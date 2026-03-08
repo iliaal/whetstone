@@ -5,6 +5,12 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.1] - 2026-03-08
+
+### Changed
+
+- **frontend-design skill** — enriched with anti-slop rules from taste-skill research: forbidden AI patterns (no pure black, no Inter, no 3-card rows, no AI purple), content realism rules (organic data, no generic names/brands/cliches), performance guardrails (transform/opacity only, z-index discipline), interactivity requirements (skeleton loaders, empty states, tactile feedback), and a prioritized 7-step redesign audit checklist for upgrading existing interfaces
+
 ## [2.45.0] - 2026-03-07
 
 ### Added
