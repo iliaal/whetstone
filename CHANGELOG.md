@@ -5,6 +5,12 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.2] - 2026-03-10
+
+### Fixed
+
+- **php-laravel skill** — tightened trigger pattern to stop false positives on bare "PHP" mentions (php-src, prose about PHP). Removed standalone `\bphp\b` match; now requires Laravel/framework context (eloquent, blade, artisan, phpunit, phpstan, "php controller", etc.). Updated skill description to exclude PHP internals.
+
 ## [2.45.1] - 2026-03-08
 
 ### Changed

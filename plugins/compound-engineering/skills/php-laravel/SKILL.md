@@ -2,8 +2,9 @@
 name: php-laravel
 description: >-
   Modern PHP 8.4 and Laravel patterns: architecture, Eloquent, queues, testing.
-  Use when working with PHP, Laravel, Eloquent, Blade, artisan, migrations,
-  PHPUnit, or writing/reviewing tests for PHP code.
+  Use when working with Laravel, Eloquent, Blade, artisan, PHPUnit, PHPStan,
+  or building/testing PHP applications with frameworks. Not for PHP internals (php-src)
+  or general PHP language discussion.
 ---
 
 # PHP & Laravel Development
