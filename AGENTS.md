@@ -25,8 +25,18 @@ compound-engineering-plugin/
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
         ├── agents/              # 26 agents (review, research, design, workflow)
+        │   ├── review/          # Code review agents
+        │   ├── research/        # Research and analysis agents
+        │   ├── design/          # Design and UI agents
+        │   └── workflow/        # Workflow automation agents
         ├── commands/            # 19 slash commands
-        ├── skills/              # 31 skills (all native)
+        │   ├── workflows/       # Core workflow commands (workflows:plan, etc.)
+        │   └── *.md             # Utility commands
+        ├── skills/              # 32 skills (all native)
+        │   └── <skill-name>/
+        │       ├── SKILL.md        # Skill content
+        │       ├── references/     # Optional supplementary docs
+        │       └── scripts/        # Optional bundled scripts
         ├── hooks/               # 1 hook (inject-skills into subagents)
         └── README.md            # Plugin documentation
 ```
@@ -38,33 +48,78 @@ compound-engineering-plugin/
 - `model: inherit` removed from agents — only declare when overriding (e.g., `model: haiku`).
 - Agents reference skills (one-directional); skills stay generic and portable.
 
-## Updating the plugin
+## Versioning
 
-When agents, commands, skills, or hooks are added/removed:
+Every change MUST include:
 
-### 1. Update counts and descriptions
+1. **Version bump** in `plugins/compound-engineering/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+2. **CHANGELOG.md** entry using Keep a Changelog format
+3. **README.md** — verify/update component counts and tables
+4. **`bash scripts/update-metadata.sh`** — updates descriptions and counts
+
+Semver rules:
+- **MAJOR** (1.0.0 → 2.0.0): Breaking changes, major reorganization
+- **MINOR** (1.0.0 → 1.1.0): New agents, commands, or skills
+- **PATCH** (1.0.0 → 1.0.1): Bug fixes, doc updates, minor improvements
+
+Pre-commit checklist:
+
+- [ ] Version bumped in both JSON files
+- [ ] CHANGELOG.md updated
+- [ ] README.md component counts verified
+- [ ] README.md tables accurate (agents, commands, skills)
+- [ ] `bash scripts/update-metadata.sh` run
+- [ ] `jq . .claude-plugin/marketplace.json && jq . plugins/compound-engineering/.claude-plugin/plugin.json`
+
+## Command naming convention
+
+Workflow commands use `workflows:` prefix to avoid collisions with built-in commands:
+- `/workflows:brainstorm` — explore requirements and approaches before planning
+- `/workflows:plan` — create implementation plans
+- `/workflows:review` — run comprehensive code reviews
+- `/workflows:work` — execute work items systematically
+- `/workflows:compound` — document solved problems
+
+Why `workflows:`? Claude Code has built-in `/plan` and `/review`. Using `name: workflows:plan` in frontmatter creates a unique command with no collision.
+
+## Skill compliance checklist
+
+When adding or modifying skills, verify:
+
+### YAML Frontmatter (Required)
+
+- [ ] `name:` present and matches directory name (lowercase-with-hyphens)
+- [ ] `description:` describes **what it does and when to use it** (e.g., "Explains code with diagrams. Use when exploring how code works.")
+
+### Reference Links (Required if references/ exists)
+
+- [ ] All files in `references/` linked as `[filename.md](./references/filename.md)`
+- [ ] All files in `assets/` linked as `[filename](./assets/filename)`
+- [ ] All files in `scripts/` linked as `[filename](./scripts/filename)`
+- [ ] No bare backtick references like `` `references/file.md` `` — use proper markdown links
+
+### Writing Style
+
+- [ ] Imperative/infinitive form (verb-first instructions)
+- [ ] No second person ("you should") — use objective language ("To accomplish X, do Y")
+
+### Quality Dimensions (SkillsBench arXiv:2602.12670)
+
+- [ ] **Output format** — skill defines what it produces (report template, file path, code pattern)
+- [ ] **Success criteria** — how the agent knows the skill completed correctly
+- [ ] **Constraints** — what the skill must NOT do, stop conditions, boundaries
+- [ ] **Procedural content** — numbered steps with action verbs, not just declarative rules
+- [ ] **Optimal length** — SKILL.md body 2K-8K chars ideal. >15K hurts (-2.9pp). Overflow → `references/`
+
+### Quick Validation
 
 ```bash
-bash scripts/update-metadata.sh
-```
+# Check for unlinked references in a skill
+grep -E '`(references|assets|scripts)/[^`]+`' skills/*/SKILL.md
+# Should return nothing if all refs are properly linked
 
-This automatically counts all components (agents, commands, skills, hooks, MCP servers) and updates descriptions in both `plugin.json` and `marketplace.json`. Run this after any component change.
-
-### 2. Bump version
-
-- `plugins/compound-engineering/.claude-plugin/plugin.json` → `version`
-- `.claude-plugin/marketplace.json` → plugin `version`
-
-### 3. Update docs
-
-- `plugins/compound-engineering/README.md` → component tables
-- `CHANGELOG.md` → document changes
-
-### 4. Validate JSON
-
-```bash
-jq . .claude-plugin/marketplace.json
-jq . plugins/compound-engineering/.claude-plugin/plugin.json
+# Check description format - should describe what + when
+grep -E '^description:' skills/*/SKILL.md
 ```
 
 ## Common tasks
