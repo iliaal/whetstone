@@ -104,7 +104,7 @@ Form state           → React Hook Form
 
 **Rendering modes:** Server Components (default) | Client (`'use client'`) | Static (build) | Dynamic (request) | Streaming (progressive)
 
-**Decision:** Server Component unless it needs hooks, event handlers, or browser APIs. Split: server parent + client child.
+**Decision:** Server Component unless it needs hooks, event handlers, or browser APIs. Split: server parent + client child. Isolate interactive components as `'use client'` leaf components — keep server components static with no global state or event handlers.
 
 **Routing patterns:**
 - Route groups `(name)` — organize without affecting URL

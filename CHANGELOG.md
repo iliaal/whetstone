@@ -5,6 +5,21 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.3] - 2026-03-14
+
+### Changed
+
+- **code-review skill** — added untracked files to scope resolution fallback chain (new files were invisible to review)
+- **receiving-code-review skill** — added `gh api` reply command for inline PR thread replies
+- **brainstorming skill** — added trivially-scoped escape hatch and multi-subsystem decomposition signal
+- **planning skill** — added execution handoff line pointing to `workflows:work`
+- **simplifying-code skill** — added dense transform chain pattern to Smell-to-Fix table
+- **frontend-design skill** — added Motion library performance guardrails (useMotionValue, leaf client components), strengthened Tailwind version check in redesign section
+- **tailwind-css skill** — expanded border radius v3-to-v4 rename table (5 explicit mappings replacing 1 vague row)
+- **refine-prompt skill** — added missing-context sub-checklist to Context assessment row
+- **verification-before-completion skill** — added verification phase order (build, typecheck, lint, test, diff)
+- **react-frontend skill** — added RSC safety rules to App Router decision section
+
 ## [2.45.2] - 2026-03-10
 
 ### Fixed

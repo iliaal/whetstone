@@ -17,7 +17,7 @@ description: >-
 | Task | Is the core action explicit and unambiguous? |
 | Constraints | Are length, format, tone, and scope defined? |
 | Output format | Does it specify the expected structure? |
-| Context | Does the model have enough background to act? |
+| Context | Does the model have enough background to act? Check: audience, input format, success criteria, scope boundaries, technical constraints |
 | Examples | Would a demonstration clarify the expected output? |
 | Edge cases | Are failure modes and boundary conditions addressed? |
 

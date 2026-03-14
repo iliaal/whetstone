@@ -23,6 +23,7 @@ Brainstorming can be skipped when:
 - Requirements are explicit and detailed
 - The user knows exactly what they want
 - The task is a straightforward bug fix or well-defined change
+- The task is trivially scoped (a rename, a one-line config change, a simple fix)
 
 ## Hard Gate
 
@@ -46,6 +47,7 @@ Before diving into questions, assess whether brainstorming is needed.
 - Trade-offs haven't been discussed
 - User seems unsure about the approach
 - User described a solution ("build a dashboard") instead of a problem
+- Request spans multiple independent subsystems — decompose into separate brainstorming sessions before diving into any single one
 
 If requirements are clear, suggest: "Your requirements seem clear. Consider proceeding directly to planning or implementation."
 

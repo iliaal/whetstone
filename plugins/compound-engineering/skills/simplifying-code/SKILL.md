@@ -36,6 +36,7 @@ description: >-
 | Duplicated block (**3+** occurrences) | Extract shared function. Two copies = leave inline; wait for the third |
 | Magic numbers/strings | Named constants |
 | Complex conditional | Extract to descriptively-named boolean or function |
+| Dense transform chain (3+ chained methods) | Break into named intermediates for debuggability |
 | Dead code / unreachable branches | Delete entirely — no commented-out code |
 | Unnecessary `else` after return | Remove `else`, dedent |
 

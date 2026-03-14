@@ -19,7 +19,8 @@ When no specific files are given, resolve scope via this fallback chain:
 1. User-specified files/directories (explicit request)
 2. Session-modified files (`git diff --name-only` for unstaged + staged)
 3. All uncommitted files (`git diff --name-only HEAD`)
-4. **Zero files → stop.** Ask what to review.
+4. Untracked files (`git ls-files --others --exclude-standard`) — new files are often most review-worthy
+5. **Zero files → stop.** Ask what to review.
 
 Exclude: lockfiles, minified/bundled output, vendored/generated code.
 

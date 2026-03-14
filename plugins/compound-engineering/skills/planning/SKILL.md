@@ -161,5 +161,6 @@ Use this skill's principles during any planning activity. Use `workflows:plan` w
 - **This skill** applies as methodology during `workflows:plan` and `workflows:work`
 - **Predecessor:** `brainstorming` — use first when requirements are ambiguous or multiple approaches exist
 - **Prose quality:** `writing` — use to humanize plan language and remove AI slop from plan documents
+- **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline
 - **End of chain:** `finishing-branch` (merge / PR / keep / discard)
 - See `brainstorming` for the full workflow chain diagram

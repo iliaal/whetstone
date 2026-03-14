@@ -46,7 +46,11 @@ Tokens defined with `@theme` become utilities automatically: `--color-brand` pro
 | `darkMode: "class"` | `@custom-variant dark (...)` | CSS-only |
 | `bg-gradient-to-r` | `bg-linear-to-r` | Also: `bg-radial`, `bg-conic` |
 | `bg-opacity-60` | `bg-red-500/60` | All `*-opacity-*` removed |
-| `rounded-md` (6px) | `rounded` (6px) | Radius scale shifted down |
+| `rounded-sm` | `rounded-xs` | Radius scale shifted down one step |
+| `rounded` | `rounded-sm` | (run `@tailwindcss/upgrade` codemod) |
+| `rounded-md` (6px) | `rounded` (6px) | |
+| `rounded-lg` | `rounded-md` | |
+| `rounded-xl` | `rounded-lg` | |
 | `min-h-screen` | `min-h-dvh` | `dvh` handles mobile browser chrome |
 | `w-6 h-6` | `size-6` | Size shorthand for equal w/h |
 | `space-x-4` | `gap-4` | Gap handles flex/grid wrapping correctly |

@@ -108,7 +108,7 @@ State the correction factually: "Checked this, you're correct because [reason]. 
 
 ## GitHub PR Reviews
 
-- Reply in the inline comment thread, not as top-level PR comments
+- Reply in the inline comment thread, not as top-level PR comments: `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f body="..." -f in_reply_to={comment_id}`
 - Reference specific lines when explaining why you disagree
 - Mark conversations as resolved only after the fix is verified
 - If a suggestion spawns a larger discussion, suggest moving it to an issue

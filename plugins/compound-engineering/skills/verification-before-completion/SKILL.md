@@ -21,7 +21,7 @@ Before any success claim, run through these five steps:
 
 | Step | Action | Example |
 |------|--------|---------|
-| **1. Identify** | What command proves this claim? | `pytest tests/`, `npm test`, `curl -s localhost:3000/health` |
+| **1. Identify** | What command proves this claim? Run in order: build → typecheck → lint → test → diff review | `pytest tests/`, `npm test`, `curl -s localhost:3000/health` |
 | **2. Run** | Execute the full command, fresh | Not "I ran it earlier" — run it now |
 | **3. Read** | Read the complete output, check exit code | Don't scan for "passed" — read failure counts, warnings, errors |
 | **4. Verify** | Does the output actually confirm the claim? | "42 passed, 0 failed" confirms "tests pass". "41 passed, 1 failed" does not. |
