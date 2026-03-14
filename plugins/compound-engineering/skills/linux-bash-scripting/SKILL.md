@@ -172,3 +172,7 @@ Run `shellcheck --enable=all script.sh`. Key rules:
 - **SC2327/SC2328**: Use `${BASH_REMATCH[n]}` not `$n` for regex captures
 
 Pre-commit: `shellcheck *.sh && shfmt -i 2 -ci -d *.sh`
+
+## Verify
+
+Run `shellcheck --enable=all` and `shfmt -d` with zero warnings before declaring done. Test edge cases: empty input, missing files, spaces in paths.

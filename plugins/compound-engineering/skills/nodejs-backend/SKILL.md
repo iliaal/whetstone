@@ -94,6 +94,7 @@ Never `readFileSync` / sync methods in production. Offload CPU work to worker th
 - Simplicity first — every change as simple as possible, impact minimal code
 - Only touch what's necessary — avoid introducing unrelated changes
 - No hacky workarounds — if a fix feels wrong, step back and implement the clean solution
+- Verify: `tsc --noEmit && npm test` pass with zero warnings before declaring done
 
 ## References
 

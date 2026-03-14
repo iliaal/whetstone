@@ -5,6 +5,24 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.4] - 2026-03-14
+
+### Changed
+
+- **meta-prompting skill** — added output format awareness to intro line (pattern results now marked inline)
+- **writing skill** — converted Self-Check from prose to 4-step procedural checklist with done definition
+- **pinescript skill** — added Workflow section with 4-step development cycle and overfit detection
+- **linux-bash-scripting skill** — added Verify section (shellcheck + shfmt + edge case testing)
+- **nodejs-backend skill** — added verify line to Discipline section (tsc + npm test)
+- **postgresql skill** — added Verify section (EXPLAIN ANALYZE + unindexed FK check)
+- **python-services skill** — added verify line to Discipline section (pytest + ruff)
+
+### Added
+
+- **CLAUDE.md** — added SkillsBench Quality Dimensions checklist (output format, success criteria, constraints, procedural content, optimal length)
+- **md-docs init-agents.md** — added SkillsBench quality rules for generated AGENTS.md files
+- **distiller.py** — added `token-budget` command with SkillsBench effectiveness rating (OPTIMAL/VERBOSE/OVER_BUDGET)
+
 ## [2.45.3] - 2026-03-14
 
 ### Changed

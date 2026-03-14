@@ -75,4 +75,7 @@ description: >-
 
 ## Self-Check
 
-Read it aloud. If any sentence sounds like a press release, a Wikipedia article, or a chatbot response — rewrite it.
+1. Read every sentence aloud. If it sounds like a press release, Wikipedia, or chatbot — rewrite.
+2. Ctrl-F the banned-phrases list above. Zero matches required.
+3. Check for em dash overuse, mechanical bold, and synonym cycling.
+4. Done when every sentence passes the aloud test and no banned patterns remain.

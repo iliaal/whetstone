@@ -77,6 +77,14 @@ When adding or modifying skills, verify compliance:
 - [ ] Use imperative/infinitive form (verb-first instructions)
 - [ ] Avoid second person ("you should") - use objective language ("To accomplish X, do Y")
 
+### Quality Dimensions (SkillsBench arXiv:2602.12670)
+
+- [ ] **Output format** — skill defines what it produces (report template, file path, code pattern)
+- [ ] **Success criteria** — how the agent knows the skill completed correctly
+- [ ] **Constraints** — what the skill must NOT do, stop conditions, boundaries
+- [ ] **Procedural content** — numbered steps with action verbs, not just declarative rules
+- [ ] **Optimal length** — SKILL.md body 2K-8K chars ideal. >15K hurts (-2.9pp). Overflow → `references/`
+
 ### Quick Validation Command
 
 ```bash

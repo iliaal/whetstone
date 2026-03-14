@@ -184,3 +184,7 @@ Always filter BEFORE vector search (use partial indexes or CTEs with pre-filtere
 | N+1 query loops | Batch with `= ANY($1::bigint[])` or JOIN |
 | SELECT-then-INSERT for upsert | `ON CONFLICT DO UPDATE` |
 | Multi-tenant without RLS | Enable RLS with per-tenant policies |
+
+## Verify
+
+Run `EXPLAIN (ANALYZE, BUFFERS)` on changed queries. Confirm no sequential scans on large tables and no unindexed FK columns before declaring done.

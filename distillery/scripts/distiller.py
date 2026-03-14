@@ -427,6 +427,47 @@ def token_count(filepath):
     return round(size / 3.5)
 
 
+def token_budget_report(skill_dir):
+    """Token budget with SkillsBench effectiveness rating.
+
+    Optimal SKILL.md: 2K-8K chars (+18.8pp). Over 15K: -2.9pp.
+    """
+    skill_path = Path(skill_dir) / "SKILL.md"
+    refs_dir = Path(skill_dir) / "references"
+
+    if not skill_path.exists():
+        return {"error": f"SKILL.md not found in {skill_dir}"}
+
+    body_chars = skill_path.stat().st_size
+    body_tokens = round(body_chars / 3.5)
+
+    ref_tokens = {}
+    if refs_dir.exists():
+        for ref in refs_dir.glob("*.md"):
+            ref_tokens[ref.name] = round(ref.stat().st_size / 3.5)
+
+    total = body_tokens + sum(ref_tokens.values())
+
+    if body_chars > 15000:
+        rating = "OVER_BUDGET"
+    elif body_chars > 8000:
+        rating = "VERBOSE"
+    elif body_chars >= 2000:
+        rating = "OPTIMAL"
+    elif body_chars >= 1000:
+        rating = "BRIEF"
+    else:
+        rating = "TOO_SHORT"
+
+    return {
+        "body_tokens": body_tokens,
+        "body_chars": body_chars,
+        "ref_tokens": ref_tokens,
+        "total_tokens": total,
+        "rating": rating,
+    }
+
+
 def load_env():
     """Load key=value pairs from .env file."""
     if not ENV_FILE.exists():
@@ -1014,6 +1055,10 @@ def main():
     p_tokens = sub.add_parser("token-count", help="Estimate token count for a file")
     p_tokens.add_argument("file", help="Path to file")
 
+    # token-budget
+    p_budget = sub.add_parser("token-budget", help="SkillsBench effectiveness rating for a skill")
+    p_budget.add_argument("name", help="Skill name (directory under generated-skills/ or full path)")
+
     # grok-query
     p_grok = sub.add_parser("grok-query", help="Query Grok for recent X posts about a topic")
     p_grok.add_argument("topic", help="Topic to search for")
@@ -1073,6 +1118,11 @@ def main():
     elif args.command == "token-count":
         count = token_count(args.file)
         print(count)
+
+    elif args.command == "token-budget":
+        skill_dir = GENERATED_DIR / args.name if not os.path.isabs(args.name) else Path(args.name)
+        report = token_budget_report(skill_dir)
+        print(json.dumps(report, indent=2))
 
     elif args.command == "grok-query":
         result = grok_query(args.topic, args.top_installs, args.instructions)

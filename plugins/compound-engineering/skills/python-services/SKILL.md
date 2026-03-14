@@ -104,6 +104,7 @@ def call_api(url: str) -> dict: ...
 - Simplicity first — every change as simple as possible, impact minimal code
 - Only touch what's necessary — avoid introducing unrelated changes
 - No hacky workarounds — if a fix feels wrong, step back and implement the clean solution
+- Verify: `uv run pytest && uv run ruff check .` pass with zero warnings before declaring done
 
 ## Error Handling
 

@@ -10,7 +10,7 @@ description: >-
 
 # Meta-Prompting
 
-Enhanced reasoning via `/commands` or natural language. Commands combine left-to-right: `/verify /adversarial`. Auto-trigger when context warrants — note which pattern applied.
+Enhanced reasoning via `/commands` or natural language. Commands combine left-to-right: `/verify /adversarial`. Auto-trigger when context warrants — note which pattern applied. Output: apply the pattern inline, then mark the result (e.g., `VERIFIED ANSWER:`, `REVISED ANSWER:`, confidence tier).
 
 ## Patterns
 

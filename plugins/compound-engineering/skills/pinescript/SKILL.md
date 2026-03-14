@@ -67,3 +67,10 @@ TradingView has no console or debugger. Use these patterns:
 - Trading divergence without structure confirmation — wait for break above prior swing high before entry, divergence alone can persist far longer than expected
 - Overfitting signals: if optimal parameters are oddly specific (RSI 23 instead of 20), the backtest is curve-fitted. Use round numbers.
 - Treating support/resistance as exact prices — they are zones (crypto 1-3%, forex 20-50 pips)
+
+## Workflow
+
+1. Write indicator/strategy in Pine Editor
+2. Test with bar replay and strategy tester on multiple timeframes
+3. Walk-forward validate before trusting backtest results
+4. Verify: run on 3+ symbols and 2+ timeframes. If metrics degrade >30%, parameters are overfit.

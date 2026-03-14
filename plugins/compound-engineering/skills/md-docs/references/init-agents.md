@@ -114,6 +114,12 @@ Sections to include (only if relevant):
 
 Style: terse, imperative, expert-to-expert. No fluff.
 
+Quality rules (SkillsBench arXiv:2602.12670):
+- Procedural over declarative — "Run `npm test`" beats "Tests should pass"
+- Tables over prose — agents parse structured data more reliably
+- 2K-8K chars is optimal (+18.8pp). Beyond 15K, effectiveness degrades. Split or link out.
+- Context-first ordering — overview before commands, commands before architecture
+
 ## Write
 
 1. Write AGENTS.md with generated content
