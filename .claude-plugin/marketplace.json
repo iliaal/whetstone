@@ -12,7 +12,7 @@
     {
       "name": "compound-engineering",
       "description": "AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes 24 specialized agents, 20 commands, 32 skills, and 1 hook, 1 MCP server.",
-      "version": "2.45.4",
+      "version": "2.45.5",
       "author": {
         "name": "Ilia Alshanetsky",
         "url": "https://github.com/iliaal"

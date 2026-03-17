@@ -5,6 +5,13 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.5] - 2026-03-17
+
+### Changed
+
+- **code-review skill** — fetch MR/PR discussions before writing findings to avoid re-raising resolved issues
+- **code-review skill** — use diff content directly for added files instead of reading from working tree on remote branches
+
 ## [2.45.4] - 2026-03-14
 
 ### Changed

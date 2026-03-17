@@ -26,8 +26,8 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
 ## Review Process
 
-1. **Context** — read the PR description, linked issue, or task spec. Run the project's test/lint suite if available (`npm run test`, `make check`, etc.) to catch automated failures before manual review.
-2. **Structural scan** — architecture, file organization, API surface changes. Flag breaking changes.
+1. **Context** — read the PR description, linked issue, or task spec. Fetch existing review comments and discussions before writing any findings — prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (`npm run test`, `make check`, etc.) to catch automated failures before manual review.
+2. **Structural scan** — architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly — don't attempt to read them from the working tree when reviewing a remote branch.
 3. **Line-by-line** — correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
 4. **Security** — input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act).
 5. **Test coverage** — verify new code paths have tests. Flag untested error paths, edge cases, and behavioral changes without corresponding test updates. Flag tests coupled to implementation details (mocking internals, testing private methods) -- test behavior, not wiring.
