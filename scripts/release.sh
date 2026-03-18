@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Release pipeline: commit, push, mirror to ai-skills, update local plugin
-# Usage: bash scripts/release.sh "commit message"
+# Usage: bash scripts/release.sh ["commit message"]
+#   If no message provided, auto-generates from version + CHANGELOG headline
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,7 +29,20 @@ if [[ -z "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
-commit_msg="${1:-bump: v${version}}"
+# Auto-generate commit message from CHANGELOG if not provided
+if [[ -n "${1:-}" ]]; then
+  commit_msg="$1"
+else
+  # Extract first content line after the version header in CHANGELOG
+  changelog_headline=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;/^$/d;/^###/{ s/^### //; p; q; }}" CHANGELOG.md 2>/dev/null)
+  if [[ -n "$changelog_headline" ]]; then
+    # Use changelog section name as summary
+    commit_msg="bump: v${version} — $(echo "$changelog_headline" | tr '[:upper:]' '[:lower:]')"
+  else
+    commit_msg="bump: v${version}"
+  fi
+  echo "Commit message: $commit_msg"
+fi
 
 echo "=== Release v${version} ==="
 echo ""
@@ -39,6 +53,8 @@ git add -A -- \
   .claude-plugin/marketplace.json \
   CHANGELOG.md \
   plugins/compound-engineering/
+# Also stage project-level skill changes if any
+git add -A -- .claude/skills/ 2>/dev/null || true
 git commit -m "$commit_msg"
 git push origin main
 echo "  Pushed to origin/main"
@@ -57,11 +73,15 @@ else
 fi
 cd "$ROOT_DIR"
 
-# --- 3. Update local plugin ---
-echo "[3/4] Update local plugin..."
+# --- 3. Sync to other tools (Codex, Kilocode, etc.) ---
+echo "[3/5] Sync skills to other tools..."
+bash "$SCRIPT_DIR/sync-to-tools.sh"
+
+# --- 4. Update local plugin ---
+echo "[4/5] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
-# --- 4. Summary ---
+# --- 5. Summary ---
 echo ""
-echo "[4/4] Done. v${version} released."
+echo "[5/5] Done. v${version} released."
 echo "  Restart Claude Code to pick up the new version."

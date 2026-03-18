@@ -17,12 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **agent-native-architecture skill** — removed second person ("you should")
 - **setup skill** — removed dead `plan_review_agents` config field
 - **skill-distiller** — added triage-before-fetch step and manual npx fallback for fetch failures
-- **release.sh** — auto-generates commit message from CHANGELOG, stages .claude/skills/ changes
-
-### Added
-
-- **`/release` command** (project-level) — runs full release pipeline: update-metadata, commit, push, mirror, update-plugin
-- **`/sync-from-repos` command** (project-level) — cross-reference ~/ai/repos/ against plugin skills and recommend improvements
 
 ## [2.45.8] - 2026-03-18
 
