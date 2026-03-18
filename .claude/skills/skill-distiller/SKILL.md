@@ -25,6 +25,8 @@ python3 distillery/scripts/distiller.py search "<query1>" "<query2>" ...
 
 Returns JSON array of qualifying skills (filtered to `installs >= 100`, top 10, deduplicated). If fewer than 3 qualify, threshold drops to 50. Save this output — it feeds into Step 2.
 
+**1b. Triage before fetching** — High install count does not correlate with quality. Before fetching, scan the search results: read skill descriptions and source repo names. Skip sources that are clearly generic checklists, project-specific tools, or domains outside the target skill's scope. Only fetch sources that suggest genuinely new patterns or techniques.
+
 **2. Fetch** — Stage sources and compute checksums:
 
 ```bash
@@ -32,6 +34,8 @@ python3 distillery/scripts/distiller.py fetch --skills '<JSON from Step 1>'
 ```
 
 Handles grouping by source, running `npx skills add`, staging to `distillery/.skill-distiller/sources/`, removing symlinks, and computing SHA-1 checksums. Returns JSON array with `id`, `skillId`, `installs`, `sha1`, and `path` for each staged source.
+
+**Fetch fallback:** If `distillery/scripts/distiller.py fetch` fails (subprocess issues with `npx skills add`), run `npx skills add <source_url> -s <skillId> -y --agent claude-code` directly from the project root. The skill will be installed to `.claude/skills/<skillId>/`. Read the SKILL.md from there, then clean up the directory after analysis.
 
 **2b. Grok query** — Query recent X posts for practitioner insights:
 

@@ -138,7 +138,6 @@ Write `compound-engineering.local.md`:
 ```markdown
 ---
 review_agents: [{computed agent list}]
-plan_review_agents: [{computed plan agent list}]
 ---
 
 # Review Context

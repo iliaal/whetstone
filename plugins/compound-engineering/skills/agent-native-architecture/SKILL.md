@@ -222,7 +222,7 @@ const tools = [
 **Step 2: Write behavior in the system prompt**
 ```markdown
 ## Your Responsibilities
-When asked to organize content, you should:
+When organizing content:
 1. Read existing files to understand the structure
 2. Analyze what organization makes sense
 3. Create/move files using your tools

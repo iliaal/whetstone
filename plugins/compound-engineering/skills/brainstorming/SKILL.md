@@ -8,7 +8,7 @@ description: >-
 
 # Brainstorming
 
-This skill provides detailed process knowledge for effective brainstorming sessions that clarify **WHAT** to build before diving into **HOW** to build it.
+Clarify **WHAT** to build before **HOW** to build it.
 
 ## When to Use This Skill
 

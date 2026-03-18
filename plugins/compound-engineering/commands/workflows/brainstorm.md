@@ -8,9 +8,7 @@ argument-hint: "[feature idea or problem to explore]"
 
 **Note: The current year is 2026.** Use this when dating brainstorm documents.
 
-Brainstorming helps answer **WHAT** to build through collaborative dialogue. It precedes `/workflows:plan`, which answers **HOW** to build it.
-
-**Process knowledge:** Load the `brainstorming` skill for detailed question techniques, approach exploration patterns, and YAGNI principles.
+**Process knowledge:** Follow the `brainstorming` skill for all process details -- clarity assessment, question techniques, approach exploration, YAGNI principles, scope decomposition, and spec review.
 
 ## Feature Description
 
@@ -24,84 +22,50 @@ Do not proceed until you have a feature description from the user.
 
 ### Phase 0: Assess Requirements Clarity
 
-Evaluate whether brainstorming is needed based on the feature description.
-
-**Clear requirements indicators:**
-- Specific acceptance criteria provided
-- Referenced existing patterns to follow
-- Described exact expected behavior
-- Constrained, well-defined scope
+Per the `brainstorming` skill Phase 0 -- evaluate whether brainstorming is needed.
 
 **If requirements are already clear:**
 Use **AskUserQuestion tool** to suggest: "Your requirements seem detailed enough to proceed directly to planning. Should I run `/workflows:plan` instead, or would you like to explore the idea further?"
 
 ### Phase 1: Understand the Idea
 
-#### 1.1 Repository Research (Lightweight)
-
-Run a quick repo scan to understand existing patterns:
+**1.1 Repository Research (Lightweight)**
 
 - Task repo-research-analyst("Understand existing patterns related to: <feature_description>")
 
 Focus on: similar features, established patterns, CLAUDE.md guidance.
 
-#### 1.2 Collaborative Dialogue
+**1.2 Collaborative Dialogue**
 
-Use the **AskUserQuestion tool** to ask questions **one at a time**.
+Use the **AskUserQuestion tool** to ask questions **one at a time**. Follow the `brainstorming` skill Phase 1 for question techniques and topic coverage.
 
-**Guidelines (see `brainstorming` skill for detailed techniques):**
-- Prefer multiple choice when natural options exist
-- Start broad (purpose, users) then narrow (constraints, edge cases)
-- Validate assumptions explicitly
-- Ask about success criteria
-
-**Exit condition:** Continue until the idea is clear OR user says "proceed"
+**Exit condition:** Continue until the idea is clear OR user says "proceed."
 
 ### Phase 2: Explore Approaches
 
-Propose **2-3 concrete approaches** based on research and conversation.
-
-For each approach, provide:
-- Brief description (2-3 sentences)
-- Pros and cons
-- When it's best suited
-
-Lead with your recommendation and explain why. Apply YAGNI—prefer simpler solutions.
-
-Use **AskUserQuestion tool** to ask which approach the user prefers.
+Per the `brainstorming` skill Phase 2. Use **AskUserQuestion tool** to ask which approach the user prefers.
 
 ### Phase 3: Capture the Design
 
-Write a brainstorm document to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`.
+Write to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` using the template from the `brainstorming` skill Phase 3. Ensure directory exists before writing.
 
-**Document structure:** See the `brainstorming` skill for the template format. Key sections: What We're Building, Why This Approach, Key Decisions, Open Questions.
+**IMPORTANT:** Before proceeding, check for Open Questions. If any exist, ask the user about each one using AskUserQuestion. Move resolved questions to a "Resolved Questions" section.
 
-Ensure `docs/brainstorms/` directory exists before writing.
+### Phase 4: Spec Review
 
-**IMPORTANT:** Before proceeding to Phase 4, check if there are any Open Questions listed in the brainstorm document. If there are open questions, YOU MUST ask the user about each one using AskUserQuestion before offering to proceed to planning. Move resolved questions to a "Resolved Questions" section.
+Per the `brainstorming` skill Phase 4 -- dispatch spec-reviewer subagent, iterate up to 3 times, then present to user for approval.
 
-### Phase 4: Handoff
+### Phase 5: Handoff
 
-Use **AskUserQuestion tool** to present next steps:
-
-**Question:** "Brainstorm captured. What would you like to do next?"
+Use **AskUserQuestion tool**: "Brainstorm captured. What would you like to do next?"
 
 **Options:**
-1. **Review and refine** - Improve the document through structured self-review
-2. **Proceed to planning** - Run `/workflows:plan` (will auto-detect this brainstorm)
-3. **Ask more questions** - I have more questions to clarify before moving on
-4. **Done for now** - Return later
+1. **Review and refine** -- Load the `document-review` skill and apply it to the brainstorm document
+2. **Proceed to planning** -- Run `/workflows:plan` (will auto-detect this brainstorm)
+3. **Ask more questions** -- Return to Phase 1.2 and probe deeper
+4. **Done for now** -- Return later
 
-**If user selects "Ask more questions":** YOU (Claude) return to Phase 1.2 (Collaborative Dialogue) and continue asking the USER questions one at a time to further refine the design. The user wants YOU to probe deeper - ask about edge cases, constraints, preferences, or areas not yet explored. Continue until the user is satisfied, then return to Phase 4.
-
-**If user selects "Review and refine":**
-
-Load the `document-review` skill and apply it to the brainstorm document.
-
-When document-review returns "Review complete", present next steps:
-
-1. **Move to planning** - Continue to `/workflows:plan` with this document
-2. **Done for now** - Brainstorming complete. To start planning later: `/workflows:plan [document-path]`
+**If "Review and refine":** After document-review completes, offer: Move to planning / Done for now.
 
 ## Output Summary
 
@@ -118,12 +82,5 @@ Key decisions:
 
 Next: Run `/workflows:plan` when ready to implement.
 ```
-
-## Important Guidelines
-
-- **Stay focused on WHAT, not HOW** - Implementation details belong in the plan
-- **Ask one question at a time** - Don't overwhelm
-- **Apply YAGNI** - Prefer simpler approaches
-- **Keep outputs concise** - 200-300 words per section max
 
 NEVER CODE! Just explore and document decisions.

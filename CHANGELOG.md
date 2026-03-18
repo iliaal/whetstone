@@ -5,6 +5,25 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.9] - 2026-03-18
+
+### Changed
+
+- **reproduce-bug command** — made generic (removed project-specific rails/appsignal agent refs, uses debugging skill methodology)
+- **workflows:brainstorm command** — trimmed to thin orchestration wrapper, delegates process knowledge to brainstorming skill
+- **changelog command** — replaced stale EVERY_WRITE_STYLE.md reference with writing skill, documented intentional emoji override
+- **agent-native-audit command** — added cross-reference to agent-native-reviewer agent
+- **brainstorming skill** — trimmed verbose preamble
+- **agent-native-architecture skill** — removed second person ("you should")
+- **setup skill** — removed dead `plan_review_agents` config field
+- **skill-distiller** — added triage-before-fetch step and manual npx fallback for fetch failures
+- **release.sh** — auto-generates commit message from CHANGELOG, stages .claude/skills/ changes
+
+### Added
+
+- **`/release` command** (project-level) — runs full release pipeline: update-metadata, commit, push, mirror, update-plugin
+- **`/sync-from-repos` command** (project-level) — cross-reference ~/ai/repos/ against plugin skills and recommend improvements
+
 ## [2.45.8] - 2026-03-18
 
 ### Changed
