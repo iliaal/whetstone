@@ -21,6 +21,8 @@ Think about the places it could go wrong. Look for logging output that helps nar
 
 ## Phase 2: Visual Reproduction with Playwright
 
+**Requires Playwright MCP server.** If not available, skip to Phase 3 with findings from Phase 1 only.
+
 If the bug is UI-related or involves user flows, use Playwright to visually reproduce it:
 
 ### Step 1: Verify Server is Running

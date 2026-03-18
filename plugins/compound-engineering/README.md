@@ -77,16 +77,14 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 
 | Command | Description |
 |---------|-------------|
-| `/lfg` | Full autonomous engineering workflow |
-| `/slfg` | Full autonomous workflow with swarm mode for parallel execution |
+| `/lfg` | Full autonomous engineering workflow (plan, build, review, ship). Use `--swarm` for parallel execution |
 | `/agent-native-audit` | Run agent-native architecture review with scored principles |
 | `/deepen-plan` | Enhance plans with parallel research agents for each section |
 | `/changelog` | Create engaging changelogs for recent merges |
-| `/generate_command` | Generate new slash commands |
-| `/heal-skill` | Fix skill documentation issues |
 | `/report-bug` | Report a bug in the plugin |
 | `/reproduce-bug` | Reproduce bugs using logs and console |
 | `/resolve_todo_parallel` | Resolve todos from /todos/ directory in parallel |
+| `/setup` | Configure which review agents run for your project (auto-detects stack) |
 | `/triage` | Triage and prioritize issues |
 | `/test-browser` | Run browser tests on PR-affected pages |
 | `/feature-video` | Record video walkthroughs and add to PR description |
@@ -140,11 +138,9 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | [`compound-docs`](skills/compound-docs/SKILL.md) | Capture solved problems as categorized documentation |
 | [`document-review`](skills/document-review/SKILL.md) | Improve documents through structured self-review |
 | [`file-todos`](skills/file-todos/SKILL.md) | File-based todo tracking system |
-| [`finishing-branch`](skills/finishing-branch/SKILL.md) | Workflow closer: merge, PR, keep, or discard with safety checks |
 | [`git-worktree`](skills/git-worktree/SKILL.md) | Manage Git worktrees for parallel development |
 | [`md-docs`](skills/md-docs/SKILL.md) | Manages project documentation: AGENTS.md, README.md |
 | [`resolve-pr-parallel`](skills/resolve-pr-parallel/SKILL.md) | Resolve PR review comments in parallel |
-| [`setup`](skills/setup/SKILL.md) | Configure which review agents run for your project |
 | [`writing`](skills/writing/SKILL.md) | Prose editing, rewriting, and humanizing text |
 
 ### AI & Prompting

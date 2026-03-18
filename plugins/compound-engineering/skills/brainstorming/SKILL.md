@@ -219,11 +219,10 @@ When brainstorm output exists, `/workflows:plan` should detect it and use it as 
 ## Workflow Chain
 
 ```
-brainstorming → workflows:plan → workflows:work → finishing-branch
-     ↑              ↑                  ↑                  ↑
-   WHAT           HOW             EXECUTE             SHIP
+brainstorming → workflows:plan → workflows:work (includes ship)
+     ↑              ↑                  ↑
+   WHAT           HOW          EXECUTE + SHIP
 ```
 
 - **Next step:** `workflows:plan` (always)
 - **Predecessor:** user request or ambiguous feature description
-- **End of chain:** `finishing-branch` (merge / PR / keep / discard)

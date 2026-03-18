@@ -63,7 +63,7 @@ If a review agent flags any file in these directories for cleanup or removal, di
 
 Read `compound-engineering.local.md` in the project root. If found, use `review_agents` from YAML frontmatter. If the markdown body contains review context, pass it to each agent as additional instructions.
 
-If no settings file exists, invoke the `setup` skill to create one. Then read the newly created file and continue.
+If no settings file exists, run `/setup` to create one. Then read the newly created file and continue.
 
 #### Parallel Agents to review the PR:
 

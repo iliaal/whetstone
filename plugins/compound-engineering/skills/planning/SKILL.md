@@ -165,5 +165,5 @@ Use this skill's principles during any planning activity. Use `workflows:plan` w
 - **Predecessor:** `brainstorming` — use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
 - **Prose quality:** `writing` — use to humanize plan language and remove AI slop from plan documents
 - **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline
-- **End of chain:** `finishing-branch` (merge / PR / keep / discard)
+- **End of chain:** `workflows:work` Phase 4 (merge / PR / keep / discard)
 - See `brainstorming` for the full workflow chain diagram

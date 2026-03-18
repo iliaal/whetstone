@@ -201,7 +201,7 @@ Do not proceed to Phase 3 if verification fails.
 
 2. **Consider Reviewer Agents** (Optional)
 
-   Use for complex, risky, or large changes. Read agents from `compound-engineering.local.md` frontmatter (`review_agents`). If no settings file, invoke the `setup` skill to create one.
+   Use for complex, risky, or large changes. Read agents from `compound-engineering.local.md` frontmatter (`review_agents`). If no settings file, run `/setup` to create one.
 
    Run configured agents in parallel with Task tool. Present findings and address critical issues.
 
@@ -265,13 +265,30 @@ Do not proceed to Phase 3 if verification fails.
 
 3. **Finish the Branch**
 
-   Invoke the `finishing-branch` skill to close out the work:
+   Present options: **Merge locally** (solo work) / **Push + PR** (team work) / **Keep as-is** (WIP) / **Discard** (requires typed "discard" confirmation).
 
+   For PRs, use this template:
    ```
-   skill: finishing-branch
+   ## Summary
+   - [What was built and why]
+   - [Key decisions made]
+
+   ## Testing
+   - [Tests added/modified]
+   - [Manual testing performed]
+
+   ## Post-Deploy Monitoring & Validation
+   - **What to monitor**: [logs, metrics, dashboards]
+   - **Expected healthy behavior**: [signals]
+   - **Failure signals / rollback trigger**: [trigger + action]
+   - **If no operational impact**: `No additional monitoring required: <reason>`
    ```
 
-   This handles the full shipping decision: commit, merge locally, push + PR, keep as-is, or discard. Follow the skill's safety checks and PR template.
+   **Safety rules:**
+   - Never proceed with failing tests
+   - Never force-push without explicit user request
+   - Never merge directly to main/master without explicit user permission
+   - Always run tests after merge. If tests fail: revert (`git revert -m 1 HEAD`), keep branch, diagnose
 
 4. **Notify User**
    - Summarize what was completed
@@ -425,4 +442,4 @@ For most features: tests + linting + following patterns is sufficient.
 
 - **Predecessor:** `workflows:plan` (provides the plan to execute)
 - **During execution:** `verification-before-completion`, `writing-tests`, `debugging`
-- **Next step:** `finishing-branch` (merge / PR / keep / discard)
+- **Next step:** Phase 4 Ship It (merge / PR / keep / discard)

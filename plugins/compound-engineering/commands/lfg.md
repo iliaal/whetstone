@@ -1,20 +1,37 @@
 ---
 name: lfg
-description: Full autonomous engineering workflow
-argument-hint: "[feature description]"
+description: Full autonomous engineering workflow (plan, build, review, ship)
+argument-hint: "[feature description] [--swarm for parallel execution]"
 disable-model-invocation: true
 ---
 
-Run these slash commands in order. Do not do anything else. Do not stop between steps — complete every step through to the end.
+Run these steps in order. Do not stop between steps -- complete every step through to the end.
 
-1. **Optional:** If the `ralph-wiggum` skill is available, run `/ralph-wiggum:ralph-loop "finish all slash commands" --completion-promise "DONE"`. If not available or it fails, skip and continue to step 2 immediately.
-2. `/workflows:plan $ARGUMENTS`
-3. `/compound-engineering:deepen-plan`
-4. `/workflows:work`
-5. `/workflows:review`
-6. `/compound-engineering:resolve_todo_parallel`
-7. `/compound-engineering:test-browser`
-8. `/compound-engineering:feature-video`
-9. Output `<promise>DONE</promise>` when video is in PR
+**Mode detection:** If `$ARGUMENTS` contains `--swarm`, use swarm mode (parallel execution in steps 4-6). Otherwise run sequentially.
 
-Start with step 2 now (or step 1 if ralph-wiggum is available).
+## Sequential steps
+
+1. `/workflows:plan $ARGUMENTS` (strip `--swarm` from arguments if present)
+2. `/compound-engineering:deepen-plan`
+
+## Build
+
+3. `/workflows:work`
+
+**Swarm mode:** Use Task list and launch parallel agent swarm subagents to build the plan.
+**Normal mode:** Execute sequentially.
+
+## Verify (parallel in swarm mode)
+
+4. `/workflows:review`
+5. `/compound-engineering:test-browser`
+
+**Swarm mode:** Launch steps 4 and 5 as parallel background Task agents. Wait for both to complete.
+**Normal mode:** Run sequentially.
+
+## Finalize
+
+6. `/compound-engineering:resolve_todo_parallel` -- resolve any findings from review
+7. `/compound-engineering:feature-video` -- record walkthrough and add to PR
+
+Start now.

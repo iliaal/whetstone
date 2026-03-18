@@ -35,8 +35,6 @@ SKILL_TIERS[receiving-code-review]=1
 SKILL_PATTERNS[writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline'
 SKILL_TIERS[writing-tests]=1
 
-SKILL_PATTERNS[finishing-branch]='finish.*(branch|feature)|merge.{0,15}branch|merge.?locally|ready.?to.?merge|ship.?it|close.{0,15}branch|discard.{0,15}branch|branch.?cleanup|done.*integrat|completed.*branch'
-SKILL_TIERS[finishing-branch]=1
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
@@ -108,7 +106,5 @@ SKILL_TIERS[git-worktree]=3
 SKILL_PATTERNS[resolve-pr-parallel]='resolve.*(thread|comment|pr)|batch.?resolve'
 SKILL_TIERS[resolve-pr-parallel]=3
 
-SKILL_PATTERNS[setup]='configure.*(review.?agent|compound)|setup.?compound'
-SKILL_TIERS[setup]=3
 
 # Total skills: 32

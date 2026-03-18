@@ -122,5 +122,5 @@ This skill is referenced by:
 - `workflows:work` — before marking tasks complete and before shipping
 - `receiving-code-review` — verify each fix before marking resolved
 - `debugging` — before claiming a bug is fixed
-- `finishing-branch` — before merge or PR creation
+- `workflows:work` Phase 4 — before merge or PR creation
 - `writing-tests` — tests as primary verification evidence

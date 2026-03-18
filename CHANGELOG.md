@@ -5,6 +5,23 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.47.0] - 2026-03-18
+
+### Changed
+
+- **Merged `/lfg` + `/slfg`** into single `/lfg` command with `--swarm` flag for parallel execution
+- **Absorbed `finishing-branch` skill** into `workflows:work` Phase 4 -- PR template, safety rules, and ship options now inline. Saves 1542 tokens per session.
+- **Moved `setup` from skill to command** -- invoked explicitly via `/setup`, no longer in trigger-matching pool. Saves 1257 tokens per session.
+- **`reproduce-bug` command** -- added Playwright MCP availability guard
+
+### Removed
+
+- **`/slfg` command** -- merged into `/lfg --swarm`
+- **`/generate_command` command** -- generic scaffold with project-specific refs, Claude handles this natively
+- **`/heal-skill` command** -- reactive skill fixing absorbed into `/audit-plugin`
+- **`finishing-branch` skill** -- absorbed into `workflows:work`
+- **`setup` skill** -- moved to `/setup` command (still available, just not a skill)
+
 ## [2.46.0] - 2026-03-18
 
 ### Changed
