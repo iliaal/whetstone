@@ -59,6 +59,18 @@ Run these checks against every file. Use parallel subagents (model: sonnet) grou
 | Description overlap | Two skills/agents with descriptions similar enough to confuse trigger selection |
 | Process conflicts | Different ordering of the same workflow steps across files |
 
+### Cross-type overlap (agents vs skills vs commands)
+
+Check every agent-skill, agent-command, and skill-command pair for:
+
+| Check | Signal |
+|-------|--------|
+| Agent wraps a skill with no added value | Agent description matches a skill description and the agent body just says "follow the X skill." If the agent adds no unique perspective (specialized role, tool restrictions, output format), flag it. |
+| Command duplicates skill process | Command restates the same phases/steps already defined in a skill instead of delegating. The command should be a thin orchestration wrapper; process knowledge belongs in the skill. |
+| Agent duplicates command | Agent and command serve the same purpose with overlapping scope (e.g., both review code, both plan features). One should defer to the other with a clear scope boundary. |
+| Undocumented relationships | Agent uses a skill but neither file cross-references the other. Both should document the relationship in their Integration section. |
+| Trigger confusion | An agent and a skill have similar enough descriptions that the model may invoke the wrong one. Descriptions must clearly differentiate when to use each. |
+
 ### Structural
 
 | Check | Signal |
