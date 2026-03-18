@@ -34,7 +34,9 @@ bash init-plan.sh "Feature Name"
 
 This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` — each pre-populated with the correct structure. Also adds `.plan/` to `.gitignore`.
 
-Planning files are ephemeral working state — do not commit them. If working on multiple features sequentially, old files are overwritten; the plan captures the current task only.
+Planning files are ephemeral working state -- do not commit them. If working on multiple features sequentially, old files are overwritten; the plan captures the current task only.
+
+**Note:** `.plan/` is for ephemeral working state during implementation (scratch notes, progress tracking). `docs/plans/` is for the formal plan document created by `workflows:plan` (committed, living documents). Both coexist -- `.plan/` supports the work session, `docs/plans/` stores the committed plan.
 
 | File | Purpose | Update When |
 |------|---------|-------------|
@@ -74,7 +76,7 @@ Planning files are ephemeral working state — do not commit them. If working on
 Every phase must be **context-safe**:
 - Max 5-8 files touched
 - Max 2 dependencies on other phases
-- Fits in one 2-4 hour session (implementation + verification + fixes)
+- Fits in one focused session for a developer without external blockers
 - If a phase violates these → split it
 
 ## Clarifying Questions
@@ -88,11 +90,12 @@ Only ask if truly blocking. Make reasonable assumptions for everything else.
 
 ## Task Rules
 
-- **Atomic**: one logical unit of work per task
+- **Atomic**: one action, 2-5 minutes to complete. "Write the failing test" is a step. "Implement the feature" is not.
 - **Verb-first**: "Add...", "Create...", "Refactor...", "Verify..."
-- **Concrete**: name specific files, endpoints, components
+- **Concrete**: name specific files, endpoints, components. Include exact commands with expected output, code snippets (not "add validation"), and file paths with line ranges for modifications.
 - **Ordered**: respect dependencies, sequential when needed
 - **Verifiable**: include at least one validation task per phase
+- **Complete**: do not defer test coverage, skip edge cases, or omit error handling to save time. The marginal cost of completeness during initial implementation is near-zero compared to retrofitting later.
 
 ## Context Management Rules
 
@@ -121,9 +124,9 @@ AFTER 3 FAILURES: Escalate to user with what you tried
 
 For complex projects, iterate on the plan before implementing:
 1. Draft initial plan
-2. Review for gaps, missing edge cases, architectural issues
-3. Revise until suggestions become incremental
-4. Only then start implementation
+2. Dispatch a plan-reviewer subagent with the plan document and original spec (not session history) to evaluate completeness, feasibility, and gaps
+3. Fix issues found, re-dispatch reviewer if needed (max 3 iterations)
+4. Present to user for final approval before implementation
 
 ## 5-Question Context Check
 
@@ -159,7 +162,7 @@ Use this skill's principles during any planning activity. Use `workflows:plan` w
 ## Integration
 
 - **This skill** applies as methodology during `workflows:plan` and `workflows:work`
-- **Predecessor:** `brainstorming` — use first when requirements are ambiguous or multiple approaches exist
+- **Predecessor:** `brainstorming` — use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
 - **Prose quality:** `writing` — use to humanize plan language and remove AI slop from plan documents
 - **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline
 - **End of chain:** `finishing-branch` (merge / PR / keep / discard)

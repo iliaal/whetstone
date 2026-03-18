@@ -33,6 +33,8 @@ With the philosophy written, commit to the specifics:
 
 **CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work — the key is intentionality, not intensity.
 
+**Dependency check**: Before importing any third-party library (framer-motion, lucide-react, zustand, etc.), check `package.json`. If the package is missing, output the install command before the code. Never assume a library exists.
+
 Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 - Production-grade and functional
 - Visually striking and memorable
@@ -62,11 +64,31 @@ These are the telltale signs of AI-generated design. Avoid them:
 
 **Layout**: No centered hero sections when the design calls for asymmetry — use split-screen, left-aligned content, or offset compositions. No "three equal cards in a row" feature sections — use zig-zag, asymmetric grid, horizontal scroll, or masonry instead. No random dark sections breaking a light-mode page (or vice versa) — commit to a tone or use subtle shade shifts.
 
-**Content (the "Jane Doe" effect)**: No generic names ("John Doe", "Sarah Chen"). No fake round numbers (`99.99%`, `50%`) — use organic data (`47.2%`, `$87.50`, `+1 (312) 847-1928`). No startup slop names ("Acme", "Nexus", "SmartFlow") — invent contextual, believable brands. No AI copywriting cliches ("Elevate", "Seamless", "Unleash", "Next-Gen", "Delve", "Game-changer"). No Lorem Ipsum. No exclamation marks in success messages. No "Oops!" error messages — be direct. Use sentence case for headers, not Title Case On Every Header.
+**Content (the "Jane Doe" effect)**: No generic names ("John Doe", "Sarah Chen"). No fake round numbers (`99.99%`, `50%`) — use organic data (`47.2%`, `$87.50`, `+1 (312) 847-1928`). No startup slop names ("Acme", "Nexus", "SmartFlow") — invent contextual, believable brands. No AI copywriting cliches ("Elevate", "Seamless", "Unleash", "Next-Gen", "Delve", "Game-changer"). No Lorem Ipsum. No exclamation marks in success messages. No "Oops!" error messages — be direct. Use sentence case for headers, not Title Case On Every Header. No emojis in code, markup, or text content — replace with icons or SVG primitives.
+
+**Forms**: Label above the input. Helper text optional but present in markup. Error message below input. Use `gap-2` for input stacking.
 
 **Components**: No generic card look everywhere (border + shadow + white) — cards should exist only when elevation communicates hierarchy. No Lucide/Feather icons exclusively (try Phosphor, Heroicons, or custom). No rocketship for "Launch", shield for "Security" — replace cliche metaphors. No accordion FAQ — use side-by-side lists or inline progressive disclosure. No 3-card carousel testimonials with dots. No avatar circles exclusively — try squircles or rounded squares. No broken Unsplash links — use picsum.photos or SVG avatars. Standardize icon stroke widths. Always include a favicon.
 
 **Interactivity**: Implement full interaction cycles, not just the success state. Provide skeleton loaders (not circular spinners), composed empty states, inline error messages (not `window.alert()`), and tactile press feedback (`scale-[0.98]` or `translateY(1px)` on `:active`). Add visible focus rings for keyboard navigation. Add `scroll-behavior: smooth` for anchor navigation.
+
+## Animation Library Guidance
+
+Default to Framer Motion for UI interactions (buttons, modals, lists, bento cards). Use GSAP or Three.js only for isolated full-page scroll storytelling or canvas/WebGL backgrounds — never mix them with Framer Motion in the same component tree. Wrap GSAP/Three.js in strict `useEffect` cleanup blocks.
+
+## Creative Arsenal
+
+Avoid defaulting to generic patterns. Pull from these when the design calls for it:
+
+**Navigation**: Floating glass-pill navbar detached from top. Hamburger that morphs into X. Mega-menu with staggered fade-in. Magnetic button that pulls toward cursor (use `useMotionValue` + `useTransform`, never `useState`).
+
+**Layouts**: Asymmetric bento grid (`grid-template-columns: 2fr 1fr`). Masonry (staggered heights). Z-axis card cascade (slight rotation, overlapping depth). Editorial split (massive type left, interactive content right). Horizontal scroll hijack. Sticky scroll stack (cards physically stack on top of each other).
+
+**Cards**: Parallax tilt tracking mouse coordinates. Spotlight border illuminating under cursor. Glassmorphism with inner refraction border (`border-white/10` + `shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`). Morphing modal (button expands into full-screen dialog).
+
+**Typography**: Kinetic marquee (reverses on scroll). Text scramble/Matrix decode on hover. Text mask revealing video behind letters. Gradient stroke animation running along outlined text.
+
+**Micro-interactions**: Particle explosion on CTA success. Skeleton shimmer (shifting light across placeholders). Directional hover fill (enters from the mouse's entry side). Ripple from click coordinates. Animated SVG line drawing. Mesh gradient blob background (`pointer-events-none`, `position: fixed`).
 
 ## Redesigning Existing Interfaces
 

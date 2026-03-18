@@ -21,7 +21,7 @@ Root cause identification is the core deliverable of debugging — not the fix i
 - **Trace backward**: Start at the symptom, walk the call chain in reverse to find where behavior diverges from expectation
 - **Differential analysis**: Compare working vs broken state across dimensions (code version, data, environment, timing, configuration)
 - **Regression hunting**: Use `git bisect` to pinpoint the exact commit that introduced the issue
-- **Evidence-based**: Document root cause with `file:line` references, log output, and concrete reproduction proof
+- **Evidence-based**: Document root cause with `file:line` references, log output, and concrete reproduction proof. Root cause = the earliest point where behavior diverged from expectation, stated with evidence at least two levels deep (not just "it failed here" but "it failed here because X was null, and X was null because Y never set it")
 - **Competing hypotheses**: When the cause is ambiguous, generate multiple hypotheses and rank by evidence strength (see Escalation section below)
 
 ## Environment Diagnostics
@@ -41,7 +41,14 @@ Collects system info, language versions, git state, project files, and environme
 
 **1. Reproduce** — make the bug consistent. If intermittent, run N times under stress or simulate poor conditions (slow network, low memory) until it triggers reliably.
 
-**2. Investigate** — trace backward through the call chain from the symptom. Add diagnostic logging at each component boundary. Compare working vs broken state using a differential table (environment, version, data, timing — what changed?).
+**2. Investigate** — trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
+
+**Multi-component systems** (CI -> build -> deploy, API -> service -> DB): before proposing fixes, instrument each component boundary:
+- Log what data **enters** the component
+- Log what data **exits** the component
+- Verify environment/config propagation across the boundary
+
+Run once to gather evidence showing WHERE it breaks, then investigate that specific component. Use `console.error()` (not logger, which may be suppressed in tests). Log BEFORE the dangerous operation, not after it fails. Include context: cwd, env vars, `new Error().stack`.
 
 **3. Hypothesize and test** — one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to find regressions efficiently.
 
@@ -49,7 +56,7 @@ Collects system info, language versions, git state, project files, and environme
 
 ## Three-Fix Threshold
 
-After 3 failed fix attempts, STOP. The problem is likely architectural, not a surface bug. Escalate to the user before attempting further fixes. Step back and question assumptions about how the system works. Read the actual code path end-to-end instead of spot-checking.
+After 3 failed fix attempts, STOP. An attempt = one complete hypothesis-test cycle (form hypothesis, make minimal change, verify). The problem is likely architectural, not a surface bug. Escalate to the user before attempting further fixes. Step back and question assumptions about how the system works. Read the actual code path end-to-end instead of spot-checking.
 
 **Architectural problem indicators** — signals the bug is structural, not a surface fix:
 - Each fix reveals new shared state or coupling you didn't expect
@@ -136,6 +143,8 @@ This skill is referenced by:
 - `workflows:work` — during task execution for bug investigation
 - `writing-tests` — creating failing tests to reproduce bugs
 - `verification-before-completion` — before claiming a bug is fixed
+- `bug-reproduction-validator` agent — follows Root Cause Analysis methodology
+- `reproduce-bug` command — automated bug reproduction workflow
 
 ## Postmortem
 

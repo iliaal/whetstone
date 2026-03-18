@@ -12,7 +12,7 @@ description: >-
 
 | Principle | Rule |
 |-----------|------|
-| **Preserve behavior** | Output must do exactly what the input did — no silent feature additions or removals. Specifically preserve: async/sync boundaries, error propagation paths, and logging side effects |
+| **Preserve behavior** | Output must do exactly what the input did — no silent feature additions or removals. Specifically preserve: async/sync boundaries (do not convert sync to async or reverse), error propagation paths (do not alter strategy), logging/telemetry/guards/retries that encode operational intent, and domain-specific steps (do not collapse into generic helpers that hide intent) |
 | **Explicit over clever** | Prefer explicit variables over nested expressions. Readable beats compact |
 | **Simplicity over cleanliness** | Prefer straightforward code over pattern-heavy "clean" code. Three similar lines beat a premature abstraction |
 | **Surgical changes** | Touch only what needs simplifying. Match existing style, naming conventions, and formatting of the surrounding code |
@@ -22,7 +22,7 @@ description: >-
 
 1. **Read first** — understand the full file and its dependents before changing anything
 2. **Identify invariants** — what must stay the same? Public API, return types, side effects, error behavior
-3. **Identify targets** — find the highest-impact simplification opportunities (see Smell → Fix table)
+3. **Identify targets** — find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> types (see Smell -> Fix table)
 4. **Apply in order** — control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
 5. **Verify** — confirm no behavior change: tests pass, types check, imports resolve
 

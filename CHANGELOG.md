@@ -5,6 +5,49 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.45.8] - 2026-03-18
+
+### Changed
+
+- **code-review skill** — Fix-First Heuristic: classify findings as AUTO-FIX (mechanical) or ASK (judgment), batch-apply safe fixes. Added suppression list (things NOT to flag), LLM trust boundary checks, enum/value completeness tracing, evidence confidence levels, doc staleness detection
+- **debugging skill** — formalized multi-component boundary instrumentation (enter/exit/verify at each layer), defined "attempt" for three-fix threshold, deepened root cause evidence requirement (two levels deep)
+- **planning skill** — task granularity to 2-5 minutes with exact commands/code, subagent-based plan review loop (max 3 iterations), completeness rule (don't defer tests/edge cases)
+- **brainstorming skill** — scope decomposition gate for multi-subsystem requests, spec review loop with subagent before user approval
+- **writing-tests skill** — complete mock data structure rule, test pollution bisection technique, user journey-driven test case derivation
+- **verification-before-completion skill** — ordered verification chain (build->types->lint->test->security, stop on first failure), periodic checkpoints during long sessions
+- **simplifying-code skill** — explicit async/sync conversion prohibition, domain-step preservation rule, impact prioritization (control flow->naming->duplication->types)
+- **receiving-code-review skill** — prescriptive YAGNI grep-before-implementing workflow
+- **finishing-branch skill** — post-merge test failure recovery (revert merge, keep branch, diagnose)
+- **writing skill** — person rules clarified (you/we/I usage, avoid third-person passive)
+
+### Fixed
+
+- **brainstorming/planning conflict** — explicit handoff: brainstorm outputs approved spec to `docs/brainstorms/`, planning takes it as input
+- **code-review** — prior comments instruction bolded and repositioned for visibility
+- **planning skill** — clarified `.plan/` (ephemeral working state) vs `docs/plans/` (committed formal plans) distinction
+- **debugging skill** — added `bug-reproduction-validator` agent and `reproduce-bug` command to integration section
+
+### Removed
+
+- **`/resolve_parallel` command** — merged into `/resolve_todo_parallel` (was a near-duplicate)
+- Stale references: `/technical_review` -> `/workflows:review` in deepen-plan and workflows:plan commands
+- Stale references: `cora-test-reviewer` agent removed from workflows:compound (agent doesn't exist)
+- Stale reference: `/compound command` -> `/workflows:compound` in compound-docs skill
+
+## [2.45.7] - 2026-03-18
+
+### Added
+
+- **`/workflows:document-release` command** — post-ship documentation sync. After code ships and a PR exists, cross-references every doc file against the diff and brings README, ARCHITECTURE, CONTRIBUTING, CLAUDE.md/AGENTS.md up to date. Polishes CHANGELOG voice, cleans up completed TODOs, and asks about version bumps. Auto-applies factual updates; stops to ask only for narrative or risky changes. Commits modified docs as a single `docs:` commit and updates the PR body with a per-file change summary.
+
+## [2.45.6] - 2026-03-18
+
+### Changed
+
+- **writing skill** — added False Agency section (inanimate actors → name the person), narrator-from-a-distance principle, throat-clearing openers and emphasis crutches to banned phrases, scoring rubric (Directness/Rhythm/Trust/Authenticity/Density, target 35/50) to self-check
+- **writing skill** — added `references/phrases.md` (extended jargon table, adverb list, meta-commentary, sentence starters to avoid) and `references/examples.md` (7 before/after transformations)
+- **frontend-design skill** — added dependency check policy (verify package.json before any import), explicit no-emoji rule, form layout rule (label above, error below), GSAP/Framer Motion separation guidance, Creative Arsenal section (navigation, layout, card, typography, micro-interaction patterns)
+
 ## [2.45.5] - 2026-03-17
 
 ### Changed

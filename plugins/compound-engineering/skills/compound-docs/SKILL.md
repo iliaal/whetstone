@@ -64,7 +64,7 @@ For detailed response handling, see [documentation-process.md](./references/docu
 
 ## Integration Points
 
-**Invoked by:** `/compound` command, manual invocation after solution confirmed, or auto-triggered by confirmation phrases.
+**Invoked by:** `/workflows:compound` command, manual invocation after solution confirmed, or auto-triggered by confirmation phrases.
 
 **Invokes:** None (terminal skill -- does not delegate to other skills).
 

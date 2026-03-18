@@ -25,6 +25,10 @@ Good:  "rejects user with duplicate email"
 Bad:   "creates user and sends welcome email and updates counter"
 ```
 
+### Derive test cases from user journeys
+
+Before writing test cases for a new feature, enumerate user journeys: "As a [role], I want to [action], so that [benefit]." Generate test cases from each journey -- this ensures tests cover user-visible behavior, not implementation details.
+
 ### Name tests by expected behavior
 
 The test name should describe what happens, not what's being called.
@@ -123,7 +127,7 @@ The goal: by the time the feature is done, tests exist and pass. Whether you wro
 
 **Symptom:** Mock only includes the fields the test author knows about. Downstream code consumes other fields and gets undefined.
 
-**Fix:** Use real objects or factory-generated fixtures with all fields populated. If you must mock, generate from the real type/schema.
+**Fix:** Mock the COMPLETE data structure as it exists in reality, not just the fields the immediate test uses. Before creating a mock response, check what fields the real API/type contains -- include ALL fields the system might consume downstream. Use real objects or factory-generated fixtures with all fields populated. If you must mock, generate from the real type/schema.
 
 ### Mocking without understanding
 
@@ -163,7 +167,7 @@ Before considering tests complete:
 - [ ] Tests use real objects where possible (mocks only at system boundaries)
 - [ ] Edge cases covered (empty, null, boundary, error paths)
 - [ ] Tests assert on outcomes, not implementation details
-- [ ] Tests are independent — no shared mutable state between tests
+- [ ] Tests are independent — no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
 - [ ] Tests run fast enough to run frequently (< 30 seconds for unit suite)
 - [ ] Bug fix tests reproduce the original bug
 

@@ -152,6 +152,7 @@ If working in a git worktree (not the main working tree):
 - Never force-push without explicit user request
 - Never merge directly to main/master without explicit user permission
 - Always run tests after merge to catch integration issues
+- If tests fail after merge: revert the merge (`git revert -m 1 HEAD`), do not delete the branch, diagnose the integration failure
 
 ## Integration
 

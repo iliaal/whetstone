@@ -26,15 +26,15 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
 ## Review Process
 
-1. **Context** — read the PR description, linked issue, or task spec. Fetch existing review comments and discussions before writing any findings — prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (`npm run test`, `make check`, etc.) to catch automated failures before manual review.
+1. **Context** — read the PR description, linked issue, or task spec. **Fetch existing review comments and discussions first** — prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (check CI config for the canonical test command) to catch automated failures before manual review.
 2. **Structural scan** — architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly — don't attempt to read them from the working tree when reviewing a remote branch.
 3. **Line-by-line** — correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
 4. **Security** — input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act).
 5. **Test coverage** — verify new code paths have tests. Flag untested error paths, edge cases, and behavioral changes without corresponding test updates. Flag tests coupled to implementation details (mocking internals, testing private methods) -- test behavior, not wiring.
 6. **Resource cleanup** — file handles, DB connections, event listeners, timers, subscriptions. Verify cleanup on both success and error paths.
 7. **Removal candidates** — identify dead code, unused imports, feature-flagged code that can be cleaned up. Distinguish safe-to-delete (no references) from defer-with-plan (needs migration).
-8. **Verify** — run formatter/lint/tests on touched files. State what was skipped and why.
-9. **Summary** — present findings grouped by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Do NOT auto-implement fixes. Instead, offer: **Fix all / Fix Critical+Important only / Fix specific items / No changes**.
+8. **Verify** — run formatter/lint/tests on touched files. State what was skipped and why. If code changes affect features described in README/ARCHITECTURE/CONTRIBUTING, note doc staleness as informational.
+9. **Summary** — present findings grouped by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Classify each finding using the Fix-First Heuristic, then auto-apply AUTO-FIX items (with one-line summaries) and batch-present ASK items for user decision.
 
 **Large diffs (>500 lines):** Review by module/directory rather than file-by-file. Summarize each module's changes first, then drill into high-risk areas. Flag if the PR should be split.
 
@@ -44,12 +44,30 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 - **Important** — should fix before merge. Performance issues, missing error handling, poor maintainability, silent failures.
 - **Minor** — optional. Naming, style preferences, minor simplifications. Skip if linters already cover it.
 
+Tie every finding to concrete code evidence (file path, line number, specific pattern). State confidence: **high** (verified in code), **medium** (inferred from pattern), **low** (suspected, needs verification). Never fabricate references.
+
+## Fix-First Heuristic
+
+After classifying severity, determine disposition for each finding:
+
+| AUTO-FIX (apply without asking) | ASK (needs human judgment) |
+|---------------------------------|---------------------------|
+| Dead code, unused variables/imports | Security (auth, XSS, injection) |
+| N+1 queries (missing eager load) | Race conditions |
+| Stale comments contradicting code | Design decisions |
+| Magic numbers -> named constants | Large fixes (>20 lines changed) |
+| Variables assigned but never read | Removing functionality |
+| Version/path mismatches in docs | Anything changing user-visible behavior |
+
+**Rule of thumb:** if a senior engineer would apply it without discussion, AUTO-FIX. If reasonable engineers could disagree, ASK. Critical findings default toward ASK. Minor/mechanical findings default toward AUTO-FIX.
+
 ## What to Check
 
 Correctness:
 - Edge cases (null, empty, boundary values, concurrent access)
 - Error paths (are failures handled or swallowed?)
 - Type safety (implicit conversions, `any` types, unchecked casts)
+- New enum/status/type values — trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff. Missing handler = wrong default at runtime.
 
 Maintainability:
 - Functions doing too much (split by responsibility, not size)
@@ -68,6 +86,7 @@ Language-Specific Checks:
 - **Python** — mutable default arguments, bare `except:`, missing `async`/`await`
 - **PHP** — SQL injection via string concat, missing `strict_types`, type coercion traps
 - **Security** — show attacker-controlled input path to vulnerable sink, not just "possible injection"
+- **LLM trust boundaries** — LLM-generated values (emails, URLs, names) written to DB or mailers without format validation; structured tool output accepted without type/shape checks; 0-indexed lists in prompts (LLMs return 1-indexed); prompt text listing capabilities that don't match what's wired up
 
 ## Anti-Patterns in Reviews
 
@@ -76,6 +95,14 @@ Language-Specific Checks:
 - Blocking on personal preference — approve with a Minor comment instead
 - Rubber-stamping without reading — always verify at least Stage 1
 - Reviewing code quality before verifying spec compliance — do Stage 1 first
+
+**Also suppress** (do not flag these):
+- "X is redundant with Y" when redundancy aids readability
+- "Add a comment explaining this threshold" — thresholds change during tuning, comments rot
+- "This assertion could be tighter" when it already covers the behavior
+- Consistency-only changes (reformatting to match adjacent code style)
+- "Regex doesn't handle edge case X" when input is constrained and X never occurs
+- Anything already addressed in the diff being reviewed — read the FULL diff before commenting
 
 ## When to Stop and Ask
 
@@ -107,7 +134,7 @@ Language-Specific Checks:
 Ready to merge / Ready with fixes / Not ready — [one-sentence rationale]
 ```
 
-Ground every finding in actual code -- no invented line references. Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
+Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
 
 **Clean review (no findings):** If the code is solid, say so explicitly. Summarize what was checked and why no issues were found. A clean review is a valid outcome, not an indication of insufficient effort.
 

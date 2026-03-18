@@ -65,8 +65,10 @@ Push back (with evidence) when a suggestion:
 - **Violates project conventions** — "Our CLAUDE.md specifies we do it this way because..."
 - **Is technically incorrect** — "This API was deprecated in v3. We're on v4 which uses..."
 - **Adds unnecessary complexity** — "This handles a case that can't occur because..."
-- **Is unused (YAGNI)** — grep the codebase for actual usage. If the code being "improved" has zero callers, suggest removing it instead
+- **Is unused (YAGNI)** — when a reviewer suggests "implementing properly", grep the codebase for actual usage FIRST. Zero callers? Suggest removal: "This endpoint isn't called. Remove it (YAGNI)?" If used, implement properly.
 - **Conflicts with architectural decisions** — "We chose X over Y in the brainstorm because..."
+
+**Valid evidence:** code references (`file:line`), test output, git blame/log, framework docs, reproduction steps, grep results showing usage patterns. **Not evidence:** "I think", "it should work", "it's fine", appeals to convention without citing the convention, or restating the original code as justification.
 
 ## When NOT to Push Back
 

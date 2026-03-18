@@ -47,9 +47,18 @@ Before diving into questions, assess whether brainstorming is needed.
 - Trade-offs haven't been discussed
 - User seems unsure about the approach
 - User described a solution ("build a dashboard") instead of a problem
-- Request spans multiple independent subsystems — decompose into separate brainstorming sessions before diving into any single one
+- Request spans multiple independent subsystems — decompose first (see Scope Decomposition below)
 
 If requirements are clear, suggest: "Your requirements seem clear. Consider proceeding directly to planning or implementation."
+
+### Scope Decomposition Gate
+
+If the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs decomposition first.
+
+1. Identify the independent pieces and how they relate
+2. Determine build order (dependencies, shared infrastructure first)
+3. Brainstorm the first sub-project through the normal Phase 1-3 flow
+4. Each sub-project gets its own spec -> plan -> implementation cycle
 
 ### Phase 1: Understand the Idea
 
@@ -150,11 +159,15 @@ topic: <kebab-case-topic>
 
 **Commit the design doc** to git after writing — design decisions are project history worth preserving.
 
-### Phase 4: Handoff
+### Phase 4: Spec Review
+
+After writing the design doc, dispatch a spec-reviewer subagent with the document and original requirements (not session history). If issues found, fix and re-dispatch (max 3 iterations). Then present to the user for approval -- the user explicitly confirming the design is the gate to proceed.
+
+### Phase 5: Handoff
 
 Present clear options for what to do next:
 
-1. **Proceed to planning** → Run `/workflows:plan`
+1. **Proceed to planning** → Run `/workflows:plan` (pass the approved brainstorm doc as input)
 2. **Refine further** → Continue exploring the design
 3. **Done for now** → User will return later
 
