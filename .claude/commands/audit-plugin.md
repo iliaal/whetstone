@@ -80,6 +80,13 @@ Check every agent-skill, agent-command, and skill-command pair for:
 | Stale references | Links to files, commands, agents, or skills that don't exist |
 | Heading style | Title Case where sentence case expected (per md-docs), non-actionable headings |
 
+### Reference validation (mechanical -- run these checks via grep/glob)
+
+1. **Markdown links resolve:** For every `[text](path)` link in skills, agents, and commands, verify the target file exists at the resolved path (relative to the file's directory). Flag broken links.
+2. **Backtick skill/agent names exist:** For every backtick reference like `` `skill-name` `` or `` `agent-name` `` followed by "skill", "agent", or "command", verify a matching file exists in `skills/*/SKILL.md`, `agents/**/*.md`, or `commands/**/*.md`. Flag names that don't match any component.
+3. **Slash command references exist:** For every `/command-name` reference, verify a matching command file exists with that `name:` in frontmatter. Flag stale `/command` references.
+4. **Reference directories fully linked:** For every skill with a `references/` or `scripts/` subdirectory, list all files in that directory and verify each is linked from SKILL.md. Flag orphaned files.
+
 ### Writing style (per md-docs + writing skill)
 
 | Check | Signal |
