@@ -19,9 +19,9 @@ Generate a thread of tweets announcing the latest compound-engineering plugin re
 
 **Tweet 1 (hook + repos):**
 - Lead with what users can now DO, not what changed internally
-- Mention both repos with versions:
-  - `compound-engineering-plugin` (github.com/iliaal/compound-engineering-plugin) vX.Y.Z
-  - `ai-skills` (github.com/iliaal/ai-skills) -- portable skills mirror
+- **Always include both repo URLs in Tweet 1** (non-negotiable):
+  - github.com/iliaal/compound-engineering-plugin (with version)
+  - github.com/iliaal/ai-skills (portable skills mirror)
 - Include component counts (N agents, N commands, N skills)
 - End with a hook for the thread
 
