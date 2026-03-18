@@ -89,6 +89,20 @@ Check every agent-skill, agent-command, and skill-command pair for:
 | Filler phrases | "It's worth noting", "In order to", "It is important to" |
 | Emoji in non-Discord content | Emoji headers or decorations outside changelog context |
 
+### Consolidation opportunities
+
+Every skill, agent, and command exposed adds to the system prompt token budget. Actively look for ways to reduce the total count:
+
+| Check | Signal |
+|-------|--------|
+| Merge candidates | Two skills/agents that cover adjacent topics and could be combined without losing specificity (e.g., separate skills for "writing tests" and "test-driven development" could be one skill with a TDD section) |
+| Absorption candidates | A small skill (<300 tokens) whose content fits naturally as a section in a larger related skill |
+| Low-value components | Skills/agents that restate what Claude already knows with no project-specific or opinionated content — candidates for removal |
+| Description-only overlap | Two components whose descriptions load similar tokens into context but serve different purposes — tighten descriptions to reduce wasted trigger-matching tokens |
+| Unused agents | Agents not referenced by any command, skill, or workflow — candidates for removal unless they serve a standalone purpose |
+
+Present consolidation proposals separately from quality findings: "These N components could be merged/removed, saving ~X tokens from the system prompt."
+
 ## Phase 3: Present findings
 
 Sort by impact. Single table:
