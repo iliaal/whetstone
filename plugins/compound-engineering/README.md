@@ -6,9 +6,9 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 | Component | Count |
 |-----------|-------|
-| Agents | 24 |
-| Commands | 20 |
-| Skills | 32 |
+| Agents | 23 |
+| Commands | 18 |
+| Skills | 30 |
 | Hooks | 1 |
 | MCP Servers | 1 |
 
@@ -16,7 +16,7 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 Agents are organized into categories for easier discovery.
 
-### Review (11)
+### Review (10)
 
 | Agent | Description |
 |-------|-------------|
@@ -72,6 +72,7 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | `/workflows:review` | Run comprehensive code reviews |
 | `/workflows:work` | Execute work items systematically |
 | `/workflows:compound` | Document solved problems to compound team knowledge |
+| `/workflows:document-release` | Post-ship documentation sync across README/ARCHITECTURE/CONTRIBUTING/CHANGELOG |
 
 ### Utility Commands
 

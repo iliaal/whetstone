@@ -5,6 +5,15 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.47.1] - 2026-03-18
+
+### Fixed
+
+- README component counts (23 agents, 18 commands, 30 skills), Review heading (10 not 11), added missing `/workflows:document-release` to commands table
+- Stale "LFG/SLFG" references in `workflows:plan` -- replaced with "LFG"
+- Added Before/After Screenshots table to `workflows:work` PR template
+- Updated `skill-patterns.sh` total count comment
+
 ## [2.47.0] - 2026-03-18
 
 ### Changed

@@ -282,6 +282,11 @@ Do not proceed to Phase 3 if verification fails.
    - **Expected healthy behavior**: [signals]
    - **Failure signals / rollback trigger**: [trigger + action]
    - **If no operational impact**: `No additional monitoring required: <reason>`
+
+   ## Before / After Screenshots
+   | Before | After |
+   |--------|-------|
+   | ![before](URL) | ![after](URL) |
    ```
 
    **Safety rules:**

@@ -107,4 +107,4 @@ SKILL_PATTERNS[resolve-pr-parallel]='resolve.*(thread|comment|pr)|batch.?resolve
 SKILL_TIERS[resolve-pr-parallel]=3
 
 
-# Total skills: 32
+# Total skills: 30
