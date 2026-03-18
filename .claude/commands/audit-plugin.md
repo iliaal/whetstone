@@ -16,6 +16,8 @@ PLUGIN_DIR=plugins/compound-engineering
 
 If `$ARGUMENTS` specifies a name or category, narrow to that. Otherwise audit everything.
 
+**Reactive mode:** If invoked after a skill/agent failed during use, detect the failing component from conversation context and focus the audit on that component first.
+
 ## Phase 1: Inventory
 
 Read frontmatter + first section of every file:
@@ -86,6 +88,8 @@ Check every agent-skill, agent-command, and skill-command pair for:
 2. **Backtick skill/agent names exist:** For every backtick reference like `` `skill-name` `` or `` `agent-name` `` followed by "skill", "agent", or "command", verify a matching file exists in `skills/*/SKILL.md`, `agents/**/*.md`, or `commands/**/*.md`. Flag names that don't match any component.
 3. **Slash command references exist:** For every `/command-name` reference, verify a matching command file exists with that `name:` in frontmatter. Flag stale `/command` references.
 4. **Reference directories fully linked:** For every skill with a `references/` or `scripts/` subdirectory, list all files in that directory and verify each is linked from SKILL.md. Flag orphaned files.
+5. **README.md accuracy:** Verify component count table matches actual counts (`ls skills/*/SKILL.md | wc -l`, etc.). Verify every skill/agent/command is listed in the appropriate README table. Verify category headings match actual agent counts (e.g., "Review (10)"). Flag missing entries and stale counts.
+6. **Hook patterns current:** Verify `hooks/skill-patterns.sh` total count comment matches actual skill count. Verify no patterns reference deleted skills.
 
 ### Writing style (per md-docs + writing skill)
 
