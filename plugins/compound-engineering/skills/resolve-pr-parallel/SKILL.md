@@ -1,6 +1,6 @@
 ---
 name: resolve-pr-parallel
-description: Resolve all PR comments using parallel processing. Use when addressing PR review feedback, resolving review threads, or batch-fixing PR comments.
+description: Batch-resolve all open PR threads via parallel subagents. Use when bulk-fixing PR comments after triage -- spawns one pr-comment-resolver agent per thread, no interactive judgment.
 argument-hint: "[optional: PR number or current PR]"
 disable-model-invocation: true
 allowed-tools: Bash(gh *), Bash(git *), Read

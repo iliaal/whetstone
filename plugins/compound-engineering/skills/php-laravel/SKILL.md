@@ -87,7 +87,7 @@ Use these when applicable — do not explain them in comments (Claude and develo
 - `actingAs($user)` for auth, `Sanctum::actingAs($user, ['ability'])` for API auth
 - Fake facades BEFORE the action: `Queue::fake()` then act then `Queue::assertPushed(...)`
 - `assertDatabaseHas` / `assertDatabaseMissing` to verify persistence
-General testing discipline (anti-patterns, rationalization resistance): `writing-tests` skill.
+General testing discipline (anti-patterns, rationalization resistance): see `writing-tests` skill.
 See [testing patterns and examples](./references/testing.md) for PHPUnit essentials, data providers, and running tests.
 See [feature testing](./references/feature-testing.md) for auth, validation, API, console, and DB assertions.
 See [mocking and faking](./references/mocking-and-faking.md) for facade fakes and action mocking.
@@ -99,6 +99,7 @@ See [factories](./references/factories.md) for states, relationships, sequences,
 - Simplicity first — every change as simple as possible, impact minimal code
 - Only touch what's necessary — avoid introducing unrelated changes
 - No hacky workarounds — if a fix feels wrong, step back and implement the clean solution
+- Verify: `./vendor/bin/phpstan analyse --level=8 && ./vendor/bin/phpunit` pass with zero warnings before declaring done
 
 ## Production Performance
 

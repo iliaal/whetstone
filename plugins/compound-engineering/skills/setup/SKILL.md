@@ -58,8 +58,7 @@ options:
 
 ### If Auto-configure → Skip to Step 4 with defaults:
 
-- **Python:** `[kieran-python-reviewer, code-simplicity-reviewer, security-sentinel, performance-oracle]`
-- **TypeScript:** `[kieran-typescript-reviewer, code-simplicity-reviewer, security-sentinel, performance-oracle]`
+- **Python/TypeScript:** `[kieran-reviewer, code-simplicity-reviewer, security-sentinel, performance-oracle]`
 - **General:** `[code-simplicity-reviewer, security-sentinel, performance-oracle, architecture-strategist]`
 
 ### If Customize → Step 3
@@ -116,8 +115,7 @@ options:
 ## Step 4: Build Agent List and Write File
 
 **Stack-specific agents:**
-- Python → `kieran-python-reviewer`
-- TypeScript → `kieran-typescript-reviewer`
+- Python/TypeScript → `kieran-reviewer`
 - General → (none)
 
 **Focus area agents:**

@@ -5,6 +5,21 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.46.0] - 2026-03-18
+
+### Changed
+
+- **Merged `kieran-python-reviewer` + `kieran-typescript-reviewer`** into single `kieran-reviewer` agent -- ~1400 tokens saved, 50% shared content deduplicated
+- **Disambiguated trigger descriptions** -- pr-comment-resolver vs resolve-pr-parallel, code-simplicity-reviewer vs simplifying-code, architecture-strategist vs code-review, bug-reproduction-validator vs debugging now have clearly distinct descriptions
+- **design-iterator agent** -- removed false "skill auto-loaded" claims, collapsed duplicate screenshot sections
+- **agent-native-reviewer agent** -- replaced inline anti-pattern examples with skill reference, ~40% token reduction
+- **learnings-researcher agent** -- moved schema to external reference, removed duplicate efficiency guidelines
+- **pr-comment-resolver agent** -- aligned description and body to "pre-triaged mechanical" scope
+- **agent-native-architecture skill** -- removed "Why Now" filler block, fixed second-person heading
+- **frontend-design skill** -- added Verify section, removed preamble restating frontmatter
+- **Trimmed filler** across compound-docs, file-todos, git-worktree, orchestrating-swarms (removed preambles restating frontmatter, redundant prose, stale timestamps)
+- **php-laravel skill** -- added missing verify command to Discipline section
+
 ## [2.45.9] - 2026-03-18
 
 ### Changed

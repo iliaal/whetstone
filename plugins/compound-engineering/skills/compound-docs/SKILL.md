@@ -16,15 +16,11 @@ preconditions:
   - Solution has been verified working
 ---
 
-# compound-docs Skill
-
-Automatically document solved problems to build searchable institutional knowledge with category-based organization (enum-validated problem types).
-
-Single-file architecture -- each problem documented as one markdown file in its symptom category directory (e.g., `docs/solutions/performance-issues/n-plus-one-briefs.md`). Files use YAML frontmatter for metadata and searchability.
-
----
+# compound-docs
 
 ## Process
+
+Single-file architecture -- one markdown file per problem in its symptom category directory (e.g., `docs/solutions/performance-issues/n-plus-one-briefs.md`), with YAML frontmatter for metadata.
 
 Follow the 7-step documentation capture process. For full details, see [documentation-process.md](./references/documentation-process.md).
 

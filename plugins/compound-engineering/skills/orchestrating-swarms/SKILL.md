@@ -7,11 +7,7 @@ description: >-
 disable-model-invocation: true
 ---
 
-# Claude Code Swarm Orchestration
-
-Master multi-agent orchestration using Claude Code's TeammateTool and Task system.
-
----
+# Swarm orchestration
 
 ## Primitives
 
@@ -29,8 +25,6 @@ Master multi-agent orchestration using Claude Code's TeammateTool and Task syste
 ---
 
 ## Core Architecture
-
-A swarm consists of a **Leader** (you) who creates a team, spawns workers, and coordinates work. **Teammates** (spawned agents) execute tasks and report back. A shared **Task List** provides a work queue with dependencies, and **Inboxes** (JSON files) enable inter-agent messaging.
 
 ```
 ~/.claude/teams/{team-name}/
@@ -134,5 +128,3 @@ Detailed documentation for each subsystem:
 - [orchestration-patterns.md](./references/orchestration-patterns.md) - 6 patterns (parallel specialists, pipeline, swarm, research+implementation, plan approval, coordinated refactoring) + 3 complete workflow examples
 - [spawn-backends.md](./references/spawn-backends.md) - Backend comparison, auto-detection, in-process/tmux/iterm2 details, troubleshooting
 - [environment-config.md](./references/environment-config.md) - Environment variables and team config structure
-
-*Last verified: 2026-01-25*

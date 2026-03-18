@@ -5,14 +5,6 @@ description: >-
   autonomous agents, MCP tools, or self-modifying agent-loop architectures.
 ---
 
-<why_now>
-## Why Now
-
-Software agents work reliably now. Claude Code demonstrated that an LLM with access to bash and file tools, operating in a loop until an objective is achieved, can accomplish complex multi-step tasks autonomously.
-
-The surprising discovery: **a really good coding agent is actually a really good general-purpose agent.** The same architecture that lets Claude Code refactor a codebase can let an agent organize your files, manage your reading list, or automate your workflows.
-</why_now>
-
 <core_principles>
 ## Core Principles
 
@@ -111,7 +103,7 @@ You didn't build a "commitment tracker" feature. But if the agent can read notes
 </core_principles>
 
 <intake>
-## What aspect of agent-native architecture do you need help with?
+## Select focus area
 
 1. **Design architecture** - Plan a new agent-native system from scratch
 2. **Files & workspace** - Use files as the universal interface, shared workspace patterns

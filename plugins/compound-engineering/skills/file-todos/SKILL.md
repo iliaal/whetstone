@@ -7,15 +7,9 @@ description: >-
 disable-model-invocation: true
 ---
 
-# File-Based Todo Tracking Skill
+# File-based todo tracking
 
-## Overview
-
-The `todos/` directory contains a file-based tracking system for managing code review feedback, technical debt, feature requests, and work items. Each todo is a markdown file with YAML frontmatter and structured sections.
-
-Use this skill when creating new todos, managing lifecycle (pending -> ready -> complete), triaging pending items, checking dependencies, or converting PR comments into tracked work.
-
-## File Naming Convention
+## File naming convention
 
 ```
 {issue_id}-{status}-{priority}-{description}.md

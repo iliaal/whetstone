@@ -6,20 +6,9 @@ description: >-
   branches for concurrent reviews or feature work.
 ---
 
-# Git Worktree Manager
+# Git worktree manager
 
-Unified interface for managing Git worktrees across your development workflow -- isolated PR reviews, parallel feature work, and cleanup.
-
-## What This Skill Does
-
-- **Create worktrees** from main branch with clear branch names
-- **List worktrees** with current status
-- **Switch between worktrees** for parallel work
-- **Clean up completed worktrees** automatically
-- **Automatic .env file copying** from main repo to new worktrees
-- **Automatic .gitignore management** for worktree directory
-
-## CRITICAL: Always Use the Manager Script
+## CRITICAL: Always use the manager script
 
 **NEVER call `git worktree add` directly.** Always use the `worktree-manager.sh` script.
 

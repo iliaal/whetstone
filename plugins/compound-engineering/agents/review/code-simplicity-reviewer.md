@@ -1,7 +1,7 @@
 ---
 name: code-simplicity-reviewer
 autoApprove: read
-description: "Final review pass to ensure code is as simple and minimal as possible. Use after implementation is complete to identify YAGNI violations and simplification opportunities."
+description: "Produces a simplification analysis report (no code changes). Use after implementation to identify YAGNI violations and simplification opportunities. For actual refactoring, use the simplifying-code skill."
 ---
 
 <examples>

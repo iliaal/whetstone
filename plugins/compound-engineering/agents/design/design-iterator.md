@@ -58,31 +58,12 @@ Recommended viewport sizes for reference:
 - Medium section (hero, features): 1200x800
 - Full page section: 1440x900
 
-### Taking Element Screenshots
+### Taking element screenshots
 
-1. First, get element references with `agent-browser snapshot -i`
-2. Find the ref for your target element (e.g., @e1, @e2)
-3. Use `agent-browser scrollintoview @e1` to focus on specific elements
-4. Take screenshot: `agent-browser screenshot output.png`
-
-### Viewport Screenshots
-
-For focused screenshots:
-1. Use `agent-browser scrollintoview @e1` to scroll element into view
-2. Take viewport screenshot: `agent-browser screenshot output.png`
-
-### Example Workflow
-
-```bash
-1. agent-browser open [url]
-2. agent-browser snapshot -i  # Get refs
-3. agent-browser screenshot output.png
-4. [analyze and implement changes]
-5. agent-browser screenshot output-v2.png
-6. [repeat...]
-```
-
-**Keep screenshots focused** - capture only the element/area you're working on to reduce noise.
+1. Get element references: `agent-browser snapshot -i`
+2. Scroll to target: `agent-browser scrollintoview @e1`
+3. Screenshot: `agent-browser screenshot output.png`
+4. Implement changes, then screenshot again as `output-v2.png` to compare
 
 ## Design Principles to Apply
 
@@ -180,11 +161,9 @@ For each iteration, output:
 
 When invoked, you should:
 
-### Step 0: Check for Design Skills in Context
+### Step 0: Check for design skills in context
 
-**Design skills like frontend-design are automatically loaded when invoked by the user.** Check your context for active skill instructions.
-
-If the user mentions a design style (Swiss, minimalist, Stripe-like, etc.), look for:
+Follow the `frontend-design` skill for aesthetics guidance. If the user mentions a design style (Swiss, minimalist, Stripe-like, etc.), look for:
 - Loaded skill instructions in your system context
 - Apply those principles throughout ALL iterations
 
@@ -207,4 +186,4 @@ Start by taking an initial screenshot of the target element to establish baselin
 
 Make targeted, minimal changes per iteration. Don't redesign what's already working.
 
-**Design quality**: Follow the `frontend-design` skill for aesthetics guidance (typography, color, motion, avoiding AI slop). The skill is loaded automatically when this agent is invoked.
+**Design quality**: Follow the `frontend-design` skill for aesthetics guidance (typography, color, motion, avoiding AI slop).

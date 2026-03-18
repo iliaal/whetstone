@@ -1,6 +1,6 @@
 ---
 name: pr-comment-resolver
-description: "Addresses PR review comments by implementing requested changes and reporting resolutions. Use when code review feedback needs to be resolved with code changes."
+description: "Implements a single pre-triaged PR review comment mechanically. Use when a specific comment's action is clear and agreed — not for judgment calls (use receiving-code-review skill) or bulk resolution (use resolve-pr-parallel skill)."
 color: blue
 ---
 
@@ -19,9 +19,9 @@ assistant: "Let me use the pr-comment-resolver agent to address these review com
 </example>
 </examples>
 
-Take comments from pull requests or code reviews, implement the requested changes, and report on how each was resolved.
+Implement pre-triaged PR review comments mechanically. This agent handles comments where the action is clear and agreed -- not judgment calls about whether to accept feedback (that's the `receiving-code-review` skill's job).
 
-For judgment calls on whether to accept or push back on feedback, follow the `receiving-code-review` skill. After implementing fixes, verify them using the `verification-before-completion` skill.
+After implementing fixes, verify using the `verification-before-completion` skill.
 
 When you receive a comment or review feedback, you will:
 

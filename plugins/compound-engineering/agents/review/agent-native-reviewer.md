@@ -109,69 +109,11 @@ Verify:
 - Sync layer needed to move data between agent and user spaces
 - User can't inspect or edit agent-created files
 
-## Common Anti-Patterns to Flag
+## Common Anti-Patterns
 
-### 1. Context Starvation
-Agent doesn't know what resources exist.
-```
-User: "Write something about Catherine the Great in my feed"
-Agent: "What feed? I don't understand."
-```
-**Fix:** Inject available resources and capabilities into system prompt.
+Flag these during review: Context Starvation (agent doesn't know what resources exist), Orphan Features (UI action with no agent equivalent), Sandbox Isolation (separate data spaces), Silent Actions (state changes without UI update), Capability Hiding (users can't discover what agents do), Workflow Tools (business logic in tools), Decision Inputs (tools accept decisions instead of data).
 
-### 2. Orphan Features
-UI action with no agent equivalent.
-```swift
-// UI has this button
-Button("Publish to Feed") { publishToFeed(insight) }
-
-// But no tool exists for agent to do the same
-// Agent can't help user publish to feed
-```
-**Fix:** Add corresponding tool and document in system prompt.
-
-### 3. Sandbox Isolation
-Agent works in separate data space from user.
-```
-Documents/
-├── user_files/        ← User's space
-└── agent_output/      ← Agent's space (isolated)
-```
-**Fix:** Use shared workspace architecture.
-
-### 4. Silent Actions
-Agent changes state but UI doesn't update.
-```typescript
-// Agent writes to feed
-await feedService.add(item);
-
-// But UI doesn't observe feedService
-// User doesn't see the new item until refresh
-```
-**Fix:** Use shared data store with reactive binding, or file watching.
-
-### 5. Capability Hiding
-Users can't discover what agents can do.
-```
-User: "Can you help me with my reading?"
-Agent: "Sure, what would you like help with?"
-// Agent doesn't mention it can publish to feed, research books, etc.
-```
-**Fix:** Add capability hints to agent responses, or onboarding.
-
-### 6. Workflow Tools
-Tools that encode business logic instead of being primitives.
-**Fix:** Extract primitives, move logic to system prompt.
-
-### 7. Decision Inputs
-Tools that accept decisions instead of data.
-```typescript
-// BAD: Tool accepts decision
-tool("format_report", { format: z.enum(["markdown", "html", "pdf"]) })
-
-// GOOD: Agent decides, tool just writes
-tool("write_file", { path: z.string(), content: z.string() })
-```
+For definitions, code examples, and fixes, see the `agent-native-architecture` skill.
 
 ## Review Output Format
 

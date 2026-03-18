@@ -27,8 +27,7 @@ Agents are organized into categories for easier discovery.
 | [`data-integrity-guardian`](agents/review/data-integrity-guardian.md) | Database migrations and data integrity |
 | [`data-migration-expert`](agents/review/data-migration-expert.md) | Validate ID mappings match production, check for swapped values |
 | [`deployment-verification-agent`](agents/review/deployment-verification-agent.md) | Create Go/No-Go deployment checklists for risky data changes |
-| [`kieran-python-reviewer`](agents/review/kieran-python-reviewer.md) | Python code review with strict conventions |
-| [`kieran-typescript-reviewer`](agents/review/kieran-typescript-reviewer.md) | TypeScript code review with strict conventions |
+| [`kieran-reviewer`](agents/review/kieran-reviewer.md) | Python and TypeScript code review with strict conventions |
 | [`performance-oracle`](agents/review/performance-oracle.md) | Performance analysis and optimization |
 | [`security-sentinel`](agents/review/security-sentinel.md) | Security audits and vulnerability assessments |
 

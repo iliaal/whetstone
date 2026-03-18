@@ -121,8 +121,7 @@ Task({
 - `data-integrity-guardian` - Database and data safety
 - `data-migration-expert` - Migration validation
 - `deployment-verification-agent` - Pre-deploy checklists
-- `kieran-python-reviewer` - Python best practices
-- `kieran-typescript-reviewer` - TypeScript best practices
+- `kieran-reviewer` - Python and TypeScript best practices
 - `architecture-strategist` - Architecture, design patterns, and anti-patterns
 - `performance-oracle` - Performance analysis
 - `security-sentinel` - Security vulnerabilities

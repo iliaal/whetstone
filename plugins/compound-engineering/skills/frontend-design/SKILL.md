@@ -7,8 +7,6 @@ description: >-
 license: Complete terms in LICENSE.txt
 ---
 
-Create distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
-
 Read the user's frontend requirements: a component, page, application, or interface to build. Note context about purpose, audience, or technical constraints.
 
 ## Design Philosophy (Write First, Code Second)
@@ -103,3 +101,11 @@ When upgrading an existing project, audit first, then fix in this priority order
 7. **Polish typography scale and spacing** — the premium final touch
 
 Work with the existing tech stack. Do not migrate frameworks or styling libraries. Keep changes reviewable and focused — small, targeted improvements over big rewrites. Before importing any new library or writing any styles, check `package.json` for the Tailwind version (v3 vs v4) — v4 syntax in a v3 project will break the build.
+
+## Verify
+
+- Design philosophy written before code (for full pages)
+- No forbidden AI patterns present in output
+- Dependency check done before any new library import
+- Code renders without errors in the browser
+- No `outline: none` without replacement focus indicator

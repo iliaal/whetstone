@@ -154,41 +154,7 @@ For each relevant document, return a summary in this format:
 
 ## Frontmatter Schema Reference
 
-Reference the [yaml-schema.md](../../skills/compound-docs/references/yaml-schema.md) for the complete schema. Key enum values:
-
-**problem_type values:**
-- build_error, test_failure, runtime_error, performance_issue
-- database_issue, security_issue, ui_bug, integration_issue
-- logic_error, developer_experience, workflow_issue
-- best_practice, documentation_gap
-
-**component values:**
-- rails_model, rails_controller, rails_view, service_object
-- background_job, database, frontend_stimulus, hotwire_turbo
-- email_processing, brief_system, assistant, authentication
-- payments, development_workflow, testing_framework, documentation, tooling
-
-**root_cause values:**
-- missing_association, missing_include, missing_index, wrong_api
-- scope_issue, thread_violation, async_timing, memory_leak
-- config_error, logic_error, test_isolation, missing_validation
-- missing_permission, missing_workflow_step, inadequate_documentation
-- missing_tooling, incomplete_setup
-
-**Category directories (mapped from problem_type):**
-- `docs/solutions/build-errors/`
-- `docs/solutions/test-failures/`
-- `docs/solutions/runtime-errors/`
-- `docs/solutions/performance-issues/`
-- `docs/solutions/database-issues/`
-- `docs/solutions/security-issues/`
-- `docs/solutions/ui-bugs/`
-- `docs/solutions/integration-issues/`
-- `docs/solutions/logic-errors/`
-- `docs/solutions/developer-experience/`
-- `docs/solutions/workflow-issues/`
-- `docs/solutions/best-practices/`
-- `docs/solutions/documentation-gaps/`
+See [yaml-schema.md](../../skills/compound-docs/references/yaml-schema.md) for the complete schema (problem_type, component, root_cause enum values, and category directory mappings).
 
 ## Output Format
 
@@ -226,40 +192,6 @@ Structure your findings as:
 [If no relevant learnings found, explicitly state this]
 ```
 
-## Efficiency Guidelines
+## Integration
 
-**DO:**
-- Use Grep to pre-filter files BEFORE reading any content (critical for 100+ files)
-- Run multiple Grep calls in PARALLEL for different keywords
-- Include `title:` in Grep patterns - often the most descriptive field
-- Use OR patterns for synonyms: `tags:.*(payment|billing|stripe)`
-- Use `-i=true` for case-insensitive matching
-- Use category directories to narrow scope when feature type is clear
-- Do a broader content Grep as fallback if <3 candidates found
-- Re-narrow with more specific patterns if >25 candidates found
-- Always read the critical patterns file (Step 3b)
-- Only read frontmatter of Grep-matched candidates (not all files)
-- Filter aggressively - only fully read truly relevant files
-- Prioritize high-severity and critical patterns
-- Extract actionable insights, not just summaries
-- Note when no relevant learnings exist (this is valuable information too)
-
-**DON'T:**
-- Read frontmatter of ALL files (use Grep to pre-filter first)
-- Run Grep calls sequentially when they can be parallel
-- Use only exact keyword matches (include synonyms)
-- Skip the `title:` field in Grep patterns
-- Proceed with >25 candidates without narrowing first
-- Read every file in full (wasteful)
-- Return raw document contents (distill instead)
-- Include tangentially related learnings (focus on relevance)
-- Skip the critical patterns file (always check it)
-
-## Integration Points
-
-This agent is designed to be invoked by:
-- `/workflows:plan` - To inform planning with institutional knowledge
-- `/deepen-plan` - To add depth with relevant learnings
-- Manual invocation before starting work on a feature
-
-The goal is to surface relevant learnings in under 30 seconds for a typical solutions directory, enabling fast knowledge retrieval during planning phases.
+Invoked by `/workflows:plan` and `/deepen-plan` to surface institutional knowledge during planning. Target: relevant learnings in under 30 seconds.

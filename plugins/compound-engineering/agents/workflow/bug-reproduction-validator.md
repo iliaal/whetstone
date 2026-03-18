@@ -1,7 +1,7 @@
 ---
 name: bug-reproduction-validator
 autoApprove: read
-description: "Systematically reproduces and validates bug reports to confirm whether reported behavior is an actual bug. Use when you receive a bug report or issue that needs verification."
+description: "Validates and classifies bug reports (reproduction only -- does not fix). Use when a bug report needs verification before committing to a fix. For root-cause analysis and fixing, use the debugging skill."
 ---
 
 <examples>
