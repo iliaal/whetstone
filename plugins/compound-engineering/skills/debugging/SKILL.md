@@ -50,9 +50,25 @@ Collects system info, language versions, git state, project files, and environme
 
 Run once to gather evidence showing WHERE it breaks, then investigate that specific component. Use `console.error()` (not logger, which may be suppressed in tests). Log BEFORE the dangerous operation, not after it fails. Include context: cwd, env vars, `new Error().stack`.
 
-**3. Hypothesize and test** — one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to find regressions efficiently.
+**Before external searches** (web, docs, forums): strip hostnames, IPs, file paths, SQL fragments, and customer data from the query. Raw stack traces leak privacy and return noise.
+
+**3. Hypothesize and test** — one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to find regressions efficiently. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set. Do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
 
 **4. Fix and verify** — create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `verification-before-completion`).
+
+## Debug Report
+
+Emit after every resolved bug. For non-trivial production bugs, also write a full Postmortem (see below).
+
+After resolving, output a structured report:
+
+```
+SYMPTOM:    [What was observed]
+ROOT CAUSE: [Why it happened — file:line with evidence]
+FIX:        [What changed]
+EVIDENCE:   [Verification output proving the fix]
+REGRESSION: [Test added to prevent recurrence]
+```
 
 ## Three-Fix Threshold
 
@@ -104,6 +120,7 @@ When multiple bugs exist, prioritize by:
 - **Type coercion** — `==` vs `===`, string-to-number conversion, truthy/falsy edge cases
 - **Timezone** — always store UTC, convert at display. Check DST transitions.
 - **Stale state** — cached values, stale closures, outdated config, old build artifacts. When behavior contradicts the code you're reading, verify you're running what you think you're running.
+- **Recurring fix site** — if `git log` shows 3+ prior fixes in the same file, the file needs redesign, not another patch. Escalate as architectural smell.
 
 ## Pattern Comparison
 

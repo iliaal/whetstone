@@ -78,6 +78,7 @@ Every phase must be **context-safe**:
 - Max 2 dependencies on other phases
 - Fits in one focused session for a developer without external blockers
 - If a phase violates these → split it
+- **Scope challenge**: if the overall plan touches 8+ files or introduces 2+ new classes/services, challenge the scope. Ask: can this be split into smaller, independently shippable increments?
 
 ## Clarifying Questions
 

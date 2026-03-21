@@ -1,7 +1,6 @@
 ---
 name: figma-design-sync
 description: "Detects AND IMPLEMENTS fixes for visual differences between a web implementation and its Figma design. This agent modifies code. Use iteratively when syncing implementation to match Figma specs."
-color: purple
 ---
 
 <examples>

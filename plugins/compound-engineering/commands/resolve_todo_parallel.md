@@ -20,15 +20,13 @@ Create a TodoWrite list of all unresolved items grouped by type.Make sure to loo
 
 ### 3. Implement (PARALLEL)
 
-Spawn a pr-comment-resolver agent for each unresolved item in parallel.
+Spawn a general-purpose agent for each unresolved todo item in parallel:
 
-So if there are 3 comments, it will spawn 3 pr-comment-resolver agents in parallel. liek this
+1. Task general-purpose(todo1)
+2. Task general-purpose(todo2)
+3. Task general-purpose(todo3)
 
-1. Task pr-comment-resolver(comment1)
-2. Task pr-comment-resolver(comment2)
-3. Task pr-comment-resolver(comment3)
-
-Always run all in parallel subagents/Tasks for each Todo item.
+Always run all in parallel.
 
 ### 4. Commit & Resolve
 

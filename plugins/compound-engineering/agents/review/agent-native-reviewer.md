@@ -176,32 +176,7 @@ Use this review when:
 
 ## Quick Checks
 
-### The "Write to Location" Test
-Ask: "If a user said 'write something to [location]', would the agent know how?"
+- **"Write to Location" test**: for every noun in the app (feed, library, profile, settings) — can an agent interact with it via tool, does it know it exists via context, is it in the system prompt?
+- **Surprise test**: given an open-ended request, can the agent compose available primitives creatively? If not, tools are workflows, not primitives.
 
-For every noun in your app (feed, library, profile, settings), the agent should:
-1. Know what it is (context injection)
-2. Have a tool to interact with it (action parity)
-3. Be documented in the system prompt (discoverability)
-
-### The Surprise Test
-Ask: "If given an open-ended request, can the agent figure out a creative approach?"
-
-Good agents use available tools creatively. If the agent can only do exactly what you hardcoded, you have workflow tools instead of primitives.
-
-## Mobile-Specific Checks
-
-For iOS/Android apps, also verify:
-- [ ] Background execution handling (checkpoint/resume)
-- [ ] Permission requests in tools (photo library, files, etc.)
-- [ ] Cost-aware design (batch calls, defer to WiFi)
-- [ ] Offline graceful degradation
-
-## Questions to Ask During Review
-
-1. "Can the agent do everything the user can do?"
-2. "Does the agent know what resources exist?"
-3. "Can users inspect and edit agent work?"
-4. "Are tools primitives or workflows?"
-5. "Would a new feature require a new tool, or just a prompt update?"
-6. "If this fails, how does the agent (and user) know?"
+For mobile-specific checks (background execution, permissions, cost-aware batching, offline degradation) and detailed code examples, see the `agent-native-architecture` skill.

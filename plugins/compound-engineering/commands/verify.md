@@ -116,3 +116,7 @@ Produce a structured report:
 ```
 
 If NOT READY, list exactly what needs fixing before the PR can proceed.
+
+## Integration
+
+For in-session verification gates (before claiming tasks complete, committing, or creating PRs), use the `verification-before-completion` skill. This command runs the full pipeline; the skill enforces the discipline of running it.

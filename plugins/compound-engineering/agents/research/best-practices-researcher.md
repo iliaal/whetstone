@@ -50,7 +50,7 @@ Before going online, check if curated knowledge already exists in loaded skills.
 
 Only after checking skills AND verifying API availability:
 
-1. **Official Documentation**: Use Context7 MCP or search_docs MCP to fetch framework/library docs. If unavailable, use web search as fallback.
+1. **Official Documentation**: Use Docfork MCP (`search_docs` / `fetch_doc`) to fetch framework/library docs. If unavailable, use web search as fallback.
 2. **Version-Specific Research**: Determine the installed version from lock files (package-lock.json, composer.lock, uv.lock, etc.) and find version-specific docs.
 3. **Source Code Analysis**: Locate installed library source (node_modules, vendor, site-packages). Read key source files, tests, README, and changelogs to understand internals.
 4. **Community Research**: Search for real-world usage examples, GitHub issues/discussions, and community solutions.

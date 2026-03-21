@@ -49,6 +49,7 @@ When simplifying AI-generated code, specifically target:
 - **Gratuitous type casts** (`as any`, `as unknown as T`) — fix the actual type or use a proper generic
 - **Over-abstraction** (factory for 2 objects, wrapper around a single call, util file with 1 function) — inline the code
 - **Inconsistent style** that drifts from the file's existing conventions — match the file
+- **Placeholder stubs** (`// ...`, `// rest of code`, `// similar to above`, `// continue pattern`, `// add more as needed`) — leave unsimplified code as-is rather than replacing it with stubs
 
 ## Stop Conditions
 

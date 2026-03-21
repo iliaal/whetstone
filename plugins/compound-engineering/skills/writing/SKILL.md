@@ -101,4 +101,10 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 4. Check for em dash overuse, mechanical bold, and synonym cycling.
 5. Score 1–10 on each: Directness / Rhythm / Trust / Authenticity / Density. Below 35/50: revise.
 
+## Changelog Voice
+
+- **Sell test**: every bullet should pass "would a user reading this think 'I want to try that'?" Lead with what the user can now *do*, not implementation details. "You can now filter by date range" not "Refactored the query builder to support date predicates"
+- **User-facing vs internal**: internal changes (refactors, dependency bumps, CI fixes) belong in a separate "For contributors" subsection, not mixed with user-facing bullets
+- **Verb tense**: past tense for what changed ("Added", "Fixed"), not present ("Adds", "Fixes")
+
 See [references/examples.md](./references/examples.md) for before/after transformations.

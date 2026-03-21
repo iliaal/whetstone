@@ -4,7 +4,6 @@ description: >-
   Orchestrate multi-agent swarms using TeammateTool and Task system. Use when
   coordinating multiple agents, running parallel reviews, building pipeline
   workflows, or implementing divide-and-conquer patterns with subagents.
-disable-model-invocation: true
 ---
 
 # Swarm orchestration

@@ -4,7 +4,6 @@ description: >-
   Create distinctive, production-grade frontend interfaces with real working
   code. Use when building web pages, UI components, landing pages, dashboards,
   or applications with HTML/CSS/JS/React. Avoids generic AI aesthetics.
-license: Complete terms in LICENSE.txt
 ---
 
 Read the user's frontend requirements: a component, page, application, or interface to build. Note context about purpose, audience, or technical constraints.
@@ -29,9 +28,9 @@ With the philosophy written, commit to the specifics:
 - **Constraints**: Technical requirements (framework, performance, accessibility).
 - **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
 
-**CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work — the key is intentionality, not intensity.
+Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work — the key is intentionality, not intensity.
 
-**Dependency check**: Before importing any third-party library (framer-motion, lucide-react, zustand, etc.), check `package.json`. If the package is missing, output the install command before the code. Never assume a library exists.
+Before importing any third-party library (framer-motion, lucide-react, zustand, etc.), check `package.json`. If the package is missing, output the install command before the code. Never assume a library exists.
 
 Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 - Production-grade and functional
@@ -74,34 +73,6 @@ These are the telltale signs of AI-generated design. Avoid them:
 
 Default to Framer Motion for UI interactions (buttons, modals, lists, bento cards). Use GSAP or Three.js only for isolated full-page scroll storytelling or canvas/WebGL backgrounds — never mix them with Framer Motion in the same component tree. Wrap GSAP/Three.js in strict `useEffect` cleanup blocks.
 
-## Creative Arsenal
-
-Avoid defaulting to generic patterns. Pull from these when the design calls for it:
-
-**Navigation**: Floating glass-pill navbar detached from top. Hamburger that morphs into X. Mega-menu with staggered fade-in. Magnetic button that pulls toward cursor (use `useMotionValue` + `useTransform`, never `useState`).
-
-**Layouts**: Asymmetric bento grid (`grid-template-columns: 2fr 1fr`). Masonry (staggered heights). Z-axis card cascade (slight rotation, overlapping depth). Editorial split (massive type left, interactive content right). Horizontal scroll hijack. Sticky scroll stack (cards physically stack on top of each other).
-
-**Cards**: Parallax tilt tracking mouse coordinates. Spotlight border illuminating under cursor. Glassmorphism with inner refraction border (`border-white/10` + `shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`). Morphing modal (button expands into full-screen dialog).
-
-**Typography**: Kinetic marquee (reverses on scroll). Text scramble/Matrix decode on hover. Text mask revealing video behind letters. Gradient stroke animation running along outlined text.
-
-**Micro-interactions**: Particle explosion on CTA success. Skeleton shimmer (shifting light across placeholders). Directional hover fill (enters from the mouse's entry side). Ripple from click coordinates. Animated SVG line drawing. Mesh gradient blob background (`pointer-events-none`, `position: fixed`).
-
-## Redesigning Existing Interfaces
-
-When upgrading an existing project, audit first, then fix in this priority order (maximum visual impact, minimum risk):
-
-1. **Font swap** — biggest instant improvement, lowest risk
-2. **Color palette cleanup** — remove clashing or oversaturated colors, enforce one accent
-3. **Hover and active states** — makes the interface feel alive
-4. **Layout and spacing** — proper grid, max-width container, consistent padding
-5. **Replace generic components** — swap cliche patterns for modern alternatives
-6. **Add loading, empty, and error states** — makes it feel finished
-7. **Polish typography scale and spacing** — the premium final touch
-
-Work with the existing tech stack. Do not migrate frameworks or styling libraries. Keep changes reviewable and focused — small, targeted improvements over big rewrites. Before importing any new library or writing any styles, check `package.json` for the Tailwind version (v3 vs v4) — v4 syntax in a v3 project will break the build.
-
 ## Verify
 
 - Design philosophy written before code (for full pages)
@@ -109,3 +80,8 @@ Work with the existing tech stack. Do not migrate frameworks or styling librarie
 - Dependency check done before any new library import
 - Code renders without errors in the browser
 - No `outline: none` without replacement focus indicator
+
+## References
+
+- [Creative arsenal](./references/creative-arsenal.md) — navigation, layout, card, typography, and micro-interaction patterns
+- [Redesigning existing interfaces](./references/redesigning-existing.md) — audit-first upgrade workflow for existing projects

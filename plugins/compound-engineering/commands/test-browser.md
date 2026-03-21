@@ -47,8 +47,6 @@ npm install -g agent-browser
 agent-browser install  # Downloads Chromium (~160MB)
 ```
 
-See the `agent-browser` skill for detailed usage.
-
 ## Main Tasks
 
 ### 0. Verify agent-browser Installation

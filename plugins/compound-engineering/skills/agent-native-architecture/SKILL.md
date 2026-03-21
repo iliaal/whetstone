@@ -198,57 +198,15 @@ When designing an agent-native system, verify these **before implementation**:
 **When designing architecture, explicitly address each checkbox in your plan.**
 </architecture_checklist>
 
-<quick_start>
-## Quick Start: Build an Agent-Native Feature
+## References
 
-**Step 1: Define atomic tools**
-```typescript
-const tools = [
-  tool("read_file", "Read any file", { path: z.string() }, ...),
-  tool("write_file", "Write any file", { path: z.string(), content: z.string() }, ...),
-  tool("list_files", "List directory", { path: z.string() }, ...),
-  tool("complete_task", "Signal task completion", { summary: z.string() }, ...),
-];
-```
-
-**Step 2: Write behavior in the system prompt**
-```markdown
-## Your Responsibilities
-When organizing content:
-1. Read existing files to understand the structure
-2. Analyze what organization makes sense
-3. Create/move files using your tools
-4. Use your judgment about layout and formatting
-5. Call complete_task when you're done
-
-You decide the structure. Make it good.
-```
-
-**Step 3: Let the agent work in a loop**
-```typescript
-const result = await agent.run({
-  prompt: userMessage,
-  tools: tools,
-  systemPrompt: systemPrompt,
-  // Agent loops until it calls complete_task
-});
-```
-</quick_start>
-
-<reference_index>
-## Reference Files
-
-All reference files:
-
-**Core Patterns:**
+- [quick-start.md](./references/quick-start.md) - Build an agent-native feature in 3 steps
 - [architecture-patterns.md](./references/architecture-patterns.md) - Event-driven, unified orchestrator, agent-to-UI
 - [files-universal-interface.md](./references/files-universal-interface.md) - Why files, organization patterns, context.md
 - [mcp-tool-design.md](./references/mcp-tool-design.md) - Tool design, dynamic capability discovery, CRUD
 - [from-primitives-to-domain-tools.md](./references/from-primitives-to-domain-tools.md) - When to add domain tools, graduating to code
 - [agent-execution-patterns.md](./references/agent-execution-patterns.md) - Completion signals, partial completion, context limits
 - [system-prompt-design.md](./references/system-prompt-design.md) - Features as prompts, judgment criteria
-
-**Agent-Native Disciplines:**
 - [dynamic-context-injection.md](./references/dynamic-context-injection.md) - Runtime context, what to inject
 - [action-parity-discipline.md](./references/action-parity-discipline.md) - Capability mapping, parity workflow
 - [shared-workspace-architecture.md](./references/shared-workspace-architecture.md) - Shared data space, UI integration
@@ -256,9 +214,6 @@ All reference files:
 - [agent-native-testing.md](./references/agent-native-testing.md) - Testing outcomes, parity tests
 - [anti-patterns.md](./references/anti-patterns.md) - Common mistakes and what to do instead
 - [success-criteria.md](./references/success-criteria.md) - Verify your architecture is agent-native
-
-**Platform-Specific:**
 - [mobile-patterns.md](./references/mobile-patterns.md) - iOS storage, checkpoint/resume, cost awareness
 - [self-modification.md](./references/self-modification.md) - Git-based evolution, guardrails
 - [refactoring-to-prompt-native.md](./references/refactoring-to-prompt-native.md) - Migrating existing code
-</reference_index>

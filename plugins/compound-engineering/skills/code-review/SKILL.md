@@ -26,7 +26,7 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
 ## Review Process
 
-1. **Context** — read the PR description, linked issue, or task spec. **Fetch existing review comments and discussions first** — prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (check CI config for the canonical test command) to catch automated failures before manual review.
+1. **Context** — run a Scope Drift Check first: compare `git diff --stat` against the PR's stated intent. Classify as CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING. If DRIFT, note drifted files and ask: ship as-is, split, or remove unrelated changes? Then read the PR description, linked issue, or task spec. **Fetch existing review comments and discussions first** — prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (check CI config for the canonical test command) to catch automated failures before manual review.
 2. **Structural scan** — architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly — don't attempt to read them from the working tree when reviewing a remote branch.
 3. **Line-by-line** — correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
 4. **Security** — input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act).
@@ -95,6 +95,7 @@ Language-Specific Checks:
 - Blocking on personal preference — approve with a Minor comment instead
 - Rubber-stamping without reading — always verify at least Stage 1
 - Reviewing code quality before verifying spec compliance — do Stage 1 first
+- Recommending fix patterns without checking currency — verify the pattern is current for the project's framework version before suggesting it. Prefer built-in alternatives from newer versions
 
 **Also suppress** (do not flag these):
 - "X is redundant with Y" when redundancy aids readability
@@ -143,3 +144,4 @@ Limit to 10 findings per severity. If more exist, note the count and show the hi
 - `receiving-code-review` — the inbound side (processing review feedback received from others)
 - `workflows:review` — the full review command with multi-agent analysis
 - `resolve-pr-parallel` — batch-resolve PR comments with parallel agents
+- `security-sentinel` agent — deep security audit beyond the security step in this skill

@@ -41,8 +41,6 @@ command -v agent-browser >/dev/null 2>&1 && echo "Installed" || echo "NOT INSTAL
 npm install -g agent-browser && agent-browser install
 ```
 
-See the `agent-browser` skill for detailed usage.
-
 ## Main Tasks
 
 ### 1. Parse Arguments

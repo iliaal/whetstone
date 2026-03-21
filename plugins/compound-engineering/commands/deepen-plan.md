@@ -281,12 +281,12 @@ Find:
 Return concrete, actionable recommendations."
 ```
 
-**Also use Context7 MCP for framework documentation:**
+**Also use Docfork MCP for framework documentation:**
 
-For any technologies/frameworks mentioned in the plan, query Context7:
+For any technologies/frameworks mentioned in the plan, query Docfork:
 ```
-mcp__plugin_compound-engineering_context7__resolve-library-id: Find library ID for [framework]
-mcp__plugin_compound-engineering_context7__query-docs: Query documentation for specific patterns
+mcp__plugin_compound-engineering_docfork__search_docs: Search documentation for [framework]
+mcp__plugin_compound-engineering_docfork__fetch_doc: Fetch full content from a search result URL
 ```
 
 **Use WebSearch for current best practices:**
@@ -348,10 +348,9 @@ Task [agent-name]: "Review this plan using your expertise. Apply all your checks
 ```
 
 **CRITICAL RULES:**
-- Do NOT filter agents by "relevance" - run them ALL
-- Do NOT skip agents because they "might not apply" - let them decide
+- Run all review, research, and design agents — do NOT filter by perceived relevance
+- SKIP `agents/workflow/*` — these are orchestrators, not reviewers
 - Launch ALL agents in a SINGLE message with multiple Task tool calls
-- 20, 30, 40 parallel agents is fine - use everything
 - Each agent may catch something others miss
 - The goal is MAXIMUM coverage, not efficiency
 
@@ -371,7 +370,7 @@ Wait for ALL parallel agents to complete - skills, research agents, review agent
 2. **Learnings/Solutions sub-agents** - Relevant documented learnings from /workflows:compound
 3. **Research agents** - Best practices, documentation, real-world examples
 4. **Review agents** - All feedback from every reviewer (architecture, security, performance, simplicity, etc.)
-5. **Context7 queries** - Framework documentation and patterns
+5. **Docfork queries** - Framework documentation and patterns
 6. **Web searches** - Current best practices and articles
 
 **For each agent's findings, extract:**

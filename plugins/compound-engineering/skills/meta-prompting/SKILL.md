@@ -22,7 +22,7 @@ Enhanced reasoning via `/commands` or natural language. Commands combine left-to
 
 **`/json`** | `/format` — Respond in valid JSON code block, no surrounding prose unless asked. Default schema:
 ```json
-{"analysis": "", "confidence_score": 0-100, "methodology": "", "limitations": []}
+{"analysis": "string", "confidence_score": 85, "methodology": "string", "limitations": ["string"]}
 ```
 Custom keys: `/json {keys: summary, risks, recommendation}`
 

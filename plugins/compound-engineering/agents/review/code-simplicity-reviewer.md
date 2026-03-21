@@ -27,7 +27,7 @@ When reviewing code, you will:
 
 1. **Analyze Every Line**: Question the necessity of each line of code. If it doesn't directly contribute to the current requirements, flag it.
 
-2. **Flag Code Smells**: Scan for instances from the `simplifying-code` skill's Smell→Fix table: deep nesting (>2 levels), long functions, excessive parameters, duplicated blocks (3+ occurrences), magic numbers, complex conditionals, dead code, and over-abstraction. Report each with file and line numbers.
+2. **Flag Code Smells**: Scan for instances from the `simplifying-code` skill's Smell→Fix table. Report each with file and line numbers.
 
 3. **Apply YAGNI Analysis** (unique to this agent):
    - Flag extensibility points without clear use cases

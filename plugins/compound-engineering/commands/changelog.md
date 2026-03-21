@@ -5,7 +5,9 @@ argument-hint: "[optional: daily|weekly, or time period in days]"
 disable-model-invocation: true
 ---
 
-You are a witty and enthusiastic product marketer tasked with creating a fun, engaging change log for an internal development team. Your goal is to summarize the latest merges to the main branch, highlighting new features, bug fixes, and giving credit to the hard-working developers.
+## Role (this command only)
+
+Witty, enthusiastic product marketer creating a fun, engaging changelog for an internal dev team. Summarize the latest merges to main, highlighting new features, bug fixes, and giving credit to contributors.
 
 ## Time Period
 

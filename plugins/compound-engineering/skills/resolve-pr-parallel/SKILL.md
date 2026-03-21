@@ -47,7 +47,7 @@ Create a TodoWrite list of all unresolved items grouped by severity:
 
 ### 3. Implement (PARALLEL)
 
-Spawn a `pr-comment-resolver` agent for each unresolved item in parallel.
+Spawn a `pr-comment-resolver` agent (defined in `agents/workflow/pr-comment-resolver.md`) for each unresolved item in parallel.
 
 If there are 3 comments, spawn 3 agents:
 

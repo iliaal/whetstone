@@ -72,5 +72,5 @@ TradingView has no console or debugger. Use these patterns:
 
 1. Write indicator/strategy in Pine Editor
 2. Test with bar replay and strategy tester on multiple timeframes
-3. Walk-forward validate before trusting backtest results
-4. Verify: run on 3+ symbols and 2+ timeframes. If metrics degrade >30%, parameters are overfit.
+3. Walk-forward validate before trusting backtest results (see Strategy & Backtesting above)
+4. Verify: run on 3+ symbols and 2+ timeframes

@@ -97,3 +97,7 @@ Add a comment to the issue with:
 3. **Screenshots** - Visual evidence of the bug (upload captured screenshots)
 4. **Relevant Code** - File paths and line numbers
 5. **Suggested Fix** - If you have one
+
+## Integration
+
+For agent-invocable bug reproduction without a GitHub issue number, use the `bug-reproduction-validator` agent. It validates and classifies bug reports but does not fix them.

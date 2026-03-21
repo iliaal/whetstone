@@ -27,6 +27,10 @@ Before any success claim, run through these five steps:
 | **4. Verify** | Does the output actually confirm the claim? | "42 passed, 0 failed" confirms "tests pass". "41 passed, 1 failed" does not. |
 | **5. Claim** | Only now make the statement | "All 42 tests pass" with the evidence visible |
 
+## Review Staleness
+
+Before shipping, check whether prior reviews (agent or human) are still valid. If commits landed after the last review, verify the new changes don't invalidate review conclusions — check that previously flagged issues are still fixed and no new code contradicts the review's approval. `git log --oneline <review-commit>..HEAD` shows what changed since the review.
+
 ## When This Applies
 
 - About to say "tests pass" or "build succeeds"
@@ -95,26 +99,17 @@ If the output does not confirm the claim:
 
 ## Rationalization Prevention
 
+Stop and re-verify when you catch yourself thinking any of these:
+
 | Rationalization | Reality |
 |----------------|---------|
-| "Should work now" | RUN the verification. "Should" is not evidence. |
-| "I'm confident this is correct" | Confidence is not evidence. Run it. |
-| "It's a trivial change" | Trivial changes still break builds. Run it. |
-| "I already verified something similar" | Similar is not identical. Run THIS verification. |
-| "The logic is obviously correct" | Obvious bugs ship to production daily. Run it. |
-
-## Red Flags
-
-Stop and re-verify if you notice yourself:
-
-- Using "should", "probably", or "seems to" about verification results
-- Feeling satisfied before running the command
-- Relying on a previous run ("it passed earlier")
-- Verifying only part of the claim ("new tests pass" instead of "all tests pass")
-- Trusting a subagent's report without independent verification
-- Claiming success based on code reading ("the logic looks correct")
-- Skipping verification because "it's a small change"
-- Feeling confident about the result before running the command
+| "Should work now" / "probably works" / "seems to" | "Should" is not evidence. Run it. |
+| "I'm confident this is correct" / feeling satisfied before running | Confidence is not evidence. Run it. |
+| "It's a trivial change" / "it's a small change" | Trivial changes still break builds. Run it. |
+| "I already verified something similar" / relying on a previous run | Similar is not identical. Run THIS verification now. |
+| "The logic is obviously correct" / claiming success from code reading | Obvious bugs ship to production daily. Run it. |
+| Verifying only part of the claim ("new tests pass") | "New tests pass" is not "all tests pass". Run the full suite. |
+| Trusting a subagent's report without checking | Subagent claims require independent verification. Run it yourself. |
 
 ## Integration
 
@@ -124,3 +119,4 @@ This skill is referenced by:
 - `debugging` — before claiming a bug is fixed
 - `workflows:work` Phase 4 — before merge or PR creation
 - `writing-tests` — tests as primary verification evidence
+- `/verify` command — runs the full pre-PR verification pipeline

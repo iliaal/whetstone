@@ -8,9 +8,9 @@ description: >-
 
 # Git worktree manager
 
-## CRITICAL: Always use the manager script
+## Always use the manager script
 
-**NEVER call `git worktree add` directly.** Always use the `worktree-manager.sh` script.
+Never call `git worktree add` directly — always use the `worktree-manager.sh` script.
 
 The script handles critical setup that raw git commands don't:
 1. Copies `.env`, `.env.local`, `.env.test`, etc. from main repo

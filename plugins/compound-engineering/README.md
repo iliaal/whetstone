@@ -183,8 +183,8 @@ Up to 5 matching skills are injected per subagent call, prioritized by tier. Sub
 ### Docfork
 
 **Tools provided:**
-- `query_docs` - Search documentation for a framework/library
-- `fetch_url` - Fetch full markdown content from a documentation URL
+- `search_docs` - Search documentation for a framework/library
+- `fetch_doc` - Fetch full markdown content from a documentation URL
 
 9,000+ libraries with daily updates. Free tier: 1,000 requests/month.
 

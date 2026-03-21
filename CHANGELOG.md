@@ -5,6 +5,41 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.47.2] - 2026-03-21
+
+### Improved
+
+- **code-review** — scope drift check integrated into review process step 1, search-before-recommending anti-pattern
+- **debugging** — sanitize-before-search rule, scope lock on hypothesis, structured debug report format, recurring fix site detection
+- **writing** — changelog voice section (sell test, contributor subsection, verb tense)
+- **verification-before-completion** — review staleness check, merged Red Flags into Rationalization Prevention
+- **planning** — scope challenge trigger (8+ files or 2+ new classes)
+- **nodejs-backend** — new `references/api-design.md` (cursor pagination, filtering, sorting, deprecation)
+- **react-frontend** — flaky test quarantine workflow in e2e-testing reference
+- **simplifying-code** — placeholder stub bans in AI Slop Removal
+- **frontend-design** — extracted Creative Arsenal and Redesigning to references
+- **agent-native-architecture** — extracted quick-start template to references, flattened reference index
+- **linux-bash-scripting** — added output format definition
+
+### Fixed
+
+- Stale `agent-browser` skill references in feature-video and test-browser commands
+- `refine-prompt` now asks before writing to `.ai/PROMPT.md`
+- README MCP tool names corrected (`search_docs`/`fetch_doc`)
+- Invalid JSON in meta-prompting `/json` schema
+- Removed incorrect `disable-model-invocation: true` from orchestrating-swarms
+- `workflows:review` step numbering fixed (1-6), file-todos duplication cut (~137 lines)
+- `workflows:plan` templates extracted to `references/plan-templates.md` (~277 lines)
+- `triage` file-todos duplication cut (~100 lines)
+- `deepen-plan` agent-filtering clarified, MCP references updated context7 → docfork
+- `resolve_todo_parallel` agent scope fixed (general-purpose instead of pr-comment-resolver)
+- Cross-references added between 6 component pairs
+- `code-simplicity-reviewer` and `agent-native-reviewer` agents trimmed of duplicated skill content
+- Removed inert frontmatter (`color:`, `license:`) from 4 files
+- Stale `spec-reviewer` → `spec-flow-analyzer` in brainstorming skill and brainstorm command
+- Removed orphaned `tailwind-css/manifest.json` and `compound-docs/schema.yaml`
+- `best-practices-researcher` MCP reference updated context7 → docfork
+
 ## [2.47.1] - 2026-03-18
 
 ### Fixed

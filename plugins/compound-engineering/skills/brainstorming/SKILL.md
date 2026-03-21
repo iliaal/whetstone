@@ -10,21 +10,6 @@ description: >-
 
 Clarify **WHAT** to build before **HOW** to build it.
 
-## When to Use This Skill
-
-Brainstorming is valuable when:
-- Requirements are unclear or ambiguous
-- Multiple approaches could solve the problem
-- Trade-offs need to be explored with the user
-- The user hasn't fully articulated what they want
-- The feature scope needs refinement
-
-Brainstorming can be skipped when:
-- Requirements are explicit and detailed
-- The user knows exactly what they want
-- The task is a straightforward bug fix or well-defined change
-- The task is trivially scoped (a rename, a one-line config change, a simple fix)
-
 ## Hard Gate
 
 **No implementation until the design is approved.** Brainstorming produces a design document, not code. Do not invoke implementation skills, write production code, or create files outside `docs/brainstorms/` until the user explicitly approves the design and moves to planning.
@@ -161,7 +146,7 @@ topic: <kebab-case-topic>
 
 ### Phase 4: Spec Review
 
-After writing the design doc, dispatch a spec-reviewer subagent with the document and original requirements (not session history). If issues found, fix and re-dispatch (max 3 iterations). Then present to the user for approval -- the user explicitly confirming the design is the gate to proceed.
+After writing the design doc, dispatch a `spec-flow-analyzer` agent with the document and original requirements (not session history). If issues found, fix and re-dispatch (max 3 iterations). Then present to the user for approval -- the user explicitly confirming the design is the gate to proceed.
 
 ### Phase 5: Handoff
 

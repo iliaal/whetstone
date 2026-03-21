@@ -79,73 +79,9 @@ Do you want to add this to the todo list?
 
    Example: `042-ready-p1-transaction-boundaries.md`
 
-2. **Update YAML frontmatter:**
+2. **Update the file** using the `file-todos` skill's template and naming convention. Change status from `pending` to `ready` in both filename and YAML frontmatter.
 
-   ```yaml
-   ---
-   status: ready # IMPORTANT: Change from "pending" to "ready"
-   priority: p1 # or p2, p3 based on severity
-   issue_id: "042"
-   tags: [category, relevant-tags]
-   dependencies: []
-   ---
-   ```
-
-3. **Populate or update the file:**
-
-   ```yaml
-   # [Issue Title]
-
-   ## Problem Statement
-   [Description from finding]
-
-   ## Findings
-   - [Key discoveries]
-   - Location: [file_path:line_number]
-   - [Scenario details]
-
-   ## Proposed Solutions
-
-   ### Option 1: [Primary solution]
-   - **Pros**: [Benefits]
-   - **Cons**: [Drawbacks if any]
-   - **Effort**: [Small/Medium/Large]
-   - **Risk**: [Low/Medium/High]
-
-   ## Recommended Action
-   [Filled during triage - specific action plan]
-
-   ## Technical Details
-   - **Affected Files**: [List files]
-   - **Related Components**: [Components affected]
-   - **Database Changes**: [Yes/No - describe if yes]
-
-   ## Resources
-   - Original finding: [Source of this issue]
-   - Related issues: [If any]
-
-   ## Acceptance Criteria
-   - [ ] [Specific success criteria]
-   - [ ] Tests pass
-   - [ ] Code reviewed
-
-   ## Work Log
-
-   ### {date} - Approved for Work
-   **By:** Claude Triage System
-   **Actions:**
-   - Issue approved during triage session
-   - Status changed from pending → ready
-   - Ready to be picked up and worked on
-
-   **Learnings:**
-   - [Context and insights]
-
-   ## Notes
-   Source: Triage session on {date}
-   ```
-
-4. **Confirm approval:** "✅ Approved: `{new_filename}` (Issue #{issue_id}) - Status: **ready** → Ready to work on"
+3. **Confirm approval:** "Approved: `{new_filename}` (Issue #{issue_id}) - Status: **ready**"
 
 **When user says "next":**
 
@@ -261,44 +197,9 @@ Do you want to add this to the todo list?
 
 ```
 
-## Important Implementation Details
+## Progress Tracking
 
-### Status Transitions During Triage
-
-**When "yes" is selected:**
-1. Rename file: `{id}-pending-{priority}-{desc}.md` → `{id}-ready-{priority}-{desc}.md`
-2. Update YAML frontmatter: `status: pending` → `status: ready`
-3. Update Work Log with triage approval entry
-4. Confirm: "✅ Approved: `{filename}` (Issue #{issue_id}) - Status: **ready**"
-
-**When "next" is selected:**
-1. Delete the todo file from todos/ directory
-2. Skip to next item
-3. No file remains in the system
-
-### Progress Tracking
-
-Every time you present a todo as a header, include:
-- **Progress:** X/Y completed (e.g., "3/10 completed")
-- **Estimated time remaining:** Based on how quickly you're progressing
-- **Pacing:** Monitor time per finding and adjust estimate accordingly
-
-Example:
-```
-
-Progress: 3/10 completed | Estimated time: ~2 minutes remaining
-
-```
-
-### Do Not Code During Triage
-
-- ✅ Present findings
-- ✅ Make yes/next/custom decisions
-- ✅ Update todo files (rename, frontmatter, work log)
-- ❌ Do NOT implement fixes or write code
-- ❌ Do NOT add detailed implementation details
-- ❌ That's for /resolve_todo_parallel phase
-```
+Show progress with each item: "X/Y completed". Follow the `file-todos` skill for all file naming, frontmatter structure, and status transitions.
 
 When done give these options
 

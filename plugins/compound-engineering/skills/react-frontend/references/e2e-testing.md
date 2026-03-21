@@ -156,6 +156,18 @@ Tests receive auth state via `storageState` in config projects.
 | Animations | `animations: 'disabled'` in config |
 | Race conditions | Wait for API responses before assertions |
 
+**Quarantine workflow** — confirm flakiness before quarantining:
+```bash
+npx playwright test --repeat-each=10 path/to/test.spec.ts  # Confirm flakiness
+npx playwright test --retries=3 path/to/test.spec.ts       # Check if retries help
+```
+
+Mark confirmed flaky tests with an issue reference:
+```typescript
+test.fixme(true, 'Flaky - Issue #123');                       // Always skip
+test.skip(!!process.env.CI, 'Flaky in CI only - Issue #123'); // Skip in CI only
+```
+
 ```bash
 npx playwright test --headed --debug  # Debug mode
 npx playwright show-trace trace.zip   # Trace viewer

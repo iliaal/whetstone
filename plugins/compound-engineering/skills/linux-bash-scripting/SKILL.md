@@ -8,6 +8,8 @@ description: >-
 
 # Linux Bash Scripting
 
+Produce bash scripts that pass `shellcheck --enable=all` and `shfmt -d` with zero warnings.
+
 Target: GNU Bash 4.4+ on Linux. No macOS/BSD workarounds, no Windows paths, no POSIX-only restrictions.
 
 ## Script Foundation

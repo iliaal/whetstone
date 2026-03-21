@@ -37,7 +37,7 @@ description: >-
 
 ## Persistence
 
-After refining, save the result to `.ai/PROMPT.md` (create `.ai/` directory if needed). This builds a reusable prompt library over time. Append with a heading and date:
+After refining, offer to save the result to `.ai/PROMPT.md` — do not write without user confirmation. If approved, append with a heading and date:
 
 ```markdown
 ## [Prompt Name] — YYYY-MM-DD

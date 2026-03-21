@@ -53,7 +53,7 @@ Write to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` using the template 
 
 ### Phase 4: Spec Review
 
-Per the `brainstorming` skill Phase 4 -- dispatch spec-reviewer subagent, iterate up to 3 times, then present to user for approval.
+Per the `brainstorming` skill Phase 4 -- dispatch `spec-flow-analyzer` agent, iterate up to 3 times, then present to user for approval.
 
 ### Phase 5: Handoff
 
