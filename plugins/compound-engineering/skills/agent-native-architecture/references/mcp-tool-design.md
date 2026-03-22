@@ -1,7 +1,7 @@
 <overview>
 How to design MCP tools following prompt-native principles. Tools should be primitives that enable capability, not workflows that encode decisions.
 
-**Core principle:** Whatever a user can do, the agent should be able to do. Don't artificially limit the agent—give it the same primitives a power user would have.
+**Core principle:** Whatever a user can do, the agent should be able to do. Don't artificially limit the agent--give it the same primitives a power user would have.
 </overview>
 
 <principle name="primitives-not-workflows">
@@ -215,7 +215,7 @@ export const serverName = createSdkMcpServer({
 <example name="feedback-server">
 ## Example: Feedback Storage Server
 
-This server provides primitives for storing feedback. It does NOT decide how to categorize or organize feedback—that's the agent's job via the prompt.
+This server provides primitives for storing feedback. It does NOT decide how to categorize or organize feedback--that's the agent's job via the prompt.
 
 ```typescript
 export const feedbackMcpServer = createSdkMcpServer({
@@ -306,7 +306,7 @@ Use your judgment about importance ratings.
 <principle name="dynamic-capability-discovery">
 ## Dynamic Capability Discovery vs Static Tool Mapping
 
-**This pattern is specifically for agent-native apps** where you want the agent to have full access to an external API—the same access a user would have. It follows the core agent-native principle: "Whatever the user can do, the agent can do."
+**This pattern is specifically for agent-native apps** where you want the agent to have full access to an external API--the same access a user would have. It follows the core agent-native principle: "Whatever the user can do, the agent can do."
 
 If you're building a constrained agent with limited capabilities, static tool mapping may be intentional. But for agent-native apps integrating with HealthKit, HomeKit, GraphQL, or similar APIs:
 

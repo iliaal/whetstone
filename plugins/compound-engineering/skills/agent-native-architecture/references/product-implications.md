@@ -11,7 +11,7 @@ The best agent-native applications are simple to start but endlessly powerful.
 
 Excel is the canonical example: you can use it for a grocery list, or you can build complex financial models. The same tool, radically different depths of use.
 
-Claude Code has this quality: fix a typo, or refactor an entire codebase. The interface is the same—natural language—but the capability scales with the ask.
+Claude Code has this quality: fix a typo, or refactor an entire codebase. The interface is the same--natural language--but the capability scales with the ask.
 
 ### The Pattern
 
@@ -178,9 +178,9 @@ You didn't have to guess that weekly review would be popular. You discovered it.
 <approval_and_agency>
 ## Approval and User Agency
 
-When agents take unsolicited actions—doing things on their own rather than responding to explicit requests—you need to decide how much autonomy to grant.
+When agents take unsolicited actions--doing things on their own rather than responding to explicit requests--you need to decide how much autonomy to grant.
 
-> **Note:** This framework applies to unsolicited agent actions. If the user explicitly asks the agent to do something ("send that email"), that's already approval—the agent just does it.
+> **Note:** This framework applies to unsolicited agent actions. If the user explicitly asks the agent to do something ("send that email"), that's already approval--the agent just does it.
 
 ### The Stakes/Reversibility Matrix
 
@@ -203,7 +203,7 @@ Agent: [Organizes files into folders]
 Agent: "I organized your downloads into folders by type.
         You can undo with Cmd+Z or move them back."
 ```
-User doesn't need to approve—it's easy to undo and doesn't matter much.
+User doesn't need to approve--it's easy to undo and doesn't matter much.
 
 **Quick confirm (low stakes, hard reversal):**
 ```
@@ -276,7 +276,7 @@ func assessReversibility(_ action: AgentAction) -> Reversibility {
 
 ### Self-Modification Considerations
 
-When agents can modify their own behavior—changing prompts, updating preferences, adjusting workflows—the goals are:
+When agents can modify their own behavior--changing prompts, updating preferences, adjusting workflows--the goals are:
 
 1. **Visibility:** User can see what changed
 2. **Understanding:** User understands the effects

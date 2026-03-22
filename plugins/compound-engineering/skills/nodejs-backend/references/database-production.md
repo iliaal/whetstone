@@ -20,7 +20,7 @@ Always `EXPLAIN ANALYZE` slow queries. Watch for sequential scans on large table
 
 ## Production
 
-- **Docker**: multi-stage build — `node:20-alpine` builder + prod image with `npm ci --omit=dev`
+- **Docker**: multi-stage build -- `node:20-alpine` builder + prod image with `npm ci --omit=dev`
 - **Process**: PM2 cluster mode (`instances: 'max'`) or container orchestration
 - **Shutdown**: SIGTERM → stop accepting connections → drain in-flight → close DB pool
 - **Logging**: Pino (structured JSON), not console.log

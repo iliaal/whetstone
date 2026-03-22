@@ -53,7 +53,7 @@ Evaluate every architecture against these pillars:
 - **Pilot Light** (RPO minutes, RTO 10s of minutes): core infra running, scale on failover
 - **Warm Standby** (RPO seconds, RTO minutes): scaled-down copy always running
 - **Active-Active** (RPO ~0, RTO ~0): full capacity in multiple regions
-- Test failover regularly — untested DR is not DR
+- Test failover regularly -- untested DR is not DR
 
 ## Migration Strategies (6Rs)
 
@@ -87,13 +87,13 @@ Approach: discovery → dependency mapping → migration waves (least dependent 
 
 ## Secrets Management
 
-- **Never in code or env files committed to git** — use a secrets manager (AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, or HashiCorp Vault)
+- **Never in code or env files committed to git** -- use a secrets manager (AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, or HashiCorp Vault)
 - **Dynamic secrets**: prefer short-lived, auto-generated credentials (Vault dynamic DB creds, IAM role temporary tokens) over static long-lived keys
-- **Rotation**: automate rotation on a schedule — 90 days max for static secrets, shorter for high-privilege
+- **Rotation**: automate rotation on a schedule -- 90 days max for static secrets, shorter for high-privilege
 - **Application access**: inject via environment variables or mounted files at runtime, never bake into container images
-- **Certificate lifecycle**: automate TLS cert provisioning and renewal (Let's Encrypt/ACM/cert-manager) — no manual certificate management
-- **Least privilege**: each service gets its own credentials scoped to exactly what it needs — no shared service accounts
-- **Audit**: log all secret access — who accessed what, when, from where
+- **Certificate lifecycle**: automate TLS cert provisioning and renewal (Let's Encrypt/ACM/cert-manager) -- no manual certificate management
+- **Least privilege**: each service gets its own credentials scoped to exactly what it needs -- no shared service accounts
+- **Audit**: log all secret access -- who accessed what, when, from where
 
 ## Report Format
 

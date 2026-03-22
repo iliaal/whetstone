@@ -42,13 +42,13 @@ Save approved items to memory files via the auto memory system.
 
 For each skill invoked during the session:
 
-**A. Self-check gate** — If the skill lacks success criteria + verification loop:
+**A. Self-check gate** -- If the skill lacks success criteria + verification loop:
 - Add `## Success Criteria` at top (3-5 measurable checks)
 - Add `## Self-Check` at bottom: "Verify all success criteria are met before presenting output. If not, iterate (max 5 times)."
 
-**B. Token efficiency** — Flag: redundant phrasing, mergeable sections, oversized examples, "Claude already knows this" content, inert frontmatter metadata.
+**B. Token efficiency** -- Flag: redundant phrasing, mergeable sections, oversized examples, "Claude already knows this" content, inert frontmatter metadata.
 
-**C. Other** — Missing edge cases, vague directives (rewrite as measurable criteria or remove), naked negations (add "do Y instead" or remove).
+**C. Other** -- Missing edge cases, vague directives (rewrite as measurable criteria or remove), naked negations (add "do Y instead" or remove).
 
 Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
 
@@ -58,9 +58,9 @@ If 2+ similar tasks appear that no existing skill covers, suggest a new skill (1
 
 ## Proactive Trigger
 
-When the user corrects you, clarifies the same thing twice, or shows frustration — append:
+When the user corrects you, clarifies the same thing twice, or shows frustration -- append:
 
-> Tip: Type `/reflect` when you're ready — I'll review what we can improve.
+> Tip: Type `/reflect` when you're ready -- I'll review what we can improve.
 
 ## Self-Check
 

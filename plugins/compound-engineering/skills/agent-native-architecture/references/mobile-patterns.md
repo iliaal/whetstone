@@ -11,13 +11,13 @@ Mobile devices offer unique advantages for agent-native apps:
 Agents can work with files naturally, using the same primitives that work everywhere else. The filesystem is the universal interface.
 
 ### Rich Context
-A walled garden you get access to. Health data, location, photos, calendars—context that doesn't exist on desktop or web. This enables deeply personalized agent experiences.
+A walled garden you get access to. Health data, location, photos, calendars--context that doesn't exist on desktop or web. This enables deeply personalized agent experiences.
 
 ### Local Apps
 Everyone has their own copy of the app. This opens opportunities that aren't fully realized yet: apps that modify themselves, fork themselves, evolve per-user. App Store policies constrain some of this today, but the foundation is there.
 
 ### Cross-Device Sync
-If you use the file system with iCloud, all devices share the same file system. The agent's work on one device appears on all devices—without you having to build a server.
+If you use the file system with iCloud, all devices share the same file system. The agent's work on one device appears on all devices--without you having to build a server.
 
 ### The Challenge
 
@@ -26,10 +26,10 @@ If you use the file system with iCloud, all devices share the same file system. 
 An agent might need 30 seconds, 5 minutes, or an hour to complete a task. But iOS will background your app after seconds of inactivity, and may kill it entirely to reclaim memory. The user might switch apps, take a call, or lock their phone mid-task.
 
 This means mobile agent apps need:
-- **Checkpointing** — Saving state so work isn't lost
-- **Resuming** — Picking up where you left off after interruption
-- **Background execution** — Using the limited time iOS gives you wisely
-- **On-device vs. cloud decisions** — What runs locally vs. what needs a server
+- **Checkpointing** -- Saving state so work isn't lost
+- **Resuming** -- Picking up where you left off after interruption
+- **Background execution** -- Using the limited time iOS gives you wisely
+- **On-device vs. cloud decisions** -- What runs locally vs. what needs a server
 </why_mobile>
 
 <ios_storage>

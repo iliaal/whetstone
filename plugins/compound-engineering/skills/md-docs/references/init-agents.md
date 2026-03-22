@@ -11,7 +11,7 @@ test -f CLAUDE.md && echo "claude exists" || echo "no claude"
 
 If AGENTS.md exists: warn user, suggest update workflow instead. Allow override with `--force`.
 
-If CLAUDE.md exists but AGENTS.md doesn't: migrate — rename to AGENTS.md, create CLAUDE.md symlink.
+If CLAUDE.md exists but AGENTS.md doesn't: migrate -- rename to AGENTS.md, create CLAUDE.md symlink.
 
 ## Modes
 
@@ -22,11 +22,11 @@ If CLAUDE.md exists but AGENTS.md doesn't: migrate — rename to AGENTS.md, crea
 ## Gather Context
 
 Read available config files (skip missing):
-- `package.json` — stack, scripts, dependencies
-- `pyproject.toml` — Python project config
-- `composer.json` — PHP project config
-- `README.md` — project overview
-- `.gitignore` — exclusion patterns
+- `package.json` -- stack, scripts, dependencies
+- `pyproject.toml` -- Python project config
+- `composer.json` -- PHP project config
+- `README.md` -- project overview
+- `.gitignore` -- exclusion patterns
 - Directory listing (2 levels deep)
 
 Determine:
@@ -41,15 +41,15 @@ Determine:
 
 ```markdown
 ## Stack
-- PHP 8.2+ with Laravel
+- PHP 8.4+ with Laravel
 - Composer for dependencies
 - PHPUnit / Pest for testing
 
 ## Commands
-- `composer install` — install dependencies
-- `php artisan serve` — local dev server
-- `php artisan test` — run tests
-- `php artisan migrate` — run migrations
+- `composer install` -- install dependencies
+- `php artisan serve` -- local dev server
+- `php artisan test` -- run tests
+- `php artisan migrate` -- run migrations
 ```
 
 ### Python
@@ -60,9 +60,9 @@ Determine:
 - uv for dependency management
 
 ## Commands
-- `uv sync` — install dependencies
-- `uv run pytest` — run tests
-- `uv run ruff check .` — lint
+- `uv sync` -- install dependencies
+- `uv run pytest` -- run tests
+- `uv run ruff check .` -- lint
 ```
 
 ### JavaScript / TypeScript
@@ -73,9 +73,9 @@ Determine:
 - {detected package manager}
 
 ## Commands
-- `{pm} install` — install dependencies
-- `{pm} run build` — build
-- `{pm} test` — run tests
+- `{pm} install` -- install dependencies
+- `{pm} run build` -- build
+- `{pm} test` -- run tests
 ```
 
 ### PineScript
@@ -98,27 +98,27 @@ Determine:
 - ShellCheck for linting
 
 ## Commands
-- `shellcheck *.sh` — lint all scripts
-- `chmod +x script.sh && ./script.sh` — run
+- `shellcheck *.sh` -- lint all scripts
+- `chmod +x script.sh && ./script.sh` -- run
 ```
 
 ## Generate Content
 
 Sections to include (only if relevant):
 
-- **Stack** — languages, frameworks, tools
-- **Structure** — key directories and files
-- **Commands** — build, test, lint, deploy
-- **Code style** — naming, formatting, patterns
-- **Constraints** — security, performance, environment
+- **Stack** -- languages, frameworks, tools
+- **Structure** -- key directories and files
+- **Commands** -- build, test, lint, deploy
+- **Code style** -- naming, formatting, patterns
+- **Constraints** -- security, performance, environment
 
 Style: terse, imperative, expert-to-expert. No fluff.
 
 Quality rules (SkillsBench arXiv:2602.12670):
-- Procedural over declarative — "Run `npm test`" beats "Tests should pass"
-- Tables over prose — agents parse structured data more reliably
+- Procedural over declarative -- "Run `npm test`" beats "Tests should pass"
+- Tables over prose -- agents parse structured data more reliably
 - 2K-8K chars is optimal (+18.8pp). Beyond 15K, effectiveness degrades. Split or link out.
-- Context-first ordering — overview before commands, commands before architecture
+- Context-first ordering -- overview before commands, commands before architecture
 
 ## Write
 

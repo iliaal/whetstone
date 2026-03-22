@@ -8,7 +8,7 @@ description: >-
 
 # Markdown Documentation
 
-Manage project documentation by verifying against actual codebase state. Emphasize verification over blind generation — analyze structure, files, and patterns before writing.
+Manage project documentation by verifying against actual codebase state. Emphasize verification over blind generation -- analyze structure, files, and patterns before writing.
 
 ## Portability
 
@@ -45,7 +45,7 @@ Generate or refresh README.md from project metadata and structure. See [update-r
 
 ### Update CONTRIBUTING
 
-Update existing CONTRIBUTING.md only — never auto-create. See [update-contributing.md](./references/update-contributing.md).
+Update existing CONTRIBUTING.md only -- never auto-create. See [update-contributing.md](./references/update-contributing.md).
 
 When updating, detect project conventions automatically:
 - Package manager from lock files (package-lock.json → npm, yarn.lock → yarn, pnpm-lock.yaml → pnpm, bun.lockb → bun)
@@ -54,7 +54,7 @@ When updating, detect project conventions automatically:
 
 ### Update DOCS
 
-If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md — only update existing.
+If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md -- only update existing.
 
 ### Initialize Context
 

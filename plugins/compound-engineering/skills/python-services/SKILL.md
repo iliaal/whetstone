@@ -25,6 +25,19 @@ description: >-
 - PEP 723 inline metadata for standalone scripts with deps
 - `ruff check --fix . && ruff format .` for lint+format in one pass
 
+**Standard project layout:**
+```
+src/mypackage/
+    __init__.py
+    main.py
+    services/
+    models/
+tests/
+    conftest.py
+    test_main.py
+pyproject.toml
+```
+
 See [cli-tools.md](./references/cli-tools.md) for Click patterns, argparse, and CLI project layout.
 
 ## Parallelism
@@ -39,14 +52,14 @@ See [cli-tools.md](./references/cli-tools.md) for Click patterns, argparse, and 
 **Key rule:** Stay fully sync or fully async within a call path.
 
 **asyncio patterns:**
-- `asyncio.gather(*tasks)` for concurrent I/O — use `return_exceptions=True` for partial failure tolerance
-- `asyncio.TaskGroup` (3.11+) for structured concurrency — automatic cancellation of sibling tasks on failure; prefer over `gather` when all tasks must succeed
+- `asyncio.gather(*tasks)` for concurrent I/O -- use `return_exceptions=True` for partial failure tolerance
+- `asyncio.TaskGroup` (3.11+) for structured concurrency -- automatic cancellation of sibling tasks on failure; prefer over `gather` when all tasks must succeed
 - `asyncio.Semaphore(n)` to limit concurrency (rate limiting external APIs)
 - `asyncio.wait_for(coro, timeout=N)` for timeouts
 - `asyncio.Queue` for producer-consumer
 - `asyncio.Lock` when coroutines share mutable state
 - Never block the event loop: `asyncio.to_thread(sync_fn)` for sync libs, `aiohttp`/`httpx.AsyncClient` for HTTP
-- Handle `CancelledError` — always re-raise after cleanup
+- Handle `CancelledError` -- always re-raise after cleanup
 - Async generators (`async for`) for streaming/pagination
 
 **multiprocessing** for CPU-bound:
@@ -61,9 +74,9 @@ See [fastapi.md](./references/fastapi.md) for project structure, lifespan, confi
 ## Background Jobs
 
 - Return job ID immediately, process async. Client polls `/jobs/{id}` for status
-- **Celery**: `@app.task(bind=True, max_retries=3, autoretry_for=(ConnectionError,))` — exponential backoff: `raise self.retry(countdown=2**self.request.retries * 60)`
+- **Celery**: `@app.task(bind=True, max_retries=3, autoretry_for=(ConnectionError,))` -- exponential backoff: `raise self.retry(countdown=2**self.request.retries * 60)`
 - **Alternatives**: Dramatiq (modern Celery), RQ (simple Redis), cloud-native (SQS+Lambda, Cloud Tasks)
-- **Idempotency is mandatory** — tasks may retry. Use idempotency keys for external calls, check-before-write, upsert patterns
+- **Idempotency is mandatory** -- tasks may retry. Use idempotency keys for external calls, check-before-write, upsert patterns
 - Dead letter queue for permanently failed tasks after max retries
 - Task workflows: `chain(a.s(), b.s())` for sequential, `group(...)` for parallel, `chord(group, callback)` for fan-out/fan-in
 
@@ -84,33 +97,45 @@ def call_api(url: str) -> dict: ...
 
 - Retry only transient errors: network, 429/502/503/504. Never retry 4xx (except 429), auth errors, validation errors
 - Every network call needs a timeout
-- `@fail_safe(default=[])` decorator for non-critical paths — return cached/default on failure
+- `@fail_safe(default=[])` decorator for non-critical paths -- return cached/default on failure
 - `functools.lru_cache(maxsize=N)` for pure-function memoization; `functools.cache` (unbounded) for small domains
-- Stack decorators: `@traced @with_timeout(30) @retry(...)` — separate infra from business logic
+- Stack decorators: `@traced @with_timeout(30) @retry(...)` -- separate infra from business logic
 
 **Connection pooling** is mandatory for production: reuse `httpx.AsyncClient()` across requests, configure SQLAlchemy `pool_size`/`max_overflow`, use `aiohttp.TCPConnector(limit=N)`.
 
 ## Observability
 
 - **structlog** for JSON structured logging. Configure once at startup with `JSONRenderer`, `TimeStamper`, `merge_contextvars`
-- **Correlation IDs** — generate at ingress (`X-Correlation-ID` header), bind to `contextvars`, propagate to downstream calls
+- **Correlation IDs** -- generate at ingress (`X-Correlation-ID` header), bind to `contextvars`, propagate to downstream calls
 - **Log levels**: DEBUG=diagnostics, INFO=operations, WARNING=anomalies handled, ERROR=failures needing attention. Never log expected behavior at ERROR
-- **Prometheus metrics** — track latency (Histogram), traffic (Counter), errors (Counter), saturation (Gauge). Keep label cardinality bounded (no user IDs)
+- **Prometheus metrics** -- track latency (Histogram), traffic (Counter), errors (Counter), saturation (Gauge). Keep label cardinality bounded (no user IDs)
 - **OpenTelemetry** for distributed tracing across services
 
 ## Discipline
 
 - For non-trivial changes, pause and ask: "is there a more elegant way?" Skip for obvious fixes.
-- Simplicity first — every change as simple as possible, impact minimal code
-- Only touch what's necessary — avoid introducing unrelated changes
-- No hacky workarounds — if a fix feels wrong, step back and implement the clean solution
+- Simplicity first -- every change as simple as possible, impact minimal code
+- Only touch what's necessary -- avoid introducing unrelated changes
+- No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
 - Verify: `uv run pytest && uv run ruff check .` pass with zero warnings before declaring done
+- Coverage target: 80%+ (`uv run pytest --cov --cov-report=html`)
+
+## Testing Patterns
+
+- **pytest flags**: `--lf` (last failed), `-x` (stop on first failure), `-k "pattern"` (filter), `--pdb` (debugger on failure)
+- **Fixtures**: use `conftest.py` for shared fixtures. Scope wisely: `@pytest.fixture(scope="session")` for expensive setup (DB connections), `scope="function"` (default) for test isolation
+- **`tmp_path`**: built-in fixture for temp files -- no manual cleanup needed
+- **Parametrize with IDs**: `@pytest.mark.parametrize("input,expected", [...], ids=["empty", "single", "overflow"])` for readable test names
+- **Mock discipline**: always `autospec=True` on mocks to catch API drift. `assert_awaited_once()` for async mocks.
+- **Test markers**: register in `pyproject.toml` under `[tool.pytest.ini_options]` with `markers = ["slow", "integration"]`. Run fast tests with `-m "not slow"`.
+- **Protocol duck typing**: use `class Renderable(Protocol)` for structural typing at service boundaries -- enables testing with plain objects instead of mocks
+- **Context managers**: `@contextmanager` for connection/transaction lifecycle. Always implement `__exit__` cleanup.
 
 ## Error Handling
 
 - Validate inputs at boundaries before expensive ops. Report all errors at once when possible
 - Use specific exceptions: `ValueError`, `TypeError`, `KeyError`, not bare `Exception`
-- `raise ServiceError("upload failed") from e` — always chain to preserve debug trail
+- `raise ServiceError("upload failed") from e` -- always chain to preserve debug trail
 - Convert external data to domain types (enums, Pydantic models) at system boundaries
-- Batch processing: `BatchResult(succeeded={}, failed={})` — don't let one item abort the batch
+- Batch processing: `BatchResult(succeeded={}, failed={})` -- don't let one item abort the batch
 - Pydantic `BaseModel` with `field_validator` for complex input validation

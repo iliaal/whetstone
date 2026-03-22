@@ -99,15 +99,15 @@ This command takes a work document (plan, specification, or todo file) and execu
      - Evaluate for incremental commit (see below)
    ```
 
-   **System-Wide Test Check** — Before marking a task done, pause and ask:
+   **System-Wide Test Check** -- Before marking a task done, pause and ask:
 
    | Question | What to do |
    |----------|------------|
-   | **What fires when this runs?** Callbacks, middleware, observers, event handlers — trace two levels out from your change. | Read the actual code (not docs) for callbacks on models you touch, middleware in the request chain, `after_*` hooks. |
-   | **Do my tests exercise the real chain?** If every dependency is mocked, the test proves your logic works *in isolation* — it says nothing about the interaction. | Write at least one integration test that uses real objects through the full callback/middleware chain. No mocks for the layers that interact. |
+   | **What fires when this runs?** Callbacks, middleware, observers, event handlers -- trace two levels out from your change. | Read the actual code (not docs) for callbacks on models you touch, middleware in the request chain, `after_*` hooks. |
+   | **Do my tests exercise the real chain?** If every dependency is mocked, the test proves your logic works *in isolation* -- it says nothing about the interaction. | Write at least one integration test that uses real objects through the full callback/middleware chain. No mocks for the layers that interact. |
    | **Can failure leave orphaned state?** If your code persists state (DB row, cache, file) before calling an external service, what happens when the service fails? Does retry create duplicates? | Trace the failure path with real objects. If state is created before the risky call, test that failure cleans up or that retry is idempotent. |
-   | **What other interfaces expose this?** Mixins, DSLs, alternative entry points (Agent vs Chat vs ChatMethods). | Grep for the method/behavior in related classes. If parity is needed, add it now — not as a follow-up. |
-   | **Do error strategies align across layers?** Retry middleware + application fallback + framework error handling — do they conflict or create double execution? | List the specific error classes at each layer. Verify your rescue list matches what the lower layer actually raises. |
+   | **What other interfaces expose this?** Mixins, DSLs, alternative entry points (Agent vs Chat vs ChatMethods). | Grep for the method/behavior in related classes. If parity is needed, add it now -- not as a follow-up. |
+   | **Do error strategies align across layers?** Retry middleware + application fallback + framework error handling -- do they conflict or create double execution? | List the specific error classes at each layer. Verify your rescue list matches what the lower layer actually raises. |
 
    **When to skip:** Leaf-node changes with no callbacks, no state persistence, no parallel interfaces. If the change is purely additive (new helper method, new view partial), the check takes 10 seconds and the answer is "nothing fires, skip."
 
@@ -158,7 +158,7 @@ This command takes a work document (plan, specification, or todo file) and execu
    - Don't wait until the end to test
    - Fix failures immediately
    - Add new tests for new functionality
-   - **Unit tests with mocks prove logic in isolation. Integration tests with real objects prove the layers work together.** If your change touches callbacks, middleware, or error handling — you need both.
+   - **Unit tests with mocks prove logic in isolation. Integration tests with real objects prove the layers work together.** If your change touches callbacks, middleware, or error handling -- you need both.
 
 5. **Figma Design Sync** (if applicable)
 
@@ -173,15 +173,19 @@ This command takes a work document (plan, specification, or todo file) and execu
    - Keep task list updated (TaskUpdate) as you complete tasks
    - Note any blockers or unexpected discoveries
    - Create new tasks if scope expands
-   - Keep user informed of major milestones
+   - Keep user informed of major milestones using **experiential framing**:
+     - Lead with what changed from the user's perspective, then the technical detail
+     - "Users can now reset their password via email (added PasswordResetController + mailer)"
+     - "Search results load instantly on repeat queries (added Redis caching layer)"
+     - Not: "Added PasswordResetController, ResetMailer, and migration for password_reset_tokens"
 
 ### Phase 2.5: Verify Before Proceeding
 
 Before moving to quality checks, run the `verification-before-completion` gate:
 
 1. Identify the verification command (project's test suite)
-2. Run it fresh — not "it passed earlier"
-3. Read the full output — check exit code, failure counts
+2. Run it fresh -- not "it passed earlier"
+3. Read the full output -- check exit code, failure counts
 4. Confirm all tasks are actually complete (check TaskList)
 
 Do not proceed to Phase 3 if verification fails.
@@ -296,7 +300,7 @@ Do not proceed to Phase 3 if verification fails.
    - Always run tests after merge. If tests fail: revert (`git revert -m 1 HEAD`), keep branch, diagnose
 
 4. **Notify User**
-   - Summarize what was completed
+   - Summarize what was completed using experiential framing (what the user/end-user can now do, then technical details)
    - Link to PR (if created)
    - Note any follow-up work needed
    - Suggest next steps if applicable

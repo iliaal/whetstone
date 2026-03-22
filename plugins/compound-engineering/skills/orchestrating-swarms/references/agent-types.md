@@ -135,7 +135,7 @@ Task({
   prompt: "Research current best practices for JWT authentication 2024-2026"
 })
 
-// Framework documentation (use best-practices-researcher — covers docs + best practices)
+// Framework documentation (use best-practices-researcher -- covers docs + best practices)
 Task({
   subagent_type: "compound-engineering:research:best-practices-researcher",
   description: "Research Active Storage",

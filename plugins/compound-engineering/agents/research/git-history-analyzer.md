@@ -102,7 +102,7 @@ Combine all evidence into a coherent narrative.
 - [Issue pattern]: [How it was resolved, with commit references]
 
 ### Co-Change Clusters
-- [File A] and [File B] always change together — [reason]
+- [File A] and [File B] always change together -- [reason]
 
 ### Insights for Current Work
 - [Actionable insight based on historical patterns]
@@ -112,4 +112,4 @@ Combine all evidence into a coherent narrative.
 
 This agent analyzes git history. For understanding current codebase conventions and patterns, use the `repo-research-analyst` agent. For researching external best practices, use the `best-practices-researcher` agent.
 
-Note: files in `docs/plans/` and `docs/solutions/` are compound-engineering pipeline artifacts — do not recommend their removal.
+Note: files in `docs/plans/` and `docs/solutions/` are compound-engineering pipeline artifacts -- do not recommend their removal.

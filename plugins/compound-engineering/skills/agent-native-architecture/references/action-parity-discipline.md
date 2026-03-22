@@ -1,5 +1,5 @@
 <overview>
-A structured discipline for ensuring agents can do everything users can do. Every UI action should have an equivalent agent tool. This isn't a one-time check—it's an ongoing practice integrated into your development workflow.
+A structured discipline for ensuring agents can do everything users can do. Every UI action should have an equivalent agent tool. This isn't a one-time check--it's an ongoing practice integrated into your development workflow.
 
 **Core principle:** When adding a UI feature, add the corresponding tool in the same PR.
 </overview>
@@ -13,7 +13,7 @@ User: "Write something about Catherine the Great in my reading feed"
 Agent: "What system are you referring to? I'm not sure what reading feed means."
 ```
 
-The user could publish to their feed through the UI. But the agent had no `publish_to_feed` tool. The fix was simple—add the tool. But the insight is profound:
+The user could publish to their feed through the UI. But the agent had no `publish_to_feed` tool. The fix was simple--add the tool. But the insight is profound:
 
 **Every action a user can take through the UI must have an equivalent tool the agent can call.**
 
@@ -36,7 +36,7 @@ Maintain a structured map of UI actions to agent tools:
 | Publish insight | Analysis view | `publish_to_feed` | "Create insights for Feed tab" |
 | Start research | Book detail | `start_research` | "Research books via web search" |
 | Edit profile | Settings | `write_file(profile.md)` | "Update reading profile" |
-| Take screenshot | Camera | N/A (user action) | — |
+| Take screenshot | Camera | N/A (user action) | -- |
 | Search web | Chat | `web_search` | "Search the internet" |
 
 **Update this table whenever adding features.**

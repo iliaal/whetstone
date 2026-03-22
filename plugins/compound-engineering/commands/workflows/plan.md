@@ -36,7 +36,7 @@ ls -la docs/brainstorms/*.md 2>/dev/null | head -10
 - If multiple candidates match, use the most recent one
 
 **If a relevant brainstorm exists:**
-1. Read the brainstorm document **thoroughly** — every section matters
+1. Read the brainstorm document **thoroughly** -- every section matters
 2. Announce: "Found brainstorm from [date]: [topic]. Using as foundation for planning."
 3. Extract and carry forward **ALL** of the following into the plan:
    - Key decisions and their rationale
@@ -45,15 +45,22 @@ ls -la docs/brainstorms/*.md 2>/dev/null | head -10
    - Open questions (flag these for resolution during planning)
    - Success criteria and scope boundaries
    - Any specific technical choices or patterns discussed
-4. **Skip the idea refinement questions below** — the brainstorm already answered WHAT to build
-5. Use brainstorm content as the **primary input** to research and planning phases
-6. **Critical: The brainstorm is the origin document.** Throughout the plan, reference specific decisions with `(see brainstorm: docs/brainstorms/<filename>)` when carrying forward conclusions. Do not paraphrase decisions in a way that loses their original context — link back to the source.
-7. **Do not omit brainstorm content** — if the brainstorm discussed it, the plan must address it (even if briefly). Scan each brainstorm section before finalizing the plan to verify nothing was dropped.
+4. **Skip the baseline idea refinement questions** -- the brainstorm already answered WHAT to build
+5. **Run a gap-analysis interview** focused on implementation-specific concerns the brainstorm didn't cover:
+   - Deployment and rollback strategy
+   - Monitoring and observability
+   - Data migration (if applicable)
+   - Performance under load
+   - Security implications at the implementation level
+   - Use AskUserQuestion to probe only the gaps. Categorize by severity -- auto-skip gaps that don't apply to this feature's domain.
+6. Use brainstorm content as the **primary input** to research and planning phases
+7. **Critical: The brainstorm is the origin document.** Throughout the plan, reference specific decisions with `(see brainstorm: docs/brainstorms/<filename>)` when carrying forward conclusions. Do not paraphrase decisions in a way that loses their original context -- link back to the source.
+8. **Do not omit brainstorm content** -- if the brainstorm discussed it, the plan must address it (even if briefly). Scan each brainstorm section before finalizing the plan to verify nothing was dropped.
 
 **If multiple brainstorms could match:**
 Use **AskUserQuestion tool** to ask which brainstorm to use, or whether to proceed without one.
 
-**If no brainstorm found (or not relevant), run idea refinement:**
+**If no brainstorm found (or not relevant), run idea refinement with deep interview:**
 
 Refine the idea through collaborative dialogue using the **AskUserQuestion tool**:
 
@@ -61,6 +68,16 @@ Refine the idea through collaborative dialogue using the **AskUserQuestion tool*
 - Prefer multiple choice questions when natural options exist
 - Focus on understanding: purpose, constraints and success criteria
 - Continue until the idea is clear OR user says "proceed"
+
+**Apply the deep interview protocol (see CLAUDE.md) throughout refinement:**
+
+- Probe assumptions the user hasn't stated. Surface hidden dependencies.
+- Ask about second-order effects: "If this works, what pressure does it create elsewhere?"
+- Cluster 2-3 related questions when probing a single dimension (e.g., data model). Switch to one-at-a-time across dimensions.
+- Fire background research on technology claims. Challenge contradictions with cited sources. Briefly confirm when research supports a choice.
+- Flag user contradictions immediately: "Earlier you said X, but this implies Y."
+- Capture anti-requirements inline when they surface organically.
+- Before proceeding, assess completeness and signal confidence: "Critical areas covered. Rollback strategy and monitoring are still thin -- want to explore those?"
 
 **Gather signals for research decision.** During refinement, note:
 
@@ -263,7 +280,7 @@ Before finalizing, re-read the brainstorm document and verify:
 mkdir -p docs/plans/
 ```
 
-Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md`. This step is mandatory and cannot be skipped — even when running as part of LFG or other automated pipelines.
+Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md`. This step is mandatory and cannot be skipped -- even when running as part of LFG or other automated pipelines.
 
 Confirm: "Plan written to docs/plans/[filename]"
 

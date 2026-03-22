@@ -1,5 +1,5 @@
 <overview>
-Files are the universal interface for agent-native applications. Agents are naturally fluent with file operations—they already know how to read, write, and organize files. This document covers why files work so well, how to organize them, and the context.md pattern for accumulated knowledge.
+Files are the universal interface for agent-native applications. Agents are naturally fluent with file operations--they already know how to read, write, and organize files. This document covers why files work so well, how to organize them, and the context.md pattern for accumulated knowledge.
 </overview>
 
 <why_files>
@@ -9,7 +9,7 @@ Agents are naturally good at files. Claude Code works because bash + filesystem 
 
 ### Agents Already Know How
 
-You don't need to teach the agent your API—it already knows `cat`, `grep`, `mv`, `mkdir`. File operations are the primitives it's most fluent with.
+You don't need to teach the agent your API--it already knows `cat`, `grep`, `mv`, `mkdir`. File operations are the primitives it's most fluent with.
 
 ### Files Are Inspectable
 
@@ -21,7 +21,7 @@ Export is trivial. Backup is trivial. Users own their data. No vendor lock-in, n
 
 ### App State Stays in Sync
 
-On mobile, if you use the file system with iCloud, all devices share the same file system. The agent's work on one device appears on all devices—without you having to build a server.
+On mobile, if you use the file system with iCloud, all devices share the same file system. The agent's work on one device appears on all devices--without you having to build a server.
 
 ### Directory Structure Is Information Architecture
 
@@ -46,7 +46,7 @@ Organize files around entities, not actors or file types:
 └── related materials
 ```
 
-**Example:** `Research/books/{bookId}/` contains everything about one book—full text, notes, sources, agent logs.
+**Example:** `Research/books/{bookId}/` contains everything about one book--full text, notes, sources, agent logs.
 
 ### Naming Conventions
 
@@ -160,7 +160,7 @@ Reading assistant for the Every app.
 | Anything that benefits from transparency | Data with relationships |
 | Large text content | Data that needs indexing |
 
-**The principle:** Files for legibility, databases for structure. When in doubt, files—they're more transparent and users can always inspect them.
+**The principle:** Files for legibility, databases for structure. When in doubt, files--they're more transparent and users can always inspect them.
 
 ### When Files Work Best
 
@@ -234,7 +234,7 @@ Tell the agent about the conflict model:
 ## Working with User Content
 
 When you create content, the user may edit it afterward. Always read
-existing files before modifying them—the user may have made improvements
+existing files before modifying them--the user may have made improvements
 you should preserve.
 
 If a file has been modified since you last wrote it, ask before overwriting.

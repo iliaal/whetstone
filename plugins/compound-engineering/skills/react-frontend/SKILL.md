@@ -1,9 +1,10 @@
 ---
 name: react-frontend
 description: >-
-  React, TypeScript, and Next.js patterns for frontend development and testing.
-  Use when working with React, Next.js, JSX/TSX, hooks, Vitest, React Testing
-  Library, or writing/reviewing tests for React components.
+  React architecture patterns, TypeScript, Next.js, hooks, and testing. Use when
+  working with React component structure, state management, Next.js routing,
+  Vitest, React Testing Library, or reviewing React code. For visual design and
+  aesthetic direction, use frontend-design instead.
 ---
 
 # React Frontend
@@ -12,7 +13,7 @@ description: >-
 
 - Extend native elements with `ComponentPropsWithoutRef<'button'>`, add custom props via intersection
 - Use `React.ReactNode` for children, `React.ReactElement` for single element, render prop `(data: T) => ReactNode`
-- Discriminated unions for variant props — TypeScript narrows automatically in branches
+- Discriminated unions for variant props -- TypeScript narrows automatically in branches
 - Generic components: `<T>` with `keyof T` for column keys, `T extends { id: string }` for constraints
 - Event types: `React.MouseEvent<HTMLButtonElement>`, `FormEvent<HTMLFormElement>`, `ChangeEvent<HTMLInputElement>`
 - `as const` for custom hook tuple returns
@@ -23,7 +24,7 @@ description: >-
 
 ## Effects Decision Tree
 
-Effects are escape hatches — most logic should NOT use effects.
+Effects are escape hatches -- most logic should NOT use effects.
 
 | Need | Solution |
 |------|----------|
@@ -35,7 +36,7 @@ Effects are escape hatches — most logic should NOT use effects.
 | Sync with external system | Effect with cleanup |
 
 **Effect rules:**
-- Never suppress the linter — fix the code instead
+- Never suppress the linter -- fix the code instead
 - Use updater functions (`setItems(prev => [...prev, item])`) to remove state dependencies
 - Move objects/functions inside effects to stabilize dependencies
 - `useEffectEvent` for non-reactive values (e.g., theme in a connection effect)
@@ -54,19 +55,19 @@ Form state           → React Hook Form
 ```
 
 **Key patterns:**
-- Zustand: `create<State>()(devtools(persist((set) => ({...}))))` — use slices for scale, selective subscriptions to prevent re-renders
+- Zustand: `create<State>()(devtools(persist((set) => ({...}))))` -- use slices for scale, selective subscriptions to prevent re-renders
 - React Query: query keys factory (`['users', 'detail', id] as const`), `staleTime`/`gcTime`, optimistic updates with `onMutate`/`onError` rollback
-- Separate client state (Zustand) from server state (React Query) — never duplicate server data in client store
+- Separate client state (Zustand) from server state (React Query) -- never duplicate server data in client store
 - Colocate state close to where it's used; don't over-globalize
 
 ## Performance
 
-**Critical — eliminate waterfalls:**
+**Critical -- eliminate waterfalls:**
 - `Promise.all()` for independent async operations
 - Move `await` into branches where actually needed
 - Suspense boundaries to stream slow content
 
-**Critical — bundle size:**
+**Critical -- bundle size:**
 - Import directly from modules, avoid barrel files (`index.ts` re-exports)
 - `next/dynamic` or `React.lazy()` for heavy components
 - Defer third-party scripts (analytics, logging) until after hydration
@@ -85,18 +86,18 @@ Form state           → React Hook Form
 - `React.memo` only for expensive subtrees with stable props
 - Hoist static JSX outside components
 
-**React Compiler** (React 19): auto-memoizes — write idiomatic React, remove manual `useMemo`/`useCallback`/`memo`. Install `babel-plugin-react-compiler`, keep components pure.
+**React Compiler** (React 19): auto-memoizes -- write idiomatic React, remove manual `useMemo`/`useCallback`/`memo`. Install `babel-plugin-react-compiler`, keep components pure.
 
 ## React 19
 
-- **ref as prop** — `forwardRef` deprecated. Accept `ref?: React.Ref<HTMLElement>` as regular prop
-- **useActionState** — replaces `useFormState`: `const [state, formAction, isPending] = useActionState(action, initialState)`
-- **use()** — unwrap Promise or Context during render (not in callbacks/effects). Enables conditional context reads
-- **useOptimistic** — `const [optimistic, addOptimistic] = useOptimistic(state, mergeFn)` for instant UI feedback
-- **useFormStatus** — `const { pending } = useFormStatus()` in child of `<form action={...}>`
-- **Server Components** — default in App Router. Async, access DB/secrets directly. No hooks, no event handlers
-- **Server Actions** — `'use server'` directive. Validate inputs (Zod), `revalidateTag`/`revalidatePath` after mutations. **Server Actions are public endpoints** — always verify auth/authz inside each action, not just in middleware or layout guards
-- **`<Activity mode='visible'|'hidden'>`** — preserves state/DOM for toggled components (experimental)
+- **ref as prop** -- `forwardRef` deprecated. Accept `ref?: React.Ref<HTMLElement>` as regular prop
+- **useActionState** -- replaces `useFormState`: `const [state, formAction, isPending] = useActionState(action, initialState)`
+- **use()** -- unwrap Promise or Context during render (not in callbacks/effects). Enables conditional context reads
+- **useOptimistic** -- `const [optimistic, addOptimistic] = useOptimistic(state, mergeFn)` for instant UI feedback
+- **useFormStatus** -- `const { pending } = useFormStatus()` in child of `<form action={...}>`
+- **Server Components** -- default in App Router. Async, access DB/secrets directly. No hooks, no event handlers
+- **Server Actions** -- `'use server'` directive. Validate inputs (Zod), `revalidateTag`/`revalidatePath` after mutations. **Server Actions are public endpoints** -- always verify auth/authz inside each action, not just in middleware or layout guards
+- **`<Activity mode='visible'|'hidden'>`** -- preserves state/DOM for toggled components (experimental)
 
 ## Next.js App Router
 
@@ -104,17 +105,17 @@ Form state           → React Hook Form
 
 **Rendering modes:** Server Components (default) | Client (`'use client'`) | Static (build) | Dynamic (request) | Streaming (progressive)
 
-**Decision:** Server Component unless it needs hooks, event handlers, or browser APIs. Split: server parent + client child. Isolate interactive components as `'use client'` leaf components — keep server components static with no global state or event handlers.
+**Decision:** Server Component unless it needs hooks, event handlers, or browser APIs. Split: server parent + client child. Isolate interactive components as `'use client'` leaf components -- keep server components static with no global state or event handlers.
 
 **Routing patterns:**
-- Route groups `(name)` — organize without affecting URL
-- Parallel routes `@slot` — independent loading states in same layout
-- Intercepting routes `(.)` — modal overlays with full-page fallback
+- Route groups `(name)` -- organize without affecting URL
+- Parallel routes `@slot` -- independent loading states in same layout
+- Intercepting routes `(.)` -- modal overlays with full-page fallback
 
 **Caching:**
-- `fetch(url, { cache: 'force-cache' })` — static
-- `fetch(url, { next: { revalidate: 60 } })` — ISR
-- `fetch(url, { cache: 'no-store' })` — dynamic
+- `fetch(url, { cache: 'force-cache' })` -- static
+- `fetch(url, { next: { revalidate: 60 } })` -- ISR
+- `fetch(url, { cache: 'no-store' })` -- dynamic
 - Tag-based: `fetch(url, { next: { tags: ['products'] } })` then `revalidateTag('products')`
 
 **Data fetching:** Fetch in Server Components where data is used. Use Suspense boundaries for slow queries. `React.cache()` for per-request dedup. `generateStaticParams` for static generation. `generateMetadata` for dynamic SEO. Static metadata with `title: { default: 'App', template: '%s | App' }` for cascading page titles. `after()` for non-blocking side effects (logging, analytics) -- runs after response is sent. Hoist static I/O (fonts, config) to module level -- runs once, not per request.

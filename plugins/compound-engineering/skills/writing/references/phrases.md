@@ -87,6 +87,6 @@ Sentences that announce importance without naming the specific thing. Replace wi
 
 ## Sentence Starters to Avoid
 
-- Sentences starting with What/When/Where/Which/Who/Why/How — restructure, lead with the subject or verb
-- Paragraphs starting with "So" — start with content
-- Sentences starting with "Look," — remove
+- Sentences starting with What/When/Where/Which/Who/Why/How -- restructure, lead with the subject or verb
+- Paragraphs starting with "So" -- start with content
+- Sentences starting with "Look," -- remove

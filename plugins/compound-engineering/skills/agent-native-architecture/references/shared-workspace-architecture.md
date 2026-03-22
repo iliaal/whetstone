@@ -381,7 +381,7 @@ The agent's system prompt should acknowledge this:
 ## Working with User Content
 
 When you create content (introductions, research notes, etc.), the user may
-edit it afterward. Always read existing files before modifying them—the user
+edit it afterward. Always read existing files before modifying them--the user
 may have made improvements you should preserve.
 
 If a file exists and has been modified by the user (check the metadata or

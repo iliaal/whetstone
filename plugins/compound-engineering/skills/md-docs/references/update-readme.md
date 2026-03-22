@@ -6,7 +6,7 @@ Generate or refresh README.md based on codebase analysis.
 
 - Balanced, not bloated: 200-400 lines for most projects
 - Show, don't tell: code examples over prose
-- Every section must add value — skip empty or trivial sections
+- Every section must add value -- skip empty or trivial sections
 - Readers should find what they need in under 30 seconds
 
 Target length: `--minimal` 100-200 lines, default 200-400, `--thorough` 400-600.
@@ -100,4 +100,4 @@ Merge preserved sections with regenerated ones in standard order.
 - Code blocks with language tags
 - Tables for commands if 5+ items
 - Admonitions for important notes: `> [!NOTE]` and `> [!WARNING]`
-- No git operations — user reviews and commits manually
+- No git operations -- user reviews and commits manually

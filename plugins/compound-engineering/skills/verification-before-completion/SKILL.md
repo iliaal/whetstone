@@ -11,7 +11,7 @@ description: >-
 
 ## The Rule
 
-No completion claims without fresh verification evidence. If the verification command has not been run **immediately before the claim**, the claim cannot be made. Violating the letter of this rule is violating the spirit — rephrasing a claim to technically avoid the wording does not exempt it from verification.
+No completion claims without fresh verification evidence. If the verification command has not been run **immediately before the claim**, the claim cannot be made. Violating the letter of this rule is violating the spirit -- rephrasing a claim to technically avoid the wording does not exempt it from verification.
 
 "Should pass", "probably works", and "looks correct" are not verification. Only command output confirming the claim counts (typically exit code 0). If pre-existing failures cause non-zero exits unrelated to your changes, see "When Verification Fails" below.
 
@@ -23,13 +23,13 @@ Before any success claim, run through these five steps:
 |------|--------|---------|
 | **1. Identify** | What command proves this claim? Run in order: build -> typecheck -> lint -> test -> security scan -> diff review. **Stop on first failure** -- later steps are meaningless if earlier ones fail. | `pytest tests/`, `npm test`, `curl -s localhost:3000/health` |
 | **2. Run** | Execute the full command, fresh (run in this message, with output shown -- cannot reuse prior results) | Not "I ran it earlier" -- run it now |
-| **3. Read** | Read the complete output, check exit code | Don't scan for "passed" — read failure counts, warnings, errors |
+| **3. Read** | Read the complete output, check exit code | Don't scan for "passed" -- read failure counts, warnings, errors |
 | **4. Verify** | Does the output actually confirm the claim? | "42 passed, 0 failed" confirms "tests pass". "41 passed, 1 failed" does not. |
 | **5. Claim** | Only now make the statement | "All 42 tests pass" with the evidence visible |
 
 ## Review Staleness
 
-Before shipping, check whether prior reviews (agent or human) are still valid. If commits landed after the last review, verify the new changes don't invalidate review conclusions — check that previously flagged issues are still fixed and no new code contradicts the review's approval. `git log --oneline <review-commit>..HEAD` shows what changed since the review.
+Before shipping, check whether prior reviews (agent or human) are still valid. If commits landed after the last review, verify the new changes don't invalidate review conclusions -- check that previously flagged issues are still fixed and no new code contradicts the review's approval. `git log --oneline <review-commit>..HEAD` shows what changed since the review.
 
 ## When This Applies
 
@@ -49,7 +49,7 @@ Before shipping, check whether prior reviews (agent or human) are still valid. I
 
 When a subagent reports success:
 
-1. Check the VCS diff — did the agent actually make changes?
+1. Check the VCS diff -- did the agent actually make changes?
 2. Run the verification command yourself
 3. Report the actual state, not the agent's claim
 
@@ -80,11 +80,11 @@ Passing tests prove the code works. They don't prove the right code was written.
 
 ## When No Verification Command Exists
 
-Some changes have no obvious test command — documentation, configuration, infrastructure-as-code, skill files. In these cases:
+Some changes have no obvious test command -- documentation, configuration, infrastructure-as-code, skill files. In these cases:
 
-- **Documentation/prose** — verify by reading the rendered output. Confirm links work, formatting is correct, content matches intent.
-- **Configuration/infra** — verify syntax (`jq .` for JSON, `yamllint` for YAML, `terraform validate`, `docker build`). If no validator exists, read the file and confirm it matches the intended change.
-- **Non-runnable changes** — verify by diffing (`git diff`) and confirming the diff matches what was intended. State explicitly: "No automated verification available. Verified by reading the diff."
+- **Documentation/prose** -- verify by reading the rendered output. Confirm links work, formatting is correct, content matches intent.
+- **Configuration/infra** -- verify syntax (`jq .` for JSON, `yamllint` for YAML, `terraform validate`, `docker build`). If no validator exists, read the file and confirm it matches the intended change.
+- **Non-runnable changes** -- verify by diffing (`git diff`) and confirming the diff matches what was intended. State explicitly: "No automated verification available. Verified by reading the diff."
 
 The principle holds: state what you checked and how, even when a test suite doesn't apply.
 
@@ -95,7 +95,7 @@ If the output does not confirm the claim:
 1. **Do not claim completion.** Report the actual failure output to the user.
 2. **Do not retry the same verification hoping for a different result.** If it failed, something is wrong.
 3. **Return to implementation.** Fix the issue, then re-run verification from Step 1 of the Gate Function.
-4. **If the failure is unrelated to your changes** (pre-existing flaky test, environment issue), state this explicitly with evidence — show that the failure also occurs on the base branch or is a known issue.
+4. **If the failure is unrelated to your changes** (pre-existing flaky test, environment issue), state this explicitly with evidence -- show that the failure also occurs on the base branch or is a known issue.
 
 ## Rationalization Prevention
 
@@ -110,13 +110,14 @@ Stop and re-verify when you catch yourself thinking any of these:
 | "The logic is obviously correct" / claiming success from code reading | Obvious bugs ship to production daily. Run it. |
 | Verifying only part of the claim ("new tests pass") | "New tests pass" is not "all tests pass". Run the full suite. |
 | Trusting a subagent's report without checking | Subagent claims require independent verification. Run it yourself. |
+| "I'm tired" / wanting the task to be over | Exhaustion is not an excuse. The last verification matters most. |
+| Rephrasing a claim to dodge the rule ("looks good" instead of "tests pass") | Spirit over letter. Any satisfaction expression about work state triggers verification. |
 
 ## Integration
 
 This skill is referenced by:
-- `workflows:work` — before marking tasks complete and before shipping
-- `receiving-code-review` — verify each fix before marking resolved
-- `debugging` — before claiming a bug is fixed
-- `workflows:work` Phase 4 — before merge or PR creation
-- `writing-tests` — tests as primary verification evidence
-- `/verify` command — runs the full pre-PR verification pipeline
+- `workflows:work` -- before marking tasks complete, before shipping, and before merge/PR creation (Phase 4)
+- `receiving-code-review` -- verify each fix before marking resolved
+- `debugging` -- before claiming a bug is fixed
+- `writing-tests` -- tests as primary verification evidence
+- `/verify` command -- runs the full pre-PR verification pipeline

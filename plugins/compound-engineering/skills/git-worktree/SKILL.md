@@ -10,7 +10,7 @@ description: >-
 
 ## Always use the manager script
 
-Never call `git worktree add` directly — always use the `worktree-manager.sh` script.
+Never call `git worktree add` directly -- always use the `worktree-manager.sh` script.
 
 The script handles critical setup that raw git commands don't:
 1. Copies `.env`, `.env.local`, `.env.test`, etc. from main repo
@@ -29,7 +29,7 @@ git check-ignore .worktrees || echo "WARNING: .worktrees not in .gitignore"
 
 If not ignored, add it to `.gitignore` before proceeding. The manager script handles this, but verify when troubleshooting.
 
-After creating a worktree, run the project's test suite to establish a clean baseline. Pre-existing failures in the worktree should be caught before starting new work — not discovered mid-implementation.
+After creating a worktree, run the project's test suite to establish a clean baseline. Pre-existing failures in the worktree should be caught before starting new work -- not discovered mid-implementation.
 
 ```bash
 # CORRECT - Always use the script

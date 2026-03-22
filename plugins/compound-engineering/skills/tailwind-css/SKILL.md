@@ -16,7 +16,7 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 | Directive | Purpose |
 |-----------|---------|
 | `@import "tailwindcss"` | Entry point (replaces `@tailwind base/components/utilities`) |
-| `@theme { }` | Define/extend design tokens — auto-generates utility classes |
+| `@theme { }` | Define/extend design tokens -- auto-generates utility classes |
 | `@theme inline { }` | Map CSS variables to Tailwind utilities without generating new vars |
 | `@theme static { }` | Define tokens that don't generate utilities |
 | `@utility name { }` | Create custom utilities (replaces `@layer components` + `@apply`) |
@@ -35,7 +35,11 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 @custom-variant dark (&:where(.dark, .dark *));
 ```
 
-Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`.
+Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`. Define z-index as tokens (`--z-modal: 50`) and reference via `z-(--z-modal)` instead of arbitrary `z-50`.
+
+**CSS Modules**: when using `.module.css` with Tailwind v4, add `@reference "#tailwind";` at the top of the module file to enable theme token access inside the module.
+
+**Animations (tw-animate-css)**: use `animate-in`/`animate-out` base classes combined with effect classes (`fade-in`, `slide-in-from-top`). Decimal spacing gotcha: use bracket notation `[0.625rem]` instead of fractional values like `2.5`.
 
 ## v3 to v4 Breaking Changes
 
@@ -60,13 +64,23 @@ Tokens defined with `@theme` become utilities automatically: `--color-brand` pro
 
 ## Coding Rules
 
-- **`gap` over `space-x`/`space-y`** — gap handles wrapping; space-* breaks on wrap
-- **`size-*` over `w-* h-*`** — for equal dimensions
-- **`min-h-dvh` over `min-h-screen`** — dvh accounts for mobile browser chrome
-- **Opacity modifier** (`bg-black/50`) — `*-opacity-*` utilities are removed in v4
-- **Design tokens over arbitrary values** — check `@theme` before using `[#hex]`
-- **Never construct classes dynamically** — `text-${color}-500` won't be detected; use complete class names
-- **`@utility` over `@apply` with `@layer`** — `@apply` on `@layer` classes fails in v4
+- **`gap` over `space-x`/`space-y`** -- gap handles wrapping; space-* breaks on wrap
+- **`size-*` over `w-* h-*`** -- for equal dimensions
+- **`min-h-dvh` over `min-h-screen`** -- dvh accounts for mobile browser chrome
+- **Opacity modifier** (`bg-black/50`) -- `*-opacity-*` utilities are removed in v4
+- **Design tokens over arbitrary values** -- check `@theme` before using `[#hex]`
+- **Never construct classes dynamically** -- `text-${color}-500` won't be detected; use complete class names
+- **`@utility` over `@apply` with `@layer`** -- `@apply` on `@layer` classes fails in v4
+- **Parent padding over last-child margin** -- use padding on containers instead of bottom margins on the last child
+
+## ESLint Integration
+
+Use `eslint-plugin-better-tailwindcss` for automated class validation:
+- `no-conflicting-classes` -- catches `text-red-500 text-blue-500`
+- `no-unknown-classes` -- flags typos
+- `enforce-canonical-classes` -- normalizes shorthand
+- `no-duplicate-classes` -- removes redundant entries
+- `no-deprecated-classes` -- catches v3 classes removed in v4
 
 ## Class Merging
 
@@ -109,11 +123,11 @@ See [tailwind-variants patterns](references/component-patterns.md) for slots, co
 | Symptom | Fix |
 |---------|-----|
 | `bg-primary` doesn't work | Add `@theme inline { --color-primary: var(--primary); }` |
-| Colors all black/white | Double `hsl()` wrapping — use `var(--color)` not `hsl(var(--color))` |
+| Colors all black/white | Double `hsl()` wrapping -- use `var(--color)` not `hsl(var(--color))` |
 | `@apply` fails on custom class | Use `@utility` instead of `@layer components` |
 | Build fails after migration | Delete `tailwind.config.ts` |
 | Animations broken | Replace `tailwindcss-animate` with `tw-animate-css` |
-| `.dark { @theme { } }` fails | v4 does not support nested `@theme` — use `:root`/`.dark` CSS vars mapped via `@theme inline` |
+| `.dark { @theme { } }` fails | v4 does not support nested `@theme` -- use `:root`/`.dark` CSS vars mapped via `@theme inline` |
 
 ## Dark Mode (v4 Pattern)
 
@@ -123,9 +137,9 @@ See [tailwind-variants patterns](references/component-patterns.md) for slots, co
 @theme inline { --color-background: var(--background); --color-foreground: var(--foreground); }
 ```
 
-Semantic classes (`bg-background`, `text-foreground`) auto-switch — no `dark:` variants needed for themed colors.
+Semantic classes (`bg-background`, `text-foreground`) auto-switch -- no `dark:` variants needed for themed colors.
 
 ## References
 
-- [Component patterns](references/component-patterns.md) — tailwind-variants slots, CVA, compound components
-- [Layout patterns](references/layout-patterns.md) — grid areas, container queries, z-index management, fluid typography
+- [Component patterns](references/component-patterns.md) -- tailwind-variants slots, CVA, compound components
+- [Layout patterns](references/layout-patterns.md) -- grid areas, container queries, z-index management, fluid typography

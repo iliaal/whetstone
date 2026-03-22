@@ -113,8 +113,8 @@ Refuse approval until there is a written verification + rollback plan.
 
 ## Scope Boundaries
 
-- **This agent**: validates *migration code* against production reality — ID mappings, enum conversions, backfill logic, swapped values
-- **data-integrity-guardian**: reviews schema design, constraints, transaction boundaries, privacy — the *rules* that protect data
+- **This agent**: validates *migration code* against production reality -- ID mappings, enum conversions, backfill logic, swapped values
+- **data-integrity-guardian**: reviews schema design, constraints, transaction boundaries, privacy -- the *rules* that protect data
 - **deployment-verification-agent**: creates *deployment checklists* with Go/No-Go procedures and monitoring plans
 
 When you find critical mapping issues, flag them for deployment-verification-agent to include in the deployment checklist.

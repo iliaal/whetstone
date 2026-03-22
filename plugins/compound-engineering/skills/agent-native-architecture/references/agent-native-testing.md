@@ -26,7 +26,7 @@ const storedFeedback = await db.feedback.getLatest();
 expect(storedFeedback.content).toContain("Great app");
 expect(storedFeedback.importance).toBeGreaterThanOrEqual(1);
 expect(storedFeedback.importance).toBeLessThanOrEqual(5);
-// We don't care exactly how it categorized—just that it's reasonable
+// We don't care exactly how it categorized--just that it's reasonable
 ```
 
 ### Accept Variability
@@ -137,7 +137,7 @@ describe('Agent Creativity Tests', () => {
     const result = await agent.chat("Help me organize my reading for next month");
 
     // The agent should do SOMETHING useful
-    // We don't specify exactly what—that's the point
+    // We don't specify exactly what--that's the point
     expect(result.toolCalls.length).toBeGreaterThan(0);
 
     // It should have engaged with the library

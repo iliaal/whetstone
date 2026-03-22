@@ -1,6 +1,6 @@
 # Update CONTRIBUTING Workflow
 
-Update existing CONTRIBUTING.md only. Never auto-create — contribution guidelines represent intentional maintainer decisions.
+Update existing CONTRIBUTING.md only. Never auto-create -- contribution guidelines represent intentional maintainer decisions.
 
 ## Prerequisite
 
@@ -36,7 +36,7 @@ If missing: report to user and stop. Do not create unless explicitly requested.
 
 ## Adding Acknowledgements
 
-If requested, add or update an Acknowledgements/Credits section. Place at the end, before License if present. Keep it factual — list contributors, tools, or inspirations without embellishment.
+If requested, add or update an Acknowledgements/Credits section. Place at the end, before License if present. Keep it factual -- list contributors, tools, or inspirations without embellishment.
 
 ## Report
 

@@ -71,7 +71,7 @@ assistant: "I'll run the figma-design-sync agent again to verify the implementat
 
 ## Responsive Design Patterns
 
-- Components should be full width (`w-full`) — width constraints and horizontal padding belong on wrapper elements in the parent template
+- Components should be full width (`w-full`) -- width constraints and horizontal padding belong on wrapper elements in the parent template
 - Use mobile-first responsive patterns (e.g., `flex-col lg:flex-row`)
 - Prefer Tailwind default spacing values over arbitrary values when within 2-4px of the design spec
 - For detailed Tailwind patterns, follow the `tailwind-css` skill

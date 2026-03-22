@@ -32,7 +32,7 @@ description: >-
 - Separate `updated_at` with trigger, never trust app layer alone
 - Use `BIGINT` PKs -- cheaper JOINs than UUID, better index locality
 - Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with `DEFAULT` (instant PG11+). Never `ALTER TYPE` on large tables in-place.
-- `NULLS NOT DISTINCT` on unique indexes (PG15+) — treats NULLs as equal for uniqueness
+- `NULLS NOT DISTINCT` on unique indexes (PG15+) -- treats NULLs as equal for uniqueness
 - Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
 
 ## Index Strategy
@@ -49,7 +49,7 @@ description: >-
 - Partial: `WHERE status = 'active'` -- smaller, faster
 - Covering: `INCLUDE (col)` -- avoids heap lookup
 - Expression: `ON (lower(email))` -- for function-based WHERE
-- `fillfactor = 70-90` on write-heavy tables — reserves space for HOT updates, reducing index bloat
+- `fillfactor = 70-90` on write-heavy tables -- reserves space for HOT updates, reducing index bloat
 - Drop unused indexes: `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
 
 **Detect unindexed foreign keys:**
@@ -78,7 +78,7 @@ SELECT * FROM items WHERE metadata->>'category' = 'electronics';
 
 Prefer typed columns over JSONB for frequently queried, well-structured data. Use JSONB for truly dynamic/variable attributes.
 
-Use `jsonb_path_ops` operator class for containment-only (`@>`) queries — 2-3x smaller index. Use default `jsonb_ops` when key-existence (`?`, `?|`) is needed.
+Use `jsonb_path_ops` operator class for containment-only (`@>`) queries -- 2-3x smaller index. Use default `jsonb_ops` when key-existence (`?`, `?|`) is needed.
 
 ## Row-Level Security (RLS)
 
@@ -108,13 +108,15 @@ Always index columns referenced in RLS policies. For complex multi-table checks,
 ## Query Optimization
 
 - Always `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` before optimizing
+- `pg_stat_statements` for slow query detection: `SELECT query, mean_exec_time, calls FROM pg_stat_statements WHERE mean_exec_time > 100 ORDER BY mean_exec_time DESC LIMIT 20`
+- Table bloat check: `SELECT relname, n_dead_tup, last_vacuum FROM pg_stat_user_tables WHERE n_dead_tup > 1000 ORDER BY n_dead_tup DESC`
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping
 - High `rows removed by filter` -> index doesn't match predicate
 - `CTE` is an optimization fence before PG12; use `MATERIALIZED`/`NOT MATERIALIZED` hints (PG12+)
 - Prefer `EXISTS` over `IN` for correlated subqueries
 - Use `LATERAL JOIN` when subquery needs outer row reference
 - Cursor pagination (`WHERE id > $last ORDER BY id LIMIT $n`) over `OFFSET`
-- Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` — avoids full `count(*)` on large tables
+- Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` -- avoids full `count(*)` on large tables
 - Materialized views for expensive aggregations: `REFRESH MATERIALIZED VIEW CONCURRENTLY` (needs unique index). Schedule refresh, not per-query.
 
 ## Concurrency Patterns
@@ -134,7 +136,7 @@ Partition key must be in every unique/PK constraint. Create indexes on partition
 
 - Keep transactions short -- long txns block vacuum and bloat tables
 - Advisory locks for application-level mutual exclusion: `pg_advisory_xact_lock(key)`
-- Non-blocking alternative: `pg_try_advisory_lock(key)` — returns false instead of waiting
+- Non-blocking alternative: `pg_try_advisory_lock(key)` -- returns false instead of waiting
 - Check blocked queries: `SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock'`
 - Monitor deadlocks: `SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()`
 

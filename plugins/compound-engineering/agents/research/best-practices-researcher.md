@@ -44,7 +44,7 @@ Before going online, check if curated knowledge already exists in loaded skills.
 1. Search for deprecation: `"[API name] deprecated [current year] sunset shutdown"`
 2. Search for breaking changes: `"[API name] breaking changes migration"`
 3. Check official documentation for deprecation banners or sunset notices
-4. **Report findings before proceeding** — do not recommend deprecated APIs
+4. **Report findings before proceeding** -- do not recommend deprecated APIs
 
 ### Phase 3: Documentation and Online Research
 

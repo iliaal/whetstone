@@ -168,9 +168,9 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 When the main agent spawns a subagent via the Task tool, this hook analyzes the subagent's prompt and identifies matching skills based on trigger keywords. It prepends "Read these SKILL.md files" instructions to the prompt so subagents follow the same methodology as the main agent.
 
 Skills are matched using a 3-tier priority system:
-1. **Methodology** (planning, debugging, code-review, etc.) — process skills, matched first
-2. **Domain** (php-laravel, react-frontend, terraform, etc.) — language/framework skills
-3. **Supporting** (writing, md-docs, reflect, etc.) — workflow skills
+1. **Methodology** (planning, debugging, code-review, etc.) -- process skills, matched first
+2. **Domain** (php-laravel, react-frontend, terraform, etc.) -- language/framework skills
+3. **Supporting** (writing, md-docs, reflect, etc.) -- workflow skills
 
 Up to 5 matching skills are injected per subagent call, prioritized by tier. Subagent types without file read access (e.g., Bash) are skipped.
 

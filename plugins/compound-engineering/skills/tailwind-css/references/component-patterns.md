@@ -55,7 +55,7 @@ const grid = tv({
 
 ## CVA (class-variance-authority)
 
-Alternative to tailwind-variants — simpler API, no slots.
+Alternative to tailwind-variants -- simpler API, no slots.
 
 ```typescript
 import { cva, type VariantProps } from "class-variance-authority";
@@ -91,7 +91,7 @@ export function Button({ className, variant, size, ...props }: ButtonProps) {
 
 ## Compound Components (React 19)
 
-React 19 passes ref as a regular prop — no `forwardRef` needed.
+React 19 passes ref as a regular prop -- no `forwardRef` needed.
 
 ```typescript
 export function Card({ className, ref, ...props }: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {

@@ -10,7 +10,7 @@ description: >-
 
 ## Process
 
-1. **Assess** — Identify what the prompt is missing:
+1. **Assess** -- Identify what the prompt is missing:
 
 | Element | Check |
 |---------|-------|
@@ -21,26 +21,26 @@ description: >-
 | Examples | Would a demonstration clarify the expected output? |
 | Edge cases | Are failure modes and boundary conditions addressed? |
 
-2. **Rewrite** — Transform into specification language: precise, imperative, no filler. Treat the prompt as a spec, not conversation.
+2. **Rewrite** -- Transform into specification language: precise, imperative, no filler. Treat the prompt as a spec, not conversation.
 
-3. **Validate** — Check the rewrite against the assessment table. Every gap identified in step 1 must be addressed.
+3. **Validate** -- Check the rewrite against the assessment table. Every gap identified in step 1 must be addressed.
 
 ## Rules
 
-- **Length**: 0.75x–1.5x the original. Conciseness is a feature — add only what's missing, cut what's vague.
-- **Never invent** — only use information present in the original prompt or conversation context. If critical info is missing, ask instead of assuming.
-- **Instruction hierarchy** — order sections by priority: task → constraints → examples → input data → output format. Place the most important instruction first.
-- **Progressive complexity** — start with the simplest prompt that could work. Add few-shot examples, chain-of-thought, or role framing only when the task demands it, not by default.
-- **Specific verbs** — replace vague actions ("analyze", "process", "handle") with measurable ones ("list the top 3", "classify as A/B/C", "return JSON with keys X, Y").
-- **One output format** — specify exactly one format (JSON schema, markdown template, numbered list). Ambiguous format expectations cause inconsistent results.
-- **No meta-commentary** — output only the refined prompt as markdown. No preamble ("Here's an improved version..."), no explanation of changes unless explicitly requested.
+- **Length**: 0.75x–1.5x the original. Conciseness is a feature -- add only what's missing, cut what's vague.
+- **Never invent** -- only use information present in the original prompt or conversation context. If critical info is missing, ask instead of assuming.
+- **Instruction hierarchy** -- order sections by priority: task → constraints → examples → input data → output format. Place the most important instruction first.
+- **Progressive complexity** -- start with the simplest prompt that could work. Add few-shot examples, chain-of-thought, or role framing only when the task demands it, not by default.
+- **Specific verbs** -- replace vague actions ("analyze", "process", "handle") with measurable ones ("list the top 3", "classify as A/B/C", "return JSON with keys X, Y").
+- **One output format** -- specify exactly one format (JSON schema, markdown template, numbered list). Ambiguous format expectations cause inconsistent results.
+- **No meta-commentary** -- output only the refined prompt as markdown. No preamble ("Here's an improved version..."), no explanation of changes unless explicitly requested.
 
 ## Persistence
 
-After refining, offer to save the result to `.ai/PROMPT.md` — do not write without user confirmation. If approved, append with a heading and date:
+After refining, offer to save the result to `.ai/PROMPT.md` -- do not write without user confirmation. If approved, append with a heading and date:
 
 ```markdown
-## [Prompt Name] — YYYY-MM-DD
+## [Prompt Name] -- YYYY-MM-DD
 
 [refined prompt content]
 ```

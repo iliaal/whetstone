@@ -32,7 +32,7 @@ Before diving into questions, assess whether brainstorming is needed.
 - Trade-offs haven't been discussed
 - User seems unsure about the approach
 - User described a solution ("build a dashboard") instead of a problem
-- Request spans multiple independent subsystems — decompose first (see Scope Decomposition below)
+- Request spans multiple independent subsystems -- decompose first (see Scope Decomposition below)
 
 If requirements are clear, suggest: "Your requirements seem clear. Consider proceeding directly to planning or implementation."
 
@@ -46,6 +46,17 @@ If the request describes multiple independent subsystems (e.g., "build a platfor
 4. Each sub-project gets its own spec -> plan -> implementation cycle
 
 ### Phase 1: Understand the Idea
+
+**User context calibration (before diving into the idea):**
+
+Read signals from the user's first message to calibrate communication register:
+- **Vocabulary**: Are they using technical terms (API, schema, migration) or describing experiences (it's slow, it breaks when...)?
+- **Framing**: Are they describing a solution ("build a dashboard") or a problem ("I can't see what's happening")?
+- **References**: Are they pointing to code, files, and patterns, or to analogies and comparisons ("something like Notion")?
+
+Adjust question style accordingly. Technical users get architecture-level probing. Non-technical users get experience-level probing. Don't ask about this calibration -- just do it. If signals are ambiguous, default to the vocabulary the user is already using.
+
+**Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality.
 
 Ask questions **one at a time** to understand the user's intent. Avoid overwhelming with multiple questions.
 
@@ -78,6 +89,24 @@ Ask questions **one at a time** to understand the user's intent. Avoid overwhelm
 | Existing Patterns | Are there similar features in the codebase to follow? |
 | Non-goals | What is explicitly NOT in scope? |
 
+### Deep Interview Layer
+
+Apply the deep interview protocol on top of the baseline questions above. This layer always runs.
+
+**Assumption probing:** After each substantive answer, identify what the user assumed but didn't state. "You described X -- are you assuming Y is already in place?" Surface hidden dependencies and unstated constraints.
+
+**Second-order effects:** For features that touch shared infrastructure or data models, ask what success creates downstream. "If this works and gets adopted, what pressure does it put on [related system]?"
+
+**Research-backed challenges:** Fire background research on technology choices and claims. When findings contradict, challenge directly with citation. When findings support, briefly confirm to build confidence in the decision.
+
+**Contradiction tracking:** If the user's answer contradicts something said earlier, flag it immediately: "Earlier you said X, but this implies Y. Which takes priority?"
+
+**Anti-requirements:** When the user rejects an approach or says "definitely not X," capture the rejection and rationale inline with the related decision. Don't force this -- capture organically when it surfaces.
+
+**Question clustering:** When probing a single dimension (e.g., data model, auth flow), ask 2-3 related questions together using AskUserQuestion's multi-question support. Switch to one-at-a-time when jumping between dimensions.
+
+**Completeness assessment:** Track which dimensions have been explored. Before proposing to move to Phase 2, assess coverage and signal confidence: "We've covered purpose, users, and constraints well. Data flow and failure modes are still thin -- want to explore those, or proceed?"
+
 **Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets and confirm with the user.
 
 ### Phase 2: Explore Approaches
@@ -105,13 +134,13 @@ After understanding the idea, propose 2-3 concrete approaches.
 **Guidelines:**
 - Lead with a recommendation and explain why
 - Be honest about trade-offs
-- Consider YAGNI—simpler is usually better
+- Consider YAGNI--simpler is usually better
 - Reference codebase patterns when relevant
 - If no approach is accepted after 2 rounds, ask the user to describe their preferred direction directly
 
 ### Phase 3: Capture the Design
 
-Summarize key decisions in a structured format.
+Summarize key decisions in a structured format. For each major component, verify isolation and clarity: it must answer "what does it do, how do you use it, what does it depend on?" and be independently understandable and testable. If working in an existing codebase, note which existing patterns to follow and where targeted improvements fit naturally.
 
 **Design Doc Structure:**
 
@@ -124,7 +153,7 @@ topic: <kebab-case-topic>
 # <Topic Title>
 
 ## What We're Building
-[Concise description—1-2 paragraphs max]
+[Concise description--1-2 paragraphs max]
 
 ## Why This Approach
 [Brief explanation of approaches considered and why this one was chosen]
@@ -138,11 +167,18 @@ topic: <kebab-case-topic>
 
 ## Next Steps
 → `/workflows:plan` for implementation details
+
+<details>
+<summary>Interview Q&A Log</summary>
+
+[Collapsed transcript of key questions and answers from the brainstorming interview. Include research-backed challenges and their resolutions. Omit routine clarifications.]
+
+</details>
 ```
 
 **Output Location:** `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (create directory with `mkdir -p docs/brainstorms` if needed)
 
-**Commit the design doc** to git after writing — design decisions are project history worth preserving.
+**Commit the design doc** to git after writing -- design decisions are project history worth preserving.
 
 ### Phase 4: Spec Review
 
@@ -156,26 +192,6 @@ Present clear options for what to do next:
 2. **Refine further** → Continue exploring the design
 3. **Done for now** → User will return later
 
-## YAGNI Principles
-
-During brainstorming, actively resist complexity:
-
-- **Don't design for hypothetical future requirements**
-- **Choose the simplest approach that solves the stated problem**
-- **Prefer boring, proven patterns over clever solutions**
-- **Ask "Do we really need this?" when complexity emerges**
-- **Defer decisions that don't need to be made now**
-
-## Incremental Validation
-
-Keep sections short—200-300 words maximum. After each section of output, pause to validate understanding:
-
-- "Does this match what you had in mind?"
-- "Any adjustments before we continue?"
-- "Is this the direction you want to go?"
-
-This prevents wasted effort on misaligned designs.
-
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern | Better Approach |
@@ -185,29 +201,11 @@ This prevents wasted effort on misaligned designs.
 | Proposing overly complex solutions | Start simple, add complexity only if needed |
 | Ignoring existing codebase patterns | Research what exists first |
 | Making assumptions without validating | State assumptions explicitly and confirm |
-| Creating lengthy design documents | Keep it concise—details go in the plan |
+| Creating lengthy design documents | Keep it concise--details go in the plan |
 
 ## Integration
 
-Brainstorming answers **WHAT** to build:
-- Requirements and acceptance criteria
-- Chosen approach and rationale
-- Key decisions and trade-offs
-
-Planning answers **HOW** to build it:
-- Implementation steps and file changes
-- Technical details and code patterns
-- Testing strategy and verification
-
-When brainstorm output exists, `/workflows:plan` should detect it and use it as input, skipping its own idea refinement phase.
-
-## Workflow Chain
-
-```
-brainstorming → workflows:plan → workflows:work (includes ship)
-     ↑              ↑                  ↑
-   WHAT           HOW          EXECUTE + SHIP
-```
+Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `workflows:plan` detects it and skips idea refinement.
 
 - **Next step:** `workflows:plan` (always)
 - **Predecessor:** user request or ambiguous feature description

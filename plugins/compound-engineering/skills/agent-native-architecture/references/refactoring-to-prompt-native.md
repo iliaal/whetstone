@@ -256,7 +256,7 @@ Yes, and you can iterate. Change the prompt to add guidance:
 Rate importance 1-5.
 
 // After (if agent keeps rating too high)
-Rate importance 1-5. Be conservative—most feedback is 2-3.
+Rate importance 1-5. Be conservative--most feedback is 2-3.
 Only use 4-5 for truly blocking or critical issues.
 ```
 

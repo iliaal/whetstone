@@ -61,7 +61,7 @@ Keep modules small (single responsibility). `examples/` double as documentation 
 | Named/keyed items that may reorder | `for_each = toset(list)` or `map` |
 | Fixed identical replicas | `count = N` |
 
-Default to `for_each` — removing a middle item from a `count` list recreates all subsequent resources. Use `count` only for boolean conditionals or truly identical replicas.
+Default to `for_each` -- removing a middle item from a `count` list recreates all subsequent resources. Use `count` only for boolean conditionals or truly identical replicas.
 
 ## Testing
 
@@ -75,12 +75,12 @@ Default to `for_each` — removing a middle item from a `count` list recreates a
 
 **Native test essentials** (`.tftest.hcl` in `tests/`):
 - `command = plan` for fast unit tests; `command = apply` for integration (default)
-- `assert { condition = expr; error_message = "..." }` — multiple per run block
+- `assert { condition = expr; error_message = "..." }` -- multiple per run block
 - `expect_failures = [var.name]` for negative testing (validate rejection of bad input)
-- `mock_provider "aws" { mock_resource "..." { defaults = { ... } } }` — plan-mode only, no credentials, fast CI
+- `mock_provider "aws" { mock_resource "..." { defaults = { ... } } }` -- plan-mode only, no credentials, fast CI
 - `variables {}` at file level (all runs) or within a `run` block (override)
 - Reference prior run outputs: `run.setup.vpc_id`
-- `parallel = true` on independent runs with separate state — creates sync point at next sequential run
+- `parallel = true` on independent runs with separate state -- creates sync point at next sequential run
 - `state_key = "name"` required for `parallel = true` runs with independent state
 - File naming: `*_unit_test.tftest.hcl` (plan mode) vs `*_integration_test.tftest.hcl` (apply mode)
 
@@ -94,22 +94,22 @@ Default to `for_each` — removing a middle item from a `count` list recreates a
 | Modules (dev) | Allow patch | `version = "~> 5.1"` |
 
 Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
-Stacks (HCP, preview): orchestrates multiple configs as a single deployment unit — evaluate for multi-environment patterns.
+Stacks (HCP, preview): orchestrates multiple configs as a single deployment unit -- evaluate for multi-environment patterns.
 
 ## State & Security
 
 - Remote backend with locking: S3+DynamoDB, Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure.
 - Encrypt state at rest. Never commit `.tfstate`, `.terraform/`, or `*.tfplan`. Always commit `.terraform.lock.hcl`.
 - `default_tags` on provider for consistent resource tagging.
-- Encryption at rest on all storage. Private networking by default — public access is opt-in.
+- Encryption at rest on all storage. Private networking by default -- public access is opt-in.
 - Least-privilege security groups. No `0.0.0.0/0` ingress without explicit justification.
-- Never hardcode credentials — use assume_role, OIDC, or secrets managers.
+- Never hardcode credentials -- use assume_role, OIDC, or secrets managers.
 - Pre-commit: `terraform fmt -recursive && terraform validate && trivy config .`
 - `moved { from = old; to = new }` for refactoring resource names/modules without destroy-recreate. Remove block after apply.
 
 ## Troubleshooting
 
-- State lock stuck: `terraform force-unlock <ID>` — only after confirming no other operation running
+- State lock stuck: `terraform force-unlock <ID>` -- only after confirming no other operation running
 - Resource drift: `terraform plan -refresh-only` to detect, `terraform apply -refresh-only` to accept
 - Replace tainted: `terraform apply -replace=ADDR` (not deprecated `terraform taint`)
 - Import existing: `import` blocks (1.5+) for declarative import, or `terraform import ADDR ID`
@@ -124,7 +124,7 @@ locals {
 }
 ```
 
-This forces Terraform to destroy subnets before CIDR associations — prevents deletion errors.
+This forces Terraform to destroy subnets before CIDR associations -- prevents deletion errors.
 
-- `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs — never hardcode subnets
+- `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs -- never hardcode subnets
 - Multi-region: `provider "aws" { alias = "eu_west_1" }` + `providers = { aws = aws.eu_west_1 }` in module blocks

@@ -40,7 +40,7 @@ Track and optimize these four metrics:
 
 1. **Source**: trigger on push/PR, fetch dependencies
 2. **Build**: compile/bundle, cache dependencies between runs
-3. **Test**: unit → integration → e2e (fail fast — cheapest tests first)
+3. **Test**: unit → integration → e2e (fail fast -- cheapest tests first)
 4. **Security**: dependency audit, SAST scan, secret detection
 5. **Artifact**: build container image or package, tag with commit SHA
 6. **Deploy staging**: auto-deploy, run smoke tests
@@ -49,7 +49,7 @@ Track and optimize these four metrics:
 
 ### Pipeline Optimization
 
-- **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs — keyed by lockfile hash
+- **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs -- keyed by lockfile hash
 - **Parallel execution**: run unit tests, lint, type-check, security scan concurrently
 - **Artifact promotion**: build once, deploy the same artifact to staging → production (never rebuild)
 - **Fast feedback**: fail on lint/type errors before running expensive test suites
@@ -60,7 +60,7 @@ Track and optimize these four metrics:
 ### Blue-Green
 
 Two identical environments. Deploy to inactive (green), run smoke tests, switch traffic.
-- **Rollback**: instant — switch traffic back to blue
+- **Rollback**: instant -- switch traffic back to blue
 - **Database**: must be backward-compatible (both versions run briefly during switch)
 - **Best for**: low-risk, fast rollback requirement
 
@@ -101,7 +101,7 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 - **Dependency coordination**: if service A depends on service B's new API, deploy B first
 - **Database migrations**: run before code deploy, ensure backward compatibility (expand-contract pattern)
 - **Communication**: auto-notify on deploy start/finish/rollback (Slack, email)
-- **Rollback triggers**: define explicit criteria — error rate, latency, failed health checks
+- **Rollback triggers**: define explicit criteria -- error rate, latency, failed health checks
 - **Post-deploy soak**: monitor for 15-30 minutes before declaring success
 
 ## Report Format

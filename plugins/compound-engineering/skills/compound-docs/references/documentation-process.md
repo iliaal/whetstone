@@ -15,7 +15,7 @@
 - "problem solved"
 - "that did it"
 
-**OR manual:** `/doc-fix` command
+**OR manual:** `/workflows:compound` command
 
 **Non-trivial problems only:**
 

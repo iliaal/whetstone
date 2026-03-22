@@ -34,15 +34,16 @@ src/
 - Routes never contain business logic
 - Services never import Request/Response
 - Repositories never throw HTTP errors
-- For scripts/prototypes: single file is fine — ask "will this grow?"
+- Dependencies point inward only (Clean Architecture rule): routes -> services -> repositories. Never the reverse.
+- For scripts/prototypes: single file is fine -- ask "will this grow?"
 
 ## TypeScript Rules
 
-- Use `import type { }` for type-only imports — eliminates runtime overhead
+- Use `import type { }` for type-only imports -- eliminates runtime overhead
 - Prefer `interface` for object shapes (2-5x faster type resolution than intersections)
-- Prefer `unknown` over `any` — forces explicit narrowing
-- Use `z.infer<typeof Schema>` as single source of truth — never duplicate types and schemas
-- Minimize `as` assertions — use type guards instead
+- Prefer `unknown` over `any` -- forces explicit narrowing
+- Use `z.infer<typeof Schema>` as single source of truth -- never duplicate types and schemas
+- Minimize `as` assertions -- use type guards instead
 - Add explicit return types to exported functions (faster declaration emit)
 - Untyped package? `declare module 'pkg' { const v: unknown; export default v; }` in `types/ambient.d.ts`
 
@@ -70,6 +71,7 @@ Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 confl
 - **Errors**: `{ error: { code, message, details? } }`
 - **Queries**: `?page=1&limit=20&status=active&sort=createdAt,desc`
 - Return `Location` header on 201. Use 204 for successful DELETE with no body.
+- Generate OpenAPI/Swagger docs from route schemas for interactive API documentation.
 
 ## Async Patterns
 
@@ -85,20 +87,21 @@ Never `readFileSync` / sync methods in production. Offload CPU work to worker th
 ## Production Resilience
 
 - **Caching**: Redis cache-aside for DB/API responses; in-memory LRU with TTL for hot paths. Always invalidate on writes.
-- **Load shedding**: `@fastify/under-pressure` (or equivalent) — monitor event loop delay, heap, RSS; return 503 when thresholds exceeded.
-- **Response schemas**: In Fastify, always define response schemas — enables `fast-json-stringify` for 2-3x faster serialization.
+- **Load shedding**: `@fastify/under-pressure` (or equivalent) -- monitor event loop delay, heap, RSS; return 503 when thresholds exceeded.
+- **Response schemas**: In Fastify, always define response schemas -- enables `fast-json-stringify` for 2-3x faster serialization.
+- **Circuit breaker**: use `opossum` for outbound service calls. States: CLOSED (normal) -> OPEN (failing, return fallback) -> HALF_OPEN (probe). Prevents cascade failures when downstream services are down.
 
 ## Discipline
 
 - For non-trivial changes, pause and ask: "is there a more elegant way?" Skip for obvious fixes.
-- Simplicity first — every change as simple as possible, impact minimal code
-- Only touch what's necessary — avoid introducing unrelated changes
-- No hacky workarounds — if a fix feels wrong, step back and implement the clean solution
+- Simplicity first -- every change as simple as possible, impact minimal code
+- Only touch what's necessary -- avoid introducing unrelated changes
+- No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
 - Verify: `tsc --noEmit && npm test` pass with zero warnings before declaring done
 
 ## References
 
-- [TypeScript config](./references/typescript-config.md) — tsconfig, ESM, branded types, compiler performance
-- [Security](./references/security.md) — JWT, password hashing, rate limiting, OWASP
-- [API design patterns](./references/api-design.md) — pagination, filtering, sorting, deprecation
-- [Database & production](./references/database-production.md) — connection pooling, transactions, Docker, logging
+- [TypeScript config](./references/typescript-config.md) -- tsconfig, ESM, branded types, compiler performance
+- [Security](./references/security.md) -- JWT, password hashing, rate limiting, OWASP
+- [API design patterns](./references/api-design.md) -- pagination, filtering, sorting, deprecation
+- [Database & production](./references/database-production.md) -- connection pooling, transactions, Docker, logging

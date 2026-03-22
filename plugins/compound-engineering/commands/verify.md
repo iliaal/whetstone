@@ -10,7 +10,7 @@ Run a structured verification pipeline and produce a single READY / NOT READY re
 
 ## Mode
 
-`$ARGUMENTS` — defaults to `full` if omitted.
+`$ARGUMENTS` -- defaults to `full` if omitted.
 
 | Mode | What runs |
 |------|-----------|

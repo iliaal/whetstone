@@ -1,7 +1,7 @@
 ---
 name: bug-reproduction-validator
 autoApprove: read
-description: "Validates and classifies bug reports (reproduction only -- does not fix). Use when a bug report needs verification before committing to a fix. For root-cause analysis and fixing, use the debugging skill."
+description: "Validates, reproduces, and root-cause analyzes bug reports (does not fix). Use when a bug report needs verification and root cause identification before committing to a fix. For fixing, use the debugging skill."
 ---
 
 <examples>
@@ -52,7 +52,7 @@ When presented with a bug report:
    - Check application logs in development/test environments
 
 5. **Root Cause Investigation**:
-   Follow the `debugging` skill's Root Cause Analysis methodology: trace backward from symptom through the call chain, differential analysis (compare working vs broken state), regression hunting with `git bisect`, and evidence-based documentation with `file:line` references. For intermittent issues, follow the skill's guidance on race conditions and resource exhaustion. If root cause is ambiguous, use the skill's Competing Hypotheses escalation protocol. Always document findings — never skip root cause investigation.
+   Follow the `debugging` skill's Root Cause Analysis methodology: trace backward from symptom through the call chain, differential analysis (compare working vs broken state), regression hunting with `git bisect`, and evidence-based documentation with `file:line` references. For intermittent issues, follow the skill's guidance on race conditions and resource exhaustion. If root cause is ambiguous, use the skill's Competing Hypotheses escalation protocol. Always document findings -- never skip root cause investigation.
 
 6. **Bug Classification**:
    After reproduction attempts, classify the issue as:
@@ -68,7 +68,7 @@ When presented with a bug report:
    - **Reproduction Status**: Confirmed/Cannot Reproduce/Not a Bug
    - **Steps Taken**: Detailed list of what you did to reproduce
    - **Findings**: What you discovered during investigation
-   - **Root Cause**: The specific code, configuration, or condition causing the issue (always investigate — never skip this)
+   - **Root Cause**: The specific code, configuration, or condition causing the issue (always investigate -- never skip this)
    - **Evidence**: Relevant code snippets, logs, or test results
    - **Severity Assessment**: Critical/High/Medium/Low based on impact
    - **Recommended Next Steps**: Whether to fix, close, or investigate further

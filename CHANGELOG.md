@@ -5,6 +5,53 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.48.0] - 2026-03-22
+
+### Added
+
+- **Deep interview protocol** in brainstorming, planning, and deepen-plan -- probes assumptions, second-order effects, research-backed challenges with citations, contradiction tracking, completeness assessment
+- **User context calibration** in brainstorming -- reads vocabulary/framing signals to adapt question style
+- **Decision authority principle** in planning -- Claude decides technical implementation, user decides experience-affecting tradeoffs
+- **Experiential progress framing** in workflows:work -- milestones reported as user-visible changes, not technical diffs
+- **Post-research interview** in deepen-plan (Step 6.5) -- surfaces agent contradictions with cited evidence before enhancing the plan
+- **Skills.sh marketplace scan** in sync-from-repos (Phase 2b) -- cross-references existing skills against marketplace for improvements
+- **Post-sync audit recommendation** in sync-from-repos (Phase 6) -- suggests running audit after applying external changes
+- **Three audit checks** from distiller: temporal accuracy (stale version pins), description keyword gaps, trigger pattern accuracy
+- **Language review profiles** for code-review -- TypeScript, Python, PHP, Shell, Config, Data Formats, Security, LLM Trust Boundaries in references/language-profiles.md
+- **Four-level severity** in code-review -- added Medium between Important and Minor for maintainability issues
+- **Orchestration best practices** #9-13 -- two-stage per-task review, implementer status signals (DONE/BLOCKED/NEEDS_CONTEXT), worktree-based parallel dispatch, post-integration verification, context provision
+- **File structure table** in planning template -- map all files before defining tasks
+- **pytest patterns** in python-services -- flags, fixtures, conftest, autospec, markers, Protocol typing, context managers, project layout
+- **Routing + migrations** sections in php-laravel -- scoped model binding, anonymous migrations, JSON response envelope
+- **Security hardening** in php-laravel ecosystem reference -- session hardening, security headers middleware, encrypted casts, signed URLs, composer audit
+- **ESLint integration** in tailwind-css -- eslint-plugin-better-tailwindcss rules
+- **CSS Modules + animate patterns** in tailwind-css -- @reference "#tailwind", z-index tokens, tw-animate-css
+- **Circuit breaker** in nodejs-backend -- opossum for outbound service calls, Clean Architecture dependency rule
+- **Double-bezel depth technique** in frontend-design -- nested container pattern, blur scroll entry, staggered --index reveals, IntersectionObserver mandate
+- **Button-in-button CTA pattern** + hero construction + content register + eyebrow tags in frontend-design
+- **Five anti-slop checks** in writing -- cut quotables, Wh-word openers, meta-joiners, same-length sentence detection, one-liner variation
+- **Common mistakes table** + approved response templates in receiving-code-review
+- **Output contract** in simplifying-code -- scope, key changes, verification, residual risks
+
+### Improved
+
+- **brainstorming** -- explore project context before questions, isolation/clarity design principles in Phase 3, collapsed redundant YAGNI/Incremental Validation/Integration sections
+- **debugging** -- under-pressure inoculation in Iron Law, trimmed Common Patterns to 3 non-obvious entries, removed duplicate anti-pattern row
+- **verification-before-completion** -- "I'm tired" and spirit-over-letter rationalization rows
+- **receiving-code-review** -- deleted redundant Forbidden Responses (covered by Common Mistakes table)
+- **planning** -- zero-context engineer framing for tasks, merged Relationship + Integration sections
+- **postgresql** -- pg_stat_statements slow-query detection, table bloat check
+- **php-laravel** -- DatabaseTransactions/DatabaseMigrations distinction, Http::fake(), Gate::forUser(), coverage target, dropped stale "since Laravel 9" pin, fixed Kernel.php framing for Laravel 11+
+
+### Fixed
+
+- Em dashes replaced with double hyphens across all 82 plugin markdown files (skills, references, agents, commands)
+- Stale `/doc-fix` reference replaced with `/workflows:compound`
+- PHP 8.2+ version pin in md-docs init template updated to 8.4+
+- Duplicate `workflows:work` entry in verification-before-completion Integration merged
+- bug-reproduction-validator description updated to match body (includes RCA, not "reproduction only")
+- Description overlap disambiguated for frontend-design/react-frontend and document-review/brainstorming pairs
+
 ## [2.47.2] - 2026-03-21
 
 ### Improved

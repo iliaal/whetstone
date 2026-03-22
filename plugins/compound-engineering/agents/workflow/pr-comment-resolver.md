@@ -1,6 +1,6 @@
 ---
 name: pr-comment-resolver
-description: "Implements a single pre-triaged PR review comment mechanically. Use when a specific comment's action is clear and agreed — not for judgment calls (use receiving-code-review skill) or bulk resolution (use resolve-pr-parallel skill)."
+description: "Implements a single pre-triaged PR review comment mechanically. Use when a specific comment's action is clear and agreed -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use resolve-pr-parallel skill)."
 ---
 
 <examples>

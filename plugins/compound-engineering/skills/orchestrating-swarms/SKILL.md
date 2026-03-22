@@ -110,9 +110,18 @@ Teammate({ operation: "cleanup" })
 3. **Write clear prompts** - Tell workers exactly what to do and how to report results.
 4. **Use task dependencies** - Let the system manage unblocking via `addBlockedBy`.
 5. **Prefer `write` over `broadcast`** - Broadcast sends N messages for N teammates.
-6. **Match agent type to task** - Explore for reading, Plan for architecture, general-purpose for implementation, specialized reviewers for reviews.
+6. **Match agent type and model to task** - Explore for reading, Plan for architecture, general-purpose for implementation, specialized reviewers for reviews. For model: use `model: "haiku"` for mechanical isolated tasks (1-2 files, clear spec), default model for multi-file integration, `model: "opus"` for architecture decisions and review.
 7. **Handle failures** - Workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
 8. **Check inboxes** - Workers send results to your inbox at `~/.claude/teams/{team}/inboxes/team-lead.json`.
+9. **Two-stage per-task review** - After each implementation task, dispatch two sequential review subagents: (1) spec compliance ("does the output match the task spec, no more, no less?"), then (2) code quality. Spec compliance must pass before quality review runs. Skip for trivial/mechanical tasks.
+10. **Standardize implementer status signals** - Expect teammates to report one of four statuses:
+    - **DONE** - Task complete, all tests pass
+    - **DONE_WITH_CONCERNS** - Complete but flagging risks (include what and why)
+    - **BLOCKED** - Cannot proceed. Escalation: context problem -> provide and re-dispatch; needs more reasoning -> upgrade model; task too large -> split; plan wrong -> escalate to user
+    - **NEEDS_CONTEXT** - Missing information to start. Provide context before re-dispatching.
+11. **Parallel implementation via worktrees** - Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review/research/analysis agents are always safe to parallelize (read-only).
+12. **Post-integration verification** - After all agents return: check if agents edited overlapping files (especially with worktrees), review summaries for conflicting approaches, run full test suite, spot-check for systematic errors.
+13. **Provide context, don't delegate reading** - Extract task text and include it in the agent prompt. Don't tell agents "read the plan file" -- that wastes their context window on navigation and risks misinterpretation.
 
 ---
 

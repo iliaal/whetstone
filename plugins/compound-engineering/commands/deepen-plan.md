@@ -348,8 +348,8 @@ Task [agent-name]: "Review this plan using your expertise. Apply all your checks
 ```
 
 **CRITICAL RULES:**
-- Run all review, research, and design agents — do NOT filter by perceived relevance
-- SKIP `agents/workflow/*` — these are orchestrators, not reviewers
+- Run all review, research, and design agents -- do NOT filter by perceived relevance
+- SKIP `agents/workflow/*` -- these are orchestrators, not reviewers
 - Launch ALL agents in a SINGLE message with multiple Task tool calls
 - Each agent may catch something others miss
 - The goal is MAXIMUM coverage, not efficiency
@@ -390,10 +390,43 @@ Wait for ALL parallel agents to complete - skills, research agents, review agent
 - Flag conflicting advice for human review
 - Group by plan section
 
+### 6.5. Post-Research Interview
+
+After agents return and findings are synthesized, interview the user about what the research surfaced. Apply the deep interview protocol (see CLAUDE.md).
+
+**Present contradictions with evidence:**
+
+For each case where agent findings contradict a plan decision, use **AskUserQuestion** to challenge directly with citation:
+- "The plan uses approach X, but [agent/source] recommends Y because [reason] ([link]). Should we revise, or is the plan's choice intentional?"
+- Group related contradictions into clustered questions (2-3 per AskUserQuestion call) when they concern the same plan section.
+
+**Confirm research-backed decisions:**
+
+Briefly note where research supports the plan: "Research confirms [decision] is the right call -- [brief reason]." Don't turn this into a list of validations; just mention the significant ones.
+
+**Probe unresolved tensions:**
+
+If agents returned conflicting recommendations (e.g., one agent favors performance, another favors simplicity), present the tension and ask the user to resolve it.
+
+**Capture decisions:**
+
+Record all interview outcomes (revised decisions, confirmed choices, anti-requirements) for incorporation in the next step. Add a collapsed Q&A appendix to the enhanced plan:
+
+```markdown
+<details>
+<summary>Deepening Interview Q&A</summary>
+
+[Key questions, contradictions surfaced, and user decisions from the post-research interview.]
+
+</details>
+```
+
+**Exit condition:** Claude assesses coverage and proposes stopping with confidence signal. User can always say "stop" to proceed immediately.
+
 ### 7. Enhance Plan Sections
 
 <thinking>
-Merge research findings back into the plan, adding depth without changing the original structure.
+Merge research findings and interview outcomes back into the plan, adding depth without changing the original structure.
 </thinking>
 
 **Enhancement format for each section:**

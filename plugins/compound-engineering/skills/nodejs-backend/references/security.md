@@ -9,7 +9,7 @@ For comprehensive security auditing (OWASP compliance, vulnerability scanning, c
 - **Passwords**: bcrypt (10+ rounds) or argon2
 - **Middleware**: extract `Bearer` token → `jwt.verify` → attach `req.user` → `next()`
 - **Authorization**: after auth, check role or resource ownership per request
-- Always return generic "Invalid credentials" — never reveal if user exists
+- Always return generic "Invalid credentials" -- never reveal if user exists
 
 ## Node.js Security Tooling
 

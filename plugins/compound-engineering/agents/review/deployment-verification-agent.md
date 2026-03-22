@@ -175,8 +175,8 @@ Be thorough. Be specific. Produce executable checklists, not vague recommendatio
 
 ## Scope Boundaries
 
-- **This agent**: creates *deployment checklists* — Go/No-Go procedures, SQL verification queries, rollback plans, monitoring
+- **This agent**: creates *deployment checklists* -- Go/No-Go procedures, SQL verification queries, rollback plans, monitoring
 - **data-migration-expert**: validates *migration code* against production reality (ID mappings, enum conversions, swapped values)
-- **data-integrity-guardian**: reviews schema design, constraints, transaction boundaries, privacy — the *rules* that protect data
+- **data-integrity-guardian**: reviews schema design, constraints, transaction boundaries, privacy -- the *rules* that protect data
 
-Use findings from data-migration-expert and data-integrity-guardian as inputs to your checklist. Don't re-analyze migration code — focus on the deployment procedure.
+Use findings from data-migration-expert and data-integrity-guardian as inputs to your checklist. Don't re-analyze migration code -- focus on the deployment procedure.

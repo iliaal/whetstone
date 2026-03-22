@@ -2,7 +2,7 @@
 
 ## Notifications
 
-Multi-channel dispatch — mail, SMS, Slack, database — from a single notification class.
+Multi-channel dispatch -- mail, SMS, Slack, database -- from a single notification class.
 
 ```php
 // Create: php artisan make:notification OrderShipped
@@ -40,14 +40,14 @@ $user->notify(new OrderShipped($order));
 Notification::send($users, new OrderShipped($order));
 ```
 
-- Always implement `ShouldQueue` — notifications are side effects, never block the request
-- Use `toArray()` for database channel — powers in-app notification feeds
+- Always implement `ShouldQueue` -- notifications are side effects, never block the request
+- Use `toArray()` for database channel -- powers in-app notification feeds
 - Read: `$user->unreadNotifications`, mark: `$notification->markAsRead()`
 - Rate limit with `ShouldBeUnique` to prevent notification spam
 
 ## Task Scheduling
 
-Define recurring tasks in `app/Console/Kernel.php` (or `routes/console.php` in Laravel 11+):
+Define recurring tasks in `routes/console.php`:
 
 ```php
 // Artisan commands
@@ -65,16 +65,16 @@ $schedule->job(new ProcessDailyMetrics)->dailyAt('01:00');
 ```
 
 Key methods:
-- `->withoutOverlapping()` — prevent concurrent runs (uses cache lock)
-- `->onOneServer()` — run only on one server in multi-server setup
-- `->evenInMaintenanceMode()` — critical tasks that must run during `php artisan down`
-- `->runInBackground()` — don't block scheduler for long tasks
-- `->emailOutputOnFailure('ops@example.com')` — alert on failures
+- `->withoutOverlapping()` -- prevent concurrent runs (uses cache lock)
+- `->onOneServer()` -- run only on one server in multi-server setup
+- `->evenInMaintenanceMode()` -- critical tasks that must run during `php artisan down`
+- `->runInBackground()` -- don't block scheduler for long tasks
+- `->emailOutputOnFailure('ops@example.com')` -- alert on failures
 - Requires system cron: `* * * * * cd /path && php artisan schedule:run >> /dev/null 2>&1`
 
 ## Custom Casts
 
-Value objects for model attributes — encapsulate formatting, validation, and behavior.
+Value objects for model attributes -- encapsulate formatting, validation, and behavior.
 
 ```php
 class Money implements CastsAttributes
@@ -101,7 +101,60 @@ protected function casts(): array
 ```
 
 Built-in casts to prefer over manual accessors:
-- `AsEncryptedCollection::class` — encrypt JSON columns at rest
-- `AsEnumCollection::class` — array of enums stored as JSON
-- `AsStringable::class` — fluent string operations on attribute
-- Enum casts: `'status' => OrderStatus::class` — automatic PHP enum ↔ DB value
+- `AsEncryptedCollection::class` -- encrypt JSON columns at rest
+- `AsEnumCollection::class` -- array of enums stored as JSON
+- `AsStringable::class` -- fluent string operations on attribute
+- Enum casts: `'status' => OrderStatus::class` -- automatic PHP enum <-> DB value
+- Encrypted cast: `'api_token' => 'encrypted'` -- transparent encrypt/decrypt for sensitive fields
+
+## Security Hardening
+
+### Session
+
+- `SESSION_HTTP_ONLY=true`, `SESSION_SAME_SITE=strict` in `.env`
+- Regenerate session on login: `$request->session()->regenerate()` in auth controller
+- `SESSION_LIFETIME` -- set appropriate timeout (120 min default is often too long)
+
+### Security Headers Middleware
+
+```php
+class SecurityHeaders
+{
+    public function handle($request, Closure $next)
+    {
+        $response = $next($request);
+        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        $response->headers->set('Content-Security-Policy', "default-src 'self'");
+        return $response;
+    }
+}
+```
+
+Register in `bootstrap/app.php` middleware stack.
+
+### Password Validation
+
+```php
+Password::min(12)->letters()->mixedCase()->numbers()->symbols()
+```
+
+### Signed URLs
+
+`URL::temporarySignedRoute('download', now()->addMinutes(30), ['file' => $id])` with `signed` middleware for tamper-proof temporary access.
+
+### File Uploads
+
+- Validate MIME type: `'file' => ['required', 'mimes:pdf,docx', 'max:10240']`
+- Store outside public disk: `$request->file('doc')->store('documents', 's3')`
+- Never trust the original filename
+
+### Dependency Audit
+
+`composer audit` -- check for known CVEs in dependencies. Run in CI.
+
+### Logging PII
+
+Never log raw user data. Use `[REDACTED]` pattern for sensitive fields in log context.

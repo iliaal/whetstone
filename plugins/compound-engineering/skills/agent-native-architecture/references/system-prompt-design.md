@@ -1,5 +1,5 @@
 <overview>
-How to write system prompts for prompt-native agents. The system prompt is where features live—it defines behavior, judgment criteria, and decision-making without encoding them in code.
+How to write system prompts for prompt-native agents. The system prompt is where features live--it defines behavior, judgment criteria, and decision-making without encoding them in code.
 </overview>
 
 <principle name="features-in-prompts">
@@ -169,7 +169,7 @@ You are R2-C2, Every's feedback collection assistant. You monitor Discord for fe
 - Be warm and helpful, never robotic
 - Acknowledge all feedback, even if brief
 - Ask clarifying questions when feedback is vague
-- Never argue with feedback—collect and organize it
+- Never argue with feedback--collect and organize it
 
 ## Feedback Collection
 
@@ -186,7 +186,7 @@ When someone shares feedback:
 4. **Store** using feedback.store_feedback
 5. **Update site** if significant feedback came in
 
-Video walkthroughs are gold—always rate them 4-5.
+Video walkthroughs are gold--always rate them 4-5.
 
 ## Site Management
 
@@ -217,7 +217,7 @@ Before processing any message:
 - Don't promise fixes or timelines
 - Don't share internal discussions
 - Don't ignore feedback even if it seems minor
-- Don't repeat yourself—vary acknowledgments
+- Don't repeat yourself--vary acknowledgments
 ```
 </example>
 
@@ -228,7 +228,7 @@ Prompt-native development means rapid iteration:
 
 1. **Observe** agent behavior in production
 2. **Identify** gaps: "It's not rating video feedback high enough"
-3. **Add guidance**: "Video walkthroughs are gold—always rate them 4-5"
+3. **Add guidance**: "Video walkthroughs are gold--always rate them 4-5"
 4. **Deploy** (just edit the prompt file)
 5. **Repeat**
 

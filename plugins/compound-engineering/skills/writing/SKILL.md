@@ -11,39 +11,39 @@ description: >-
 ## Core Principles
 
 - **Active voice**: "We shipped the fix" not "The fix was shipped"
-- **Name the actor**: Every sentence needs a human subject doing something. Inanimate objects don't fix bugs, shift cultures, or tell us anything — a person does.
+- **Name the actor**: Every sentence needs a human subject doing something. Inanimate objects don't fix bugs, shift cultures, or tell us anything -- a person does.
 - **Specific over vague**: "Cut reporting from 4 hours to 15 minutes" not "Save time"
 - **Simple words**: "Use" not "utilize", "help" not "facilitate", "start" not "initiate"
-- **Positive form**: Say what it is, not what it isn't — "Ignore" not "Do not pay attention to"
+- **Positive form**: Say what it is, not what it isn't -- "Ignore" not "Do not pay attention to"
 - **Confident**: Cut "almost", "very", "really", "quite", "arguably", and all -ly adverbs
 - **Concrete**: Name the thing, state the number, cite the source
 - **Omit needless words**: "Because" not "due to the fact that"; "Now" not "at this point in time"; "Can" not "has the ability to"
-- **Use contractions**: "don't", "won't", "it's", "they're" — uncontracted forms are a major AI tell
+- **Use contractions**: "don't", "won't", "it's", "they're" -- uncontracted forms are a major AI tell
 - **Put the reader in the room**: "You" beats "People." Specifics beat abstractions. Avoid narrating from a distance.
 
-## AI Patterns — Kill on Sight
+## AI Patterns -- Kill on Sight
 
 **Vocabulary**: delve, crucial, pivotal, foster, leverage, tapestry, testament, underscore, vibrant, landscape (abstract), interplay, multifaceted, enhance, enduring, garner, showcase, Additionally, seamless, robust, cutting-edge, groundbreaking, nestled, renowned
 
 **Structural tells**:
 - Rule of three: forced triads ("streamline, optimize, and enhance")
-- Negative parallelism: "It's not just X — it's Y" / "Not X. But Y." → state Y directly
+- Negative parallelism: "It's not just X -- it's Y" / "Not X. But Y." → state Y directly
 - Superficial -ing phrases: "ensuring reliability", "showcasing features"
-- Copula avoidance: "serves as", "stands as", "boasts" — use "is", "has"
+- Copula avoidance: "serves as", "stands as", "boasts" -- use "is", "has"
 - Synonym cycling: four names for the same thing in four sentences
 - False ranges: "from X to Y" where X and Y aren't on a meaningful scale
 - Formulaic challenges: "Despite X, Y continues to thrive"
-- Dramatic fragmentation: "[Noun]. That's it. That's the [thing]." — performative simplicity
+- Dramatic fragmentation: "[Noun]. That's it. That's the [thing]." -- performative simplicity
 - Rhetorical setups: "What if I told you..." / "Think about it:" / "Here's what I mean:"
 
 **Formatting tells**:
-- Em dash overuse — replace most with commas or periods
+- Em dash overuse -- replace most with commas or periods
 - Mechanical bold on every other phrase
 - Emoji-decorated headers
 - Bolded-header bullet lists (**Thing:** explanation of thing)
-- Title Case In Every Heading Word — use sentence case instead
+- Title Case In Every Heading Word -- use sentence case instead
 
-**Banned phrases** — delete and rewrite on sight. See [references/phrases.md](./references/phrases.md) for the full list.
+**Banned phrases** -- delete and rewrite on sight. See [references/phrases.md](./references/phrases.md) for the full list.
 
 Core offenders:
 - "In today's rapidly evolving landscape"
@@ -78,12 +78,12 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 
 ## Voice
 
-- **Have opinions** — react to facts, don't just report them
-- **Vary rhythm** — short sentences, then longer ones. Mix it up.
-- **Acknowledge complexity** — "impressive but also unsettling" beats "impressive"
-- **Use first person when appropriate** — "I keep coming back to..." signals a real person
-- **Be specific about feelings** — not "this is concerning" but name what unsettles you
-- **Let some mess in** — fragments ("Because that's real."), conjunction starters ("But here's the thing."), parentheticals (thinking mid-sentence) — all signal a human drafting, not generating
+- **Have opinions** -- react to facts, don't just report them
+- **Vary rhythm** -- short sentences, then longer ones. Mix it up.
+- **Acknowledge complexity** -- "impressive but also unsettling" beats "impressive"
+- **Use first person when appropriate** -- "I keep coming back to..." signals a real person
+- **Be specific about feelings** -- not "this is concerning" but name what unsettles you
+- **Let some mess in** -- fragments ("Because that's real."), conjunction starters ("But here's the thing."), parentheticals (thinking mid-sentence) -- all signal a human drafting, not generating
 
 ## Composition
 
@@ -95,11 +95,15 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 
 ## Self-Check
 
-1. Read every sentence aloud. If it sounds like a press release, Wikipedia, or chatbot — rewrite.
+1. Read every sentence aloud. If it sounds like a press release, Wikipedia, or chatbot -- rewrite.
 2. Ctrl-F the banned-phrases list. Zero matches required.
 3. Check for false agency: any inanimate thing performing a human verb? Name the person.
 4. Check for em dash overuse, mechanical bold, and synonym cycling.
-5. Score 1–10 on each: Directness / Rhythm / Trust / Authenticity / Density. Below 35/50: revise.
+5. Cut quotables: if a sentence sounds like a pull-quote or aphorism, rewrite it. AI over-produces these.
+6. Wh-word openers: sentence starts with "What makes this..." or "When it comes to..."? Restructure.
+7. Meta-joiners: "The rest of this section..." or "As we'll see below..." -- delete. Let the text move.
+8. Three consecutive sentences match length? Break one. Paragraph ends with a punchy one-liner? Vary it.
+9. Score 1-10 on each: Directness / Rhythm / Trust / Authenticity / Density. Below 35/50: revise.
 
 ## Changelog Voice
 

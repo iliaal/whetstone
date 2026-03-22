@@ -32,7 +32,7 @@ Scaffold the `.plan/` directory with pre-populated templates using [init-plan.sh
 bash init-plan.sh "Feature Name"
 ```
 
-This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` — each pre-populated with the correct structure. Also adds `.plan/` to `.gitignore`.
+This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` -- each pre-populated with the correct structure. Also adds `.plan/` to `.gitignore`.
 
 Planning files are ephemeral working state -- do not commit them. If working on multiple features sequentially, old files are overwritten; the plan captures the current task only.
 
@@ -56,10 +56,18 @@ Planning files are ephemeral working state -- do not commit them. If working on 
 - **In**: [what's included]
 - **Out**: [what's explicitly excluded]
 
+## File Structure
+[Map ALL files that will be created or modified, with one-line responsibility for each. Lock in decomposition decisions before defining tasks. Write for a zero-context engineer.]
+
+| File | Action | Responsibility |
+|------|--------|---------------|
+| `path/to/file.ts` | Create | [what this file does] |
+| `path/to/existing.ts` | Modify | [what changes and why] |
+
 ## Phase 1: [Name]
 **Files**: [specific files, max 5-8 per phase]
 **Tasks**:
-- [ ] [Verb-first atomic task] — `path/to/file.ts`
+- [ ] [Verb-first atomic task] -- `path/to/file.ts`
 - [ ] [Next task]
 **Verify**: [specific test: "POST /api/users → 201", not "test feature"]
 **Exit**: [clear done definition]
@@ -80,6 +88,16 @@ Every phase must be **context-safe**:
 - If a phase violates these → split it
 - **Scope challenge**: if the overall plan touches 8+ files or introduces 2+ new classes/services, challenge the scope. Ask: can this be split into smaller, independently shippable increments?
 
+## Decision Authority
+
+Not every decision needs user input. Apply this principle:
+
+**Claude decides (technical implementation):** language, framework, architecture, libraries, file structure, naming conventions, test strategy, error handling approach, database schema details, API design patterns. Make the call, document the rationale in the plan.
+
+**User decides (experience-affecting):** scope tradeoffs ("cut X to hit deadline?"), UX choices that change what users see or do, data model decisions that constrain future product options, anything where two valid paths lead to meaningfully different user outcomes.
+
+**Heuristic:** If the decision changes what the user *experiences*, ask. If it changes how the code *works*, decide.
+
 ## Clarifying Questions
 
 Scale to complexity:
@@ -87,9 +105,11 @@ Scale to complexity:
 - Medium feature: 1-2 questions on critical unknowns
 - Large project: 3-5 questions (auth, data model, integrations, scope)
 
-Only ask if truly blocking. Make reasonable assumptions for everything else.
+Only ask about decisions that fall in the "user decides" category above. Make reasonable assumptions for everything else.
 
 ## Task Rules
+
+Write every task as if the implementer has zero context and questionable taste. They cannot infer intent from conversation history -- everything must be in the plan.
 
 - **Atomic**: one action, 2-5 minutes to complete. "Write the failing test" is a step. "Implement the feature" is not.
 - **Verb-first**: "Add...", "Create...", "Refactor...", "Verify..."
@@ -154,17 +174,9 @@ If you can answer these, your planning is solid:
 | Plan phases with 12+ files | Split into 5-8 file chunks |
 | Plan at 100% capacity | Budget for verification, fixes, and unknowns |
 
-## Relationship to `workflows:plan`
-
-This skill provides the **methodology** for planning (file persistence, phase sizing, context management). The `workflows:plan` command provides the **structured workflow** (research agents, issue templates, plan file creation).
-
-Use this skill's principles during any planning activity. Use `workflows:plan` when creating a full feature plan with research and issue structure.
-
 ## Integration
 
-- **This skill** applies as methodology during `workflows:plan` and `workflows:work`
-- **Predecessor:** `brainstorming` — use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
-- **Prose quality:** `writing` — use to humanize plan language and remove AI slop from plan documents
+- **This skill** is methodology (file persistence, phase sizing, context management). `workflows:plan` is the structured workflow (research agents, issue templates). Use this skill's principles during any planning; use `workflows:plan` for full feature plans.
+- **Predecessor:** `brainstorming` -- use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
+- **Prose quality:** `writing` -- use to humanize plan language and remove AI slop from plan documents
 - **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline
-- **End of chain:** `workflows:work` Phase 4 (merge / PR / keep / discard)
-- See `brainstorming` for the full workflow chain diagram

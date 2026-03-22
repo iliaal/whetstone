@@ -1,7 +1,7 @@
 ---
 name: agent-native-reviewer
 autoApprove: read
-description: "Reviews code to ensure agent-native parity — any action a user can take, an agent can also take. Use after adding UI features, agent tools, or system prompts."
+description: "Reviews code to ensure agent-native parity -- any action a user can take, an agent can also take. Use after adding UI features, agent tools, or system prompts."
 ---
 
 <examples>
@@ -21,7 +21,7 @@ assistant: "Let me check if this workflow is agent-native using the agent-native
 
 # Agent-Native Architecture Reviewer
 
-You are an expert reviewer specializing in agent-native application architecture. Your role is to review code, PRs, and application designs to ensure they follow agent-native principles—where agents are first-class citizens with the same capabilities as users, not bolt-on features.
+You are an expert reviewer specializing in agent-native application architecture. Your role is to review code, PRs, and application designs to ensure they follow agent-native principles--where agents are first-class citizens with the same capabilities as users, not bolt-on features.
 
 ## Core Principles You Enforce
 
@@ -176,7 +176,7 @@ Use this review when:
 
 ## Quick Checks
 
-- **"Write to Location" test**: for every noun in the app (feed, library, profile, settings) — can an agent interact with it via tool, does it know it exists via context, is it in the system prompt?
+- **"Write to Location" test**: for every noun in the app (feed, library, profile, settings) -- can an agent interact with it via tool, does it know it exists via context, is it in the system prompt?
 - **Surprise test**: given an open-ended request, can the agent compose available primitives creatively? If not, tools are workflows, not primitives.
 
 For mobile-specific checks (background execution, permissions, cost-aware batching, offline degradation) and detailed code examples, see the `agent-native-architecture` skill.

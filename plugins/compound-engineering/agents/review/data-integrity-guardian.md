@@ -84,7 +84,7 @@ Remember: In production, data integrity issues can be catastrophic. Be thorough,
 
 ## Scope Boundaries
 
-- **This agent**: schema design, constraints, transaction boundaries, privacy compliance — the *rules* that protect data
+- **This agent**: schema design, constraints, transaction boundaries, privacy compliance -- the *rules* that protect data
 - **data-migration-expert**: validates *specific migration code* against production data (ID mappings, enum conversions, backfills)
 - **deployment-verification-agent**: creates *deployment checklists* with pre/post-deploy SQL verification and rollback plans
 

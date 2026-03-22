@@ -44,7 +44,7 @@ When processing feedback:
 <when_to_add_domain_tools>
 ## When to Add Domain Tools
 
-As patterns emerge, you'll want to add domain-specific tools. This is good—but do it deliberately.
+As patterns emerge, you'll want to add domain-specific tools. This is good--but do it deliberately.
 
 ### Vocabulary Anchoring
 

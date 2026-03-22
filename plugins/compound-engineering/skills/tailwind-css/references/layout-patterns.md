@@ -51,7 +51,7 @@ Define a z-index scale in `@theme` tokens instead of arbitrary numbers:
 }
 ```
 
-Reference with `z-(--z-modal)` syntax — never use `z-[9999]`.
+Reference with `z-(--z-modal)` syntax -- never use `z-[9999]`.
 
 ## Container Queries
 
@@ -94,7 +94,7 @@ Eliminate breakpoint jumps with `clamp()`:
 }
 ```
 
-Always combine `vw` with `rem` — pure `vw` breaks when users zoom (WCAG violation).
+Always combine `vw` with `rem` -- pure `vw` breaks when users zoom (WCAG violation).
 
 ## Custom Utilities
 

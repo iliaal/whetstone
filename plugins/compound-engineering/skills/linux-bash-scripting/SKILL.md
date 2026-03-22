@@ -28,20 +28,20 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - `-E` propagates ERR traps into functions
 - `inherit_errexit` propagates errexit into `$()`  command substitutions
 - Always create temp dirs under the EXIT trap: `_tmpdir=$(mktemp -d)`
-- Wrap body in `main() { ... }` with source guard: `[[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"` — enables sourcing for testing
+- Wrap body in `main() { ... }` with source guard: `[[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"` -- enables sourcing for testing
 
 ## Core Rules
 
 - Quote every expansion: `"$var"`, `"$(cmd)"`, `"${array[@]}"`
 - `local` for function variables, `local -r` for function constants, `readonly` for script constants
-- `printf '%s\n'` over `echo` — predictable behavior, no flag interpretation
+- `printf '%s\n'` over `echo` -- predictable behavior, no flag interpretation
 - `[[ ]]` for conditionals; `(( ))` for arithmetic; `$()` over backticks
 - End options with `--`: `rm -rf -- "$path"`, `grep -- "$pattern" "$file"`
 - Require env vars: `: "${VAR:?must be set}"`
 - Never `eval` user input; build commands as arrays: `cmd=("grep" "--" "$pat" "$f"); "${cmd[@]}"`
 - Separate `local` from assignment to preserve exit codes: `local val; val=$(cmd)`
-- Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` — shows file:line per command
-- Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` — no magic numbers in `exit`
+- Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` -- shows file:line per command
+- Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` -- no magic numbers in `exit`
 - Pipeline diagnostics: `"${PIPESTATUS[@]}"` shows exit code of each pipe stage, not just last failure
 
 ## Safe Iteration
@@ -90,7 +90,7 @@ run() { if [[ "${DRY_RUN:-}" == "1" ]]; then printf '[dry] %s\n' "$*" >&2; else 
 run cp "$src" "$dst"
 ```
 
-**Atomic file write** — write to temp, rename into place:
+**Atomic file write** -- write to temp, rename into place:
 ```bash
 atomic_write() { local tmp; tmp=$(mktemp); cat >"$tmp"; mv -- "$tmp" "$1"; }
 generate_config | atomic_write /etc/app/config.yml
@@ -102,22 +102,22 @@ retry() { local n=0 max=5 delay=1; until "$@"; do ((++n>=max)) && return 1; slee
 retry curl -fsSL "$url"
 ```
 
-**Script locking** — prevent concurrent runs:
+**Script locking** -- prevent concurrent runs:
 ```bash
 exec 9>/var/lock/"${0##*/}".lock
 flock -n 9 || { printf 'Already running\n' >&2; exit 1; }
 ```
 
-**Idempotent operations** — safe to rerun:
+**Idempotent operations** -- safe to rerun:
 ```bash
 ensure_dir()  { [[ -d "$1" ]] || mkdir -p -- "$1"; }
 ensure_link() { [[ -L "$2" ]] || ln -s -- "$1" "$2"; }
 ```
 
-**Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` — validate at script boundaries with `[[ =~ ]]`
+**Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` -- validate at script boundaries with `[[ =~ ]]`
 
 - `umask 077` for scripts creating sensitive files
-- Signal cleanup: `trap 'cleanup; exit 130' INT TERM` — preserves correct exit codes for callers
+- Signal cleanup: `trap 'cleanup; exit 130' INT TERM` -- preserves correct exit codes for callers
 
 ## Logging
 
@@ -134,7 +134,7 @@ die()   { error "$@"; exit 1; }
 | Bad | Fix |
 |-----|-----|
 | `for f in $(ls)` | `for f in *; do` or `find -print0 \| while read` |
-| `local x=$(cmd)` | `local x; x=$(cmd)` — preserves exit code |
+| `local x=$(cmd)` | `local x; x=$(cmd)` -- preserves exit code |
 | `echo "$data"` | `printf '%s\n' "$data"` |
 | `cat file \| grep` | `grep pat file` |
 | `kill -9 $pid` first | `kill "$pid"` first, `-9` as last resort |
@@ -153,7 +153,7 @@ die()   { error "$@"; exit 1; }
 - `${var@Q}` shell-quoted, `${var@U}` uppercase, `${var@L}` lowercase
 - `declare -n ref=varname` nameref for indirect access
 - `wait -n` wait for any background job
-- `$EPOCHSECONDS`, `$EPOCHREALTIME` — timestamps without forking `date`
+- `$EPOCHSECONDS`, `$EPOCHREALTIME` -- timestamps without forking `date`
 
 ## Linux-Specific
 
