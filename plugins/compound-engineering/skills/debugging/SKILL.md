@@ -26,14 +26,7 @@ Root cause identification is the core deliverable of debugging -- not the fix it
 
 ## Environment Diagnostics
 
-Before investigating, capture the environment state using [collect-diagnostics.sh](./scripts/collect-diagnostics.sh):
-
-```bash
-bash collect-diagnostics.sh           # print to stdout
-bash collect-diagnostics.sh diag.md   # write to file
-```
-
-Collects system info, language versions, git state, project files, and environment variables. Use during differential analysis to compare working vs broken environments, or attach to bug reports.
+Capture environment state with `bash collect-diagnostics.sh` ([script](./scripts/collect-diagnostics.sh)). Use during differential analysis or attach to bug reports. See [specialized-patterns.md](./references/specialized-patterns.md) for details.
 
 ## Process
 
@@ -95,11 +88,7 @@ When the cause is unclear across multiple components, use Analysis of Competing 
 
 ## Intermittent Issues
 
-- Track with correlation IDs across distributed components
-- Race conditions: look for shared mutable state, check-then-act patterns, missing locks. In async code (Node.js, Python asyncio): interleaved `.then()` chains, unguarded shared state between concurrent tasks, missing transaction isolation in DB operations
-- Deadlocks: check for circular lock acquisition (DB row locks held across multiple queries), circular `await` dependencies in async code, connection pool exhaustion blocking queries that would release other connections
-- Resource exhaustion: monitor memory growth, connection pool depletion, file descriptor leaks. Under load: check pool size vs concurrent request count, verify connections are returned on error paths (finally/dispose)
-- Timing-dependent: replace arbitrary `sleep()` with condition-based polling -- wait for the actual state, not a duration
+For race conditions, deadlocks, resource exhaustion, and timing-dependent bugs, see [specialized-patterns.md](./references/specialized-patterns.md). Key signals: shared mutable state, check-then-act, circular lock acquisition, connection pool exhaustion under load.
 
 ## Defense-in-Depth Validation
 
@@ -167,10 +156,4 @@ This skill is referenced by:
 
 ## Postmortem
 
-After resolving non-trivial bugs, document a lightweight postmortem:
-
-1. **Timeline**: when introduced, when detected, when resolved (include commit SHAs)
-2. **Root cause**: one sentence -- the actual cause, not the symptom
-3. **Impact**: what broke, for how long, who was affected
-4. **Fix**: what changed and why this fix addresses the root cause
-5. **Prevention**: what test, monitor, or process change prevents recurrence
+For non-trivial production bugs, write a lightweight postmortem (timeline, root cause, impact, fix, prevention). See [specialized-patterns.md](./references/specialized-patterns.md) for the template.

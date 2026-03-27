@@ -7,7 +7,9 @@ disable-model-invocation: true
 
 # Report a Compounding Engineering Plugin Bug
 
-Report bugs encountered while using the compound-engineering plugin. This command gathers structured information and creates a GitHub issue for the maintainer.
+**Bug description:** #$ARGUMENTS
+
+Report bugs encountered while using the compound-engineering plugin. This command gathers structured information and creates a GitHub issue for the maintainer. If a description was provided above, use it as the starting point.
 
 ## Step 1: Gather Bug Information
 

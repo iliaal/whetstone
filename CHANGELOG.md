@@ -5,6 +5,13 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.49.2] - 2026-03-27
+
+### Changed
+
+- **Token budget optimization**: debugging skill 3089t -> 2832t (-257t, environment diagnostics + intermittent issues + postmortem moved to `references/specialized-patterns.md`); planning skill 2557t -> 2195t (-362t, context management + error protocol + iterative refinement + 5-question check moved to `references/operational-patterns.md`)
+- **Command argument fixes**: `$ARGUMENTS` interpolation added to report-bug, workflows:compound, workflows:document-release (3 more commands that had argument-hint but never used the value)
+
 ## [2.49.1] - 2026-03-27
 
 ### Changed

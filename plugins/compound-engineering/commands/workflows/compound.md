@@ -6,7 +6,9 @@ argument-hint: "[optional: brief context about the fix]"
 
 # /compound
 
-Coordinate multiple subagents working in parallel to document a recently solved problem.
+**Context:** #$ARGUMENTS
+
+Coordinate multiple subagents working in parallel to document a recently solved problem. If context was provided above, use it as the starting point for Phase 1.
 
 ## Purpose
 
