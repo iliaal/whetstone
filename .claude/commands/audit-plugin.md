@@ -27,6 +27,38 @@ Read frontmatter + first section of every file:
 
 Build a map: name, description, type, approximate token count (chars / 4).
 
+## Phase 1b: PluginEval scoring
+
+Score each component against these 10 weighted dimensions. Use the weights to prioritize findings -- issues in high-weight dimensions get higher severity.
+
+| Dimension | Weight | What to measure |
+|-----------|--------|-----------------|
+| **Triggering accuracy** | 25% | Does the description cause correct activation? Check for missing synonyms, false-positive triggers, description/content mismatch |
+| **Orchestration fitness** | 20% | Does the component compose well with others? Check cross-references, handoff clarity, scope boundaries |
+| **Output quality** | 15% | Does the component define what it produces? Check for output format specs, templates, success criteria |
+| **Scope calibration** | 12% | Does the component stay in its lane? Check for scope creep, overlap with adjacent components |
+| **Progressive disclosure** | 10% | Does it load only what's needed? Check body size, references/ split, conditional sections |
+| **Token efficiency** | 6% | Does it waste tokens? Check for "Claude already knows this" content, redundancy, verbose examples |
+| **Robustness** | 5% | Does it handle edge cases? Check for missing error paths, ambiguous instructions |
+| **Structural completeness** | 3% | Frontmatter correct? Required sections present? References linked? |
+| **Code template quality** | 2% | Do bundled scripts work? Are they referenced correctly? |
+| **Ecosystem coherence** | 2% | Consistent naming, tone, terminology with the rest of the plugin? |
+
+### Named anti-patterns (auto-flag)
+
+Flag these automatically during the audit. Each is a specific, testable condition:
+
+| Anti-pattern | Detection | Severity |
+|-------------|-----------|----------|
+| **OVER_CONSTRAINED** | >15 MUST/ALWAYS/NEVER directives in one file | MEDIUM |
+| **BLOATED_SKILL** | Skill body >800 lines with no references/ directory | HIGH |
+| **EMPTY_DESCRIPTION** | Description <20 characters | HIGH |
+| **MISSING_TRIGGER** | Skill description doesn't say "Use when..." | MEDIUM |
+| **ORPHAN_REFERENCE** | File in references/ not linked from SKILL.md | MEDIUM |
+| **DEAD_CROSS_REF** | Link to a skill/agent/command that doesn't exist | HIGH |
+| **DUPLICATE_TRIGGER** | Two components with >70% description keyword overlap | MEDIUM |
+| **STALE_VERSION_PIN** | Content says "as of v3.2" or "since 2024" without verification | LOW |
+
 ## Phase 2: Quality checks
 
 Run these checks against every file. Use parallel subagents (model: sonnet) grouped by category to keep context manageable.
@@ -39,7 +71,7 @@ Run these checks against every file. Use parallel subagents (model: sonnet) grou
 | Redundant phrasing | Same idea stated twice in different words within the same file |
 | Oversized examples | Code examples longer than needed to illustrate the pattern (>15 lines when 5 would suffice) |
 | Inert frontmatter | Fields beyond `name` and `description` that Claude Code ignores (triggers, role, scope, domain, author, version, license) |
-| Body over budget | Skill body > 2K tokens without `references/` split; agent > 3K tokens |
+| Body over budget | Skill body > 2K tokens without `references/` split; agent > 3K tokens; command > 4K tokens |
 
 ### Directive quality
 
@@ -72,6 +104,40 @@ Check every agent-skill, agent-command, and skill-command pair for:
 | Agent duplicates command | Agent and command serve the same purpose with overlapping scope (e.g., both review code, both plan features). One should defer to the other with a clear scope boundary. |
 | Undocumented relationships | Agent uses a skill but neither file cross-references the other. Both should document the relationship in their Integration section. |
 | Trigger confusion | An agent and a skill have similar enough descriptions that the model may invoke the wrong one. Descriptions must clearly differentiate when to use each. |
+
+### Agent-specific checks
+
+| Check | Signal |
+|-------|--------|
+| Missing `model:` | Agent doesn't declare a model override. Review agents and research agents that don't need heavy reasoning should use `model: haiku` or `model: sonnet` to reduce cost. Only flag when a cheaper model would clearly suffice. |
+| Persona without perspective | Agent body is generic instructions that any skill could provide. An agent must add a unique perspective (specialized role, constrained scope, output format, tool restrictions) beyond what the referenced skill already covers. |
+| Overly broad tools | Purely analytical agents (reviewers, analyzers, researchers) that could work with read-only tools but inherit full write permissions. Flag agents whose job is analysis but who could accidentally write files. |
+| Missing `description:` trigger phrases | Agent description doesn't clearly state when it should be invoked. Compare against similar agents for trigger differentiation. |
+| Category misplacement | Agent filed under wrong category directory (e.g., a review agent in `workflow/` or a research agent in `review/`). |
+
+### Command-specific checks
+
+| Check | Signal |
+|-------|--------|
+| Inlined process logic | Command contains step-by-step process that should live in a skill. Commands should orchestrate (decide what to run, in what order), not instruct (how to do the work). |
+| Missing argument handling | Command declares `argument-hint:` but body doesn't reference `$ARGUMENTS` or explain argument behavior. |
+| No skill delegation | Command does all work inline without referencing or delegating to any skill. If the command's domain has a matching skill, the command should delegate. |
+| Unclear output | Command doesn't specify where results go (file path, conversation, both) or what format they take. |
+
+### Temporal accuracy
+
+| Check | Signal |
+|-------|--------|
+| Version-pinned statements | "as of v3.2", "since 2024", "if using React 18" -- claims that may be outdated. Either remove the version qualifier to state the pattern as current default, or flag for manual verification. |
+| Date-dependent advice | "recently added", "new in", "upcoming" -- relative time references that rot. Convert to absolute or remove. |
+| Deprecated bifurcations | "if using old version, do X; if using new version, do Y" -- if the old version is no longer relevant, remove the fork and keep only the current path. |
+
+### Trigger coverage
+
+| Check | Signal |
+|-------|--------|
+| Description keyword gaps | Skill or command description missing obvious synonyms or alternate phrasings a user might say. Compare the description's trigger phrases against the component's actual domain. E.g., a "writing-tests" skill whose description says "tests" but not "specs", "assertions", "coverage", or "test suite". |
+| Trigger pattern accuracy | For skills with patterns in `hooks/skill-patterns.sh`, run `python3 distillery/scripts/distiller.py eval-triggers <name>` with 3-5 should-trigger and 3-5 should-not-trigger queries. Flag patterns with F1 < 0.8. |
 
 ### Structural
 
@@ -106,11 +172,12 @@ Every skill, agent, and command exposed adds to the system prompt token budget. 
 
 | Check | Signal |
 |-------|--------|
-| Merge candidates | Two skills/agents that cover adjacent topics and could be combined without losing specificity (e.g., separate skills for "writing tests" and "test-driven development" could be one skill with a TDD section) |
-| Absorption candidates | A small skill (<300 tokens) whose content fits naturally as a section in a larger related skill |
-| Low-value components | Skills/agents that restate what Claude already knows with no project-specific or opinionated content — candidates for removal |
+| Merge candidates | Two skills/agents/commands that cover adjacent topics and could be combined without losing specificity (e.g., separate skills for "writing tests" and "test-driven development" could be one skill with a TDD section) |
+| Absorption candidates | A small component (<300 tokens) whose content fits naturally as a section in a larger related component |
+| Low-value components | Skills/agents/commands that restate what Claude already knows with no project-specific or opinionated content — candidates for removal |
 | Description-only overlap | Two components whose descriptions load similar tokens into context but serve different purposes — tighten descriptions to reduce wasted trigger-matching tokens |
 | Unused agents | Agents not referenced by any command, skill, or workflow — candidates for removal unless they serve a standalone purpose |
+| Bloated commands | Commands that inline process knowledge instead of delegating to skills. Commands should be thin orchestration wrappers — process logic belongs in skills. |
 
 Present consolidation proposals separately from quality findings: "These N components could be merged/removed, saving ~X tokens from the system prompt."
 

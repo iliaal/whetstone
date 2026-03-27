@@ -32,31 +32,74 @@ Build two inventories in parallel:
 - `$PLUGIN_DIR/agents/**/*.md`
 - `$PLUGIN_DIR/commands/**/*.md`
 
-**Theirs** — for each repo in `$REPOS_DIR/`, find skill/agent content:
-- Look for `SKILL.md`, `*.md` in `skills/`, `agents/`, `.claude/`, `.agents/`, root-level `.md` files
-- Extract: name, description, key topics/patterns (read first 50 lines of each)
-- Skip: README, LICENSE, CONTRIBUTING, CHANGELOG, config files
+**Theirs** — for EVERY repo in `$REPOS_DIR/`, find skill/agent/command content using parallel subagents (one per repo). Each subagent must:
+
+1. **Discover all content files**: `SKILL.md`, `*.md` in `skills/`, `agents/`, `commands/`, `.claude/`, `.agents/`, `plugins/`, `categories/`, `specialized/`, `engineering/`, `strategy/`, `integrations/`, and any other non-standard directories. Also check root-level `.md` files (CLAUDE.md, AGENTS.md) for embedded rules and patterns.
+2. **Read promising files in full** (not just first 50 lines). Read at minimum the 15-20 most substantial files per repo. For repos with fewer files, read all of them.
+3. **Extract**: name, description, specific actionable patterns/rules/techniques, quality assessment, and whether it adds value over our existing content.
+4. **Analyze agents and commands** with the same rigor as skills. Agent frontmatter patterns (tools, model, maxTurns, paths, memory), command orchestration workflows, and hook configurations are all in scope.
+5. **Skip**: README, LICENSE, CONTRIBUTING, CHANGELOG, config files, and generic persona descriptions without actionable rules.
+
+Every repo must be analyzed. Do not skip repos based on surface-level impressions. Repos that look simple may contain high-quality patterns in non-obvious locations.
 
 If `$ARGUMENTS` specifies a skill or repo, narrow scope to that.
 
+## Phase 2b: Skills.sh marketplace scan
+
+For each existing skill in the plugin inventory, search for marketplace counterparts:
+
+```bash
+python3 distillery/scripts/distiller.py search "<skill-name>"
+```
+
+**Triage before fetching:** Same rules as repos -- scan descriptions, skip generic checklists and low-relevance matches. Only fetch sources that suggest genuinely new patterns for an existing skill.
+
+For promising matches, fetch and stage:
+
+```bash
+python3 distillery/scripts/distiller.py fetch --skills '<JSON from search>'
+```
+
+Read the staged SKILL.md files. These feed into Phase 3 alongside repo findings -- same cross-reference analysis, same quality filters, same approval flow.
+
+**Scope control:** If `$ARGUMENTS` specifies a skill name, only search marketplace for that skill. If running a full scan, cap at the top 3 marketplace results per skill to keep the analysis manageable.
+
+**Cleanup after analysis:**
+
+```bash
+python3 distillery/scripts/distiller.py cleanup
+```
+
 ## Phase 3: Cross-reference analysis
 
-For each external skill/pattern found, classify:
+For each external skill, agent, command, or pattern found, classify:
 
-### Additions (not covered by any existing skill/agent)
+### Additions (not covered by any existing component)
 
 New capability worth creating? Evaluate:
 - Does it fill a gap in the plugin's coverage?
 - Is the pattern general enough to be useful across projects?
-- Would it trigger distinctly from existing skills (no description overlap)?
+- Would it trigger distinctly from existing components (no description overlap)?
+- What component type fits best? Skill (ambient behavior), command (explicit invocation), or agent (specialized persona for subagent dispatch)?
 
-### Improvements (strengthens an existing skill)
+### Improvements (strengthens an existing skill, agent, or command)
 
-Specific patterns, rules, or techniques from external sources that would improve an existing skill. Evaluate:
+Specific patterns, rules, or techniques from external sources that would improve an existing component. Evaluate:
 - Is the content genuinely new (not already covered, even if worded differently)?
 - Is it actionable and measurable (not generic advice)?
-- Does it fit the skill's scope without bloating it?
-- Would it push the skill body over 2K tokens? If so, propose as a `references/` file instead.
+- Does it fit the component's scope without bloating it?
+- Would it push the body over budget (skill > 2K tokens, agent > 3K, command > 4K)? If so, propose as a `references/` file instead.
+
+**Agent-specific improvements** to look for:
+- Better frontmatter patterns (model selection, tools restriction, maxTurns, paths)
+- Persona design techniques (stronger role framing, output format constraints)
+- Tool restriction patterns (read-only agents, scoped permissions)
+
+**Command-specific improvements** to look for:
+- Orchestration patterns (how commands coordinate agents and skills)
+- Argument handling and mode detection
+- File-based state machines for long-running workflows
+- User approval gates between phases
 
 **Quality filters** (reject content that fails any of these):
 - "Claude already knows this" — skip content explaining what a technology is, how basic concepts work, or general programming knowledge
@@ -72,18 +115,18 @@ External source says X, our skill says Y. Flag with:
 
 ### Redundancies
 
-External skill that fully overlaps an existing skill with no new value. Note and skip.
+External component that fully overlaps an existing skill, agent, or command with no new value. Note and skip.
 
 ## Phase 4: Present findings
 
 Sort ALL findings by impact (highest first), not by category. Use a single table:
 
 ```
-| # | Type | Skill/Target | Finding | Source repo | Impact |
-|---|------|-------------|---------|-------------|--------|
-| 1 | IMPROVE | code-review | [specific pattern] | gstack | HIGH |
-| 2 | ADD | git-commit | [what it does] | agent-skills | HIGH |
-| 3 | CONFLICT | debugging | [what conflicts] | superpowers | MEDIUM |
+| # | Type | Component/Target | Finding | Source repo | Impact |
+|---|------|-----------------|---------|-------------|--------|
+| 1 | IMPROVE | code-review (skill) | [specific pattern] | gstack | HIGH |
+| 2 | ADD | git-commit (command) | [what it does] | agent-skills | HIGH |
+| 3 | IMPROVE | security-sentinel (agent) | [agent pattern] | agency-agents | MEDIUM |
 ```
 
 For each finding, include:
@@ -101,15 +144,25 @@ After user reviews findings:
 **Do not proceed without explicit approval.** Ask: "Which items should I apply? (all / pick by number / skip)"
 
 For approved items:
-1. Read the target skill/agent fully before editing
+1. Read the target skill/agent/command fully before editing
 2. Make surgical edits — add content, don't restructure
-3. Validate against skill compliance checklist (CLAUDE.md)
+3. Validate against skill compliance checklist (CLAUDE.md) for skills; check agent frontmatter patterns for agents; verify command orchestration delegates to skills for commands
 4. Run `bash scripts/update-metadata.sh` if components were added/removed
+
+## Phase 6: Post-sync audit
+
+After applying changes, recommend running the audit on modified components:
+
+"Changes applied. Run `/audit-plugin [modified-skill-names]` to check for inconsistencies introduced by external content?"
+
+External source changes are the most likely to introduce conflicting rules, terminology drift, or stale references. The audit catches what the sync's quality filters miss.
 
 ## Constraints
 
 - Never delete existing content without asking
 - Never create new skills/agents without approval — only propose them
 - Never modify files outside the plugin directory without asking
-- Triage before deep-reading: check external source descriptions first, only read full content for promising matches (high install count alone doesn't mean quality)
-- If an external source is a generic checklist, project-specific tool, or domain outside our scope, skip it without reading the full file
+- Every repo must get a deep pass — do not skip repos based on surface impressions. Use parallel subagents (one per repo) to keep analysis thorough without being slow.
+- Triage happens AFTER reading, not before. Read the content, then decide if it's actionable. The exception: files that are clearly project-specific tooling (e.g., a company's deploy script) can be skipped on sight.
+- Analyze skills, agents, AND commands with equal rigor. Agent frontmatter patterns (tools, model, maxTurns, paths), command orchestration workflows, and hook configurations are all in scope.
+- If an external source is a generic checklist with no measurable criteria, note it as low-quality and move on

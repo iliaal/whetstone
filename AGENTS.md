@@ -24,15 +24,15 @@ compound-engineering-plugin/
     └── compound-engineering/     # The plugin
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
-        ├── agents/              # 26 agents (review, research, design, workflow)
+        ├── agents/              # 23 agents (review, research, design, workflow)
         │   ├── review/          # Code review agents
         │   ├── research/        # Research and analysis agents
         │   ├── design/          # Design and UI agents
         │   └── workflow/        # Workflow automation agents
-        ├── commands/            # 19 slash commands
+        ├── commands/            # 18 slash commands
         │   ├── workflows/       # Core workflow commands (workflows:plan, etc.)
         │   └── *.md             # Utility commands
-        ├── skills/              # 32 skills (all native)
+        ├── skills/              # 30 skills (all native)
         │   └── <skill-name>/
         │       ├── SKILL.md        # Skill content
         │       ├── references/     # Optional supplementary docs

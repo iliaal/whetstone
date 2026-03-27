@@ -90,6 +90,17 @@ if [[ -n "$(git status --porcelain)" ]]; then
 else
   echo "  ai-skills already up to date"
 fi
+
+# Create GitHub release on ai-skills
+if gh release view "v${version}" &>/dev/null; then
+  echo "  ai-skills release v${version} already exists, skipping"
+else
+  gh release create "v${version}" \
+    --title "v${version}" \
+    --notes "Synced from compound-engineering plugin v${version}" \
+    --target master
+  echo "  ai-skills release v${version} created"
+fi
 cd "$ROOT_DIR"
 
 # --- 4. Sync to other tools (Codex, Kilocode, etc.) ---
