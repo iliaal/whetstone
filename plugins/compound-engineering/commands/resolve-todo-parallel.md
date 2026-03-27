@@ -18,7 +18,11 @@ If any todo recommends deleting, removing, or gitignoring files in `docs/plans/`
 
 ### 2. Plan
 
-Create a TodoWrite list of all unresolved items grouped by type.Make sure to look at dependencies that might occur and prioritize the ones needed by others. For example, if you need to change a name, you must wait to do the others. Output a mermaid flow diagram showing how we can do this. Can we do everything in parallel? Do we need to do one first that leads to others in parallel? I'll put the to-dos in the mermaid diagram flow‑wise so the agent knows how to proceed in order.
+Create a TodoWrite list of all unresolved items grouped by type.
+
+- Identify dependencies between items. Prioritize items that others depend on (e.g., a rename must complete before downstream changes).
+- Output a mermaid flow diagram showing execution order: which items can run in parallel, which must run sequentially.
+- Use the diagram to determine the spawn order in step 3.
 
 ### 3. Implement (PARALLEL)
 

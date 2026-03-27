@@ -13,28 +13,20 @@ Conduct a comprehensive review of the codebase against agent-native architecture
 
 ## Core Principles to Audit
 
-1. **Action Parity** - "Whatever the user can do, the agent can do"
-2. **Tools as Primitives** - "Tools provide capability, not behavior"
-3. **Context Injection** - "System prompt includes dynamic context about app state"
-4. **Shared Workspace** - "Agent and user work in the same data space"
-5. **CRUD Completeness** - "Every entity has full CRUD (Create, Read, Update, Delete)"
-6. **UI Integration** - "Agent actions immediately reflected in UI"
-7. **Capability Discovery** - "Users can discover what the agent can do"
-8. **Prompt-Native Features** - "Features are prompts defining outcomes, not code"
+Full principle definitions live in the `agent-native-architecture` skill. Summaries for scoring:
+
+1. **Action Parity** -- "Whatever the user can do, the agent can do"
+2. **Tools as Primitives** -- "Tools provide capability, not behavior"
+3. **Context Injection** -- "System prompt includes dynamic context about app state"
+4. **Shared Workspace** -- "Agent and user work in the same data space"
+5. **CRUD Completeness** -- "Every entity has full CRUD (Create, Read, Update, Delete)"
+6. **UI Integration** -- "Agent actions immediately reflected in UI"
+7. **Capability Discovery** -- "Users can discover what the agent can do"
+8. **Prompt-Native Features** -- "Features are prompts defining outcomes, not code"
 
 ## Workflow
 
-### Step 1: Load the Agent-Native Skill
-
-First, invoke the agent-native-architecture skill to understand all principles:
-
-```
-/compound-engineering:agent-native-architecture
-```
-
-Select option 7 (action parity) to load the full reference material.
-
-### Step 2: Launch Parallel Sub-Agents
+### Step 1: Launch Parallel Sub-Agents
 
 Launch 8 parallel sub-agents using the Task tool with `subagent_type: Explore`, one for each principle. Each agent should:
 
@@ -220,7 +212,7 @@ Format:
 
 </sub-agents>
 
-### Step 3: Compile Summary Report
+### Step 2: Compile Summary Report
 
 After all agents complete, compile a summary with:
 
@@ -257,7 +249,7 @@ After all agents complete, compile a summary with:
 [List top 5 strengths]
 ```
 
-### Step 4: Persist Report
+### Step 3: Persist Report
 
 Write the compiled report to `docs/audits/YYYY-MM-DD-agent-native-audit.md`. Commit to git.
 

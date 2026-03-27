@@ -42,92 +42,42 @@ Section 2: [Title] - [Brief description of what to research]
 ...
 ```
 
-### 2. Discover and Apply Available Skills
+### 2. Discover All Available Skills and Agents
 
-<thinking>
-Dynamically discover all available skills and match them to plan sections. Don't assume what skills exist - discover them at runtime.
-</thinking>
-
-**Step 1: Discover ALL available skills from ALL sources**
+Discover everything once upfront. Match skills and agents to plan sections, then spawn sub-agents in later steps.
 
 ```bash
-# 1. Project-local skills (highest priority - project-specific)
-ls .claude/skills/
-
-# 2. User's global skills (~/.claude/)
-ls ~/.claude/skills/
-
-# 3. compound-engineering plugin skills
-ls ~/.claude/plugins/cache/*/compound-engineering/*/skills/
-
-# 4. ALL other installed plugins - check every plugin for skills
+# Skills: project-local, user-global, all plugins
+ls .claude/skills/ 2>/dev/null
+ls ~/.claude/skills/ 2>/dev/null
 find ~/.claude/plugins/cache -type d -name "skills" 2>/dev/null
 
-# 5. Also check installed_plugins.json for all plugin locations
-cat ~/.claude/plugins/installed_plugins.json
+# Agents: project-local, user-global, all plugins (skip workflow/ orchestrators)
+find .claude/agents -name "*.md" 2>/dev/null
+find ~/.claude/agents -name "*.md" 2>/dev/null
+find ~/.claude/plugins/cache -path "*/agents/*.md" -not -path "*/workflow/*" 2>/dev/null
 ```
 
-**Important:** Check EVERY source. Don't assume compound-engineering is the only plugin. Use skills from ANY installed plugin that's relevant.
+Read each discovered SKILL.md description and agent frontmatter. Build a manifest:
 
-**Step 2: For each discovered skill, read its SKILL.md to understand what it does**
-
-```bash
-# For each skill directory found, read its documentation
-cat [skill-path]/SKILL.md
+```
+Skills:  [name] -> [description] -> [matching plan sections]
+Agents:  [name] -> [description] -> [matching plan sections]
 ```
 
-**Step 3: Match skills to plan content**
+### 3. Apply Matched Skills
 
-For each skill discovered:
-- Read its SKILL.md description
-- Check if any plan sections match the skill's domain
-- If there's a match, spawn a sub-agent to apply that skill's knowledge
+For each skill that matches plan content, spawn a sub-agent to apply it:
 
-**Step 4: Spawn a sub-agent for EVERY matched skill**
-
-**CRITICAL: For EACH skill that matches, spawn a separate sub-agent and instruct it to USE that skill.**
-
-For each matched skill:
 ```
-Task general-purpose: "You have the [skill-name] skill available at [skill-path].
-
-YOUR JOB: Use this skill on the plan.
-
-1. Read the skill: cat [skill-path]/SKILL.md
-2. Follow the skill's instructions exactly
-3. Apply the skill to this content:
-
-[relevant plan section or full plan]
-
-4. Return the skill's full output
-
-The skill tells you what to do - follow it. Execute the skill completely."
+Task general-purpose: "Read [skill-path]/SKILL.md and follow its instructions.
+Apply the skill to this plan content: [relevant section or full plan].
+Return the skill's full output."
 ```
 
-**Spawn ALL skill sub-agents in PARALLEL:**
-- 1 sub-agent per matched skill
-- Each sub-agent reads and uses its assigned skill
-- All run simultaneously
-- 10, 20, 30 skill sub-agents is fine
+Spawn all skill sub-agents in parallel, one per matched skill. Cap at 10 skill agents -- if more than 10 match, select the 10 most directly relevant to the plan's core domain.
 
-**Each sub-agent:**
-1. Reads its skill's SKILL.md
-2. Follows the skill's workflow/instructions
-3. Applies the skill to the plan
-4. Returns whatever the skill produces (code, recommendations, patterns, reviews, etc.)
-
-**Example spawns:**
-```
-Task general-purpose: "Use the frontend-design skill at ~/.claude/plugins/.../frontend-design. Read SKILL.md and apply it to: [UI sections of plan]"
-
-Task general-purpose: "Use the agent-native-architecture skill at ~/.claude/plugins/.../agent-native-architecture. Read SKILL.md and apply it to: [agent/tool sections of plan]"
-
-Task general-purpose: "Use the security-patterns skill at ~/.claude/skills/security-patterns. Read SKILL.md and apply it to: [full plan]"
-```
-
-**No limit on skill sub-agents. Spawn one for every skill that could possibly be relevant.**
-
-### 3. Discover and Apply Learnings/Solutions
+### 4. Discover and Apply Learnings/Solutions
 
 <thinking>
 Check for documented learnings from /workflows:compound. These are solved problems stored as markdown files. Spawn a sub-agent for each learning to check if it's relevant.
@@ -250,7 +200,7 @@ docs/solutions/authentication-issues/jwt-expiry.md           # plan has no auth
 
 **These learnings are institutional knowledge - applying them prevents repeating past mistakes.**
 
-### 4. Launch Per-Section Research Agents
+### 5. Launch Per-Section Research Agents
 
 <thinking>
 For each major section in the plan, spawn dedicated sub-agents to research improvements. Use the Explore agent type for open-ended research.
@@ -280,72 +230,18 @@ mcp__plugin_compound-engineering_docfork__fetch_doc: Fetch full content from a s
 
 Search for recent (2024-2026) articles, blog posts, and documentation on topics in the plan.
 
-### 5. Discover and Run ALL Review Agents
+### 6. Run Review and Research Agents
 
-<thinking>
-Dynamically discover every available agent and run them ALL against the plan. Don't filter, don't skip, don't assume relevance. 40+ parallel agents is fine. Use everything available.
-</thinking>
+Using the agent manifest from Step 2, launch review and research agents against the plan. Skip `workflow/` agents (orchestrators, not reviewers).
 
-**Step 1: Discover ALL available agents from ALL sources**
-
-```bash
-# 1. Project-local agents (highest priority - project-specific)
-find .claude/agents -name "*.md" 2>/dev/null
-
-# 2. User's global agents (~/.claude/)
-find ~/.claude/agents -name "*.md" 2>/dev/null
-
-# 3. compound-engineering plugin agents (all subdirectories)
-find ~/.claude/plugins/cache/*/compound-engineering/*/agents -name "*.md" 2>/dev/null
-
-# 4. ALL other installed plugins - check every plugin for agents
-find ~/.claude/plugins/cache -path "*/agents/*.md" 2>/dev/null
-
-# 5. Check installed_plugins.json to find all plugin locations
-cat ~/.claude/plugins/installed_plugins.json
-
-# 6. For local plugins (isLocal: true), check their source directories
-# Parse installed_plugins.json and find local plugin paths
-```
-
-**Important:** Check EVERY source. Include agents from:
-- Project `.claude/agents/`
-- User's `~/.claude/agents/`
-- compound-engineering plugin (but SKIP workflow/ agents - only use review/, research/, design/, docs/)
-- ALL other installed plugins (agent-sdk-dev, frontend-design, etc.)
-- Any local plugins
-
-**For compound-engineering plugin specifically:**
-- USE: `agents/review/*` (all reviewers)
-- USE: `agents/research/*` (all researchers)
-- USE: `agents/design/*` (design agents)
-- USE: `agents/docs/*` (documentation agents)
-- SKIP: `agents/workflow/*` (these are workflow orchestrators, not reviewers)
-
-**Step 2: For each discovered agent, read its description**
-
-Read the first few lines of each agent file to understand what it reviews/analyzes.
-
-**Step 3: Launch ALL agents in parallel**
-
-For EVERY agent discovered, launch a Task in parallel:
-
+For each matched agent:
 ```
 Task [agent-name]: "Review this plan using your expertise. Apply all your checks and patterns. Plan content: [full plan content]"
 ```
 
-**CRITICAL RULES:**
-- Run all review, research, and design agents -- do NOT filter by perceived relevance
-- SKIP `agents/workflow/*` -- these are orchestrators, not reviewers
-- Launch ALL agents in a SINGLE message with multiple Task tool calls
-- Each agent may catch something others miss
-- The goal is MAXIMUM coverage, not efficiency
+Launch all agents in a single message with multiple Task tool calls. Cap at 10 review agents -- if more match, select those most relevant to the plan's domain. Research agents (`best-practices-researcher`, `repo-research-analyst`, `git-history-analyzer`) run in addition to the review cap.
 
-**Step 4: Also discover and run research agents**
-
-Research agents (like `best-practices-researcher`, `git-history-analyzer`, `repo-research-analyst`) should also be run for relevant plan sections.
-
-### 6. Wait for ALL Agents and Synthesize Everything
+### 7. Wait for ALL Agents and Synthesize Everything
 
 <thinking>
 Wait for ALL parallel agents to complete - skills, research agents, review agents, everything. Then synthesize all findings into a comprehensive enhancement.
@@ -377,7 +273,7 @@ Wait for ALL parallel agents to complete - skills, research agents, review agent
 - Flag conflicting advice for human review
 - Group by plan section
 
-### 6.5. Post-Research Interview
+### 7.5. Post-Research Interview
 
 After agents return and findings are synthesized, interview the user about what the research surfaced. Apply the deep interview protocol (see CLAUDE.md).
 
@@ -410,7 +306,7 @@ Record all interview outcomes (revised decisions, confirmed choices, anti-requir
 
 **Exit condition:** Claude assesses coverage and proposes stopping with confidence signal. User can always say "stop" to proceed immediately.
 
-### 7. Enhance Plan Sections
+### 8. Enhance Plan Sections
 
 <thinking>
 Merge research findings and interview outcomes back into the plan, adding depth without changing the original structure.
@@ -447,7 +343,7 @@ Merge research findings and interview outcomes back into the plan, adding depth 
 - [Documentation URL 2]
 ```
 
-### 8. Add Enhancement Summary
+### 9. Add Enhancement Summary
 
 At the top of the plan, add a summary section:
 
@@ -468,7 +364,7 @@ At the top of the plan, add a summary section:
 - [Important finding 2]
 ```
 
-### 9. Update Plan File
+### 10. Update Plan File
 
 **Write the enhanced plan:**
 - Preserve original filename

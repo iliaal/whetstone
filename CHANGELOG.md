@@ -5,6 +5,15 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.49.4] - 2026-03-27
+
+### Fixed
+
+- **agent-native-audit**: removed Step 1 skill invocation that deadlocked on interactive `<intake>` menu; command now references `agent-native-architecture` skill as canonical source
+- **feature-video**: replaced hardcoded personal rclone remote (`r2:kieran-claude/`) with configurable `$R2_REMOTE`, `$R2_BUCKET`, `$PUBLIC_BASE_URL` env vars; upload step aborts gracefully if rclone not configured
+- **resolve-todo-parallel**: rewrote garbled Step 2 run-on sentence into structured imperative bullets
+- **deepen-plan**: consolidated duplicate skill/agent discovery (was in Steps 2 and 5) into single upfront step; added soft cap of 10 agents per category; removed unbounded "40+ parallel agents is fine" directives; net -118 lines
+
 ## [2.49.3] - 2026-03-27
 
 ### Changed

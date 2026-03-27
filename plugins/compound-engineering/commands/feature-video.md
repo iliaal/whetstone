@@ -205,29 +205,29 @@ ffmpeg -y -framerate 0.5 -pattern_type glob -i 'tmp/screenshots/*.png' \
 
 <upload_video>
 
-**Upload with rclone:**
+**Upload with rclone (skip if rclone is not configured):**
 
 ```bash
-# Check rclone is configured
-rclone listremotes
+# Check rclone is configured -- abort upload step if not
+rclone listremotes || { echo "rclone not configured, skipping upload"; exit 0; }
 
-# Set your public base URL (NO trailing slash)
-PUBLIC_BASE_URL="https://<your-public-r2-domain>.r2.dev"
+# Config: set these to your rclone remote, bucket, and public base URL
+R2_REMOTE="${R2_REMOTE:-r2}"              # rclone remote name
+R2_BUCKET="${R2_BUCKET:-my-bucket}"       # bucket name
+PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://your-domain.r2.dev}"  # NO trailing slash
 
-# Upload video, preview GIF, and screenshots to cloud storage
-# Use --s3-no-check-bucket to avoid permission errors
-rclone copy tmp/videos/ r2:kieran-claude/pr-videos/pr-[number]/ --s3-no-check-bucket --progress
-rclone copy tmp/screenshots/ r2:kieran-claude/pr-videos/pr-[number]/screenshots/ --s3-no-check-bucket --progress
+UPLOAD_PATH="$R2_REMOTE:$R2_BUCKET/pr-videos/pr-[number]"
+
+# Upload video, preview GIF, and screenshots
+rclone copy tmp/videos/ "$UPLOAD_PATH/" --s3-no-check-bucket --progress
+rclone copy tmp/screenshots/ "$UPLOAD_PATH/screenshots/" --s3-no-check-bucket --progress
 
 # List uploaded files
-rclone ls r2:kieran-claude/pr-videos/pr-[number]/
+rclone ls "$UPLOAD_PATH/"
 
 # Build and validate public URLs BEFORE updating PR
 VIDEO_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/feature-demo.mp4"
 PREVIEW_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/feature-demo-preview.gif"
-
-curl -I "$VIDEO_URL"
-curl -I "$PREVIEW_URL"
 
 # Require HTTP 200 for both URLs; stop if either fails
 curl -I "$VIDEO_URL" | head -n 1 | grep -q ' 200 ' || exit 1
@@ -259,9 +259,9 @@ If the PR already has a video section, replace it. Otherwise, append:
 *Click to view full video*
 ```
 
-Example:
+Example (using `$PUBLIC_BASE_URL`):
 ```markdown
-[![Feature Demo](https://<your-public-r2-domain>.r2.dev/pr-videos/pr-137/feature-demo-preview.gif)](https://<your-public-r2-domain>.r2.dev/pr-videos/pr-137/feature-demo.mp4)
+[![Feature Demo]($PUBLIC_BASE_URL/pr-videos/pr-137/feature-demo-preview.gif)]($PUBLIC_BASE_URL/pr-videos/pr-137/feature-demo.mp4)
 ```
 
 **Update the PR:**
