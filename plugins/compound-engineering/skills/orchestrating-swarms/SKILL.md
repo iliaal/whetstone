@@ -161,6 +161,13 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 ---
 
+## Verify
+
+- All tasks in terminal state (completed or blocked)
+- No orphaned teammates (`git worktree list` shows no stale entries)
+- Overlapping file edits reviewed and merged
+- Full test suite passes post-integration
+
 ## References
 
 Detailed documentation for each subsystem:

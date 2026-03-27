@@ -6,34 +6,28 @@ argument-hint: "[PR number, GitHub URL, branch name, or latest]"
 
 # Review Command
 
-<command_purpose> Perform exhaustive code reviews using multi-agent analysis, ultra-thinking, and Git worktrees for deep local inspection. </command_purpose>
+Perform exhaustive code reviews using multi-agent analysis, ultra-thinking, and Git worktrees for deep local inspection.
 
 ## Introduction
 
-<role>Senior Code Review Architect with expertise in security, performance, architecture, and quality assurance</role>
+**Senior Code Review Architect** with expertise in security, performance, architecture, and quality assurance.
 
 ## Prerequisites
 
-<requirements>
 - Git repository with GitHub CLI (`gh`) installed and authenticated
 - Clean main/master branch
 - Proper permissions to create worktrees and access the repository
 - For document reviews: Path to a markdown file or document
-</requirements>
 
 ## Main Tasks
 
 ### 1. Determine Review Target & Setup (ALWAYS FIRST)
 
-<review_target> #$ARGUMENTS </review_target>
+**Review target:** #$ARGUMENTS
 
-<thinking>
-First, I need to determine the review target type and set up the code for analysis.
-</thinking>
+First, determine the review target type and set up the code for analysis.
 
 #### Immediate Actions:
-
-<task_list>
 
 - [ ] Determine review type: PR number (numeric), GitHub URL, file path (.md), or empty (current branch)
 - [ ] Check current git branch
@@ -46,18 +40,14 @@ First, I need to determine the review target type and set up the code for analys
 
 Ensure that the code is ready for analysis (either in worktree or on current branch). ONLY then proceed to the next step.
 
-</task_list>
-
 #### Protected Artifacts
 
-<protected_artifacts>
 The following paths are compound-engineering pipeline artifacts and must never be flagged for deletion, removal, or gitignore by any review agent:
 
 - `docs/plans/*.md` -- Plan files created by `/workflows:plan`. These are living documents that track implementation progress (checkboxes are checked off by `/workflows:work`).
 - `docs/solutions/*.md` -- Solution documents created during the pipeline.
 
 If a review agent flags any file in these directories for cleanup or removal, discard that finding during synthesis. Do not create a todo for it.
-</protected_artifacts>
 
 #### Load Review Agents
 
@@ -66,8 +56,6 @@ Read `compound-engineering.local.md` in the project root. If found, use `review_
 If no settings file exists, run `/setup` to create one. Then read the newly created file and continue.
 
 #### Parallel Agents to review the PR:
-
-<parallel_tasks>
 
 Run all configured review agents in parallel using Task tool. For each agent in the `review_agents` list:
 
@@ -79,17 +67,13 @@ Additionally, always run these regardless of settings:
 - Task agent-native-reviewer(PR content) - Verify new features are agent-accessible
 - Task learnings-researcher(PR content) - Search docs/solutions/ for past issues related to this PR's modules and patterns
 
-</parallel_tasks>
-
 #### Conditional Agents (Run if applicable):
-
-<conditional_agents>
 
 These agents are run ONLY when the PR matches specific criteria. Check the PR files list to determine if they apply:
 
 **MIGRATIONS: If PR contains database migrations, schema.rb, or data backfills:**
 
-- Task data-migration-expert(PR content) - Validates ID mappings match production, checks for swapped values, verifies rollback safety
+- Task database-guardian(PR content) - Validates ID mappings match production, checks for swapped values, verifies rollback safety
 - Task deployment-verification-agent(PR content) - Creates Go/No-Go deployment checklist with SQL verification queries
 
 **When to run:**
@@ -99,64 +83,56 @@ These agents are run ONLY when the PR matches specific criteria. Check the PR fi
 - PR title/body mentions: migration, backfill, data transformation, ID mapping
 
 **What these agents check:**
-- `data-migration-expert`: Verifies hard-coded mappings match production reality (prevents swapped IDs), checks for orphaned associations, validates dual-write patterns
+- `database-guardian`: Verifies hard-coded mappings match production reality (prevents swapped IDs), checks for orphaned associations, validates dual-write patterns
 - `deployment-verification-agent`: Produces executable pre/post-deploy checklists with SQL queries, rollback procedures, and monitoring plans
-
-</conditional_agents>
 
 ### 2. Ultra-Thinking Deep Dive Phases
 
-<ultrathink_instruction> For each phase below, spend maximum cognitive effort. Think step by step. Consider all angles. Question assumptions. And bring all reviews in a synthesis to the user.</ultrathink_instruction>
+**For each phase below, spend maximum cognitive effort. Think step by step. Consider all angles. Question assumptions. And bring all reviews in a synthesis to the user.**
 
-<deliverable>
-Complete system context map with component interactions
-</deliverable>
+**Deliverable:** Complete system context map with component interactions.
 
-#### Phase 3: Stakeholder Perspective Analysis
+#### Phase 1: Stakeholder Perspective Analysis
 
-<thinking_prompt> ULTRA-THINK: Put yourself in each stakeholder's shoes. What matters to them? What are their pain points? </thinking_prompt>
+**ULTRA-THINK: Put yourself in each stakeholder's shoes. What matters to them? What are their pain points?**
 
-<stakeholder_perspectives>
-
-1. **Developer Perspective** <questions>
+1. **Developer Perspective**
 
    - How easy is this to understand and modify?
    - Are the APIs intuitive?
    - Is debugging straightforward?
-   - Can I test this easily? </questions>
+   - Can I test this easily?
 
-2. **Operations Perspective** <questions>
+2. **Operations Perspective**
 
    - How do I deploy this safely?
    - What metrics and logs are available?
    - How do I troubleshoot issues?
-   - What are the resource requirements? </questions>
+   - What are the resource requirements?
 
-3. **End User Perspective** <questions>
+3. **End User Perspective**
 
    - Is the feature intuitive?
    - Are error messages helpful?
    - Is performance acceptable?
-   - Does it solve my problem? </questions>
+   - Does it solve my problem?
 
-4. **Security Team Perspective** <questions>
+4. **Security Team Perspective**
 
    - What's the attack surface?
    - Are there compliance requirements?
    - How is data protected?
-   - What are the audit capabilities? </questions>
+   - What are the audit capabilities?
 
-5. **Business Perspective** <questions>
+5. **Business Perspective**
    - What's the ROI?
    - Are there legal/compliance risks?
    - How does this affect time-to-market?
-   - What's the total cost of ownership? </questions> </stakeholder_perspectives>
+   - What's the total cost of ownership?
 
-#### Phase 4: Scenario Exploration
+#### Phase 2: Scenario Exploration
 
-<thinking_prompt> ULTRA-THINK: Explore edge cases and failure scenarios. What could go wrong? How does the system behave under stress? </thinking_prompt>
-
-<scenario_checklist>
+**ULTRA-THINK: Explore edge cases and failure scenarios. What could go wrong? How does the system behave under stress?**
 
 - [ ] **Happy Path**: Normal operation with valid inputs
 - [ ] **Invalid Inputs**: Null, empty, malformed data
@@ -167,7 +143,7 @@ Complete system context map with component interactions
 - [ ] **Resource Exhaustion**: Memory, disk, connections
 - [ ] **Security Attacks**: Injection, overflow, DoS
 - [ ] **Data Corruption**: Partial writes, inconsistency
-- [ ] **Cascading Failures**: Downstream service issues </scenario_checklist>
+- [ ] **Cascading Failures**: Downstream service issues
 
 ### 3. Multi-Angle Review Perspectives
 
@@ -205,16 +181,11 @@ Run the Task code-simplicity-reviewer() to see if we can simplify the code. Note
 
 ### 5. Findings synthesis and todo creation
 
-<critical_requirement> ALL findings MUST be stored in the todos/ directory using the file-todos skill. Create todo files immediately after synthesis - do NOT present findings for user approval first. Use the skill for structured todo management. </critical_requirement>
+**ALL findings MUST be stored in the todos/ directory using the file-todos skill.** Create todo files immediately after synthesis -- do NOT present findings for user approval first. Use the skill for structured todo management.
 
 #### Step 1: Synthesize All Findings
 
-<thinking>
-Consolidate all agent reports into a categorized list of findings.
-Remove duplicates, prioritize by severity and impact.
-</thinking>
-
-<synthesis_tasks>
+Consolidate all agent reports into a categorized list of findings. Remove duplicates, prioritize by severity and impact.
 
 - [ ] Collect findings from all parallel agents
 - [ ] Surface learnings-researcher results: if past solutions are relevant, flag them as "Known Pattern" with links to docs/solutions/ files
@@ -223,8 +194,6 @@ Remove duplicates, prioritize by severity and impact.
 - [ ] Assign severity levels: 🔴 CRITICAL (P1), 🟡 IMPORTANT (P2), 🔵 NICE-TO-HAVE (P3)
 - [ ] Deduplicate findings: same file:line + same issue class from different agents = merge, keep the higher severity rating
 - [ ] Estimate effort for each finding (Small/Medium/Large)
-
-</synthesis_tasks>
 
 #### Step 2: Create Todo Files
 
@@ -290,7 +259,7 @@ After creating all todo files, present comprehensive summary:
 3. **Work on Approved Todos**:
 
    ```bash
-   /resolve_todo_parallel  # Fix all approved items efficiently
+   /resolve-todo-parallel  # Fix all approved items efficiently
    ```
 
 4. **Track Progress**:
@@ -302,8 +271,6 @@ After creating all todo files, present comprehensive summary:
 
 ### 6. End-to-end testing (optional)
 
-<detect_project_type>
-
 **First, detect the project type from PR files:**
 
 | Indicator | Project Type |
@@ -311,10 +278,6 @@ After creating all todo files, present comprehensive summary:
 | `*.xcodeproj`, `*.xcworkspace`, `Package.swift` (iOS) | iOS/macOS |
 | `Gemfile`, `package.json`, `app/views/*`, `*.html.*` | Web |
 | Both iOS files AND web files | Hybrid (test both) |
-
-</detect_project_type>
-
-<offer_testing>
 
 After presenting the Summary Report, offer appropriate testing based on project type:
 
@@ -332,8 +295,6 @@ After presenting the Summary Report, offer appropriate testing based on project 
 2. Both web and native - run both commands
 3. No - skip
 ```
-
-</offer_testing>
 
 #### If User Accepts Web Testing:
 

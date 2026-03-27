@@ -176,7 +176,7 @@ Think like a product manager - what would make this issue clear and actionable? 
 
 After planning the issue structure, run SpecFlow Analyzer to validate and refine the feature specification:
 
-- Task compound-engineering:workflow:spec-flow-analyzer(feature_description, research_findings)
+- Task compound-engineering:review:spec-flow-analyzer(feature_description, research_findings)
 
 **SpecFlow Analyzer Output:**
 
@@ -209,7 +209,6 @@ Apply best practices for clarity and actionability, making the issue easy to sca
 - [ ] Add screenshots/mockups if UI-related (drag & drop or use image hosting)
 - [ ] Use task lists (- [ ]) for trackable items that can be checked off
 - [ ] Add collapsible sections for lengthy logs or optional details using `<details>` tags
-- [ ] Apply appropriate emoji for visual scanning (🐛 bug, ✨ feature, 📚 docs, ♻️ refactor)
 
 **Cross-Referencing:**
 

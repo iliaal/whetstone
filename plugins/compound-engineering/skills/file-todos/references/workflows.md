@@ -120,6 +120,6 @@ Work logs serve as:
 |---------|------|------|
 | Code review | `/workflows:review` -> Findings -> `/triage` -> Todos | Review agent + skill |
 | PR comments | `/resolve-pr-parallel` -> Individual fixes -> Todos | gh CLI + command |
-| Code TODOs | `/resolve_todo_parallel` -> Fixes + Complex todos | Agent + skill |
+| Code TODOs | `/resolve-todo-parallel` -> Fixes + Complex todos | Agent + skill |
 | Planning | Brainstorm -> Create todo -> Work -> Complete | Skill |
 | Feedback | Discussion -> Create todo -> Triage -> Work | Skill + slash |

@@ -10,7 +10,7 @@ Context: The user has just implemented a new feature that processes user data.
 user: "I've implemented the user analytics feature. Can you check if it will scale?"
 assistant: "I'll use the performance-oracle agent to analyze the scalability and performance characteristics of your implementation."
 <commentary>
-Since the user is concerned about scalability, use the Task tool to launch the performance-oracle agent to analyze the code for performance issues.
+Since the user is concerned about scalability, use the performance-oracle agent to analyze the code for performance issues.
 </commentary>
 </example>
 <example>

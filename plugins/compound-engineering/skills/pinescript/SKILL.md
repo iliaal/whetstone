@@ -4,7 +4,6 @@ description: >-
   Pine Script v6 patterns: syntax, performance, error diagnosis, backtesting,
   visualization. Use when working with PineScript, TradingView, indicators,
   strategies, or backtesting.
-paths: "**/*.pine"
 ---
 
 # Pine Script Development
@@ -77,3 +76,9 @@ TradingView has no console or debugger. Use these patterns:
 2. Test with bar replay and strategy tester on multiple timeframes
 3. Walk-forward validate before trusting backtest results (see Strategy & Backtesting above)
 4. Verify: run on 3+ symbols and 2+ timeframes
+
+## Verify
+
+- Indicator compiles without errors on TradingView
+- No repainting: `barstate.isconfirmed` guard present where needed
+- Walk-forward tested on 3+ symbols across different timeframes

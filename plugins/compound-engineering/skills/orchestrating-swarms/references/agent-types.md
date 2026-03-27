@@ -118,8 +118,7 @@ Task({
 - `agent-native-reviewer` - Ensures features work for agents too
 - `architecture-strategist` - Architectural compliance
 - `code-simplicity-reviewer` - YAGNI and minimalism
-- `data-integrity-guardian` - Database and data safety
-- `data-migration-expert` - Migration validation
+- `database-guardian` - Database safety and migration validation
 - `deployment-verification-agent` - Pre-deploy checklists
 - `kieran-reviewer` - Python and TypeScript best practices
 - `architecture-strategist` - Architecture, design patterns, and anti-patterns

@@ -6,7 +6,7 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 | Component | Count |
 |-----------|-------|
-| Agents | 23 |
+| Agents | 21 |
 | Commands | 22 |
 | Skills | 29 |
 | Hooks | 1 |
@@ -16,7 +16,7 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 Agents are organized into categories for easier discovery.
 
-### Review (11)
+### Review (10)
 
 | Agent | Description |
 |-------|-------------|
@@ -25,8 +25,7 @@ Agents are organized into categories for easier discovery.
 | [`architecture-strategist`](agents/review/architecture-strategist.md) | Architecture, design patterns, naming conventions, and structural integrity |
 | [`cloud-architect`](agents/review/cloud-architect.md) | Cloud infrastructure review, cost optimization, DR, migration strategies |
 | [`code-simplicity-reviewer`](agents/review/code-simplicity-reviewer.md) | Final pass for simplicity and minimalism |
-| [`data-integrity-guardian`](agents/review/data-integrity-guardian.md) | Database migrations and data integrity |
-| [`data-migration-expert`](agents/review/data-migration-expert.md) | Validate ID mappings match production, check for swapped values |
+| [`database-guardian`](agents/review/database-guardian.md) | Database schema, constraints, and migration code validation |
 | [`kieran-reviewer`](agents/review/kieran-reviewer.md) | Python and TypeScript code review with strict conventions |
 | [`performance-oracle`](agents/review/performance-oracle.md) | Performance analysis and optimization |
 | [`security-sentinel`](agents/review/security-sentinel.md) | Security audits and vulnerability assessments |
@@ -41,13 +40,12 @@ Agents are organized into categories for easier discovery.
 | [`learnings-researcher`](agents/research/learnings-researcher.md) | Search institutional learnings for relevant past solutions |
 | [`repo-research-analyst`](agents/research/repo-research-analyst.md) | Research repository structure and conventions |
 
-### Design (3)
+### Design (2)
 
 | Agent | Description |
 |-------|-------------|
-| [`design-implementation-reviewer`](agents/design/design-implementation-reviewer.md) | Verify UI implementations match Figma designs |
 | [`design-iterator`](agents/design/design-iterator.md) | Iteratively refine UI through systematic design iterations |
-| [`figma-design-sync`](agents/design/figma-design-sync.md) | Synchronize web implementations with Figma designs |
+| [`figma-design-sync`](agents/design/figma-design-sync.md) | Compare UI against Figma designs, report discrepancies, and optionally implement fixes |
 
 ### Workflow (5)
 
@@ -84,7 +82,7 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | `/changelog` | Create engaging changelogs for recent merges |
 | `/report-bug` | Report a bug in the plugin |
 | `/reproduce-bug` | Reproduce bugs using logs and console |
-| `/resolve_todo_parallel` | Resolve todos from /todos/ directory in parallel |
+| `/resolve-todo-parallel` | Resolve todos from /todos/ directory in parallel |
 | `/setup` | Configure which review agents run for your project (auto-detects stack) |
 | `/triage` | Triage and prioritize issues |
 | `/test-browser` | Run browser tests on PR-affected pages |

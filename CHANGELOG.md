@@ -5,6 +5,33 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.49.3] - 2026-03-27
+
+### Changed
+
+- **Deep audit: 35 findings fixed, 2 agent consolidations, net -381 lines**
+- Merged `data-integrity-guardian` + `data-migration-expert` into `database-guardian` (two-phase: schema review, then migration validation)
+- Absorbed `design-implementation-reviewer` into `figma-design-sync` as Phase 1 (review-only with stop condition)
+- Renamed `resolve_todo_parallel` to `resolve-todo-parallel` (naming convention compliance)
+- Fixed wrong agent namespace in workflows:plan (`workflow:` -> `review:spec-flow-analyzer`)
+- Fixed wrong maintainer name in report-bug command
+- Removed stale `resolve-pr-parallel` hook pattern (deleted in v2.49.1)
+- Removed dead `schema.yaml` link in compound-docs, dead `/research` ref in compound, dead rclone skill ref in feature-video
+- Removed inert `paths:` frontmatter from 8 skills, `allowed-tools`/`preconditions` from compound-docs
+- Removed stale "Task tool" references from performance-oracle and spec-flow-analyzer agents
+- Resolved brainstorming directive contradiction (one-at-a-time vs clustering)
+- Replaced vague "elegant" directive in nodejs-backend, php-laravel, python-services with measurable criteria
+- Trimmed deepen-plan (~64 lines), workflows:work (~123 lines), changelog directives (21 -> 10 rules)
+- Removed XML wrapper tags from workflows:review and workflows:work
+- Fixed phase numbering gap in workflows:review (Phase 3,4 -> Phase 1,2)
+- Removed emoji directive from workflows:plan, hardcoded year from brainstorm/deepen-plan
+- Added verify sections to orchestrating-swarms, terraform, pinescript, git-worktree
+- Added constraints to refine-prompt, success criteria to document-review
+- Moved oversized content to references/: frontend-design, debugging, brainstorming
+- Clarified descriptions: repo-research-analyst, deployment-verification-agent
+- Fixed bare backtick skill refs in php-laravel, react-frontend
+- Removed duplicate `frontend-design` reference in design-iterator
+
 ## [2.49.2] - 2026-03-27
 
 ### Changed

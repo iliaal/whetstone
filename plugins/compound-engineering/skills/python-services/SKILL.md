@@ -5,7 +5,6 @@ description: >-
   when working with Python code, building CLI apps, FastAPI services,
   async with asyncio, background jobs, or configuring uv, ruff, ty, pytest, or
   pyproject.toml.
-paths: "**/*.py"
 ---
 
 # Python Services & CLI
@@ -114,7 +113,7 @@ def call_api(url: str) -> dict: ...
 
 ## Discipline
 
-- For non-trivial changes, pause and ask: "is there a more elegant way?" Skip for obvious fixes.
+- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution

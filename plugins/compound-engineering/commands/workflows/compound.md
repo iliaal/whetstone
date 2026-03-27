@@ -92,7 +92,7 @@ Based on problem type, optionally invoke specialized agents to review the docume
 
 - **performance_issue** → `performance-oracle`
 - **security_issue** → `security-sentinel`
-- **database_issue** → `data-integrity-guardian`
+- **database_issue** → `database-guardian`
 - **test_failure** → `writing-tests`
 - Any code-heavy issue → `code-simplicity-reviewer`
 
@@ -218,7 +218,7 @@ Based on problem type, these agents can enhance documentation:
 - **performance-oracle**: Analyzes performance_issue category solutions
 - **security-sentinel**: Reviews security_issue solutions for vulnerabilities
 - **writing-tests**: Creates test cases for prevention strategies
-- **data-integrity-guardian**: Reviews database_issue migrations and queries
+- **database-guardian**: Reviews database_issue migrations and queries
 
 ### Enhancement & Documentation
 - **best-practices-researcher**: Enriches solution with industry best practices
@@ -231,5 +231,4 @@ Based on problem type, these agents can enhance documentation:
 
 ## Related Commands
 
-- `/research [topic]` - Deep investigation (searches docs/solutions/ for patterns)
 - `/workflows:plan` - Planning workflow (references documented solutions)

@@ -103,8 +103,5 @@ SKILL_TIERS[orchestrating-swarms]=3
 SKILL_PATTERNS[git-worktree]='worktree|parallel.?development'
 SKILL_TIERS[git-worktree]=3
 
-SKILL_PATTERNS[resolve-pr-parallel]='resolve.*(thread|comment|pr)|batch.?resolve'
-SKILL_TIERS[resolve-pr-parallel]=3
 
-
-# Total skills: 30
+# Total skills: 29

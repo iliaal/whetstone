@@ -1,7 +1,7 @@
 ---
 name: repo-research-analyst
 autoApprove: read
-description: "Conducts thorough research on repository structure, documentation, conventions, and implementation patterns. Use when onboarding to a new codebase or understanding project conventions."
+description: "Conducts thorough research on this codebase's structure, documentation, conventions, and project-specific implementation patterns. Use when onboarding to the repo or understanding its conventions. For external best practices, use best-practices-researcher."
 ---
 
 <examples>

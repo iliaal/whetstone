@@ -5,7 +5,6 @@ description: >-
   Use when working with Laravel, Eloquent, Blade, artisan, PHPUnit, PHPStan,
   or building/testing PHP applications with frameworks. Not for PHP internals (php-src)
   or general PHP language discussion.
-paths: "**/*.php"
 ---
 
 # PHP & Laravel Development
@@ -106,7 +105,7 @@ Use these when applicable -- do not explain them in comments (Claude and develop
 - `Gate::forUser($user)->allows('update', $post)` for authorization assertions
 - `assertDatabaseHas` / `assertDatabaseMissing` to verify persistence
 - Coverage target: 80%+ with `pcov` or `XDEBUG_MODE=coverage` in CI
-General testing discipline (anti-patterns, rationalization resistance): see `writing-tests` skill.
+General testing discipline (anti-patterns, rationalization resistance): see [writing-tests](../writing-tests/SKILL.md) skill.
 See [testing patterns and examples](./references/testing.md) for PHPUnit essentials, data providers, and running tests.
 See [feature testing](./references/feature-testing.md) for auth, validation, API, console, and DB assertions.
 See [mocking and faking](./references/mocking-and-faking.md) for facade fakes and action mocking.
@@ -114,7 +113,7 @@ See [factories](./references/factories.md) for states, relationships, sequences,
 
 ## Discipline
 
-- For non-trivial changes, pause and ask: "is there a more elegant way?" Skip for obvious fixes.
+- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution

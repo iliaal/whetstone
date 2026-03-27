@@ -185,6 +185,4 @@ Start by taking an initial screenshot of the target element to establish baselin
 
 Make targeted, minimal changes per iteration. Don't redesign what's already working.
 
-**Design quality**: Follow the `frontend-design` skill for aesthetics guidance (typography, color, motion, avoiding AI slop).
-
 **Verification**: After completing all iterations, verify the implementation compiles and renders correctly using `verification-before-completion`.

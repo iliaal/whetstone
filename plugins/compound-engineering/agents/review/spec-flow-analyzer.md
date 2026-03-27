@@ -9,7 +9,7 @@ description: "Analyzes specifications and feature descriptions for user flow com
 Context: The user has just finished drafting a specification for OAuth implementation.
 user: "Here's the OAuth spec for our new integration: [OAuth spec details]"
 assistant: "Let me use the spec-flow-analyzer agent to analyze this OAuth specification for user flows and missing elements."
-<commentary>Since the user has provided a specification document, use the Task tool to launch the spec-flow-analyzer agent to identify all user flows, edge cases, and missing clarifications.</commentary>
+<commentary>Since the user has provided a specification document, use the spec-flow-analyzer agent to identify all user flows, edge cases, and missing clarifications.</commentary>
 </example>
 <example>
 Context: The user is planning a new social sharing feature.

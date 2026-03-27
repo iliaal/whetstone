@@ -16,7 +16,7 @@ Never propose a fix without first identifying the root cause. "Quick fix now, in
 
 ## Root Cause Analysis
 
-Root cause identification is the core deliverable of debugging -- not the fix itself. A fix without a confirmed root cause is guesswork.
+Root cause identification is the core deliverable of debugging -- not the fix itself.
 
 - **Trace backward**: Start at the symptom, walk the call chain in reverse to find where behavior diverges from expectation
 - **Differential analysis**: Compare working vs broken state across dimensions (code version, data, environment, timing, configuration)
@@ -125,7 +125,6 @@ When you catch yourself doing or thinking these things, **stop and return to Pha
 | Multiple simultaneous changes | You're making the problem harder to diagnose. One change at a time. |
 | Fixing the symptom, not the cause | The same bug will resurface differently. Trace to root cause. |
 | Ignoring intermittent failures ("works on my machine") | Instrument and reproduce under load instead. |
-| "Quick fix for now, investigate later" | You don't understand the root cause. Later never comes. |
 | "Skip the test, I can see it works" | You can't. Run the verification. See `verification-before-completion`. |
 | "It's probably X" | "Probably" means you haven't verified. Trace the actual execution path. |
 | "I see the problem, let me fix it" | Seeing symptoms is not understanding root cause. Trace the actual execution path first. |
@@ -135,15 +134,7 @@ When you catch yourself doing or thinking these things, **stop and return to Pha
 | "The test is wrong, not the code" | Verify before dismissing. Read the test's intent. If the test is genuinely wrong, fix the test with a clear rationale, not a silent update. |
 | "It works in isolation, must be an environment issue" | Isolation success doesn't explain integration failure. Instrument the integration boundary. |
 
-## Signals You're Off Track
-
-Watch for these signs from the user -- they indicate you've left the systematic process:
-
-- "Is that not happening?" -- you assumed behavior without checking
-- "Will it show us...?" -- you're not gathering enough evidence
-- "Stop guessing" -- you're proposing fixes without root cause
-- "We're going in circles" -- same hypothesis repackaged, not a new approach
-- Repeating the same type of fix with slight variations -- that's not a new hypothesis
+See [specialized-patterns.md](./references/specialized-patterns.md) for anti-pattern signals and specialized debugging patterns.
 
 ## Integration
 

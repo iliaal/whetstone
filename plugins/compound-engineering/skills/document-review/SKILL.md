@@ -99,3 +99,10 @@ Return control to the caller (workflow or user) after selection.
 - Flag missing sections in your review, but don't add them. The user decides what to include.
 - Keep changes minimal. If a paragraph needs tightening, tighten it. Don't expand scope.
 - Review inline. No separate review files or metadata sections.
+
+## Success Criteria
+
+- Document read and scored on all four quality criteria
+- Critical improvements identified with specific suggestions
+- User presented with clear next-action choice
+- Revised document saved if changes were approved

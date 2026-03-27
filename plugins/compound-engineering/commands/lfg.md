@@ -31,7 +31,7 @@ Run these steps in order. Do not stop between steps -- complete every step throu
 
 ## Finalize
 
-6. `/compound-engineering:resolve_todo_parallel` -- resolve any findings from review
+6. `/compound-engineering:resolve-todo-parallel` -- resolve any findings from review
 7. `/compound-engineering:feature-video` -- record walkthrough and add to PR
 
 Start now.

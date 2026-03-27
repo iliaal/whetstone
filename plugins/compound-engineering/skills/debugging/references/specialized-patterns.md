@@ -28,3 +28,13 @@ After resolving non-trivial bugs, document a lightweight postmortem:
 3. **Impact**: what broke, for how long, who was affected
 4. **Fix**: what changed and why this fix addresses the root cause
 5. **Prevention**: what test, monitor, or process change prevents recurrence
+
+## Signals You're Off Track
+
+Watch for these signs from the user -- they indicate you've left the systematic process:
+
+- "Is that not happening?" -- you assumed behavior without checking
+- "Will it show us...?" -- you're not gathering enough evidence
+- "Stop guessing" -- you're proposing fixes without root cause
+- "We're going in circles" -- same hypothesis repackaged, not a new approach
+- Repeating the same type of fix with slight variations -- that's not a new hypothesis

@@ -54,3 +54,9 @@ After refining, offer to save the result to `.ai/PROMPT.md` -- do not write with
 | Examples contradict instructions | Align examples to match every stated rule |
 | Over-engineered from the start | Strip to simplest working version, then add complexity only where output quality requires it |
 | Prompt exceeds context with examples | Limit to 2–3 diverse examples; use one simple, one edge case |
+
+## Constraints
+
+- Never invent missing information -- if context is ambiguous, ask instead of inferring
+- Stop refining if the original intent is unclear -- clarify first
+- Do not refine prompts for harmful or illegal tasks

@@ -67,6 +67,13 @@ Always offer choice:
 1. New branch on current worktree (live work)
 2. Worktree (parallel work)
 
+## Verify
+
+- `git worktree list` shows the new entry
+- `.worktrees` directory confirmed in `.gitignore`
+- Dependencies installed in the worktree
+- Baseline test suite passes in the worktree
+
 ## References
 
 - [workflow-examples.md](./references/workflow-examples.md) - Code review and parallel development workflows

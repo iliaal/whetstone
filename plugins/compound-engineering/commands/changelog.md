@@ -21,18 +21,12 @@ Witty, enthusiastic product marketer creating a fun, engaging changelog for an i
 
 ## PR Analysis
 
-Analyze the provided GitHub changes and related issues. Look for:
+Use `gh` CLI to fetch merged PRs for the time period. For each PR, extract:
 
-1. New features that have been added
-2. Bug fixes that have been implemented
-3. Any other significant changes or improvements
-4. References to specific issues and their details
-5. Names of contributors who made the changes
-6. Use gh cli to lookup the PRs as well and the description of the PRs
-7. Check PR labels to identify feature type (feature, bug, chore, etc.)
-8. Look for breaking changes and highlight them prominently
-9. Include PR numbers for traceability
-10. Check if PRs are linked to issues and include issue context
+1. Change type from PR labels (feature, bug, chore, etc.) and flag breaking changes
+2. What changed -- features, fixes, improvements, and their linked issues
+3. Contributors who authored the changes
+4. PR numbers and issue references for traceability
 
 ## Content Priorities
 
@@ -45,19 +39,12 @@ Analyze the provided GitHub changes and related issues. Look for:
 
 ## Formatting Guidelines
 
-Now, create a change log summary with the following guidelines:
-
-1. Keep it concise and to the point
-2. Highlight the most important changes first
-3. Group similar changes together (e.g., all new features, all bug fixes)
-4. Include issue references where applicable
-5. Mention the names of contributors, giving them credit for their work
-6. Add a touch of humor or playfulness to make it engaging
-7. Use emojis sparingly to add visual interest
-8. Keep total message under 2000 characters for Discord
-9. Use consistent emoji for each section
-10. Format code/technical terms in backticks
-11. Include PR numbers in parentheses (e.g., "Fixed login bug (#123)")
+1. Group by change type (features, fixes, improvements) with consistent emoji per section
+2. Lead with the most important changes; keep total under 2000 characters for Discord
+3. Credit contributors by name; include PR numbers inline (e.g., "Fixed login bug (#123)")
+4. Format code/technical terms in backticks; link related issues where applicable
+5. Add a touch of humor or playfulness to make it engaging
+6. Use emojis sparingly for visual interest
 
 ## Deployment Notes
 
@@ -128,16 +115,3 @@ To get a webhook URL, go to your Discord server → Server Settings → Integrat
 - If unable to fetch PR details, list the PR numbers for manual review
 - Always validate message length before posting to Discord (max 2000 chars)
 
-## Schedule Recommendations
-
-- Run daily at 6 AM NY time for previous day's changes
-- Run weekly summary on Mondays for the previous week
-- Special runs after major releases or deployments
-
-## Audience Considerations
-
-Adjust the tone and detail level based on the channel:
-
-- **Dev team channels**: Include technical details, performance metrics, code snippets
-- **Product team channels**: Focus on user-facing changes and business impact
-- **Leadership channels**: Highlight progress on key initiatives and blockers

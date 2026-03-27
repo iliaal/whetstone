@@ -6,8 +6,6 @@ argument-hint: "[feature idea or problem to explore]"
 
 # Brainstorm a Feature or Improvement
 
-**Note: The current year is 2026.** Use this when dating brainstorm documents.
-
 **Process knowledge:** Follow the `brainstorming` skill for all process details -- clarity assessment, question techniques, approach exploration, YAGNI principles, scope decomposition, and spec review.
 
 ## Feature Description

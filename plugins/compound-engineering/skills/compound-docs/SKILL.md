@@ -6,14 +6,6 @@ description: >-
   knowledge base, or building searchable institutional knowledge after
   debugging or troubleshooting.
 disable-model-invocation: true
-allowed-tools:
-  - Read # Parse conversation context
-  - Write # Create resolution docs
-  - Bash # Create directories
-  - Grep # Search existing docs
-preconditions:
-  - Problem has been solved (not in-progress)
-  - Solution has been verified working
 ---
 
 # compound-docs

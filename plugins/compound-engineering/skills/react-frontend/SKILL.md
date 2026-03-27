@@ -5,7 +5,6 @@ description: >-
   working with React component structure, state management, Next.js routing,
   Vitest, React Testing Library, or reviewing React code. For visual design and
   aesthetic direction, use frontend-design instead.
-paths: "**/*.tsx,**/*.jsx"
 ---
 
 # React Frontend
@@ -135,7 +134,7 @@ Form state           → React Hook Form
 - Use `userEvent` over `fireEvent` for realistic interactions
 - `findBy*` for async elements, `waitFor` after state-triggering actions
 - `vi.clearAllMocks()` in `beforeEach`. Recreate state per test.
-General testing discipline (anti-patterns, rationalization resistance): see `writing-tests` skill.
+General testing discipline (anti-patterns, rationalization resistance): see [writing-tests](../writing-tests/SKILL.md) skill.
 See [testing patterns and examples](./references/testing.md) for component, hook, and mocking examples.
 See [e2e testing](./references/e2e-testing.md) for Playwright patterns.
 

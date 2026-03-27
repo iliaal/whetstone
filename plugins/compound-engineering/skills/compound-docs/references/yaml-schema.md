@@ -1,6 +1,6 @@
 # YAML Frontmatter Schema
 
-**See [schema.yaml](../schema.yaml) for the complete schema specification.**
+**Schema specification for YAML frontmatter in solution documents.**
 
 ## Required Fields
 

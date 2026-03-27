@@ -4,7 +4,6 @@ description: >-
   Terraform and OpenTofu configuration, modules, testing, state management, and
   HCL review. Use when working with Terraform, OpenTofu, HCL, tfvars, tftest,
   state migration, or IaC patterns.
-paths: "**/*.tf,**/*.tfvars"
 ---
 
 # Terraform & OpenTofu
@@ -129,3 +128,13 @@ This forces Terraform to destroy subnets before CIDR associations -- prevents de
 
 - `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs -- never hardcode subnets
 - Multi-region: `provider "aws" { alias = "eu_west_1" }` + `providers = { aws = aws.eu_west_1 }` in module blocks
+
+## Verify
+
+Run before declaring done:
+
+```bash
+terraform fmt -check && terraform validate && tflint && trivy config .
+```
+
+All commands must pass with zero errors.

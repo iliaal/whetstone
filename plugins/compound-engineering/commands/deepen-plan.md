@@ -6,19 +6,6 @@ argument-hint: "[path to plan file]"
 
 # Deepen Plan - Power Enhancement Mode
 
-## Introduction
-
-**Note: The current year is 2026.** Use this when searching for recent documentation and best practices.
-
-This command takes an existing plan (from `/workflows:plan`) and enhances each section with parallel research agents. Each major element gets its own dedicated research sub-agent to find:
-- Best practices and industry patterns
-- Performance optimizations
-- UI/UX improvements (if applicable)
-- Quality enhancements and edge cases
-- Real-world implementation examples
-
-The result is a deeply grounded, production-ready plan with concrete implementation details.
-
 ## Plan File
 
 <plan_path> #$ARGUMENTS </plan_path>
@@ -521,56 +508,5 @@ Based on selection:
 - **`/workflows:work`** → Call the /workflows:work command with the plan file path
 - **Deepen further** → Ask which sections need more research, then re-run those agents
 - **Revert** → Restore from git or backup
-
-## Example Enhancement
-
-**Before (from /workflows:plan):**
-```markdown
-## Technical Approach
-
-Use React Query for data fetching with optimistic updates.
-```
-
-**After (from /workflows:deepen-plan):**
-```markdown
-## Technical Approach
-
-Use React Query for data fetching with optimistic updates.
-
-### Research Insights
-
-**Best Practices:**
-- Configure `staleTime` and `cacheTime` based on data freshness requirements
-- Use `queryKey` factories for consistent cache invalidation
-- Implement error boundaries around query-dependent components
-
-**Performance Considerations:**
-- Enable `refetchOnWindowFocus: false` for stable data to reduce unnecessary requests
-- Use `select` option to transform and memoize data at query level
-- Consider `placeholderData` for instant perceived loading
-
-**Implementation Details:**
-```typescript
-// Recommended query configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 2,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-```
-
-**Edge Cases:**
-- Handle race conditions with `cancelQueries` on component unmount
-- Implement retry logic for transient network failures
-- Consider offline support with `persistQueryClient`
-
-**References:**
-- https://tanstack.com/query/latest/docs/react/guides/optimistic-updates
-- https://tkdodo.eu/blog/practical-react-query
-```
 
 NEVER CODE! Just research and enhance the plan.

@@ -25,7 +25,7 @@ This command creates professional video walkthroughs of features for PR document
 - agent-browser CLI installed
 - Git repository with a PR to document
 - `ffmpeg` installed (for video conversion)
-- `rclone` configured (optional, for cloud upload - see rclone skill)
+- `rclone` configured (optional, for cloud upload - see rclone documentation)
 - Public R2 base URL known (for example, `https://<public-domain>.r2.dev`)
 </requirements>
 

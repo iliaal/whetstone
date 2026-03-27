@@ -1,7 +1,7 @@
 ---
 name: deployment-verification-agent
 autoApprove: read
-description: "Produces Go/No-Go deployment checklists with SQL verification queries, rollback procedures, and monitoring plans. Use when PRs touch production data, migrations, or risky data changes."
+description: "Produces Go/No-Go deployment checklists with SQL verification queries, rollback procedures, and monitoring plans. Use after database-guardian validates migration code, when PRs touch production data, migrations, or risky data changes."
 ---
 
 <examples>
@@ -176,7 +176,6 @@ Be thorough. Be specific. Produce executable checklists, not vague recommendatio
 ## Scope Boundaries
 
 - **This agent**: creates *deployment checklists* -- Go/No-Go procedures, SQL verification queries, rollback plans, monitoring
-- **data-migration-expert**: validates *migration code* against production reality (ID mappings, enum conversions, swapped values)
-- **data-integrity-guardian**: reviews schema design, constraints, transaction boundaries, privacy -- the *rules* that protect data
+- **database-guardian**: reviews schema design, constraints, transaction boundaries, privacy, AND validates migration code against production reality (ID mappings, enum conversions, swapped values)
 
-Use findings from data-migration-expert and data-integrity-guardian as inputs to your checklist. Don't re-analyze migration code -- focus on the deployment procedure.
+Use findings from database-guardian as inputs to your checklist. Don't re-analyze migration code -- focus on the deployment procedure.

@@ -65,7 +65,7 @@ Adjust question style accordingly. Technical users get architecture-level probin
 
 **Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality.
 
-Ask questions **one at a time** to understand the user's intent. Avoid overwhelming with multiple questions.
+Ask questions **one at a time** by default. When probing a single dimension (e.g., data model, auth flow), 2-3 related questions together is acceptable -- see Question Clustering below.
 
 **Question Techniques:**
 
@@ -96,23 +96,7 @@ Ask questions **one at a time** to understand the user's intent. Avoid overwhelm
 | Existing Patterns | Are there similar features in the codebase to follow? |
 | Non-goals | What is explicitly NOT in scope? |
 
-### Deep Interview Layer
-
-Apply the deep interview protocol on top of the baseline questions above. Assumption probing and contradiction tracking always run. Research-backed challenges and second-order effects run when the scope warrants it (multi-system changes, infrastructure decisions, technology selection).
-
-**Assumption probing:** After each substantive answer, identify what the user assumed but didn't state. "You described X -- are you assuming Y is already in place?" Surface hidden dependencies and unstated constraints.
-
-**Second-order effects:** For features that touch shared infrastructure or data models, ask what success creates downstream. "If this works and gets adopted, what pressure does it put on [related system]?"
-
-**Research-backed challenges:** Fire background research on technology choices and claims. When findings contradict, challenge directly with citation. When findings support, briefly confirm to build confidence in the decision.
-
-**Contradiction tracking:** If the user's answer contradicts something said earlier, flag it immediately: "Earlier you said X, but this implies Y. Which takes priority?"
-
-**Anti-requirements:** When the user rejects an approach or says "definitely not X," capture the rejection and rationale inline with the related decision. Don't force this -- capture organically when it surfaces.
-
-**Question clustering:** When probing a single dimension (e.g., data model, auth flow), ask 2-3 related questions together using AskUserQuestion's multi-question support. Switch to one-at-a-time when jumping between dimensions.
-
-**Completeness assessment:** Track which dimensions have been explored. Before proposing to move to Phase 2, assess coverage and signal confidence: "We've covered purpose, users, and constraints well. Data flow and failure modes are still thin -- want to explore those, or proceed?"
+See [deep-interview.md](./references/deep-interview.md) for deep interview techniques.
 
 **Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets and confirm with the user.
 
@@ -167,7 +151,7 @@ Present clear options for what to do next:
 
 | Anti-Pattern | Better Approach |
 |--------------|-----------------|
-| Asking 5 questions at once | Ask one at a time |
+| Asking 5 questions at once | Ask one at a time across dimensions; cluster 2-3 within a dimension |
 | Jumping to implementation details | Stay focused on WHAT, not HOW |
 | Proposing overly complex solutions | Start simple, add complexity only if needed |
 | Ignoring existing codebase patterns | Research what exists first |

@@ -95,10 +95,10 @@ Never `readFileSync` / sync methods in production. Offload CPU work to worker th
 
 ## Discipline
 
-- For non-trivial changes, pause and ask: "is there a more elegant way?" Skip for obvious fixes.
+- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
-- No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- If a fix requires bypassing TypeScript (`as any`, non-null assertions on untrusted data, `// @ts-ignore`), treat it as a design smell and find the typed solution
 - Verify: `tsc --noEmit && npm test` pass with zero warnings before declaring done
 
 ## References
