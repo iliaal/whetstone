@@ -7,8 +7,8 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 | Component | Count |
 |-----------|-------|
 | Agents | 23 |
-| Commands | 21 |
-| Skills | 30 |
+| Commands | 22 |
+| Skills | 29 |
 | Hooks | 1 |
 | MCP Servers | 1 |
 
@@ -92,6 +92,7 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | `/adr` | Create Architecture Decision Records with format selection and lifecycle management |
 | `/compound-refresh` | Review docs/solutions/ for stale learnings -- keep, update, replace, or archive |
 | `/ideate` | Generate ranked improvement ideas by scanning the codebase |
+| `/resolve-pr-parallel` | Batch-resolve PR review comments via parallel subagents |
 | `/verify` | Pre-PR verification pipeline (build, types, lint, tests, security) |
 
 ## Skills
@@ -144,7 +145,6 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | [`file-todos`](skills/file-todos/SKILL.md) | File-based todo tracking system |
 | [`git-worktree`](skills/git-worktree/SKILL.md) | Manage Git worktrees for parallel development |
 | [`md-docs`](skills/md-docs/SKILL.md) | Manages project documentation: AGENTS.md, README.md |
-| [`resolve-pr-parallel`](skills/resolve-pr-parallel/SKILL.md) | Resolve PR review comments in parallel |
 | [`writing`](skills/writing/SKILL.md) | Prose editing, rewriting, and humanizing text |
 
 ### AI & Prompting

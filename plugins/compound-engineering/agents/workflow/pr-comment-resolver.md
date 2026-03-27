@@ -1,6 +1,6 @@
 ---
 name: pr-comment-resolver
-description: "Implements a single pre-triaged PR review comment mechanically. Use when a specific comment's action is clear and agreed -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use resolve-pr-parallel skill)."
+description: "Implements a single pre-triaged PR review comment mechanically. Use when a specific comment's action is clear and agreed -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use /resolve-pr-parallel command)."
 ---
 
 <examples>
@@ -14,7 +14,7 @@ assistant: "I'll use the pr-comment-resolver agent to address this comment by im
 Context: A reviewer has left a specific comment about a naming issue.
 user: "The reviewer says to rename processData to transformUserRecord for clarity"
 assistant: "I'll use the pr-comment-resolver agent to implement that rename and mark the comment resolved"
-<commentary>This is a single, clear-action comment -- exactly what pr-comment-resolver handles. For multiple comments at once, use the resolve-pr-parallel skill instead.</commentary>
+<commentary>This is a single, clear-action comment -- exactly what pr-comment-resolver handles. For multiple comments at once, use the /resolve-pr-parallel command instead.</commentary>
 </example>
 </examples>
 

@@ -146,5 +146,5 @@ Limit to 10 findings per severity. If more exist, note the count and show the hi
 
 - `receiving-code-review` -- the inbound side (processing review feedback received from others)
 - `workflows:review` -- the full review command with multi-agent analysis
-- `resolve-pr-parallel` -- batch-resolve PR comments with parallel agents
+- `/resolve-pr-parallel` command -- batch-resolve PR comments with parallel agents
 - `security-sentinel` agent -- deep security audit beyond the security step in this skill

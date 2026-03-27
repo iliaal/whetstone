@@ -5,6 +5,13 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.49.1] - 2026-03-27
+
+### Changed
+
+- **Migrated `resolve-pr-parallel` from skill to command** -- was already `disable-model-invocation: true` with `argument-hint`, now properly lives in `commands/` with `$ARGUMENTS` interpolation and `receiving-code-review` skill delegation
+- Scripts moved to `commands/scripts/`; cross-references updated in code-review, pr-comment-resolver, file-todos
+
 ## [2.49.0] - 2026-03-27
 
 ### Added

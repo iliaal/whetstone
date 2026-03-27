@@ -1,23 +1,16 @@
 ---
 name: resolve-pr-parallel
-description: >-
-  Batch-resolve all open PR threads via parallel subagents. Use when bulk-fixing
-  PR comments after triage.
+description: Batch-resolve all open PR threads via parallel subagents. Use when bulk-fixing PR comments after triage.
 argument-hint: "[optional: PR number or current PR]"
-disable-model-invocation: true
-allowed-tools: Bash(gh *), Bash(git *), Read
 ---
 
 # Resolve PR Comments in Parallel
 
-Resolve all unresolved PR review comments by spawning parallel agents for each thread.
+**PR:** #$ARGUMENTS
 
-## Context Detection
+Resolve all unresolved PR review comments by spawning parallel agents for each thread. If no PR number given, detect from current branch.
 
-Claude Code automatically detects git context:
-- Current branch and associated PR
-- All PR comments and review threads
-- Works with any PR by specifying the number
+Use the `receiving-code-review` skill for how to handle each comment (verify before implementing, push back on incorrect suggestions).
 
 ## Workflow
 
@@ -26,7 +19,7 @@ Claude Code automatically detects git context:
 Fetch unresolved review threads using the GraphQL script:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/resolve-pr-parallel/scripts/get-pr-comments PR_NUMBER
+bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
 This returns only **unresolved, non-outdated** threads with file paths, line numbers, and comment bodies.
@@ -66,7 +59,7 @@ Always run all in parallel subagents/Tasks for each Todo item.
 - Resolve each thread programmatically:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/resolve-pr-parallel/scripts/resolve-pr-thread THREAD_ID
+bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-pr-thread THREAD_ID
 ```
 
 - Push to remote
@@ -76,7 +69,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/resolve-pr-parallel/scripts/resolve-pr-thread 
 Re-fetch comments to confirm all threads are resolved:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/skills/resolve-pr-parallel/scripts/get-pr-comments PR_NUMBER
+bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
 Should return an empty array `[]`. If threads remain, repeat from step 1.
