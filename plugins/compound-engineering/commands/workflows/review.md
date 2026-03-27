@@ -221,7 +221,7 @@ Remove duplicates, prioritize by severity and impact.
 - [ ] Discard any findings that recommend deleting or gitignoring files in `docs/plans/` or `docs/solutions/` (see Protected Artifacts above)
 - [ ] Categorize by type: security, performance, architecture, quality, etc.
 - [ ] Assign severity levels: 🔴 CRITICAL (P1), 🟡 IMPORTANT (P2), 🔵 NICE-TO-HAVE (P3)
-- [ ] Remove duplicate or overlapping findings
+- [ ] Deduplicate findings: same file:line + same issue class from different agents = merge, keep the higher severity rating
 - [ ] Estimate effort for each finding (Small/Medium/Large)
 
 </synthesis_tasks>

@@ -5,6 +5,35 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.49.0] - 2026-03-27
+
+### Added
+
+- **Security detection patterns** reference (`code-review/references/security-patterns.md`) covering 11 vulnerability classes with grep-able signatures: deployment entrypoints, config/secrets, auth/authz, CSRF, XSS, cache, file handling, SQL/NoSQL injection, SSRF, open redirects, CORS
+- **Review dispatch templates** for orchestrating-swarms: Stage 1 (spec compliance) and Stage 2 (code quality) prompt templates for subagent review handoffs
+- **Core principles reference** for agent-native-architecture: moved 95-line prose to `references/core-principles.md`, replaced with summary table (saves ~320 tokens per invocation)
+- 3 missing commands added to README tables: `/adr`, `/compound-refresh`, `/ideate`
+
+### Changed
+
+- **Cross-repo sync improvements** across 30 skills, 12 agents, 8 commands:
+  - Skill descriptions: removed workflow leaks from 5 skills (CSO pattern from superpowers) -- descriptions now contain only trigger conditions
+  - Research verification triggers added to react-frontend, tailwind-css, nodejs-backend, pinescript (search current docs before implementing version-sensitive patterns)
+  - Writing skill: 5 new anti-slop sections (lazy extremes, negative listing, performative emphasis, telling-instead-of-showing, rhythm rules)
+  - Code review: findings now require `quoted code` for Critical/Important severity
+  - Planning: anti-gold-plating rule, ADR cross-reference for architectural decisions
+  - Brainstorming: deep interview layer now selective (not blanket "always runs"), design doc template collapsed from 30 lines to 3
+  - Orchestrating swarms: status signals now instructed (not just expected) in teammate prompts
+  - Review deduplication made specific: same file:line + same issue class = merge, keep higher severity
+  - Compound docs: trigger synonyms added (post-mortem, lessons learned, knowledge base)
+  - File todos: trigger synonyms added (task tracking, backlog)
+- **Agent category corrections**: cloud-architect moved to review/, deployment-verification-agent to workflow/, spec-flow-analyzer to review/
+- **Agent quality**: 5 agents fixed from "you will:" to imperative style; pr-comment-resolver Example 2 fixed (was multi-comment, contradicted single-comment description); design-iterator and figma-design-sync now reference verification-before-completion; deployment-engineer and devops-engineer descriptions now exclude each other's domains; best-practices-researcher Example 4 fixed (was debugging question); repo-research-analyst raw `rg` reference replaced with Grep tool; agent-native-reviewer duplicated TypeScript block replaced with skill reference
+- **Command fixes**: `$ARGUMENTS` interpolation added to adr, changelog, triage, resolve_todo_parallel (all had argument-hint but never used the value); workflows:compound Phase 2 now delegates to compound-docs skill instead of reimplementing; triage inline naming conventions removed (delegates to file-todos skill); workflows:plan now references planning skill; agent-native-audit persists report to docs/audits/; reproduce-bug and bug-reproduction-validator descriptions differentiated
+- **Skill refinements**: debugging anti-patterns table rendering bug fixed (blank line splitting table); document-review naked negations replaced with paired constraints; pinescript anti-patterns restricted to coding patterns (trading advice removed); postgresql stale PG11/PG12 version markers removed
+- README command count corrected: 18 -> 21
+- Global CLAUDE.md: output completeness rule added (banned placeholder comments in code)
+
 ## [2.48.0] - 2026-03-22
 
 ### Added

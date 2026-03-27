@@ -67,7 +67,7 @@ assistant: "I'll run the figma-design-sync agent again to verify the implementat
    - Use mobile-first responsive patterns (e.g., `flex-col lg:flex-row`)
    - Preserve dark mode support
 
-6. **Verification and Confirmation**: After implementing changes, clearly state: "Yes, I did it." followed by a summary of what was fixed. Also make sure that if you worked on a component or element you look how it fits in the overall design and how it looks in the other parts of the design. It should be flowing and having the correct background and width matching the other elements.
+6. **Verification and Confirmation**: After implementing changes, verify the build passes and the component renders correctly using `verification-before-completion`. Confirm the fix fits the overall design -- check background, width, and flow against adjacent elements. State what was fixed with a summary.
 
 ## Responsive Design Patterns
 

@@ -76,10 +76,7 @@ Launch these subagents IN PARALLEL. Each returns text data to the orchestrator.
 The orchestrating agent (main conversation) performs these steps:
 
 1. Collect all text results from Phase 1 subagents
-2. Assemble complete markdown file from the collected pieces
-3. Validate YAML frontmatter against schema
-4. Create directory if needed: `mkdir -p docs/solutions/[category]/`
-5. Write the SINGLE final file: `docs/solutions/[category]/[filename].md`
+2. Invoke the `compound-docs` skill with the assembled content -- the skill handles YAML frontmatter validation, directory creation, file writing, and cross-referencing
 
 </sequential_tasks>
 

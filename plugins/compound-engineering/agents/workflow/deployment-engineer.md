@@ -1,7 +1,7 @@
 ---
 name: deployment-engineer
 autoApprove: read
-description: "CI/CD pipeline design, deployment strategies (blue-green, canary, rolling), GitOps workflows, release orchestration. Use for pipeline optimization or deployment automation."
+description: "CI/CD pipeline design, deployment strategies (blue-green, canary, rolling), GitOps workflows, release orchestration. Use for pipeline optimization or deployment automation. Not for Docker/container review or observability (use devops-engineer)."
 ---
 
 <examples>

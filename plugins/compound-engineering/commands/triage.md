@@ -5,8 +5,10 @@ argument-hint: "[findings list or source type]"
 disable-model-invocation: true
 ---
 
+**Input:** #$ARGUMENTS
+
 - First set the /model to Haiku
-- Then read all pending todos in the todos/ directory
+- If input specifies a source or filter, use it. Otherwise read all pending todos in the todos/ directory.
 
 Present all findings, decisions, or issues here one by one for triage. The goal is to go through each item and decide whether to add it to the CLI todo system.
 
@@ -57,29 +59,7 @@ Do you want to add this to the todo list?
 
 **When user says "yes":**
 
-1. **Update existing todo file** (if it exists) or **Create new filename:**
-
-   If todo already exists (from code review):
-
-   - Rename file from `{id}-pending-{priority}-{desc}.md` → `{id}-ready-{priority}-{desc}.md`
-   - Update YAML frontmatter: `status: pending` → `status: ready`
-   - Keep issue_id, priority, and description unchanged
-
-   If creating new todo:
-
-   ```
-   {next_id}-ready-{priority}-{brief-description}.md
-   ```
-
-   Priority mapping:
-
-   - 🔴 P1 (CRITICAL) → `p1`
-   - 🟡 P2 (IMPORTANT) → `p2`
-   - 🔵 P3 (NICE-TO-HAVE) → `p3`
-
-   Example: `042-ready-p1-transaction-boundaries.md`
-
-2. **Update the file** using the `file-todos` skill's template and naming convention. Change status from `pending` to `ready` in both filename and YAML frontmatter.
+1. **Update or create todo file** using the `file-todos` skill for all naming, frontmatter, and status conventions. Change status from `pending` to `ready` in both filename and YAML frontmatter.
 
 3. **Confirm approval:** "Approved: `{new_filename}` (Issue #{issue_id}) - Status: **ready**"
 

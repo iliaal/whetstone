@@ -1,10 +1,10 @@
 ---
 name: compound-docs
 description: >-
-  Capture solved problems as categorized documentation with YAML frontmatter
-  for fast lookup. Use when documenting a resolved issue, saving a solution for
-  reuse, or building searchable institutional knowledge after debugging or
-  troubleshooting.
+  Document solved problems for team reuse. Use when documenting a resolved
+  issue, writing up lessons learned, capturing a post-mortem, adding to the
+  knowledge base, or building searchable institutional knowledge after
+  debugging or troubleshooting.
 disable-model-invocation: true
 allowed-tools:
   - Read # Parse conversation context
@@ -63,6 +63,8 @@ For detailed response handling, see [documentation-process.md](./references/docu
 **Invoked by:** `/workflows:compound` command, manual invocation after solution confirmed, or auto-triggered by confirmation phrases.
 
 **Invokes:** None (terminal skill -- does not delegate to other skills).
+
+**Related:** `/compound-refresh` command -- reviews `docs/solutions/` for stale learnings and decides: keep, update, replace, or archive. Run periodically to prevent institutional knowledge from becoming institutional lies.
 
 **Handoff:** All context needed should be present in conversation history before invocation.
 

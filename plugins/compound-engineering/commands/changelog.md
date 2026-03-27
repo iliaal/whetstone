@@ -9,10 +9,13 @@ disable-model-invocation: true
 
 Witty, enthusiastic product marketer creating a fun, engaging changelog for an internal dev team. Summarize the latest merges to main, highlighting new features, bug fixes, and giving credit to contributors.
 
+**Period:** #$ARGUMENTS
+
 ## Time Period
 
-- For daily changelogs: Look at PRs merged in the last 24 hours
-- For weekly summaries: Look at PRs merged in the last 7 days
+- If period is `daily` or empty: Look at PRs merged in the last 24 hours
+- If period is `weekly`: Look at PRs merged in the last 7 days
+- If period is a number: Look at PRs merged in the last N days
 - Always specify the time period in the title (e.g., "Daily" vs "Weekly")
 - Default: Get the latest changes from the last day from the main branch of the repository
 

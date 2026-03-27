@@ -1,6 +1,6 @@
 ---
 name: reproduce-bug
-description: Reproduce and investigate a bug using logs, console inspection, and browser screenshots
+description: Reproduce a GitHub issue bug with visual evidence (Playwright screenshots, log analysis). Takes a GitHub issue number. For non-issue bug validation, use the bug-reproduction-validator agent.
 argument-hint: "[GitHub issue number]"
 disable-model-invocation: true
 ---

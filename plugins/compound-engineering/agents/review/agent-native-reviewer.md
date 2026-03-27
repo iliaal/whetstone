@@ -80,21 +80,7 @@ For each tool, verify:
 - [ ] No business logic in the tool implementation
 - [ ] Rich output that helps agent verify success
 
-**Red flags:**
-```typescript
-// BAD: Tool encodes business logic
-tool("process_feedback", async ({ message }) => {
-  const category = categorize(message);      // Logic in tool
-  const priority = calculatePriority(message); // Logic in tool
-  if (priority > 3) await notify();           // Decision in tool
-});
-
-// GOOD: Tool is a primitive
-tool("store_item", async ({ key, value }) => {
-  await db.set(key, value);
-  return { text: `Stored ${key}` };
-});
-```
+**Red flags:** Tools that encode business logic (categorization, priority calculation, conditional notifications) instead of exposing primitives (store, read, notify). See the `agent-native-architecture` skill for code examples.
 
 ### Step 5: Check Shared Workspace
 

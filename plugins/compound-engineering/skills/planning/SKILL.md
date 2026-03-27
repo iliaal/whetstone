@@ -75,9 +75,26 @@ Planning files are ephemeral working state -- do not commit them. If working on 
 ## Phase 2: [Name]
 ...
 
+## Deferred to Implementation
+- [Things intentionally left unspecified -- details that depend on what you find in the code]
+
 ## Open Questions
 - [Max 3, only truly blocking unknowns]
 ```
+
+### Plan Quality Rules
+
+**No placeholders between tasks.** Each task must be self-contained. Never write "Similar to Task N" or "See above" -- repeat the spec, code pattern, or file path in every task that needs it. The implementer may read tasks out of order.
+
+**Type-consistency check.** After writing all tasks, scan for naming drift. If Task 3 says `clearLayers()` but Task 7 says `clearFullLayers()`, that's a bug in the plan. Function names, variable names, and file paths must be consistent across all tasks.
+
+**Numbered outputs for long sessions.** For multi-phase implementations, write numbered intermediate files to `.plan/` (e.g., `01-setup.md`, `02-phase1-complete.md`) so state survives context compaction. Read from files, not conversation memory, when resuming work after compaction or across sessions.
+
+**SHA recording.** When a task completes and is committed, note the commit SHA inline: `- [x] Task 1.1 \`abc1234\``. Creates traceability from plan to code.
+
+**Deviation documentation.** When the implementation deviates from the plan, document why inline: `**Deviation**: [what changed and why]` under the affected task. Silent deviation breaks trust -- the orchestrator assumes the plan was followed.
+
+**No gold-plating.** Build exactly what the spec requires. If a feature, enhancement, or "nice-to-have" isn't in the requirements, don't add it. Quote the exact spec requirements in the plan and flag any additions explicitly as scope expansion needing approval. Basic first implementations are acceptable -- most need 2-3 revision cycles anyway.
 
 ## Phase Sizing Rules
 
@@ -177,6 +194,7 @@ If you can answer these, your planning is solid:
 ## Integration
 
 - **This skill** is methodology (file persistence, phase sizing, context management). `workflows:plan` is the structured workflow (research agents, issue templates). Use this skill's principles during any planning; use `workflows:plan` for full feature plans.
+- **Architecture decisions:** when the plan involves significant trade-offs (choosing between approaches, accepting constraints), use `/adr` to document the decision and what was given up. ADRs outlive the plan.
 - **Predecessor:** `brainstorming` -- use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
 - **Prose quality:** `writing` -- use to humanize plan language and remove AI slop from plan documents
 - **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline

@@ -257,6 +257,10 @@ After all agents complete, compile a summary with:
 [List top 5 strengths]
 ```
 
+### Step 4: Persist Report
+
+Write the compiled report to `docs/audits/YYYY-MM-DD-agent-native-audit.md`. Commit to git.
+
 ## Success Criteria
 
 - [ ] All 8 sub-agents complete their audits

@@ -4,6 +4,7 @@ description: >-
   PostgreSQL schema design, query optimization, indexing, and administration.
   Use when working with PostgreSQL, JSONB, partitioning, RLS, CTEs, window
   functions, or EXPLAIN ANALYZE.
+paths: "**/*.sql"
 ---
 
 # PostgreSQL
@@ -31,7 +32,7 @@ description: >-
 - Default `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
 - Separate `updated_at` with trigger, never trust app layer alone
 - Use `BIGINT` PKs -- cheaper JOINs than UUID, better index locality
-- Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with `DEFAULT` (instant PG11+). Never `ALTER TYPE` on large tables in-place.
+- Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with `DEFAULT` (instant add). Never `ALTER TYPE` on large tables in-place.
 - `NULLS NOT DISTINCT` on unique indexes (PG15+) -- treats NULLs as equal for uniqueness
 - Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
 
@@ -112,7 +113,7 @@ Always index columns referenced in RLS policies. For complex multi-table checks,
 - Table bloat check: `SELECT relname, n_dead_tup, last_vacuum FROM pg_stat_user_tables WHERE n_dead_tup > 1000 ORDER BY n_dead_tup DESC`
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping
 - High `rows removed by filter` -> index doesn't match predicate
-- `CTE` is an optimization fence before PG12; use `MATERIALIZED`/`NOT MATERIALIZED` hints (PG12+)
+- CTEs are inlined by default; use `MATERIALIZED`/`NOT MATERIALIZED` hints to control optimization
 - Prefer `EXISTS` over `IN` for correlated subqueries
 - Use `LATERAL JOIN` when subquery needs outer row reference
 - Cursor pagination (`WHERE id > $last ORDER BY id LIMIT $n`) over `OFFSET`

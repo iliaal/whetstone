@@ -4,9 +4,12 @@ description: >-
   Pine Script v6 patterns: syntax, performance, error diagnosis, backtesting,
   visualization. Use when working with PineScript, TradingView, indicators,
   strategies, or backtesting.
+paths: "**/*.pine"
 ---
 
 # Pine Script Development
+
+**Verify before implementing**: For Pine Script version-specific syntax or new built-in functions, search current docs via `search_docs` before writing code. TradingView updates Pine Script frequently and training data may be stale.
 
 ## Critical Syntax Rules
 
@@ -61,12 +64,12 @@ TradingView has no console or debugger. Use these patterns:
 - Multi-line tooltips: `tooltip="Line 1" + "\n" + "Line 2"`
 - **TradingView House Rules**: no financial advice, no performance guarantees, no external links, no obfuscated code, no donation requests
 
-## Anti-Patterns
+## Common Coding Mistakes
 
 - Indicator stacking (RSI + Stochastics + CCI) -- all measure the same thing (momentum). Use indicators from different categories instead.
-- Trading divergence without structure confirmation -- wait for break above prior swing high before entry, divergence alone can persist far longer than expected
-- Overfitting signals: if optimal parameters are oddly specific (RSI 23 instead of 20), the backtest is curve-fitted. Use round numbers.
-- Treating support/resistance as exact prices -- they are zones (crypto 1-3%, forex 20-50 pips)
+- Overfitting parameters: if optimal values are oddly specific (RSI 23 instead of 20), the backtest is curve-fitted. Use round numbers and `input()` with sensible defaults.
+- Missing `barstate.isconfirmed` guard -- calculations on unconfirmed bars cause repainting. Always guard entry signals.
+- Hardcoded thresholds without `input()` -- makes the script untestable across instruments.
 
 ## Workflow
 

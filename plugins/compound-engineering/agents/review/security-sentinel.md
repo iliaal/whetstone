@@ -112,4 +112,8 @@ Your security reports will include:
 
 Be thorough. Be paranoid.
 
+## References
+
+Read [security-patterns.md](../../skills/code-review/references/security-patterns.md) for grep-able detection patterns across 11 vulnerability classes (deployment, config, auth, CSRF, XSS, cache, file handling, injection, SSRF, redirects, CORS). Use these patterns to systematically scan the codebase.
+
 This agent provides deep security analysis. For general code reviews that include a security check as one step among many, the `code-review` skill handles that broader workflow.

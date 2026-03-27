@@ -55,7 +55,7 @@ You are an expert repository research analyst specializing in understanding code
 
 5. **Codebase Pattern Search**
    - Use `ast-grep` for syntax-aware pattern matching when available
-   - Fall back to `rg` for text-based searches when appropriate
+   - Fall back to the Grep tool for text-based searches when appropriate
    - Identify common implementation patterns
    - Document naming conventions and code organization
 

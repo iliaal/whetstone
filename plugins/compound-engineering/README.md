@@ -7,7 +7,7 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 | Component | Count |
 |-----------|-------|
 | Agents | 23 |
-| Commands | 18 |
+| Commands | 21 |
 | Skills | 30 |
 | Hooks | 1 |
 | MCP Servers | 1 |
@@ -16,20 +16,21 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 Agents are organized into categories for easier discovery.
 
-### Review (10)
+### Review (11)
 
 | Agent | Description |
 |-------|-------------|
 | [`accessibility-tester`](agents/review/accessibility-tester.md) | WCAG 2.1 accessibility audit: keyboard, screen reader, contrast, ARIA, forms |
 | [`agent-native-reviewer`](agents/review/agent-native-reviewer.md) | Verify features are agent-native (action + context parity) |
 | [`architecture-strategist`](agents/review/architecture-strategist.md) | Architecture, design patterns, naming conventions, and structural integrity |
+| [`cloud-architect`](agents/review/cloud-architect.md) | Cloud infrastructure review, cost optimization, DR, migration strategies |
 | [`code-simplicity-reviewer`](agents/review/code-simplicity-reviewer.md) | Final pass for simplicity and minimalism |
 | [`data-integrity-guardian`](agents/review/data-integrity-guardian.md) | Database migrations and data integrity |
 | [`data-migration-expert`](agents/review/data-migration-expert.md) | Validate ID mappings match production, check for swapped values |
-| [`deployment-verification-agent`](agents/review/deployment-verification-agent.md) | Create Go/No-Go deployment checklists for risky data changes |
 | [`kieran-reviewer`](agents/review/kieran-reviewer.md) | Python and TypeScript code review with strict conventions |
 | [`performance-oracle`](agents/review/performance-oracle.md) | Performance analysis and optimization |
 | [`security-sentinel`](agents/review/security-sentinel.md) | Security audits and vulnerability assessments |
+| [`spec-flow-analyzer`](agents/review/spec-flow-analyzer.md) | Analyze user flows and identify gaps in specifications |
 
 ### Research (4)
 
@@ -40,11 +41,10 @@ Agents are organized into categories for easier discovery.
 | [`learnings-researcher`](agents/research/learnings-researcher.md) | Search institutional learnings for relevant past solutions |
 | [`repo-research-analyst`](agents/research/repo-research-analyst.md) | Research repository structure and conventions |
 
-### Design (4)
+### Design (3)
 
 | Agent | Description |
 |-------|-------------|
-| [`cloud-architect`](agents/design/cloud-architect.md) | Cloud infrastructure design, cost optimization, DR, migration strategies |
 | [`design-implementation-reviewer`](agents/design/design-implementation-reviewer.md) | Verify UI implementations match Figma designs |
 | [`design-iterator`](agents/design/design-iterator.md) | Iteratively refine UI through systematic design iterations |
 | [`figma-design-sync`](agents/design/figma-design-sync.md) | Synchronize web implementations with Figma designs |
@@ -55,9 +55,9 @@ Agents are organized into categories for easier discovery.
 |-------|-------------|
 | [`bug-reproduction-validator`](agents/workflow/bug-reproduction-validator.md) | Systematically reproduce and validate bug reports |
 | [`deployment-engineer`](agents/workflow/deployment-engineer.md) | CI/CD pipeline design, deployment strategies, GitOps workflows |
+| [`deployment-verification-agent`](agents/workflow/deployment-verification-agent.md) | Create Go/No-Go deployment checklists for risky data changes |
 | [`devops-engineer`](agents/workflow/devops-engineer.md) | Docker containerization, monitoring/observability, incident management |
 | [`pr-comment-resolver`](agents/workflow/pr-comment-resolver.md) | Address PR comments and implement fixes |
-| [`spec-flow-analyzer`](agents/workflow/spec-flow-analyzer.md) | Analyze user flows and identify gaps in specifications |
 
 ## Commands
 
@@ -89,6 +89,9 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | `/triage` | Triage and prioritize issues |
 | `/test-browser` | Run browser tests on PR-affected pages |
 | `/feature-video` | Record video walkthroughs and add to PR description |
+| `/adr` | Create Architecture Decision Records with format selection and lifecycle management |
+| `/compound-refresh` | Review docs/solutions/ for stale learnings -- keep, update, replace, or archive |
+| `/ideate` | Generate ranked improvement ideas by scanning the codebase |
 | `/verify` | Pre-PR verification pipeline (build, types, lint, tests, security) |
 
 ## Skills

@@ -85,6 +85,60 @@ Sentences that announce importance without naming the specific thing. Replace wi
 - "This is genuinely hard"
 - "This is what leadership actually looks like"
 
+## Binary Contrast Structures
+
+AI defaults to "not X, it's Y" framing. State Y directly without the contrast scaffolding.
+
+- "Not because X. Because Y." -- just state Y
+- "The answer isn't X. It's Y." -- state Y
+- "It's not about X. It's about Y." -- state Y
+- "stops being X and starts being Y" -- say what it becomes
+- "less about X and more about Y" -- say what it's about
+- "X gives way to Y" -- state the current state
+- "from X to Y" (false ranges) -- name the specific thing
+- "Beyond X, there's Y" -- state Y directly
+- "X, yes. But Y." -- state both as facts
+- "It's not just X -- it's Y" -- state Y
+- "The real X isn't Y -- it's Z" -- state Z
+
+## Lazy Extremes
+
+False authority through sweeping claims. Use specifics instead.
+
+- "every", "always", "never", "everyone", "everybody", "nobody"
+- "No one has ever..." / "Everyone knows..." / "This always happens"
+
+These sound confident but say nothing. Name the specific cases, people, or frequency.
+
+## Negative Listing
+
+Listing what something is *not* before revealing what it *is*. A rhetorical striptease.
+
+- "Not a X... Not a Y... A Z." -- state Z directly
+- "It wasn't X. It wasn't Y. It was Z." -- the reader doesn't need the runway
+
+## Performative Emphasis
+
+False intimacy or manufactured sincerity:
+
+- "creeps in"
+- "I promise" / "They exist, I promise"
+
+## Telling Instead of Showing
+
+Announcing difficulty or significance rather than demonstrating it:
+
+- "This is what X actually looks like"
+- "actually matters"
+- "This is genuinely hard"
+
+If something is hard or significant, show the specific constraint. Don't announce it.
+
+## Rhythm
+
+- Three-item lists: use two items or one. Triads are an AI tell.
+- Questions answered immediately: let questions breathe or cut them.
+
 ## Sentence Starters to Avoid
 
 - Sentences starting with What/When/Where/Which/Who/Why/How -- restructure, lead with the subject or verb

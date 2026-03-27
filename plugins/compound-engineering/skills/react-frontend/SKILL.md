@@ -5,9 +5,12 @@ description: >-
   working with React component structure, state management, Next.js routing,
   Vitest, React Testing Library, or reviewing React code. For visual design and
   aesthetic direction, use frontend-design instead.
+paths: "**/*.tsx,**/*.jsx"
 ---
 
 # React Frontend
+
+**Verify before implementing**: For App Router patterns, React 19 APIs, or version-specific behavior, search current docs via `search_docs` before writing code. Training data may lag current releases.
 
 ## Component TypeScript
 

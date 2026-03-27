@@ -6,6 +6,8 @@ argument-hint: "[feature description, bug report, or improvement idea]"
 
 # Create a plan for a new feature or bug fix
 
+Follow the `planning` skill for methodology (file persistence in `.plan/`, phase sizing, context management rules). This command adds structured research, issue templates, and `docs/plans/` output on top of that methodology.
+
 ## Introduction
 
 **Note: The current year is 2026.** Use this when dating plans and searching for recent documentation.

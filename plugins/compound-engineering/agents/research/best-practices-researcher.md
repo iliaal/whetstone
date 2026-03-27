@@ -24,10 +24,10 @@ assistant: "I'll use the best-practices-researcher agent to gather comprehensive
 <commentary>Since the user needs framework-specific documentation and patterns, use the best-practices-researcher agent.</commentary>
 </example>
 <example>
-Context: User is troubleshooting an issue with a package.
-user: "Why is the React Query cache not invalidating as expected?"
-assistant: "Let me use the best-practices-researcher agent to investigate the React Query documentation and source code."
-<commentary>The user needs to understand library behavior, so the best-practices-researcher should gather docs and explore source.</commentary>
+Context: User needs to understand recommended patterns for a library feature.
+user: "What are the recommended patterns for React Query v5 cache invalidation?"
+assistant: "Let me use the best-practices-researcher agent to research the React Query v5 documentation for cache invalidation patterns."
+<commentary>The user needs official documentation patterns, so the best-practices-researcher should gather docs. For runtime errors or unexpected behavior, use the debugging skill instead.</commentary>
 </example>
 </examples>
 

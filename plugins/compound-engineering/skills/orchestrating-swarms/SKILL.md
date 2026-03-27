@@ -1,7 +1,7 @@
 ---
 name: orchestrating-swarms
 description: >-
-  Orchestrate multi-agent swarms using TeammateTool and Task system. Use when
+  Coordinate multi-agent swarms for parallel and pipeline workflows. Use when
   coordinating multiple agents, running parallel reviews, building pipeline
   workflows, or implementing divide-and-conquer patterns with subagents.
 ---
@@ -103,6 +103,50 @@ Teammate({ operation: "cleanup" })
 
 ---
 
+## Dispatch Discipline
+
+Rules for when and how to dispatch agents. Getting these wrong wastes tokens and creates hard-to-debug failures.
+
+**When to dispatch a team vs. do it yourself:**
+
+Assess 5 signals: file count, module span, dependency chain, risk surface, parallelism potential. If 3+ fall in the "complex" column, dispatch a team. Below 3, do it yourself. When in doubt, prefer the simple path -- team overhead is only justified when parallelism provides a real speedup.
+
+**Provide full context, never delegate navigation:**
+
+Extract task text, specs, and relevant code into the agent prompt directly. Never tell an agent "read the plan file" or "check the spec at path X" -- that wastes their context window on navigation and risks misinterpretation. You already have the text; paste it.
+
+**No parallel implementation agents (without worktrees):**
+
+Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review, research, and analysis agents are always safe to parallelize (read-only).
+
+**Context pollution -- fresh agents for failures:**
+
+If a subagent fails a task, dispatch a fresh agent to fix it. Don't try to fix in the failed agent's session. The failed agent's context is polluted with wrong assumptions and dead-end investigations that bias subsequent attempts.
+
+**Model selection by task complexity:**
+
+| Task shape | Model |
+|-----------|-------|
+| 1-2 files, clear spec, mechanical | `model: "haiku"` |
+| Multi-file integration, standard complexity | Default model |
+| Architecture decisions, ambiguous scope, review | `model: "opus"` |
+
+**Standardize implementer status signals:**
+
+Include these four statuses in every teammate prompt so they know the reporting format. Expect teammates to report one of:
+- **DONE** -- task complete, all tests pass
+- **DONE_WITH_CONCERNS** -- complete but flagging risks (include what and why)
+- **BLOCKED** -- cannot proceed. Escalation: context problem -> provide and re-dispatch; needs more reasoning -> upgrade model; task too large -> split; plan wrong -> escalate to user
+- **NEEDS_CONTEXT** -- missing information to start. Provide context before re-dispatching.
+
+Never ignore an escalation or force the same agent to retry without changes.
+
+**QA retry loop:**
+
+Max 3 attempts per task. After each QA failure, pass structured feedback to the implementer using the [QA FAIL template](./references/handoff-templates.md). After 3 failures, mark the task as blocked, continue the pipeline (don't halt everything), and let final integration catch remaining issues. Counter resets when advancing to the next task.
+
+---
+
 ## Best Practices
 
 1. **Always cleanup** - Don't leave orphaned teams. Call `cleanup` when done.
@@ -110,18 +154,10 @@ Teammate({ operation: "cleanup" })
 3. **Write clear prompts** - Tell workers exactly what to do and how to report results.
 4. **Use task dependencies** - Let the system manage unblocking via `addBlockedBy`.
 5. **Prefer `write` over `broadcast`** - Broadcast sends N messages for N teammates.
-6. **Match agent type and model to task** - Explore for reading, Plan for architecture, general-purpose for implementation, specialized reviewers for reviews. For model: use `model: "haiku"` for mechanical isolated tasks (1-2 files, clear spec), default model for multi-file integration, `model: "opus"` for architecture decisions and review.
-7. **Handle failures** - Workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
-8. **Check inboxes** - Workers send results to your inbox at `~/.claude/teams/{team}/inboxes/team-lead.json`.
-9. **Two-stage per-task review** - After each implementation task, dispatch two sequential review subagents: (1) spec compliance ("does the output match the task spec, no more, no less?"), then (2) code quality. Spec compliance must pass before quality review runs. Skip for trivial/mechanical tasks.
-10. **Standardize implementer status signals** - Expect teammates to report one of four statuses:
-    - **DONE** - Task complete, all tests pass
-    - **DONE_WITH_CONCERNS** - Complete but flagging risks (include what and why)
-    - **BLOCKED** - Cannot proceed. Escalation: context problem -> provide and re-dispatch; needs more reasoning -> upgrade model; task too large -> split; plan wrong -> escalate to user
-    - **NEEDS_CONTEXT** - Missing information to start. Provide context before re-dispatching.
-11. **Parallel implementation via worktrees** - Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review/research/analysis agents are always safe to parallelize (read-only).
-12. **Post-integration verification** - After all agents return: check if agents edited overlapping files (especially with worktrees), review summaries for conflicting approaches, run full test suite, spot-check for systematic errors.
-13. **Provide context, don't delegate reading** - Extract task text and include it in the agent prompt. Don't tell agents "read the plan file" -- that wastes their context window on navigation and risks misinterpretation.
+6. **Handle failures** - Workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
+7. **Check inboxes** - Workers send results to your inbox at `~/.claude/teams/{team}/inboxes/team-lead.json`.
+8. **Two-stage per-task review** - After each implementation task, dispatch two sequential review subagents: (1) spec compliance ("does the output match the task spec, no more, no less?"), then (2) code quality. Spec compliance must pass before quality review runs. Skip for trivial/mechanical tasks.
+9. **Post-integration verification** - After all agents return: check if agents edited overlapping files (especially with worktrees), review summaries for conflicting approaches, run full test suite, spot-check for systematic errors.
 
 ---
 
@@ -136,3 +172,4 @@ Detailed documentation for each subsystem:
 - [orchestration-patterns.md](./references/orchestration-patterns.md) - 6 patterns (parallel specialists, pipeline, swarm, research+implementation, plan approval, coordinated refactoring) + 3 complete workflow examples
 - [spawn-backends.md](./references/spawn-backends.md) - Backend comparison, auto-detection, in-process/tmux/iterm2 details, troubleshooting
 - [environment-config.md](./references/environment-config.md) - Environment variables and team config structure
+- [handoff-templates.md](./references/handoff-templates.md) - QA FAIL and Escalation Report formats for structured agent-to-agent feedback

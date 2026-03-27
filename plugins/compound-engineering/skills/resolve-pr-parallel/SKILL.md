@@ -1,6 +1,8 @@
 ---
 name: resolve-pr-parallel
-description: Batch-resolve all open PR threads via parallel subagents. Use when bulk-fixing PR comments after triage -- spawns one pr-comment-resolver agent per thread, no interactive judgment.
+description: >-
+  Batch-resolve all open PR threads via parallel subagents. Use when bulk-fixing
+  PR comments after triage.
 argument-hint: "[optional: PR number or current PR]"
 disable-model-invocation: true
 allowed-tools: Bash(gh *), Bash(git *), Read

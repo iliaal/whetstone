@@ -4,6 +4,7 @@ description: >-
   Defensive Bash scripting for Linux: safe foundations, argument parsing,
   production patterns, ShellCheck compliance. Use when writing bash scripts,
   shell scripts, cron jobs, or CLI tools in bash.
+paths: "**/*.sh,**/*.bash"
 ---
 
 # Linux Bash Scripting

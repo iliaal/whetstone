@@ -5,9 +5,12 @@ description: >-
   variants, v3 migration. Use when styling with Tailwind, configuring
   @theme tokens, using tailwind-variants/CVA, migrating v3 to v4, or
   fixing Tailwind styles and dark mode.
+paths: "**/*.css,**/tailwind.config.*"
 ---
 
 # Tailwind CSS v4
+
+**Verify before implementing**: For v4-specific syntax (`@theme`, `@variant`, CSS-first config), search current docs via `search_docs` before writing code. Tailwind v4 changed significantly from v3 and training data may be stale.
 
 ## CSS-First Configuration
 

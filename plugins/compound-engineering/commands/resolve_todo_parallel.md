@@ -4,13 +4,15 @@ description: Resolve all pending CLI todos using parallel processing
 argument-hint: "[optional: specific todo ID or pattern]"
 ---
 
-Resolve all TODO comments using parallel processing.
+**Filter:** #$ARGUMENTS
+
+Resolve TODO comments using parallel processing.
 
 ## Workflow
 
 ### 1. Analyze
 
-Get all unresolved TODOs from the /todos/\*.md directory
+Get unresolved TODOs from the /todos/\*.md directory. If a filter is specified, only process todos matching that ID or pattern.
 
 If any todo recommends deleting, removing, or gitignoring files in `docs/plans/` or `docs/solutions/`, skip it and mark it as `wont_fix`. These are compound-engineering pipeline artifacts that are intentional and permanent.
 

@@ -1,8 +1,8 @@
 ---
 name: debugging
 description: >-
-  Systematic root-cause debugging: reproduce, investigate, hypothesize, fix with
-  verification. Use when debugging, troubleshooting, or facing errors, stack
+  Systematic root-cause debugging with verification. Use when debugging,
+  troubleshooting, or facing errors, stack
   traces, broken tests, flaky tests, or regressions.
 ---
 
@@ -41,6 +41,8 @@ Collects system info, language versions, git state, project files, and environme
 
 **1. Reproduce** -- make the bug consistent. If intermittent, run N times under stress or simulate poor conditions (slow network, low memory) until it triggers reliably.
 
+**1b. Form initial hypotheses** -- before investigating broadly, form 2-3 hypotheses based on the reproduction. What are the most likely causes given the symptoms? This focuses the investigation on plausible paths rather than searching aimlessly.
+
 **2. Investigate** -- trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
 
 **Multi-component systems** (CI -> build -> deploy, API -> service -> DB): before proposing fixes, instrument each component boundary:
@@ -49,6 +51,8 @@ Collects system info, language versions, git state, project files, and environme
 - Verify environment/config propagation across the boundary
 
 Run once to gather evidence showing WHERE it breaks, then investigate that specific component. Use `console.error()` (not logger, which may be suppressed in tests). Log BEFORE the dangerous operation, not after it fails. Include context: cwd, env vars, `new Error().stack`.
+
+**Pre-existing failure proof:** Before claiming a test failure is "not related to our changes," prove it. Run `git stash && [test command]` on clean state to confirm the failure exists on the base branch. Pre-existing without receipts is a lazy claim.
 
 **Before external searches** (web, docs, forums): strip hostnames, IPs, file paths, SQL fragments, and customer data from the query. Raw stack traces leak privacy and return noise.
 
@@ -135,10 +139,12 @@ When you catch yourself doing or thinking these things, **stop and return to Pha
 | "Quick fix for now, investigate later" | You don't understand the root cause. Later never comes. |
 | "Skip the test, I can see it works" | You can't. Run the verification. See `verification-before-completion`. |
 | "It's probably X" | "Probably" means you haven't verified. Trace the actual execution path. |
-
 | "I see the problem, let me fix it" | Seeing symptoms is not understanding root cause. Trace the actual execution path first. |
-| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
+| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the working example completely and apply it exactly. |
 | "I'll clean up the debugging later" | Remove diagnostic code now or it ships to production. |
+| "This failure is pre-existing, not related to our changes" | Prove it: run the test suite on the base branch. No receipts = no claim. |
+| "The test is wrong, not the code" | Verify before dismissing. Read the test's intent. If the test is genuinely wrong, fix the test with a clear rationale, not a silent update. |
+| "It works in isolation, must be an environment issue" | Isolation success doesn't explain integration failure. Instrument the integration boundary. |
 
 ## Signals You're Off Track
 

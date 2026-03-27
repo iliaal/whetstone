@@ -8,6 +8,8 @@ description: >-
 
 # Node.js Backend
 
+**Verify before implementing**: For framework-specific APIs (Express 5, Fastify 5, Node.js 22+ built-ins), search current docs via `search_docs` before writing code. Training data may lag current releases.
+
 ## Framework Selection
 
 | Context | Choose | Why |

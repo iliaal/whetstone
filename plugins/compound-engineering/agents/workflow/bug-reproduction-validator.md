@@ -1,7 +1,7 @@
 ---
 name: bug-reproduction-validator
 autoApprove: read
-description: "Validates, reproduces, and root-cause analyzes bug reports (does not fix). Use when a bug report needs verification and root cause identification before committing to a fix. For fixing, use the debugging skill."
+description: "Validates, reproduces, and root-cause analyzes bug reports (does not fix). Use when a bug report needs verification and root cause identification before committing to a fix. For GitHub issue bugs with visual reproduction, use the /reproduce-bug command. For fixing, use the debugging skill."
 ---
 
 <examples>

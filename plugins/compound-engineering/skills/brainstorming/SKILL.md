@@ -1,9 +1,10 @@
 ---
 name: brainstorming
 description: >-
-  Pre-implementation brainstorming: explore intent, approaches, and design
-  decisions before planning. Use when asked to brainstorm, think through
-  approaches, or clarify ambiguous requirements.
+  Pre-implementation brainstorming process: deep interview protocol, approach
+  exploration, and design doc generation. Provides process knowledge for
+  `/workflows:brainstorm`. Use when brainstorming inline without the full
+  command workflow, or when clarifying ambiguous requirements.
 ---
 
 # Brainstorming
@@ -16,9 +17,15 @@ Clarify **WHAT** to build before **HOW** to build it.
 
 ## Core Process
 
-### Phase 0: Assess Requirement Clarity
+### Phase 0: Assess and Ground
 
-Before diving into questions, assess whether brainstorming is needed.
+Before diving into questions, do two things:
+
+**Ground in the codebase (when applicable).** If the brainstorm relates to existing code, read the relevant modules, patterns, and constraints before generating options. This prevents suggesting approaches that conflict with the actual architecture. Skip for purely abstract brainstorms (tech choices, product direction) where no codebase context applies.
+
+**Right-size the artifact.** Match ceremony to problem size. If the brainstorm resolves in 3 messages, don't force a formal design doc -- a summary comment is enough. If it spans multiple sessions and touches architecture, write the full Phase 3 doc. No ceremony tax.
+
+**Assess whether brainstorming is needed:**
 
 **Signals that requirements are clear:**
 - User provided specific acceptance criteria
@@ -91,7 +98,7 @@ Ask questions **one at a time** to understand the user's intent. Avoid overwhelm
 
 ### Deep Interview Layer
 
-Apply the deep interview protocol on top of the baseline questions above. This layer always runs.
+Apply the deep interview protocol on top of the baseline questions above. Assumption probing and contradiction tracking always run. Research-backed challenges and second-order effects run when the scope warrants it (multi-system changes, infrastructure decisions, technology selection).
 
 **Assumption probing:** After each substantive answer, identify what the user assumed but didn't state. "You described X -- are you assuming Y is already in place?" Surface hidden dependencies and unstated constraints.
 
@@ -142,43 +149,7 @@ After understanding the idea, propose 2-3 concrete approaches.
 
 Summarize key decisions in a structured format. For each major component, verify isolation and clarity: it must answer "what does it do, how do you use it, what does it depend on?" and be independently understandable and testable. If working in an existing codebase, note which existing patterns to follow and where targeted improvements fit naturally.
 
-**Design Doc Structure:**
-
-```markdown
----
-date: YYYY-MM-DD
-topic: <kebab-case-topic>
----
-
-# <Topic Title>
-
-## What We're Building
-[Concise description--1-2 paragraphs max]
-
-## Why This Approach
-[Brief explanation of approaches considered and why this one was chosen]
-
-## Key Decisions
-- [Decision 1]: [Rationale]
-- [Decision 2]: [Rationale]
-
-## Open Questions
-- [Any unresolved questions for the planning phase]
-
-## Next Steps
-→ `/workflows:plan` for implementation details
-
-<details>
-<summary>Interview Q&A Log</summary>
-
-[Collapsed transcript of key questions and answers from the brainstorming interview. Include research-backed challenges and their resolutions. Omit routine clarifications.]
-
-</details>
-```
-
-**Output Location:** `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (create directory with `mkdir -p docs/brainstorms` if needed)
-
-**Commit the design doc** to git after writing -- design decisions are project history worth preserving.
+**Design Doc:** Save to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`. Required sections: What We're Building, Why This Approach, Key Decisions (with rationale), Open Questions, Next Steps. Collapse the Q&A interview log in a `<details>` block. Include YAML frontmatter with `date` and `topic`. Commit to git -- design decisions are project history.
 
 ### Phase 4: Spec Review
 

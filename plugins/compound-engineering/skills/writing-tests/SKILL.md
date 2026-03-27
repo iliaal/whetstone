@@ -79,6 +79,8 @@ For every feature, consider:
 
 ## Red-Green-Refactor (When It Applies)
 
+Tests-first answer "what should this do?" Tests-after answer "what does this do?" The distinction matters: tests written after implementation are biased toward verifying what you built, not what's required.
+
 For bug fixes, writing the failing test first is genuinely valuable -- it proves the bug exists and proves the fix works. For new features, the order is less critical than the quality.
 
 ### Bug fixes: test first
@@ -96,6 +98,8 @@ This is non-negotiable for bugs -- a fix without a regression test is a fix that
 Write tests as you build, not after. "I'll add tests later" means "I won't add tests."
 
 The goal: by the time the feature is done, tests exist and pass. Whether you wrote the test 5 minutes before or 5 minutes after the code matters less than whether the test exists and is good.
+
+**Minimum viability during green phase:** When making a test pass, write the simplest code that satisfies it. Not the abstraction you think is "right," not the feature you imagine you'll need next. The simplest thing. Refactor only after the test is green.
 
 ## Anti-Patterns
 

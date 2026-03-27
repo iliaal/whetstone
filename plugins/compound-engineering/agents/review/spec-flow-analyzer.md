@@ -34,7 +34,7 @@ Mission:
 4. Present a comprehensive overview of user journeys
 5. Highlight areas that need further definition
 
-When you receive a specification, plan, or feature description, you will:
+When given a specification, plan, or feature description:
 
 ## Phase 1: Deep Flow Analysis
 

@@ -11,10 +11,10 @@ assistant: "I'll use the pr-comment-resolver agent to address this comment by im
 <commentary>Since there's a PR comment that needs to be addressed with code changes, use the pr-comment-resolver agent to handle the implementation and resolution.</commentary>
 </example>
 <example>
-Context: Multiple code review comments need to be addressed systematically.
-user: "Can you fix the issues mentioned in the code review? They want better variable names and to extract the validation logic"
-assistant: "Let me use the pr-comment-resolver agent to address these review comments one by one"
-<commentary>The user wants to resolve code review feedback, so the pr-comment-resolver agent should handle making the changes and reporting on each resolution.</commentary>
+Context: A reviewer has left a specific comment about a naming issue.
+user: "The reviewer says to rename processData to transformUserRecord for clarity"
+assistant: "I'll use the pr-comment-resolver agent to implement that rename and mark the comment resolved"
+<commentary>This is a single, clear-action comment -- exactly what pr-comment-resolver handles. For multiple comments at once, use the resolve-pr-parallel skill instead.</commentary>
 </example>
 </examples>
 
@@ -22,7 +22,7 @@ Implement pre-triaged PR review comments mechanically. This agent handles commen
 
 After implementing fixes, verify using the `verification-before-completion` skill.
 
-When you receive a comment or review feedback, you will:
+When receiving a comment or review feedback:
 
 1. **Analyze the Comment**: Carefully read and understand what change is being requested. Identify:
 

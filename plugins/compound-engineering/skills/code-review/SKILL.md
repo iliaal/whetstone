@@ -1,8 +1,8 @@
 ---
 name: code-review
 description: >-
-  Two-stage code reviews (spec compliance, then code quality) with severity-ranked
-  findings. Use when performing a code review, auditing code quality, or critiquing PRs, MRs, or diffs.
+  Structured code reviews with severity-ranked findings. Use when performing a
+  code review, auditing code quality, or critiquing PRs, MRs, or diffs.
 ---
 
 # Code Review
@@ -31,7 +31,7 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 1. **Context** -- run a Scope Drift Check first: compare `git diff --stat` against the PR's stated intent. Classify as CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING. If DRIFT, note drifted files and ask: ship as-is, split, or remove unrelated changes? Then read the PR description, linked issue, or task spec. **Fetch existing review comments and discussions first** -- prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (check CI config for the canonical test command) to catch automated failures before manual review.
 2. **Structural scan** -- architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly -- don't attempt to read them from the working tree when reviewing a remote branch.
 3. **Line-by-line** -- correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
-4. **Security** -- input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act).
+4. **Security** -- input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act). Use [security-patterns.md](./references/security-patterns.md) for grep-able detection patterns across 11 vulnerability classes.
 5. **Test coverage** -- verify new code paths have tests. Flag untested error paths, edge cases, and behavioral changes without corresponding test updates. Flag tests coupled to implementation details (mocking internals, testing private methods) -- test behavior, not wiring.
 6. **Resource cleanup** -- file handles, DB connections, event listeners, timers, subscriptions. Verify cleanup on both success and error paths.
 7. **Removal candidates** -- identify dead code, unused imports, feature-flagged code that can be cleaned up. Distinguish safe-to-delete (no references) from defer-with-plan (needs migration).
@@ -117,10 +117,10 @@ Load the relevant profile from [language-profiles.md](./references/language-prof
 ## Review: [brief title]
 
 ### Critical
-- **[file:line]** -- [issue]. Confidence: high|medium|low. [What happens if not fixed]. Fix: [concrete suggestion].
+- **[file:line]** `quoted code` -- [issue]. Confidence: high|medium|low. [What happens if not fixed]. Fix: [concrete suggestion].
 
 ### Important
-- **[file:line]** -- [issue]. Confidence: high|medium|low. [Why it matters]. Consider: [alternative approach].
+- **[file:line]** `quoted code` -- [issue]. Confidence: high|medium|low. [Why it matters]. Consider: [alternative approach].
 
 ### Medium
 - **[file:line]** -- [issue]. Confidence: high|medium|low. [Why it matters].

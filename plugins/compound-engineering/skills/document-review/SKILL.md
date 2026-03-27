@@ -26,6 +26,8 @@ Read through the document and ask:
 - What decision is being avoided?
 - What assumptions are unstated?
 - Where could scope accidentally expand?
+- Is this technically feasible with the current architecture?
+- Are there security implications in what's proposed?
 
 These questions surface issues. Don't fix yet--just note what you find.
 
@@ -70,6 +72,14 @@ Simplification is purposeful removal of unnecessary complexity, not shortening f
 - Rationale that explains why alternatives were rejected
 - Open questions that need resolution
 
+## Step 5b: Reader Test (Optional)
+
+For standalone documents that must be self-contained (onboarding guides, ADRs, external-facing docs), optionally dispatch a zero-context sub-agent with only the document and 5 reader questions. The sub-agent has no conversation history -- it sees only what a future reader would see.
+
+If the sub-agent can answer the questions correctly, the document is self-contained. If it can't, the document has gaps that need filling. This is the "fresh eyes" test automated.
+
+Skip for context-dependent docs (brainstorm notes, plan files, internal working docs) where the reader will have prior context.
+
 ## Step 6: Offer Next Action
 
 After changes are complete, ask:
@@ -83,9 +93,9 @@ After 2 refinement passes, recommend completion--diminishing returns are likely.
 
 Return control to the caller (workflow or user) after selection.
 
-## What NOT to Do
+## Constraints
 
-- Do not rewrite the entire document
-- Do not add new sections or requirements the user didn't discuss
-- Do not over-engineer or add complexity
-- Do not create separate review files or add metadata sections
+- Fix targeted sections, don't rewrite the whole document. If the structure is fundamentally broken, surface the structural problem and ask for permission to restructure.
+- Flag missing sections in your review, but don't add them. The user decides what to include.
+- Keep changes minimal. If a paragraph needs tightening, tighten it. Don't expand scope.
+- Review inline. No separate review files or metadata sections.
