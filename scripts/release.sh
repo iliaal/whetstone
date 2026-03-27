@@ -59,8 +59,13 @@ git commit -m "$commit_msg"
 git push origin main
 echo "  Pushed to origin/main"
 
-# --- 2. Create GitHub release ---
-echo "[2/6] Create GitHub release..."
+# --- 2. Sync GitHub repo description ---
+echo "[2/7] Sync repo description..."
+repo_desc=$(jq -r '.description' plugins/compound-engineering/.claude-plugin/plugin.json)
+gh repo edit --description "$repo_desc" 2>/dev/null && echo "  Updated repo description" || echo "  Failed to update repo description (non-fatal)"
+
+# --- 3. Create GitHub release ---
+echo "[3/7] Create GitHub release..."
 # Extract changelog entry for this version
 release_notes=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;p;}" CHANGELOG.md)
 if gh release view "v${version}" &>/dev/null; then
@@ -74,7 +79,7 @@ else
 fi
 
 # --- 3. Mirror to ai-skills ---
-echo "[3/6] Mirror to ai-skills..."
+echo "[4/7] Mirror to ai-skills..."
 bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
 cd "$AI_SKILLS_DIR"
 if [[ -n "$(git status --porcelain)" ]]; then
@@ -88,14 +93,14 @@ fi
 cd "$ROOT_DIR"
 
 # --- 4. Sync to other tools (Codex, Kilocode, etc.) ---
-echo "[4/6] Sync skills to other tools..."
+echo "[5/7] Sync skills to other tools..."
 bash "$SCRIPT_DIR/sync-to-tools.sh"
 
 # --- 5. Update local plugin ---
-echo "[5/6] Update local plugin..."
+echo "[6/7] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
 # --- 6. Summary ---
 echo ""
-echo "[6/6] Done. v${version} released."
+echo "[7/7] Done. v${version} released."
 echo "  Restart Claude Code to pick up the new version."
