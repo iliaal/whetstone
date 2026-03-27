@@ -48,7 +48,7 @@ echo "=== Release v${version} ==="
 echo ""
 
 # --- 1. Commit & Push ---
-echo "[1/4] Commit & push..."
+echo "[1/6] Commit & push..."
 git add -A -- \
   .claude-plugin/marketplace.json \
   CHANGELOG.md \
@@ -59,8 +59,22 @@ git commit -m "$commit_msg"
 git push origin main
 echo "  Pushed to origin/main"
 
-# --- 2. Mirror to ai-skills ---
-echo "[2/4] Mirror to ai-skills..."
+# --- 2. Create GitHub release ---
+echo "[2/6] Create GitHub release..."
+# Extract changelog entry for this version
+release_notes=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;p;}" CHANGELOG.md)
+if gh release view "v${version}" &>/dev/null; then
+  echo "  Release v${version} already exists, skipping"
+else
+  gh release create "v${version}" \
+    --title "v${version}" \
+    --notes "$release_notes" \
+    --target main
+  echo "  Created release v${version}"
+fi
+
+# --- 3. Mirror to ai-skills ---
+echo "[3/6] Mirror to ai-skills..."
 bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
 cd "$AI_SKILLS_DIR"
 if [[ -n "$(git status --porcelain)" ]]; then
@@ -73,15 +87,15 @@ else
 fi
 cd "$ROOT_DIR"
 
-# --- 3. Sync to other tools (Codex, Kilocode, etc.) ---
-echo "[3/5] Sync skills to other tools..."
+# --- 4. Sync to other tools (Codex, Kilocode, etc.) ---
+echo "[4/6] Sync skills to other tools..."
 bash "$SCRIPT_DIR/sync-to-tools.sh"
 
-# --- 4. Update local plugin ---
-echo "[4/5] Update local plugin..."
+# --- 5. Update local plugin ---
+echo "[5/6] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
-# --- 5. Summary ---
+# --- 6. Summary ---
 echo ""
-echo "[5/5] Done. v${version} released."
+echo "[6/6] Done. v${version} released."
 echo "  Restart Claude Code to pick up the new version."
