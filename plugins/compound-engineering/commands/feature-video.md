@@ -21,7 +21,7 @@ This command creates professional video walkthroughs of features for PR document
 ## Prerequisites
 
 <requirements>
-- Local development server running (e.g., `bin/dev`, `rails server`)
+- Local development server running (e.g., `npm run dev`, `php artisan serve`)
 - agent-browser CLI installed
 - Git repository with a PR to document
 - `ffmpeg` installed (for video conversion)
@@ -79,9 +79,9 @@ gh pr view [number] --json files -q '.files[].path'
 | File Pattern | Route(s) |
 |-------------|----------|
 | `app/views/users/*` | `/users`, `/users/:id`, `/users/new` |
-| `app/controllers/settings_controller.rb` | `/settings` |
-| `app/javascript/controllers/*_controller.js` | Pages using that Stimulus controller |
-| `app/components/*_component.rb` | Pages rendering that component |
+| `src/controllers/SettingsController.ts` | `/settings` |
+| `src/controllers/*.ts` | Pages using that controller |
+| `src/components/*.tsx` | Pages rendering that component |
 
 </gather_context>
 
@@ -289,7 +289,7 @@ _Automated walkthrough of the changes in this PR_"
 rm -rf tmp/screenshots
 
 # Keep videos for reference
-echo "Video retained at: tmp/videos/feature-demo.gif"
+echo "Video retained at: tmp/videos/feature-demo.mp4"
 ```
 
 </cleanup>

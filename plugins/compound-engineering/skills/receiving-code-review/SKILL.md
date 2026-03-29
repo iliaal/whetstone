@@ -16,6 +16,8 @@ Verify before implementing. Technical correctness matters more than social comfo
 
 For each piece of feedback, follow this sequence:
 
+**0. Prior feedback check (re-reviews only)** -- if this is not the first review round, check whether previously flagged issues were addressed before processing new comments. Compare the current diff against prior review threads (`gh api repos/{owner}/{repo}/pulls/{pr}/comments`). Surface any that were ignored or only partially fixed -- these take priority over new feedback.
+
 1. **Read** -- Understand what's being suggested and why
 2. **Verify** -- Is the suggestion technically correct for THIS codebase?
 3. **Evaluate** -- Does it improve the code, or is it preference/style?
@@ -120,16 +122,49 @@ State the correction factually: "Checked this, you're correct because [reason]. 
 - Mark conversations as resolved only after the fix is verified
 - If a suggestion spawns a larger discussion, suggest moving it to an issue
 
+## Headless Mode
+
+When invoked programmatically (by another skill or command with `mode:headless`), skip interactive prompts and return structured triage results.
+
+### Triage Process
+
+1. **Collect** -- gather all unresolved review comments from the PR
+2. **Check prior feedback** -- if prior review comments exist (re-review), same as step 0 above. Flag previously ignored or partially addressed items. Skip on first-time reviews.
+3. **Classify each comment** using the same verification logic as interactive mode:
+
+| Classification | Criteria | Action |
+|---------------|----------|--------|
+| **AUTO-FIX** | Clearly correct, matches project conventions, mechanical change (<10 lines), passes source-specific checks | Classify for `pr-comment-resolver` dispatch |
+| **AUTO-DECLINE** | Technically incorrect (provable with code evidence), contradicts project conventions, YAGNI (zero callers via grep) | Draft push-back response with evidence |
+| **ESCALATE** | Ambiguous intent, architectural decision, reasonable engineers could disagree, changes user-visible behavior | Surface to user with context summary |
+
+4. **Return** structured output:
+
+```
+TRIAGE RESULTS:
+- AUTO-FIX (N items): [list with one-line summaries]
+- AUTO-DECLINE (N items): [list with evidence for each]
+- ESCALATE (N items): [list with why each needs human judgment]
+- PRIOR FEEDBACK: [addressed|partially addressed|ignored] with specifics
+```
+
+### Headless Constraints
+
+- Never auto-fix security-related suggestions -- always escalate
+- Never auto-decline feedback from the project owner -- escalate instead
+- Apply the same skepticism levels from Source-Specific Handling (agents: skeptical, external: verify, owner: trusted)
+- If >50% of comments classify as ESCALATE, abort headless mode and recommend interactive review
+
 ## Scope vs `pr-comment-resolver` Agent
 
 This skill and the `pr-comment-resolver` agent handle different situations:
 
-| | This skill | `pr-comment-resolver` agent |
-|---|---|---|
-| **When** | Interactive review requiring judgment | Batch-resolving mechanical PR comments |
-| **Approach** | Verify, evaluate, potentially push back | Implement requested changes efficiently |
-| **Skepticism** | High -- check correctness first | Low -- comments are pre-triaged |
-| **Use for** | Unclear suggestions, architectural feedback, debatable changes | Clear-cut fixes, style nits, typos, straightforward requests |
+| | This skill (interactive) | This skill (headless) | `pr-comment-resolver` agent |
+|---|---|---|---|
+| **When** | Interactive review requiring judgment | Programmatic triage by another skill/command | Implementing a single pre-triaged comment |
+| **Approach** | Verify, evaluate, potentially push back | Auto-classify and return triage results | Implement a single pre-classified change |
+| **Skepticism** | High -- check correctness first | High -- same rules, automated classification | Low -- comments are pre-triaged |
+| **Use for** | Unclear suggestions, architectural feedback | Batch triage before dispatching resolvers | Clear-cut fixes, style nits, typos |
 
 When the `pr-comment-resolver` agent encounters feedback that requires judgment (architectural decisions, debatable trade-offs), it should escalate rather than implement.
 
@@ -154,6 +189,13 @@ When the `pr-comment-resolver` agent encounters feedback that requires judgment 
 **Good -- unclear item:**
 > Reviewer: "This logic seems off."
 > Response: "Can you clarify which part? The filter predicate, the sort order, or the pagination logic?"
+
+## Verify
+
+- All feedback items triaged (classified as correct, incorrect, or unclear)
+- Ambiguous items clarified before any implementation
+- Each fix verified individually (test after each, not batch)
+- No performative agreement phrases in responses ("Great catch!", "Absolutely right")
 
 ## Integration
 

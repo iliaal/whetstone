@@ -53,6 +53,16 @@ After cleanup, run `git worktree prune` to remove any orphaned worktree metadata
 
 All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/git-worktree/scripts/worktree-manager.sh <command>`
 
+## Environment Detection
+
+Before creating worktrees, detect the execution context:
+
+1. **Already in a worktree?** Check `git rev-parse --show-toplevel` against `git worktree list`. If the current directory is already a linked worktree, skip creation -- work directly in the existing worktree.
+2. **Codex/sandbox environment?** If `$CODEX_SANDBOX` is set or the repo is at a non-standard path (e.g., `/tmp/`, `/workspace/`), worktrees may not be supported. Fall back to regular branch switching.
+3. **Bare repo?** If `git rev-parse --is-bare-repository` returns true, worktrees are the only way to have a working directory. Adjust paths accordingly.
+
+Adapt the workflow to the detected context rather than failing with a generic error.
+
 ## Integration with Workflows
 
 ### `/workflows:review`

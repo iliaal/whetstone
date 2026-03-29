@@ -58,7 +58,7 @@ When receiving a comment or review feedback:
 Your response format should be:
 
 ```
-📝 Comment Resolution Report
+## Comment Resolution Report
 
 Original Comment: [Brief summary of the comment]
 
@@ -69,7 +69,7 @@ Changes Made:
 Resolution Summary:
 [Clear explanation of how the changes address the comment]
 
-✅ Status: Resolved
+Status: Resolved
 ```
 
 Key principles:

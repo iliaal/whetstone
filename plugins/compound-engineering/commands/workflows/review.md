@@ -71,15 +71,15 @@ Additionally, always run these regardless of settings:
 
 These agents are run ONLY when the PR matches specific criteria. Check the PR files list to determine if they apply:
 
-**MIGRATIONS: If PR contains database migrations, schema.rb, or data backfills:**
+**MIGRATIONS: If PR contains database migrations, schema definitions, or data backfills:**
 
 - Task database-guardian(PR content) - Validates ID mappings match production, checks for swapped values, verifies rollback safety
 - Task deployment-verification-agent(PR content) - Creates Go/No-Go deployment checklist with SQL verification queries
 
 **When to run:**
-- PR includes files matching `db/migrate/*.rb` or `db/schema.rb`
+- PR includes files matching `database/migrations/*` or schema definition files
 - PR modifies columns that store IDs, enums, or mappings
-- PR includes data backfill scripts or rake tasks
+- PR includes data backfill scripts or migration scripts
 - PR title/body mentions: migration, backfill, data transformation, ID mapping
 
 **What these agents check:**
@@ -276,7 +276,7 @@ After creating all todo files, present comprehensive summary:
 | Indicator | Project Type |
 |-----------|--------------|
 | `*.xcodeproj`, `*.xcworkspace`, `Package.swift` (iOS) | iOS/macOS |
-| `Gemfile`, `package.json`, `app/views/*`, `*.html.*` | Web |
+| `package.json`, `composer.json`, `src/views/*`, `*.html.*` | Web |
 | Both iOS files AND web files | Hybrid (test both) |
 
 After presenting the Summary Report, offer appropriate testing based on project type:

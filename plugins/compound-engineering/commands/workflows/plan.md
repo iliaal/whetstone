@@ -10,8 +10,6 @@ Follow the `planning` skill for methodology (file persistence in `.plan/`, phase
 
 ## Introduction
 
-**Note: The current year is 2026.** Use this when dating plans and searching for recent documentation.
-
 Transform feature descriptions, bug reports, or improvement ideas into well-structured markdown files issues that follow project conventions and best practices. This command provides flexible detail levels to match your needs.
 
 ## Feature Description
@@ -138,7 +136,7 @@ Run these agents in parallel:
 
 After all research steps complete, consolidate findings:
 
-- Document relevant file paths from repo research (e.g., `app/services/example_service.rb:42`)
+- Document relevant file paths from repo research (e.g., `src/services/ExampleService.ts:42`)
 - **Include relevant institutional learnings** from `docs/solutions/` (key insights, gotchas to avoid)
 - Note external documentation URLs and best practices (if external research was done)
 - List related issues or PRs discovered
@@ -176,7 +174,7 @@ Think like a product manager - what would make this issue clear and actionable? 
 
 After planning the issue structure, run SpecFlow Analyzer to validate and refine the feature specification:
 
-- Task compound-engineering:review:spec-flow-analyzer(feature_description, research_findings)
+- Task spec-flow-analyzer(feature_description, research_findings)
 
 **SpecFlow Analyzer Output:**
 
@@ -198,58 +196,7 @@ See [plan-templates.md](./references/plan-templates.md) for the full template of
 
 ### 5. Issue Creation & Formatting
 
-<thinking>
-Apply best practices for clarity and actionability, making the issue easy to scan and understand
-</thinking>
-
-**Content Formatting:**
-
-- [ ] Use clear, descriptive headings with proper hierarchy (##, ###)
-- [ ] Include code examples in triple backticks with language syntax highlighting
-- [ ] Add screenshots/mockups if UI-related (drag & drop or use image hosting)
-- [ ] Use task lists (- [ ]) for trackable items that can be checked off
-- [ ] Add collapsible sections for lengthy logs or optional details using `<details>` tags
-
-**Cross-Referencing:**
-
-- [ ] Link to related issues/PRs using #number format
-- [ ] Reference specific commits with SHA hashes when relevant
-- [ ] Link to code using GitHub's permalink feature (press 'y' for permanent link)
-- [ ] Mention relevant team members with @username if needed
-- [ ] Add links to external resources with descriptive text
-
-**Code & Examples:**
-
-````markdown
-# Good example with syntax highlighting and line references
-
-
-```ruby
-# app/services/user_service.rb:42
-def process_user(user)
-
-# Implementation here
-
-end
-```
-
-# Collapsible error logs
-
-<details>
-<summary>Full error stacktrace</summary>
-
-`Error details here...`
-
-</details>
-````
-
-**AI-Era Considerations:**
-
-- [ ] Account for accelerated development with AI pair programming
-- [ ] Include prompts or instructions that worked well during research
-- [ ] Note which AI tools were used for initial exploration (Claude, Copilot, etc.)
-- [ ] Emphasize comprehensive testing given rapid implementation
-- [ ] Document any AI-generated code that needs human review
+Format the issue content following [issue-formatting.md](./references/issue-formatting.md) (content structure, cross-referencing, code examples, AI-era considerations).
 
 ### 6. Final Review & Submission
 
@@ -313,7 +260,7 @@ After writing the plan file, use the **AskUserQuestion tool** to present these o
 **Options:**
 1. **Open plan in editor** - Open the plan file for review
 2. **Run `/deepen-plan`** - Enhance each section with parallel research agents (best practices, performance, UI)
-3. **Run `/workflows:review`** - Technical feedback from code-focused reviewers (DHH, Kieran, Simplicity)
+3. **Run `/workflows:review`** - Technical feedback from code-focused reviewers (Kieran, Simplicity)
 4. **Review and refine** - Improve the document through structured self-review
 5. **Start `/workflows:work`** - Begin implementing this plan locally
 6. **Start `/workflows:work` on remote** - Begin implementing in Claude Code on the web (use `&` to run in background)
@@ -335,32 +282,6 @@ Loop back to options after Simplify or Other changes until user selects `/workfl
 
 ## Issue Creation
 
-When user selects "Create Issue", detect their project tracker from CLAUDE.md:
-
-1. **Check for tracker preference** in user's CLAUDE.md (global or project):
-   - Look for `project_tracker: github` or `project_tracker: linear`
-   - Or look for mentions of "GitHub Issues" or "Linear" in their workflow section
-
-2. **If GitHub:**
-
-   Use the title and type from Step 2 (already in context - no need to re-read the file):
-
-   ```bash
-   gh issue create --title "<type>: <title>" --body-file <plan_path>
-   ```
-
-3. **If Linear:**
-
-   ```bash
-   linear issue create --title "<title>" --description "$(cat <plan_path>)"
-   ```
-
-4. **If no tracker configured:**
-   Ask user: "Which project tracker do you use? (GitHub/Linear/Other)"
-   - Suggest adding `project_tracker: github` or `project_tracker: linear` to their CLAUDE.md
-
-5. **After creation:**
-   - Display the issue URL
-   - Ask if they want to proceed to `/workflows:work` or `/workflows:review`
+Follow the issue creation procedure in [issue-formatting.md](./references/issue-formatting.md#issue-creation) (tracker detection, GitHub/Linear commands).
 
 NEVER CODE! Just research and write the plan.

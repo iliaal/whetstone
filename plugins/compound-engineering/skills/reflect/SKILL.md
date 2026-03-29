@@ -36,7 +36,7 @@ Numbered list of **concrete improvements**, ranked by impact. Each item: one sen
 
 Ask: *"Which of these should I remember for future chats?"*
 
-Save approved items to memory files via the auto memory system.
+Save approved items to memory files at `~/.claude/projects/.../memory/` using the Write tool with proper frontmatter (see MEMORY.md index).
 
 ### 3. Skill Audit (if skills were used)
 
@@ -56,11 +56,7 @@ Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
 
 If 2+ similar tasks appear that no existing skill covers, suggest a new skill (1-2 sentence description). Create only after confirmation.
 
-## Proactive Trigger
-
-When the user corrects you, clarifies the same thing twice, or shows frustration -- append:
-
-> Tip: Type `/reflect` when you're ready -- I'll review what we can improve.
+**Proactive trigger:** When the user corrects you, clarifies the same thing twice, or shows frustration, append: "Tip: Type `/reflect` when you're ready -- I'll review what we can improve."
 
 ## Self-Check
 

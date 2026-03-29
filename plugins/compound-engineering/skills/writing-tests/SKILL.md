@@ -162,7 +162,7 @@ When you catch yourself thinking these things, stop:
 | "Mocks are faster" | Mocks are faster to run and slower to maintain. They test assumptions, not behavior. |
 | "I already wrote the implementation" | Sunk cost. Tests written after pass immediately and prove nothing about the original bug. |
 
-## Test Quality Checklist
+## Verify
 
 Before considering tests complete:
 

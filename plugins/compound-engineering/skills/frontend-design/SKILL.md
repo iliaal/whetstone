@@ -7,6 +7,8 @@ description: >-
   architecture patterns, hooks, and testing, use react-frontend instead.
 ---
 
+# Frontend Design
+
 Read the user's frontend requirements: a component, page, application, or interface to build. Note context about purpose, audience, or technical constraints.
 
 ## Context Detection
@@ -62,7 +64,16 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
-See [creative-arsenal.md](./references/creative-arsenal.md) for forbidden patterns and animation guidance.
+### Banned AI Design Patterns
+
+These patterns are hallmarks of AI-generated interfaces. Avoid them:
+
+- **Purple-to-blue gradient hero** -- the default AI aesthetic. Pick a different palette entirely.
+- **Centered hero → three equal-width cards → centered CTA** -- the most common AI layout. Use asymmetric layouts, split screens, or bento grids instead.
+- **Uniform rounded corners everywhere** -- vary border-radius by component purpose (sharp for data, rounded for interactive, pill for tags)
+- **Accent line under every heading** -- a dead giveaway. Use typography weight and spacing for hierarchy instead.
+- **Decorative emoji in headers** -- use quality icons (Phosphor, Radix) or no decoration at all
+- **Generic placeholder copy** -- no "John Doe", "Acme Corp", "Lorem ipsum". Use realistic, messy data ("47.2%", "+1 (312) 847-1928")
 
 ## Verify
 

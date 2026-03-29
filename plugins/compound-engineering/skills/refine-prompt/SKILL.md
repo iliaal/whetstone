@@ -60,3 +60,9 @@ After refining, offer to save the result to `.ai/PROMPT.md` -- do not write with
 - Never invent missing information -- if context is ambiguous, ask instead of inferring
 - Stop refining if the original intent is unclear -- clarify first
 - Do not refine prompts for harmful or illegal tasks
+
+## Verify
+
+- Rewrite addresses every gap identified in the assessment
+- Length ratio within 0.75x-1.5x of original (unless structural change justified)
+- No invented constraints or assumptions not in the original

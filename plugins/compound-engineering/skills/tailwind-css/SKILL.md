@@ -118,7 +118,7 @@ const button = tv({
 });
 ```
 
-See [tailwind-variants patterns](references/component-patterns.md) for slots, composition, and responsive variants.
+See [tailwind-variants patterns](./references/component-patterns.md) for slots, composition, and responsive variants.
 
 ## Common Errors
 
@@ -141,7 +141,13 @@ See [tailwind-variants patterns](references/component-patterns.md) for slots, co
 
 Semantic classes (`bg-background`, `text-foreground`) auto-switch -- no `dark:` variants needed for themed colors.
 
+## Verify
+
+- Build passes with zero errors (`npm run build` or equivalent)
+- No v3 class names remain in changed files (check with `@tailwindcss/upgrade --dry-run` if available)
+- No conflicting classes on the same element
+
 ## References
 
-- [Component patterns](references/component-patterns.md) -- tailwind-variants slots, CVA, compound components
-- [Layout patterns](references/layout-patterns.md) -- grid areas, container queries, z-index management, fluid typography
+- [Component patterns](./references/component-patterns.md) -- tailwind-variants slots, CVA, compound components
+- [Layout patterns](./references/layout-patterns.md) -- grid areas, container queries, z-index management, fluid typography

@@ -131,6 +131,15 @@ If a subagent fails a task, dispatch a fresh agent to fix it. Don't try to fix i
 | Multi-file integration, standard complexity | Default model |
 | Architecture decisions, ambiguous scope, review | `model: "opus"` |
 
+**Handoff protocol -- structured agent-to-agent transfers:**
+
+When passing work between agents (leader→implementer, implementer→reviewer, reviewer→leader), include:
+1. **Context**: what was done, relevant files, constraints discovered
+2. **Deliverable**: specific output expected from the receiving agent
+3. **Acceptance criteria**: how the receiving agent knows the work is correct
+
+Copy the necessary context into the prompt directly. Never tell the next agent "read the previous agent's output" -- paste it. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
+
 **Standardize implementer status signals:**
 
 Include these four statuses in every teammate prompt so they know the reporting format. Expect teammates to report one of:
@@ -149,17 +158,28 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 ## Best Practices
 
-1. **Always cleanup** - Don't leave orphaned teams. Call `cleanup` when done.
-2. **Use meaningful names** - `security-reviewer`, not `worker-1`.
-3. **Write clear prompts** - Tell workers exactly what to do and how to report results.
-4. **Use task dependencies** - Let the system manage unblocking via `addBlockedBy`.
-5. **Prefer `write` over `broadcast`** - Broadcast sends N messages for N teammates.
-6. **Handle failures** - Workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
-7. **Check inboxes** - Workers send results to your inbox at `~/.claude/teams/{team}/inboxes/team-lead.json`.
-8. **Two-stage per-task review** - After each implementation task, dispatch two sequential review subagents: (1) spec compliance ("does the output match the task spec, no more, no less?"), then (2) code quality. Spec compliance must pass before quality review runs. Skip for trivial/mechanical tasks.
-9. **Post-integration verification** - After all agents return: check if agents edited overlapping files (especially with worktrees), review summaries for conflicting approaches, run full test suite, spot-check for systematic errors.
+1. **Use meaningful names** - `security-reviewer`, not `worker-1`.
+2. **Write clear prompts** - Tell workers exactly what to do and how to report results.
+3. **Use task dependencies** - Let the system manage unblocking via `addBlockedBy`.
+4. **Prefer `write` over `broadcast`** - Broadcast sends N messages for N teammates.
+5. **Handle failures** - Workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
+6. **Check inboxes** - Workers send results to your inbox at `~/.claude/teams/{team}/inboxes/team-lead.json`.
+7. **Post-integration verification** - After all agents return: check if agents edited overlapping files (especially with worktrees), review summaries for conflicting approaches, run full test suite, spot-check for systematic errors.
 
 ---
+
+## Coordination Models
+
+Two approaches to multi-agent coordination exist. Choose based on the work pattern:
+
+| Aspect | Stateless (copy-paste outputs) | Stateful (file ownership + dependencies) |
+|--------|-------------------------------|------------------------------------------|
+| How agents share state | Leader copies full outputs between prompts | Agents read/write shared task files, claim ownership |
+| Best for | Short pipelines, 2-3 agents, sequential handoffs | Parallel work, 4+ agents, complex dependency graphs |
+| Failure mode | Context grows linearly with agent count | Concurrent modification conflicts |
+| Mitigation | Summarize before passing (keep essentials, drop navigation) | Use worktrees or exclusive file ownership per agent |
+
+For most work, start with stateless handoffs. Graduate to stateful coordination only when parallelism provides a real speedup and you have worktree isolation to prevent file conflicts.
 
 ## Verify
 
@@ -170,13 +190,13 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 ## References
 
-Detailed documentation for each subsystem:
-
-- [agent-types.md](./references/agent-types.md) - Built-in and plugin agent types with examples
-- [teammate-operations.md](./references/teammate-operations.md) - All 13 TeammateTool operations (spawnTeam, write, broadcast, requestShutdown, etc.)
-- [task-system.md](./references/task-system.md) - TaskCreate, TaskList, TaskGet, TaskUpdate, dependencies, task file structure
-- [message-formats.md](./references/message-formats.md) - All message format JSON examples (regular, shutdown, idle, plan approval, etc.)
-- [orchestration-patterns.md](./references/orchestration-patterns.md) - 6 patterns (parallel specialists, pipeline, swarm, research+implementation, plan approval, coordinated refactoring) + 3 complete workflow examples
-- [spawn-backends.md](./references/spawn-backends.md) - Backend comparison, auto-detection, in-process/tmux/iterm2 details, troubleshooting
-- [environment-config.md](./references/environment-config.md) - Environment variables and team config structure
-- [handoff-templates.md](./references/handoff-templates.md) - QA FAIL and Escalation Report formats for structured agent-to-agent feedback
+| Document | When to load | What it covers |
+|----------|-------------|----------------|
+| [agent-types.md](./references/agent-types.md) | Choosing which agent to spawn | Built-in and plugin agent types with examples |
+| [teammate-operations.md](./references/teammate-operations.md) | Using TeammateTool for persistent agents | All 13 operations (spawnTeam, write, broadcast, requestShutdown, etc.) |
+| [task-system.md](./references/task-system.md) | Managing work items and dependencies | TaskCreate, TaskList, TaskGet, TaskUpdate, file structure |
+| [message-formats.md](./references/message-formats.md) | Sending structured messages between agents | All JSON message examples (regular, shutdown, idle, plan approval) |
+| [orchestration-patterns.md](./references/orchestration-patterns.md) | Designing a multi-agent workflow | 6 patterns + 3 complete workflow examples |
+| [spawn-backends.md](./references/spawn-backends.md) | Troubleshooting agent spawn issues | Backend comparison, auto-detection, in-process/tmux/iterm2 |
+| [environment-config.md](./references/environment-config.md) | Configuring team environment | Environment variables and team config structure |
+| [handoff-templates.md](./references/handoff-templates.md) | Passing work between agents | QA FAIL and Escalation Report formats |

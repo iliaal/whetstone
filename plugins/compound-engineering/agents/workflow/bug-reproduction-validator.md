@@ -45,7 +45,7 @@ When presented with a bug report:
    - Look for recent changes that might have introduced the issue using git history if relevant
 
 4. **Investigation Techniques**:
-   - Add temporary logging to trace execution flow if needed
+   - Inspect existing logs and trace execution flow to identify where behavior diverges
    - Check related test files to understand expected behavior
    - Review error handling and validation logic
    - Examine database constraints and model validations

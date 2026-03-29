@@ -93,7 +93,7 @@ Based on problem type, optionally invoke specialized agents to review the docume
 - **performance_issue** → `performance-oracle`
 - **security_issue** → `security-sentinel`
 - **database_issue** → `database-guardian`
-- **test_failure** → `writing-tests`
+- **test_failure** → `writing-tests` skill
 - Any code-heavy issue → `code-simplicity-reviewer`
 
 </parallel_tasks>
@@ -205,29 +205,6 @@ Build → Test → Find Issue → Research → Improve → Document → Validate
 ## Routes To
 
 `compound-docs` skill
-
-## Applicable Specialized Agents
-
-Based on problem type, these agents can enhance documentation:
-
-### Code Quality & Review
-- **code-simplicity-reviewer**: Ensures solution code is minimal and clear
-- **architecture-strategist**: Identifies anti-patterns, design pattern issues, or structural problems
-
-### Specific Domain Experts
-- **performance-oracle**: Analyzes performance_issue category solutions
-- **security-sentinel**: Reviews security_issue solutions for vulnerabilities
-- **writing-tests**: Creates test cases for prevention strategies
-- **database-guardian**: Reviews database_issue migrations and queries
-
-### Enhancement & Documentation
-- **best-practices-researcher**: Enriches solution with industry best practices
-- **best-practices-researcher**: Also links to framework/library documentation references
-
-### When to Invoke
-- **Auto-triggered** (optional): Agents can run post-documentation for enhancement
-- **Manual trigger**: User can invoke agents after /workflows:compound completes for deeper review
-- **Customize agents**: Edit `compound-engineering.local.md` or run `/setup` to configure which review agents are used across all workflows
 
 ## Related Commands
 

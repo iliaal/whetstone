@@ -5,6 +5,8 @@ description: >-
   autonomous agents, MCP tools, or self-modifying agent-loop architectures.
 ---
 
+# Agent-Native Architecture
+
 ## Core Principles
 
 Five principles govern agent-native design. For detailed explanations, examples, and test criteria, see [core-principles.md](./references/core-principles.md).
@@ -17,8 +19,7 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | **Emergent Capability** | Can the agent handle open-ended requests you didn't design for? |
 | **Improvement Over Time** | Does the app work better after a month, even without code changes? |
 
-<intake>
-## Select focus area
+## Focus Area Selection
 
 1. **Design architecture** - Plan a new agent-native system from scratch
 2. **Files & workspace** - Use files as the universal interface, shared workspace patterns
@@ -37,9 +38,9 @@ Five principles govern agent-native design. For detailed explanations, examples,
 15. **Success criteria** - Verify your architecture is agent-native
 
 **Wait for response before proceeding.**
-</intake>
 
-<routing>
+## Reference Routing
+
 | Response | Action |
 |----------|--------|
 | 1, "design", "architecture", "plan" | Read [architecture-patterns.md](./references/architecture-patterns.md), then apply Architecture Checklist below |
@@ -57,11 +58,10 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | 13, "review", "refactor", "existing" | Read [refactoring-to-prompt-native.md](./references/refactoring-to-prompt-native.md) |
 | 14, "anti-pattern", "mistake", "wrong" | Read [anti-patterns.md](./references/anti-patterns.md) |
 | 15, "success", "criteria", "verify", "checklist" | Read [success-criteria.md](./references/success-criteria.md) |
+| 0, "quick start", "getting started", "overview", "introduction" | Read [quick-start.md](./references/quick-start.md) |
 
 **After reading the reference, apply those patterns to the user's specific context.**
-</routing>
 
-<architecture_checklist>
 ## Architecture Review Checklist
 
 When designing an agent-native system, verify these **before implementation**:
@@ -111,25 +111,3 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Cost Awareness:** Model tier selection (Haiku/Sonnet/Opus)
 
 **When designing architecture, explicitly address each checkbox in your plan.**
-</architecture_checklist>
-
-## References
-
-- [core-principles.md](./references/core-principles.md) - The five principles with examples and test criteria
-- [quick-start.md](./references/quick-start.md) - Build an agent-native feature in 3 steps
-- [architecture-patterns.md](./references/architecture-patterns.md) - Event-driven, unified orchestrator, agent-to-UI
-- [files-universal-interface.md](./references/files-universal-interface.md) - Why files, organization patterns, context.md
-- [mcp-tool-design.md](./references/mcp-tool-design.md) - Tool design, dynamic capability discovery, CRUD
-- [from-primitives-to-domain-tools.md](./references/from-primitives-to-domain-tools.md) - When to add domain tools, graduating to code
-- [agent-execution-patterns.md](./references/agent-execution-patterns.md) - Completion signals, partial completion, context limits
-- [system-prompt-design.md](./references/system-prompt-design.md) - Features as prompts, judgment criteria
-- [dynamic-context-injection.md](./references/dynamic-context-injection.md) - Runtime context, what to inject
-- [action-parity-discipline.md](./references/action-parity-discipline.md) - Capability mapping, parity workflow
-- [shared-workspace-architecture.md](./references/shared-workspace-architecture.md) - Shared data space, UI integration
-- [product-implications.md](./references/product-implications.md) - Progressive disclosure, latent demand, approval
-- [agent-native-testing.md](./references/agent-native-testing.md) - Testing outcomes, parity tests
-- [anti-patterns.md](./references/anti-patterns.md) - Common mistakes and what to do instead
-- [success-criteria.md](./references/success-criteria.md) - Verify your architecture is agent-native
-- [mobile-patterns.md](./references/mobile-patterns.md) - iOS storage, checkpoint/resume, cost awareness
-- [self-modification.md](./references/self-modification.md) - Git-based evolution, guardrails
-- [refactoring-to-prompt-native.md](./references/refactoring-to-prompt-native.md) - Migrating existing code

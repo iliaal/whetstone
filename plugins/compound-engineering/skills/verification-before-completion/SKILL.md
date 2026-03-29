@@ -2,8 +2,8 @@
 name: verification-before-completion
 description: >-
   Enforces fresh verification evidence before any completion claim, commit, or
-  PR. Use before claiming "tests pass", "bug fixed", "feature complete", or
-  handing off work. Prevents the most common AI failure mode: asserting success
+  PR. Use before claiming "tests pass", "bug fixed", "feature complete", "done",
+  "finished", "ready to merge", "ship it", or handing off work. Prevents the most common AI failure mode: asserting success
   without running the proof.
 ---
 
@@ -46,8 +46,6 @@ Before shipping, check whether prior reviews (agent or human) are still valid. I
 - ANY positive statement about completion, including paraphrases and synonyms
 
 ## Red Flags
-
-**Fantasy assessment auto-fail.** A claim of "zero issues found" on a first implementation pass is a red flag, not a green light. First implementations typically need 2-3 revision cycles. "Perfect on the first try" more likely means incomplete verification than flawless code. Re-verify with a broader scope.
 
 **Negative confirmation at signoff.** When reporting verification results, include a brief statement of what defect classes were checked and NOT found, not just what passed. "Tests pass, no type errors, no lint warnings, no security flags in the changed files" is stronger than "tests pass" because it proves the scope of verification.
 
@@ -118,6 +116,9 @@ Stop and re-verify when you catch yourself thinking any of these:
 | Trusting a subagent's report without checking | Subagent claims require independent verification. Run it yourself. |
 | "I'm tired" / wanting the task to be over | Exhaustion is not an excuse. The last verification matters most. |
 | Rephrasing a claim to dodge the rule ("looks good" instead of "tests pass") | Spirit over letter. Any satisfaction expression about work state triggers verification. |
+| "Just this once" / "This time it's different" | Every bypass weakens the habit. No exceptions. |
+| "The CI will catch it" | CI runs after you claim done. Verification happens before the claim, not after. |
+| "Zero issues found" on first pass | First implementations typically need 2-3 revision cycles. "Perfect on the first try" more likely means incomplete verification. Re-verify with broader scope. |
 
 ## Integration
 
@@ -126,4 +127,6 @@ This skill is referenced by:
 - `receiving-code-review` -- verify each fix before marking resolved
 - `debugging` -- before claiming a bug is fixed
 - `writing-tests` -- tests as primary verification evidence
+- `design-iterator` agent -- verify design changes render correctly
+- `figma-design-sync` agent -- verify implementation matches Figma
 - `/verify` command -- runs the full pre-PR verification pipeline

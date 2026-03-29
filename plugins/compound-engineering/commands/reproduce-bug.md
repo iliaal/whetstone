@@ -5,6 +5,8 @@ argument-hint: "[GitHub issue number]"
 disable-model-invocation: true
 ---
 
+**Requires:** Playwright MCP server configured. If unavailable, fall back to manual browser testing with screenshots.
+
 # Reproduce Bug Command
 
 Look at github issue #$ARGUMENTS and read the issue description and comments.
@@ -32,7 +34,7 @@ mcp__plugin_compound-engineering_pw__browser_navigate({ url: "http://localhost:3
 mcp__plugin_compound-engineering_pw__browser_snapshot({})
 ```
 
-If server not running, inform user to start `bin/dev`.
+If server not running, inform user to start their dev server.
 
 ### Step 2: Navigate to Affected Area
 
@@ -83,7 +85,7 @@ mcp__plugin_compound-engineering_pw__browser_take_screenshot({ filename: "bug-[i
 
 **Reference Collection:**
 
-- [ ] Document all research findings with specific file paths (e.g., `app/services/example_service.rb:42`)
+- [ ] Document all research findings with specific file paths (e.g., `src/services/ExampleService.ts:42`)
 - [ ] Include screenshots showing the bug reproduction
 - [ ] List console errors if any
 - [ ] Document the exact reproduction steps

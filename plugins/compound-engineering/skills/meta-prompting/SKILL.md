@@ -3,7 +3,7 @@ name: meta-prompting
 description: >-
   Enhanced reasoning via slash commands (/think, /verify, /adversarial, /edge,
   /compare, /confidence, /budget, /constrain, /json, /flip, /assumptions,
-  /tensions, /analyze, /trade) or natural language like "argue against" or
+  /tensions, /analyze, /trade, /postmortem) or natural language like "argue against" or
   "what could break". Use when asked to stress-test reasoning, find
   counterarguments, or apply structured thinking patterns.
 ---
@@ -61,3 +61,8 @@ Custom keys: `/json {keys: summary, risks, recommendation}`
 - Separate combined pattern outputs with `---`
 - Keep core answer prominent -- patterns enhance, not bury the response
 - Accept new pattern definitions mid-conversation ("Add `/eli5` for explain like I'm 5") -- apply for the session
+
+## Verify
+
+- Pattern marker present in output (e.g., `VERIFIED ANSWER:` for /verify)
+- Core answer remains prominent -- meta-reasoning enhances, doesn't bury it

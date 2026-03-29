@@ -131,7 +131,7 @@ This command takes a work document (plan, specification, or todo file) and execu
    **Commit workflow:**
    ```bash
    # 1. Verify tests pass (use project's test command)
-   # Examples: bin/rails test, npm test, pytest, go test, etc.
+   # Examples: npm test, pytest, php artisan test, go test, etc.
 
    # 2. Stage only files related to this logical unit (not `git add .`)
    git add <files related to this logical unit>
@@ -198,7 +198,7 @@ Do not proceed to Phase 3 if verification fails.
 
    ```bash
    # Run full test suite (use project's test command)
-   # Examples: bin/rails test, npm test, pytest, go test, etc.
+   # Examples: npm test, pytest, php artisan test, go test, etc.
 
    # Run linting (use project's lint command per CLAUDE.md)
    ```
@@ -235,7 +235,7 @@ Do not proceed to Phase 3 if verification fails.
 
    **Step 1: Start dev server** (if not running)
    ```bash
-   bin/dev  # Run in background
+   npm run dev  # Run in background
    ```
 
    **Step 2: Capture screenshots with agent-browser CLI**

@@ -70,8 +70,8 @@ For each destructive step:
 
 | Step | Command | Estimated Runtime | Batching | Rollback |
 |------|---------|-------------------|----------|----------|
-| 1. Add column | `rails db:migrate` | < 1 min | N/A | Drop column |
-| 2. Backfill data | `rake data:backfill` | ~10 min | 1000 rows | Restore from backup |
+| 1. Add column | Run migration | < 1 min | N/A | Drop column |
+| 2. Backfill data | Run backfill script | ~10 min | 1000 rows | Restore from backup |
 | 3. Enable feature | Set flag | Instant | N/A | Disable flag |
 
 ### 4. Post-Deploy Verification (Within 5 Minutes)
@@ -116,14 +116,16 @@ SELECT status, COUNT(*) FROM records GROUP BY status;
 | User reports | Any report | Support queue |
 
 **Sample console verification (run 1 hour after deploy):**
-```ruby
-# Quick sanity check
-Record.where(new_column: nil, old_column: [present values]).count
-# Expected: 0
+```sql
+-- Quick sanity check
+SELECT COUNT(*) FROM records
+WHERE new_column IS NULL AND old_column IS NOT NULL;
+-- Expected: 0
 
-# Spot check random records
-Record.order("RANDOM()").limit(10).pluck(:old_column, :new_column)
-# Verify mapping is correct
+-- Spot check random records
+SELECT old_column, new_column FROM records
+ORDER BY RANDOM() LIMIT 10;
+-- Verify mapping is correct
 ```
 
 ## Output Format
@@ -133,29 +135,29 @@ Produce a complete Go/No-Go checklist that an engineer can literally execute:
 ```markdown
 # Deployment Checklist: [PR Title]
 
-## 🔴 Pre-Deploy (Required)
+## PRE-DEPLOY (Required)
 - [ ] Run baseline SQL queries
 - [ ] Save expected values
 - [ ] Verify staging test passed
 - [ ] Confirm rollback plan reviewed
 
-## 🟡 Deploy Steps
+## DEPLOY Steps
 1. [ ] Deploy commit [sha]
 2. [ ] Run migration
 3. [ ] Enable feature flag
 
-## 🟢 Post-Deploy (Within 5 Minutes)
+## POST-DEPLOY (Within 5 Minutes)
 - [ ] Run verification queries
 - [ ] Compare with baseline
 - [ ] Check error dashboard
 - [ ] Spot check in console
 
-## 🔵 Monitoring (24 Hours)
+## MONITORING (24 Hours)
 - [ ] Set up alerts
 - [ ] Check metrics at +1h, +4h, +24h
 - [ ] Close deployment ticket
 
-## 🔄 Rollback (If Needed)
+## ROLLBACK (If Needed)
 1. [ ] Disable feature flag
 2. [ ] Deploy rollback commit
 3. [ ] Run data restoration
@@ -168,7 +170,7 @@ Invoke this agent when:
 - PR touches database migrations with data changes
 - PR modifies data processing logic
 - PR involves backfills or data transformations
-- Data Migration Expert flags critical findings
+- `database-guardian` agent flags critical findings
 - Any change that could silently corrupt/lose data
 
 Be thorough. Be specific. Produce executable checklists, not vague recommendations.

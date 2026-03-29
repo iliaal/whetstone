@@ -139,3 +139,9 @@ def call_api(url: str) -> dict: ...
 - Convert external data to domain types (enums, Pydantic models) at system boundaries
 - Batch processing: `BatchResult(succeeded={}, failed={})` -- don't let one item abort the batch
 - Pydantic `BaseModel` with `field_validator` for complex input validation
+
+## Verify
+
+- `uv run pytest` passes with zero failures
+- `uv run ruff check .` passes with zero warnings
+- Coverage target: 80%+ (`uv run pytest --cov`)

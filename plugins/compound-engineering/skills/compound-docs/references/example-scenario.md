@@ -18,7 +18,7 @@
    module: Brief System
    date: 2025-11-10
    problem_type: performance_issue
-   component: rails_model
+   component: database_model
    symptoms:
      - "N+1 query when loading email threads"
      - "Brief generation taking >5 seconds"

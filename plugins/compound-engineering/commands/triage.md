@@ -129,8 +129,6 @@ During triage, the following status updates occurred:
    - Ready → In Progress (in your local context as you work)
    - In Progress → Complete (rename file: ready → complete, update frontmatter)
 
-```
-
 ## Example Response Format
 
 ```
@@ -145,7 +143,7 @@ Category: Data Integrity / Security
 
 Description: The google_oauth2_connected callback in GoogleOauthCallbacks concern performs multiple database operations without transaction protection. If any step fails midway, the database is left in an inconsistent state.
 
-Location: app/controllers/concerns/google_oauth_callbacks.rb:13-50
+Location: src/controllers/OAuthController.ts:13-50
 
 Problem Scenario:
 

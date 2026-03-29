@@ -5,6 +5,51 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.50.0] - 2026-03-29
+
+### Added
+
+- **code-review**: Deep multi-agent review mode -- auto-detects complex diffs (3+ signals) and dispatches parallel specialist agents (correctness, security, testing, maintainability, performance). New `references/deep-review.md` with agent prompt templates, merge algorithm, and model selection.
+- **code-review**: Confidence rubric (0.0-1.0 scoring) with false-positive suppression categories. Intent verification in review process.
+- **receiving-code-review**: Headless mode for programmatic triage (AUTO-FIX / AUTO-DECLINE / ESCALATE classification). Prior-feedback check on re-reviews.
+- **document-review**: 5 conditional review lenses (Product, Design, Security, Scope guardian, Adversarial) activated by document signals.
+- **orchestrating-swarms**: Handoff protocol for structured agent-to-agent transfers. Coordination models comparison (stateless vs stateful). Reference map table.
+- **frontend-design**: 6 banned AI design patterns (purple gradient, centered-cards layout, uniform corners, accent lines, emoji headers, generic placeholder copy).
+- **git-worktree**: Environment detection (existing worktree, sandbox, bare repo).
+- **planning**: Test discovery phase for existing projects. Verify section with 6 measurable criteria.
+- **verification-before-completion**: 3 new rationalization entries (just this once, CI will catch it, zero issues on first pass).
+- **Verify sections** added to 9 skills: receiving-code-review, simplifying-code, tailwind-css, md-docs, meta-prompting, refine-prompt, debugging, react-frontend, writing-tests (renamed from Test Quality Checklist). Also nodejs-backend and python-services.
+- **brainstorming**: Success criteria section.
+- **writing**: Short-form/long-form mode labels for self-check. Two new self-check items (contrast structures, vague declaratives).
+
+### Changed
+
+- **agent-native-architecture**: Converted non-standard XML tags (`<intake>`, `<routing>`, `<architecture_checklist>`) to standard markdown. Added H1 heading. Removed duplicate References section. Linked orphan `quick-start.md`.
+- **orchestrating-swarms**: Removed duplicate Best Practices rules 1 and 8 (covered by Verify and Dispatch Discipline).
+- **php-laravel**: Removed duplicate Anti-Patterns section (4/5 entries already covered; moved unique entry to Discipline).
+- **postgresql**: Removed 10 duplicate Anti-Patterns entries (kept 1 genuinely new).
+- **linux-bash-scripting**: Compressed Linux-Specific section to non-obvious items only (GNU coreutils differences, timeout).
+- **compound-docs**: Replaced verbose Integration Points block with slim Integration section.
+- **reflect**: Replaced vague "auto memory system" with concrete file path. Folded Proactive Trigger into Process step.
+- **document-review**: Renumbered steps 1-8 sequentially (was 1, 2, 2b, 3, 4, 5, 5b, 6). Broadened description to cover specs, ADRs, and any doc.
+- **workflows:plan**: Extracted issue formatting and creation logic to `references/issue-formatting.md` (was over 4K token budget). Removed hardcoded year. Fixed non-standard namespaced agent call.
+- **resolve-todo-parallel**: Removed dead dependency diagram code.
+- **lfg**: Normalized namespaced command references to short names. Added auto-detect note for deepen-plan.
+- **agent-native-audit**: Added argument anchor at top of body.
+- **deployment-verification-agent**: Replaced emoji section headers with text. Fixed stale "Data Migration Expert" reference to `database-guardian`. Made examples stack-neutral.
+- **devops-engineer**: Removed incorrect `autoApprove: read` (agent writes Dockerfiles).
+- **figma-design-sync**: Removed `autoApprove: read` (Phase 2 writes code).
+- **kieran-reviewer**: Sharpened description with persona-driven focus. Added code-review cross-reference.
+- **pr-comment-resolver**: Removed emoji from output template.
+- **bug-reproduction-validator**: Replaced "add temporary logging" with "inspect existing logs" (permission-safe).
+- **security-sentinel**, **learnings-researcher**: Added OWASP/schema fallback notes for cross-reference paths.
+- **Cross-references**: Added bidirectional Integration entries across simplifying-code, verification-before-completion, debugging, code-review, and 4 description-level pointers.
+- **Description triggers**: Added missing synonyms to verification-before-completion, nodejs-backend, code-review, meta-prompting, simplifying-code, debugging, compound-docs, devops-engineer.
+
+### Removed
+
+- All Rails/Ruby-specific examples replaced with TypeScript/PHP/generic equivalents across 18 files (agents, commands, skills). Plugin no longer assumes a Rails stack.
+
 ## [2.49.4] - 2026-03-27
 
 ### Fixed

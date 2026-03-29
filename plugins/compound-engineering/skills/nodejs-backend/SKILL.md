@@ -2,7 +2,7 @@
 name: nodejs-backend
 description: >-
   Node.js backend patterns: layered architecture, TypeScript, validation, error
-  handling, security, deployment. Use when building REST APIs, Express/Fastify
+  handling, security, deployment. Use when building REST APIs, Express/Fastify/Hono/NestJS
   servers, or server-side TypeScript.
 ---
 
@@ -100,6 +100,12 @@ Never `readFileSync` / sync methods in production. Offload CPU work to worker th
 - Only touch what's necessary -- avoid introducing unrelated changes
 - If a fix requires bypassing TypeScript (`as any`, non-null assertions on untrusted data, `// @ts-ignore`), treat it as a design smell and find the typed solution
 - Verify: `tsc --noEmit && npm test` pass with zero warnings before declaring done
+
+## Verify
+
+- `tsc --noEmit` passes with zero errors
+- `npm test` passes with zero failures
+- No TypeScript bypasses (`as any`, `@ts-ignore`) in new code
 
 ## References
 

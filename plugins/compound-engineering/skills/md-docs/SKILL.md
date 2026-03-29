@@ -118,3 +118,9 @@ After every operation, display a summary:
 
 ⊘ CONTRIBUTING.md not found (skipped)
 ```
+
+## Verify
+
+- Every factual claim in updated docs verified against current codebase
+- No stale file paths or component names
+- Formatting renders correctly in markdown preview

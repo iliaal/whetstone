@@ -1,8 +1,8 @@
 ---
 name: document-review
 description: >-
-  Structural quality review of existing documents -- checks for gaps, clarity,
-  completeness, and organization. Use when a brainstorm or plan doc needs polish
+  Structural review of documents for gaps, clarity, completeness, and
+  organization. Use when a brainstorm, plan, spec, ADR, or any doc needs polish
   before the next workflow step. For exploring new ideas from scratch, use
   brainstorming instead.
 ---
@@ -31,7 +31,21 @@ Read through the document and ask:
 
 These questions surface issues. Don't fix yet--just note what you find.
 
-## Step 3: Evaluate
+## Step 3: Activate Review Lenses
+
+Based on the document's content, activate specialized review perspectives. Scan for signals and apply matching lenses:
+
+| Lens | Signals | What it checks |
+|------|---------|----------------|
+| **Product** | User-facing features, customer language, market claims, scope decisions | Problem framing, value proposition clarity, whether scope matches stated goals |
+| **Design** | UI/UX references, user flows, wireframes, interaction descriptions | Flow completeness, interaction gaps, accessibility considerations |
+| **Security** | Auth/authorization, API endpoints, PII, payments, tokens, encryption | Auth model gaps, data exposure risks, missing threat considerations |
+| **Scope guardian** | Multiple priority tiers (P0/P1/P2), large requirement count (>8), stretch goals | Scope creep, premature abstractions, features disguised as requirements |
+| **Adversarial** | >5 distinct requirements, explicit architectural decisions, high-stakes domains | Unstated assumptions, optimistic estimates, single points of failure, missing failure modes |
+
+Activate a lens when ANY of its signals match. Most documents trigger 1-2 lenses; brainstorm notes may trigger none. When a lens is active, weave its checks into the assessment and evaluation steps rather than running it as a separate pass.
+
+## Step 4: Evaluate
 
 Score the document against these criteria:
 
@@ -45,11 +59,11 @@ Score the document against these criteria:
 If invoked within a workflow (after `/workflows:brainstorm` or `/workflows:plan`), also check:
 - **User intent fidelity** -- Document reflects what was discussed, assumptions validated
 
-## Step 4: Identify the Critical Improvement
+## Step 5: Identify the Critical Improvement
 
-Among everything found in Steps 2-3, does one issue stand out? If something would significantly improve the document's quality, this is the "must address" item. Highlight it prominently.
+Among everything found in Steps 2-4, does one issue stand out? If something would significantly improve the document's quality, this is the "must address" item. Highlight it prominently.
 
-## Step 5: Make Changes
+## Step 6: Make Changes
 
 Present your findings, then:
 
@@ -72,15 +86,15 @@ Simplification is purposeful removal of unnecessary complexity, not shortening f
 - Rationale that explains why alternatives were rejected
 - Open questions that need resolution
 
-## Step 5b: Reader Test (Optional)
+## Step 7: Reader Test (Optional)
 
-For standalone documents that must be self-contained (onboarding guides, ADRs, external-facing docs), optionally dispatch a zero-context sub-agent with only the document and 5 reader questions. The sub-agent has no conversation history -- it sees only what a future reader would see.
+For standalone documents that must be self-contained (onboarding guides, ADRs, external-facing docs), optionally dispatch a zero-context sub-agent with only the document and 5 reader questions. Generate the questions from the document's stated goals -- one per major section or decision. The sub-agent has no conversation history -- it sees only what a future reader would see.
 
 If the sub-agent can answer the questions correctly, the document is self-contained. If it can't, the document has gaps that need filling. This is the "fresh eyes" test automated.
 
 Skip for context-dependent docs (brainstorm notes, plan files, internal working docs) where the reader will have prior context.
 
-## Step 6: Offer Next Action
+## Step 8: Offer Next Action
 
 After changes are complete, ask:
 
@@ -103,6 +117,7 @@ Return control to the caller (workflow or user) after selection.
 ## Success Criteria
 
 - Document read and scored on all four quality criteria
+- Relevant review lenses activated and checks applied
 - Critical improvements identified with specific suggestions
-- User presented with clear next-action choice
+- User presented with clear next-action choice (refine or complete)
 - Revised document saved if changes were approved

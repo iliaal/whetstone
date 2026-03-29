@@ -2,8 +2,9 @@
 name: debugging
 description: >-
   Systematic root-cause debugging with verification. Use when debugging,
-  troubleshooting, or facing errors, stack
-  traces, broken tests, flaky tests, or regressions.
+  troubleshooting, or facing errors, stack traces, broken tests, flaky tests,
+  or regressions. For validating bug reports before fixing, use
+  bug-reproduction-validator agent.
 ---
 
 # Debugging
@@ -136,6 +137,13 @@ When you catch yourself doing or thinking these things, **stop and return to Pha
 
 See [specialized-patterns.md](./references/specialized-patterns.md) for anti-pattern signals and specialized debugging patterns.
 
+## Verify
+
+- Root cause identified with `file:line` evidence (not just "it failed here")
+- Regression test exists and fails without the fix, passes with it
+- Debug Report emitted with all five fields
+- No diagnostic instrumentation left in code (`git diff` shows no leftover logging)
+
 ## Integration
 
 This skill is referenced by:
@@ -143,6 +151,7 @@ This skill is referenced by:
 - `writing-tests` -- creating failing tests to reproduce bugs
 - `verification-before-completion` -- before claiming a bug is fixed
 - `bug-reproduction-validator` agent -- follows Root Cause Analysis methodology
+- `devops-engineer` agent -- follows Postmortem template for production incidents
 - `reproduce-bug` command -- automated bug reproduction workflow
 
 ## Postmortem

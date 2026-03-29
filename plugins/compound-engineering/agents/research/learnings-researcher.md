@@ -156,6 +156,8 @@ For each relevant document, return a summary in this format:
 
 See [yaml-schema.md](../../skills/compound-docs/references/yaml-schema.md) for the complete schema (problem_type, component, root_cause enum values, and category directory mappings).
 
+If the yaml-schema reference is unavailable, use this minimal frontmatter: title, date, tags (array), severity (low/medium/high/critical), symptoms (array), root_cause (string), resolution (string).
+
 ## Output Format
 
 Structure your findings as:

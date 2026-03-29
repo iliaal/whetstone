@@ -30,14 +30,16 @@ origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md  # if originated from 
 
 ## MVP
 
-### test.rb
+### example.ts
 
-```ruby
-class Test
-  def initialize
-    @name = "test"
-  end
-end
+```typescript
+class Example {
+  private name: string;
+
+  constructor() {
+    this.name = "test";
+  }
+}
 ```
 
 ## Sources

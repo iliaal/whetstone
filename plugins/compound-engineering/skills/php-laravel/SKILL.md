@@ -117,6 +117,7 @@ See [factories](./references/factories.md) for states, relationships, sequences,
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- No empty catch blocks -- log or rethrow, never swallow exceptions
 - Verify: `./vendor/bin/phpstan analyse --level=8 && ./vendor/bin/phpunit` pass with zero warnings before declaring done
 
 ## Production Performance
@@ -125,14 +126,6 @@ See [factories](./references/factories.md) for states, relationships, sequences,
 - **JIT**: enable with `opcache.jit_buffer_size=100M`, `opcache.jit=1255` (tracing). Biggest gains on CPU-bound code (math, loops), minimal impact on I/O-bound Laravel requests.
 - **Preloading**: `opcache.preload=preload.php` -- preload framework classes and hot app classes. Use `composer dumpautoload --classmap-authoritative` in production.
 - **Laravel-specific**: `php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache` -- run on every deploy. `composer install --optimize-autoloader --no-dev` for production.
-
-## Anti-Patterns
-
-- Querying in loops -- use eager loading or `whereIn()` instead
-- Empty catch blocks -- log or rethrow, never swallow
-- Business logic in controllers -- extract to service/action instead
-- `protected $guarded = []` -- use `$fillable` instead
-- Inline validation in controllers -- use Form Requests instead
 
 ## References
 

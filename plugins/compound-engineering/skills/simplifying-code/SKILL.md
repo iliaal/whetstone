@@ -3,7 +3,8 @@ name: simplifying-code
 description: >-
   Simplifies, polishes, and declutters code without changing behavior. Use when
   asked to simplify, clean up, refactor, declutter, remove dead code or AI slop,
-  or improve readability.
+  or improve readability. For analysis-only reports without code changes, use
+  code-simplicity-reviewer agent.
 ---
 
 # Simplifying Code
@@ -69,6 +70,16 @@ Stop and ask before proceeding when:
 - Keep comments that explain intent, invariants, or non-obvious constraints. Remove comments that restate obvious code behavior.
 - If a simplification would make the code harder to understand, skip it
 - When unsure whether a block is dead code, ask instead of deleting
+
+## Verify
+
+- Tests pass and types check after changes
+- No behavior change (same inputs produce same outputs)
+- Scope limited to requested files -- no drive-by cleanups
+
+## Integration
+
+- `code-simplicity-reviewer` agent -- analysis-only pass producing a simplification report (no code changes). Use before refactoring to identify targets.
 
 ## Output
 

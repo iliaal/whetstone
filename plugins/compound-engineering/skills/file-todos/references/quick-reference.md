@@ -32,7 +32,7 @@ grep -l 'dependencies:.*"002"' todos/*.md
 
 ```bash
 # Search by tag
-grep -l "tags:.*rails" todos/*.md
+grep -l "tags:.*typescript" todos/*.md
 
 # Search by priority
 ls todos/*-p1-*.md

@@ -32,7 +32,7 @@ Use [todo-template.md](./assets/todo-template.md) as a starting point. YAML fron
 status: ready              # pending | ready | complete
 priority: p1               # p1 | p2 | p3
 issue_id: "002"
-tags: [rails, performance, database]
+tags: [typescript, performance, database]
 dependencies: ["001"]      # Issue IDs this is blocked by
 ---
 ```

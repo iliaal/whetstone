@@ -44,6 +44,16 @@ Planning files are ephemeral working state -- do not commit them. If working on 
 | `.plan/findings.md` | Research, discoveries, code analysis | After any discovery |
 | `.plan/progress.md` | Session log, test results, files changed | Throughout session |
 
+## Test Discovery (Existing Projects)
+
+For projects with existing code (not greenfield), discover the test landscape before planning:
+
+1. Search for test/spec files related to the feature area: `Glob("**/*test*")` and `Grep("<feature-keyword>", glob="**/*.{ts,php,py}")`
+2. Check test config for the canonical test command (`package.json` scripts, `pytest.ini`, `phpunit.xml`, CI config)
+3. Note which modules have coverage and which don't -- plan should extend existing test patterns, not introduce new frameworks
+
+Skip for greenfield projects where no tests exist yet.
+
 ## Plan Template
 
 ```markdown
@@ -151,6 +161,15 @@ Context management rules, error protocol (3-attempt escalation), iterative plan 
 | Create vague tasks ("improve X") | Concrete verb-first tasks with file paths |
 | Plan phases with 12+ files | Split into 5-8 file chunks |
 | Plan at 100% capacity | Budget for verification, fixes, and unknowns |
+
+## Verify
+
+- Plan file exists at `.plan/task_plan.md` (or `docs/plans/` for formal plans)
+- All tasks are verb-first and atomic (2-5 minutes each)
+- File structure table is complete with action and responsibility columns
+- Phase sizing respects 5-8 file limit
+- No placeholder tasks ("implement feature", "add tests") -- every task names specific files and patterns
+- Open questions limited to 3 or fewer genuinely blocking unknowns
 
 ## Integration
 

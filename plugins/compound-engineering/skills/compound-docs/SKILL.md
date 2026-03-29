@@ -1,10 +1,10 @@
 ---
 name: compound-docs
 description: >-
-  Document solved problems for team reuse. Use when documenting a resolved
-  issue, writing up lessons learned, capturing a post-mortem, adding to the
-  knowledge base, or building searchable institutional knowledge after
-  debugging or troubleshooting.
+  Document solved problems for team reuse. Provides process knowledge for
+  /workflows:compound. Use when documenting a resolved issue, writing up
+  lessons learned, capturing a post-mortem, adding to the knowledge base,
+  or building searchable institutional knowledge after debugging.
 disable-model-invocation: true
 ---
 
@@ -50,18 +50,6 @@ For detailed response handling, see [documentation-process.md](./references/docu
 
 ---
 
-## Integration Points
-
-**Invoked by:** `/workflows:compound` command, manual invocation after solution confirmed, or auto-triggered by confirmation phrases.
-
-**Invokes:** None (terminal skill -- does not delegate to other skills).
-
-**Related:** `/compound-refresh` command -- reviews `docs/solutions/` for stale learnings and decides: keep, update, replace, or archive. Run periodically to prevent institutional knowledge from becoming institutional lies.
-
-**Handoff:** All context needed should be present in conversation history before invocation.
-
----
-
 ## Success Criteria
 
 - YAML frontmatter validated (all required fields, correct formats)
@@ -82,3 +70,7 @@ For detailed response handling, see [documentation-process.md](./references/docu
 - [resolution-template.md](./assets/resolution-template.md) - Template for documentation files
 - [critical-pattern-template.md](./assets/critical-pattern-template.md) - Template for critical pattern entries
 - [validate-frontmatter.sh](./scripts/validate-frontmatter.sh) - Validate YAML frontmatter against schema
+
+## Integration
+
+- `/compound-refresh` command -- reviews `docs/solutions/` for stale learnings

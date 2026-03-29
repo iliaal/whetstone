@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 Conduct a comprehensive review of the codebase against agent-native architecture principles, launching parallel sub-agents for each principle and producing a scored report.
 
+**Target principle (optional):** #$ARGUMENTS -- if specified, audit only that principle.
+
 **For quick single-pass reviews**, use the `agent-native-reviewer` agent instead. This command runs a deeper 8-principle parallel audit with numeric scoring.
 
 ## Core Principles to Audit

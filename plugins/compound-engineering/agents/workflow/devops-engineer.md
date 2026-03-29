@@ -1,7 +1,6 @@
 ---
 name: devops-engineer
-autoApprove: read
-description: "Docker containerization, monitoring/observability, and incident management. Use when reviewing Dockerfiles, optimizing containers, setting up observability, or responding to incidents. Not for CI/CD pipeline design or release strategies (use deployment-engineer)."
+description: "Docker containerization, monitoring/observability, and incident management. For postmortems, follows the debugging skill. Use when reviewing Dockerfiles, optimizing containers, setting up observability, or responding to incidents. Not for CI/CD pipeline design or release strategies (use deployment-engineer)."
 ---
 
 <examples>

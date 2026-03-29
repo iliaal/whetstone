@@ -157,12 +157,8 @@ die()   { error "$@"; exit 1; }
 
 ## Linux-Specific
 
-- `/proc/self/status`, `/proc/cpuinfo`, `/proc/meminfo` for system info
-- `systemctl` for services; `journalctl -u svc` for logs
-- GNU coreutils: `sed -i` (no `''`), `grep -P` (PCRE), `readlink -f`
-- `timeout 30s cmd` to prevent hangs
-- `flock` for script locking (see above)
-- Package install: `apt-get install -y` / `dnf install -y` / `pacman -S --noconfirm`
+- GNU coreutils differ from macOS: `sed -i` (no `''` suffix), `grep -P` (PCRE support), `readlink -f` (canonical path)
+- `timeout 30s cmd` to prevent automation hangs
 
 ## ShellCheck
 

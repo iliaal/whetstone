@@ -149,3 +149,10 @@ See [e2e testing](./references/e2e-testing.md) for Playwright patterns.
 
 - [testing.md](./references/testing.md) -- Component, hook, and mocking test examples
 - [e2e-testing.md](./references/e2e-testing.md) -- Playwright E2E patterns
+
+## Verify
+
+- TypeScript compiles with zero errors
+- No suppressed lint rules (`eslint-disable`, `@ts-ignore`) in new code
+- `useEffect` dependency arrays not manually overridden
+- No `forwardRef` usage in React 19+ projects (use `ref` prop directly)

@@ -29,7 +29,7 @@ This command tests affected pages in a real browser, catching issues that unit t
 ## Prerequisites
 
 <requirements>
-- Local development server running (e.g., `bin/dev`, `rails server`, `npm run dev`)
+- Local development server running (e.g., `npm run dev`, `php artisan serve`)
 - agent-browser CLI installed (see Setup below)
 - Git repository with changes to test
 </requirements>
@@ -107,12 +107,12 @@ Map changed files to testable routes:
 | File Pattern | Route(s) |
 |-------------|----------|
 | `app/views/users/*` | `/users`, `/users/:id`, `/users/new` |
-| `app/controllers/settings_controller.rb` | `/settings` |
-| `app/javascript/controllers/*_controller.js` | Pages using that Stimulus controller |
-| `app/components/*_component.rb` | Pages rendering that component |
-| `app/views/layouts/*` | All pages (test homepage at minimum) |
-| `app/assets/stylesheets/*` | Visual regression on key pages |
-| `app/helpers/*_helper.rb` | Pages using that helper |
+| `src/controllers/SettingsController.ts` | `/settings` |
+| `src/controllers/*.ts` | Pages using that controller |
+| `src/components/*.tsx` | Pages rendering that component |
+| `src/layouts/*` | All pages (test homepage at minimum) |
+| `src/styles/*` | Visual regression on key pages |
+| `src/helpers/*.ts` | Pages using that helper |
 | `src/app/*` (Next.js) | Corresponding routes |
 | `src/components/*` | Pages using those components |
 
@@ -136,8 +136,8 @@ If server is not running, inform user:
 **Server not running**
 
 Please start your development server:
-- Rails: `bin/dev` or `rails server`
 - Node/Next.js: `npm run dev`
+- PHP: `php artisan serve`
 
 Then run `/test-browser` again.
 ```

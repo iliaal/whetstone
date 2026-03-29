@@ -158,6 +158,12 @@ Present clear options for what to do next:
 | Making assumptions without validating | State assumptions explicitly and confirm |
 | Creating lengthy design documents | Keep it concise--details go in the plan |
 
+## Success Criteria
+
+- Design doc saved to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`
+- User explicitly approves the spec before handoff to planning
+- All open questions resolved or explicitly deferred with rationale
+
 ## Integration
 
 Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `workflows:plan` detects it and skips idea refinement.

@@ -12,7 +12,7 @@ Run these steps in order. Do not stop between steps -- complete every step throu
 ## Sequential steps
 
 1. `/workflows:plan $ARGUMENTS` (strip `--swarm` from arguments if present)
-2. `/compound-engineering:deepen-plan`
+2. `/deepen-plan` (auto-detects latest plan in `docs/plans/`)
 
 ## Build
 
@@ -24,14 +24,14 @@ Run these steps in order. Do not stop between steps -- complete every step throu
 ## Verify (parallel in swarm mode)
 
 4. `/workflows:review`
-5. `/compound-engineering:test-browser`
+5. `/test-browser`
 
 **Swarm mode:** Launch steps 4 and 5 as parallel background Task agents. Wait for both to complete.
 **Normal mode:** Run sequentially.
 
 ## Finalize
 
-6. `/compound-engineering:resolve-todo-parallel` -- resolve any findings from review
-7. `/compound-engineering:feature-video` -- record walkthrough and add to PR
+6. `/resolve-todo-parallel` -- resolve any findings from review
+7. `/feature-video` -- record walkthrough and add to PR
 
 Start now.

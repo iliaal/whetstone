@@ -175,17 +175,7 @@ Always filter BEFORE vector search (use partial indexes or CTEs with pre-filtere
 
 | Anti-Pattern | Fix |
 |-------------|-----|
-| `SERIAL` / `BIGSERIAL` for PKs | `BIGINT GENERATED ALWAYS AS IDENTITY` |
-| No FK indexes | Add index on every FK column |
-| `OFFSET` pagination | Cursor-based: `WHERE id > $last` |
 | `SELECT *` | List needed columns |
-| `TIMESTAMP` without timezone | `TIMESTAMPTZ` |
-| Functions in WHERE (`lower(col)`) | Expression index or citext extension |
-| Storing structured data as text | `JSONB` with GIN index |
-| Long-running transactions | Keep txns short, use `idle_in_transaction_session_timeout` |
-| N+1 query loops | Batch with `= ANY($1::bigint[])` or JOIN |
-| SELECT-then-INSERT for upsert | `ON CONFLICT DO UPDATE` |
-| Multi-tenant without RLS | Enable RLS with per-tenant policies |
 
 ## Verify
 

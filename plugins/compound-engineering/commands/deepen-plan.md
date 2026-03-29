@@ -32,7 +32,7 @@ First, read and parse the plan to identify each major section that can be enhanc
 - [ ] Code examples and file references
 - [ ] Acceptance criteria
 - [ ] Any UI/UX components mentioned
-- [ ] Technologies/frameworks mentioned (Rails, React, Python, TypeScript, etc.)
+- [ ] Technologies/frameworks mentioned (React, Python, TypeScript, Laravel, etc.)
 - [ ] Domain areas (data models, APIs, UI, security, performance, etc.)
 
 **Create a section manifest:**
@@ -122,7 +122,7 @@ Each learning file has YAML frontmatter with metadata. Read the first ~20 lines 
 ---
 title: "N+1 Query Fix for Briefs"
 category: performance-issues
-tags: [activerecord, n-plus-one, includes, eager-loading]
+tags: [orm, n-plus-one, eager-loading, performance]
 module: Briefs
 symptom: "Slow page load, multiple queries in logs"
 root_cause: "Missing includes on association"
@@ -146,7 +146,7 @@ Compare each learning's frontmatter against the plan:
 
 **SKIP learnings that are clearly not applicable:**
 - Plan is frontend-only → skip `database-migrations/` learnings
-- Plan is Python → skip `rails-specific/` learnings
+- Plan is Python → skip `framework-specific/` learnings
 - Plan has no auth → skip `authentication-issues/` learnings
 
 **SPAWN sub-agents for learnings that MIGHT apply:**
@@ -183,10 +183,10 @@ If NOT relevant after deeper analysis:
 
 **Example filtering:**
 ```
-# Found 15 learning files, plan is about "Rails API caching"
+# Found 15 learning files, plan is about "API caching layer"
 
 # SPAWN (likely relevant):
-docs/solutions/performance-issues/n-plus-one-queries.md      # tags: [activerecord] ✓
+docs/solutions/performance-issues/n-plus-one-queries.md      # tags: [orm, database] ✓
 docs/solutions/performance-issues/redis-cache-stampede.md    # tags: [caching, redis] ✓
 docs/solutions/configuration-fixes/redis-connection-pool.md  # tags: [redis] ✓
 
@@ -228,7 +228,7 @@ mcp__plugin_compound-engineering_docfork__fetch_doc: Fetch full content from a s
 
 **Use WebSearch for current best practices:**
 
-Search for recent (2024-2026) articles, blog posts, and documentation on topics in the plan.
+Search for recent (within the last 2 years) articles, blog posts, and documentation on topics in the plan.
 
 ### 6. Run Review and Research Agents
 

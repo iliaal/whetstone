@@ -95,6 +95,8 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 
 ## Self-Check
 
+**Short-form** (commits, PR descriptions, comments): checks 1-4 only. **Long-form** (blog posts, docs, essays): all checks.
+
 1. Read every sentence aloud. If it sounds like a press release, Wikipedia, or chatbot -- rewrite.
 2. Ctrl-F the banned-phrases list. Zero matches required.
 3. Check for false agency: any inanimate thing performing a human verb? Name the person.
@@ -103,7 +105,9 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 6. Wh-word openers: sentence starts with "What makes this..." or "When it comes to..."? Restructure.
 7. Meta-joiners: "The rest of this section..." or "As we'll see below..." -- delete. Let the text move.
 8. Three consecutive sentences match length? Break one. Paragraph ends with a punchy one-liner? Vary it.
-9. Score 1-10 on each: Directness / Rhythm / Trust / Authenticity / Density. Below 35/50: revise.
+9. "Not X, it's Y" contrast structure? State Y directly without the scaffolding.
+10. Vague declarative ("the implications are significant")? Name the specific implication.
+11. Score 1-10 on each: Directness / Rhythm / Trust / Authenticity / Density. Below 35/50: revise.
 
 ## Changelog Voice
 

@@ -35,8 +35,6 @@ If "Cancel": stop.
 Auto-detect the project stack:
 
 ```bash
-test -f Gemfile && test -f config/routes.rb && echo "rails" || \
-test -f Gemfile && echo "ruby" || \
 test -f tsconfig.json && echo "typescript" || \
 test -f package.json && echo "javascript" || \
 test -f pyproject.toml && echo "python" || \
@@ -144,7 +142,7 @@ Add project-specific review instructions here.
 These notes are passed to all review agents during /workflows:review and /workflows:work.
 
 Examples:
-- "We use Turbo Frames heavily -- check for frame-busting issues"
+- "We use event sourcing -- check for missed projections"
 - "Our API is public -- extra scrutiny on input validation"
 - "Performance-critical: we serve 10k req/s on this endpoint"
 ```
