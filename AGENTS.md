@@ -47,6 +47,9 @@ compound-engineering-plugin/
 - Hyphens for all file naming (agents, skills, commands).
 - `model: inherit` removed from agents — only declare when overriding (e.g., `model: haiku`).
 - Agents reference skills (one-directional); skills stay generic and portable.
+- **Read before claiming "new"**: Before presenting sync/improvement findings, read the target skill to verify the pattern isn't already covered. Saves round-trips.
+- **Present changes one at a time** for review decisions. Batch presentation only when explicitly asked.
+- **No off-stack content**: Skip or replace code examples, references, and patterns for languages/frameworks the team doesn't use (Ruby/Rails, Java, Swift, etc.). Use PHP, Python, or TypeScript equivalents. Generic SQL or framework-agnostic examples are fine when no specific stack fits.
 
 ## Versioning
 

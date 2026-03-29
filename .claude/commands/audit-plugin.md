@@ -205,6 +205,8 @@ Before presenting, apply meta-prompting patterns to each HIGH/MEDIUM finding:
 - **Assumptions** — "What assumption does this finding rest on? Is that assumption valid for this specific skill?" Drop findings based on false assumptions.
 - **Tensions** — "Does this fix conflict with another finding or an existing rule?" Resolve conflicts before presenting.
 
+- **Mechanical verification** — For HIGH/MEDIUM findings that claim something is missing or broken (missing autoApprove, orphan reference, stale name), verify the claim by reading the actual file before including it. Subagent reports contain false positives.
+
 This prevents recommending changes that sound right in isolation but degrade the skill in context. Only findings that survive stress-testing make the final report.
 
 ## Phase 5: Apply approved changes
