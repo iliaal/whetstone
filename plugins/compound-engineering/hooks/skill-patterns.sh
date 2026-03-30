@@ -41,7 +41,7 @@ SKILL_TIERS[writing-tests]=1
 SKILL_PATTERNS[php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|phpunit|phpstan|composer\.(json|lock)|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.*\.php|unit.?test.*\.php|test.*(controller|model|service|action|job|command|endpoint).*\.php'
 SKILL_TIERS[php-laravel]=2
 
-SKILL_PATTERNS[react-frontend]='\breact\b|next\.?js|react.*test|jsx|tsx|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
+SKILL_PATTERNS[react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
 SKILL_TIERS[react-frontend]=2
 
 SKILL_PATTERNS[nodejs-backend]='\bexpress\b.*server|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
@@ -50,7 +50,7 @@ SKILL_TIERS[nodejs-backend]=2
 SKILL_PATTERNS[python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
 SKILL_TIERS[python-services]=2
 
-SKILL_PATTERNS[postgresql]='postgres|jsonb|row.?level.?security|\brls\b|\bcte[s]?\b|window.?function|explain.?analyze|partition.*(table|range|list|hash)|connection.?pool.*(pg|postgres|bouncer)|upsert|full.?text.?search|tsvector'
+SKILL_PATTERNS[postgresql]='postgres.{0,30}(query|schema|index|optim|migrat|constraint|trigger|function|extension|permission)|jsonb|row.?level.?security|\brls\b|\bcte[s]?\b|window.?function|explain.?analyze|partition.*(table|range|list|hash)|connection.?pool.*(pg|postgres|bouncer)|upsert|full.?text.?search|tsvector'
 SKILL_TIERS[postgresql]=2
 
 SKILL_PATTERNS[terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'
@@ -59,7 +59,7 @@ SKILL_TIERS[terraform]=2
 SKILL_PATTERNS[linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script'
 SKILL_TIERS[linux-bash-scripting]=2
 
-SKILL_PATTERNS[pinescript]='pine.?script|tradingview|backtest'
+SKILL_PATTERNS[pinescript]='pine.?script|tradingview|pinescript|\bindicator\b.{0,20}(pine|trading.?view)|\.pine\b'
 SKILL_TIERS[pinescript]=2
 
 SKILL_PATTERNS[frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|build.*(web.?component|web.?page|landing.?page|dashboard)'
