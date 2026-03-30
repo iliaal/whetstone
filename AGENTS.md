@@ -173,6 +173,39 @@ bash scripts/update-metadata.sh
 bash scripts/mirror-to-ai-skills.sh
 ```
 
+## Session harvesting and eval
+
+The distillery includes tools for mining Claude Code session logs to build skill evaluation datasets, score skill effectiveness, and build golden eval datasets.
+
+```bash
+# Harvest per-skill eval datasets from ~/.claude/projects/
+python3 distillery/scripts/distiller.py harvest-sessions [--project <name>] [--skill <name>]
+
+# Discover new negative signal patterns not yet in _NEGATIVE_SIGNAL_PATTERNS
+python3 distillery/scripts/distiller.py discover-signals [--top 30]
+
+# Score a skill via LLM-as-judge (default: Sonnet 4.6 via claude -p)
+python3 distillery/scripts/distiller.py dspy-eval <skill> [--max-examples 20] [--backend claude-cli|openrouter]
+
+# Build golden eval dataset from harvested sessions
+python3 distillery/scripts/distiller.py build-golden <skill> [--top 20] [--auto]
+# Review candidates.jsonl, set labels to positive/negative/skip, then:
+python3 distillery/scripts/distiller.py approve-golden <skill>
+
+# Evolve a skill via DSPy GEPA/MIPROv2 (outputs diff for review, requires: pip install dspy)
+python3 distillery/scripts/distiller.py evolve <skill> [--optimizer gepa|mipro|bootstrap] [--iterations 5] [--save]
+
+# Identify skills injected into tasks where they're not needed (misfire detection)
+python3 distillery/scripts/distiller.py analyze-misfires [--min-examples 30]
+
+# Analyze negative-signal sessions to find failure patterns and suggest skill fixes
+python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10]
+```
+
+Run `discover-signals` periodically (before releases or after heavy usage periods) to surface new user dissatisfaction patterns from session history. Review the candidates, promote confirmed patterns to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py`, then re-harvest to update eval data.
+
+The practical skill improvement loop is: `analyze-misfires` to tighten injection patterns, then `diagnose-negatives` per skill to read real failures and get concrete fix suggestions. This is more effective than DSPy evolution for mature skills because it addresses the actual problems (wrong injection, missing guidance) rather than trying to auto-rewrite text.
+
 ## Scripts
 
 | Script | Purpose | When to run |
