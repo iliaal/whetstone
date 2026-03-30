@@ -14,7 +14,7 @@ declare -A SKILL_TIERS
 SKILL_PATTERNS[planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan'
 SKILL_TIERS[planning]=1
 
-SKILL_PATTERNS[debugging]='debug|fix.*(bug|this)|why.*(fail|broken)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression|unexpected.?behav'
+SKILL_PATTERNS[debugging]='debug|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
 SKILL_TIERS[debugging]=1
 
 SKILL_PATTERNS[code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'
