@@ -2018,6 +2018,237 @@ def approve_golden(skill_name):
     }
 
 
+def analyze_misfires(min_examples=30):
+    """Identify skills that are frequently injected into tasks where they're not needed.
+
+    Reads all harvested session data across all skills. For each skill, checks how
+    often it was injected alongside other skills (co-injection) and how often the
+    task text actually relates to the skill's domain (relevance). Skills with high
+    injection count but low relevance are misfiring -- their trigger regex is too broad.
+
+    Returns ranked list of misfiring skills with suggested regex tightening.
+    """
+    if not EVAL_DATA_DIR.exists():
+        print("Error: no eval data. Run harvest-sessions first.", file=sys.stderr)
+        sys.exit(1)
+
+    # Collect all examples across all skills
+    all_examples = []
+    for skill_dir in sorted(EVAL_DATA_DIR.iterdir()):
+        if not skill_dir.is_dir() or skill_dir.name == "_unattributed":
+            continue
+        sessions_file = skill_dir / "sessions.jsonl"
+        if not sessions_file.exists():
+            continue
+        with open(sessions_file) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    all_examples.append(json.loads(line))
+
+    # For each skill, count: total injections, relevant injections, co-injection patterns
+    skill_stats = defaultdict(lambda: {
+        "injected": 0, "relevant": 0, "irrelevant": 0,
+        "positive": 0, "negative": 0,
+        "co_injected_with": defaultdict(int),
+        "irrelevant_task_samples": [],
+    })
+
+    # Load skill keywords for relevance checking
+    skill_keywords_cache = {}
+    for skill_dir in (PLUGIN_DIR / "skills").iterdir():
+        skill_file = skill_dir / "SKILL.md"
+        if skill_file.exists():
+            skill_keywords_cache[skill_dir.name] = _extract_skill_keywords(skill_file.read_text())
+
+    for ex in all_examples:
+        injected = ex.get("injected_skills", [])
+        task_input = ex.get("task_input", "")
+        signal = ex.get("signal", "ambiguous")
+
+        for skill_info in injected:
+            skill_name = skill_info["skill"]
+            stats = skill_stats[skill_name]
+            stats["injected"] += 1
+
+            if signal == "positive":
+                stats["positive"] += 1
+            elif signal == "negative":
+                stats["negative"] += 1
+
+            # Check relevance
+            keywords = skill_keywords_cache.get(skill_name, set())
+            if keywords:
+                is_rel, overlap = _check_skill_relevance(task_input, keywords)
+                if is_rel:
+                    stats["relevant"] += 1
+                else:
+                    stats["irrelevant"] += 1
+                    if len(stats["irrelevant_task_samples"]) < 3:
+                        stats["irrelevant_task_samples"].append(task_input[:150])
+
+            # Track co-injection
+            for other in injected:
+                if other["skill"] != skill_name:
+                    stats["co_injected_with"][other["skill"]] += 1
+
+    # Rank by misfire rate (irrelevant / injected)
+    results = []
+    for skill_name, stats in sorted(skill_stats.items()):
+        total = stats["injected"]
+        if total < min_examples:
+            continue
+        irrelevant = stats["irrelevant"]
+        misfire_rate = irrelevant / total if total > 0 else 0
+        top_co = sorted(stats["co_injected_with"].items(), key=lambda x: -x[1])[:3]
+
+        results.append({
+            "skill": skill_name,
+            "injected": total,
+            "relevant": stats["relevant"],
+            "irrelevant": irrelevant,
+            "misfire_rate": round(misfire_rate, 3),
+            "positive_rate": round(stats["positive"] / total, 3) if total else 0,
+            "top_co_injected": [{"skill": s, "count": c} for s, c in top_co],
+            "irrelevant_samples": stats["irrelevant_task_samples"],
+        })
+
+    results.sort(key=lambda x: -x["misfire_rate"])
+
+    return {
+        "total_examples": len(all_examples),
+        "skills_analyzed": len(results),
+        "misfires": results,
+    }
+
+
+def diagnose_negatives(skill_name, max_examples=10):
+    """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
+
+    Reads harvested sessions where the user expressed dissatisfaction (negative signal),
+    extracts the task, the agent output, and the user's negative feedback, then uses
+    Claude to identify patterns and suggest specific skill text improvements.
+
+    Args:
+        skill_name: skill to diagnose
+        max_examples: max negative examples to analyze (default 10)
+
+    Returns dict with failure patterns and suggested skill improvements.
+    """
+    # Load skill text
+    skill_path = _find_skill_path(skill_name)
+    if not skill_path:
+        print(f"Error: skill '{skill_name}' not found", file=sys.stderr)
+        sys.exit(1)
+    skill_text = skill_path.read_text()
+
+    # Load sessions and filter to negatives
+    sessions_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
+    if not sessions_path.exists():
+        print(f"Error: no session data for '{skill_name}'. Run harvest-sessions first.", file=sys.stderr)
+        sys.exit(1)
+
+    negatives = []
+    with open(sessions_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            ex = json.loads(line)
+            if ex.get("signal") == "negative":
+                negatives.append(ex)
+
+    if not negatives:
+        print(f"No negative-signal sessions for '{skill_name}'.", file=sys.stderr)
+        return {"skill": skill_name, "negative_count": 0, "patterns": [], "suggestions": []}
+
+    # Apply relevance filter -- only analyze negatives where the skill was actually relevant
+    skill_keywords = _extract_skill_keywords(skill_text)
+    relevant_negatives = []
+    for ex in negatives:
+        is_rel, _ = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
+        if is_rel:
+            relevant_negatives.append(ex)
+
+    # Use relevant negatives if enough, otherwise fall back to all negatives
+    pool = relevant_negatives if len(relevant_negatives) >= 3 else negatives
+    sample = pool[:max_examples]
+
+    print(f"Analyzing {len(sample)} negative sessions for '{skill_name}' ({len(relevant_negatives)} relevant of {len(negatives)} total)", file=sys.stderr)
+
+    # Build a digest of negative sessions for analysis
+    cases = []
+    for i, ex in enumerate(sample):
+        cases.append(
+            f"--- CASE {i+1} (signal: negative, session: {ex.get('session_id', '?')[:12]}) ---\n"
+            f"TASK: {ex.get('task_input', '')[:1000]}\n\n"
+            f"AGENT OUTPUT (truncated): {ex.get('agent_output', '')[:2000]}\n"
+        )
+
+    cases_text = "\n\n".join(cases)
+
+    # Ask Claude to analyze the failure patterns
+    prompt = (
+        f"You are analyzing why a skill file produces negative outcomes. "
+        f"The skill is injected into AI agent sessions to guide behavior.\n\n"
+        f"SKILL FILE ({skill_name}):\n{skill_text[:6000]}\n\n"
+        f"NEGATIVE-SIGNAL SESSIONS (user expressed dissatisfaction):\n\n{cases_text[:12000]}\n\n"
+        f"Analyze these failures and respond with ONLY valid JSON:\n"
+        f'{{"patterns": ['
+        f'{{"pattern": "description of recurring failure", "frequency": "N of M cases", "example_case": 1}},'
+        f'...], '
+        f'"suggestions": ['
+        f'{{"section": "which part of the skill to change", "current": "current text (brief)", '
+        f'"proposed": "proposed replacement (brief)", "rationale": "why this fixes the pattern"}},'
+        f'...], '
+        f'"summary": "one paragraph overall diagnosis"}}'
+    )
+
+    result = _claude_cli_request(prompt, model="sonnet")
+
+    if result["status"] != "ok":
+        return {"skill": skill_name, "error": result.get("error", "unknown")}
+
+    # Parse response
+    response_text = result["response"]
+    # Strip markdown fences
+    if response_text.startswith("```"):
+        response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+    if response_text.startswith("json"):
+        response_text = response_text[4:].strip()
+
+    try:
+        analysis = json.loads(response_text)
+    except json.JSONDecodeError:
+        # Try to find JSON in the response
+        for m in _re.finditer(r'\{[\s\S]*"patterns"[\s\S]*"suggestions"[\s\S]*\}', response_text):
+            try:
+                analysis = json.loads(m.group())
+                break
+            except json.JSONDecodeError:
+                continue
+        else:
+            return {
+                "skill": skill_name,
+                "negative_count": len(negatives),
+                "error": f"Could not parse analysis: {response_text[:200]}",
+            }
+
+    return {
+        "skill": skill_name,
+        "negative_count": len(negatives),
+        "relevant_negatives": len(relevant_negatives),
+        "analyzed": len(sample),
+        "patterns": analysis.get("patterns", []),
+        "suggestions": analysis.get("suggestions", []),
+        "summary": analysis.get("summary", ""),
+        "cost_usd": result.get("cost_usd", 0),
+    }
+
+
 def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backend="claude-cli"):
     """Score a skill's effectiveness using LLM-as-judge on harvested eval data.
 
@@ -2435,6 +2666,15 @@ def main():
     p_approve = sub.add_parser("approve-golden", help="Promote reviewed candidates.jsonl to golden.jsonl")
     p_approve.add_argument("name", help="Skill name")
 
+    # analyze-misfires
+    p_misfire = sub.add_parser("analyze-misfires", help="Identify skills injected into tasks where they're not needed")
+    p_misfire.add_argument("--min-examples", type=int, default=30, help="Minimum injections to include (default: 30)")
+
+    # diagnose-negatives
+    p_diag = sub.add_parser("diagnose-negatives", help="Analyze negative-signal sessions to find failure patterns and suggest skill fixes")
+    p_diag.add_argument("name", help="Skill name")
+    p_diag.add_argument("--max-examples", type=int, default=10, help="Max negative examples to analyze (default: 10)")
+
     # evolve
     p_evolve = sub.add_parser("evolve", help="Run DSPy GEPA optimization on a skill (outputs diff for review)")
     p_evolve.add_argument("name", help="Skill name")
@@ -2528,6 +2768,32 @@ def main():
 
     elif args.command == "approve-golden":
         report = approve_golden(args.name)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "analyze-misfires":
+        report = analyze_misfires(args.min_examples)
+        # Print summary table to stderr
+        print(f"\n{'Skill':35s} {'Injected':>8s} {'Relevant':>8s} {'Misfire%':>8s} {'Pos%':>6s}", file=sys.stderr)
+        print("-" * 70, file=sys.stderr)
+        for m in report["misfires"]:
+            print(f"{m['skill']:35s} {m['injected']:8d} {m['relevant']:8d} {m['misfire_rate']*100:7.1f}% {m['positive_rate']*100:5.1f}%", file=sys.stderr)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "diagnose-negatives":
+        report = diagnose_negatives(args.name, args.max_examples)
+        # Print summary to stderr
+        if report.get("summary"):
+            print(f"\n  Diagnosis for '{args.name}':", file=sys.stderr)
+            print(f"  {report['summary']}", file=sys.stderr)
+            if report.get("patterns"):
+                print(f"\n  Failure patterns ({len(report['patterns'])}):", file=sys.stderr)
+                for p in report["patterns"]:
+                    print(f"    - {p.get('pattern', '?')} ({p.get('frequency', '?')})", file=sys.stderr)
+            if report.get("suggestions"):
+                print(f"\n  Suggested changes ({len(report['suggestions'])}):", file=sys.stderr)
+                for s in report["suggestions"]:
+                    print(f"    [{s.get('section', '?')}] {s.get('rationale', '?')}", file=sys.stderr)
+            print("", file=sys.stderr)
         print(json.dumps(report, indent=2))
 
     elif args.command == "evolve":
