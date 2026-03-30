@@ -20,13 +20,13 @@ SKILL_TIERS[debugging]=1
 SKILL_PATTERNS[code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'
 SKILL_TIERS[code-review]=1
 
-SKILL_PATTERNS[simplifying-code]='simplif.*code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
+SKILL_PATTERNS[simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
 SKILL_TIERS[simplifying-code]=1
 
 SKILL_PATTERNS[brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.*approach'
 SKILL_TIERS[brainstorming]=1
 
-SKILL_PATTERNS[verification-before-completion]='verif.*(complet|done|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,12}(commit|push|pr|merge)'
+SKILL_PATTERNS[verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,12}(commit|push|pr|merge)'
 SKILL_TIERS[verification-before-completion]=1
 
 SKILL_PATTERNS[receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.*(review|feedback).?comment|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
