@@ -29,7 +29,7 @@ SKILL_TIERS[brainstorming]=1
 SKILL_PATTERNS[verification-before-completion]='verif.*(complet|done|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,12}(commit|push|pr|merge)'
 SKILL_TIERS[verification-before-completion]=1
 
-SKILL_PATTERNS[receiving-code-review]='receiv.*(review|feedback)|pr.?feedback|implement.*(suggestion|feedback)|push.?back.*review|address.*(review|feedback)'
+SKILL_PATTERNS[receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.*(review|feedback).?comment|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
 SKILL_TIERS[receiving-code-review]=1
 
 SKILL_PATTERNS[writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline'
