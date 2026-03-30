@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PROJECT_ROOT}/.claude/hooks/session-reminder.sh",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}
