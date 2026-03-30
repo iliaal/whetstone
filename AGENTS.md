@@ -2,6 +2,8 @@
 
 Claude Code plugin for PHP/React/Python/JavaScript/TypeScript workflows. Includes the plugin (agents, commands, skills, hooks), a skill distillery, and a CLI for cross-tool conversion.
 
+When you see a `<session-commands>` tag in hook context, briefly list those commands to the user at the start of your first response.
+
 ## Repository structure
 
 ```
