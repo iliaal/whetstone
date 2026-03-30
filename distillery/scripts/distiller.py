@@ -34,6 +34,9 @@ DEFAULT_TEST_MODELS = [
     "anthropic/claude-sonnet-4.5:google-vertex",
 ]
 
+DEFAULT_EVAL_MODEL = "deepseek/deepseek-v3.2"
+DEFAULT_EVAL_REASONING = True
+
 MIN_INSTALLS = 100
 MIN_INSTALLS_FALLBACK = 50
 MIN_QUALIFYING = 3
@@ -41,6 +44,148 @@ TOP_N = 10
 
 MAX_RETRIES = 2
 RETRY_DELAY = 1.0
+
+# LLM-as-judge rubric for skill eval scoring.
+# Weights: correctness 0.5, procedure_following 0.3, conciseness 0.2
+_JUDGE_SYSTEM_PROMPT = """\
+You are an expert evaluator scoring an AI agent's response quality.
+
+You will receive:
+- SKILL INSTRUCTIONS: A methodology/skill the agent had available during this task
+- TASK INPUT: What the user asked the agent to do
+- AGENT OUTPUT: What the agent actually produced (may be truncated from a longer conversation)
+
+Important context: The skill was automatically injected based on keyword matching. The skill may or may not be directly relevant to this specific task. Score procedure_following based on how well the agent applied APPLICABLE parts of the skill -- if the skill isn't relevant to this task, score procedure_following as 5 (neutral, not penalized).
+
+Score each dimension 0-10 (integers only):
+
+1. CORRECTNESS: Did the agent correctly address the task? Did it produce accurate, relevant output? (0=completely wrong, 10=perfectly correct)
+
+2. PROCEDURE_FOLLOWING: Did the agent follow applicable parts of the skill's methodology? (0=ignored relevant skill guidance, 5=skill not applicable to this task, 10=followed every applicable step)
+
+3. CONCISENESS: Was the response appropriately concise without omitting important information? (0=extremely verbose/repetitive or critically incomplete, 10=perfect density)
+
+Respond with ONLY valid JSON, no other text:
+{"correctness": <0-10>, "procedure_following": <0-10>, "conciseness": <0-10>, "notes": "<one sentence justification>"}"""
+
+_JUDGE_USER_TEMPLATE = """\
+SKILL INSTRUCTIONS:
+{skill_text}
+
+TASK INPUT:
+{task_input}
+
+AGENT OUTPUT (may be truncated):
+{agent_output}"""
+
+# --- Session harvesting ---
+
+CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
+EVAL_DATA_DIR = DISTILLERY_DIR / ".eval-data"
+
+import re as _re
+
+# Secret patterns — compiled once, used to scrub content before writing eval data.
+# Matches common secret formats: API keys, tokens, PEM blocks, passwords, connection strings.
+_SECRET_PATTERNS = _re.compile(
+    r"|".join([
+        r"(?:api[_-]?key|token|secret|password|passwd|pwd)\s*[:=]\s*['\"]?[A-Za-z0-9_\-/.+]{16,}",
+        r"(?:sk|pk|ak|rk|pat|ghp|gho|ghu|ghs|ghr|glpat|xox[bpsa])-[A-Za-z0-9_\-]{16,}",
+        r"-----BEGIN\s+(?:RSA\s+)?(?:PRIVATE|PUBLIC)\s+KEY-----",
+        r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp)://[^\s'\"]+",
+        r"Bearer\s+[A-Za-z0-9_\-/.+=]{20,}",
+        r"AKIA[0-9A-Z]{16}",  # AWS access key
+        r"eyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}",  # JWT
+    ]),
+    _re.IGNORECASE,
+)
+
+# Negative signal patterns — user expressed dissatisfaction or retried.
+_NEGATIVE_SIGNAL_PATTERNS = _re.compile(
+    r"(?:"
+    # Explicit corrections
+    r"\bno[,.]?\s+(?:that'?s?\s+)?(?:not|wrong|incorrect)\b"
+    r"|\bthat'?s?\s+(?:not\s+(?:what|right|correct)|wrong|incorrect)\b"
+    r"|\b(?:is\s+)?(?:factually\s+)?incorrect\b"
+    r"|\bnot\s+true\b"
+    # Wrongness (33 hits: "is wrong", "are wrong", "everything is wrong")
+    r"|\b(?:is|are)\s+wrong\b"
+    r"|\beverything\s+is\s+wrong\b"
+    # "should not/shouldn't be" — user correcting agent behavior (5 hits)
+    r"|\bshould\s*n[o']t\s+(?:be|have|show)\b"
+    # "should have been" — agent missed something (9 hits)
+    r"|\bshould'?ve?\s+been\b"
+    # Retry / undo requests
+    r"|\btry\s+again\b"
+    r"|\b(?:please\s+)?(?:undo|revert|roll\s*back)\b"
+    r"|\bstart\s+over\b"
+    # Direct blame / frustration
+    r"|\byou\s+(?:broke|messed|screwed)\b"
+    r"|\byou\s+keep\b"
+    r"|\bi\s+already\s+(?:said|told|mentioned|asked)\b"
+    # Wrong target
+    r"|\bwrong\s+(?:file|approach|direction)\b"
+    # Stop / don't
+    r"|\bstop(?:\s+doing\s+that)?\b"
+    r"|\bdon'?t\s+(?:do\s+that|mock|use|jump|commit)\b"
+    # Persistence complaints — agent failed to fix on prior attempt (8 hits)
+    r"|\bstill\s+(?:wrong|broken|failing|present|there|doesn'?t)\b"
+    # Doubt — user lost confidence in agent (5 hits)
+    r"|\bare\s+you\s+(?:sure|certain)\b"
+    r"|\bare\s+you\s+confident\b"
+    # User interrupted the agent mid-response (94 hits)
+    r"|\[Request interrupted by user\b"
+    # Strong negative language about agent output (5 hits)
+    r"|\buseless\b|\bgarbage\b|\bjunk\b|\bcrap\b"
+    r"|\bnever\s*mind\b|\bnevermind\b"
+    # Short imperative fix requests (agent broke something)
+    r"|\byes[,.]?\s+fix\s+(?:it|this|that)\b"
+    r"|\bfix\s+(?:it|this|that)\s+(?:first|before|now|please)\b"
+    # User rejecting agent's output or suggestion
+    r"|\bskip\s+(?:it|this|that)\b"
+    r"|\bmultiple\s+things\s+are\s+wrong\b"
+    # Doesn't work / not working (6 hits)
+    r"|\b(?:doesn'?t|does\s+not)\s+work\b"
+    r"|\bnot\s+working\b"
+    # Didn't fix / didn't work — agent's fix attempt failed (6 hits)
+    r"|\b(?:didn'?t|did\s+not)\s+(?:fix|work|help|solve)\b"
+    # Bug identification — user found an error in agent output (5 hits)
+    r"|\bhas\s+a\s+bug\b"
+    # Flat rejection at start of message (6 hits: "no, ...", "nope")
+    r"|^no[,.:]\s"
+    r"|^nope\b"
+    # "no you are wrong" — direct contradiction (6 hits)
+    r"|\bno\s+you\s+are\s+wrong\b"
+    # "that's not right/it" — correction (2 hits)
+    r"|\bthat'?s?\s+not\s+(?:right|correct|it)\b"
+    # "seems/looks wrong" — user questioning output correctness (7+1 hits)
+    r"|\b(?:seems?|looks?)\s+wrong\b"
+    # "why did you" — questioning agent's decision (3 hits, all genuine)
+    r"|\bwhy\s+did\s+you\b"
+    # "you made things worse" — regression from agent action
+    r"|\bmade\s+things\s+worse\b"
+    # "something went wrong" / CI failures (2 hits)
+    r"|\bsomething\s+went\s+wrong\b"
+    r"|\bCI/?CD\s+(?:failed|still\s+failing)\b"
+    # Latest changes broke — regression (3 hits)
+    r"|\bbroke\s+things\b|\bregressed\b|\blatest\s+changes\s+broke\b"
+    r")",
+    _re.IGNORECASE,
+)
+
+# Skill injection header pattern — extracts skill paths from BEFORE STARTING block.
+_SKILL_INJECTION_RE = _re.compile(
+    r"^BEFORE STARTING:.*?(?=\nIf you cannot read)",
+    _re.MULTILINE | _re.DOTALL,
+)
+
+# Extracts skill name and version from injection path like:
+#   /home/.../.claude/plugins/cache/iliaal-marketplace/compound-engineering/2.47.2/skills/code-review/SKILL.md
+# or local dev path like:
+#   /home/.../compound-engineering-plugin/plugins/compound-engineering/skills/planning/SKILL.md
+_SKILL_PATH_RE = _re.compile(
+    r"/(?:compound-engineering)/(?:(\d+\.\d+\.\d+)/)?skills/([a-z0-9-]+)/SKILL\.md"
+)
 
 
 def _http_request(url, data=None, headers=None, timeout=30, retries=MAX_RETRIES):
@@ -856,7 +1001,7 @@ def _parse_model_spec(model):
     return model_id, provider_slug
 
 
-def _openrouter_request(api_key, model_id, provider_slug, messages, max_tokens, temperature=0.2):
+def _openrouter_request(api_key, model_id, provider_slug, messages, max_tokens, temperature=0.2, reasoning=False):
     """Single OpenRouter API call. Returns dict with response/tokens/status or error."""
     body = {
         "model": model_id,
@@ -866,6 +1011,8 @@ def _openrouter_request(api_key, model_id, provider_slug, messages, max_tokens, 
     }
     if provider_slug:
         body["provider"] = {"order": [provider_slug], "allow_fallbacks": False}
+    if reasoning:
+        body["reasoning"] = {"enabled": True}
 
     payload = json.dumps(body).encode()
     try:
@@ -876,13 +1023,48 @@ def _openrouter_request(api_key, model_id, provider_slug, messages, max_tokens, 
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
             },
-            timeout=120,
+            timeout=180,
         )
-        response = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        msg = data.get("choices", [{}])[0].get("message", {})
+        response = msg.get("content") or ""
+        # DeepSeek V3.2 uses "reasoning" field; other models may use "reasoning_content"
+        reasoning_content = msg.get("reasoning") or msg.get("reasoning_content") or ""
         usage = data.get("usage", {})
-        return {"response": response, "tokens": usage.get("total_tokens", 0), "status": "ok"}
+        result = {"response": response, "tokens": usage.get("total_tokens", 0), "status": "ok"}
+        if reasoning_content:
+            result["reasoning"] = reasoning_content
+        return result
     except RuntimeError as e:
         return {"response": "", "error": str(e), "status": "error"}
+
+
+DEFAULT_CLI_MODEL = "sonnet"
+
+def _claude_cli_request(prompt, model=None):
+    """Call claude -p and return the response. Returns dict with response/tokens/status."""
+    model = model or DEFAULT_CLI_MODEL
+    cmd = [
+        "claude", "-p", prompt,
+        "--model", model,
+        "--effort", "medium",
+        "--output-format", "json",
+        "--permission-mode", "default",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        if proc.returncode != 0:
+            return {"response": "", "error": proc.stderr[:300], "status": "error"}
+
+        data = json.loads(proc.stdout)
+        response = data.get("result", "")
+        usage = data.get("usage", {})
+        total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+        cost = data.get("total_cost_usd", 0)
+        return {"response": response, "tokens": total_tokens, "cost_usd": cost, "status": "ok"}
+    except subprocess.TimeoutExpired:
+        return {"response": "", "error": "timeout (180s)", "status": "error"}
+    except (json.JSONDecodeError, OSError) as e:
+        return {"response": "", "error": str(e)[:300], "status": "error"}
 
 
 def test_skill(name, prompts, models=None, max_tokens=2000):
@@ -1029,6 +1211,1133 @@ def cleanup():
         shutil.rmtree(staging_root)
 
 
+# --- Session harvesting ---
+
+
+def _contains_secret(text):
+    """Return True if text contains likely secrets."""
+    return bool(_SECRET_PATTERNS.search(text))
+
+
+def _scrub_secrets(text):
+    """Replace detected secrets with [REDACTED]."""
+    return _SECRET_PATTERNS.sub("[REDACTED]", text)
+
+
+def _extract_injected_skills(prompt_text):
+    """Extract skill names and versions from a BEFORE STARTING injection header.
+
+    Returns list of dicts: [{"skill": "code-review", "version": "2.47.2"}, ...]
+    Version may be None for local dev paths.
+    """
+    m = _SKILL_INJECTION_RE.search(prompt_text)
+    if not m:
+        return []
+    header = m.group(0)
+    skills = []
+    for pm in _SKILL_PATH_RE.finditer(header):
+        version, skill_name = pm.group(1), pm.group(2)
+        skills.append({"skill": skill_name, "version": version})
+    return skills
+
+
+def _strip_injection_header(prompt_text):
+    """Remove the BEFORE STARTING block from a prompt, returning the actual task."""
+    m = _SKILL_INJECTION_RE.search(prompt_text)
+    if not m:
+        return prompt_text
+    # The header ends with "If you cannot read the files, proceed with your best judgment.\n\n"
+    end_marker = "If you cannot read the files, proceed with your best judgment."
+    idx = prompt_text.find(end_marker)
+    if idx >= 0:
+        remainder = prompt_text[idx + len(end_marker):]
+        return remainder.lstrip("\n")
+    return prompt_text[m.end():].lstrip("\n")
+
+
+def _classify_signal(user_messages):
+    """Classify conversation outcome based on user messages.
+
+    Returns: "positive", "negative", or "ambiguous".
+    Heuristic: if any user message matches negative patterns, it's negative.
+    If there are fewer than 2 user messages, ambiguous (too little signal).
+    Otherwise positive.
+    """
+    if len(user_messages) < 2:
+        return "ambiguous"
+    for msg in user_messages:
+        # Only scan short conversational messages (< 500 chars) to avoid
+        # false positives from instructional content, code, or skill text
+        # that the user pasted or the agent quoted back.
+        if len(msg) > 500:
+            continue
+        # Skip tool_result content that looks like file contents (YAML frontmatter,
+        # code, markdown headings). In subagent traces, tool results arrive as
+        # "user" role messages and contain skill/code text with words like "stop",
+        # "don't mock" that trigger false positives.
+        stripped = msg.lstrip()
+        if stripped.startswith("---\n") or stripped.startswith("```") or stripped.startswith("#"):
+            continue
+        # Skip numbered line output (cat -n format from Read tool results)
+        if stripped and stripped[0].isdigit() and "\t" in stripped[:10]:
+            continue
+        if _NEGATIVE_SIGNAL_PATTERNS.search(msg):
+            return "negative"
+    return "positive"
+
+
+def _parse_session(jsonl_path):
+    """Parse a single JSONL session file into structured data.
+
+    Returns dict with:
+      - session_id: str
+      - project: str (directory name)
+      - is_subagent: bool
+      - turns: list of {role, content_text, tool_calls, timestamp}
+      - injected_skills: list of {skill, version} (subagents only)
+      - task_prompt: str (the actual task, with injection header stripped)
+      - signal: "positive" | "negative" | "ambiguous"
+      - git_branch: str or None
+      - claude_version: str or None
+    """
+    turns = []
+    session_id = None
+    git_branch = None
+    claude_version = None
+    is_subagent = "subagents" in str(jsonl_path)
+
+    with open(jsonl_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            msg_type = obj.get("type", "")
+            if msg_type not in ("user", "assistant"):
+                continue
+
+            msg = obj.get("message", {})
+            role = msg.get("role", "")
+            if not role:
+                continue
+
+            # Extract metadata from first user message
+            if session_id is None:
+                session_id = obj.get("sessionId")
+                git_branch = obj.get("gitBranch")
+                claude_version = obj.get("version")
+
+            # Extract text content
+            content = msg.get("content", "")
+            content_text = ""
+            tool_calls = []
+            tool_results = []
+
+            if isinstance(content, str):
+                content_text = content
+            elif isinstance(content, list):
+                text_parts = []
+                for block in content:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "text":
+                        text_parts.append(block.get("text", ""))
+                    elif block.get("type") == "tool_use":
+                        tool_calls.append({
+                            "tool": block.get("name", ""),
+                            "input_preview": json.dumps(block.get("input", {}))[:200],
+                        })
+                    elif block.get("type") == "tool_result":
+                        # Capture tool results -- these contain the real work product
+                        # (file contents after edits, bash output, grep results)
+                        result_content = block.get("content", "")
+                        if isinstance(result_content, list):
+                            result_content = " ".join(
+                                b.get("text", "") for b in result_content
+                                if isinstance(b, dict) and b.get("type") == "text"
+                            )
+                        result_str = str(result_content)[:2000]
+                        if result_str.strip():
+                            tool_results.append(result_str)
+                        text_parts.append(result_str[:500])
+                content_text = "\n".join(text_parts)
+
+            # Skip meta/system messages with XML tags that aren't real user input
+            if role == "user" and content_text.startswith("<local-command-"):
+                continue
+            if role == "user" and content_text.startswith("<command-name>"):
+                continue
+
+            timestamp = obj.get("timestamp")
+            turns.append({
+                "role": role,
+                "content_text": content_text,
+                "tool_calls": tool_calls,
+                "tool_results": tool_results,
+                "timestamp": timestamp,
+            })
+
+    if not turns:
+        return None
+
+    # Extract project name from path
+    # ~/.claude/projects/<project-name>/session-id.jsonl
+    # ~/.claude/projects/<project-name>/session-id/subagents/agent-xxx.jsonl
+    project = ""
+    parts = jsonl_path.parts
+    for i, p in enumerate(parts):
+        if p == "projects" and i + 1 < len(parts):
+            project = parts[i + 1]
+            break
+
+    # Detect injected skills from first user message (subagent traces)
+    injected_skills = []
+    task_prompt = ""
+    first_user = next((t for t in turns if t["role"] == "user"), None)
+    if first_user:
+        injected_skills = _extract_injected_skills(first_user["content_text"])
+        task_prompt = _strip_injection_header(first_user["content_text"])
+
+    # Classify success signal from user messages
+    user_messages = [t["content_text"] for t in turns if t["role"] == "user"]
+    signal = _classify_signal(user_messages)
+
+    return {
+        "session_id": session_id or jsonl_path.stem,
+        "project": project,
+        "is_subagent": is_subagent,
+        "turns": turns,
+        "injected_skills": injected_skills,
+        "task_prompt": task_prompt,
+        "signal": signal,
+        "git_branch": git_branch,
+        "claude_version": claude_version,
+        "source_file": str(jsonl_path),
+    }
+
+
+def _build_eval_example(parsed_session):
+    """Convert a parsed session into a compact eval example for a skill.
+
+    Returns dict suitable for JSONL output, with secrets scrubbed.
+    Interleaves assistant text with tool results to capture actual work product,
+    not just process narration.
+    """
+    output_parts = []
+    tools_used = set()
+    total_len = 0
+    max_output = 15000
+
+    for turn in parsed_session["turns"]:
+        if total_len >= max_output:
+            break
+        if turn["role"] == "assistant":
+            # Assistant's text response
+            text = turn["content_text"].strip()
+            if text:
+                chunk = text[:4000]
+                output_parts.append(chunk)
+                total_len += len(chunk)
+            for tc in turn["tool_calls"]:
+                tools_used.add(tc["tool"])
+        elif turn["role"] == "user" and turn.get("tool_results"):
+            # Tool results contain the real work product (file contents,
+            # bash output, grep results) that show what the agent actually did
+            for result in turn["tool_results"]:
+                if total_len >= max_output:
+                    break
+                chunk = result[:2000]
+                output_parts.append(f"[Tool Result]: {chunk}")
+                total_len += len(chunk)
+
+    agent_output = "\n---\n".join(output_parts)
+
+    example = {
+        "task_input": _scrub_secrets(parsed_session["task_prompt"][:5000]),
+        "agent_output": _scrub_secrets(agent_output[:max_output]),
+        "signal": parsed_session["signal"],
+        "tools_used": sorted(tools_used),
+        "injected_skills": parsed_session["injected_skills"],
+        "turn_count": len(parsed_session["turns"]),
+        "project": parsed_session["project"],
+        "session_id": parsed_session["session_id"],
+        "claude_version": parsed_session["claude_version"],
+    }
+    return example
+
+
+def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3):
+    """Walk ~/.claude/projects/, extract per-skill eval datasets.
+
+    Args:
+        project_filter: only process this project directory name (optional)
+        skill_filter: only extract examples for this skill (optional)
+        min_turns: minimum conversation turns to include (default 3)
+
+    Returns summary dict. Writes per-skill JSONL to distillery/.eval-data/<skill>/sessions.jsonl.
+    """
+    if not CLAUDE_PROJECTS_DIR.exists():
+        print(f"Error: {CLAUDE_PROJECTS_DIR} not found", file=sys.stderr)
+        return {"error": "no projects directory"}
+
+    # Discover all JSONL files
+    session_files = []
+    subagent_files = []
+
+    for project_dir in sorted(CLAUDE_PROJECTS_DIR.iterdir()):
+        if not project_dir.is_dir():
+            continue
+        if project_filter and project_dir.name != project_filter:
+            continue
+
+        # Main session files
+        for f in project_dir.glob("*.jsonl"):
+            session_files.append(f)
+
+        # Subagent traces — inside <session-id>/subagents/
+        for f in project_dir.glob("*/subagents/*.jsonl"):
+            subagent_files.append(f)
+
+    all_files = session_files + subagent_files
+    print(f"Found {len(session_files)} sessions, {len(subagent_files)} subagent traces", file=sys.stderr)
+
+    # Parse all files and group by skill
+    skill_examples = defaultdict(list)
+    stats = {
+        "files_parsed": 0,
+        "files_skipped": 0,
+        "secrets_detected": 0,
+        "subagent_with_skills": 0,
+        "signals": {"positive": 0, "negative": 0, "ambiguous": 0},
+    }
+
+    for filepath in all_files:
+        parsed = _parse_session(filepath)
+        if parsed is None:
+            stats["files_skipped"] += 1
+            continue
+
+        stats["files_parsed"] += 1
+
+        # Filter by turn count
+        if len(parsed["turns"]) < min_turns:
+            stats["files_skipped"] += 1
+            continue
+
+        # Check for secrets in the raw task prompt
+        if _contains_secret(parsed["task_prompt"]):
+            stats["secrets_detected"] += 1
+
+        stats["signals"][parsed["signal"]] += 1
+
+        # For subagent traces with injected skills, create per-skill examples
+        if parsed["injected_skills"]:
+            stats["subagent_with_skills"] += 1
+            for skill_info in parsed["injected_skills"]:
+                skill_name = skill_info["skill"]
+                if skill_filter and skill_name != skill_filter:
+                    continue
+                example = _build_eval_example(parsed)
+                example["skill_version"] = skill_info["version"]
+                skill_examples[skill_name].append(example)
+
+        # For main sessions (no injection), still useful as general task examples
+        # but don't attribute to any specific skill
+        elif not parsed["is_subagent"]:
+            example = _build_eval_example(parsed)
+            skill_examples["_unattributed"].append(example)
+
+    # Write per-skill JSONL files
+    EVAL_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    written = {}
+
+    for skill_name, examples in sorted(skill_examples.items()):
+        skill_dir = EVAL_DATA_DIR / skill_name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        out_path = skill_dir / "sessions.jsonl"
+
+        with open(out_path, "w") as f:
+            for ex in examples:
+                f.write(json.dumps(ex) + "\n")
+
+        written[skill_name] = {
+            "count": len(examples),
+            "positive": sum(1 for e in examples if e["signal"] == "positive"),
+            "negative": sum(1 for e in examples if e["signal"] == "negative"),
+            "ambiguous": sum(1 for e in examples if e["signal"] == "ambiguous"),
+            "path": str(out_path),
+        }
+        print(f"  {skill_name}: {len(examples)} examples → {out_path}", file=sys.stderr)
+
+    return {
+        "stats": stats,
+        "skills": written,
+        "total_examples": sum(v["count"] for v in written.values()),
+    }
+
+
+# Heuristic indicators that a short message *might* be negative even if
+# _NEGATIVE_SIGNAL_PATTERNS doesn't match. Used by discover-signals to
+# surface candidates for human review and potential pattern promotion.
+_CANDIDATE_NEGATIVE_HINTS = _re.compile(
+    r"(?:"
+    r"\bwhy\s+(?:is|are|was|were|did|does|do)\b"  # questioning agent behavior
+    r"|\bthat\s+(?:is|was)\s+not\b"
+    r"|\bnot\s+(?:correct|right|accurate|valid|what)\b"
+    r"|\bwrong\b"
+    r"|\bmissing\b"
+    r"|\bbug\b"
+    r"|\bfail\b"
+    r"|\berror\b"
+    r"|\bregress\b"
+    r"|\bbroke\b"
+    r"|\bfix\b"
+    r"|\bremove\b.*\b(?:it|this|that|crap|junk|garbage)\b"
+    r"|\bi\s+(?:said|told|asked|mentioned)\b"
+    r"|\binvalid\b"
+    r"|\bnot\s+(?:needed|necessary|applicable|relevant)\b"
+    r"|\bstop\b"
+    r"|\bno\b.*\b(?:need|don'?t|shouldn'?t|won'?t)\b"
+    r")",
+    _re.IGNORECASE,
+)
+
+
+def discover_signals(top_n=30):
+    """Scan session history for short user messages that might indicate undiscovered
+    negative patterns. Surfaces candidates not matched by _NEGATIVE_SIGNAL_PATTERNS
+    but flagged by looser heuristics, ranked by frequency.
+
+    Returns dict with candidate patterns and example messages for human review.
+    """
+    if not CLAUDE_PROJECTS_DIR.exists():
+        return {"error": "no projects directory"}
+
+    # Collect all short user messages that pass our filters but are NOT
+    # matched by the current negative pattern set
+    unmatched_candidates = defaultdict(list)  # hint_phrase -> [messages]
+    all_unmatched = []
+
+    for jsonl in CLAUDE_PROJECTS_DIR.glob("*/*.jsonl"):
+        if "subagents" in str(jsonl):
+            continue
+        try:
+            with open(jsonl) as f:
+                for line in f:
+                    try:
+                        obj = json.loads(line.strip())
+                        if obj.get("type") != "user":
+                            continue
+                        msg = obj.get("message", {})
+                        if msg.get("role") != "user":
+                            continue
+                        content = msg.get("content", "")
+                        text = ""
+                        if isinstance(content, str):
+                            text = content
+                        elif isinstance(content, list):
+                            for b in content:
+                                if isinstance(b, dict) and b.get("type") == "text":
+                                    text += b.get("text", "")
+                        # Same filters as _classify_signal
+                        if len(text) > 500 or len(text) < 8:
+                            continue
+                        stripped = text.lstrip()
+                        if stripped.startswith("<"):
+                            continue
+                        if stripped.startswith("---\n") or stripped.startswith("```") or stripped.startswith("#"):
+                            continue
+                        if stripped[0].isdigit() and "\t" in stripped[:10]:
+                            continue
+                        # Skip if already matched by current patterns
+                        if _NEGATIVE_SIGNAL_PATTERNS.search(text):
+                            continue
+                        # Check candidate hints
+                        m = _CANDIDATE_NEGATIVE_HINTS.search(text)
+                        if m:
+                            hint = m.group().strip().lower()
+                            unmatched_candidates[hint].append(text.strip()[:200])
+                            all_unmatched.append(text.strip()[:200])
+                    except (json.JSONDecodeError, IndexError):
+                        continue
+        except OSError:
+            continue
+
+    # Rank by frequency — most common unmatched hint phrases first
+    ranked = sorted(unmatched_candidates.items(), key=lambda x: -len(x[1]))[:top_n]
+
+    results = []
+    for hint, messages in ranked:
+        # Deduplicate similar messages
+        unique = list(dict.fromkeys(messages))[:8]
+        results.append({
+            "hint_match": hint,
+            "count": len(messages),
+            "unique_examples": len(set(messages)),
+            "examples": unique,
+        })
+
+    return {
+        "total_unmatched_with_hints": len(all_unmatched),
+        "distinct_hints": len(unmatched_candidates),
+        "top_candidates": results,
+    }
+
+
+def _parse_judge_response(text):
+    """Extract scores from judge JSON response. Returns dict or None on parse failure."""
+    if not text:
+        return None
+    # Strip markdown code fences if present
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+    if text.startswith("json"):
+        text = text[4:].strip()
+
+    # Try direct parse first, then search for JSON object in longer text
+    # (reasoning models may embed the JSON within their thinking)
+    data = None
+    try:
+        data = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        # Search for a JSON object containing "correctness"
+        for m in _re.finditer(r'\{[^{}]*"correctness"[^{}]*\}', text):
+            try:
+                data = json.loads(m.group())
+                break
+            except json.JSONDecodeError:
+                continue
+    if data is None:
+        return None
+
+    try:
+        correctness = max(0, min(10, int(data.get("correctness", 0))))
+        procedure = max(0, min(10, int(data.get("procedure_following", 0))))
+        conciseness = max(0, min(10, int(data.get("conciseness", 0))))
+        # Normalize to 0-1 and compute weighted composite
+        c, p, co = correctness / 10, procedure / 10, conciseness / 10
+        composite = 0.5 * c + 0.3 * p + 0.2 * co
+        return {
+            "correctness": correctness,
+            "procedure_following": procedure,
+            "conciseness": conciseness,
+            "composite": round(composite, 3),
+            "notes": data.get("notes", ""),
+        }
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return None
+
+
+def _find_skill_path(name):
+    """Find a skill's SKILL.md path. Checks plugin dir first, then generated-skills."""
+    plugin_path = PLUGIN_DIR / "skills" / name / "SKILL.md"
+    if plugin_path.exists():
+        return plugin_path
+    generated_path = GENERATED_DIR / name / "SKILL.md"
+    if generated_path.exists():
+        return generated_path
+    return None
+
+
+def _extract_skill_keywords(skill_text):
+    """Extract relevance keywords from a skill's YAML description and first section.
+
+    Returns a set of lowercase keyword strings (2+ chars) for fast relevance checking.
+    """
+    keywords = set()
+    # Extract description from YAML frontmatter
+    if skill_text.startswith("---"):
+        parts = skill_text.split("---", 2)
+        if len(parts) >= 3:
+            frontmatter = parts[1]
+            for line in frontmatter.splitlines():
+                if line.strip().startswith("description:") or line.strip().startswith("name:"):
+                    value = line.split(":", 1)[1].strip().strip("'\"").strip(">-").strip()
+                    keywords.update(w.lower() for w in _re.findall(r'[a-zA-Z]{3,}', value))
+                elif line.startswith("  ") and keywords:
+                    # continuation line of description
+                    keywords.update(w.lower() for w in _re.findall(r'[a-zA-Z]{3,}', line))
+
+    # Extract from skill name (hyphen-separated)
+    name_match = _re.search(r'^name:\s*(.+)', skill_text, _re.MULTILINE)
+    if name_match:
+        keywords.update(name_match.group(1).strip().split("-"))
+
+    # Remove common stop words that would match everything
+    stop = {"the", "and", "for", "use", "when", "with", "this", "that", "from",
+            "are", "not", "all", "any", "you", "has", "can", "will", "how",
+            "been", "being", "into", "also", "such", "than", "each", "does",
+            "should", "before", "after", "asked", "apply", "proactively",
+            "starting", "complex", "tasks"}
+    keywords -= stop
+    return keywords
+
+
+def _check_skill_relevance(task_input, skill_keywords, threshold=2):
+    """Check if a task is relevant to a skill based on keyword overlap.
+
+    Returns (is_relevant, overlap_count).
+    """
+    task_lower = task_input.lower()
+    task_words = set(_re.findall(r'[a-zA-Z]{3,}', task_lower))
+    overlap = skill_keywords & task_words
+    return len(overlap) >= threshold, len(overlap)
+
+
+def _score_candidate(example, skill_keywords):
+    """Heuristic quality score for a harvested example, used to rank golden dataset candidates.
+
+    Returns a float 0-1. Higher = better candidate for golden dataset.
+    Factors: signal clarity, relevance to skill, output substance, session diversity.
+    """
+    score = 0.0
+
+    # Signal clarity: clear positive/negative is better than ambiguous
+    signal = example.get("signal", "ambiguous")
+    if signal in ("positive", "negative"):
+        score += 0.3
+    # Negative examples are slightly more valuable for eval (harder to get right)
+    if signal == "negative":
+        score += 0.1
+
+    # Relevance: keyword overlap with skill
+    task = example.get("task_input", "")
+    _, overlap = _check_skill_relevance(task, skill_keywords, threshold=0)
+    # Normalize: 5+ keyword overlaps = max relevance score
+    score += min(overlap / 5, 1.0) * 0.3
+
+    # Output substance: longer, more complete agent output is better for eval
+    output = example.get("agent_output", "")
+    output_len = len(output)
+    if output_len > 2000:
+        score += 0.15
+    elif output_len > 500:
+        score += 0.1
+    elif output_len > 100:
+        score += 0.05
+
+    # Task substance: longer, more specific tasks are better eval material
+    task_len = len(task)
+    if task_len > 200:
+        score += 0.1
+    elif task_len > 50:
+        score += 0.05
+
+    # Version tracked: examples with skill_version are more useful (temporal context)
+    if example.get("skill_version"):
+        score += 0.05
+
+    return round(min(score, 1.0), 3)
+
+
+def build_golden(skill_name, top_n=20, auto=False):
+    """Build a golden eval dataset from harvested session data.
+
+    Ranks harvested examples by quality heuristics (relevance, output substance,
+    signal clarity), applies relevance filtering, and outputs candidates.
+
+    With --auto: writes golden.jsonl directly using heuristic labels.
+    Without --auto: writes a review file (candidates.jsonl) for human annotation,
+    then run build-golden --skill X --approve to promote to golden.jsonl.
+
+    Args:
+        skill_name: skill directory name
+        top_n: number of candidates to select
+        auto: if True, skip human review and label automatically
+
+    Returns summary dict.
+    """
+    # Load skill for keyword extraction
+    skill_path = _find_skill_path(skill_name)
+    if not skill_path:
+        print(f"Error: skill '{skill_name}' not found", file=sys.stderr)
+        sys.exit(1)
+    skill_text = skill_path.read_text()
+    skill_keywords = _extract_skill_keywords(skill_text)
+
+    # Load harvested sessions
+    sessions_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
+    if not sessions_path.exists():
+        print(f"Error: {sessions_path} not found. Run harvest-sessions first.", file=sys.stderr)
+        sys.exit(1)
+
+    examples = []
+    with open(sessions_path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                examples.append(json.loads(line))
+
+    # Filter for relevance
+    relevant = []
+    for ex in examples:
+        is_rel, _ = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
+        if is_rel:
+            relevant.append(ex)
+
+    print(f"Loaded {len(examples)} examples, {len(relevant)} relevant to '{skill_name}'", file=sys.stderr)
+
+    if not relevant:
+        print(f"Error: no relevant examples. Keywords: {sorted(skill_keywords)}", file=sys.stderr)
+        sys.exit(1)
+
+    # Score and rank
+    scored = []
+    for ex in relevant:
+        quality = _score_candidate(ex, skill_keywords)
+        scored.append((quality, ex))
+    scored.sort(key=lambda x: -x[0])
+
+    # Take balanced sample: aim for ~50/50 positive/negative from top candidates
+    top_pool = scored[:top_n * 3]  # over-select to allow balancing
+    pos_pool = [(q, e) for q, e in top_pool if e.get("signal") == "positive"]
+    neg_pool = [(q, e) for q, e in top_pool if e.get("signal") == "negative"]
+    amb_pool = [(q, e) for q, e in top_pool if e.get("signal") == "ambiguous"]
+
+    half = top_n // 2
+    selected = pos_pool[:half] + neg_pool[:half]
+    remaining = top_n - len(selected)
+    if remaining > 0:
+        # Fill from whichever pool has more
+        extras = sorted(pos_pool[half:] + neg_pool[half:] + amb_pool, key=lambda x: -x[0])
+        selected.extend(extras[:remaining])
+    selected = selected[:top_n]
+
+    # Build candidate records
+    candidates = []
+    for quality, ex in selected:
+        candidate = {
+            "task_input": ex["task_input"],
+            "agent_output": ex["agent_output"],
+            "signal": ex.get("signal", "ambiguous"),
+            "quality_score": quality,
+            "session_id": ex.get("session_id", ""),
+            "skill_version": ex.get("skill_version"),
+            "tools_used": ex.get("tools_used", []),
+            "turn_count": ex.get("turn_count", 0),
+            "project": ex.get("project", ""),
+            # Label: auto-assign from signal, or "review" for human annotation
+            "label": ex.get("signal", "ambiguous") if auto else "review",
+        }
+        candidates.append(candidate)
+
+    # Write output
+    skill_eval_dir = EVAL_DATA_DIR / skill_name
+    skill_eval_dir.mkdir(parents=True, exist_ok=True)
+
+    # Always write candidates.jsonl (keeps state consistent)
+    candidates_path = skill_eval_dir / "candidates.jsonl"
+    with open(candidates_path, "w") as f:
+        for c in candidates:
+            f.write(json.dumps(c) + "\n")
+
+    if auto:
+        # Also write golden.jsonl directly (labels already set from signal)
+        golden_path = skill_eval_dir / "golden.jsonl"
+        with open(golden_path, "w") as f:
+            for c in candidates:
+                f.write(json.dumps(c) + "\n")
+        out_path = golden_path
+        print(f"Wrote {len(candidates)} auto-labeled examples → {golden_path}", file=sys.stderr)
+    else:
+        out_path = candidates_path
+        print(f"Wrote {len(candidates)} candidates for review → {candidates_path}", file=sys.stderr)
+        print(f"Review the file, change 'label' from 'review' to 'positive'/'negative'/'skip',", file=sys.stderr)
+        print(f"then run: distiller.py approve-golden {skill_name}", file=sys.stderr)
+
+    pos = sum(1 for c in candidates if c["signal"] == "positive")
+    neg = sum(1 for c in candidates if c["signal"] == "negative")
+
+    return {
+        "skill": skill_name,
+        "total_harvested": len(examples),
+        "relevant": len(relevant),
+        "selected": len(candidates),
+        "positive": pos,
+        "negative": neg,
+        "mean_quality": round(sum(c["quality_score"] for c in candidates) / len(candidates), 3) if candidates else 0,
+        "output": str(out_path),
+        "mode": "auto" if auto else "review",
+    }
+
+
+def approve_golden(skill_name):
+    """Promote reviewed candidates.jsonl to golden.jsonl.
+
+    Reads candidates.jsonl, keeps entries labeled 'positive' or 'negative'
+    (skips 'review' and 'skip'), writes to golden.jsonl.
+    """
+    candidates_path = EVAL_DATA_DIR / skill_name / "candidates.jsonl"
+    if not candidates_path.exists():
+        print(f"Error: {candidates_path} not found. Run build-golden first.", file=sys.stderr)
+        sys.exit(1)
+
+    candidates = []
+    with open(candidates_path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                candidates.append(json.loads(line))
+
+    approved = [c for c in candidates if c.get("label") in ("positive", "negative")]
+    skipped = [c for c in candidates if c.get("label") == "skip"]
+    unreviewed = [c for c in candidates if c.get("label") == "review"]
+
+    if unreviewed:
+        print(f"Warning: {len(unreviewed)} candidates still labeled 'review' (skipped)", file=sys.stderr)
+
+    if not approved:
+        print("Error: no approved candidates (label must be 'positive' or 'negative')", file=sys.stderr)
+        sys.exit(1)
+
+    golden_path = EVAL_DATA_DIR / skill_name / "golden.jsonl"
+    with open(golden_path, "w") as f:
+        for c in approved:
+            f.write(json.dumps(c) + "\n")
+
+    pos = sum(1 for c in approved if c["label"] == "positive")
+    neg = sum(1 for c in approved if c["label"] == "negative")
+    print(f"Wrote {len(approved)} golden examples ({pos} positive, {neg} negative) → {golden_path}", file=sys.stderr)
+
+    return {
+        "skill": skill_name,
+        "approved": len(approved),
+        "positive": pos,
+        "negative": neg,
+        "skipped": len(skipped),
+        "unreviewed": len(unreviewed),
+        "path": str(golden_path),
+    }
+
+
+def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backend="claude-cli"):
+    """Score a skill's effectiveness using LLM-as-judge on harvested eval data.
+
+    Loads the skill's SKILL.md and eval dataset, sends each example to the judge
+    model and aggregates scores.
+
+    Args:
+        skill_name: skill directory name (e.g., "planning", "code-review")
+        dataset: "sessions" for harvested data, or path to a custom JSONL file
+        max_examples: max examples to score (default 20, controls cost)
+        model: override eval model (default depends on backend)
+        backend: "openrouter" (DeepSeek V3.2) or "claude-cli" (Sonnet 4.6 via claude -p)
+
+    Returns dict with per-example scores and aggregated metrics.
+    """
+    use_cli = backend == "claude-cli"
+
+    if not use_cli:
+        load_env()
+        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        if not api_key:
+            print("Error: OPENROUTER_API_KEY not set in .env", file=sys.stderr)
+            sys.exit(1)
+
+    # Load skill
+    skill_path = _find_skill_path(skill_name)
+    if not skill_path:
+        print(f"Error: skill '{skill_name}' not found in plugin or generated-skills", file=sys.stderr)
+        sys.exit(1)
+    skill_text = skill_path.read_text()
+    print(f"Loaded skill: {skill_path}", file=sys.stderr)
+
+    # Load eval dataset
+    if dataset == "sessions":
+        dataset_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
+    elif dataset == "golden":
+        dataset_path = EVAL_DATA_DIR / skill_name / "golden.jsonl"
+    else:
+        dataset_path = Path(dataset)
+
+    if not dataset_path.exists():
+        print(f"Error: dataset not found at {dataset_path}", file=sys.stderr)
+        print("Run 'harvest-sessions' first to generate eval data.", file=sys.stderr)
+        sys.exit(1)
+
+    examples = []
+    with open(dataset_path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                examples.append(json.loads(line))
+
+    if not examples:
+        print(f"Error: no examples in {dataset_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Filter for relevance: only keep examples where the task is actually
+    # about this skill's domain, not just where the skill was injected alongside others.
+    skill_keywords = _extract_skill_keywords(skill_text)
+    relevant = []
+    irrelevant = 0
+    for ex in examples:
+        is_rel, overlap = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
+        if is_rel:
+            relevant.append(ex)
+        else:
+            irrelevant += 1
+
+    if irrelevant:
+        print(f"Filtered {irrelevant}/{len(examples)} irrelevant examples (keywords: {sorted(skill_keywords)[:10]}...)", file=sys.stderr)
+    if not relevant:
+        print(f"Error: no relevant examples after filtering. Keywords: {sorted(skill_keywords)}", file=sys.stderr)
+        sys.exit(1)
+
+    # Prioritize: positive examples first (skill worked), then negative (skill failed),
+    # so we get a balanced sample if capped
+    positive = [e for e in relevant if e.get("signal") == "positive"]
+    negative = [e for e in relevant if e.get("signal") == "negative"]
+    ambiguous = [e for e in relevant if e.get("signal") == "ambiguous"]
+
+    # Take balanced sample: half positive, half negative (when available)
+    half = max_examples // 2
+    sampled = positive[:half] + negative[:half] + ambiguous[:max(0, max_examples - 2 * half)]
+    sampled = sampled[:max_examples]
+
+    print(f"Evaluating {len(sampled)} examples ({len(positive)} pos, {len(negative)} neg, {len(ambiguous)} amb available)", file=sys.stderr)
+
+    # Configure model and backend
+    if use_cli:
+        eval_model = model or DEFAULT_CLI_MODEL
+        print(f"Backend: claude-cli (model: {eval_model})", file=sys.stderr)
+    else:
+        eval_model = model or DEFAULT_EVAL_MODEL
+        model_id, provider_slug = _parse_model_spec(eval_model)
+        print(f"Backend: openrouter (model: {eval_model})", file=sys.stderr)
+
+    # Score each example
+    scored = []
+    total_tokens = 0
+    total_cost = 0.0
+
+    for i, ex in enumerate(sampled):
+        task_input = ex.get("task_input", "")
+        agent_output = ex.get("agent_output", "")
+
+        if not task_input or not agent_output:
+            print(f"  [{i+1}/{len(sampled)}] skipped (empty input/output)", file=sys.stderr)
+            continue
+
+        judge_user = _JUDGE_USER_TEMPLATE.format(
+            skill_text=skill_text[:8000],
+            task_input=task_input[:5000],
+            agent_output=agent_output[:12000],
+        )
+
+        if use_cli:
+            # Combine system + user into a single prompt for claude -p
+            full_prompt = _JUDGE_SYSTEM_PROMPT + "\n\n" + judge_user
+            result = _claude_cli_request(full_prompt, model=eval_model)
+        else:
+            result = _openrouter_request(
+                api_key, model_id, provider_slug,
+                [
+                    {"role": "system", "content": _JUDGE_SYSTEM_PROMPT},
+                    {"role": "user", "content": judge_user},
+                ],
+                max_tokens=8000,
+                temperature=0.1,
+                reasoning=DEFAULT_EVAL_REASONING,
+            )
+
+        if result["status"] != "ok":
+            print(f"  [{i+1}/{len(sampled)}] error: {result.get('error', 'unknown')}", file=sys.stderr)
+            scored.append({
+                "index": i,
+                "signal": ex.get("signal", ""),
+                "session_id": ex.get("session_id", ""),
+                "error": result.get("error", "unknown"),
+            })
+            continue
+
+        total_tokens += result.get("tokens", 0)
+        total_cost += result.get("cost_usd", 0)
+        # Try content first; if empty (reasoning-only models), extract JSON from reasoning
+        scores = _parse_judge_response(result["response"])
+        if scores is None and result.get("reasoning"):
+            scores = _parse_judge_response(result["reasoning"])
+
+        if scores is None:
+            print(f"  [{i+1}/{len(sampled)}] parse error: {result['response'][:100]}", file=sys.stderr)
+            scored.append({
+                "index": i,
+                "signal": ex.get("signal", ""),
+                "session_id": ex.get("session_id", ""),
+                "error": f"parse_error: {result['response'][:200]}",
+            })
+            continue
+
+        scored.append({
+            "index": i,
+            "signal": ex.get("signal", ""),
+            "session_id": ex.get("session_id", ""),
+            "skill_version": ex.get("skill_version"),
+            **scores,
+        })
+        print(
+            f"  [{i+1}/{len(sampled)}] {ex.get('signal', '?'):8s} "
+            f"C={scores['correctness']} P={scores['procedure_following']} "
+            f"Co={scores['conciseness']} composite={scores['composite']}",
+            file=sys.stderr,
+        )
+
+    # Aggregate
+    valid_scores = [s for s in scored if "composite" in s]
+    if not valid_scores:
+        return {"skill": skill_name, "error": "no valid scores", "scored": scored}
+
+    avg = lambda key: round(sum(s[key] for s in valid_scores) / len(valid_scores), 3)
+
+    # Split by signal
+    pos_scores = [s for s in valid_scores if s["signal"] == "positive"]
+    neg_scores = [s for s in valid_scores if s["signal"] == "negative"]
+
+    summary = {
+        "mean_composite": avg("composite"),
+        "mean_correctness": avg("correctness"),
+        "mean_procedure_following": avg("procedure_following"),
+        "mean_conciseness": avg("conciseness"),
+        "count": len(valid_scores),
+        "errors": len(scored) - len(valid_scores),
+    }
+
+    if pos_scores:
+        pos_avg = lambda key: round(sum(s[key] for s in pos_scores) / len(pos_scores), 3)
+        summary["positive"] = {
+            "count": len(pos_scores),
+            "mean_composite": pos_avg("composite"),
+        }
+    if neg_scores:
+        neg_avg = lambda key: round(sum(s[key] for s in neg_scores) / len(neg_scores), 3)
+        summary["negative"] = {
+            "count": len(neg_scores),
+            "mean_composite": neg_avg("composite"),
+        }
+
+    result = {
+        "skill": skill_name,
+        "backend": backend,
+        "model": eval_model,
+        "dataset": str(dataset_path),
+        "total_tokens": total_tokens,
+        "summary": summary,
+        "scores": scored,
+    }
+    if total_cost > 0:
+        result["total_cost_usd"] = round(total_cost, 4)
+    return result
+
+
+def _save_eval_history(report):
+    """Append an eval run to the skill's eval-history.jsonl. Returns the previous run (or None)."""
+    from datetime import datetime, timezone
+
+    skill_name = report.get("skill", "")
+    if not skill_name or "error" in report:
+        return None
+
+    history_path = EVAL_DATA_DIR / skill_name / "eval-history.jsonl"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Read previous runs to find the last one
+    previous = None
+    if history_path.exists():
+        with open(history_path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        previous = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+    # Build compact history entry (no per-example scores, just summary)
+    entry = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "skill": skill_name,
+        "backend": report.get("backend", ""),
+        "model": report.get("model", ""),
+        "dataset": report.get("dataset", "").split("/")[-1],  # just filename
+        "examples": report.get("summary", {}).get("count", 0),
+        "composite": report.get("summary", {}).get("mean_composite", 0),
+        "correctness": report.get("summary", {}).get("mean_correctness", 0),
+        "procedure": report.get("summary", {}).get("mean_procedure_following", 0),
+        "conciseness": report.get("summary", {}).get("mean_conciseness", 0),
+        "tokens": report.get("total_tokens", 0),
+    }
+    cost = report.get("total_cost_usd")
+    if cost:
+        entry["cost_usd"] = cost
+    if report.get("summary", {}).get("positive"):
+        entry["positive_composite"] = report["summary"]["positive"].get("mean_composite", 0)
+    if report.get("summary", {}).get("negative"):
+        entry["negative_composite"] = report["summary"]["negative"].get("mean_composite", 0)
+
+    with open(history_path, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+    return previous
+
+
+def _format_eval_comparison(report, previous):
+    """Format eval results with comparison to previous run. Returns lines for stderr."""
+    lines = []
+    summary = report.get("summary", {})
+    composite = summary.get("mean_composite", 0)
+    correctness = summary.get("mean_correctness", 0)
+    procedure = summary.get("mean_procedure_following", 0)
+    conciseness = summary.get("mean_conciseness", 0)
+    count = summary.get("count", 0)
+    errors = summary.get("errors", 0)
+
+    lines.append("")
+    lines.append(f"  Skill: {report['skill']}  ({report.get('backend', '?')}/{report.get('model', '?')})")
+    lines.append(f"  Examples: {count}  Errors: {errors}")
+
+    def delta_str(current, prev_key, prev_data):
+        if not prev_data:
+            return ""
+        prev_val = prev_data.get(prev_key, 0)
+        if prev_val == 0:
+            return ""
+        diff = current - prev_val
+        pct = (diff / prev_val) * 100 if prev_val else 0
+        arrow = "+" if diff > 0 else ""
+        return f"  ({arrow}{diff:.3f}, {arrow}{pct:.0f}%)"
+
+    prev_s = previous  # previous is already a flat history entry
+    lines.append(f"  Composite:  {composite:.3f}{delta_str(composite, 'composite', prev_s)}")
+    lines.append(f"  Correct:    {correctness:.1f}/10{delta_str(correctness, 'correctness', prev_s)}")
+    lines.append(f"  Procedure:  {procedure:.1f}/10{delta_str(procedure, 'procedure', prev_s)}")
+    lines.append(f"  Concise:    {conciseness:.1f}/10{delta_str(conciseness, 'conciseness', prev_s)}")
+
+    pos = summary.get("positive", {})
+    neg = summary.get("negative", {})
+    if pos:
+        lines.append(f"  Positive:   {pos.get('mean_composite', 0):.3f} ({pos.get('count', 0)} examples)")
+    if neg:
+        lines.append(f"  Negative:   {neg.get('mean_composite', 0):.3f} ({neg.get('count', 0)} examples)")
+
+    # Threshold flag
+    if composite < 0.5:
+        lines.append(f"  ** BELOW THRESHOLD (0.5) -- skill may need attention **")
+
+    if report.get("total_cost_usd"):
+        lines.append(f"  Cost: ${report['total_cost_usd']:.4f}")
+
+    lines.append("")
+    return lines
+
+
 def main():
     parser = argparse.ArgumentParser(description="Skill distiller helper")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1097,6 +2406,48 @@ def main():
     # cleanup
     sub.add_parser("cleanup", help="Remove staging directory")
 
+    # harvest-sessions
+    p_harvest = sub.add_parser("harvest-sessions", help="Extract per-skill eval datasets from Claude Code session logs")
+    p_harvest.add_argument("--project", default=None, help="Filter to a specific project directory name")
+    p_harvest.add_argument("--skill", default=None, help="Filter to a specific skill name")
+    p_harvest.add_argument("--min-turns", type=int, default=3, help="Minimum conversation turns to include (default: 3)")
+
+    # discover-signals
+    p_discover = sub.add_parser("discover-signals", help="Surface unmatched user messages that may indicate new negative patterns")
+    p_discover.add_argument("--top", type=int, default=30, help="Number of top candidate patterns to show (default: 30)")
+
+    # dspy-eval
+    p_eval = sub.add_parser("dspy-eval", help="Score a skill's effectiveness using LLM-as-judge on harvested eval data")
+    p_eval.add_argument("name", help="Skill name (e.g., 'planning', 'code-review')")
+    p_eval.add_argument("--dataset", default="sessions", help="Dataset: 'sessions', 'golden', or path to JSONL (default: sessions)")
+    p_eval.add_argument("--max-examples", type=int, default=20, help="Max examples to score (default: 20)")
+    p_eval.add_argument("--model", default=None, help=f"Override eval model (default depends on backend)")
+    p_eval.add_argument("--backend", default="claude-cli", choices=["openrouter", "claude-cli"],
+                         help="LLM backend: 'claude-cli' (Sonnet 4.6 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
+
+    # build-golden
+    p_golden = sub.add_parser("build-golden", help="Build golden eval dataset from harvested sessions")
+    p_golden.add_argument("name", help="Skill name")
+    p_golden.add_argument("--top", type=int, default=20, help="Number of candidates to select (default: 20)")
+    p_golden.add_argument("--auto", action="store_true", help="Auto-label from signal (skip human review)")
+
+    # approve-golden
+    p_approve = sub.add_parser("approve-golden", help="Promote reviewed candidates.jsonl to golden.jsonl")
+    p_approve.add_argument("name", help="Skill name")
+
+    # evolve
+    p_evolve = sub.add_parser("evolve", help="Run DSPy GEPA optimization on a skill (outputs diff for review)")
+    p_evolve.add_argument("name", help="Skill name")
+    p_evolve.add_argument("--dataset", default="golden", help="Dataset: 'golden', 'sessions', or path to JSONL (default: golden)")
+    p_evolve.add_argument("--iterations", type=int, default=5, help="Max optimization iterations (default: 5)")
+    p_evolve.add_argument("--model", default=None, help="LiteLLM model for DSPy (default: openrouter/deepseek/deepseek-v3.2)")
+    p_evolve.add_argument("--optimizer", default="gepa", choices=["gepa", "mipro", "bootstrap"],
+                           help="Optimizer: 'gepa' (default), 'mipro', or 'bootstrap'")
+    p_evolve.add_argument("--max-growth", type=int, default=20, help="Max body growth percent (default: 20)")
+    p_evolve.add_argument("--fitness", default="keyword", choices=["keyword", "llm-judge"],
+                           help="Fitness function: 'keyword' (fast/cheap) or 'llm-judge' (Sonnet 4.6, ~$0.10/call)")
+    p_evolve.add_argument("--save", action="store_true", help="Save evolved skill to .eval-data/<skill>/evolved-SKILL.md")
+
     args = parser.parse_args()
 
     if args.command == "search":
@@ -1155,6 +2506,72 @@ def main():
     elif args.command == "cleanup":
         cleanup()
         print("Cleaned up", file=sys.stderr)
+
+    elif args.command == "harvest-sessions":
+        report = harvest_sessions(args.project, args.skill, args.min_turns)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "discover-signals":
+        report = discover_signals(args.top)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "dspy-eval":
+        report = dspy_eval(args.name, args.dataset, args.max_examples, args.model, args.backend)
+        previous = _save_eval_history(report)
+        for line in _format_eval_comparison(report, previous):
+            print(line, file=sys.stderr)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "build-golden":
+        report = build_golden(args.name, args.top, args.auto)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "approve-golden":
+        report = approve_golden(args.name)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "evolve":
+        from evolve import evolve_skill
+
+        skill_path = _find_skill_path(args.name)
+        if not skill_path:
+            print(f"Error: skill '{args.name}' not found", file=sys.stderr)
+            sys.exit(1)
+
+        if args.dataset == "golden":
+            dataset_path = EVAL_DATA_DIR / args.name / "golden.jsonl"
+        elif args.dataset == "sessions":
+            dataset_path = EVAL_DATA_DIR / args.name / "sessions.jsonl"
+        else:
+            dataset_path = Path(args.dataset)
+
+        if not dataset_path.exists():
+            print(f"Error: dataset not found at {dataset_path}", file=sys.stderr)
+            sys.exit(1)
+
+        report = evolve_skill(
+            args.name, str(skill_path), str(dataset_path),
+            iterations=args.iterations,
+            model=args.model,
+            optimizer=args.optimizer,
+            max_growth_pct=args.max_growth,
+            fitness=args.fitness,
+        )
+
+        # Print diff to stderr for immediate review
+        if report.get("diff"):
+            print("\n" + report["diff"], file=sys.stderr)
+
+        # Save evolved skill if requested
+        if args.save and report.get("evolved_text") and report.get("constraints_pass"):
+            evolved_path = EVAL_DATA_DIR / args.name / "evolved-SKILL.md"
+            evolved_path.parent.mkdir(parents=True, exist_ok=True)
+            evolved_path.write_text(report["evolved_text"])
+            report["evolved_path"] = str(evolved_path)
+            print(f"Saved evolved skill → {evolved_path}", file=sys.stderr)
+
+        # Output JSON without the full evolved_text (it's in the file)
+        print(json.dumps({k: v for k, v in report.items() if k not in ("diff", "evolved_text")}, indent=2))
 
 
 if __name__ == "__main__":
