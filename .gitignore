@@ -8,3 +8,4 @@ distillery/.skill-distiller/
 distillery/.eval-data/
 __pycache__/
 .pytest_cache/
+skills-lock.json
