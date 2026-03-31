@@ -18,14 +18,26 @@ If `$ARGUMENTS` specifies a name or category, narrow to that. Otherwise audit ev
 
 **Reactive mode:** If invoked after a skill/agent failed during use, detect the failing component from conversation context and focus the audit on that component first.
 
-## Phase 1: Inventory
+## Phase 1: Mechanical validation (deterministic, no AI)
 
-Read frontmatter + first section of every file:
-- `$PLUGIN_DIR/skills/*/SKILL.md`
-- `$PLUGIN_DIR/agents/**/*.md`
-- `$PLUGIN_DIR/commands/**/*.md`
+Run the full deterministic validation pass first. This replaces manual inventory, validation gates, anti-pattern detection, structural checks, and reference validation with a single script:
 
-Build a map: name, description, type, approximate token count (chars / 4).
+```bash
+python3 distillery/scripts/distiller.py validate-plugin
+python3 distillery/scripts/distiller.py test-triggers
+```
+
+`validate-plugin` checks every skill, agent, and command for:
+- Frontmatter: exists, valid YAML, no inert fields, name format, description length (<80 tokens), "Use when" trigger phrase
+- Anti-patterns: OVER_CONSTRAINED, BLOATED_SKILL, EMPTY_DESCRIPTION, MISSING_TRIGGER, ORPHAN_REFERENCE, DEAD_CROSS_REF, DUPLICATE_TRIGGER, STALE_VERSION_PIN
+- Structural: placeholder text, empty sections, missing headings
+- Body size: skills >4K, agents >3K, commands >4K tokens
+- Reference integrity: orphaned files in references/scripts dirs, backtick references to nonexistent components
+- README and hook pattern count accuracy
+
+The output is a structured JSON report with inventory counts and per-component findings sorted by severity. Include all findings in the Phase 3 presentation alongside AI-generated findings.
+
+`test-triggers` runs the regex regression suite. Include any failing skills as HIGH severity.
 
 ## Phase 1b: PluginEval scoring
 
@@ -44,20 +56,7 @@ Score each component against these 10 weighted dimensions. Use the weights to pr
 | **Code template quality** | 2% | Do bundled scripts work? Are they referenced correctly? |
 | **Ecosystem coherence** | 2% | Consistent naming, tone, terminology with the rest of the plugin? |
 
-### Named anti-patterns (auto-flag)
-
-Flag these automatically during the audit. Each is a specific, testable condition:
-
-| Anti-pattern | Detection | Severity |
-|-------------|-----------|----------|
-| **OVER_CONSTRAINED** | >15 MUST/ALWAYS/NEVER directives in one file | MEDIUM |
-| **BLOATED_SKILL** | Skill body >800 lines with no references/ directory | HIGH |
-| **EMPTY_DESCRIPTION** | Description <20 characters | HIGH |
-| **MISSING_TRIGGER** | Skill description doesn't say "Use when..." | MEDIUM |
-| **ORPHAN_REFERENCE** | File in references/ not linked from SKILL.md | MEDIUM |
-| **DEAD_CROSS_REF** | Link to a skill/agent/command that doesn't exist | HIGH |
-| **DUPLICATE_TRIGGER** | Two components with >70% description keyword overlap | MEDIUM |
-| **STALE_VERSION_PIN** | Content says "as of v3.2" or "since 2024" without verification | LOW |
+Note: Many structural completeness checks (frontmatter, references) are already covered by Phase 1's `validate-plugin`. Focus PluginEval scoring on the qualitative dimensions that need AI judgment.
 
 ## Phase 2: Quality checks
 
@@ -65,13 +64,13 @@ Run these checks against every file. Use parallel subagents (model: sonnet) grou
 
 ### Token efficiency
 
+These checks require AI judgment. Inert frontmatter and body size are already covered by `validate-plugin`.
+
 | Check | Signal |
 |-------|--------|
 | "Claude already knows this" | Content explaining what a technology is, how basic concepts work, or general programming knowledge that any LLM inherently knows |
 | Redundant phrasing | Same idea stated twice in different words within the same file |
 | Oversized examples | Code examples longer than needed to illustrate the pattern (>15 lines when 5 would suffice) |
-| Inert frontmatter | Fields beyond `name` and `description` that Claude Code ignores (triggers, role, scope, domain, author, version, license) |
-| Body over budget | Skill body > 2K tokens without `references/` split; agent > 3K tokens; command > 4K tokens |
 
 ### Directive quality
 
@@ -85,12 +84,12 @@ Run these checks against every file. Use parallel subagents (model: sonnet) grou
 
 ### Consistency
 
+Cross-reference integrity and description overlap are already covered by `validate-plugin`. Focus AI analysis on semantic issues:
+
 | Check | Signal |
 |-------|--------|
-| Cross-reference integrity | Skill A references skill B, but B doesn't exist or was renamed |
 | Terminology drift | Same concept called different names across files (e.g., "task" vs "step" vs "phase" for the same thing) |
 | Conflicting rules | File A says "always X", file B says "never X" for the same situation |
-| Description overlap | Two skills/agents with descriptions similar enough to confuse trigger selection |
 | Process conflicts | Different ordering of the same workflow steps across files |
 
 ### Cross-type overlap (agents vs skills vs commands)
@@ -138,24 +137,17 @@ Check every agent-skill, agent-command, and skill-command pair for:
 |-------|--------|
 | Description keyword gaps | Skill or command description missing obvious synonyms or alternate phrasings a user might say. Compare the description's trigger phrases against the component's actual domain. E.g., a "writing-tests" skill whose description says "tests" but not "specs", "assertions", "coverage", or "test suite". |
 | Trigger pattern accuracy | For skills with patterns in `hooks/skill-patterns.sh`, run `python3 distillery/scripts/distiller.py eval-triggers <name>` with 3-5 should-trigger and 3-5 should-not-trigger queries. Flag patterns with F1 < 0.8. |
+| Injection misfires | Run `python3 distillery/scripts/distiller.py analyze-misfires` (uses eval data from Phase 0 harvest). Skills with misfire rate > 20% have overly broad patterns. Include misfire findings as HIGH severity with the skill name, misfire rate, irrelevant task samples, and suggested regex tightening. |
+| Negative signal diagnosis | For skills with a high ratio of negative-signal sessions (>30% of examples), run `python3 distillery/scripts/distiller.py diagnose-negatives <skill>`. Include the diagnosed failure patterns and suggested skill text improvements as MEDIUM/HIGH findings. This catches skills that are injected correctly but produce poor output. |
 
-### Structural
+### Structural (AI-only checks)
+
+Orphan references, dead cross-refs, README counts, and hook pattern counts are already covered by `validate-plugin`. Focus AI analysis on semantic structural issues:
 
 | Check | Signal |
 |-------|--------|
 | Missing sections | Skill without success criteria, constraints, or procedural content (per SkillsBench quality dimensions) |
-| Unlinked references | Files in `references/` or `scripts/` not linked from SKILL.md |
-| Stale references | Links to files, commands, agents, or skills that don't exist |
 | Heading style | Title Case where sentence case expected (per md-docs), non-actionable headings |
-
-### Reference validation (mechanical -- run these checks via grep/glob)
-
-1. **Markdown links resolve:** For every `[text](path)` link in skills, agents, and commands, verify the target file exists at the resolved path (relative to the file's directory). Flag broken links.
-2. **Backtick skill/agent names exist:** For every backtick reference like `` `skill-name` `` or `` `agent-name` `` followed by "skill", "agent", or "command", verify a matching file exists in `skills/*/SKILL.md`, `agents/**/*.md`, or `commands/**/*.md`. Flag names that don't match any component.
-3. **Slash command references exist:** For every `/command-name` reference, verify a matching command file exists with that `name:` in frontmatter. Flag stale `/command` references.
-4. **Reference directories fully linked:** For every skill with a `references/` or `scripts/` subdirectory, list all files in that directory and verify each is linked from SKILL.md. Flag orphaned files.
-5. **README.md accuracy:** Verify component count table matches actual counts (`ls skills/*/SKILL.md | wc -l`, etc.). Verify every skill/agent/command is listed in the appropriate README table. Verify category headings match actual agent counts (e.g., "Review (10)"). Flag missing entries and stale counts.
-6. **Hook patterns current:** Verify `hooks/skill-patterns.sh` total count comment matches actual skill count. Verify no patterns reference deleted skills.
 
 ### Writing style (per md-docs + writing skill)
 
@@ -195,7 +187,7 @@ Severity levels:
 - **MEDIUM** — wastes tokens or reduces clarity (filler, redundancy, oversized examples)
 - **LOW** — style nit (heading case, phrasing preference)
 
-Cap at 40 findings. Group by file when multiple issues affect the same file.
+Show top 40 findings by severity. Group by file when multiple issues affect the same file. If more exist, state the count and ask: "N more findings below the cut. Show remaining? (yes / high-only / skip)"
 
 ## Phase 4: Stress-test findings
 
@@ -224,18 +216,34 @@ For approved items:
 After applying fixes, run the verification chain (stop on first failure):
 
 1. **Validate modified skills** — `python3 distillery/scripts/distiller.py validate <name>` for each changed distilled skill. All must pass 7/7 gates.
-2. **JSON integrity** — `jq . .claude-plugin/marketplace.json && jq . plugins/compound-engineering/.claude-plugin/plugin.json`
-3. **Cross-reference check** — grep all modified files for references to other skills/agents/commands. Verify each target exists.
-4. **Token budget check** — `python3 distillery/scripts/distiller.py token-count <file>` for each modified skill. Flag any that crossed the 2K threshold.
-5. **Diff review** — `git diff` on all modified files. Confirm changes match approved items only, no unintended edits.
+2. **Trigger regression tests** — `python3 distillery/scripts/distiller.py test-triggers`. All skills must pass. If a pattern was modified, update fixtures in `distillery/tests/fixtures/triggers/<skill>.jsonl`.
+3. **JSON integrity** — `jq . .claude-plugin/marketplace.json && jq . plugins/compound-engineering/.claude-plugin/plugin.json`
+4. **Cross-reference check** — grep all modified files for references to other skills/agents/commands. Verify each target exists.
+5. **Token budget check** — `python3 distillery/scripts/distiller.py token-count <file>` for each modified skill. Flag any above 4K tokens.
+6. **Diff review** — `git diff` on all modified files. Confirm changes match approved items only, no unintended edits.
 
-Present verification report:
+## Phase 7: Full test suite
+
+After Phase 6 verification passes, re-run the complete test suite to catch any regressions introduced by the fixes:
+
+```bash
+python3 -m pytest distillery/scripts/test_distiller.py -x
+python3 distillery/scripts/distiller.py test-triggers
+python3 distillery/scripts/distiller.py test-semantic --max-tests 5
+```
+
+Pytest and test-triggers must pass. test-semantic failures are warnings -- review but don't block on them (model behavior varies between runs).
+
+Present final report:
 
 ```
 Validation:    [PASS/FAIL] (N skills checked)
+Triggers:      [PASS/FAIL] (N skills, M test cases)
+Semantic:      [PASS/WARN] (N passed, M failed, K inconclusive)
 JSON:          [PASS/FAIL]
 Cross-refs:    [PASS/FAIL] (N refs verified)
-Token budgets: [PASS/FAIL] (list any over 2K)
+Token budgets: [PASS/FAIL] (list any over 4K)
+Unit tests:    [PASS/FAIL] (N tests)
 Diff review:   [N files changed, M insertions, K deletions]
 ```
 

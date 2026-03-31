@@ -15,13 +15,19 @@ REPOS_DIR=~/ai/repos
 PLUGIN_DIR=plugins/compound-engineering
 ```
 
-## Phase 1: Pull latest
+## Phase 1: Pull latest and refresh eval data
 
 ```bash
 cd ~/ai/repos && bash pull-all.sh
 ```
 
 If `pull-all.sh` doesn't exist, `git pull` each repo directory individually.
+
+Launch `harvest-sessions` as a background subagent in parallel with Phase 2. This refreshes eval data so `discover-signals` (Phase 6) and `/audit-plugin` both operate on current session data.
+
+```bash
+python3 distillery/scripts/distiller.py harvest-sessions
+```
 
 ## Phase 2: Inventory
 
@@ -88,7 +94,7 @@ Specific patterns, rules, or techniques from external sources that would improve
 - Is the content genuinely new (not already covered, even if worded differently)?
 - Is it actionable and measurable (not generic advice)?
 - Does it fit the component's scope without bloating it?
-- Would it push the body over budget (skill > 2K tokens, agent > 3K, command > 4K)? If so, propose as a `references/` file instead.
+- Would it push the body over budget (skill > 4K tokens, agent > 3K, command > 4K)? If so, propose as a `references/` file instead.
 
 **Agent-specific improvements** to look for:
 - Better frontmatter patterns (model selection, tools restriction, maxTurns, paths)
@@ -135,7 +141,7 @@ For each finding, include:
 - **Counter-argument**: reason it might NOT be worth adding
 - **Recommendation**: INCORPORATE / SKIP / NEEDS DISCUSSION
 
-Cap at 30 findings. If more exist, show top 30 by impact.
+Show top 30 findings by impact. If more exist, state the count and ask: "N more findings below the cut. Show remaining? (yes / high-only / skip)"
 
 ## Phase 5: Apply approved changes
 
@@ -149,7 +155,19 @@ For approved items:
 3. Validate against skill compliance checklist (CLAUDE.md) for skills; check agent frontmatter patterns for agents; verify command orchestration delegates to skills for commands
 4. Run `bash scripts/update-metadata.sh` if components were added/removed
 
-## Phase 6: Post-sync audit
+## Phase 6: Discover new negative signals
+
+Run signal discovery to surface new patterns of user dissatisfaction not yet captured by `_NEGATIVE_SIGNAL_PATTERNS`:
+
+```bash
+python3 distillery/scripts/distiller.py discover-signals --top 20
+```
+
+If candidates are found, present them for review. For confirmed patterns, promote to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py` so future harvests classify them correctly.
+
+This runs after sync (not during audit) because pattern discovery benefits from the broadest possible session scan, and any new patterns need to be in place before the audit's `harvest-sessions` runs.
+
+## Phase 7: Post-sync audit
 
 After applying changes, recommend running the audit on modified components:
 

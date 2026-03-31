@@ -12,7 +12,7 @@ compound-engineering-plugin/
 │   └── marketplace.json          # Marketplace catalog
 ├── distillery/                   # Skill distillery (generate skills from skills.sh)
 │   ├── scripts/
-│   │   ├── distiller.py          # Search, fetch, validate, test, A/B eval
+│   │   ├── distiller.py          # Search, fetch, validate, eval, harvest, test
 │   │   └── test_distiller.py     # pytest tests for distiller
 │   └── generated-skills/         # Generated skill output directory
 ├── scripts/
@@ -26,15 +26,15 @@ compound-engineering-plugin/
     └── compound-engineering/     # The plugin
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
-        ├── agents/              # 23 agents (review, research, design, workflow)
+        ├── agents/              # Agents (review, research, design, workflow)
         │   ├── review/          # Code review agents
         │   ├── research/        # Research and analysis agents
         │   ├── design/          # Design and UI agents
         │   └── workflow/        # Workflow automation agents
-        ├── commands/            # 18 slash commands
+        ├── commands/            # Slash commands
         │   ├── workflows/       # Core workflow commands (workflows:plan, etc.)
         │   └── *.md             # Utility commands
-        ├── skills/              # 30 skills (all native)
+        ├── skills/              # Skills (all native)
         │   └── <skill-name>/
         │       ├── SKILL.md        # Skill content
         │       ├── references/     # Optional supplementary docs
@@ -88,6 +88,8 @@ Workflow commands use `workflows:` prefix to avoid collisions with built-in comm
 Why `workflows:`? Claude Code has built-in `/plan` and `/review`. Using `name: workflows:plan` in frontmatter creates a unique command with no collision.
 
 ## Skill compliance checklist
+
+The master reference for what can/cannot/should/should not be used in skills is https://code.claude.com/docs/en/skills -- consult it when uncertain about frontmatter fields, supported features, or behavioral constraints.
 
 When adding or modifying skills, verify:
 
@@ -148,7 +150,9 @@ grep -E '^description:' skills/*/SKILL.md
 1. Create `plugins/compound-engineering/skills/skill-name/SKILL.md`
 2. Run `bash scripts/update-metadata.sh`
 3. Update README tables and `hooks/skill-patterns.sh` (add trigger pattern)
-4. Test with `claude skill skill-name`
+4. Add trigger regression fixtures to `distillery/tests/fixtures/triggers/skill-name.jsonl`
+5. Run `python3 distillery/scripts/distiller.py test-triggers --skill skill-name` to verify
+6. Test with `claude skill skill-name`
 
 ### Adding a new hook
 
@@ -181,7 +185,8 @@ The distillery includes tools for mining Claude Code session logs to build skill
 
 ```bash
 # Harvest per-skill eval datasets from ~/.claude/projects/
-python3 distillery/scripts/distiller.py harvest-sessions [--project <name>] [--skill <name>]
+# Excludes stale examples (from before skill was last changed) by default
+python3 distillery/scripts/distiller.py harvest-sessions [--project <name>] [--skill <name>] [--include-stale]
 
 # Discover new negative signal patterns not yet in _NEGATIVE_SIGNAL_PATTERNS
 python3 distillery/scripts/distiller.py discover-signals [--top 30]
@@ -198,21 +203,40 @@ python3 distillery/scripts/distiller.py approve-golden <skill>
 python3 distillery/scripts/distiller.py evolve <skill> [--optimizer gepa|mipro|bootstrap] [--iterations 5] [--save]
 
 # Identify skills injected into tasks where they're not needed (misfire detection)
-python3 distillery/scripts/distiller.py analyze-misfires [--min-examples 30]
+python3 distillery/scripts/distiller.py analyze-misfires [--min-examples 30] [--include-stale]
 
 # Analyze negative-signal sessions to find failure patterns and suggest skill fixes
-python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10]
+python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10] [--include-stale]
+
+# Run regex trigger regression tests (release gate)
+python3 distillery/scripts/distiller.py test-triggers [--skill <name>]
+
+# Run semantic injection tests via claude CLI (costs tokens)
+python3 distillery/scripts/distiller.py test-semantic [--max-tests 5]
+
+# Generate/update skill change manifest (tracks when skills and patterns last changed)
+python3 scripts/generate-manifest.py
 ```
 
-Run `discover-signals` periodically (before releases or after heavy usage periods) to surface new user dissatisfaction patterns from session history. Review the candidates, promote confirmed patterns to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py`, then re-harvest to update eval data.
+These commands are integrated into the release pipeline (`/sync-from-repos` > `/audit-plugin` > `/release` > `/announce`):
 
-The practical skill improvement loop is: `analyze-misfires` to tighten injection patterns, then `diagnose-negatives` per skill to read real failures and get concrete fix suggestions. This is more effective than DSPy evolution for mature skills because it addresses the actual problems (wrong injection, missing guidance) rather than trying to auto-rewrite text.
+- `harvest-sessions` runs in `/sync-from-repos` Phase 1 (background, parallel with inventory)
+- `discover-signals` runs in `/sync-from-repos` Phase 6 (surfaces new negative patterns before audit)
+- `analyze-misfires` and `diagnose-negatives` run in `/audit-plugin` Phase 2 (trigger coverage checks)
+- `test-triggers` and `test-semantic` run in `/audit-plugin` Phase 7 and `/release` pre-commit gates
+
+All commands can also be run standalone for targeted analysis.
+
+Staleness filtering: `harvest-sessions`, `analyze-misfires`, and `diagnose-negatives` exclude examples from before the skill/pattern was last changed. The manifest at `distillery/.skill-versions.json` tracks content and pattern hashes per skill, updated by `scripts/generate-manifest.py` during each release. Use `--include-stale` to override when you need historical analysis.
+
+Every trigger pattern fix should add a regression test case to `distillery/tests/fixtures/triggers/<skill>.jsonl` to prevent regressions.
 
 ## Scripts
 
 | Script | Purpose | When to run |
 |--------|---------|-------------|
 | `scripts/update-metadata.sh` | Count components, update `plugin.json` + `marketplace.json` descriptions | After any component change |
+| `scripts/generate-manifest.py` | Update `distillery/.skill-versions.json` with current skill/pattern hashes | Automatically during release |
 | `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | After editing or adding skills |
 | `scripts/generate-skill-hooks.sh` | Generate draft `hooks/skill-patterns.sh` from SKILL.md frontmatter | After adding/removing skills (hand-tune regex after) |
 | `scripts/sync-to-tools.sh` | Symlink plugin skills to `~/.agents/skills`, `~/.codex/skills`, `~/.kilocode/skills` | After editing or adding skills |
@@ -230,6 +254,7 @@ Do not add custom fields (`downloads`, `stars`, `rating`, `categories`, etc.).
 
 ## Resources
 
-- [Claude Code Plugin Documentation](https://code.claude.com/en/docs/claude-code/plugins)
+- [Skills Reference](https://code.claude.com/docs/en/skills) -- master reference for skill frontmatter, features, and constraints
+- [Plugin Documentation](https://code.claude.com/en/docs/claude-code/plugins)
 - [Plugin Marketplace Documentation](https://code.claude.com/en/docs/claude-code/plugin-marketplaces)
 - [Plugin Reference](https://code.claude.com/en/docs/claude-code/plugins-reference)
