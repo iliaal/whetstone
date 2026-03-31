@@ -4,6 +4,7 @@ description: >-
   Pine Script v6 patterns: syntax, performance, error diagnosis, backtesting,
   visualization. Use when working with PineScript, TradingView, indicators,
   strategies, or backtesting.
+paths: "**/*.pine"
 ---
 
 # Pine Script Development

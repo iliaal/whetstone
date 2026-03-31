@@ -4,6 +4,7 @@ description: >-
   Terraform and OpenTofu configuration, modules, testing, state management, and
   HCL review. Use when working with Terraform, OpenTofu, HCL, tfvars, tftest,
   state migration, or IaC patterns.
+paths: "**/*.tf,**/*.tfvars"
 ---
 
 # Terraform & OpenTofu

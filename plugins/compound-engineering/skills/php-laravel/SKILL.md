@@ -5,6 +5,7 @@ description: >-
   Use when working with Laravel, Eloquent, Blade, artisan, PHPUnit, PHPStan,
   or building/testing PHP applications with frameworks. Not for PHP internals (php-src)
   or general PHP language discussion.
+paths: "**/*.php"
 ---
 
 # PHP & Laravel Development

@@ -4,6 +4,7 @@ description: >-
   PostgreSQL schema design, query optimization, indexing, and administration.
   Use when working with PostgreSQL, JSONB, partitioning, RLS, CTEs, window
   functions, or EXPLAIN ANALYZE.
+paths: "**/*.sql"
 ---
 
 # PostgreSQL

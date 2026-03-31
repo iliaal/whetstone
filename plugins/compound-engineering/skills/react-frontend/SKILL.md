@@ -5,6 +5,7 @@ description: >-
   working with React component structure, state management, Next.js routing,
   Vitest, React Testing Library, or reviewing React code. For visual design and
   aesthetic direction, use frontend-design instead.
+paths: "**/*.tsx,**/*.jsx"
 ---
 
 # React Frontend

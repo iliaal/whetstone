@@ -47,6 +47,8 @@ Before shipping, check whether prior reviews (agent or human) are still valid. I
 
 ## Red Flags
 
+**Fantasy assessment auto-fail.** A claim of "zero issues found" on a first implementation pass is a red flag, not a green light. First implementations typically need 2-3 revision cycles. "Perfect on the first try" more likely means incomplete verification than flawless code. Re-verify with a broader scope.
+
 **Negative confirmation at signoff.** When reporting verification results, include a brief statement of what defect classes were checked and NOT found, not just what passed. "Tests pass, no type errors, no lint warnings, no security flags in the changed files" is stronger than "tests pass" because it proves the scope of verification.
 
 ## Agent Delegation
