@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PROJECT_ROOT}/.claude/hooks/session-reminder.sh",
+            "command": "bash .claude/hooks/session-reminder.sh",
             "timeout": 3
           }
         ]

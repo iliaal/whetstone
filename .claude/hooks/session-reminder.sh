@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # UserPromptSubmit hook — show available internal commands on first message.
-# Outputs additionalContext that Claude sees and relays to the user.
 
 INPUT=$(cat)
 
@@ -24,12 +23,9 @@ touch "$STATE_FILE"
 # Clean up old state files (older than 7 days)
 find "$STATE_DIR" -name "*.reminded" -mtime +7 -delete 2>/dev/null
 
-# Output as additionalContext — Claude receives this and should relay it
+# Output additionalContext at top level (no hookSpecificOutput wrapper)
 cat <<'EOF'
 {
-  "hookSpecificOutput": {
-    "hookEventName": "UserPromptSubmit",
-    "additionalContext": "<session-commands>Available internal commands for this project: /sync-from-repos, /audit-plugin, /release, /announce, /analyze-misfires, /diagnose-negatives <skill>, /eval-skills, /evolve-skill <skill></session-commands>"
-  }
+  "additionalContext": "<session-commands>Available internal commands for this project: /sync-from-repos, /audit-plugin, /release, /announce, /analyze-misfires, /diagnose-negatives <skill>, /eval-skills, /evolve-skill <skill></session-commands>"
 }
 EOF
