@@ -4,6 +4,7 @@ description: >-
   Visual design and aesthetic direction for frontend interfaces. Use when
   building web pages, landing pages, dashboards, or applications where visual
   identity matters. For React patterns and testing, use react-frontend.
+paths: "**/*.html,**/*.css,**/*.tsx,**/*.jsx"
 ---
 
 # Frontend Design

@@ -4,6 +4,7 @@ description: >-
   Node.js backend patterns: layered architecture, TypeScript, validation, error
   handling, security, deployment. Use when building REST APIs, Express/Fastify/Hono/NestJS
   servers, or server-side TypeScript.
+paths: "**/*.ts,**/*.js,**/*.mjs,**/*.cjs"
 ---
 
 # Node.js Backend
