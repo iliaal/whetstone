@@ -23,6 +23,25 @@ fi
 jq . .claude-plugin/marketplace.json > /dev/null || { echo "ERROR: marketplace.json is invalid JSON"; exit 1; }
 jq . plugins/compound-engineering/.claude-plugin/plugin.json > /dev/null || { echo "ERROR: plugin.json is invalid JSON"; exit 1; }
 
+# --- Pre-commit gates ---
+echo "[Pre-commit] Running trigger regression tests..."
+python3 distillery/scripts/distiller.py test-triggers > /dev/null || {
+  echo "ERROR: Trigger regression tests failed. Fix patterns or fixtures before release."
+  exit 1
+}
+echo "  Trigger tests passed"
+
+echo "[Pre-commit] Running semantic injection tests..."
+if python3 distillery/scripts/distiller.py test-semantic --max-tests 5 > /dev/null 2>&1; then
+  echo "  Semantic tests passed"
+else
+  echo "  WARNING: Semantic tests had failures. Review output before proceeding."
+fi
+
+echo "[Pre-commit] Generating skill change manifest..."
+python3 "$SCRIPT_DIR/generate-manifest.py"
+echo "  Manifest updated"
+
 # Check for staged/unstaged changes
 if [[ -z "$(git status --porcelain)" ]]; then
   echo "ERROR: Nothing to commit"
@@ -52,6 +71,10 @@ echo "[1/6] Commit & push..."
 git add -A -- \
   .claude-plugin/marketplace.json \
   CHANGELOG.md \
+  distillery/.skill-versions.json \
+  distillery/scripts/ \
+  distillery/tests/ \
+  scripts/ \
   plugins/compound-engineering/
 # Also stage project-level skill changes if any
 git add -A -- .claude/skills/ 2>/dev/null || true

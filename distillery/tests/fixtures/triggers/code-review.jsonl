@@ -1,0 +1,10 @@
+{"prompt": "review this code for potential issues", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "audit the code in the payments module", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "review the PR diff for this feature branch", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "code review the merge request", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "critique this implementation", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "debug the failing integration tests", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write tests for the new validator", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "plan the API redesign", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "deploy the staging build", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add logging to the request handler", "expect": false, "added_in": "2.51.0", "source": "initial"}

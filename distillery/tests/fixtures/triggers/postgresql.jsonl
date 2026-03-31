@@ -1,0 +1,11 @@
+{"prompt": "optimize the PostgreSQL query for the users table", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a JSONB column to the events table", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up row level security for the tenant table", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a CTE for the reporting query", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "run EXPLAIN ANALYZE on the slow query", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "partition the logs table by date range", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "implement full text search with tsvector", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a React component for the form", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a Laravel queue job", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a bash script for backups", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a Terraform module for networking", "expect": false, "added_in": "2.51.0", "source": "initial"}

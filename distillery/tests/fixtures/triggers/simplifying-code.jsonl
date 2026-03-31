@@ -1,0 +1,10 @@
+{"prompt": "simplify this code", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "clean up the code in the auth module", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "refactor the data pipeline", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "reduce complexity in the router", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "remove dead code from the utils", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "polish this code and declutter it", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "debug the login issue", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a new REST endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write tests for the service layer", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "plan the next sprint", "expect": false, "added_in": "2.51.0", "source": "initial"}

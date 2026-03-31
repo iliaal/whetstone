@@ -1,0 +1,4 @@
+{"prompt": "rewrite this paragraph to sound more natural", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a PR description for the auth refactor", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add an index on the created_at column", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "debug the memory leak in the worker process", "expect": false, "added_in": "2.51.0", "source": "initial"}

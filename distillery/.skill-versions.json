@@ -1,0 +1,180 @@
+{
+  "plugin_version": "2.51.0",
+  "generated_at": "2026-03-31T14:20:58.727042+00:00",
+  "skills": {
+    "agent-native-architecture": {
+      "content_hash": "54e923ea2d58a9f39e004f610a9df3208b83e4b09306096b0e2efc22f926be10",
+      "content_changed": "2.50.0",
+      "pattern_hash": "e1db1615a86284fedd2f6fa0a9634c0206114bef05e8e1ecf283a4c6366e53e7",
+      "pattern_changed": "2.50.0"
+    },
+    "brainstorming": {
+      "content_hash": "e6fc43813a5abab541168f1f57ae260c6b308024cc6878c20f088f70230f1617",
+      "content_changed": "2.50.0",
+      "pattern_hash": "d037718f8bcd5a3759270eb727f59fb67be182963e7727306e7e56343ab4ec1f",
+      "pattern_changed": "2.50.0"
+    },
+    "code-review": {
+      "content_hash": "e5a28f00d4a01060ea4df5d5ae752fc7ab4a54e26a4738178af98f738c0e18ea",
+      "content_changed": "2.50.0",
+      "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
+      "pattern_changed": "2.50.0"
+    },
+    "compound-docs": {
+      "content_hash": "94a29ee43def20bea1ebd99bfa795b6c540076080b21676c66aebf5dadb8f125",
+      "content_changed": "2.50.0",
+      "pattern_hash": "602dcd5759f057aae2d542c909129e1d0053b90c8b3b80d26845319c897d4bde",
+      "pattern_changed": "2.50.0"
+    },
+    "debugging": {
+      "content_hash": "a78ace1c1941f93053c7e82b671bf564cf039318cb7817b36b0603fd61b0feb1",
+      "content_changed": "2.50.0",
+      "pattern_hash": "0ce2866a68ebc9b3a5cd9d0ce3233cf11619bc237845a64a8a235581bee77c3f",
+      "pattern_changed": "2.50.0"
+    },
+    "document-review": {
+      "content_hash": "5ef96d880f3146ff4245a734cd6fe740074063b763e1174e21b201783c6873b5",
+      "content_changed": "2.50.0",
+      "pattern_hash": "3db4c6013627991fe2c7aeff58dc164894ab7bcac28dd67f49f05bc02900dda1",
+      "pattern_changed": "2.50.0"
+    },
+    "file-todos": {
+      "content_hash": "0ca794514532d4f97e36556b6d8552dfb408eaa553d60b3f6210e4710f70c7e0",
+      "content_changed": "2.50.0",
+      "pattern_hash": "8049ee058f1a5aed26f6b48f83315c4144174b243430f0872ef7f1e615c499fa",
+      "pattern_changed": "2.50.0"
+    },
+    "frontend-design": {
+      "content_hash": "40071aff08c3f4c2e85041c94a0b192f2a5e709509f049aa9ca23492bad81de8",
+      "content_changed": "2.51.0",
+      "pattern_hash": "786f969a672593c35faa252e238bea4078f399906179b1b26daec9cc4bed9104",
+      "pattern_changed": "2.50.0"
+    },
+    "git-worktree": {
+      "content_hash": "24d63ae5a6b6b128107680a6414f461bc680a3fc231dc439189c443d57282e4c",
+      "content_changed": "2.50.0",
+      "pattern_hash": "59ac396bd6f70774badd968766a3f73d4cd7a1b842728cde3e6fa48ad8fd4221",
+      "pattern_changed": "2.50.0"
+    },
+    "linux-bash-scripting": {
+      "content_hash": "e940803200b9fff11c2c480f41748b176aa3aa208dff349434b90fad85e30333",
+      "content_changed": "2.50.0",
+      "pattern_hash": "ece33477de88f1b689b905a70b184b27a9c2e64873a5dd4c6193757a2a46fe00",
+      "pattern_changed": "2.50.0"
+    },
+    "md-docs": {
+      "content_hash": "1fa380779ccf0341f0064ee8d490584af13edb9e413afbb6900455d68bfd57ee",
+      "content_changed": "2.50.0",
+      "pattern_hash": "617be059f7dc09b86928257a02babe10caeb7fefa783fef17c58503bf838550c",
+      "pattern_changed": "2.50.0"
+    },
+    "meta-prompting": {
+      "content_hash": "287c626f6f1ad66fd730781747743c7544c7663b88deac98e6f84d87e2632839",
+      "content_changed": "2.50.0",
+      "pattern_hash": "d94356a1a339fd3cc4f3dfbcec818070bb2e2b708a87ff874bec3cc6e0d6259f",
+      "pattern_changed": "2.50.0"
+    },
+    "nodejs-backend": {
+      "content_hash": "d3e03e6a5b5d1a6b825c1b23fd47da780c62d7c65355378ddf2ea7399de6e8de",
+      "content_changed": "2.50.0",
+      "pattern_hash": "41771fcd01383b6e1e2deda54941544325cb8de4f50a11c480ac74309e444c19",
+      "pattern_changed": "2.50.0"
+    },
+    "orchestrating-swarms": {
+      "content_hash": "4e7f4a82e90f3913a31dd78f964a5575839f1f3ace417bc72f3123f43d4ad9e3",
+      "content_changed": "2.50.0",
+      "pattern_hash": "5ff4d38d87cd363f2256033ea3b0371a9668b7da2e86674da929d6788d4bbfb6",
+      "pattern_changed": "2.50.0"
+    },
+    "php-laravel": {
+      "content_hash": "2cbc0e29ca38a50cc1a87f57449fdfe2110f8a0f35714423c3618373eba0b39e",
+      "content_changed": "2.50.0",
+      "pattern_hash": "6f8a9059e67336c648e92e9d52b8ab3ff3eca6ebf8cf65b802a42df4bdee4987",
+      "pattern_changed": "2.50.0"
+    },
+    "pinescript": {
+      "content_hash": "5c31dbab0109dcb73f1d679832dab4dea34de10b8d077629788b8e35e96e67d3",
+      "content_changed": "2.50.0",
+      "pattern_hash": "4e9e26260cd02b9a347574701119b57c7cf57ed6313c46582f0e2b3dc665d614",
+      "pattern_changed": "2.50.0"
+    },
+    "planning": {
+      "content_hash": "9ffae6d07230f59059c32575ea5333c9e677575dfe4f4bbb06da08b1b6824bc0",
+      "content_changed": "2.51.0",
+      "pattern_hash": "ba6f6d19fee8f9934b01ef88359e5de771b475d927b7a1365f3bee44d80d3768",
+      "pattern_changed": "2.50.0"
+    },
+    "postgresql": {
+      "content_hash": "4c09dec1dbb87b3cb87b6cbf5a0b0cfec48d61588aec2bc24281d801495d9238",
+      "content_changed": "2.50.0",
+      "pattern_hash": "da52744b7b3418c8202b65e89baa3c4edebd8e640c10d12a421d61d4c8c47a14",
+      "pattern_changed": "2.50.0"
+    },
+    "python-services": {
+      "content_hash": "3cdd4835ac1156d818abef44e0d20d71d3d2f341f8256dc71fbf393b71933c0e",
+      "content_changed": "2.50.0",
+      "pattern_hash": "cdf67475aa0f5aa56c8ec9625cd995ba28dbeeaf1c95948016c73e6662eab6c1",
+      "pattern_changed": "2.50.0"
+    },
+    "react-frontend": {
+      "content_hash": "cc7da5580fbc674d8daf88d586a32c158dda8bcbed07f76a9c89eaa21ca41d6e",
+      "content_changed": "2.50.0",
+      "pattern_hash": "4e2cb0dc61c6a496639cbc967fa3b0c1948e17d3edd8c2effdabe50efaf3d217",
+      "pattern_changed": "2.50.0"
+    },
+    "receiving-code-review": {
+      "content_hash": "4742c7b6701c9d979e336a9702b3904b6dc4fa2b837e489291ad18fc35360de3",
+      "content_changed": "2.50.0",
+      "pattern_hash": "36aa32d58037c3d2c118a19fbbad50d1d20eafc37e3aa9e96715030e3b124903",
+      "pattern_changed": "2.50.0"
+    },
+    "refine-prompt": {
+      "content_hash": "475e38b3e28b6270000e69df513f94ef0b4bd2262acb7f11db75354577682e7e",
+      "content_changed": "2.50.0",
+      "pattern_hash": "572118320b69e6254a14e407103262856308b27cc563e08c3a7b732899d0bae5",
+      "pattern_changed": "2.50.0"
+    },
+    "reflect": {
+      "content_hash": "c4d2c12d1d6ae4a879a0f86cac9d4ef4f8fd0f01bf4956e4e051a9d30332e8ca",
+      "content_changed": "2.50.0",
+      "pattern_hash": "573bbc9db1736873dac6a9effe1b3778673edd397d23923c801e9f99201c9202",
+      "pattern_changed": "2.50.0"
+    },
+    "simplifying-code": {
+      "content_hash": "8a4efa9adc0c9c59a6eeabf9cf15d15eecb8a9a075b4d6118e46496ad34ca9e3",
+      "content_changed": "2.50.0",
+      "pattern_hash": "0d4c8a0e629d3ea5a5109f7965ffee18a7de3e277895d4cec73d0c3e4b8da5f5",
+      "pattern_changed": "2.50.0"
+    },
+    "tailwind-css": {
+      "content_hash": "4c1813d647a961372249cfe81fd1587972b827baa350125da2a2f28a592e9236",
+      "content_changed": "2.50.0",
+      "pattern_hash": "0688448f47bcd5fe4377e1066ce5c3c363f25619f1caa9092b5da1f80e187b43",
+      "pattern_changed": "2.50.0"
+    },
+    "terraform": {
+      "content_hash": "e150cea154d4012cd90d2374b0794bf6541c28d06fc687a28a7b183aac8dcdac",
+      "content_changed": "2.50.0",
+      "pattern_hash": "5d164ecb393ca9d60cccb13ef505099a2b5f016c004e8f95f5114e2a055a4b6f",
+      "pattern_changed": "2.50.0"
+    },
+    "verification-before-completion": {
+      "content_hash": "a5d5397a5132c8dc2a51c8c529c484f35c2bb14115741c5c9d26ad75b376e5ea",
+      "content_changed": "2.50.0",
+      "pattern_hash": "99dfeadc1d36a057149470f1c8ce2fe4d50104e0ae0f11996d63d84755d77555",
+      "pattern_changed": "2.50.0"
+    },
+    "writing": {
+      "content_hash": "7ab12930a2adc03b2ac13e2420127d86570273c25d5eb8ab12c3e23ce5776ded",
+      "content_changed": "2.50.0",
+      "pattern_hash": "e6692e5eb9f90d15fa0f927f2d00490cf72218b36b8c1552ec7e3700f5552cfc",
+      "pattern_changed": "2.50.0"
+    },
+    "writing-tests": {
+      "content_hash": "08bac5f8deebf6bb861e2ad9e8aff3bfc205d63c377124f8a121d478952f370a",
+      "content_changed": "2.50.0",
+      "pattern_hash": "d3b32b5edcafd10d5ee44960ea1dbce87f55c3ab80d204cfd5509954fe45928a",
+      "pattern_changed": "2.50.0"
+    }
+  }
+}

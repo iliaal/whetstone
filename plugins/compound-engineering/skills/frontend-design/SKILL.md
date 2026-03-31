@@ -1,10 +1,9 @@
 ---
 name: frontend-design
 description: >-
-  Visual design and aesthetic direction for new frontend interfaces. Use when
+  Visual design and aesthetic direction for frontend interfaces. Use when
   building web pages, landing pages, dashboards, or applications where visual
-  identity matters. Produces working code with distinctive aesthetics. For React
-  architecture patterns, hooks, and testing, use react-frontend instead.
+  identity matters. For React patterns and testing, use react-frontend.
 ---
 
 # Frontend Design
@@ -62,17 +61,26 @@ Focus on:
 
 Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
 
+### Design Variance Parameters
+
+To prevent aesthetic convergence across generations, calibrate these three parameters (1-10 scale, default 5) before designing. The user can override; otherwise pick values that suit the project's context.
+
+- **DESIGN_VARIANCE** (1=conservative, 10=experimental): How far to push visual choices from conventional patterns. Low for corporate dashboards, high for creative portfolios.
+- **MOTION_INTENSITY** (1=static, 10=cinematic): How much animation and transition to include. Low for data-heavy tools, high for marketing pages.
+- **VISUAL_DENSITY** (1=spacious, 10=packed): Content density vs. negative space. Low for landing pages, high for dashboards and admin panels.
+
+State the chosen values in the design philosophy comment. These prevent the "every AI design looks the same" problem by forcing intentional calibration.
+
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
 ### Banned AI Design Patterns
 
-These patterns are hallmarks of AI-generated interfaces. Avoid them:
+These patterns are hallmarks of AI-generated interfaces. Avoid them. See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the comprehensive list covering layout, color, typography, decoration, interaction, and content patterns.
 
+Core offenders:
 - **Purple-to-blue gradient hero** -- the default AI aesthetic. Pick a different palette entirely.
-- **Centered hero → three equal-width cards → centered CTA** -- the most common AI layout. Use asymmetric layouts, split screens, or bento grids instead.
+- **Centered hero + three equal-width cards + centered CTA** -- the most common AI layout. Use asymmetric layouts, split screens, or bento grids instead.
 - **Uniform rounded corners everywhere** -- vary border-radius by component purpose (sharp for data, rounded for interactive, pill for tags)
-- **Accent line under every heading** -- a dead giveaway. Use typography weight and spacing for hierarchy instead.
-- **Decorative emoji in headers** -- use quality icons (Phosphor, Radix) or no decoration at all
 - **Generic placeholder copy** -- no "John Doe", "Acme Corp", "Lorem ipsum". Use realistic, messy data ("47.2%", "+1 (312) 847-1928")
 
 ## Verify

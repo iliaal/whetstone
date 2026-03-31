@@ -1,0 +1,11 @@
+{"prompt": "plan the implementation of the search feature", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "break down this feature into tasks", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a plan for the database migration", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "I need an implementation plan for this refactor", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "let's plan how to approach this change", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "plan this sprint's deliverables", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "debug why the tests are failing", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "review the code in this PR", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a new endpoint for user profiles", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write unit tests for the auth module", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "simplify the error handling logic", "expect": false, "added_in": "2.51.0", "source": "initial"}

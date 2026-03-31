@@ -1,0 +1,4 @@
+{"prompt": "write a terraform module for the VPC and subnets", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "review the infrastructure as code for the staging environment", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "implement the shopping cart feature in React", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add PHPUnit tests for the order service", "expect": false, "added_in": "2.51.0", "source": "initial"}

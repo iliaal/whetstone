@@ -1,0 +1,4 @@
+{"prompt": "review the brainstorm document for completeness", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "refine the plan before we start implementation", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add error handling to the file upload endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up monitoring alerts for the production database", "expect": false, "added_in": "2.51.0", "source": "initial"}

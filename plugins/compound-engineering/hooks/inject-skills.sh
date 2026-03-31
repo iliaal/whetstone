@@ -71,6 +71,13 @@ if [[ ${#ALL_MATCHES[@]} -gt $MAX_SKILLS ]]; then
   ALL_MATCHES=("${ALL_MATCHES[@]:0:$MAX_SKILLS}")
 fi
 
+# Log injected skills when running in test mode (zero overhead otherwise)
+if [[ -n "${TEST_INJECTION_LOG:-}" ]]; then
+  for skill_name in "${ALL_MATCHES[@]}"; do
+    printf '%s\n' "$skill_name" >> "$TEST_INJECTION_LOG"
+  done
+fi
+
 # Build injection text
 INJECTION="BEFORE STARTING: Read and follow these skill files for methodology and patterns relevant to this task:"
 for skill_name in "${ALL_MATCHES[@]}"; do

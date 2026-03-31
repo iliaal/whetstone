@@ -1,0 +1,4 @@
+{"prompt": "let's do a retrospective on this session", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "what went wrong with the last deployment", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "implement the webhook handler for Stripe events", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "update the Docker compose file for local dev", "expect": false, "added_in": "2.51.0", "source": "initial"}

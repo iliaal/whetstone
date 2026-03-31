@@ -1,0 +1,4 @@
+{"prompt": "set up the todo directory for tracking work items", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "manage the file-based todo list for this sprint", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "optimize the image processing pipeline", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add WebSocket support for real-time notifications", "expect": false, "added_in": "2.51.0", "source": "initial"}

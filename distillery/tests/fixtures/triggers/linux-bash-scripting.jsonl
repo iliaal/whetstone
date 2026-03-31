@@ -1,0 +1,4 @@
+{"prompt": "write a bash script to automate the database backup", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a deployment script for the production servers", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "build a React form with validation", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a new Laravel middleware for API throttling", "expect": false, "added_in": "2.51.0", "source": "initial"}

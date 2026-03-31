@@ -1,0 +1,10 @@
+{"prompt": "create a React component with state management", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a React hook for form validation", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "fix the Next.js routing issue", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a component test using testing library", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "the tsx file has a rendering bug", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add vitest coverage for the hooks", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Laravel migration for the orders table", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "optimize the database indexes", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a bash script for deployment", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a Python FastAPI endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}

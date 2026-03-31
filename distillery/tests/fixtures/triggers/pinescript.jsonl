@@ -1,0 +1,4 @@
+{"prompt": "write a pine script indicator for RSI divergence", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "fix the TradingView strategy backtest results", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up a PostgreSQL replication cluster", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write unit tests for the checkout service", "expect": false, "added_in": "2.51.0", "source": "initial"}

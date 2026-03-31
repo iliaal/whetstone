@@ -1,0 +1,4 @@
+{"prompt": "the reviewer suggested we use a factory pattern instead", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "address the review comments on the PR", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "deploy the staging environment to AWS", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a new database migration for orders", "expect": false, "added_in": "2.51.0", "source": "initial"}

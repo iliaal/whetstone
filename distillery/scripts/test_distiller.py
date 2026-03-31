@@ -1133,71 +1133,71 @@ class TestEvalTriggers:
 
 
 # ---------------------------------------------------------------------------
-# ab_eval
+# test_triggers
 # ---------------------------------------------------------------------------
 
-class TestAbEval:
-    @mock.patch.object(distiller, "load_env")
-    @mock.patch.object(distiller, "_openrouter_request")
-    def test_produces_paired_results(self, mock_request, mock_env, sample_skill, monkeypatch):
-        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-        mock_request.return_value = {"response": "test", "tokens": 100, "status": "ok"}
-        result = distiller.ab_eval("test-skill", ["prompt1"], models=["model/a"])
-        assert len(result["pairs"]) == 1
-        assert "baseline" in result["pairs"][0]
-        assert "treatment" in result["pairs"][0]
+class TestTestTriggers:
+    def test_perfect_fixture_passes(self, tmp_path):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        patterns_file.write_text("SKILL_PATTERNS[my-skill]='hello|world'\n")
+        fixtures_dir = tmp_path / "fixtures"
+        fixtures_dir.mkdir()
+        (fixtures_dir / "my-skill.jsonl").write_text(
+            '{"prompt": "hello there", "expect": true}\n'
+            '{"prompt": "goodbye now", "expect": false}\n'
+        )
+        # Temporarily override the patterns file path
+        old_default = distiller.SKILL_PATTERNS_DEFAULT
+        distiller.SKILL_PATTERNS_DEFAULT = patterns_file
+        try:
+            result = distiller.test_triggers(fixtures_dir=str(fixtures_dir))
+        finally:
+            distiller.SKILL_PATTERNS_DEFAULT = old_default
+        assert result["all_passed"]
+        assert len(result["results"]) == 1
+        assert result["results"][0]["skill"] == "my-skill"
+        assert result["results"][0]["passed"]
 
-    @mock.patch.object(distiller, "load_env")
-    @mock.patch.object(distiller, "_openrouter_request")
-    def test_baseline_has_no_system_prompt(self, mock_request, mock_env, sample_skill, monkeypatch):
-        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-        calls = []
-        def track_calls(api_key, model_id, provider_slug, messages, max_tokens, temperature=0.2):
-            calls.append(messages)
-            return {"response": "ok", "tokens": 100, "status": "ok"}
-        mock_request.side_effect = track_calls
-        distiller.ab_eval("test-skill", ["prompt1"], models=["model/a"])
-        assert len(calls) == 2
-        # First call is baseline (user message only)
-        assert len(calls[0]) == 1
-        assert calls[0][0]["role"] == "user"
-        # Second call is treatment (system + user)
-        assert len(calls[1]) == 2
-        assert calls[1][0]["role"] == "system"
+    def test_regression_failure_detected(self, tmp_path):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        patterns_file.write_text("SKILL_PATTERNS[my-skill]='hello'\n")
+        fixtures_dir = tmp_path / "fixtures"
+        fixtures_dir.mkdir()
+        (fixtures_dir / "my-skill.jsonl").write_text(
+            '{"prompt": "hello there", "expect": true}\n'
+            '{"prompt": "hello world", "expect": false}\n'
+        )
+        old_default = distiller.SKILL_PATTERNS_DEFAULT
+        distiller.SKILL_PATTERNS_DEFAULT = patterns_file
+        try:
+            result = distiller.test_triggers(fixtures_dir=str(fixtures_dir))
+        finally:
+            distiller.SKILL_PATTERNS_DEFAULT = old_default
+        assert not result["all_passed"]
+        assert len(result["results"][0]["failures"]) == 1
+        assert result["results"][0]["failures"][0]["query"] == "hello world"
 
-    @mock.patch.object(distiller, "load_env")
-    @mock.patch.object(distiller, "_openrouter_request")
-    def test_multiple_prompts_and_models(self, mock_request, mock_env, sample_skill, monkeypatch):
-        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-        mock_request.return_value = {"response": "ok", "tokens": 100, "status": "ok"}
-        result = distiller.ab_eval("test-skill", ["p1", "p2"], models=["m/a", "m/b"])
-        assert len(result["pairs"]) == 4  # 2 models x 2 prompts
-        assert mock_request.call_count == 8  # 4 pairs x 2 requests each
+    def test_skill_filter(self, tmp_path):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        patterns_file.write_text(
+            "SKILL_PATTERNS[alpha]='alpha'\n"
+            "SKILL_PATTERNS[beta]='beta'\n"
+        )
+        fixtures_dir = tmp_path / "fixtures"
+        fixtures_dir.mkdir()
+        (fixtures_dir / "alpha.jsonl").write_text('{"prompt": "alpha test", "expect": true}\n')
+        (fixtures_dir / "beta.jsonl").write_text('{"prompt": "beta test", "expect": true}\n')
+        old_default = distiller.SKILL_PATTERNS_DEFAULT
+        distiller.SKILL_PATTERNS_DEFAULT = patterns_file
+        try:
+            result = distiller.test_triggers(skill_filter="alpha", fixtures_dir=str(fixtures_dir))
+        finally:
+            distiller.SKILL_PATTERNS_DEFAULT = old_default
+        assert len(result["results"]) == 1
+        assert result["results"][0]["skill"] == "alpha"
 
-    def test_missing_api_key_exits(self, sample_skill, monkeypatch):
-        monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-        monkeypatch.setattr(distiller, "ENV_FILE", Path("/nonexistent/.env"))
+    def test_empty_fixtures_dir_exits(self, tmp_path):
+        fixtures_dir = tmp_path / "empty"
+        fixtures_dir.mkdir()
         with pytest.raises(SystemExit):
-            distiller.ab_eval("test-skill", ["prompt"])
-
-    def test_missing_skill_exits(self, tmp_project, monkeypatch):
-        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-        (tmp_project / "generated-skills" / "nonexistent").mkdir()
-        with pytest.raises(SystemExit):
-            distiller.ab_eval("nonexistent", ["prompt"])
-
-    @mock.patch.object(distiller, "load_env")
-    @mock.patch.object(distiller, "_openrouter_request")
-    def test_output_structure(self, mock_request, mock_env, sample_skill, monkeypatch):
-        monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-        mock_request.return_value = {"response": "r", "tokens": 50, "status": "ok"}
-        result = distiller.ab_eval("test-skill", ["p1"], models=["m/a"])
-        assert result["skill"] == "test-skill"
-        assert result["models"] == ["m/a"]
-        pair = result["pairs"][0]
-        assert pair["model"] == "m/a"
-        assert pair["prompt"] == "p1"
-        for side in ("baseline", "treatment"):
-            assert pair[side]["status"] == "ok"
-            assert "response" in pair[side]
-            assert "tokens" in pair[side]
+            distiller.test_triggers(fixtures_dir=str(fixtures_dir))

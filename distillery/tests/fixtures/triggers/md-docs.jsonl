@@ -1,0 +1,4 @@
+{"prompt": "update the readme with the new API endpoints", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create the agents.md file for this project", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "fix the flaky integration test for payments", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add Redis caching to the product listing", "expect": false, "added_in": "2.51.0", "source": "initial"}

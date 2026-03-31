@@ -1,0 +1,14 @@
+{"prompt": "help me debug this failing test", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "fix the bug in the login flow", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "why is this function failing", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "troubleshoot the connection timeout issue", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "the test is broken after the last merge", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "this is a flaky test that fails randomly", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "there is a regression bug in the checkout flow", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "unexpected behavior when clicking submit", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a new React component for the sidebar", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "plan the implementation of the new API", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "refactor the user service to use dependency injection", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add pagination to the list endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a migration to add the email column", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "review this pull request for code quality", "expect": false, "added_in": "2.51.0", "source": "initial"}

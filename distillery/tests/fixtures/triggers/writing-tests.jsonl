@@ -1,0 +1,9 @@
+{"prompt": "write tests for the user service", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add test coverage for the auth module", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "the test quality is poor, improve it", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a spec for the payment processor", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "mocking is bad here, use the real database instead", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "debug why the app crashes on startup", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "deploy the new version to production", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "refactor the controller layer", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a new database migration", "expect": false, "added_in": "2.51.0", "source": "initial"}

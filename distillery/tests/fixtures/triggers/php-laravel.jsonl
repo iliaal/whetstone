@@ -1,0 +1,11 @@
+{"prompt": "add a new Laravel controller for user profiles", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "fix the Eloquent query performance", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a blade template for the dashboard", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "run artisan migrate to apply changes", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a phpunit test for the order service", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add phpstan to the CI pipeline", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "the php controller needs a middleware for rate limiting", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a React component for the settings page", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "optimize the PostgreSQL query plan", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Python CLI tool for data import", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up a Terraform module for the VPC", "expect": false, "added_in": "2.51.0", "source": "initial"}

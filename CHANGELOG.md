@@ -5,6 +5,31 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.51.0] - 2026-03-31
+
+### Added
+
+- **distiller**: `validate-plugin` command -- deterministic validation of all plugin components (frontmatter gates, anti-pattern detection, reference integrity, README/hook count accuracy). Replaces manual AI checks in `/audit-plugin` Phase 1.
+- **distiller**: `test-triggers` command -- regex trigger regression suite with JSONL fixture files per skill (29 skills, 179 test cases). Release gate in `release.sh`.
+- **distiller**: `test-semantic` command -- Claude-cli injection tests (Sonnet) that verify skills trigger organically from natural language prompts via `TEST_INJECTION_LOG` env var.
+- **distiller**: Skill change manifest (`distillery/.skill-versions.json`) -- tracks SHA256 hashes of SKILL.md content and trigger patterns per skill. Enables staleness filtering in analysis commands.
+- **planning**: Execution posture signals (test-first, characterization-first, external-delegate) for phase-level implementation sequencing.
+- **planning**: Plan deepening section for targeted strengthening of existing plans.
+- **frontend-design**: Design variance parameters (DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY) to prevent aesthetic convergence.
+- **frontend-design**: `references/banned-ai-patterns.md` -- comprehensive banned AI design patterns (layout, color, typography, decoration, interaction, content).
+- **hooks**: `TEST_INJECTION_LOG` env var in `inject-skills.sh` for test observability (zero overhead in normal operation).
+
+### Changed
+
+- **audit-plugin**: Phase 1 now runs `validate-plugin` + `test-triggers` deterministically before AI analysis. Phase 2 adds `analyze-misfires` and `diagnose-negatives` as trigger coverage checks. Phase 7 runs full test suite (pytest + triggers + semantic).
+- **sync-from-repos**: Phase 1 launches `harvest-sessions` in background. Phase 6 runs `discover-signals` for negative pattern discovery. Body budget threshold raised to 4K tokens for skills.
+- **release.sh**: Pre-commit gates added -- `test-triggers` (blocking), `test-semantic` (warning), `generate-manifest.py` (auto-updates manifest).
+- **harvest-sessions/analyze-misfires/diagnose-negatives**: Stale data filtering by default (exclude examples from before skill/pattern was last changed). `--include-stale` flag to override.
+
+### Removed
+
+- **distiller**: `ab_eval()`, `test_skill()`, `DEFAULT_TEST_MODELS` -- stale OpenRouter-dependent A/B testing code, CLI commands, and tests.
+
 ## [2.50.0] - 2026-03-29
 
 ### Added

@@ -1,0 +1,8 @@
+{"prompt": "set up an Express server with middleware", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "build a Fastify API endpoint", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Node.js backend API service", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add server-side TypeScript validation", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Laravel controller for orders", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a React component for filters", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Python script for ETL", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "optimize the PostgreSQL query", "expect": false, "added_in": "2.51.0", "source": "initial"}

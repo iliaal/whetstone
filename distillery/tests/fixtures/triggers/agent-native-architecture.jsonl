@@ -1,0 +1,4 @@
+{"prompt": "design an autonomous agent that manages deployments via MCP tools", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "build a self-modifying agent loop for the CI pipeline", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add pagination to the REST API", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "update the database schema for multi-tenancy", "expect": false, "added_in": "2.51.0", "source": "initial"}

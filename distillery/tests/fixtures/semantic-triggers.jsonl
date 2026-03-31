@@ -1,0 +1,8 @@
+{"prompt": "This function keeps crashing intermittently in production, can you look into it?", "should_trigger": ["debugging"], "should_not_trigger": ["php-laravel", "react-frontend", "planning"]}
+{"prompt": "I need to build a new user dashboard with charts and filters for our admin panel", "should_trigger": ["frontend-design"], "should_not_trigger": ["debugging", "postgresql"]}
+{"prompt": "Our Eloquent query is N+1ing on the comments relationship and it's really slow", "should_trigger": ["php-laravel"], "should_not_trigger": ["react-frontend", "python-services"]}
+{"prompt": "Break down this feature into implementation phases before we start coding", "should_trigger": ["planning"], "should_not_trigger": ["debugging"]}
+{"prompt": "Review this pull request for security issues and code quality problems", "should_trigger": ["code-review"], "should_not_trigger": ["php-laravel"]}
+{"prompt": "Write comprehensive tests for the payment processor module", "should_trigger": ["writing-tests"], "should_not_trigger": ["frontend-design"]}
+{"prompt": "The React component re-renders every time state changes in the parent", "should_trigger": ["react-frontend"], "should_not_trigger": ["php-laravel", "postgresql"]}
+{"prompt": "Set up Terraform modules for our AWS VPC and subnets", "should_trigger": ["terraform"], "should_not_trigger": ["react-frontend", "php-laravel"]}

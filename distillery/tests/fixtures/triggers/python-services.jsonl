@@ -1,0 +1,9 @@
+{"prompt": "create a FastAPI endpoint for user registration", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Python CLI tool for data processing", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "use async Python to handle concurrent requests", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "configure ruff for the project linting", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "build a python backend API service", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a React component for the navbar", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a Laravel queue job for emails", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "create a Terraform module for S3 buckets", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a bash deployment script", "expect": false, "added_in": "2.51.0", "source": "initial"}

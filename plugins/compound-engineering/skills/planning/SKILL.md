@@ -85,6 +85,12 @@ Skip for greenfield projects where no tests exist yet.
 ## Phase 2: [Name]
 ...
 
+## Execution Posture
+- [Optional per-phase signals that shape implementation sequencing]
+  - `test-first`: write failing test before implementation
+  - `characterization-first`: capture existing behavior before changing it
+  - `external-delegate`: mark units suitable for parallel/external execution
+
 ## Deferred to Implementation
 - [Things intentionally left unspecified -- details that depend on what you find in the code]
 
@@ -148,6 +154,28 @@ Write every task as if the implementer has zero context and questionable taste. 
 ## Operational Patterns
 
 Context management rules, error protocol (3-attempt escalation), iterative plan refinement, and the 5-question context check are in [operational-patterns.md](./references/operational-patterns.md). Read when starting a multi-phase plan or resuming after a gap.
+
+## Execution Posture Signals
+
+Plans can carry lightweight metadata per phase that shapes how `workflows:work` sequences implementation. These are optional annotations, not requirements.
+
+- **test-first**: Write failing tests before implementation. Use when behavior is well-defined and testable upfront.
+- **characterization-first**: Capture existing behavior with tests before changing it. Use when modifying code without existing test coverage.
+- **external-delegate**: Mark self-contained units suitable for parallel execution (separate worktree, separate agent). Use when a phase has no dependencies on other phases.
+
+Add posture signals in the phase header: `## Phase 2: Auth middleware [test-first]`. The executor inherits these silently without interrupting questions -- they shape sequencing, not scope.
+
+## Plan Deepening
+
+When asked to "deepen" or "strengthen" an existing plan, don't re-run the full planning workflow. Instead:
+
+1. Read the existing plan file
+2. Identify phases or tasks that are vague, under-specified, or missing verification steps
+3. For each weak area, run targeted research (read relevant code, check existing patterns, verify assumptions)
+4. Expand the weak sections with concrete file paths, code patterns, and verification steps
+5. Preserve everything that's already specific enough
+
+Deepening is additive -- it fills gaps without restructuring what already works. The `/deepen-plan` command orchestrates this with parallel research agents per section.
 
 ## Anti-Patterns
 

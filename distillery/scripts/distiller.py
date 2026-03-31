@@ -27,13 +27,6 @@ SKILLS_SYMLINK_DIR = Path(".claude/skills")
 GROK_API_URL = "https://api.x.ai/v1/chat/completions"
 GROK_MODEL = "grok-4-1-fast-reasoning"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_TEST_MODELS = [
-    "x-ai/grok-4.1-fast",
-    "google/gemini-3-flash-preview",
-    "moonshotai/kimi-k2.5:moonshotai",
-    "anthropic/claude-sonnet-4.5:google-vertex",
-]
-
 DEFAULT_EVAL_MODEL = "deepseek/deepseek-v3.2"
 DEFAULT_EVAL_REASONING = True
 
@@ -82,6 +75,7 @@ AGENT OUTPUT (may be truncated):
 
 CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 EVAL_DATA_DIR = DISTILLERY_DIR / ".eval-data"
+MANIFEST_PATH = DISTILLERY_DIR / ".skill-versions.json"
 
 import re as _re
 
@@ -1067,37 +1061,6 @@ def _claude_cli_request(prompt, model=None):
         return {"response": "", "error": str(e)[:300], "status": "error"}
 
 
-def test_skill(name, prompts, models=None, max_tokens=2000):
-    """Test a skill against multiple models via OpenRouter. Returns per-model, per-prompt results."""
-    load_env()
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        print("Error: OPENROUTER_API_KEY not set in .env", file=sys.stderr)
-        sys.exit(1)
-
-    skill_path = GENERATED_DIR / name / "SKILL.md"
-    if not skill_path.exists():
-        print(f"Error: {skill_path} not found", file=sys.stderr)
-        sys.exit(1)
-
-    skill_content = skill_path.read_text()
-    models = models or DEFAULT_TEST_MODELS
-
-    results = []
-    for model in models:
-        for i, prompt in enumerate(prompts):
-            model_id, provider_slug = _parse_model_spec(model)
-            result = _openrouter_request(
-                api_key, model_id, provider_slug,
-                [{"role": "system", "content": skill_content}, {"role": "user", "content": prompt}],
-                max_tokens,
-            )
-            results.append({"model": model, "prompt": prompt, **result})
-            print(f"  {model} × prompt {i+1}: {result['status']}", file=sys.stderr)
-
-    return {"skill": name, "models": models, "results": results}
-
-
 SKILL_PATTERNS_DEFAULT = PLUGIN_DIR / "hooks" / "skill-patterns.sh"
 
 
@@ -1166,42 +1129,507 @@ def eval_triggers(name, queries, pattern=None, patterns_file=None):
     }
 
 
-def ab_eval(name, prompts, models=None, max_tokens=2000):
-    """A/B evaluation: for each prompt x model, run baseline (no skill) and treatment (with skill). Returns paired results."""
-    load_env()
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        print("Error: OPENROUTER_API_KEY not set in .env", file=sys.stderr)
+TRIGGER_FIXTURES_DIR = DISTILLERY_DIR / "tests" / "fixtures" / "triggers"
+
+
+def validate_plugin(component_filter=None):
+    """Run deterministic validation across all plugin skills, agents, and commands.
+
+    Consolidates: inventory, validation gates, anti-pattern detection, structural
+    checks, and reference validation into one fast pass. No AI needed.
+
+    Args:
+        component_filter: only validate this component name (optional)
+
+    Returns structured JSON report with per-component findings.
+    """
+    import re
+    import yaml
+
+    skills_dir = PLUGIN_DIR / "skills"
+    agents_dir = PLUGIN_DIR / "agents"
+    commands_dir = PLUGIN_DIR / "commands"
+    readme_path = PLUGIN_DIR / "README.md"
+    patterns_file = PLUGIN_DIR / "hooks" / "skill-patterns.sh"
+
+    # --- Build inventories ---
+    known_skills = {}
+    known_agents = {}
+    known_commands = {}
+
+    for d in sorted(skills_dir.iterdir()) if skills_dir.exists() else []:
+        if d.is_dir() and (d / "SKILL.md").exists():
+            known_skills[d.name] = d / "SKILL.md"
+
+    for f in sorted(agents_dir.rglob("*.md")) if agents_dir.exists() else []:
+        if f.name != "README.md":
+            known_agents[f.stem] = f
+
+    for f in sorted(commands_dir.rglob("*.md")) if commands_dir.exists() else []:
+        known_commands[f.stem] = f
+
+    findings = []
+    inventory = []
+
+    def add_finding(component, check, message, severity="MEDIUM"):
+        findings.append({
+            "component": component,
+            "check": check,
+            "message": message,
+            "severity": severity,
+        })
+
+    def parse_frontmatter(content):
+        """Parse YAML frontmatter from markdown content."""
+        fm = {}
+        body = content
+        if content.startswith("---"):
+            parts = content.split("---", 2)
+            if len(parts) >= 3:
+                try:
+                    fm = yaml.safe_load(parts[1]) or {}
+                except Exception:
+                    fm = {"_parse_error": True}
+                body = parts[2].strip()
+        return fm, body
+
+    # --- Validate skills ---
+    for skill_name, skill_path in known_skills.items():
+        if component_filter and skill_name != component_filter:
+            continue
+
+        content = skill_path.read_text()
+        fm, body = parse_frontmatter(content)
+        body_tokens = round(len(body.encode()) / 3.5)
+        desc = fm.get("description", "")
+        desc_tokens = round(len(desc.encode()) / 3.5) if desc else 0
+
+        inventory.append({
+            "name": skill_name,
+            "type": "skill",
+            "description": desc[:200] if desc else "",
+            "body_tokens": body_tokens,
+        })
+
+        # --- Frontmatter gates ---
+        if not content.startswith("---"):
+            add_finding(skill_name, "frontmatter", "No YAML frontmatter found", "HIGH")
+        elif fm.get("_parse_error"):
+            add_finding(skill_name, "frontmatter", "YAML parse error", "HIGH")
+
+        inert_fields = {"triggers", "role", "scope", "domain", "output-format", "author",
+                        "version", "license", "related-skills", "tags"}
+        found_inert = inert_fields & set(fm.keys())
+        if found_inert:
+            add_finding(skill_name, "inert_fields", f"Inert frontmatter fields: {', '.join(sorted(found_inert))}", "MEDIUM")
+
+        # --- Name gates ---
+        fm_name = fm.get("name", "")
+        if not fm_name:
+            add_finding(skill_name, "name", "Missing name in frontmatter", "HIGH")
+        else:
+            if not re.match(r'^[a-z0-9][a-z0-9-]*$', fm_name):
+                add_finding(skill_name, "name", f"Invalid name format: '{fm_name}'", "HIGH")
+            if len(fm_name) > 64:
+                add_finding(skill_name, "name", f"Name exceeds 64 chars: {len(fm_name)}", "HIGH")
+            for banned in ("anthropic", "claude"):
+                if banned in fm_name.lower():
+                    add_finding(skill_name, "name", f"Name contains '{banned}'", "HIGH")
+            if fm_name != skill_name:
+                add_finding(skill_name, "name", f"Name '{fm_name}' doesn't match directory '{skill_name}'", "HIGH")
+
+        # --- Description gates ---
+        if not desc:
+            add_finding(skill_name, "description", "Missing description", "HIGH")
+        else:
+            if desc_tokens > 80:
+                add_finding(skill_name, "description", f"Description exceeds 80 tokens (~{desc_tokens})", "HIGH")
+            if "use when" not in desc.lower():
+                add_finding(skill_name, "description", "Description missing 'Use when' trigger phrase", "MEDIUM")
+
+        # --- Body size ---
+        if body_tokens > 4000:
+            add_finding(skill_name, "body_size", f"Body exceeds 4K tokens (~{body_tokens}) -- consider references/ split", "MEDIUM")
+        elif body_tokens < 100:
+            add_finding(skill_name, "body_size", f"Suspiciously short (~{body_tokens} tokens)", "HIGH")
+
+        # --- Placeholder text ---
+        # Strip markdown links first to avoid false positives on [example-file.md](...)
+        body_no_links = re.sub(r'\[[^\]]+\]\([^)]+\)', '', body)
+        placeholder_patterns = [
+            r'\[TODO\b', r'\[FILL\s*IN\b', r'\[INSERT\b', r'\[REPLACE\b',
+            r'\bTBD\b', r'\bFIXME\b', r'\bXXX\b', r'\[YOUR\b', r'\[EXAMPLE\b',
+            r'<your[_-]', r'<insert[_-]', r'<add[_-]',
+        ]
+        for pat in placeholder_patterns:
+            hits = re.findall(pat, body_no_links, re.IGNORECASE)
+            if hits:
+                add_finding(skill_name, "placeholder", f"Placeholder text found: {hits[0]}", "HIGH")
+                break
+
+        # --- Structural: headings and empty sections ---
+        if not re.search(r'^#+\s+\S', body, re.MULTILINE):
+            add_finding(skill_name, "structure", "No markdown headings found", "MEDIUM")
+
+        empty_sections = []
+        for m in re.finditer(r'^(#+)\s+([^\n]+)', body, re.MULTILINE):
+            level = len(m.group(1))
+            after = body[m.end():].lstrip('\n')
+            next_heading = re.match(r'^(#+)\s+', after)
+            if not after or (next_heading and len(next_heading.group(1)) <= level):
+                empty_sections.append(m.group(2).strip()[:40])
+        if empty_sections:
+            add_finding(skill_name, "structure", f"Empty section(s): {', '.join(empty_sections[:3])}", "MEDIUM")
+
+        # --- Anti-patterns ---
+        directive_count = len(re.findall(r'\b(?:MUST|ALWAYS|NEVER)\b', body))
+        if directive_count > 15:
+            add_finding(skill_name, "OVER_CONSTRAINED", f"{directive_count} MUST/ALWAYS/NEVER directives", "MEDIUM")
+
+        line_count = body.count('\n')
+        has_refs = (skill_path.parent / "references").is_dir()
+        if line_count > 800 and not has_refs:
+            add_finding(skill_name, "BLOATED_SKILL", f"{line_count} lines with no references/ directory", "HIGH")
+
+        # --- Reference integrity ---
+        skill_dir = skill_path.parent
+        refs_dir = skill_dir / "references"
+        scripts_dir_path = skill_dir / "scripts"
+
+        if refs_dir.is_dir():
+            linked_refs = set(re.findall(r'\]\(\./references/([^)]+)\)', content))
+            actual_refs = {f.name for f in refs_dir.iterdir() if f.is_file()}
+            orphans = actual_refs - linked_refs
+            for orphan in sorted(orphans):
+                add_finding(skill_name, "ORPHAN_REFERENCE", f"references/{orphan} not linked from SKILL.md", "MEDIUM")
+
+        if scripts_dir_path.is_dir():
+            linked_scripts = set(re.findall(r'\]\(\./scripts/([^)]+)\)', content))
+            actual_scripts = {f.name for f in scripts_dir_path.iterdir() if f.is_file()}
+            orphans = actual_scripts - linked_scripts
+            for orphan in sorted(orphans):
+                add_finding(skill_name, "ORPHAN_REFERENCE", f"scripts/{orphan} not linked from SKILL.md", "MEDIUM")
+
+        # --- Backtick references to nonexistent components ---
+        backtick_refs = re.findall(r'`([a-z][a-z0-9-]+)`\s+(?:skill|agent|command)', body, re.IGNORECASE)
+        for ref in backtick_refs:
+            if ref not in known_skills and ref not in known_agents and ref not in known_commands:
+                add_finding(skill_name, "DEAD_CROSS_REF", f"References nonexistent component: `{ref}`", "HIGH")
+
+    # --- Validate agents ---
+    for agent_name, agent_path in known_agents.items():
+        if component_filter and agent_name != component_filter:
+            continue
+
+        content = agent_path.read_text()
+        fm, body = parse_frontmatter(content)
+        body_tokens = round(len(body.encode()) / 3.5)
+        desc = fm.get("description", "")
+
+        inventory.append({
+            "name": agent_name,
+            "type": "agent",
+            "description": desc[:200] if desc else "",
+            "body_tokens": body_tokens,
+        })
+
+        if not desc or len(desc) < 20:
+            add_finding(agent_name, "EMPTY_DESCRIPTION", f"Agent description too short ({len(desc)} chars)", "HIGH")
+
+        if desc and "use " not in desc.lower():
+            add_finding(agent_name, "MISSING_TRIGGER", "Agent description missing trigger phrase", "MEDIUM")
+
+        if body_tokens > 3000:
+            add_finding(agent_name, "body_size", f"Agent body exceeds 3K tokens (~{body_tokens})", "MEDIUM")
+
+        # Cross-reference check
+        skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
+        for ref in skill_refs:
+            if ref not in known_skills:
+                add_finding(agent_name, "DEAD_CROSS_REF", f"References nonexistent skill: {ref}", "HIGH")
+
+    # --- Validate commands ---
+    for cmd_name, cmd_path in known_commands.items():
+        if component_filter and cmd_name != component_filter:
+            continue
+
+        content = cmd_path.read_text()
+        fm, body = parse_frontmatter(content)
+        body_tokens = round(len(body.encode()) / 3.5)
+        desc = fm.get("description", "")
+
+        inventory.append({
+            "name": cmd_name,
+            "type": "command",
+            "description": desc[:200] if desc else "",
+            "body_tokens": body_tokens,
+        })
+
+        if not desc:
+            add_finding(cmd_name, "EMPTY_DESCRIPTION", "Command missing description", "HIGH")
+
+        if body_tokens > 4000:
+            add_finding(cmd_name, "body_size", f"Command body exceeds 4K tokens (~{body_tokens})", "MEDIUM")
+
+        if fm.get("argument-hint") and "$ARGUMENTS" not in body:
+            add_finding(cmd_name, "missing_arg_handling", "Declares argument-hint but body doesn't reference $ARGUMENTS", "MEDIUM")
+
+        # Cross-reference check
+        skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
+        for ref in skill_refs:
+            if ref not in known_skills:
+                add_finding(cmd_name, "DEAD_CROSS_REF", f"References nonexistent skill: {ref}", "HIGH")
+
+    # --- Duplicate trigger detection ---
+    descriptions = {}
+    for item in inventory:
+        if item["description"]:
+            descriptions[item["name"]] = set(re.findall(r'\b[a-z]{3,}\b', item["description"].lower()))
+
+    checked_pairs = set()
+    for name_a, words_a in descriptions.items():
+        if component_filter and name_a != component_filter:
+            continue
+        for name_b, words_b in descriptions.items():
+            if name_a >= name_b:
+                continue
+            pair = (name_a, name_b)
+            if pair in checked_pairs:
+                continue
+            checked_pairs.add(pair)
+            if not words_a or not words_b:
+                continue
+            overlap = words_a & words_b
+            smaller = min(len(words_a), len(words_b))
+            if smaller > 0 and len(overlap) / smaller > 0.7:
+                add_finding(name_a, "DUPLICATE_TRIGGER",
+                            f">70% description overlap with {name_b}: {', '.join(sorted(overlap)[:5])}", "MEDIUM")
+
+    # --- Version pin detection ---
+    for name, path in {**{k: v for k, v in known_skills.items()}, **known_agents, **known_commands}.items():
+        if component_filter and name != component_filter:
+            continue
+        content = path.read_text()
+        version_pins = re.findall(r'(?:as of v\d|since 20\d{2}|if using .{3,20} \d+)', content, re.IGNORECASE)
+        if version_pins:
+            add_finding(name, "STALE_VERSION_PIN", f"Version-pinned statement: '{version_pins[0]}'", "LOW")
+
+    # --- Hook pattern count check ---
+    if patterns_file.exists() and not component_filter:
+        patterns_content = patterns_file.read_text()
+        count_match = re.search(r'Total skills:\s*(\d+)', patterns_content)
+        if count_match:
+            declared = int(count_match.group(1))
+            actual = len(known_skills)
+            if declared != actual:
+                add_finding("skill-patterns.sh", "count_mismatch",
+                            f"Declares {declared} skills but {actual} exist", "MEDIUM")
+
+    # --- README count check ---
+    if readme_path.exists() and not component_filter:
+        readme = readme_path.read_text()
+        for label, actual_count in [("skill", len(known_skills)), ("agent", len(known_agents)), ("command", len(known_commands))]:
+            count_matches = re.findall(rf'\b(\d+)\s+{label}s?\b', readme, re.IGNORECASE)
+            for m in count_matches:
+                if int(m) != actual_count:
+                    add_finding("README.md", "count_mismatch",
+                                f"Says {m} {label}s but {actual_count} exist", "MEDIUM")
+                    break
+
+    # --- Sort findings by severity ---
+    severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+    findings.sort(key=lambda f: (severity_order.get(f["severity"], 3), f["component"]))
+
+    summary = {
+        "high": sum(1 for f in findings if f["severity"] == "HIGH"),
+        "medium": sum(1 for f in findings if f["severity"] == "MEDIUM"),
+        "low": sum(1 for f in findings if f["severity"] == "LOW"),
+    }
+
+    return {
+        "inventory": {
+            "skills": len(known_skills),
+            "agents": len(known_agents),
+            "commands": len(known_commands),
+            "total": len(inventory),
+        },
+        "findings": findings,
+        "summary": summary,
+        "passed": summary["high"] == 0,
+    }
+
+
+def test_triggers(skill_filter=None, fixtures_dir=None):
+    """Run regex trigger regression tests from fixture JSONL files.
+
+    Each fixture file is named <skill>.jsonl and contains lines with
+    {"prompt": "...", "expect": true/false, ...}. Tests each skill's
+    regex pattern against the fixture prompts and reports pass/fail.
+
+    Args:
+        skill_filter: test only this skill (optional)
+        fixtures_dir: override fixtures directory path (optional)
+
+    Returns dict with per-skill results and overall pass/fail.
+    """
+    fdir = Path(fixtures_dir) if fixtures_dir else TRIGGER_FIXTURES_DIR
+    if not fdir.exists():
+        print(f"Error: fixtures directory not found: {fdir}", file=sys.stderr)
         sys.exit(1)
 
-    skill_path = GENERATED_DIR / name / "SKILL.md"
-    if not skill_path.exists():
-        print(f"Error: {skill_path} not found", file=sys.stderr)
+    fixture_files = sorted(fdir.glob("*.jsonl"))
+    if not fixture_files:
+        print(f"Error: no fixture files in {fdir}", file=sys.stderr)
         sys.exit(1)
 
-    skill_content = skill_path.read_text()
-    models = models or DEFAULT_TEST_MODELS
+    results = []
+    all_pass = True
 
-    pairs = []
-    for model in models:
-        for i, prompt in enumerate(prompts):
-            model_id, provider_slug = _parse_model_spec(model)
+    for fpath in fixture_files:
+        skill_name = fpath.stem
+        if skill_filter and skill_name != skill_filter:
+            continue
 
-            baseline = _openrouter_request(
-                api_key, model_id, provider_slug,
-                [{"role": "user", "content": prompt}],
-                max_tokens,
+        should_trigger = []
+        should_not_trigger = []
+        with open(fpath) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                entry = json.loads(line)
+                if entry.get("expect"):
+                    should_trigger.append(entry["prompt"])
+                else:
+                    should_not_trigger.append(entry["prompt"])
+
+        if not should_trigger and not should_not_trigger:
+            continue
+
+        queries = {"should_trigger": should_trigger, "should_not_trigger": should_not_trigger}
+        report = eval_triggers(skill_name, queries)
+        passed = report["metrics"]["f1"] == 1.0
+        if not passed:
+            all_pass = False
+
+        results.append({
+            "skill": skill_name,
+            "passed": passed,
+            "metrics": report["metrics"],
+            "failures": [m for m in report["matches"] if not m["correct"]],
+        })
+
+    return {"results": results, "all_passed": all_pass}
+
+
+SEMANTIC_FIXTURES_PATH = DISTILLERY_DIR / "tests" / "fixtures" / "semantic-triggers.jsonl"
+
+
+def test_semantic(max_tests=None, fixtures_path=None):
+    """Run semantic injection tests via claude CLI.
+
+    For each test case, runs claude with the prompt, captures which skills
+    were injected via TEST_INJECTION_LOG, and compares against expectations.
+
+    Args:
+        max_tests: limit number of tests (controls token cost)
+        fixtures_path: override path to semantic-triggers.jsonl
+
+    Returns dict with per-test results and overall pass/fail.
+    """
+    fpath = Path(fixtures_path) if fixtures_path else SEMANTIC_FIXTURES_PATH
+    if not fpath.exists():
+        print(f"Error: fixtures file not found: {fpath}", file=sys.stderr)
+        sys.exit(1)
+
+    fixtures = []
+    with open(fpath) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                fixtures.append(json.loads(line))
+
+    if max_tests and len(fixtures) > max_tests:
+        fixtures = fixtures[:max_tests]
+
+    print(f"Running {len(fixtures)} semantic injection tests (costs API tokens)...", file=sys.stderr)
+
+    results = []
+    all_pass = True
+
+    for i, fixture in enumerate(fixtures):
+        prompt = fixture["prompt"]
+        should_trigger = set(fixture.get("should_trigger", []))
+        should_not_trigger = set(fixture.get("should_not_trigger", []))
+
+        # Create temp file for injection log
+        import tempfile
+        log_fd, log_path = tempfile.mkstemp(prefix="injection-test-", suffix=".log")
+        os.close(log_fd)
+
+        try:
+            env = os.environ.copy()
+            env["TEST_INJECTION_LOG"] = log_path
+
+            proc = subprocess.run(
+                ["claude", "-p", prompt, "--model", "sonnet", "--max-turns", "2", "--output-format", "json"],
+                capture_output=True, text=True, timeout=120, env=env,
             )
-            treatment = _openrouter_request(
-                api_key, model_id, provider_slug,
-                [{"role": "system", "content": skill_content}, {"role": "user", "content": prompt}],
-                max_tokens,
-            )
 
-            pairs.append({"model": model, "prompt": prompt, "baseline": baseline, "treatment": treatment})
-            print(f"  {model} × prompt {i+1}: baseline={baseline['status']}, treatment={treatment['status']}", file=sys.stderr)
+            # Read injected skills from log
+            injected = set()
+            if os.path.exists(log_path):
+                with open(log_path) as lf:
+                    for line in lf:
+                        line = line.strip()
+                        if line:
+                            injected.add(line)
 
-    return {"skill": name, "models": models, "pairs": pairs}
+            # Check expectations
+            missing = should_trigger - injected
+            unwanted = should_not_trigger & injected
+            inconclusive = not injected  # Claude didn't spawn any subagents
+
+            passed = not missing and not unwanted and not inconclusive
+            if not passed and not inconclusive:
+                all_pass = False
+
+            status = "pass" if passed else ("inconclusive" if inconclusive else "fail")
+
+            results.append({
+                "prompt": prompt[:100],
+                "status": status,
+                "injected": sorted(injected),
+                "missing": sorted(missing),
+                "unwanted": sorted(unwanted),
+            })
+
+            print(f"  [{i+1}/{len(fixtures)}] {status.upper()}: \"{prompt[:60]}...\" -> {sorted(injected) or '(no injection)'}", file=sys.stderr)
+
+        except subprocess.TimeoutExpired:
+            results.append({"prompt": prompt[:100], "status": "timeout", "injected": [], "missing": [], "unwanted": []})
+            print(f"  [{i+1}/{len(fixtures)}] TIMEOUT: \"{prompt[:60]}...\"", file=sys.stderr)
+        except FileNotFoundError:
+            print("Error: 'claude' CLI not found. Install Claude Code to run semantic tests.", file=sys.stderr)
+            sys.exit(1)
+        finally:
+            if os.path.exists(log_path):
+                os.unlink(log_path)
+
+    pass_count = sum(1 for r in results if r["status"] == "pass")
+    fail_count = sum(1 for r in results if r["status"] == "fail")
+    inconclusive_count = sum(1 for r in results if r["status"] == "inconclusive")
+
+    return {
+        "results": results,
+        "all_passed": all_pass,
+        "summary": {
+            "total": len(results),
+            "passed": pass_count,
+            "failed": fail_count,
+            "inconclusive": inconclusive_count,
+        },
+    }
 
 
 def cleanup():
@@ -1212,6 +1640,49 @@ def cleanup():
 
 
 # --- Session harvesting ---
+
+
+def _load_skill_manifest():
+    """Load .skill-versions.json. Returns dict or None if not found."""
+    if not MANIFEST_PATH.exists():
+        return None
+    with open(MANIFEST_PATH) as f:
+        return json.load(f)
+
+
+def _parse_semver(version_str):
+    """Parse a semver string into a comparable tuple. Returns (0,0,0) for None."""
+    if not version_str:
+        return (0, 0, 0)
+    parts = version_str.split(".")
+    try:
+        return tuple(int(p) for p in parts[:3])
+    except (ValueError, TypeError):
+        return (0, 0, 0)
+
+
+def _is_example_stale(example, skill_name, manifest):
+    """Check if an eval example predates the current skill content or pattern.
+
+    Returns {"content_stale": bool, "pattern_stale": bool}.
+    Null skill_version (local dev) is treated as stale.
+    """
+    if manifest is None:
+        return {"content_stale": False, "pattern_stale": False}
+
+    skill_info = manifest.get("skills", {}).get(skill_name, {})
+    if not skill_info:
+        return {"content_stale": False, "pattern_stale": False}
+
+    ex_version = _parse_semver(example.get("skill_version"))
+
+    content_changed = _parse_semver(skill_info.get("content_changed"))
+    pattern_changed = _parse_semver(skill_info.get("pattern_changed"))
+
+    return {
+        "content_stale": ex_version < content_changed,
+        "pattern_stale": ex_version < pattern_changed,
+    }
 
 
 def _contains_secret(text):
@@ -1470,19 +1941,23 @@ def _build_eval_example(parsed_session):
     return example
 
 
-def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3):
+def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, include_stale=False):
     """Walk ~/.claude/projects/, extract per-skill eval datasets.
 
     Args:
         project_filter: only process this project directory name (optional)
         skill_filter: only extract examples for this skill (optional)
         min_turns: minimum conversation turns to include (default 3)
+        include_stale: include examples from before the skill was last changed (default False)
 
     Returns summary dict. Writes per-skill JSONL to distillery/.eval-data/<skill>/sessions.jsonl.
     """
     if not CLAUDE_PROJECTS_DIR.exists():
         print(f"Error: {CLAUDE_PROJECTS_DIR} not found", file=sys.stderr)
         return {"error": "no projects directory"}
+
+    manifest = _load_skill_manifest()
+    stale_count = 0
 
     # Discover all JSONL files
     session_files = []
@@ -1543,6 +2018,12 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3):
                     continue
                 example = _build_eval_example(parsed)
                 example["skill_version"] = skill_info["version"]
+                staleness = _is_example_stale(example, skill_name, manifest)
+                example["content_stale"] = staleness["content_stale"]
+                example["pattern_stale"] = staleness["pattern_stale"]
+                if not include_stale and staleness["content_stale"]:
+                    stale_count += 1
+                    continue
                 skill_examples[skill_name].append(example)
 
         # For main sessions (no injection), still useful as general task examples
@@ -1573,10 +2054,14 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3):
         }
         print(f"  {skill_name}: {len(examples)} examples → {out_path}", file=sys.stderr)
 
+    if stale_count:
+        print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
+
     return {
         "stats": stats,
         "skills": written,
         "total_examples": sum(v["count"] for v in written.values()),
+        "stale_filtered": stale_count,
     }
 
 
@@ -2018,7 +2503,7 @@ def approve_golden(skill_name):
     }
 
 
-def analyze_misfires(min_examples=30):
+def analyze_misfires(min_examples=30, include_stale=False):
     """Identify skills that are frequently injected into tasks where they're not needed.
 
     Reads all harvested session data across all skills. For each skill, checks how
@@ -2032,8 +2517,11 @@ def analyze_misfires(min_examples=30):
         print("Error: no eval data. Run harvest-sessions first.", file=sys.stderr)
         sys.exit(1)
 
+    manifest = _load_skill_manifest()
+
     # Collect all examples across all skills
     all_examples = []
+    stale_count = 0
     for skill_dir in sorted(EVAL_DATA_DIR.iterdir()):
         if not skill_dir.is_dir() or skill_dir.name == "_unattributed":
             continue
@@ -2043,8 +2531,18 @@ def analyze_misfires(min_examples=30):
         with open(sessions_file) as f:
             for line in f:
                 line = line.strip()
-                if line:
-                    all_examples.append(json.loads(line))
+                if not line:
+                    continue
+                ex = json.loads(line)
+                if not include_stale:
+                    staleness = _is_example_stale(ex, skill_dir.name, manifest)
+                    if staleness["pattern_stale"]:
+                        stale_count += 1
+                        continue
+                all_examples.append(ex)
+
+    if stale_count:
+        print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
 
     # For each skill, count: total injections, relevant injections, co-injection patterns
     skill_stats = defaultdict(lambda: {
@@ -2122,7 +2620,7 @@ def analyze_misfires(min_examples=30):
     }
 
 
-def diagnose_negatives(skill_name, max_examples=10):
+def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
 
     Reads harvested sessions where the user expressed dissatisfaction (negative signal),
@@ -2132,6 +2630,7 @@ def diagnose_negatives(skill_name, max_examples=10):
     Args:
         skill_name: skill to diagnose
         max_examples: max negative examples to analyze (default 10)
+        include_stale: include examples from before the skill was last changed (default False)
 
     Returns dict with failure patterns and suggested skill improvements.
     """
@@ -2142,6 +2641,8 @@ def diagnose_negatives(skill_name, max_examples=10):
         sys.exit(1)
     skill_text = skill_path.read_text()
 
+    manifest = _load_skill_manifest()
+
     # Load sessions and filter to negatives
     sessions_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
     if not sessions_path.exists():
@@ -2149,14 +2650,24 @@ def diagnose_negatives(skill_name, max_examples=10):
         sys.exit(1)
 
     negatives = []
+    stale_count = 0
     with open(sessions_path) as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             ex = json.loads(line)
-            if ex.get("signal") == "negative":
-                negatives.append(ex)
+            if ex.get("signal") != "negative":
+                continue
+            if not include_stale:
+                staleness = _is_example_stale(ex, skill_name, manifest)
+                if staleness["content_stale"]:
+                    stale_count += 1
+                    continue
+            negatives.append(ex)
+
+    if stale_count:
+        print(f"  Filtered {stale_count} stale negative examples (use --include-stale to include)", file=sys.stderr)
 
     if not negatives:
         print(f"No negative-signal sessions for '{skill_name}'.", file=sys.stderr)
@@ -2613,26 +3124,26 @@ def main():
     p_validate = sub.add_parser("validate", help="Validate a generated skill")
     p_validate.add_argument("name", help="Skill name (directory under generated-skills/)")
 
-    # test
-    p_test = sub.add_parser("test", help="Test a skill against multiple models via OpenRouter")
-    p_test.add_argument("name", help="Skill name (directory under generated-skills/)")
-    p_test.add_argument("--prompts", required=True, help="JSON array of evaluation prompts")
-    p_test.add_argument("--models", default=None, help="JSON array of OpenRouter model IDs (optional)")
-    p_test.add_argument("--max-tokens", type=int, default=2000, help="Max response tokens per model (default: 2000)")
-
-    # ab-eval
-    p_ab = sub.add_parser("ab-eval", help="A/B evaluation: with-skill vs baseline for each prompt x model")
-    p_ab.add_argument("name", help="Skill name (directory under generated-skills/)")
-    p_ab.add_argument("--prompts", required=True, help="JSON array of evaluation prompts")
-    p_ab.add_argument("--models", default=None, help="JSON array of OpenRouter model IDs (optional)")
-    p_ab.add_argument("--max-tokens", type=int, default=2000, help="Max response tokens per request (default: 2000)")
-
     # eval-triggers
     p_eval_trig = sub.add_parser("eval-triggers", help="Test regex trigger patterns against evaluation queries")
     p_eval_trig.add_argument("name", help="Skill name")
     p_eval_trig.add_argument("--queries", required=True, help='JSON with "should_trigger" and "should_not_trigger" arrays')
     p_eval_trig.add_argument("--pattern", default=None, help="Regex pattern to test (default: read from skill-patterns.sh)")
     p_eval_trig.add_argument("--patterns-file", default=None, help="Path to skill-patterns.sh (default: plugin repo)")
+
+    # test-triggers
+    p_tt = sub.add_parser("test-triggers", help="Run regex trigger regression tests from fixture files")
+    p_tt.add_argument("--skill", default=None, help="Test only this skill")
+    p_tt.add_argument("--fixtures-dir", default=None, help="Override fixtures directory")
+
+    # test-semantic
+    p_ts = sub.add_parser("test-semantic", help="Run semantic injection tests via claude CLI (costs tokens)")
+    p_ts.add_argument("--max-tests", type=int, default=None, help="Limit number of tests")
+    p_ts.add_argument("--fixtures", default=None, help="Path to semantic-triggers.jsonl")
+
+    # validate-plugin
+    p_vp = sub.add_parser("validate-plugin", help="Deterministic validation of all plugin components (no AI needed)")
+    p_vp.add_argument("--component", default=None, help="Validate only this component name")
 
     # cleanup
     sub.add_parser("cleanup", help="Remove staging directory")
@@ -2642,6 +3153,7 @@ def main():
     p_harvest.add_argument("--project", default=None, help="Filter to a specific project directory name")
     p_harvest.add_argument("--skill", default=None, help="Filter to a specific skill name")
     p_harvest.add_argument("--min-turns", type=int, default=3, help="Minimum conversation turns to include (default: 3)")
+    p_harvest.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
 
     # discover-signals
     p_discover = sub.add_parser("discover-signals", help="Surface unmatched user messages that may indicate new negative patterns")
@@ -2669,11 +3181,13 @@ def main():
     # analyze-misfires
     p_misfire = sub.add_parser("analyze-misfires", help="Identify skills injected into tasks where they're not needed")
     p_misfire.add_argument("--min-examples", type=int, default=30, help="Minimum injections to include (default: 30)")
+    p_misfire.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
 
     # diagnose-negatives
     p_diag = sub.add_parser("diagnose-negatives", help="Analyze negative-signal sessions to find failure patterns and suggest skill fixes")
     p_diag.add_argument("name", help="Skill name")
     p_diag.add_argument("--max-examples", type=int, default=10, help="Max negative examples to analyze (default: 10)")
+    p_diag.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
 
     # evolve
     p_evolve = sub.add_parser("evolve", help="Run DSPy GEPA optimization on a skill (outputs diff for review)")
@@ -2726,29 +3240,64 @@ def main():
         report = validate(args.name)
         print(json.dumps(report, indent=2))
 
-    elif args.command == "test":
-        prompts = json.loads(args.prompts)
-        models = json.loads(args.models) if args.models else None
-        report = test_skill(args.name, prompts, models, args.max_tokens)
-        print(json.dumps(report, indent=2))
-
-    elif args.command == "ab-eval":
-        prompts = json.loads(args.prompts)
-        models = json.loads(args.models) if args.models else None
-        report = ab_eval(args.name, prompts, models, args.max_tokens)
-        print(json.dumps(report, indent=2))
-
     elif args.command == "eval-triggers":
         queries = json.loads(args.queries)
         report = eval_triggers(args.name, queries, args.pattern, args.patterns_file)
         print(json.dumps(report, indent=2))
+
+    elif args.command == "test-triggers":
+        report = test_triggers(args.skill, args.fixtures_dir)
+        # Print summary table
+        print(f"\n{'Skill':35s} {'TP':>4s} {'FP':>4s} {'FN':>4s} {'TN':>4s} {'F1':>6s} {'Result':>8s}", file=sys.stderr)
+        print("-" * 70, file=sys.stderr)
+        for r in report["results"]:
+            m = r["metrics"]
+            status = "PASS" if r["passed"] else "FAIL"
+            print(f"{r['skill']:35s} {m['true_positives']:4d} {m['false_positives']:4d} {m['false_negatives']:4d} {m['true_negatives']:4d} {m['f1']:6.3f} {status:>8s}", file=sys.stderr)
+        if not report["all_passed"]:
+            failed = [r for r in report["results"] if not r["passed"]]
+            print(f"\n  FAILED: {len(failed)} skill(s) have trigger regressions", file=sys.stderr)
+            for r in failed:
+                for f in r["failures"]:
+                    expected = "should trigger" if f["expected"] else "should NOT trigger"
+                    print(f"    {r['skill']}: \"{f['query']}\" — {expected} but {'matched' if f['matched'] else 'did not match'}", file=sys.stderr)
+        else:
+            print(f"\n  All {len(report['results'])} skills passed", file=sys.stderr)
+        print(json.dumps(report, indent=2))
+        if not report["all_passed"]:
+            sys.exit(1)
+
+    elif args.command == "test-semantic":
+        report = test_semantic(args.max_tests, args.fixtures)
+        s = report["summary"]
+        print(f"\n  Semantic tests: {s['passed']} passed, {s['failed']} failed, {s['inconclusive']} inconclusive out of {s['total']}", file=sys.stderr)
+        print(json.dumps(report, indent=2))
+        if not report["all_passed"]:
+            sys.exit(1)
+
+    elif args.command == "validate-plugin":
+        report = validate_plugin(args.component)
+        inv = report["inventory"]
+        s = report["summary"]
+        print(f"\n  Plugin: {inv['skills']} skills, {inv['agents']} agents, {inv['commands']} commands", file=sys.stderr)
+        print(f"  Findings: {s['high']} HIGH, {s['medium']} MEDIUM, {s['low']} LOW", file=sys.stderr)
+        if report["findings"]:
+            print(f"\n  {'Component':35s} {'Check':25s} {'Sev':>6s}  Message", file=sys.stderr)
+            print("  " + "-" * 100, file=sys.stderr)
+            for f in report["findings"]:
+                print(f"  {f['component']:35s} {f['check']:25s} {f['severity']:>6s}  {f['message']}", file=sys.stderr)
+        else:
+            print("  No findings", file=sys.stderr)
+        print(json.dumps(report, indent=2))
+        if not report["passed"]:
+            sys.exit(1)
 
     elif args.command == "cleanup":
         cleanup()
         print("Cleaned up", file=sys.stderr)
 
     elif args.command == "harvest-sessions":
-        report = harvest_sessions(args.project, args.skill, args.min_turns)
+        report = harvest_sessions(args.project, args.skill, args.min_turns, args.include_stale)
         print(json.dumps(report, indent=2))
 
     elif args.command == "discover-signals":
@@ -2771,7 +3320,7 @@ def main():
         print(json.dumps(report, indent=2))
 
     elif args.command == "analyze-misfires":
-        report = analyze_misfires(args.min_examples)
+        report = analyze_misfires(args.min_examples, args.include_stale)
         # Print summary table to stderr
         print(f"\n{'Skill':35s} {'Injected':>8s} {'Relevant':>8s} {'Misfire%':>8s} {'Pos%':>6s}", file=sys.stderr)
         print("-" * 70, file=sys.stderr)
@@ -2780,7 +3329,7 @@ def main():
         print(json.dumps(report, indent=2))
 
     elif args.command == "diagnose-negatives":
-        report = diagnose_negatives(args.name, args.max_examples)
+        report = diagnose_negatives(args.name, args.max_examples, args.include_stale)
         # Print summary to stderr
         if report.get("summary"):
             print(f"\n  Diagnosis for '{args.name}':", file=sys.stderr)

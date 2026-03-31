@@ -1,0 +1,4 @@
+{"prompt": "create a worktree for the feature branch so I can review in parallel", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up parallel development branches using worktrees", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write an Eloquent model for the invoices table", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add rate limiting to the public API", "expect": false, "added_in": "2.51.0", "source": "initial"}

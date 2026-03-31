@@ -1,0 +1,4 @@
+{"prompt": "argue against this architectural decision before we commit", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "what could break if we deploy this change to production", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add a new endpoint for user profile updates", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "run the test suite and fix any failures", "expect": false, "added_in": "2.51.0", "source": "initial"}

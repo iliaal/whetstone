@@ -1,0 +1,4 @@
+{"prompt": "run a multi-agent review of the entire codebase", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "use parallel agents to analyze each module independently", "expect": true, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a cron job for nightly backups", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add validation to the registration form", "expect": false, "added_in": "2.51.0", "source": "initial"}

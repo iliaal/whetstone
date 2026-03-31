@@ -191,30 +191,7 @@ Split rules:
   ```
   `search_queries` — all search keywords used during the Search phase (enables re-search on update). `instructions` — user-provided exclusion rules, scope narrowing, and focus directives that shaped source selection and synthesis (applied during both generation and updates). `sha1` — SHA-1 of the fetched source `SKILL.md` (enables change detection on update). Use `sha1` and `installs` values from Step 2 fetch output.
 
-**6. Evaluate** — A/B comparison against baseline. Generate 3 test prompts that minimize token usage while revealing whether the model internalized the skill's rules:
-- **Outline prompt**: ask for a plan/approach, not full code (e.g., "Outline the structure for a FastAPI service with background jobs — list files, key decisions, and which patterns you'd use")
-- **Decision prompt**: force a choice that tests the skill's defaults and opinions (e.g., "I need state management in React — what approach and why?")
-- **Review prompt**: provide a short snippet that violates 2-3 skill rules and ask the model to identify issues (e.g., "Review this: `async def get_users(): data = await db.fetch_all(); return data` — what would you change?")
-
-Avoid prompts that ask for full implementations — they burn tokens testing code generation, not skill adherence. The goal is to check: does the model follow the skill's terminology, defaults, anti-patterns, and decision frameworks?
-
-Present the prompts to the user. If they approve testing, run:
-
-```bash
-python3 distillery/scripts/distiller.py ab-eval <name> --prompts '<JSON array of 3 prompts>'
-```
-
-Sends each prompt to 4 models via OpenRouter, twice per model: once with the skill as system prompt (treatment), once without (baseline). Override models with `--models '["model/id", ...]'`. Requires `OPENROUTER_API_KEY` in `.env`.
-
-Compare paired results: for each prompt x model, how does the treatment differ from baseline?
-- Did the skill's terminology and patterns appear in treatment but not baseline?
-- Did the skill's defaults and opinions shape decisions in treatment?
-- Did the review prompt catch the planted violations in treatment?
-- Were there any regressions where baseline was actually better?
-
-If all models produce similar treatment vs baseline improvements, the skill has clear signal. If some models ignore key instructions, the skill may need more explicit guidance on those points.
-
-**6b. Trigger evaluation** (optional, run after saving to plugin) — Generate trigger evaluation queries: realistic user prompts that should and shouldn't activate this skill. Test against the regex pattern in `skill-patterns.sh`:
+**6. Trigger evaluation** (run after saving to plugin) -- Generate trigger evaluation queries: realistic user prompts that should and shouldn't activate this skill. Test against the regex pattern in `skill-patterns.sh`:
 
 ```bash
 python3 distillery/scripts/distiller.py eval-triggers <name> --queries '{"should_trigger": [...], "should_not_trigger": [...]}'
@@ -222,13 +199,10 @@ python3 distillery/scripts/distiller.py eval-triggers <name> --queries '{"should
 
 Review precision/recall/F1 metrics. If false negatives are high, the pattern needs more trigger terms. If false positives are high, the pattern is too broad. Iterate on the pattern in `skill-patterns.sh` until F1 >= 0.8.
 
-**6c. Improvement loop** (if 6 revealed weaknesses) — If A/B results show the skill failed to influence model behavior on specific points:
-1. Identify which rules were ignored or which patterns weren't followed
-2. Analyze why: was the instruction buried in the middle? too vague? contradicted by another rule?
-3. Make targeted edits to SKILL.md — move critical rules higher, make vague instructions specific, resolve contradictions
-4. Re-run `python3 distillery/scripts/distiller.py validate <name>` to confirm mechanical correctness
-5. Re-run `ab-eval` with the same prompts to verify improvement
-6. Max 3 iterations — if improvement plateaus, accept the current version
+Add the test queries to the regression fixture file at `distillery/tests/fixtures/triggers/<name>.jsonl` to lock in the improvement:
+```jsonl
+{"prompt": "...", "expect": true, "added_in": "<version>", "source": "distiller-eval"}
+```
 
 **7. Cleanup** — `python3 distillery/scripts/distiller.py cleanup`
 
