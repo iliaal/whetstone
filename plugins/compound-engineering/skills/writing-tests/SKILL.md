@@ -161,6 +161,10 @@ When you catch yourself thinking these things, stop:
 | "100% coverage is overkill" | Nobody said 100%. But 0% is negligence. Test the important paths. |
 | "Mocks are faster" | Mocks are faster to run and slower to maintain. They test assumptions, not behavior. |
 | "I already wrote the implementation" | Sunk cost. Tests written after pass immediately and prove nothing about the original bug. |
+| "The test is too hard to write" | Hard-to-test code signals a design problem. Simplify the interface, not the test. |
+| "I need to understand the code first" | Write the test to express what you expect. The test IS your understanding, made executable. |
+| "This is a prototype / throwaway" | Prototypes become production code. Every time. The test costs 5 minutes now vs. hours debugging later. |
+| "The deadline is too tight for tests" | The deadline is too tight to debug without tests. Tests catch bugs at write time, not in production under deadline pressure. |
 
 ## Verify
 

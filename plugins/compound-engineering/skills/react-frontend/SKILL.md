@@ -141,10 +141,10 @@ See [e2e testing](./references/e2e-testing.md) for Playwright patterns.
 
 ## Discipline
 
-- For non-trivial changes, pause and ask: "is there a more elegant way?" Skip for obvious fixes.
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- Before adding a new abstraction, verify it appears in 3+ places
 
 ## References
 

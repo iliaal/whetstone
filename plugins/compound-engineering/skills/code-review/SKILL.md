@@ -1,11 +1,9 @@
 ---
 name: code-review
 description: >-
-  Structured code reviews with severity-ranked findings. Supports deep
-  multi-agent review for complex diffs. Use when performing a code review,
-  auditing code quality, or critiquing PRs, MRs, or diffs. For exhaustive
-  multi-agent review with worktrees and ultra-thinking, use workflows:review
-  instead.
+  Structured code reviews with severity-ranked findings and deep multi-agent
+  mode. Use when performing a code review, auditing code quality, or critiquing
+  PRs, MRs, or diffs.
 ---
 
 # Code Review
@@ -59,7 +57,7 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 3. **Line-by-line** -- correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
 4. **Security** -- input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act). Use [security-patterns.md](./references/security-patterns.md) for grep-able detection patterns across 11 vulnerability classes.
 5. **Test coverage** -- verify new code paths have tests. Flag untested error paths, edge cases, and behavioral changes without corresponding test updates. Flag tests coupled to implementation details (mocking internals, testing private methods) -- test behavior, not wiring.
-6. **Resource cleanup** -- file handles, DB connections, event listeners, timers, subscriptions. Verify cleanup on both success and error paths.
+6. **Reliability** -- error handling completeness, timeout/retry logic, resource cleanup on error paths, graceful degradation. Use [reliability-patterns.md](./references/reliability-patterns.md) for detection patterns and grep-able signals.
 7. **Removal candidates** -- identify dead code, unused imports, feature-flagged code that can be cleaned up. Distinguish safe-to-delete (no references) from defer-with-plan (needs migration).
 8. **Verify** -- run formatter/lint/tests on touched files. State what was skipped and why. If code changes affect features described in README/ARCHITECTURE/CONTRIBUTING, note doc staleness as informational.
 9. **Summary** -- present findings grouped by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Classify each finding using the Fix-First Heuristic, then auto-apply AUTO-FIX items (with one-line summaries) and batch-present ASK items for user decision.
@@ -96,7 +94,7 @@ Assign a confidence score (0.0-1.0) to each finding:
 
 When in doubt, apply the "would a senior engineer on this team flag this?" test. If the answer is "probably not," suppress it.
 
-See also the review-level suppression list under [Anti-Patterns in Reviews](#anti-patterns-in-reviews).
+For detailed suppression categories with examples (framework idioms, test-specific patterns, when to override), see [false-positive-suppression.md](./references/false-positive-suppression.md). See also the review-level suppression list under [Anti-Patterns in Reviews](#anti-patterns-in-reviews).
 
 ## Fix-First Heuristic
 
@@ -145,14 +143,6 @@ Load the relevant profile from [language-profiles.md](./references/language-prof
 - Rubber-stamping without reading -- always verify at least Stage 1
 - Reviewing code quality before verifying spec compliance -- do Stage 1 first
 - Recommending fix patterns without checking currency -- verify the pattern is current for the project's framework version before suggesting it. Prefer built-in alternatives from newer versions
-
-**Also suppress** (do not flag these):
-- "X is redundant with Y" when redundancy aids readability
-- "Add a comment explaining this threshold" -- thresholds change during tuning, comments rot
-- "This assertion could be tighter" when it already covers the behavior
-- Consistency-only changes (reformatting to match adjacent code style)
-- "Regex doesn't handle edge case X" when input is constrained and X never occurs
-- Anything already addressed in the diff being reviewed -- read the FULL diff before commenting
 
 ## When to Stop and Ask
 

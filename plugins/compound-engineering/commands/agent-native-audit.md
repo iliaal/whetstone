@@ -9,11 +9,28 @@ disable-model-invocation: true
 
 Conduct a comprehensive review of the codebase against agent-native architecture principles, launching parallel sub-agents for each principle and producing a scored report.
 
-**Target principle (optional):** #$ARGUMENTS -- if specified, audit only that principle.
+**Target:** #$ARGUMENTS
 
-**For quick single-pass reviews**, use the `agent-native-reviewer` agent instead. This command runs a deeper 8-principle parallel audit with numeric scoring.
+**Modes:**
+- `quick` -- single-pass review: capability map, parity checklist, findings by severity, agent-native score. No parallel sub-agents.
+- (default) -- deep 8-principle parallel audit with numeric scoring per principle.
+- A specific principle name (e.g., `action parity`) -- audit only that principle in depth.
 
-## Core Principles to Audit
+## Quick Mode
+
+When `$ARGUMENTS` is `quick` or contains `quick`:
+
+Follow the `agent-native-architecture` skill for principle definitions. Produce a single-pass review:
+
+1. Explore the codebase: UI actions, agent tools, system prompt construction, context injection
+2. Build a capability map: `| UI Action | Location | Agent Tool | Prompt Ref | Status |`
+3. Check all 5 core principles: Action Parity, Context Parity, Shared Workspace, Primitives over Workflows, Dynamic Context Injection
+4. Report findings by severity (Critical/Warning/Observation) with file:line references
+5. Score: `X/Y capabilities are agent-accessible -- Verdict: PASS/NEEDS WORK`
+
+## Deep Mode (default)
+
+### Core Principles to Audit
 
 Full principle definitions live in the `agent-native-architecture` skill. Summaries for scoring:
 

@@ -1,10 +1,9 @@
 ---
 name: verification-before-completion
 description: >-
-  Enforces fresh verification evidence before any completion claim, commit, or
-  PR. Use before claiming "tests pass", "bug fixed", "feature complete", "done",
-  "finished", "ready to merge", "ship it", or handing off work. Prevents the most common AI failure mode: asserting success
-  without running the proof.
+  Enforces fresh verification evidence before any completion claim. Use when
+  about to claim "tests pass", "bug fixed", "done", "ready to merge", or
+  handing off work.
 ---
 
 # Verification Before Completion
@@ -121,6 +120,12 @@ Stop and re-verify when you catch yourself thinking any of these:
 | "Just this once" / "This time it's different" | Every bypass weakens the habit. No exceptions. |
 | "The CI will catch it" | CI runs after you claim done. Verification happens before the claim, not after. |
 | "Zero issues found" on first pass | First implementations typically need 2-3 revision cycles. "Perfect on the first try" more likely means incomplete verification. Re-verify with broader scope. |
+
+## Integration
+
+## References
+
+- [System-Wide Test Check](./references/system-wide-test-check.md) -- blast-radius verification for task completion (callbacks, integration, orphaned state)
 
 ## Integration
 

@@ -158,13 +158,10 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 ## Best Practices
 
-1. **Use meaningful names** - `security-reviewer`, not `worker-1`.
-2. **Write clear prompts** - Tell workers exactly what to do and how to report results.
-3. **Use task dependencies** - Let the system manage unblocking via `addBlockedBy`.
-4. **Prefer `write` over `broadcast`** - Broadcast sends N messages for N teammates.
-5. **Handle failures** - Workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
-6. **Check inboxes** - Workers send results to your inbox at `~/.claude/teams/{team}/inboxes/team-lead.json`.
-7. **Post-integration verification** - After all agents return: check if agents edited overlapping files (especially with worktrees), review summaries for conflicting approaches, run full test suite, spot-check for systematic errors.
+1. **Use task dependencies** -- let the system manage unblocking via `addBlockedBy`.
+2. **Prefer `write` over `broadcast`** -- broadcast sends N messages for N teammates.
+3. **Handle failures** -- workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
+4. **Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
 
 ---
 

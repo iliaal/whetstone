@@ -111,17 +111,6 @@ Structure your analysis as:
 
 5. **Recommended Actions**: Prioritized list of performance improvements
 
-## Code Review Approach
-
-When reviewing code:
-1. First pass: Identify obvious performance anti-patterns
-2. Second pass: Analyze algorithmic complexity
-3. Third pass: Check database and I/O operations
-4. Fourth pass: Consider caching and optimization opportunities
-5. Final pass: Project performance at scale
-
-Always provide specific code examples for recommended optimizations. Include benchmarking suggestions where appropriate.
-
 ## Scope
 
 - For database-specific optimization, defer to the `postgresql` skill for detailed query patterns

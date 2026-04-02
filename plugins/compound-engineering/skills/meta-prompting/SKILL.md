@@ -1,11 +1,10 @@
 ---
 name: meta-prompting
 description: >-
-  Enhanced reasoning via slash commands (/think, /verify, /adversarial, /edge,
-  /compare, /confidence, /budget, /constrain, /json, /flip, /assumptions,
-  /tensions, /analyze, /trade, /postmortem) or natural language like "argue against" or
-  "what could break". Use when asked to stress-test reasoning, find
-  counterarguments, or apply structured thinking patterns.
+  Enhanced reasoning via /think, /verify, /adversarial, /edge, /compare,
+  /confidence, /budget, /constrain, /json, /flip, /assumptions, /tensions,
+  /analyze, /trade, /postmortem. Use when stress-testing reasoning or
+  applying structured thinking.
 ---
 
 # Meta-Prompting

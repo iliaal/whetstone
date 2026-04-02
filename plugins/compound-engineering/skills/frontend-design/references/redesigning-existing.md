@@ -10,4 +10,6 @@ When upgrading an existing project, audit first, then fix in this priority order
 6. **Add loading, empty, and error states** -- makes it feel finished
 7. **Polish typography scale and spacing** -- the premium final touch
 
+Use the [redesign-audit.md](./redesign-audit.md) checklist (typography, color, layout, interactivity, content, component pattern checks) to systematically identify violations before starting fixes.
+
 Work with the existing tech stack. Do not migrate frameworks or styling libraries. Keep changes reviewable and focused -- small, targeted improvements over big rewrites. Before importing any new library or writing any styles, check `package.json` for the Tailwind version (v3 vs v4) -- v4 syntax in a v3 project will break the build.

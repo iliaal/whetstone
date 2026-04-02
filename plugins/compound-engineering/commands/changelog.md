@@ -91,7 +91,9 @@ Your final output should be formatted as follows:
 
 Review the changelog using the `writing` skill principles -- cut filler, lead with what users can do, no throat-clearing. Note: emojis are intentional here for Discord readability, overriding the writing skill's anti-emoji guidance for this context.
 
-Remember, your final output should only include the content within the <change_log> tags. Do not include any of your thought process or the original data in the output.
+Output the changelog content directly in conversation. For Discord posting, see below.
+
+Do not include any of your thought process or the original data in the output.
 
 ## Discord Posting (Optional)
 

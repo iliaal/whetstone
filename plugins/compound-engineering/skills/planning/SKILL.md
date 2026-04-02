@@ -34,7 +34,7 @@ bash init-plan.sh "Feature Name"
 
 This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` -- each pre-populated with the correct structure. Also adds `.plan/` to `.gitignore`.
 
-Planning files are ephemeral working state -- do not commit them. If working on multiple features sequentially, old files are overwritten; the plan captures the current task only.
+Planning files are ephemeral working state -- do not commit them. When starting a new feature, old `.plan/` files are overwritten. Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases.
 
 **Note:** `.plan/` is for ephemeral working state during implementation (scratch notes, progress tracking). `docs/plans/` is for the formal plan document created by `workflows:plan` (committed, living documents). Both coexist -- `.plan/` supports the work session, `docs/plans/` stores the committed plan.
 
@@ -76,6 +76,7 @@ Skip for greenfield projects where no tests exist yet.
 
 ## Phase 1: [Name]
 **Files**: [specific files, max 5-8 per phase]
+**Posture**: [test-first | characterization-first | external-delegate]
 **Tasks**:
 - [ ] [Verb-first atomic task] -- `path/to/file.ts`
 - [ ] [Next task]
@@ -100,7 +101,7 @@ Skip for greenfield projects where no tests exist yet.
 
 ### Plan Quality Rules
 
-**No placeholders between tasks.** Each task must be self-contained. Never write "Similar to Task N" or "See above" -- repeat the spec, code pattern, or file path in every task that needs it. The implementer may read tasks out of order.
+**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths -- not vague directives like "add error handling", "implement validation", or "similar to above." Each task must be self-contained. Never write "Similar to Task N" or "See above" -- repeat the spec, code pattern, or file path in every task that needs it. The implementer may read tasks out of order, and vague tasks produce vague implementations.
 
 **Type-consistency check.** After writing all tasks, scan for naming drift. If Task 3 says `clearLayers()` but Task 7 says `clearFullLayers()`, that's a bug in the plan. Function names, variable names, and file paths must be consistent across all tasks.
 

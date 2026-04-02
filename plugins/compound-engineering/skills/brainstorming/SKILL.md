@@ -135,17 +135,9 @@ Summarize key decisions in a structured format. For each major component, verify
 
 **Design Doc:** Save to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`. Required sections: What We're Building, Why This Approach, Key Decisions (with rationale), Open Questions, Next Steps. Collapse the Q&A interview log in a `<details>` block. Include YAML frontmatter with `date` and `topic`. Commit to git -- design decisions are project history.
 
-### Phase 4: Spec Review
+### Phase 4: Review and Handoff
 
-After writing the design doc, dispatch a `spec-flow-analyzer` agent with the document and original requirements (not session history). If issues found, fix and re-dispatch (max 3 iterations). Then present to the user for approval -- the user explicitly confirming the design is the gate to proceed.
-
-### Phase 5: Handoff
-
-Present clear options for what to do next:
-
-1. **Proceed to planning** → Run `/workflows:plan` (pass the approved brainstorm doc as input)
-2. **Refine further** → Continue exploring the design
-3. **Done for now** → User will return later
+Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `workflows:brainstorm`, the command handles spec review dispatch and next-step orchestration.
 
 ## Anti-Patterns to Avoid
 

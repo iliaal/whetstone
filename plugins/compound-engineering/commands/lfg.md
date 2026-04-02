@@ -9,6 +9,8 @@ Run these steps in order. Do not stop between steps -- complete every step throu
 
 **Mode detection:** If `$ARGUMENTS` contains `--swarm`, use swarm mode (parallel execution in steps 4-6). Otherwise run sequentially.
 
+**Arguments guard:** If `$ARGUMENTS` is empty (no feature description and no `--swarm`), ask for a feature description before proceeding. Do not invoke `/workflows:plan` with empty input.
+
 ## Sequential steps
 
 1. `/workflows:plan $ARGUMENTS` (strip `--swarm` from arguments if present)

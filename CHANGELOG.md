@@ -5,6 +5,55 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.52.0] - 2026-04-02
+
+### Added
+
+- **debugging**: Three new reference docs -- `defense-in-depth.md` (4-layer validation pattern), `competing-hypotheses.md` (full ACH methodology with 6 failure categories and evidence scoring), `root-cause-tracing.md` (backward call-chain tracing with test pollution detection).
+- **code-review**: `reliability-patterns.md` reference -- error handling, timeouts, retries, circuit breakers, resource cleanup, queue resilience. New reliability agent in deep-review specialist roster.
+- **code-review**: `false-positive-suppression.md` reference -- 8 suppression categories with override rules.
+- **frontend-design**: `redesign-audit.md` reference -- 60+ checks across typography, color, layout, interactivity, content, and component patterns for existing UI improvement.
+- **writing**: Quality Gate section with 5-dimension scoring rubric (Directness, Rhythm, Trust, Authenticity, Density) and 8-item quick audit checklist.
+- **writing/phrases.md**: Three structural anti-pattern categories (Dramatic Fragmentation, Formulaic Constructions, Narrator-from-a-Distance).
+- **writing-tests**: Four new rationalization table entries (hard-to-test code, understanding-first delay, prototype excuse, deadline pressure).
+- **postgresql**: Expanded anti-patterns table (7 patterns) with 3 detection queries (slow queries, table bloat, unused indexes).
+- **simplifying-code**: Two AI slop patterns (redundant error wrapping, verbose stdlib reimplementations).
+- **verification-before-completion**: `system-wide-test-check.md` reference -- blast-radius verification for task completion.
+- **resolve-pr** command -- merged `resolve-pr-parallel` + `resolve-pr-feedback` into single smart command with cluster analysis (3+ comments) and parallel agent dispatch.
+- **deep-review**: `cloud-infra` specialist agent dispatched conditionally when diff touches infrastructure files.
+- **receiving-code-review**: Headless mode extracted to `references/headless-mode.md`.
+- **commands/references**: Shared `adr-templates.md` (extracted from adr command) and `agent-browser-cli.md` (shared between test-browser and feature-video).
+
+### Changed
+
+- **agent-native-audit**: Absorbed `agent-native-reviewer` agent as `quick` mode. One component instead of two.
+- **pr-comment-resolver**: Model set to haiku (mechanical work).
+- **git-history-analyzer**: Model set to haiku (git read operations).
+- **accessibility-tester**: Model set to haiku (WCAG pattern-matching). Added cross-reference from frontend-design.
+- **devops-engineer**: Added `autoApprove: read` for consistency with other analysis agents.
+- **meta-prompting**: Description trimmed to under 80 tokens while preserving all 15 slash command triggers.
+- **code-review**: Description trimmed. FP suppression consolidated into reference file. "Also suppress" list moved from main body to reference.
+- **verification-before-completion**: Description trimmed with "Use when" trigger.
+- **planning**: Clarified `.plan/` overwrite scope (between features vs within multi-phase). Strengthened no-placeholder rule.
+- **brainstorming**: Phases 4-5 trimmed to delegate orchestration to `workflows:brainstorm` command.
+- **orchestrating-swarms**: Best Practices trimmed from 7 to 4 items (removed generic agent hygiene).
+- **writing**: Self-Check trimmed from 11 to 5 items (merged overlap with Quality Gate).
+- **workflows:work**: System-Wide Test Check extracted to verification-before-completion reference.
+- **workflows:compound**: Description differentiated from compound-docs skill.
+- **adr**: Templates extracted to `commands/references/adr-templates.md` (-109 lines).
+- **test-browser**: CLI reference extracted to shared file (-31 lines).
+- **figma-design-sync**: Phase 2 trimmed to reference Phase 1 results (-30 lines).
+- **performance-oracle**: Removed redundant "Code Review Approach" section.
+- **lfg**: Added empty-arguments guard.
+- **changelog**: Added explicit output destination instruction.
+- **compound-docs**: "BLOCK until valid" replaced with actionable "fix and re-run" fallback.
+
+### Removed
+
+- **agent-native-reviewer** agent -- absorbed into agent-native-audit command.
+- **resolve-pr-parallel** command -- merged into resolve-pr.
+- **resolve-pr-feedback** command -- merged into resolve-pr.
+
 ## [2.51.0] - 2026-03-31
 
 ### Added

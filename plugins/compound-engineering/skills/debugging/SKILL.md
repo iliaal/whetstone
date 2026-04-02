@@ -81,11 +81,9 @@ After 3 failed fix attempts, STOP. An attempt = one complete hypothesis-test cyc
 
 ## Escalation: Competing Hypotheses
 
-When the cause is unclear across multiple components, use Analysis of Competing Hypotheses:
-- Generate hypotheses across failure modes: logic error, data issue, state problem, integration failure, resource exhaustion, environment
-- Investigate each with evidence: Direct (strong), Correlational (medium), Testimonial (weak)
-- Cite evidence with `file:line` references
-- Rank by confidence. If multiple hypotheses are equally supported, suspect compound causes.
+When the cause is unclear across multiple components, use Analysis of Competing Hypotheses (ACH). Generate hypotheses across failure categories, collect evidence FOR and AGAINST each, rank by confidence, and investigate the strongest first.
+
+See [competing-hypotheses.md](./references/competing-hypotheses.md) for the full methodology: six failure categories, evidence strength scale, confidence scoring, and anti-patterns.
 
 ## Intermittent Issues
 
@@ -93,11 +91,7 @@ For race conditions, deadlocks, resource exhaustion, and timing-dependent bugs, 
 
 ## Defense-in-Depth Validation
 
-After fixing, validate at every layer -- not just where the bug appeared:
-- **Entry**: does invalid input get caught?
-- **Business logic**: does the fix handle edge cases?
-- **Environment**: does it work across configurations?
-- **Instrumentation**: add logging to detect recurrence
+After fixing, validate at every layer -- not just where the bug appeared. See [defense-in-depth.md](./references/defense-in-depth.md) for the four-layer pattern (entry, business logic, environment, instrumentation) with examples.
 
 ## Bug Triage
 
@@ -112,13 +106,17 @@ When multiple bugs exist, prioritize by:
 - **Stale state** -- cached values, stale closures, outdated config, old build artifacts. When behavior contradicts the code you're reading, verify you're running what you think you're running.
 - **Recurring fix site** -- if `git log` shows 3+ prior fixes in the same file, the file needs redesign, not another patch. Escalate as architectural smell.
 
+## Root Cause Tracing
+
+When a bug manifests deep in the call stack, resist fixing where the error appears. Trace backward through the call chain to find the original trigger, then fix at the source. See [root-cause-tracing.md](./references/root-cause-tracing.md) for the full technique with stack instrumentation patterns and test pollution detection.
+
 ## Pattern Comparison
 
 When the cause isn't obvious, find working similar code in the codebase and compare it structurally with the broken path. Read the working reference implementation completely -- don't skim. List every difference between working and broken, however small. Don't assume any difference can't matter. The bug is in one of them.
 
 ## Anti-Patterns and Red Flags
 
-When you catch yourself doing or thinking these things, **stop and return to Phase 1 (Reproduce/Investigate)**:
+When you catch yourself doing or thinking these things, **stop and return to Step 1 (Reproduce)**:
 
 | What You're Doing / Thinking | What It Really Means |
 |-----------------------------|---------------------|

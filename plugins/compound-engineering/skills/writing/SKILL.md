@@ -76,6 +76,32 @@ AI avoids naming actors by giving inanimate things human verbs. Find the person;
 
 If no specific person fits, use "you" to put the reader in the seat. Person rules: use "you" when addressing the reader directly, "we" for organizational actions, "I" for personal voice. Avoid third-person passive ("it was decided") -- name the actor.
 
+## Quality Gate
+
+Before delivering prose, run two checks:
+
+**Quick audit** (binary, kill anything that triggers):
+- Any adverbs? Kill them.
+- Any passive voice? Find the actor, make them the subject.
+- Inanimate thing doing a human verb? Name the person.
+- "Not X, it's Y" contrast? State Y directly.
+- Three consecutive sentences match length? Break one.
+- Em-dash anywhere? Replace with comma or period.
+- Vague declarative ("The implications are significant")? Name the specific implication.
+- Meta-joiner ("The rest of this section...")? Delete. Let the text move.
+
+**Five-dimension scoring** (rate 1-10 each):
+
+| Dimension | Question |
+|-----------|----------|
+| Directness | Statements or announcements? |
+| Rhythm | Varied or metronomic? |
+| Trust | Respects reader intelligence? |
+| Authenticity | Sounds human? |
+| Density | Anything cuttable? |
+
+Below 35/50: revise before delivering.
+
 ## Voice
 
 - **Have opinions** -- react to facts, don't just report them
@@ -83,7 +109,7 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 - **Acknowledge complexity** -- "impressive but also unsettling" beats "impressive"
 - **Use first person when appropriate** -- "I keep coming back to..." signals a real person
 - **Be specific about feelings** -- not "this is concerning" but name what unsettles you
-- **Let some mess in** -- fragments ("Because that's real."), conjunction starters ("But here's the thing."), parentheticals (thinking mid-sentence) -- all signal a human drafting, not generating
+- **Let some mess in** -- fragments ("Because that's real."), conjunction starters ("But that changes everything."), parentheticals (thinking mid-sentence) -- all signal a human drafting, not generating
 
 ## Composition
 
@@ -95,19 +121,13 @@ If no specific person fits, use "you" to put the reader in the seat. Person rule
 
 ## Self-Check
 
-**Short-form** (commits, PR descriptions, comments): checks 1-4 only. **Long-form** (blog posts, docs, essays): all checks.
+**Short-form** (commits, PR descriptions, comments): checks 1-4 only. **Long-form** (blog posts, docs, essays): run the full Quality Gate above, then checks 1-5.
 
 1. Read every sentence aloud. If it sounds like a press release, Wikipedia, or chatbot -- rewrite.
 2. Ctrl-F the banned-phrases list. Zero matches required.
 3. Check for false agency: any inanimate thing performing a human verb? Name the person.
 4. Check for em dash overuse, mechanical bold, and synonym cycling.
-5. Cut quotables: if a sentence sounds like a pull-quote or aphorism, rewrite it. AI over-produces these.
-6. Wh-word openers: sentence starts with "What makes this..." or "When it comes to..."? Restructure.
-7. Meta-joiners: "The rest of this section..." or "As we'll see below..." -- delete. Let the text move.
-8. Three consecutive sentences match length? Break one. Paragraph ends with a punchy one-liner? Vary it.
-9. "Not X, it's Y" contrast structure? State Y directly without the scaffolding.
-10. Vague declarative ("the implications are significant")? Name the specific implication.
-11. Score 1-10 on each: Directness / Rhythm / Trust / Authenticity / Density. Below 35/50: revise.
+5. Cut quotables: if a sentence sounds like a pull-quote or aphorism, rewrite it.
 
 ## Changelog Voice
 

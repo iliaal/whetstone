@@ -96,3 +96,5 @@ Core offenders:
 
 - [Creative arsenal](./references/creative-arsenal.md) -- navigation, layout, card, typography, and micro-interaction patterns
 - [Redesigning existing interfaces](./references/redesigning-existing.md) -- audit-first upgrade workflow for existing projects
+- [Redesign audit checklist](./references/redesign-audit.md) -- 60+ checks across typography, color, layout, interactivity, content, and component patterns
+- For WCAG accessibility audits, use the `accessibility-tester` agent

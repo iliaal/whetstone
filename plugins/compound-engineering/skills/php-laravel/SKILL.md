@@ -114,10 +114,10 @@ See [factories](./references/factories.md) for states, relationships, sequences,
 
 ## Discipline
 
-- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - No empty catch blocks -- log or rethrow, never swallow exceptions
 - Verify: `./vendor/bin/phpstan analyse --level=8 && ./vendor/bin/phpunit` pass with zero warnings before declaring done
 

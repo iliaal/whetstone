@@ -1,6 +1,6 @@
 ---
 name: workflows:compound
-description: Document a recently solved problem to compound your team's knowledge
+description: Parallel-agent workflow to document a solved problem for team reuse. Use after debugging, fixing, or resolving a non-trivial issue.
 argument-hint: "[optional: brief context about the fix]"
 ---
 

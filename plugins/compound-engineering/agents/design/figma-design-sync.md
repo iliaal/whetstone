@@ -128,37 +128,8 @@ This phase modifies code. It takes the discrepancies identified in Phase 1 and i
 
 ## Core Responsibilities
 
-1. **Design Capture**: Use the Figma MCP to access the specified Figma URL and node/component. Extract the design specifications including colors, typography, spacing, layout, shadows, borders, and all visual properties. Also take a screenshot and load it into the agent.
+Use the Phase 1 comparison results as input. For each discrepancy found, implement the fix:
 
-2. **Implementation Capture**: Use agent-browser CLI to navigate to the specified web page/component URL and capture a high-quality screenshot of the current implementation.
-
-   ```bash
-   agent-browser open [url]
-   agent-browser snapshot -i
-   agent-browser screenshot implementation.png
-   ```
-
-3. **Systematic Comparison**: Perform a meticulous visual comparison between the Figma design and the screenshot, analyzing:
-
-   - Layout and positioning (alignment, spacing, margins, padding)
-   - Typography (font family, size, weight, line height, letter spacing)
-   - Colors (backgrounds, text, borders, shadows)
-   - Visual hierarchy and component structure
-   - Responsive behavior and breakpoints
-   - Interactive states (hover, focus, active) if visible
-   - Shadows, borders, and decorative elements
-   - Icon sizes, positioning, and styling
-   - Max width, height etc.
-
-4. **Detailed Difference Documentation**: For each discrepancy found, document:
-
-   - Specific element or component affected
-   - Current state in implementation
-   - Expected state from Figma design
-   - Severity of the difference (critical, moderate, minor)
-   - Recommended fix with exact values
-
-5. **Precise Implementation**: Make the necessary code changes to fix all identified differences:
 
    - Modify CSS/Tailwind classes following the responsive design patterns above
    - Prefer Tailwind default values when close to Figma specs (within 2-4px)

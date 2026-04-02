@@ -13,6 +13,8 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 | testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage | haiku |
 | maintainability | Long-term health | Coupling, naming, complexity, API surface changes, SRP violations, leaky abstractions, dead code | haiku |
 | performance | Efficiency | N+1 queries, unbounded collections, missing indexes, unnecessary allocations, cache opportunities, algorithmic complexity | haiku |
+| reliability | Failure resilience | Error handling completeness, timeout/retry logic, circuit breakers, resource cleanup on error paths, graceful degradation. Load [reliability-patterns.md](./reliability-patterns.md) | haiku |
+| cloud-infra | Infrastructure | Terraform/IaC review, cloud architecture, cost implications, disaster recovery. Only dispatch when diff touches infrastructure files (*.tf, Dockerfile, docker-compose.*, CI/CD configs). Use `cloud-architect` agent. | haiku |
 
 ### Agent Prompt Template
 
@@ -62,7 +64,7 @@ Same as the standard review output format, with an additional header:
 
 ```
 ## Review: [brief title] (deep)
-Agents: correctness, security, testing, maintainability, performance
+Agents: correctness, security, testing, maintainability, performance, reliability
 Cross-lens agreements: N findings flagged by 2+ agents
 
 ### Critical

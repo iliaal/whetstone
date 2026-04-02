@@ -51,6 +51,8 @@ When simplifying AI-generated code, specifically target:
 - **Over-abstraction** (factory for 2 objects, wrapper around a single call, util file with 1 function) -- inline the code
 - **Inconsistent style** that drifts from the file's existing conventions -- match the file
 - **Placeholder stubs** (`// ...`, `// rest of code`, `// similar to above`, `// continue pattern`, `// add more as needed`) -- leave unsimplified code as-is rather than replacing it with stubs
+- **Redundant error wrapping** (`catch(e) { throw e; }`, `catch(e) { throw new Error(e.message); }`) that strips the original stack for no reason -- remove the try/catch entirely and let errors propagate
+- **Verbose stdlib reimplementations** (hand-rolled loops that replicate `array_filter`, `Array.from`, `Collection::pluck()`, `itertools`) -- replace with the stdlib/framework one-liner
 
 ## Stop Conditions
 

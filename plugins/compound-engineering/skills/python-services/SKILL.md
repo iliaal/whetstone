@@ -114,10 +114,10 @@ def call_api(url: str) -> dict: ...
 
 ## Discipline
 
-- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Simplicity first -- every change as simple as possible, impact minimal code
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Verify: `uv run pytest && uv run ruff check .` pass with zero warnings before declaring done
 - Coverage target: 80%+ (`uv run pytest --cov --cov-report=html`)
 

@@ -117,6 +117,31 @@ Listing what something is *not* before revealing what it *is*. A rhetorical stri
 - "Not a X... Not a Y... A Z." -- state Z directly
 - "It wasn't X. It wasn't Y. It was Z." -- the reader doesn't need the runway
 
+## Dramatic Fragmentation
+
+Sentence fragments for manufactured profundity. Complete sentences. Trust content over presentation.
+
+- "[Noun]. That's it. That's the [thing]." -- performative simplicity
+- "X. And Y. And Z." -- staccato drama
+- "This unlocks something. [Word]." -- artificial revelation
+- "Not always. Not perfectly." -- hedging disguised as reassurance
+
+## Formulaic Constructions
+
+- "By the time X, I was Y." -- narrative template, restructure
+- "X that isn't Y" -- say "X is broken" directly
+
+## Narrator-from-a-Distance
+
+Floating above the scene instead of putting the reader in it.
+
+- "Nobody designed this." -- disembodied observation
+- "This happens because..." -- lecturer voice
+- "This is why..." -- same
+- "People tend to..." -- armchair sociologist
+
+Put the reader in the room. "You don't sit down and decide to..." beats "Nobody designed this."
+
 ## Performative Emphasis
 
 False intimacy or manufactured sincerity:

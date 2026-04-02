@@ -110,7 +110,7 @@ Always index columns referenced in RLS policies. For complex multi-table checks,
 
 - Always `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` before optimizing
 - `pg_stat_statements` for slow query detection: `SELECT query, mean_exec_time, calls FROM pg_stat_statements WHERE mean_exec_time > 100 ORDER BY mean_exec_time DESC LIMIT 20`
-- Table bloat check: `SELECT relname, n_dead_tup, last_vacuum FROM pg_stat_user_tables WHERE n_dead_tup > 1000 ORDER BY n_dead_tup DESC`
+- Table bloat check: `SELECT relname, n_dead_tup, last_vacuum FROM pg_stat_user_tables WHERE n_dead_tup > 10000 ORDER BY n_dead_tup DESC`
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping
 - High `rows removed by filter` -> index doesn't match predicate
 - CTEs are inlined by default; use `MATERIALIZED`/`NOT MATERIALIZED` hints to control optimization
@@ -177,6 +177,34 @@ Always filter BEFORE vector search (use partial indexes or CTEs with pre-filtere
 | Anti-Pattern | Fix |
 |-------------|-----|
 | `SELECT *` | List needed columns |
+| N+1 queries in application loop | Use `JOIN`, `IN`, or batch fetch |
+| `OFFSET` for pagination on large tables | Cursor pagination: `WHERE id > $last ORDER BY id LIMIT $n` |
+| `count(*)` on large tables | Approximate: `SELECT reltuples FROM pg_class WHERE relname = 'table'` |
+| Nullable booleans | `NOT NULL DEFAULT false` -- three-valued logic causes subtle bugs |
+| Missing FK indexes | See detection query in Index Strategy above |
+| `ORDER BY RANDOM()` | Use `TABLESAMPLE` or application-side shuffle |
+
+**Detection queries:**
+
+```sql
+-- Slow queries (requires pg_stat_statements)
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC LIMIT 20;
+
+-- Table bloat (dead tuples awaiting vacuum)
+SELECT relname, n_dead_tup, last_vacuum, last_autovacuum
+FROM pg_stat_user_tables
+WHERE n_dead_tup > 10000
+ORDER BY n_dead_tup DESC;
+
+-- Unused indexes (candidates for removal)
+SELECT schemaname, relname, indexrelname, idx_scan
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0 AND indexrelname NOT LIKE '%_pkey'
+ORDER BY pg_relation_size(indexrelid) DESC;
+```
 
 ## Verify
 
