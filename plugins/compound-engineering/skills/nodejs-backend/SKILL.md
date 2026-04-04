@@ -67,6 +67,8 @@ Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 confl
 
 ## API Design
 
+**Contract-first**: define route schemas (Zod schemas, Fastify JSON Schema, or OpenAPI spec) before writing handler logic. The schema is the contract -- implementation follows. Never remove or rename response fields without a deprecation cycle. Prefer adding optional fields over modifying existing ones.
+
 - **Resources**: plural nouns (`/users`), max 2 nesting levels (`/users/:id/orders`)
 - **Methods**: GET read | POST create | PUT replace | PATCH partial | DELETE remove
 - **Versioning**: URL path `/api/v1/`
@@ -74,7 +76,7 @@ Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 confl
 - **Errors**: `{ error: { code, message, details? } }`
 - **Queries**: `?page=1&limit=20&status=active&sort=createdAt,desc`
 - Return `Location` header on 201. Use 204 for successful DELETE with no body.
-- Generate OpenAPI/Swagger docs from route schemas for interactive API documentation.
+- Generate OpenAPI/Swagger docs from the route schemas defined above for interactive API documentation.
 
 ## Async Patterns
 

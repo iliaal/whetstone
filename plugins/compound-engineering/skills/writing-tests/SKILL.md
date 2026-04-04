@@ -29,6 +29,14 @@ Bad:   "creates user and sends welcome email and updates counter"
 
 Before writing test cases for a new feature, enumerate user journeys: "As a [role], I want to [action], so that [benefit]." Generate test cases from each journey -- this ensures tests cover user-visible behavior, not implementation details.
 
+### DAMP over DRY in tests
+
+Each test should be independently readable without chasing shared setup through helper functions. Duplication in tests is acceptable -- even desirable -- when it makes the test's intent obvious at a glance. Extract shared setup only when it genuinely reduces noise without hiding what the test does.
+
+### Test pyramid
+
+For API/web projects, aim for ~80% unit (fast, isolated), ~15% integration (API/DB boundaries), ~5% E2E (critical user flows). Adjust ratios based on project risk profile -- data pipelines may need heavier integration coverage, CLI tools may need minimal E2E.
+
 ### Name tests by expected behavior
 
 The test name should describe what happens, not what's being called.
@@ -144,7 +152,7 @@ Before mocking any method, ask: (1) What side effects does the real method have?
 | Don't know how to test | Write the assertion first (desired outcome), then build the test around it |
 | Test too complicated | Simplify the interface being tested |
 | Must mock everything | Code is too coupled -- use dependency injection |
-| Test setup too large | Extract helpers. Still complex? Simplify the design |
+| Test setup too large | Extract helpers that reduce noise without hiding test intent (see DAMP). Still complex? Simplify the design |
 
 ## Rationalization Table
 

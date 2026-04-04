@@ -37,6 +37,8 @@ Capture environment state with `bash collect-diagnostics.sh` ([script](./scripts
 
 **1b. Form initial hypotheses** -- before investigating broadly, form 2-3 hypotheses based on the reproduction. What are the most likely causes given the symptoms? This focuses the investigation on plausible paths rather than searching aimlessly.
 
+**1c. Reduce** -- strip the reproduction to the minimal failing case. Remove unrelated code, data, and configuration until removing one more piece makes the bug disappear. That remaining piece is the trigger.
+
 **2. Investigate** -- trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
 
 **Multi-component systems** (CI -> build -> deploy, API -> service -> DB): before proposing fixes, instrument each component boundary:

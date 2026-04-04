@@ -5,6 +5,17 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.52.1] - 2026-04-04
+
+### Changed
+
+- **planning**: Vertical slicing principle in anti-patterns table and verify checklist. Task duration heuristic (>2h = split) in phase sizing rules.
+- **frontend-design**: Four new banned AI patterns -- colored icon circles, left-border accent cards, cookie-cutter section rhythm, bubbly rounded containers. Fixed stock imagery alternative.
+- **writing-tests**: DAMP over DRY principle and test pyramid ratios (~80/15/5) as separate subsections. DAMP caveat added to "When Stuck" table.
+- **debugging**: Reduce step (1c) with stopping criterion -- strip to minimal failing case before investigating.
+- **nodejs-backend**: Contract-first principle with named artifact (route schemas). Reconciled with existing OpenAPI generation guidance.
+- **verification-before-completion**: Removed duplicate empty Integration heading.
+
 ## [2.52.0] - 2026-04-02
 
 ### Added

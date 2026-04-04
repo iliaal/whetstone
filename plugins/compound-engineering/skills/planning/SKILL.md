@@ -118,6 +118,7 @@ Skip for greenfield projects where no tests exist yet.
 Every phase must be **context-safe**:
 - Max 5-8 files touched
 - Max 2 dependencies on other phases
+- No single task exceeds ~2 hours of focused work -- if it would, split further
 - Fits in one focused session for a developer without external blockers
 - If a phase violates these → split it
 - **Scope challenge**: if the overall plan touches 8+ files or introduces 2+ new classes/services, challenge the scope. Ask: can this be split into smaller, independently shippable increments?
@@ -183,6 +184,7 @@ Deepening is additive -- it fills gaps without restructuring what already works.
 | Don't | Do Instead |
 |-------|------------|
 | Start coding without a plan | Create .plan/task_plan.md first |
+| Plan horizontal layers (all DB, then all API, then all UI) | Vertical slices: one complete feature path per phase (DB + API + UI) delivering working end-to-end functionality |
 | State goals once and forget | Re-read plan before decisions |
 | Hide errors and retry silently | Log errors, mutate approach |
 | Keep everything in context | Write large content to files |
@@ -198,6 +200,7 @@ Deepening is additive -- it fills gaps without restructuring what already works.
 - File structure table is complete with action and responsibility columns
 - Phase sizing respects 5-8 file limit
 - No placeholder tasks ("implement feature", "add tests") -- every task names specific files and patterns
+- Each phase delivers end-to-end functionality (not a single horizontal layer)
 - Open questions limited to 3 or fewer genuinely blocking unknowns
 
 ## Integration

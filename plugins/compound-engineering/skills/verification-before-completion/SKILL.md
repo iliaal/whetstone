@@ -121,8 +121,6 @@ Stop and re-verify when you catch yourself thinking any of these:
 | "The CI will catch it" | CI runs after you claim done. Verification happens before the claim, not after. |
 | "Zero issues found" on first pass | First implementations typically need 2-3 revision cycles. "Perfect on the first try" more likely means incomplete verification. Re-verify with broader scope. |
 
-## Integration
-
 ## References
 
 - [System-Wide Test Check](./references/system-wide-test-check.md) -- blast-radius verification for task completion (callbacks, integration, orphaned state)

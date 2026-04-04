@@ -1,6 +1,6 @@
 {
-  "plugin_version": "2.52.0",
-  "generated_at": "2026-04-02T17:55:19.584082+00:00",
+  "plugin_version": "2.52.1",
+  "generated_at": "2026-04-04T12:17:44.375284+00:00",
   "skills": {
     "agent-native-architecture": {
       "content_hash": "54e923ea2d58a9f39e004f610a9df3208b83e4b09306096b0e2efc22f926be10",
@@ -27,8 +27,8 @@
       "pattern_changed": "2.50.0"
     },
     "debugging": {
-      "content_hash": "56014e691d8e585b9e531feab6aa6cf0ed274d13868d765381a440281a51cd4f",
-      "content_changed": "2.52.0",
+      "content_hash": "079406da221ce08f782b8f3c8950086831881a38e193ced6c79194a9394ae24b",
+      "content_changed": "2.52.1",
       "pattern_hash": "0ce2866a68ebc9b3a5cd9d0ce3233cf11619bc237845a64a8a235581bee77c3f",
       "pattern_changed": "2.50.0"
     },
@@ -75,8 +75,8 @@
       "pattern_changed": "2.50.0"
     },
     "nodejs-backend": {
-      "content_hash": "41872e7799153e49851370c0a4cdbff1f9fa11fe7a0fe11ae4000ef97950470e",
-      "content_changed": "2.52.0",
+      "content_hash": "abe90b25c9a529da0fe42b2ec04962686f2089034a7f7c2b4f85a6cc3d99a2bc",
+      "content_changed": "2.52.1",
       "pattern_hash": "41771fcd01383b6e1e2deda54941544325cb8de4f50a11c480ac74309e444c19",
       "pattern_changed": "2.50.0"
     },
@@ -99,8 +99,8 @@
       "pattern_changed": "2.50.0"
     },
     "planning": {
-      "content_hash": "596663933465a7d437f477604f693e77c3b3e7a633f635e3a885dc4226ce9494",
-      "content_changed": "2.52.0",
+      "content_hash": "33bc2e1f42bda692eb8a448289f3050d7fff86941b657da87da0e5f0d4557f0b",
+      "content_changed": "2.52.1",
       "pattern_hash": "ba6f6d19fee8f9934b01ef88359e5de771b475d927b7a1365f3bee44d80d3768",
       "pattern_changed": "2.50.0"
     },
@@ -159,8 +159,8 @@
       "pattern_changed": "2.50.0"
     },
     "verification-before-completion": {
-      "content_hash": "2beba326ef61c82f7a314966a0d0a011c3ae00fa8785d05d0dcb5ca71865b499",
-      "content_changed": "2.52.0",
+      "content_hash": "34edad25a0011ee602e0b4a5557350d1f6bd8091e36198c2973cbe1a7de603bf",
+      "content_changed": "2.52.1",
       "pattern_hash": "99dfeadc1d36a057149470f1c8ce2fe4d50104e0ae0f11996d63d84755d77555",
       "pattern_changed": "2.50.0"
     },
@@ -171,8 +171,8 @@
       "pattern_changed": "2.50.0"
     },
     "writing-tests": {
-      "content_hash": "9da0dd443bdb24f79c179e300e15700480fb7ad1cb350d5bc74b6dbefa59476b",
-      "content_changed": "2.52.0",
+      "content_hash": "91986e974f6a947387d4050c9682e44a9c656967342b1b6e107a9d505569b6ef",
+      "content_changed": "2.52.1",
       "pattern_hash": "d3b32b5edcafd10d5ee44960ea1dbce87f55c3ab80d204cfd5509954fe45928a",
       "pattern_changed": "2.50.0"
     }

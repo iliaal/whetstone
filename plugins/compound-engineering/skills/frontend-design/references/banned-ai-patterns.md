@@ -10,6 +10,8 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Perfectly symmetric grids everywhere | Real design uses intentional asymmetry | Vary column spans, use dominant/subordinate relationships |
 | Full-width sections stacked vertically with identical padding | Monotonous rhythm | Vary section widths, padding, and visual weight |
 | Everything inside cards (border + shadow + white bg) | Card overuse dilutes hierarchy | Use `border-t`, `divide-y`, or negative space for separation |
+| Cookie-cutter section rhythm (every section follows identical structure) | Monotonous, signals templated generation | Vary section types: hero, split, bento, full-bleed, editorial |
+| Colored left-border accent cards | Common AI component pattern | Use top borders, background tints, or typography weight for emphasis |
 
 ## Color Patterns
 
@@ -36,7 +38,9 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Accent line under every heading | Dead giveaway | Use typography weight and spacing for hierarchy |
 | Decorative emoji in headers | Tacky | Quality icons (Phosphor, Radix) or no decoration |
 | Uniform rounded corners everywhere | Monotonous | Vary by purpose: sharp for data, rounded for interactive, pill for tags |
-| Generic stock imagery | Placeholder feel | Realistic, messy data ("47.2%", "+1 (312) 847-1928") |
+| Icons inside colored circles (primary-color background circle + white icon) | Default AI component decoration | Use icons inline, or with subtle background tints matching the surface |
+| `rounded-2xl` / `rounded-3xl` on containers, cards, and sections | Bubbly, toy-like feel | Reserve large radii for small interactive elements; use tighter radii for containers |
+| Generic stock imagery | Placeholder feel | Contextual photos, SVG illustrations, or abstract graphics suited to the domain |
 | Floating gradient blobs as background | Overused AI aesthetic | Noise textures, mesh gradients, geometric patterns |
 
 ## Interaction Patterns
