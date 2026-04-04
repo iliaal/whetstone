@@ -87,7 +87,7 @@ echo "[2/7] Sync repo description..."
 repo_desc=$(jq -r '.description' plugins/compound-engineering/.claude-plugin/plugin.json)
 gh repo edit --description "$repo_desc" 2>/dev/null && echo "  Updated repo description" || echo "  Failed to update repo description (non-fatal)"
 
-# --- 3. Create GitHub release ---
+# --- 3. Create GitHub release on plugin repo ---
 echo "[3/7] Create GitHub release..."
 # Extract changelog entry for this version
 release_notes=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;p;}" CHANGELOG.md)
@@ -101,9 +101,40 @@ else
   echo "  Created release v${version}"
 fi
 
-# --- 3. Mirror to ai-skills ---
+# --- 4. Mirror to ai-skills ---
 echo "[4/7] Mirror to ai-skills..."
 bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
+
+# Sync changelog: extract skill-related entries from plugin changelog
+echo "  Syncing changelog..."
+# Build allowlist from actual skill directories (longest names first to avoid prefix conflicts)
+skill_names=$(ls -1 "$ROOT_DIR/plugins/compound-engineering/skills" | awk '{print length, $0}' | sort -rn | awk '{print $2}' | tr '\n' '|' | sed 's/|$//')
+# Keep ### headers and lines referencing known skills
+skill_notes=$(printf '%s\n' "$release_notes" | grep -E "^### |^- \*\*(${skill_names})(\*\*|/)" || true)
+# Strip orphan ### headers (headers with no entries after them)
+skill_notes=$(printf '%s\n' "$skill_notes" | awk '/^### /{header=$0; next} /^- /{if(header){print header; header=""} print}')
+if [[ -n "$skill_notes" ]]; then
+  ai_skills_changelog="$AI_SKILLS_DIR/CHANGELOG.md"
+  # Build new entry
+  new_entry="## [${version}] - $(date +%Y-%m-%d)
+
+${skill_notes}"
+  # Insert after the header block (after the line matching "## [")
+  # Find the line number of the first existing version entry
+  first_version_line=$(grep -n '^## \[' "$ai_skills_changelog" | head -1 | cut -d: -f1)
+  if [[ -n "$first_version_line" ]]; then
+    head -n $((first_version_line - 1)) "$ai_skills_changelog" > "${ai_skills_changelog}.tmp"
+    printf '%s\n\n' "$new_entry" >> "${ai_skills_changelog}.tmp"
+    tail -n +"$first_version_line" "$ai_skills_changelog" >> "${ai_skills_changelog}.tmp"
+    mv "${ai_skills_changelog}.tmp" "$ai_skills_changelog"
+    echo "  Changelog entry added for v${version}"
+  else
+    echo "  WARNING: Could not find version entry in ai-skills CHANGELOG, skipping"
+  fi
+else
+  echo "  No skill changes to add to changelog"
+fi
+
 cd "$AI_SKILLS_DIR"
 if [[ -n "$(git status --porcelain)" ]]; then
   git add -A
