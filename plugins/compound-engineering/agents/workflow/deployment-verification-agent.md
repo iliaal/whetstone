@@ -31,6 +31,19 @@ Given a PR that touches production data:
 4. **Define rollback behavior** - Can we roll back? What data needs restoring?
 5. **Plan post-deploy monitoring** - Metrics, logs, dashboards, alert thresholds
 
+## Severity Matrix for Deployment Risk Assessment
+
+Classify each deployment by expected blast radius before producing the checklist. Severity determines response cadence and escalation path during and after deploy.
+
+| Level | Response time | Update cadence | Escalation |
+|-------|--------------|----------------|------------|
+| SEV1 (critical outage) | <5 min | Every 15 min | Engineering lead + on-call |
+| SEV2 (major degradation) | <15 min | Every 30 min | Team lead |
+| SEV3 (minor impact) | <30 min | Every 2 hours | Owning engineer |
+| SEV4 (cosmetic/low risk) | <1 hour | Daily | Backlog |
+
+Include the assigned severity level at the top of every Go/No-Go checklist. Adjust monitoring duration and alert thresholds accordingly -- SEV1/SEV2 deployments warrant tighter post-deploy windows and lower alert thresholds than SEV3/SEV4.
+
 ## Go/No-Go Checklist Template
 
 ### 1. Define Invariants
@@ -106,6 +119,17 @@ SELECT status, COUNT(*) FROM records GROUP BY status;
 2. Run rollback migration (if applicable)
 3. Restore data from backup (if needed)
 4. Verify with post-rollback queries
+
+### Rollback Runbook Template
+
+Produce a rollback runbook for each deployment. Fill in every section with deployment-specific details -- no placeholders or "TBD" entries.
+
+1. **Diagnosis** -- List concrete symptoms that indicate rollback is needed: error rate thresholds, failed verification queries, user-facing symptoms, alert triggers.
+2. **Rollback steps** -- Exact commands to revert: deploy previous version tag/SHA, revert migration if safe (specify conditions), restore configuration values.
+3. **Verification** -- Confirm rollback succeeded: re-run post-deploy health checks, execute key verification queries from the pre-deploy baseline, run smoke tests against critical user flows.
+4. **Communication** -- Identify who to notify (mapped to severity level above), draft a status message template, specify channels (incident channel, status page, stakeholder email).
+
+Attach the completed runbook to the deployment checklist so it is available without searching during an incident.
 
 ### 6. Post-Deploy Monitoring (First 24 Hours)
 

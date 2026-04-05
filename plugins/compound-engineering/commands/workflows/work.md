@@ -167,6 +167,33 @@ This command takes a work document (plan, specification, or todo file) and execu
      - "Search results load instantly on repeat queries (added Redis caching layer)"
      - Not: "Added PasswordResetController, ResetMailer, and migration for password_reset_tokens"
 
+7. **Subagent Execution Discipline**
+
+   When dispatching subagents to implement tasks:
+
+   **Fresh agent per task.** Spawn a new subagent for each task rather than reusing one with accumulated context. Stale context from previous tasks causes drift, incorrect assumptions about current state, and hallucinated file contents. One task, one agent, one clean slate.
+
+   **Two-stage review on deliverables.** After each subagent completes, verify spec compliance FIRST: does the output match what was requested? Then evaluate code quality. Order matters -- high-quality code that solves the wrong problem is still wrong. If spec compliance fails, re-dispatch with clarified requirements before reviewing quality.
+
+   **Model selection by task complexity.** Match model cost to task difficulty:
+
+   | Task type | Model | Examples |
+   |-----------|-------|---------|
+   | Mechanical | Cheapest/fastest (e.g., Haiku) | Boilerplate, simple renames, config changes, formatting |
+   | Integration | Default model | Connecting components, API wiring, service plumbing |
+   | Architectural | Best available | New abstractions, cross-cutting concerns, design decisions |
+
+   When uncertain, default up -- the cost of a wrong architectural decision far exceeds the token savings from a cheaper model.
+
+   **Implementer status protocol.** Require subagents to report status using one of these values:
+
+   - **DONE** -- complete and verified, no concerns
+   - **DONE_WITH_CONCERNS** -- complete but flagging risks (list them explicitly)
+   - **NEEDS_CONTEXT** -- blocked on missing information. Orchestrator provides context and re-dispatches the same task to a fresh agent
+   - **BLOCKED** -- cannot proceed. Orchestrator intervenes, reassigns, or escalates to user
+
+   Treat any response without an explicit status as NEEDS_CONTEXT and follow up.
+
 ### Phase 2.5: Verify Before Proceeding
 
 Before moving to quality checks, run the `verification-before-completion` gate:

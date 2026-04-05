@@ -54,9 +54,9 @@ Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 ## Frontend Aesthetics Guidelines
 
 Focus on:
-- **Typography**: Choose fonts with character. Avoid Inter, Roboto, Arial, system fonts. Use distinctive choices like `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Pair a display font with a refined body font. Headlines: tighten letter-spacing, reduce line-height, use weight contrast (Medium 500, SemiBold 600) beyond just Regular/Bold. Body text: limit to ~65 characters wide, increase line-height. Use `font-variant-numeric: tabular-nums` or monospace for data-heavy numbers. Fix orphaned words with `text-wrap: balance`.
+- **Typography**: Choose fonts with character. Avoid Inter, Roboto, Arial, system fonts. Use distinctive choices like `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Pair a display font with a refined body font. Headlines: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust -- the typical AI default is undersized, timid headings that lack presence. Tighten letter-spacing, reduce line-height, use weight contrast (Medium 500, SemiBold 600) beyond just Regular/Bold. Body text: limit to ~65 characters wide, increase line-height. Use `font-variant-numeric: tabular-nums` or monospace for data-heavy numbers. Fix orphaned words with `text-wrap: balance`.
 - **Color & Theme**: Commit to a cohesive palette. Max one accent color, saturation below 80%. Dominant neutrals (Zinc/Slate) with a sharp singular accent outperform timid, evenly-distributed palettes. Use CSS variables for consistency. Tint all grays consistently (warm OR cool, never both). Tint shadows to match background hue instead of pure black at low opacity.
-- **Motion**: Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (`animation-delay: calc(var(--index) * 80ms)` using a CSS index variable) creates more delight than scattered micro-interactions. Use spring physics (`type: "spring", stiffness: 100, damping: 20`) over linear easing. Animate exclusively via `transform` and `opacity` -- never `top`, `left`, `width`, `height`. Scroll entry: combine Y translation + blur + opacity (`translate-y-16 blur-md opacity-0` resolving to `translate-y-0 blur-0 opacity-100`) for premium depth. Use `IntersectionObserver` for scroll reveals -- never `window.addEventListener('scroll')` (causes continuous reflows). Never use `useState` for continuous/magnetic hover animations -- use `useMotionValue` + `useTransform` exclusively for frame-rate-sensitive motion. Memoize perpetual motion components (`React.memo`) and isolate them as leaf `'use client'` components. Apply grain/noise filters only to fixed, `pointer-events-none` pseudo-elements, never to scrolling containers.
+- **Motion**: Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions. Use spring physics over linear easing. Animate exclusively via `transform` and `opacity` (GPU-composited). Use `IntersectionObserver` for scroll reveals. See [motion-patterns.md](./references/motion-patterns.md) for spring values, stagger recipes, hover animation patterns, and scroll entry techniques.
 - **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density. Use CSS Grid over complex flexbox percentage math (`w-[calc(33%-1rem)]`). Contain layouts with `max-w-7xl mx-auto` or similar. Use `min-h-[100dvh]` instead of `h-screen` (prevents iOS Safari viewport jumping). Bottom padding often needs to be slightly larger than top for optical balance. **Anti-card overuse:** at high density (dashboards, data-heavy UIs), don't wrap everything in card containers (border + shadow + white). Use `border-t`, `divide-y`, or negative space to separate content instead. Cards should exist only when elevation communicates hierarchy. **Bento grid archetypes:** when building dashboard grids, use named patterns: Intelligent List (filterable, sortable data), Command Input (search/action bar), Live Status (real-time metrics), Wide Data Stream (timeline/activity feed), Contextual UI (details panel that responds to selection).
 - **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting to solid colors. Add contextual effects and textures that match the overall aesthetic. Apply creative forms like gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, and grain overlays. Use radial gradients, noise overlays, or mesh gradients over standard linear 45-degree fades. For premium depth, use the double-bezel pattern: outer wrapper with `ring-1` hairline + padding + large radius, inner content with its own background + `shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]` + derived inner radius (`rounded-[calc(2rem-0.375rem)]`). Add glassmorphism inner borders with `border-white/10` for refraction effects. Use reliable placeholders like `https://picsum.photos/seed/{name}/800/600` when real assets are unavailable.
 
@@ -78,11 +78,16 @@ State the chosen values in the design philosophy comment. These prevent the "eve
 
 These patterns are hallmarks of AI-generated interfaces. Avoid them. See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the comprehensive list covering layout, color, typography, decoration, interaction, and content patterns.
 
-Core offenders:
-- **Purple-to-blue gradient hero** -- the default AI aesthetic. Pick a different palette entirely.
-- **Centered hero + three equal-width cards + centered CTA** -- the most common AI layout. Use asymmetric layouts, split screens, or bento grids instead.
-- **Uniform rounded corners everywhere** -- vary border-radius by component purpose (sharp for data, rounded for interactive, pill for tags)
-- **Generic placeholder copy** -- no "John Doe", "Acme Corp", "Lorem ipsum". Use realistic, messy data ("47.2%", "+1 (312) 847-1928")
+Top 6 AI slop patterns (highest detection priority):
+
+1. **Purple/violet gradients** (`#6366f1`--`#8b5cf6`) -- the single most recognizable AI color signature. Pick a different palette entirely.
+2. **3-column feature grid with icons in circles** -- the most common AI layout. Use asymmetric layouts, split screens, or bento grids instead.
+3. **Icons in colored circles as decoration** -- primary-color background circle + white icon is default AI component styling. Use inline icons or subtle background tints.
+4. **Center-heavy layouts** (>60% `text-align: center`) -- left-align body text; reserve centering for headings and CTAs only.
+5. **Uniform bubbly border-radius** (>80% of elements sharing the same value >=16px) -- vary by purpose: sharp for data, rounded for interactive, pill for tags.
+6. **Generic hero copy** ("Welcome to X", "Unlock the power of...", "Revolutionize your...") -- write specific, benefit-driven copy tied to the actual product.
+
+See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the full catalog beyond these top 6.
 
 ## Verify
 
@@ -94,6 +99,7 @@ Core offenders:
 
 ## References
 
+- [Motion patterns](./references/motion-patterns.md) -- spring values, stagger recipes, hover animations, scroll entry, performance rules
 - [Creative arsenal](./references/creative-arsenal.md) -- navigation, layout, card, typography, and micro-interaction patterns
 - [Redesigning existing interfaces](./references/redesigning-existing.md) -- audit-first upgrade workflow for existing projects
 - [Redesign audit checklist](./references/redesign-audit.md) -- 60+ checks across typography, color, layout, interactivity, content, and component patterns

@@ -35,7 +35,11 @@ Each test should be independently readable without chasing shared setup through 
 
 ### Test pyramid
 
-For API/web projects, aim for ~80% unit (fast, isolated), ~15% integration (API/DB boundaries), ~5% E2E (critical user flows). Adjust ratios based on project risk profile -- data pipelines may need heavier integration coverage, CLI tools may need minimal E2E.
+For API/web projects, aim for ~80% unit, ~15% integration, ~5% E2E. Adjust ratios based on project risk profile -- data pipelines may need heavier integration coverage, CLI tools may need minimal E2E.
+
+- **Unit tests (~80%)**: fast, isolated, test one behavior per test. Run in milliseconds. No database, no network, no filesystem. These form the foundation -- cheap to write, cheap to run, fast feedback.
+- **Integration tests (~15%)**: verify component boundaries -- API endpoints hitting a real test database, service layers wired to real dependencies, queue producers and consumers working together. Slower than unit tests but catch wiring bugs that mocks hide.
+- **E2E tests (~5%)**: validate critical user paths end-to-end through the real system. Expensive to write, slow to run, brittle to maintain. Limit to high-value flows (signup, checkout, core workflow). Every E2E test must justify its maintenance cost.
 
 ### Name tests by expected behavior
 
@@ -91,15 +95,17 @@ Tests-first answer "what should this do?" Tests-after answer "what does this do?
 
 For bug fixes, writing the failing test first is genuinely valuable -- it proves the bug exists and proves the fix works. For new features, the order is less critical than the quality.
 
-### Bug fixes: test first
+### Bug fixes: prove-it pattern
+
+The failing test is proof the bug exists. The passing test is proof the fix works. Without both halves, there is no proof -- just coincidence.
 
 1. Write a test that reproduces the bug
-2. **Run it and confirm it fails for the right reason** -- a test that fails due to a typo or import error hasn't captured the bug
-3. Fix the bug
-4. **Run it and confirm it passes AND other tests still pass** -- a fix that breaks something else isn't a fix
-5. If the test passes immediately without a fix, you're testing existing behavior, not the bug
+2. **Run it and watch it fail** -- confirm it fails for the right reason. A test that fails due to a typo or import error hasn't captured the bug. The failure message should describe the buggy behavior.
+3. Apply the fix
+4. **Run it and watch it pass** -- confirm the fix addresses the specific failure AND other tests still pass. A fix that breaks something else isn't a fix.
+5. If the test passes immediately without a fix, the test is verifying existing behavior, not the bug. Go back to step 1.
 
-This is non-negotiable for bugs -- a fix without a regression test is a fix that will break again.
+This is non-negotiable for bugs -- a fix without a regression test is a fix that will break again. The two-run sequence (fail then pass) is the proof. Skipping the first run means the test might pass for reasons unrelated to the fix.
 
 ### New features: test alongside
 

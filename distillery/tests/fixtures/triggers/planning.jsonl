@@ -9,3 +9,4 @@
 {"prompt": "add a new endpoint for user profiles", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write unit tests for the auth module", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "simplify the error handling logic", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "break this feature into vertical slices instead of horizontal layers", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}

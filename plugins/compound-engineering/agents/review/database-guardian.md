@@ -42,7 +42,21 @@ Review the structural rules that protect data. Focus on schema design, constrain
 - Ensure migrations are idempotent when possible
 - Check for long-running operations that could lock tables
 
-### 2. Validate Data Constraints
+### 2. Migration Risk Patterns
+
+Apply these checks to every migration under review:
+
+**Reversibility**: Can the migration be rolled back cleanly? Migrations that drop columns, remove tables, or perform lossy type conversions are irreversible. Flag as high-risk and require an explicit acknowledgment in the PR that rollback means "deploy a new forward migration."
+
+**Data loss risk**: Does the migration drop columns, truncate tables, or change column types in ways that lose precision (e.g., `BIGINT` to `INT`, `TEXT` to `VARCHAR(255)`, `DECIMAL(10,4)` to `DECIMAL(10,2)`)? Flag each instance and verify the team has confirmed no data in the affected range exceeds the new constraints.
+
+**Lock duration**: Will the migration hold table locks on large tables? `ALTER TABLE` on tables with millions of rows can lock reads or writes for minutes depending on the engine and operation. Flag operations that should use online DDL (`pt-online-schema-change`, `gh-ost`, MySQL `ALGORITHM=INPLACE`, PostgreSQL concurrent index creation) or phased approaches. Require an estimate of table size and expected lock duration.
+
+**Backfill strategy**: If the migration adds a `NOT NULL` column, how are existing rows handled? Acceptable approaches: a default value in the DDL, a background backfill script that runs before the constraint is enforced, or a deploy-code-then-migrate sequence. A bare `NOT NULL` addition without a default on a populated table will fail or lock. Flag it.
+
+**Multi-phase safety**: Migrations that change both schema and application code should be deployed in phases: (1) deploy code that handles both old and new schema, (2) run migration, (3) remove old-schema handling. Flag single-deployment PRs that combine schema changes with application code that only works against the new schema -- these create a window where rollback breaks the application.
+
+### 3. Validate Data Constraints
 
 - Verify presence of appropriate validations at model and database levels
 - Check for race conditions in uniqueness constraints
@@ -50,7 +64,7 @@ Review the structural rules that protect data. Focus on schema design, constrain
 - Validate that business rules are enforced consistently
 - Identify missing NOT NULL constraints
 
-### 3. Review Transaction Boundaries
+### 4. Review Transaction Boundaries
 
 - Ensure atomic operations are wrapped in transactions
 - Check for proper isolation levels
@@ -58,7 +72,7 @@ Review the structural rules that protect data. Focus on schema design, constrain
 - Verify rollback handling for failed operations
 - Assess transaction scope for performance impact
 
-### 4. Preserve Referential Integrity
+### 5. Preserve Referential Integrity
 
 - Check cascade behaviors on deletions
 - Verify orphaned record prevention
@@ -66,7 +80,7 @@ Review the structural rules that protect data. Focus on schema design, constrain
 - Validate that polymorphic associations maintain integrity
 - Check for dangling references
 
-### 5. Ensure Privacy Compliance
+### 6. Ensure Privacy Compliance
 
 - Identify personally identifiable information (PII)
 - Verify data encryption for sensitive fields

@@ -40,6 +40,31 @@ First, determine the review target type and set up the code for analysis.
 
 Ensure that the code is ready for analysis (either in worktree or on current branch). ONLY then proceed to the next step.
 
+#### Scope Resolution
+
+When no specific files are given (e.g., a bare branch name or the PR has no file list yet), resolve scope via this fallback chain:
+1. User-specified files/directories (explicit request)
+2. Session-modified files (`git diff --name-only` for unstaged + staged)
+3. All uncommitted files (`git diff --name-only HEAD`)
+4. Untracked files (`git ls-files --others --exclude-standard`)
+5. **Zero files → stop.** Ask what to review.
+
+Exclude lockfiles, minified/bundled output, and vendored/generated code.
+
+#### Two-Stage Review Gate
+
+The review proceeds in two stages. Do NOT skip to code quality before spec compliance passes.
+
+**Stage 1 -- Spec compliance (MUST complete before Stage 2):**
+- Compare the diff against the PR description, linked issue, or task spec.
+- Run a Scope Drift Check: `git diff --stat` against the PR's stated intent. Classify as **CLEAN** / **DRIFT DETECTED** / **REQUIREMENTS MISSING**.
+  - DRIFT DETECTED: note drifted files and ask the author -- ship as-is, split the PR, or remove unrelated changes?
+  - REQUIREMENTS MISSING: list what the spec promises but the diff doesn't deliver.
+- Flag missing requirements, unnecessary additions, and interpretation gaps.
+- If the implementation is fundamentally wrong (solves the wrong problem), stop here. Report Stage 1 failure and skip Stage 2 -- reviewing code quality on the wrong feature wastes effort.
+
+**Stage 2 -- Code quality:** Only after Stage 1 passes, proceed to the parallel agent dispatch and ultra-thinking phases below.
+
 #### Protected Artifacts
 
 The following paths are compound-engineering pipeline artifacts and must never be flagged for deletion, removal, or gitignore by any review agent:

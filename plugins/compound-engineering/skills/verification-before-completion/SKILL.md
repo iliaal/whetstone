@@ -118,8 +118,17 @@ Stop and re-verify when you catch yourself thinking any of these:
 | "I'm tired" / wanting the task to be over | Exhaustion is not an excuse. The last verification matters most. |
 | Rephrasing a claim to dodge the rule ("looks good" instead of "tests pass") | Spirit over letter. Any satisfaction expression about work state triggers verification. |
 | "Just this once" / "This time it's different" | Every bypass weakens the habit. No exceptions. |
-| "The CI will catch it" | CI runs after you claim done. Verification happens before the claim, not after. |
-| "Zero issues found" on first pass | First implementations typically need 2-3 revision cycles. "Perfect on the first try" more likely means incomplete verification. Re-verify with broader scope. |
+| "The CI will catch it" | CI runs after you claim done. Verification happens before the claim, not after. CI catches what CI tests -- verify locally what CI doesn't cover. |
+| "It worked on my machine" | Environment differences are the #1 source of "works for me" bugs. Verify in the target environment. |
+| "The tests are slow, I'll check later" | Slow tests are still faster than debugging a broken deployment. Run them now. |
+| "It's just a refactor, behavior didn't change" | Refactors are the most common source of subtle regressions. Run the tests. |
+
+**Red flags that verification was skipped:**
+
+- Using words like "should", "probably", "seems to" when describing outcomes
+- Expressing confidence without citing specific test output or command results
+- Claiming completion based on reasoning alone ("the logic is correct, so it should work")
+- Referencing a previous test run instead of a fresh one
 
 ## References
 

@@ -40,14 +40,17 @@ Launch these subagents IN PARALLEL. Each returns text data to the orchestrator.
 #### 1. **Context Analyzer**
    - Extracts conversation history
    - Identifies problem type, component, symptoms
+   - Quantifies impact with concrete metrics: duration, affected users/requests, SLA or revenue impact. Prefer specific numbers ("~2,000 requests failed over 45 minutes") over vague descriptions ("some users were affected")
+   - Reconstructs chronological timeline from first symptom to resolution (include timestamps where available)
    - Validates against schema
-   - Returns: YAML frontmatter skeleton
+   - Returns: YAML frontmatter skeleton + impact summary + timeline section
 
 #### 2. **Solution Extractor**
    - Analyzes all investigation steps
-   - Identifies root cause
+   - Identifies root cause using iterative "why" questioning (5 Whys): trace from the immediate failure through each contributing cause until reaching a systemic gap. "Deploy failed" → "Migration timed out" → "Table had 50M rows, no online DDL" → systemic cause: no migration size review process
+   - Frame all findings as systemic gaps, not individual mistakes. "The deploy process lacks migration size checks" not "Engineer X forgot to check"
    - Extracts working solution with code examples
-   - Returns: Solution content block
+   - Returns: Solution content block with root cause chain
 
 #### 3. **Related Docs Finder**
    - Searches `docs/solutions/` for related documentation
@@ -59,7 +62,8 @@ Launch these subagents IN PARALLEL. Each returns text data to the orchestrator.
    - Develops prevention strategies
    - Creates best practices guidance
    - Generates test cases if applicable
-   - Returns: Prevention/testing content
+   - Produces concrete action items: each action needs an owner (person or team) and a deadline. Actions without owners don't get done
+   - Returns: Prevention/testing content + action items list
 
 #### 5. **Category Classifier**
    - Determines optimal `docs/solutions/` category
@@ -101,10 +105,13 @@ Based on problem type, optionally invoke specialized agents to review the docume
 ## What It Captures
 
 - **Problem symptom**: Exact error messages, observable behavior
+- **Timeline**: Chronological sequence from first symptom to resolution, with timestamps where available. Captures the debugging path, not just the outcome
 - **Investigation steps tried**: What didn't work and why
-- **Root cause analysis**: Technical explanation
+- **Root cause analysis**: 5 Whys chain from immediate failure to systemic gap, framed as process/system deficiencies (blameless)
+- **Impact**: Concrete metrics -- duration, affected users/requests, SLA or revenue impact. Specific numbers ("~2,000 requests failed over 45 minutes") over vague descriptions ("some users were affected")
 - **Working solution**: Step-by-step fix with code examples
 - **Prevention strategies**: How to avoid in future
+- **Action items**: Follow-up tasks with assigned owner (person or team) and deadline
 - **Cross-references**: Links to related issues and docs
 
 ## Preconditions

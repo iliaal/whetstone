@@ -7,3 +7,5 @@
 {"prompt": "add a Laravel queue job for emails", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "create a Terraform module for S3 buckets", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a bash deployment script", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "should I use async or sync for this Python endpoint", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "design the API response contract for the FastAPI service", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}

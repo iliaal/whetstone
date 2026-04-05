@@ -2,3 +2,4 @@
 {"prompt": "build a self-modifying agent loop for the CI pipeline", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add pagination to the REST API", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "update the database schema for multi-tenancy", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "configure PreToolUse hooks for the agent to control permissions", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}

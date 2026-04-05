@@ -22,7 +22,7 @@ paths: "**/*.php"
 
 ## Modern PHP (8.4)
 
-Use these when applicable -- do not explain them in comments (Claude and developers know them):
+Use these when applicable -- do not add explanatory comments in generated code (Claude and developers know them):
 - Readonly classes and properties for immutable data
 - Enums with methods and interfaces for domain constants
 - Match expressions over switch
@@ -82,6 +82,14 @@ Use these when applicable -- do not explain them in comments (Claude and develop
 - `when()` / `mergeWhen()` for permission-based field inclusion
 - `whenPivotLoaded()` for pivot data
 - `withResponse()` for custom headers, `with()` for metadata (version, pagination)
+
+## API Design
+
+- **Contract-first**: define the API Resource and Form Request before writing the controller. The resource is the response contract, the Form Request is the input contract -- implementation follows.
+- **Hyrum's Law awareness**: every observable response field, ordering, or timing becomes a dependency for callers. Use API Resources to control exactly what's serialized -- never return raw models or `toArray()` from controllers.
+- **Addition over modification**: add new fields/endpoints rather than changing or removing existing ones. Removing a field from an API Resource breaks callers silently. Deprecate first (`@deprecated` in OpenAPI/docblock), remove in a later version.
+- **Consistent error envelope**: all exceptions should produce the same `{ "success": false, "error": { "code": "...", "message": "..." } }` structure. Use `Handler::render()` or a custom exception handler to normalize `ValidationException`, `ModelNotFoundException`, `AuthorizationException`, and application errors into one format. Callers build error handling once.
+- **Boundary validation via Form Requests**: validate at the HTTP boundary, not inside services. Form Requests with `toDto()` ensure services receive typed, pre-validated data. Internal code trusts that input was validated at entry -- no redundant checks scattered through repositories or models.
 
 ## Queues & Jobs
 

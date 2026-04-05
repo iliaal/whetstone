@@ -8,3 +8,4 @@
 {"prompt": "plan the API redesign", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "deploy the staging build", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add logging to the request handler", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "this PR is too large, how should we split it", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "PR management, not primarily review — too broad for regex"}

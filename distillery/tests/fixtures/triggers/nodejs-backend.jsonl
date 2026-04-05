@@ -6,3 +6,5 @@
 {"prompt": "create a React component for filters", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a Python script for ETL", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "optimize the PostgreSQL query", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "define the API contract with Zod schemas for the Express endpoints", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "add consistent error response format to the Node.js API", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}

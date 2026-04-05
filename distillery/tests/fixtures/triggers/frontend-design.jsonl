@@ -2,3 +2,5 @@
 {"prompt": "build a dashboard for the admin panel with charts and tables", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "optimize the SQL query for the reports endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "configure nginx reverse proxy for the API", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "add spring animation to the card hover effect", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "code implementation, not design direction — react-frontend territory"}
+{"prompt": "the design looks too generic and AI-generated, make it more distinctive", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}

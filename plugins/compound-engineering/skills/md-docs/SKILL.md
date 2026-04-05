@@ -65,6 +65,18 @@ Create AGENTS.md from scratch for projects without documentation. See [init-agen
 2. Generate terse, expert-to-expert context sections
 3. Write AGENTS.md, create CLAUDE.md symlink
 
+## Context File Hierarchy
+
+Structure CLAUDE.md (and AGENTS.md) content by priority so the most critical information loads first when context is compacted:
+
+1. **Rules** -- project constraints, forbidden patterns, required conventions. Override everything else.
+2. **Tech stack** -- languages, frameworks, versions, package managers.
+3. **Commands** -- how to build, test, lint, deploy. Exact commands, not descriptions.
+4. **Conventions** -- naming patterns, file organization, architectural decisions.
+5. **Boundaries** -- what's off-limits, what requires approval, scope constraints.
+
+Rules that prevent mistakes outweigh background information. Place them at the top so they survive aggressive context compaction.
+
 ## Arguments
 
 All workflows support:

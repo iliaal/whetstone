@@ -2,3 +2,5 @@
 {"prompt": "write a PR description for the auth refactor", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add an index on the created_at column", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "debug the memory leak in the worker process", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "audit this text for AI writing tells and fix them", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "check for citation issues and dead links in the documentation", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "too niche for regex — dead link matches debugging contexts"}

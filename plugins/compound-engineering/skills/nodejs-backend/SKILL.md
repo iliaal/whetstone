@@ -67,16 +67,18 @@ Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 confl
 
 ## API Design
 
-**Contract-first**: define route schemas (Zod schemas, Fastify JSON Schema, or OpenAPI spec) before writing handler logic. The schema is the contract -- implementation follows. Never remove or rename response fields without a deprecation cycle. Prefer adding optional fields over modifying existing ones.
+**Contract-first**: define route schemas (Zod schemas, Fastify JSON Schema, or OpenAPI spec) before writing handler logic. The schema is the contract -- implementation follows. Generate OpenAPI/Swagger docs from these schemas for interactive API documentation.
 
+- **Hyrum's Law awareness**: every observable response field, ordering, or timing becomes a dependency for callers. Use Zod schemas or Fastify response schemas to control exactly what's serialized -- never return raw ORM objects or untyped objects from handlers.
+- **Addition over modification**: add new optional fields rather than changing or removing existing ones. Removing a field from a response schema breaks callers silently. Deprecate first (mark in OpenAPI spec), remove in a later version.
+- **Consistent error envelope**: all errors -- validation, auth, not-found, application -- must produce the same `{ error: { code, message, details? } }` structure. Centralize in the error handler middleware. Callers build error handling once; inconsistent errors force per-endpoint special cases.
+- **Boundary validation**: validate at the middleware/route handler level (Zod `.parse()` on request body/params, Fastify schema validation). Services and repositories trust that input was validated at entry -- no redundant checks scattered through business logic.
 - **Resources**: plural nouns (`/users`), max 2 nesting levels (`/users/:id/orders`)
 - **Methods**: GET read | POST create | PUT replace | PATCH partial | DELETE remove
 - **Versioning**: URL path `/api/v1/`
 - **Response**: `{ data, pagination?: { page, limit, total, totalPages } }`
-- **Errors**: `{ error: { code, message, details? } }`
 - **Queries**: `?page=1&limit=20&status=active&sort=createdAt,desc`
 - Return `Location` header on 201. Use 204 for successful DELETE with no body.
-- Generate OpenAPI/Swagger docs from the route schemas defined above for interactive API documentation.
 
 ## Async Patterns
 
@@ -87,7 +89,7 @@ Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 confl
 | `Promise.allSettled` | Parallel, some may fail |
 | `Promise.race` | Timeout or first-wins |
 
-Never `readFileSync` / sync methods in production. Offload CPU work to worker threads (Piscina). Stream large payloads.
+Never use readFileSync or other sync methods in production -- use `fs.promises` or stream equivalents. Offload CPU work to worker threads (Piscina). Stream large payloads.
 
 ## Production Resilience
 

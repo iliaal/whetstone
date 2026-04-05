@@ -86,6 +86,34 @@ Default thresholds (calibrate per project):
 - Memory usage must be bounded and predictable
 - Background jobs should process items in batches when dealing with collections
 
+## Detection Patterns
+
+Scan changed files and their call graphs for these concrete anti-patterns. When found, report the file, line range, and recommended fix.
+
+### N+1 Queries
+Search for database calls (`->get()`, `->first()`, `->find()`, `->fetch()`, `query()`, `execute()`, `.findOne()`, `.findMany()`) inside `for`, `foreach`, `while`, or `.map()` / `.forEach()` loops. Each iteration fires a separate query. Fix: batch the IDs and issue a single `WHERE IN` query, use eager loading (`with()`, `include`), or rewrite as a join.
+
+### Missing Database Indexes
+Identify columns referenced in `WHERE`, `ORDER BY`, `GROUP BY`, or `JOIN ON` clauses. Cross-reference against migration files, schema definitions, or `CREATE INDEX` statements. Flag any filtered/sorted column that lacks a corresponding index. For composite conditions, verify a composite index exists in the correct column order.
+
+### O(n²) in Hot Paths
+Detect nested loops over the same or related collections inside request handlers, API route handlers, controller actions, or functions called more than once per request. Includes `.filter()` inside `.map()`, repeated `array_search()` / `in_array()` in a loop, or nested `for` over two arrays. Fix: build a lookup map (hash/dict/Set) in a single pass, then probe in O(1).
+
+### Bundle Size Impact
+Flag new `import` statements in frontend code that pull entire libraries (`import lodash`, `import moment`, `import * as _`). Verify the dependency supports tree-shaking. Prefer subpath imports (`import get from 'lodash/get'`) or lighter alternatives (`date-fns` over `moment`). For dependencies >50KB gzipped, require explicit justification.
+
+### Rendering Waterfalls
+Identify multiple sequential `await` calls in React component bodies, server components, `getServerSideProps`, `loader` functions, or API route handlers where the fetches are independent. Fix: wrap independent fetches in `Promise.all()` or use parallel `Suspense` boundaries.
+
+### Missing Lazy Loading
+Flag components or route-level imports pulled in synchronously when the component's bundle exceeds ~50KB or is only rendered conditionally (modals, drawers, tabs, below-the-fold sections). Fix: wrap with `React.lazy()` + `Suspense`, or `next/dynamic` in Next.js.
+
+### Missing Pagination
+Detect API endpoints or database queries that return collections without `LIMIT`/`OFFSET`, cursor parameters, or any upper bound on result size. Unbounded queries become production incidents as data grows. Fix: enforce a default page size with a maximum cap.
+
+### Blocking in Async Context
+Search for synchronous I/O calls inside `async` functions: `fs.readFileSync`, `fs.writeFileSync`, `execSync`, `dns.lookupSync`, `file_get_contents()` in async PHP contexts, `open()` without `aiofiles` in Python async functions. These block the event loop or reactor. Fix: replace with async equivalents (`fs.promises.*`, `asyncio.open`, `proc_open` with non-blocking reads).
+
 ## Analysis Output Format
 
 Structure your analysis as:

@@ -111,17 +111,9 @@ Rules for when and how to dispatch agents. Getting these wrong wastes tokens and
 
 Assess 5 signals: file count, module span, dependency chain, risk surface, parallelism potential. If 3+ fall in the "complex" column, dispatch a team. Below 3, do it yourself. When in doubt, prefer the simple path -- team overhead is only justified when parallelism provides a real speedup.
 
-**Provide full context, never delegate navigation:**
-
-Extract task text, specs, and relevant code into the agent prompt directly. Never tell an agent "read the plan file" or "check the spec at path X" -- that wastes their context window on navigation and risks misinterpretation. You already have the text; paste it.
-
 **No parallel implementation agents (without worktrees):**
 
 Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review, research, and analysis agents are always safe to parallelize (read-only).
-
-**Context pollution -- fresh agents for failures:**
-
-If a subagent fails a task, dispatch a fresh agent to fix it. Don't try to fix in the failed agent's session. The failed agent's context is polluted with wrong assumptions and dead-end investigations that bias subsequent attempts.
 
 **Model selection by task complexity:**
 
@@ -150,6 +142,10 @@ Include these four statuses in every teammate prompt so they know the reporting 
 
 Never ignore an escalation or force the same agent to retry without changes.
 
+**Two-stage review gate on subagent outputs:**
+
+Verify spec compliance first: does the output match what was requested? Only then evaluate quality. A beautifully written solution to the wrong problem is still wrong. Structure review as two explicit passes -- pass 1 rejects on spec mismatch without reading further, pass 2 assesses correctness and quality on spec-compliant outputs.
+
 **QA retry loop:**
 
 Max 3 attempts per task. After each QA failure, pass structured feedback to the implementer using the [QA FAIL template](./references/handoff-templates.md). After 3 failures, mark the task as blocked, continue the pipeline (don't halt everything), and let final integration catch remaining issues. Counter resets when advancing to the next task.
@@ -177,6 +173,47 @@ Two approaches to multi-agent coordination exist. Choose based on the work patte
 | Mitigation | Summarize before passing (keep essentials, drop navigation) | Use worktrees or exclusive file ownership per agent |
 
 For most work, start with stateless handoffs. Graduate to stateful coordination only when parallelism provides a real speedup and you have worktree isolation to prevent file conflicts.
+
+---
+
+## Anti-Sycophancy Patterns
+
+Multi-agent swarms can converge on wrong answers through groupthink. These patterns prevent agents from anchoring on each other's outputs.
+
+**Cold-start agent isolation:**
+
+Each agent in a swarm receives only the task description and fresh context. No session history, no prior agent outputs until an explicit synthesis phase. When running parallel reviewers or evaluators, the orchestrator holds all outputs until every agent has submitted independently, then passes the collected results to a synthesis agent.
+
+**Label randomization for judge panels:**
+
+When multiple candidates are evaluated (e.g., parallel implementations, competing approaches), judges see randomized labels -- X/Y/Z, not A/B or "original"/"improved." Re-shuffle labels each evaluation round. This prevents anchoring on position ("A is always the baseline") or naming ("the synthesis must be better").
+
+**Convergence detection:**
+
+Track an incumbent (current best candidate). If the same candidate wins N consecutive evaluation rounds (default: 3), stop iterating -- the swarm has converged. This prevents infinite iteration on subjective tasks where no clear winner emerges and additional rounds just burn tokens.
+
+---
+
+## Resilience Patterns
+
+Swarm failures are inevitable. Contain blast radius and recover partial value rather than discarding everything.
+
+**Cascade prevention:**
+
+Set timeout boundaries per agent. If one agent fails or hangs, do not let it cascade into abandoning the entire swarm's work. The orchestrator treats each agent as independently failable -- other agents continue their work unaffected. Terminate unresponsive agents after the timeout rather than waiting indefinitely.
+
+**Recovery strategy:**
+
+When an agent fails, classify the failure before acting:
+- **Retry** -- transient errors (network timeout, rate limit). Re-dispatch the same task.
+- **Reassign** -- agent-specific issue (context pollution, wrong model for task complexity). Dispatch a fresh agent, optionally with a different model.
+- **Escalate** -- systemic problem (bad spec, missing dependency, impossible constraint). Surface to the orchestrator or user with an [Escalation Report](./references/handoff-templates.md).
+
+Never retry blindly. Repeating the same prompt in the same conditions produces the same failure.
+
+**Post-failure synthesis:**
+
+Even partial results from a failed swarm run have value. When some agents succeed and others fail, collect and present the successful outputs rather than discarding everything. Mark failed tasks as incomplete in the synthesis so downstream consumers know which areas lack coverage.
 
 ## Verify
 

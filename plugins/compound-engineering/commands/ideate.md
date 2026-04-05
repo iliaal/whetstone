@@ -26,6 +26,18 @@ Generate 10-15 improvement ideas across categories:
 
 Each idea: one sentence describing what changes, one sentence describing the expected impact.
 
+**Ideation lenses.** After generating category-based ideas, force divergent thinking by running each lens against the codebase:
+
+1. **Inversion** -- what if the exact opposite of the current approach were taken?
+2. **Constraint removal** -- what if the biggest constraint (time, budget, compatibility, backwards-compat) didn't exist?
+3. **Audience shift** -- what if the primary user were a different persona (novice vs expert, internal vs external, human vs machine)?
+4. **Time shift** -- what would the solution look like with 10x more time? With 1/10th the time?
+5. **Scale shift** -- what if traffic/data/users were 100x current? What simplifications would break?
+6. **Simplification** -- what's the version with zero external dependencies? What's the version a junior engineer could maintain?
+7. **Combination** -- what if the two best approaches were merged? What hybrid gets the strengths of both?
+
+Each lens generates at least one candidate idea. Not all lenses will produce viable ideas for every problem -- that's fine. The point is forcing exploration beyond the obvious first idea.
+
 ### 3. Adversarial critique
 
 For each idea, challenge it:

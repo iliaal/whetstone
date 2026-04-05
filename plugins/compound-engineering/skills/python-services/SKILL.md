@@ -50,6 +50,21 @@ See [cli-tools.md](./references/cli-tools.md) for Click patterns, argparse, and 
 | Mixed I/O + CPU | `asyncio.to_thread()` to offload blocking work |
 | Simple scripts, few connections | Stay synchronous |
 
+### Sync vs Async Decision
+
+**Use async (asyncio) when:**
+- I/O-bound work has multiple concurrent operations (HTTP calls, database queries, file I/O happening in parallel)
+- WebSocket servers or long-lived connections require it
+- The framework requires it (FastAPI async endpoints, aiohttp)
+
+**Stay synchronous when:**
+- Work is CPU-bound (computation, data transformation) -- async adds nothing, use multiprocessing instead
+- Building simple scripts and CLI tools with sequential I/O
+- All I/O is sequential anyway (one DB query, process result, one API call)
+- The team lacks async debugging experience (asyncio stack traces are harder to read)
+
+**Rule of thumb:** if the code is not waiting on multiple I/O operations concurrently, sync is simpler and correct. Do not add async complexity for a single sequential pipeline.
+
 **Key rule:** Stay fully sync or fully async within a call path.
 
 **asyncio patterns:**
@@ -118,7 +133,7 @@ def call_api(url: str) -> dict: ...
 - Only touch what's necessary -- avoid introducing unrelated changes
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
 - Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
-- Verify: `uv run pytest && uv run ruff check .` pass with zero warnings before declaring done
+- Verify: see Verify section below -- pass all checks with zero warnings before declaring done
 - Coverage target: 80%+ (`uv run pytest --cov --cov-report=html`)
 
 ## Testing Patterns
@@ -140,6 +155,14 @@ def call_api(url: str) -> dict: ...
 - Convert external data to domain types (enums, Pydantic models) at system boundaries
 - Batch processing: `BatchResult(succeeded={}, failed={})` -- don't let one item abort the batch
 - Pydantic `BaseModel` with `field_validator` for complex input validation
+
+## API Design
+
+- **Contract-first**: define Pydantic `BaseModel` request/response schemas and FastAPI `response_model` before writing endpoint logic. The schema is the contract -- implementation follows. Generate OpenAPI docs from these models automatically.
+- **Hyrum's Law awareness**: every observable response field, ordering, or timing becomes a dependency for callers. Use explicit `response_model` and `model_config = ConfigDict(extra="forbid")` to control exactly what's serialized -- never return raw dicts or ORM objects from endpoints.
+- **Addition over modification**: add new optional fields (`field: str | None = None`) rather than changing or removing existing ones. Removing a Pydantic field from a response model breaks callers silently. Deprecate first (`Field(deprecated=True)`), remove in a later version.
+- **Consistent error structure**: all exceptions should produce the same envelope: `{"error": {"code": "...", "message": "...", "details": ...}}`. Register `@app.exception_handler` for `RequestValidationError`, `HTTPException`, and application-specific exceptions to normalize into one format. Callers build error handling once.
+- **Boundary validation via Pydantic**: validate at the endpoint/handler level with Pydantic models and FastAPI's automatic request parsing. Internal services and repositories trust that input was validated at entry -- no redundant validation scattered through business logic.
 
 ## Verify
 

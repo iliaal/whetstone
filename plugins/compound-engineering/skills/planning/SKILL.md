@@ -101,7 +101,7 @@ Skip for greenfield projects where no tests exist yet.
 
 ### Plan Quality Rules
 
-**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths -- not vague directives like "add error handling", "implement validation", or "similar to above." Each task must be self-contained. Never write "Similar to Task N" or "See above" -- repeat the spec, code pattern, or file path in every task that needs it. The implementer may read tasks out of order, and vague tasks produce vague implementations.
+**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths -- not vague directives. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Each task must be self-contained -- repeat the spec, code pattern, or file path in every task that needs it. The implementer may read tasks out of order, and vague tasks produce vague implementations. If a step cannot be specified concretely, it needs further breakdown before it belongs in a plan.
 
 **Type-consistency check.** After writing all tasks, scan for naming drift. If Task 3 says `clearLayers()` but Task 7 says `clearFullLayers()`, that's a bug in the plan. Function names, variable names, and file paths must be consistent across all tasks.
 
@@ -122,6 +122,20 @@ Every phase must be **context-safe**:
 - Fits in one focused session for a developer without external blockers
 - If a phase violates these → split it
 - **Scope challenge**: if the overall plan touches 8+ files or introduces 2+ new classes/services, challenge the scope. Ask: can this be split into smaller, independently shippable increments?
+
+## Task Decomposition
+
+### Vertical slicing
+
+Decompose by user-visible capability, not by technical layer. "User can log in" is a vertical slice -- it touches UI, API, and DB, and delivers a working feature when done. "Build the auth database schema" is a horizontal slice that delivers zero value until other slices complete.
+
+Vertical slices are independently demonstrable and testable. Each slice should produce something a stakeholder can see, try, or verify. When a phase in a plan delivers only one layer (all models, all controllers, all views), restructure it into slices that cut through all layers for one capability at a time.
+
+### Checkpoint system
+
+After every 2-3 completed tasks, pause and verify: are the completed pieces actually working together? Run tests, check integration points, confirm that data flows end-to-end. This catches drift early instead of discovering at the end that pieces don't fit.
+
+Checkpoints are lightweight -- run the test suite, hit the endpoint, render the component. Not a formal review. The goal is a fast feedback signal: "everything built so far integrates correctly." Document checkpoint results in `.plan/progress.md`.
 
 ## Decision Authority
 
@@ -190,7 +204,6 @@ Deepening is additive -- it fills gaps without restructuring what already works.
 | Keep everything in context | Write large content to files |
 | Repeat failed actions | Track attempts in plan file |
 | Create vague tasks ("improve X") | Concrete verb-first tasks with file paths |
-| Plan phases with 12+ files | Split into 5-8 file chunks |
 | Plan at 100% capacity | Budget for verification, fixes, and unknowns |
 
 ## Verify

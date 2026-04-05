@@ -11,7 +11,7 @@ declare -A SKILL_TIERS
 
 # --- Tier 1: Methodology (process/approach skills) ---
 
-SKILL_PATTERNS[planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan'
+SKILL_PATTERNS[planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
 SKILL_TIERS[planning]=1
 
 SKILL_PATTERNS[debugging]='debug|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
@@ -44,7 +44,7 @@ SKILL_TIERS[php-laravel]=2
 SKILL_PATTERNS[react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
 SKILL_TIERS[react-frontend]=2
 
-SKILL_PATTERNS[nodejs-backend]='\bexpress\b.*server|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
+SKILL_PATTERNS[nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
 SKILL_TIERS[nodejs-backend]=2
 
 SKILL_PATTERNS[python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
@@ -62,21 +62,21 @@ SKILL_TIERS[linux-bash-scripting]=2
 SKILL_PATTERNS[pinescript]='pine.?script|tradingview|pinescript|\bindicator\b.{0,20}(pine|trading.?view)|\.pine\b'
 SKILL_TIERS[pinescript]=2
 
-SKILL_PATTERNS[frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|build.*(web.?component|web.?page|landing.?page|dashboard)'
+SKILL_PATTERNS[frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|build.*(web.?component|web.?page|landing.?page|dashboard)|design.*too.?generic|ai.?generated.*(design|look)'
 SKILL_TIERS[frontend-design]=2
 
 SKILL_PATTERNS[tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|dark.?mode.*css'
 SKILL_TIERS[tailwind-css]=2
 
-SKILL_PATTERNS[agent-native-architecture]='autonomous.?agent|mcp.?tool|self.?modif|agent.?native|prompt.?native'
+SKILL_PATTERNS[agent-native-architecture]='autonomous.?agent|mcp.?tool|self.?modif|agent.?native|prompt.?native|pretooluse|posttooluse|agent.?hook'
 SKILL_TIERS[agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
 
-SKILL_PATTERNS[writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?language|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
+SKILL_PATTERNS[writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
 SKILL_TIERS[writing]=3
 
-SKILL_PATTERNS[md-docs]='update.*readme|update.*agents|init.*agents|create.*agents\.md|update.*contributing|update.*context.?files'
+SKILL_PATTERNS[md-docs]='update.*readme|update.*agents|init.*agents|create.*agents\.md|update.*contributing|update.*context.?files|claude\.md'
 SKILL_TIERS[md-docs]=3
 
 SKILL_PATTERNS[refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction'

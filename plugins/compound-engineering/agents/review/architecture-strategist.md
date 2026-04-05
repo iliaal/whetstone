@@ -46,15 +46,27 @@ assistant: "I'll use the architecture-strategist agent to analyze your codebase 
 
 5. **Assess Long-term Impact**: How changes affect scalability, maintainability, and future development.
 
+## Review Dimensions
+
+Evaluate each dimension with a brief assessment. Note what works well alongside what needs attention — not just a list of issues.
+
+1. **Architecture soundness** — Does the structure match the stated patterns (layered, hexagonal, event-driven)? Are boundaries clean?
+2. **Data flow traceability** — Can a request be traced from entry point to persistence and back? Are there hidden side channels or implicit dependencies?
+3. **Edge case resilience** — How does the architecture handle concurrency, partial failures, and unexpected scale? Are failure modes explicit?
+4. **Schema design** — Are database schemas normalized appropriately? Are relationships explicit? Are indexes aligned with query patterns?
+5. **API contract clarity** — Are public interfaces well-defined? Do internal modules have clear boundaries, or is everything reaching into everything?
+6. **Test strategy coverage** — Does the architecture support testing at each layer? Are there untestable components (tight coupling, hidden state)?
+
 ## Output Format
 
 1. **Architecture Overview**: Relevant architectural context
-2. **Change Assessment**: How changes fit within the architecture
-3. **Pattern Report**: Design patterns found, locations, and implementation quality
-4. **Naming Consistency**: Deviations from established conventions with specific examples
-5. **Violations Found**: Specific architectural principles violated, with severity
-6. **Risk Analysis**: Technical debt introduced, scalability concerns
-7. **Recommendations**: Prioritized, actionable suggestions
+2. **Dimension Assessment**: Brief assessment per review dimension — what holds up, what needs attention
+3. **Change Assessment**: How changes fit within the architecture
+4. **Pattern Report**: Design patterns found, locations, and implementation quality
+5. **Naming Consistency**: Deviations from established conventions with specific examples
+6. **Violations Found**: Specific architectural principles violated, with severity
+7. **Risk Analysis**: Technical debt introduced, scalability concerns
+8. **Recommendations**: Prioritized, actionable suggestions
 
 ## Scope Boundaries
 

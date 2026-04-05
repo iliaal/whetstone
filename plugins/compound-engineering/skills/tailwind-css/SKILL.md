@@ -63,7 +63,6 @@ Tokens defined with `@theme` become utilities automatically: `--color-brand` pro
 | `space-x-4` | `gap-4` | Gap handles flex/grid wrapping correctly |
 | `text-base leading-7` | `text-base/7` | Inline line-height modifier |
 | `require("tailwindcss-animate")` | `tw-animate-css` | CSS-only animations |
-| `forwardRef` | `ref` as prop | React 19 change (not Tailwind, but co-occurs) |
 
 ## Coding Rules
 
@@ -84,6 +83,7 @@ Use `eslint-plugin-better-tailwindcss` for automated class validation:
 - `enforce-canonical-classes` -- normalizes shorthand
 - `no-duplicate-classes` -- removes redundant entries
 - `no-deprecated-classes` -- catches v3 classes removed in v4
+- `useSortedClasses` -- enforces canonical class order; configure `attributes: ["classList"]` and `functions: ["clsx", "cva", "cn", "tv", "tw"]` to cover JSX utility functions
 
 ## Class Merging
 

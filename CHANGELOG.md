@@ -5,6 +5,51 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.53.0] - 2026-04-05
+
+### Added
+
+- **code-review**: Three new deep-review specialists -- api-contract (breaking changes, versioning, error consistency), data-migration (reversibility, lock duration, backfill strategy), red-team (adversarial second pass finding integration gaps). Change sizing guidance with 4 splitting strategies. Readability as explicit review dimension.
+- **writing**: Two-phase audit workflow (detect all tells first, then rewrite) with citation auditing tags ([OAICITE], [LINK-ROT], [ISBN-DOI-FAIL], [REF-BUG]). New `references/audit-workflow.md`.
+- **frontend-design**: Expanded AI slop detection to 6 prioritized patterns plus 15 additional tells. Motion patterns extracted to `references/motion-patterns.md` with spring physics values, stagger recipes, and GPU-safe animation rules.
+- **orchestrating-swarms**: Cold-start agent isolation, label randomization for judge panels, convergence detection. Two-stage review gate for subagent outputs. Resilience patterns (cascade prevention, recovery strategy, post-failure synthesis).
+- **verification-before-completion**: Three new rationalization table entries and red flags list for detecting skipped verification.
+- **planning**: Vertical slicing taxonomy, checkpoint system (verify every 2-3 tasks), strengthened no-placeholders rule.
+- **writing-tests**: Prove-It Pattern for bug fixes (reproduce bug with failing test before fixing). Test pyramid level definitions.
+- **md-docs**: Context hierarchy for CLAUDE.md files (Rules > Tech stack > Commands > Conventions > Boundaries).
+- **python-services**: Sync vs async decision guide. API design patterns with FastAPI idioms.
+- **php-laravel**: API design patterns with Laravel idioms (API Resources as contracts, Form Requests for boundary validation).
+- **nodejs-backend**: API design patterns with TypeScript/Express idioms (Zod schemas, consistent error envelopes). Expanded Express trigger to cover endpoints/routes/APIs.
+- **react-frontend**: Tailwind integration section with cross-reference to tailwind-css skill. JSX class sorting with `useSortedClasses` config.
+- **agent-native-architecture**: Hooks patterns reference (`references/hooks-patterns.md`) covering agent-context hook limitations, decision control, MCP matchers, async hooks, two-tier config.
+- **database-guardian** agent: Migration risk patterns (reversibility, data loss, lock duration, backfill, multi-phase safety).
+- **security-sentinel** agent: Adversarial pass section (happy-path assumptions, silent failures, trust boundary violations, cross-category compound issues).
+- **spec-flow-analyzer** agent: 12-dimension scenario coverage sweep (happy path through state transitions).
+- **performance-oracle** agent: 8 grep-able detection patterns with thresholds (N+1 queries, missing indexes, O(n^2), bundle size, rendering waterfalls, lazy loading, pagination, blocking sync).
+- **deployment-verification-agent**: SEV1-SEV4 severity matrix with response times and 4-step rollback runbook template.
+- **architecture-strategist** agent: 6 structured review dimensions with dimension assessment in output format.
+- **workflows:work** command: Subagent execution discipline (fresh agent per task, two-stage review, model selection by complexity, status protocol).
+- **workflows:compound** command: Post-mortem structure (5 Whys, impact quantification, timeline, action items with owners, blameless framing).
+- **workflows:review** command: Scope resolution fallback chain, two-stage review gate, scope drift check.
+- **verify** command: 4 new verification phases (performance, accessibility, infrastructure, documentation) with applicability detection.
+- **ideate** command: 7 ideation lenses for divergent thinking (Inversion, Constraint removal, Audience shift, Time shift, Scale shift, Simplification, Combination).
+- 20 new trigger regression test cases covering expanded content areas.
+- 6 regex pattern expansions (md-docs, nodejs-backend, planning, writing, agent-native-architecture, frontend-design).
+
+### Changed
+
+- **code-review**: Removed Fix-First Heuristic and auto-fix instructions -- skill is diagnostic only, identifies and reports issues without fixing.
+- **frontend-design**: Condensed motion bullet in SKILL.md, moved detailed rules to references/motion-patterns.md. Replaced inline "Additional tells" with reference link.
+- **orchestrating-swarms**: Removed duplicate "fresh agent" and "provide full context" directives that appeared in both Dispatch Discipline and later sections.
+- **verification-before-completion**: Removed duplicate "zero issues found" row from rationalization table (already covered in Rules section).
+- **agent-native-architecture**: Rephrased "Primitives not Workflows" to positive form.
+- **nodejs-backend**: Added positive alternative to sync method ban (use fs.promises/streams).
+- **php-laravel**: Clarified "don't explain" rule to specifically target generated code comments.
+- **python-services**: Discipline section references Verify section instead of restating commands.
+- **planning**: Removed redundant anti-pattern row (covered by Phase Sizing Rules).
+- **tailwind-css**: Removed out-of-scope React 19 forwardRef note (belongs in react-frontend).
+- **database-guardian** agent: Fixed duplicate section numbering in Phase 1.
+
 ## [2.52.1] - 2026-04-04
 
 ### Changed

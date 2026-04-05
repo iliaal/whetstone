@@ -36,6 +36,7 @@ Five principles govern agent-native design. For detailed explanations, examples,
 13. **Refactoring** - Make existing code more agent-native
 14. **Anti-patterns** - Common mistakes and how to avoid them
 15. **Success criteria** - Verify your architecture is agent-native
+16. **Hooks patterns** - Hook events, decision control, MCP matchers, async hooks
 
 **Wait for response before proceeding.**
 
@@ -58,6 +59,7 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | 13, "review", "refactor", "existing" | Read [refactoring-to-prompt-native.md](./references/refactoring-to-prompt-native.md) |
 | 14, "anti-pattern", "mistake", "wrong" | Read [anti-patterns.md](./references/anti-patterns.md) |
 | 15, "success", "criteria", "verify", "checklist" | Read [success-criteria.md](./references/success-criteria.md) |
+| 16, "hook", "hooks", "PreToolUse", "decision control", "async hook" | Read [hooks-patterns.md](./references/hooks-patterns.md) |
 | 0, "quick start", "getting started", "overview", "introduction" | Read [quick-start.md](./references/quick-start.md) |
 
 **After reading the reference, apply those patterns to the user's specific context.**
@@ -75,7 +77,7 @@ When designing an agent-native system, verify these **before implementation**:
 ### Tool Design
 - [ ] **Dynamic vs Static:** For external APIs where agent should have full access, use Dynamic Capability Discovery
 - [ ] **CRUD Completeness:** Every entity has create, read, update, AND delete
-- [ ] **Primitives not Workflows:** Tools enable capability, don't encode business logic
+- [ ] **Primitives over Workflows:** Tools expose atomic capabilities; compose workflows in prompts
 - [ ] **API as Validator:** Use `z.string()` inputs when the API validates, not `z.enum()`
 
 ### Files & Workspace
@@ -104,6 +106,13 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Approval Gates:** Destructive or irreversible actions require user confirmation
 - [ ] **Audit Trail:** Agent actions logged with timestamp, tool, and outcome
 - [ ] **Scope Boundaries:** Agent cannot access resources outside its designated workspace
+
+### Hooks & Governance Automation
+- [ ] **Event Coverage:** Only 6 hook events fire in agent context (PreToolUse, PostToolUse, PermissionRequest, PostToolUseFailure, Stop/SubagentStop); session lifecycle logic lives in the orchestrator
+- [ ] **Decision Gates:** PreToolUse hooks enforce tool-level policy (allow/deny/ask/defer) instead of hardcoded checks
+- [ ] **Completion Gating:** SubagentStop hooks block premature completion when verification steps remain
+- [ ] **MCP Matchers:** Regex patterns target tools by server and operation for capability-based security
+- [ ] **Two-Tier Config:** Shared policy committed, personal overrides git-ignored, per-hook disable toggles
 
 ### Mobile (if applicable)
 - [ ] **Checkpoint/Resume:** Handle iOS app suspension gracefully

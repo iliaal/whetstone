@@ -73,6 +73,7 @@ AI avoids naming actors by giving inanimate things human verbs. Find the person;
 | "the culture shifts" | People changed their behavior |
 | "the market rewards" | Buyers paid for it |
 | "the conversation moves toward" | Someone steered it |
+| "a bet lives or dies" | Someone kills or ships it |
 
 If no specific person fits, use "you" to put the reader in the seat. Person rules: use "you" when addressing the reader directly, "we" for organizational actions, "I" for personal voice. Avoid third-person passive ("it was decided") -- name the actor.
 
@@ -101,6 +102,14 @@ Before delivering prose, run two checks:
 | Density | Anything cuttable? |
 
 Below 35/50: revise before delivering.
+
+**Long-form audit workflow** -- for documents, essays, and research content, run a two-phase pass to avoid fix-as-you-go bias (fixing one tell while missing three others):
+
+*Phase 1 -- Audit*: Read the full text without changing anything. Tag every tell with its category: `[FALSE-AGENCY]`, `[BINARY-CONTRAST]`, `[META-COMMENTARY]`, `[JARGON]`, `[PASSIVE]`, `[ADVERB]`, `[BANNED-PHRASE]`. Complete the full scan before any edits.
+
+*Phase 2 -- Rewrite*: Correct tagged items in a single pass. Verify no new tells were introduced during rewriting.
+
+For documents with references or citations, also tag: `[OAICITE]` (malformed AI citation artifacts), `[LINK-ROT]` (dead or placeholder URLs), `[ISBN-DOI-FAIL]` (invalid identifiers), `[REF-BUG]` (misformatted references, wrong numbering, dangling footnotes). See [references/audit-workflow.md](./references/audit-workflow.md) for the full procedure.
 
 ## Voice
 

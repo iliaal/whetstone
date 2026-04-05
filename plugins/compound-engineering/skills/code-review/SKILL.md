@@ -60,9 +60,11 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 6. **Reliability** -- error handling completeness, timeout/retry logic, resource cleanup on error paths, graceful degradation. Use [reliability-patterns.md](./references/reliability-patterns.md) for detection patterns and grep-able signals.
 7. **Removal candidates** -- identify dead code, unused imports, feature-flagged code that can be cleaned up. Distinguish safe-to-delete (no references) from defer-with-plan (needs migration).
 8. **Verify** -- run formatter/lint/tests on touched files. State what was skipped and why. If code changes affect features described in README/ARCHITECTURE/CONTRIBUTING, note doc staleness as informational.
-9. **Summary** -- present findings grouped by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Classify each finding using the Fix-First Heuristic, then auto-apply AUTO-FIX items (with one-line summaries) and batch-present ASK items for user decision.
+9. **Summary** -- present findings grouped by severity with verdict: **Ready to merge / Ready with fixes / Not ready**.
 
 **Large diffs (>500 lines):** Review by module/directory rather than file-by-file. Summarize each module's changes first, then drill into high-risk areas. Flag if the PR should be split.
+
+**Change sizing:** Ideal PRs are ~100-300 lines of meaningful changes (excluding generated code, lockfiles, snapshots). PRs beyond this range have slower review cycles and higher defect rates. When a PR exceeds this, suggest splitting using one of these strategies: (a) **Stack** -- sequential PRs where each builds on the previous, merged in order; (b) **By file group** -- group related files (e.g., model + migration + tests) into separate PRs; (c) **Horizontal** -- split by layer (frontend, API, database); (d) **Vertical** -- split by feature slice (each PR delivers one user-visible behavior end-to-end).
 
 ## Severity Levels
 
@@ -96,21 +98,6 @@ When in doubt, apply the "would a senior engineer on this team flag this?" test.
 
 For detailed suppression categories with examples (framework idioms, test-specific patterns, when to override), see [false-positive-suppression.md](./references/false-positive-suppression.md). See also the review-level suppression list under [Anti-Patterns in Reviews](#anti-patterns-in-reviews).
 
-## Fix-First Heuristic
-
-After classifying severity, determine disposition for each finding:
-
-| AUTO-FIX (apply without asking) | ASK (needs human judgment) |
-|---------------------------------|---------------------------|
-| Dead code, unused variables/imports | Security (auth, XSS, injection) |
-| N+1 queries (missing eager load) | Race conditions |
-| Stale comments contradicting code | Design decisions |
-| Magic numbers -> named constants | Large fixes (>20 lines changed) |
-| Variables assigned but never read | Removing functionality |
-| Version/path mismatches in docs | Anything changing user-visible behavior |
-
-**Rule of thumb:** if a senior engineer would apply it without discussion, AUTO-FIX. If reasonable engineers could disagree, ASK. Critical findings default toward ASK. Minor/mechanical findings default toward AUTO-FIX.
-
 ## What to Check
 
 Correctness:
@@ -125,6 +112,12 @@ Maintainability:
 - Naming that obscures intent
 - God classes / SRP violations (class with unrelated responsibilities -- split into focused classes)
 - Leaky abstractions (implementation details exposed in interfaces or public APIs)
+
+Readability:
+- Naming clarity -- variables, functions, and classes convey purpose without needing surrounding context
+- Function length -- long functions that force scrolling to understand; prefer extractable blocks with clear names
+- Nesting depth -- more than 3 levels of indentation signals a need for early returns, guard clauses, or extraction
+- Comment quality -- comments that explain WHY (constraints, workarounds, non-obvious decisions), not WHAT the code does. Flag comments that restate the code or will rot as the code changes
 
 Performance:
 - N+1 queries (loop with query per item -- use batch/join instead)

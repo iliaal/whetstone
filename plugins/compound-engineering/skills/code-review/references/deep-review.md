@@ -15,6 +15,8 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 | performance | Efficiency | N+1 queries, unbounded collections, missing indexes, unnecessary allocations, cache opportunities, algorithmic complexity | haiku |
 | reliability | Failure resilience | Error handling completeness, timeout/retry logic, circuit breakers, resource cleanup on error paths, graceful degradation. Load [reliability-patterns.md](./reliability-patterns.md) | haiku |
 | cloud-infra | Infrastructure | Terraform/IaC review, cloud architecture, cost implications, disaster recovery. Only dispatch when diff touches infrastructure files (*.tf, Dockerfile, docker-compose.*, CI/CD configs). Use `cloud-architect` agent. | haiku |
+| api-contract | API surface | Breaking changes (removed fields, type changes, new required params), versioning strategy, error response consistency, backwards compatibility, documentation drift. Only dispatch when diff touches public endpoints, exported interfaces, or API route files. | haiku |
+| data-migration | Migration safety | Reversibility (can it roll back?), data loss risk, lock duration on large tables, backfill strategy, index creation timing, multi-phase safety (deploy code first, then migrate). Only dispatch when diff includes migration files. Use `database-guardian` agent. | default |
 
 ### Agent Prompt Template
 
@@ -42,10 +44,24 @@ Limit to 10 findings, highest severity first.
 
 ### Model Selection
 
-- **correctness** and **security**: use default model (these require deeper reasoning about logic and attack surfaces)
-- **testing**, **maintainability**, **performance**: use haiku (pattern-matching tasks that don't require deep reasoning)
+- **correctness**, **security**, **data-migration**: use default model (these require deeper reasoning about logic, attack surfaces, or data safety)
+- **testing**, **maintainability**, **performance**, **api-contract**: use haiku (pattern-matching tasks that don't require deep reasoning)
 
 Override: if the diff touches auth, payments, or crypto, upgrade security to opus.
+
+### Red-Team Pass (Second Phase)
+
+After the parallel specialists return, dispatch a single red-team agent that receives the diff AND the combined specialist findings. This agent looks for what the specialists missed:
+
+- Happy-path assumptions that break under load or unusual input sequences
+- Silent failures where errors are swallowed without logging or alerting
+- Trust boundary violations (user input flowing into privileged operations without re-validation)
+- Cross-category issues that fall between specialist domains
+- Integration boundary gaps where two systems meet
+
+Dispatch the red-team pass when: diff >200 lines, OR any specialist found a Critical finding. Skip for small/simple diffs where the parallel pass is sufficient.
+
+Red-team findings merge into the main report with a `[red-team]` tag. Use default model.
 
 ## Merge Algorithm
 
@@ -64,7 +80,7 @@ Same as the standard review output format, with an additional header:
 
 ```
 ## Review: [brief title] (deep)
-Agents: correctness, security, testing, maintainability, performance, reliability
+Agents: correctness, security, testing, maintainability, performance, reliability [+ conditional: api-contract, data-migration, cloud-infra] [+ red-team if triggered]
 Cross-lens agreements: N findings flagged by 2+ agents
 
 ### Critical

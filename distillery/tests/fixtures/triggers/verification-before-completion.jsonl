@@ -2,3 +2,4 @@
 {"prompt": "verify that tests pass before committing", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a new middleware for rate limiting", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "refactor the payment gateway integration", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "I'm confident the refactor didn't break anything", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "behavioral trigger, not regex-appropriate — too many false positives"}
