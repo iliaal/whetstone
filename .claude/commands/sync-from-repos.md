@@ -107,6 +107,18 @@ Specific patterns, rules, or techniques from external sources that would improve
 - File-based state machines for long-running workflows
 - User approval gates between phases
 
+### Cross-type analysis
+
+External content often has implications beyond its own component type. A repo's skill may contain a workflow pattern that belongs in one of our commands. An agent's persona constraints may encode behavioral rules that strengthen a skill. A command's orchestration logic may reveal a reusable pattern worth capturing as a skill.
+
+After classifying each external finding by its direct type match, also ask:
+- Does this pattern apply to a component of a **different** type in our plugin?
+- Could a skill's behavioral rule improve a command's orchestration (or vice versa)?
+- Could an agent's persona technique or tool restriction inform a skill's constraints?
+- Could a command's phased workflow reveal a general pattern worth embedding as ambient skill behavior?
+
+When a cross-type insight exists, log it as a separate finding row with the actual target component, not the source type. Example: an external skill about code review contains a "present findings sorted by severity" pattern — if our `workflows:review` command doesn't do that, the finding targets the command, not our code-review skill.
+
 **Quality filters** (reject content that fails any of these):
 - "Claude already knows this" — skip content explaining what a technology is, how basic concepts work, or general programming knowledge
 - Vague directives — "write clean code", "follow best practices" without measurable criteria
@@ -155,17 +167,20 @@ For approved items:
 3. Validate against skill compliance checklist (CLAUDE.md) for skills; check agent frontmatter patterns for agents; verify command orchestration delegates to skills for commands
 4. Run `bash scripts/update-metadata.sh` if components were added/removed
 
-## Phase 6: Discover new negative signals
+## Phase 6: Discover new signals and outcome anomalies
 
-Run signal discovery to surface new patterns of user dissatisfaction not yet captured by `_NEGATIVE_SIGNAL_PATTERNS`:
+Run signal discovery and outcome analysis on the freshly harvested data:
 
 ```bash
 python3 distillery/scripts/distiller.py discover-signals --top 20
+python3 distillery/scripts/distiller.py analyze-outcomes
 ```
 
-If candidates are found, present them for review. For confirmed patterns, promote to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py` so future harvests classify them correctly.
+**discover-signals**: Surfaces new patterns of user dissatisfaction not yet captured by `_NEGATIVE_SIGNAL_PATTERNS`. If candidates are found, present them for review. For confirmed patterns, promote to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py` so future harvests classify them correctly.
 
-This runs after sync (not during audit) because pattern discovery benefits from the broadest possible session scan, and any new patterns need to be in place before the audit's `harvest-sessions` runs.
+**analyze-outcomes**: Surfaces (skill, project) pairs where negative rate exceeds the global average by >10pp. Cross-reference anomalies against project-type constraints in `skill-patterns.sh` -- if a domain skill is consistently negative in a project whose type doesn't match, recommend adding a `SKILL_PROJECT_TYPES` entry to prevent injection.
+
+This runs after sync (not during audit) because both analyses benefit from the broadest possible session scan, and any new patterns or constraint recommendations need to be in place before the audit runs.
 
 ## Phase 7: Post-sync audit
 

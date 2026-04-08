@@ -5,6 +5,14 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.53.1] - 2026-04-08
+
+### Added
+
+- **inject-skills hook**: Project-context filtering for skill injection. Detects project type from marker files (composer.json, package.json, pyproject.toml, Cargo.toml, go.mod, *.tf) and suppresses domain skills that don't match the project stack. Monorepo-safe (multiple types detected simultaneously). No filtering when no markers found.
+- **distillery**: `analyze-outcomes` command correlates skill injection with session signal per project. Surfaces (skill, project) pairs where negative rate exceeds the skill's global average by >10 percentage points.
+- **generate-skill-hooks.sh**: `PROJECT_TYPE_MAP` for auto-generating `SKILL_PROJECT_TYPES` entries during pattern regeneration.
+
 ## [2.53.0] - 2026-04-05
 
 ### Added

@@ -33,6 +33,22 @@ fi
 # shellcheck source=skill-patterns.sh
 source "$PATTERNS_FILE"
 
+# Guard: older pattern files may not declare SKILL_PROJECT_TYPES
+if ! declare -p SKILL_PROJECT_TYPES &>/dev/null; then
+  declare -A SKILL_PROJECT_TYPES
+fi
+
+# Detect project types from marker files in working directory.
+# Used as a negative filter: domain skills that declare a project type
+# are suppressed when the project stack doesn't match.
+PROJECT_TYPES=()
+[[ -f "composer.json" || -f "artisan" ]] && PROJECT_TYPES+=("php")
+[[ -f "package.json" ]] && PROJECT_TYPES+=("js")
+[[ -f "pyproject.toml" || -f "setup.py" || -f "requirements.txt" ]] && PROJECT_TYPES+=("python")
+[[ -f "Cargo.toml" ]] && PROJECT_TYPES+=("rust")
+[[ -f "go.mod" ]] && PROJECT_TYPES+=("go")
+compgen -G "*.tf" > /dev/null 2>&1 && PROJECT_TYPES+=("terraform")
+
 # Lowercase prompt for case-insensitive matching
 PROMPT_LOWER=$(printf '%s' "$PROMPT" | tr '[:upper:]' '[:lower:]')
 
@@ -46,6 +62,18 @@ for skill_name in "${!SKILL_PATTERNS[@]}"; do
   if printf '%s' "$PROMPT_LOWER" | grep -qE "$pattern" 2>/dev/null; then
     skill_path="$PLUGIN_ROOT/skills/$skill_name/SKILL.md"
     [[ -f "$skill_path" ]] || continue
+
+    # Suppress skills whose project-type constraint doesn't match.
+    # Only filters when both: (a) skill declares a type, (b) we detected types.
+    if [[ -n "${SKILL_PROJECT_TYPES[$skill_name]+x}" ]] && [[ ${#PROJECT_TYPES[@]} -gt 0 ]]; then
+      _required="${SKILL_PROJECT_TYPES[$skill_name]}"
+      _match=false
+      for _pt in "${PROJECT_TYPES[@]}"; do
+        [[ "$_pt" == "$_required" ]] && { _match=true; break; }
+      done
+      $_match || continue
+    fi
+
     tier="${SKILL_TIERS[$skill_name]}"
     case "$tier" in
       1) TIER1+=("$skill_name") ;;

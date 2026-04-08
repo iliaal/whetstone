@@ -2620,6 +2620,108 @@ def analyze_misfires(min_examples=30, include_stale=False):
     }
 
 
+def analyze_outcomes(min_examples=5, include_stale=False):
+    """Analyze skill injection outcomes by project context.
+
+    Correlates skill injection with session signal (positive/negative) per project.
+    Surfaces (skill, project) pairs where the negative rate is notably above the
+    skill's global average -- indicating the skill performs worse in that context.
+
+    Returns ranked list with anomalies (delta > 10pp) highlighted.
+    """
+    if not EVAL_DATA_DIR.exists():
+        print("Error: no eval data. Run harvest-sessions first.", file=sys.stderr)
+        sys.exit(1)
+
+    manifest = _load_skill_manifest()
+
+    # {skill: {project: {positive: N, negative: N, ambiguous: N}}}
+    skill_project = defaultdict(lambda: defaultdict(lambda: {"positive": 0, "negative": 0, "ambiguous": 0}))
+    skill_global = defaultdict(lambda: {"positive": 0, "negative": 0, "ambiguous": 0})
+    stale_count = 0
+
+    for skill_dir in sorted(EVAL_DATA_DIR.iterdir()):
+        if not skill_dir.is_dir() or skill_dir.name == "_unattributed":
+            continue
+        sessions_file = skill_dir / "sessions.jsonl"
+        if not sessions_file.exists():
+            continue
+        skill_name = skill_dir.name
+        with open(sessions_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                ex = json.loads(line)
+                if not include_stale:
+                    staleness = _is_example_stale(ex, skill_name, manifest)
+                    if staleness["content_stale"]:
+                        stale_count += 1
+                        continue
+                signal = ex.get("signal", "ambiguous")
+                project = ex.get("project", "_unknown")
+                skill_project[skill_name][project][signal] += 1
+                skill_global[skill_name][signal] += 1
+
+    if stale_count:
+        print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
+
+    # Find (skill, project) pairs where negative rate exceeds global average
+    outcomes = []
+    for sname, projects in sorted(skill_project.items()):
+        g = skill_global[sname]
+        g_total = g["positive"] + g["negative"] + g["ambiguous"]
+        if g_total < min_examples:
+            continue
+        g_neg_rate = g["negative"] / g_total
+
+        for project, stats in sorted(projects.items()):
+            total = stats["positive"] + stats["negative"] + stats["ambiguous"]
+            if total < min_examples:
+                continue
+            neg_rate = stats["negative"] / total
+            delta = neg_rate - g_neg_rate
+
+            outcomes.append({
+                "skill": sname,
+                "project": project,
+                "injected": total,
+                "positive": stats["positive"],
+                "negative": stats["negative"],
+                "ambiguous": stats["ambiguous"],
+                "negative_rate": round(neg_rate, 3),
+                "global_negative_rate": round(g_neg_rate, 3),
+                "delta": round(delta, 3),
+            })
+
+    outcomes.sort(key=lambda x: -x["delta"])
+
+    # Per-skill global summary
+    global_summary = []
+    for sname, stats in sorted(skill_global.items()):
+        total = stats["positive"] + stats["negative"] + stats["ambiguous"]
+        if total < min_examples:
+            continue
+        global_summary.append({
+            "skill": sname,
+            "total": total,
+            "positive": stats["positive"],
+            "negative": stats["negative"],
+            "ambiguous": stats["ambiguous"],
+            "negative_rate": round(stats["negative"] / total, 3),
+        })
+    global_summary.sort(key=lambda x: -x["negative_rate"])
+
+    return {
+        "total_skills": len(skill_global),
+        "total_pairs": len(outcomes),
+        "stale_filtered": stale_count,
+        "anomalies": [o for o in outcomes if o["delta"] > 0.1],
+        "outcomes": outcomes,
+        "global_summary": global_summary,
+    }
+
+
 def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
 
@@ -3183,6 +3285,11 @@ def main():
     p_misfire.add_argument("--min-examples", type=int, default=30, help="Minimum injections to include (default: 30)")
     p_misfire.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
 
+    # analyze-outcomes
+    p_outcomes = sub.add_parser("analyze-outcomes", help="Analyze skill injection outcomes by project context, surface anomalies")
+    p_outcomes.add_argument("--min-examples", type=int, default=5, help="Minimum examples per (skill, project) pair (default: 5)")
+    p_outcomes.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
+
     # diagnose-negatives
     p_diag = sub.add_parser("diagnose-negatives", help="Analyze negative-signal sessions to find failure patterns and suggest skill fixes")
     p_diag.add_argument("name", help="Skill name")
@@ -3326,6 +3433,26 @@ def main():
         print("-" * 70, file=sys.stderr)
         for m in report["misfires"]:
             print(f"{m['skill']:35s} {m['injected']:8d} {m['relevant']:8d} {m['misfire_rate']*100:7.1f}% {m['positive_rate']*100:5.1f}%", file=sys.stderr)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "analyze-outcomes":
+        report = analyze_outcomes(args.min_examples, args.include_stale)
+        # Global summary table
+        print(f"\n  Global skill outcomes ({len(report['global_summary'])} skills with >= {args.min_examples} examples):", file=sys.stderr)
+        print(f"  {'Skill':35s} {'Total':>6s} {'Pos':>5s} {'Neg':>5s} {'Neg%':>6s}", file=sys.stderr)
+        print("  " + "-" * 60, file=sys.stderr)
+        for s in report["global_summary"]:
+            print(f"  {s['skill']:35s} {s['total']:6d} {s['positive']:5d} {s['negative']:5d} {s['negative_rate']*100:5.1f}%", file=sys.stderr)
+        # Anomalies
+        anomalies = report["anomalies"]
+        if anomalies:
+            print(f"\n  Anomalies ({len(anomalies)} pairs with negative rate >10pp above global):", file=sys.stderr)
+            print(f"  {'Skill':25s} {'Project':35s} {'N':>4s} {'Neg%':>6s} {'Global':>6s} {'Delta':>6s}", file=sys.stderr)
+            print("  " + "-" * 85, file=sys.stderr)
+            for o in anomalies:
+                print(f"  {o['skill']:25s} {o['project']:35s} {o['injected']:4d} {o['negative_rate']*100:5.1f}% {o['global_negative_rate']*100:5.1f}% {o['delta']*100:+5.1f}%", file=sys.stderr)
+        else:
+            print("\n  No anomalies found (no pairs with negative rate >10pp above global)", file=sys.stderr)
         print(json.dumps(report, indent=2))
 
     elif args.command == "diagnose-negatives":

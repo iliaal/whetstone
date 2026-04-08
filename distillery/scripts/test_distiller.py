@@ -1201,3 +1201,125 @@ class TestTestTriggers:
         fixtures_dir.mkdir()
         with pytest.raises(SystemExit):
             distiller.test_triggers(fixtures_dir=str(fixtures_dir))
+
+
+# ---------------------------------------------------------------------------
+# analyze_outcomes
+# ---------------------------------------------------------------------------
+
+def _write_session_examples(eval_dir, skill_name, examples):
+    """Helper: write a list of example dicts as JSONL for a skill."""
+    skill_dir = eval_dir / skill_name
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    with open(skill_dir / "sessions.jsonl", "w") as f:
+        for ex in examples:
+            f.write(json.dumps(ex) + "\n")
+
+
+def _make_example(signal, project, skill_version="2.50.0"):
+    return {
+        "task_input": "do something",
+        "agent_output": "did it",
+        "signal": signal,
+        "tools_used": [],
+        "injected_skills": [],
+        "turn_count": 5,
+        "project": project,
+        "session_id": "test",
+        "claude_version": "1.0",
+        "skill_version": skill_version,
+    }
+
+
+class TestAnalyzeOutcomes:
+    @pytest.fixture(autouse=True)
+    def setup_eval_dir(self, tmp_path, monkeypatch):
+        self.eval_dir = tmp_path / ".eval-data"
+        self.eval_dir.mkdir()
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", self.eval_dir)
+        monkeypatch.setattr(distiller, "MANIFEST_PATH", tmp_path / ".skill-versions.json")
+
+    def test_basic_output_structure(self):
+        _write_session_examples(self.eval_dir, "debugging", [
+            _make_example("positive", "proj-a"),
+            _make_example("positive", "proj-a"),
+            _make_example("positive", "proj-a"),
+            _make_example("positive", "proj-a"),
+            _make_example("positive", "proj-a"),
+        ])
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        assert "total_skills" in result
+        assert "anomalies" in result
+        assert "outcomes" in result
+        assert "global_summary" in result
+
+    def test_detects_anomaly(self):
+        examples = (
+            [_make_example("positive", "proj-good")] * 8 +
+            [_make_example("negative", "proj-good")] * 2 +
+            [_make_example("negative", "proj-bad")] * 5
+        )
+        _write_session_examples(self.eval_dir, "planning", examples)
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        anomalies = result["anomalies"]
+        assert len(anomalies) == 1
+        assert anomalies[0]["project"] == "proj-bad"
+        assert anomalies[0]["delta"] > 0.1
+
+    def test_no_anomaly_when_uniform(self):
+        examples = (
+            [_make_example("positive", "proj-a")] * 4 +
+            [_make_example("negative", "proj-a")] * 1 +
+            [_make_example("positive", "proj-b")] * 4 +
+            [_make_example("negative", "proj-b")] * 1
+        )
+        _write_session_examples(self.eval_dir, "debugging", examples)
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        assert len(result["anomalies"]) == 0
+
+    def test_min_examples_filter(self):
+        examples = (
+            [_make_example("positive", "proj-a")] * 10 +
+            [_make_example("negative", "proj-small")] * 3
+        )
+        _write_session_examples(self.eval_dir, "debugging", examples)
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        projects = [o["project"] for o in result["outcomes"]]
+        assert "proj-small" not in projects
+
+    def test_global_summary_sorted_by_negative_rate(self):
+        _write_session_examples(self.eval_dir, "skill-a", [
+            _make_example("positive", "p")] * 8 + [_make_example("negative", "p")] * 2)
+        _write_session_examples(self.eval_dir, "skill-b", [
+            _make_example("positive", "p")] * 5 + [_make_example("negative", "p")] * 5)
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        summary = result["global_summary"]
+        assert len(summary) == 2
+        assert summary[0]["skill"] == "skill-b"
+        assert summary[0]["negative_rate"] > summary[1]["negative_rate"]
+
+    def test_skips_unattributed(self):
+        _write_session_examples(self.eval_dir, "_unattributed", [
+            _make_example("negative", "p")] * 10)
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        assert result["total_skills"] == 0
+
+    def test_empty_eval_dir_exits(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", tmp_path / "nonexistent")
+        with pytest.raises(SystemExit):
+            distiller.analyze_outcomes()
+
+    def test_delta_calculation(self):
+        examples = (
+            [_make_example("positive", "good")] * 9 +
+            [_make_example("negative", "good")] * 1 +
+            [_make_example("positive", "bad")] * 2 +
+            [_make_example("negative", "bad")] * 8
+        )
+        _write_session_examples(self.eval_dir, "code-review", examples)
+        result = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        global_neg_rate = 9 / 20  # 9 neg out of 20 total
+        bad_neg_rate = 8 / 10
+        expected_delta = round(bad_neg_rate - global_neg_rate, 3)
+        bad_outcome = [o for o in result["outcomes"] if o["project"] == "bad"][0]
+        assert bad_outcome["delta"] == expected_delta

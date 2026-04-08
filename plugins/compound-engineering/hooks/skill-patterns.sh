@@ -104,4 +104,18 @@ SKILL_PATTERNS[git-worktree]='worktree|parallel.?development'
 SKILL_TIERS[git-worktree]=3
 
 
+# --- Project-type constraints (Tier 2 domain skills only) ---
+# Skills listed here are suppressed when the detected project type doesn't match.
+# Skills NOT listed pass unconditionally (tier 1 methodology, tier 3 workflow,
+# and cross-stack domain skills like postgresql, linux-bash-scripting).
+declare -A SKILL_PROJECT_TYPES
+
+SKILL_PROJECT_TYPES[php-laravel]="php"
+SKILL_PROJECT_TYPES[react-frontend]="js"
+SKILL_PROJECT_TYPES[nodejs-backend]="js"
+SKILL_PROJECT_TYPES[python-services]="python"
+SKILL_PROJECT_TYPES[terraform]="terraform"
+SKILL_PROJECT_TYPES[tailwind-css]="js"
+SKILL_PROJECT_TYPES[frontend-design]="js"
+
 # Total skills: 29

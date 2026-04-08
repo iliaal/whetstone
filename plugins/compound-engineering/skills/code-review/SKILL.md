@@ -29,28 +29,30 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
 ## Review Mode Selection
 
-After resolving scope, assess complexity to select review mode:
+**Run this BEFORE reading the full diff.** Use metadata only (`git diff --stat`, file list from scope resolution) to count signals. Reading the diff first creates analysis momentum that bypasses mode selection.
 
-| Signal | Threshold |
-|--------|-----------|
-| Lines changed | >300 |
-| Files touched | >8 |
-| Modules/directories spanned | >3 |
-| Security-sensitive files (auth, crypto, payments, permissions) | any |
-| Database migrations present | any |
-| API surface changes (public endpoints, exported interfaces) | any |
+| Signal | Threshold | Detect from |
+|--------|-----------|-------------|
+| Lines changed | >300 | `git diff --stat` insertion + deletion totals |
+| Files touched | >8 | File count from scope resolution |
+| Modules/directories spanned | >3 | Unique top-level directories from file list |
+| Security-sensitive files (auth, crypto, payments, permissions) | any | File path matching |
+| Database migrations present | any | File path matching |
+| API surface changes (public endpoints, exported interfaces) | any | File path matching |
 
-**3+ signals → deep review** (auto-switch, inform the user). Dispatch parallel specialist agents (correctness, security, testing, maintainability, performance) per [deep-review.md](./references/deep-review.md).
+**3+ signals → deep review.** Inform the user, then dispatch parallel specialist agents per [deep-review.md](./references/deep-review.md). Pass the diff to agents -- do NOT read it first. Reading and analyzing the diff yourself before dispatching agents defeats the purpose of deep review. **Stop here -- do not proceed to the Review Process section.**
 
 **2 signals → suggest**: "This touches N files across M modules. Deep review? (y/n)"
 
-**0-1 signals → standard review** (below).
+**0-1 signals → standard review.** Proceed to Review Process below.
 
 Before auto-switching to deep review, check the exceptions list in [deep-review.md](./references/deep-review.md) -- certain change types (pure docs, mechanical refactors, single-file <50 lines) override signal count.
 
 Override: `deep` forces multi-agent, `quick` forces single-pass.
 
 ## Review Process
+
+**Standard reviews only.** If mode selection triggered deep review, specialist agents handle the review per [deep-review.md](./references/deep-review.md) -- do not run these steps yourself.
 
 1. **Context** -- run a Scope Drift Check first: compare `git diff --stat` against the PR's stated intent. Classify as CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING. If DRIFT, note drifted files and ask: ship as-is, split, or remove unrelated changes? Then read the PR description, linked issue, or task spec. **Intent verification**: if the code does something the intent doesn't describe, or fails to do something the intent promises, flag as a finding -- correct code that solves the wrong problem is still wrong. **Fetch existing review comments and discussions first** -- prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (check CI config for the canonical test command) to catch automated failures before manual review.
 2. **Structural scan** -- architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly -- don't attempt to read them from the working tree when reviewing a remote branch.

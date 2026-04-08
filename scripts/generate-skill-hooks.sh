@@ -52,6 +52,22 @@ declare -A TIER_MAP=(
   [setup]=3
 )
 
+# --- Project-type constraints ---
+# Maps tier 2 domain skills to the project types they apply to.
+# Skills not listed pass unconditionally (cross-stack, methodology, workflow).
+# Types: php, js, python, rust, go, terraform
+declare -A PROJECT_TYPE_MAP=(
+  [php-laravel]="php"
+  [testing-laravel]="php"
+  [react-frontend]="js"
+  [testing-react]="js"
+  [nodejs-backend]="js"
+  [python-services]="python"
+  [terraform]="terraform"
+  [tailwind-css]="js"
+  [frontend-design]="js"
+)
+
 # Ensure hooks directory exists
 mkdir -p "$(dirname "$OUTPUT")"
 
@@ -122,6 +138,21 @@ for skill_dir in "$SKILLS_DIR"/*/; do
 
   count=$((count + 1))
 done
+
+# --- Project-type constraints section ---
+{
+  printf '\n# --- Project-type constraints (Tier 2 domain skills only) ---\n'
+  printf '# Skills listed here are suppressed when the detected project type does not match.\n'
+  printf '# Skills NOT listed pass unconditionally (tier 1 methodology, tier 3 workflow,\n'
+  printf '# and cross-stack domain skills like postgresql, linux-bash-scripting).\n'
+  printf 'declare -A SKILL_PROJECT_TYPES\n\n'
+  for skill_name in "${!PROJECT_TYPE_MAP[@]}"; do
+    # Only emit if the skill directory exists
+    if [[ -d "$SKILLS_DIR/$skill_name" ]]; then
+      printf 'SKILL_PROJECT_TYPES[%s]="%s"\n' "$skill_name" "${PROJECT_TYPE_MAP[$skill_name]}"
+    fi
+  done
+} >> "$OUTPUT"
 
 printf '\n# Total skills: %d\n' "$count" >> "$OUTPUT"
 
