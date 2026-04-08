@@ -60,3 +60,20 @@ Prefix `-` for descending, comma-separated for multi-field:
 | Adding new enum values | Removing endpoints |
 | Relaxing validation | Tightening validation |
 | Extending response with new keys | Changing response structure |
+
+## Pre-Ship Endpoint Checklist
+
+Before shipping any new endpoint, verify:
+
+- [ ] Resource naming: plural nouns, max 2 nesting levels
+- [ ] HTTP method matches semantics (GET reads, POST creates, etc.)
+- [ ] Status codes correct (201 + Location on create, 204 on delete, 404 vs 400 distinction)
+- [ ] Request validation with schema (rejects invalid input with 400 + detail)
+- [ ] Response schema defined (controls serialized fields, no raw objects)
+- [ ] Pagination on list endpoints (cursor or offset with has_next)
+- [ ] Auth/authz enforced (401 vs 403 distinction)
+- [ ] Rate limiting configured
+- [ ] Error envelope matches project standard
+- [ ] Idempotency for non-safe methods (POST with idempotency key where needed)
+- [ ] External API responses validated before use
+- [ ] OpenAPI/docs updated

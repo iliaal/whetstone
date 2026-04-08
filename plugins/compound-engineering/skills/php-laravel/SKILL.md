@@ -45,6 +45,11 @@ Use these when applicable -- do not add explanatory comments in generated code (
 - **Events + Listeners** for side effects (notifications, logging, cache invalidation). Do not put side effects in services.
 - Feature folder organization over type-based when project exceeds ~20 models
 
+## Production Resilience
+
+- **Fail-fast config validation**: validate critical config values in a service provider's `boot()` method. Missing API keys, invalid DSNs, or misconfigured queues should crash the app on startup, not on the first request that hits the code path.
+- **Health endpoints**: expose `/health` (shallow, returns 200 if the process responds) and `/ready` (deep, checks database, Redis, and critical service connectivity). Use Laravel's built-in health checks (`Illuminate\Health`) or a simple route that queries each dependency.
+
 ## Routing
 
 - Scoped route model binding to prevent cross-tenant access: `Route::scopeBindings()->group(fn() => ...)`
@@ -59,6 +64,9 @@ Use these when applicable -- do not add explanatory comments in generated code (
 - Foreign keys: `$table->foreignId('user_id')->constrained()->cascadeOnDelete()`
 - Always add index on foreign keys and frequently filtered columns
 - Down method: include rollback logic or `Schema::dropIfExists()` for new tables
+- Separate schema and data migrations -- data backfills in their own migration file, not mixed with DDL
+- Renames/removals use expand-contract: add new column → backfill → switch reads → drop old (see `postgresql` skill for the full pattern)
+- Never edit a migration that has run in a shared environment -- write a new one
 
 ## Eloquent
 
@@ -90,6 +98,7 @@ Use these when applicable -- do not add explanatory comments in generated code (
 - **Addition over modification**: add new fields/endpoints rather than changing or removing existing ones. Removing a field from an API Resource breaks callers silently. Deprecate first (`@deprecated` in OpenAPI/docblock), remove in a later version.
 - **Consistent error envelope**: all exceptions should produce the same `{ "success": false, "error": { "code": "...", "message": "..." } }` structure. Use `Handler::render()` or a custom exception handler to normalize `ValidationException`, `ModelNotFoundException`, `AuthorizationException`, and application errors into one format. Callers build error handling once.
 - **Boundary validation via Form Requests**: validate at the HTTP boundary, not inside services. Form Requests with `toDto()` ensure services receive typed, pre-validated data. Internal code trusts that input was validated at entry -- no redundant checks scattered through repositories or models.
+- **Third-party responses are untrusted data**: validate shape and content of external API responses before using them in logic, rendering, or decision-making. A compromised or misbehaving service can return unexpected types, malicious content, or missing fields. Wrap in a DTO or validate through a dedicated response class before use.
 
 ## Queues & Jobs
 

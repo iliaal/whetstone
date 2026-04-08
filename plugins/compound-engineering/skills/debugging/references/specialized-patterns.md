@@ -19,6 +19,17 @@ Collects system info, language versions, git state, project files, and environme
 - Resource exhaustion: monitor memory growth, connection pool depletion, file descriptor leaks. Under load: check pool size vs concurrent request count, verify connections are returned on error paths (finally/dispose)
 - Timing-dependent: replace arbitrary `sleep()` with condition-based polling -- wait for the actual state, not a duration
 
+## CI Failures
+
+When a CI check fails on a PR or branch:
+
+1. **Fetch logs**: `gh run view <run_id> --log` (extract run ID from the checks URL). If `detailsUrl` points to a non-GitHub provider (Buildkite, CircleCI), don't attempt to fetch logs -- report the URL and let the user investigate.
+2. **Classify the failure**: build error (compilation/dependency), test failure (which test, what assertion), lint/type error (which rule, which file), timeout (which step exceeded limits), or infrastructure (runner OOM, network, flaky service).
+3. **Reproduce locally**: run the same command from the CI config (`cat .github/workflows/*.yml` to find it). If it passes locally, the issue is environment-specific -- compare CI runner config against local (OS, versions, env vars, caching).
+4. **Fix and verify**: fix the issue, then suggest re-running the relevant checks: `gh pr checks <pr> --watch` or `gh run rerun <run_id> --failed`.
+
+Don't retry a CI run without changing something. If the same run failed twice, it's not flaky -- it's broken.
+
 ## Postmortem
 
 After resolving non-trivial bugs, document a lightweight postmortem:

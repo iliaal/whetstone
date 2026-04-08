@@ -157,15 +157,23 @@ else
 fi
 cd "$ROOT_DIR"
 
-# --- 4. Sync to other tools (Codex, Kilocode, etc.) ---
-echo "[5/7] Sync skills to other tools..."
+# --- 5. Publish to ClawHub ---
+echo "[5/8] Publish skills to ClawHub..."
+if npx clawhub@latest whoami >/dev/null 2>&1; then
+  bash "$SCRIPT_DIR/publish-clawhub.sh"
+else
+  echo "  WARNING: Not authenticated to ClawHub, skipping. Run: npx clawhub@latest login"
+fi
+
+# --- 6. Sync to other tools (Codex, Kilocode, etc.) ---
+echo "[6/8] Sync skills to other tools..."
 bash "$SCRIPT_DIR/sync-to-tools.sh"
 
-# --- 5. Update local plugin ---
-echo "[6/7] Update local plugin..."
+# --- 7. Update local plugin ---
+echo "[7/8] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
-# --- 6. Summary ---
+# --- 8. Summary ---
 echo ""
-echo "[7/7] Done. v${version} released."
+echo "[8/8] Done. v${version} released."
 echo "  Restart Claude Code to pick up the new version."

@@ -68,6 +68,8 @@ ROOT CAUSE: [Why it happened -- file:line with evidence]
 FIX:        [What changed]
 EVIDENCE:   [Verification output proving the fix]
 REGRESSION: [Test added to prevent recurrence]
+RELATED:    [Prior bugs in same area, known issues, architectural notes]
+STATUS:     DONE | DONE_WITH_CONCERNS (fix applied, known risk remains) | BLOCKED (needs external input)
 ```
 
 ## Three-Fix Threshold

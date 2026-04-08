@@ -35,6 +35,10 @@ description: >-
 - Formulaic challenges: "Despite X, Y continues to thrive"
 - Dramatic fragmentation: "[Noun]. That's it. That's the [thing]." -- performative simplicity
 - Rhetorical setups: "What if I told you..." / "Think about it:" / "Here's what I mean:"
+- Wh- sentence openers: sentences starting with What/When/Where/Which/Who/Why/How as filler. Restructure to lead with the subject or verb.
+- Narrator-from-a-distance: "This happens because...", "People tend to...", "Nobody designed this." Put the reader in the room instead.
+- Lazy extremes: every, always, never, everyone, nobody -- false authority. Use specifics instead of sweeping claims.
+- Meta-commentary: "Hint:", "Plot twist:", "Spoiler:", "In this section, we'll...", "As we'll see...", "Let me walk you through..."
 
 **Formatting tells**:
 - Em dash overuse -- replace most with commas or periods

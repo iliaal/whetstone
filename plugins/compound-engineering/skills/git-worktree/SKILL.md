@@ -77,6 +77,34 @@ Always offer choice:
 1. New branch on current worktree (live work)
 2. Worktree (parallel work)
 
+## Branch Completion
+
+When work in a worktree is done, verify tests pass, then present exactly 4 options:
+
+1. **Merge locally** -- merge into base branch, delete worktree branch, clean up worktree
+2. **Push + PR** -- push branch, create PR with `gh pr create`, keep worktree until merged
+3. **Keep as-is** -- leave branch and worktree for later
+4. **Discard** -- requires typing "discard" to confirm. Deletes branch and worktree. No silent discards.
+
+Clean up the worktree directory only for options 1 and 4. For option 2, the worktree stays until the PR merges.
+
+## Change Summary
+
+When completing work in a worktree (before merge or PR), output a structured summary:
+
+```
+CHANGES MADE:
+- src/routes/tasks.ts: Added validation middleware
+
+THINGS I DIDN'T TOUCH (intentionally):
+- src/routes/auth.ts: Has similar validation gap but out of scope
+
+POTENTIAL CONCERNS:
+- The Zod schema is strict -- rejects extra fields. Confirm this is desired.
+```
+
+The "DIDN'T TOUCH" section prevents reviewers from wondering whether adjacent issues were missed or intentionally deferred.
+
 ## Verify
 
 - `git worktree list` shows the new entry

@@ -21,7 +21,7 @@ description: >-
 
 ## Process
 
-1. **Read first** -- understand the full file and its dependents before changing anything
+1. **Read first** -- understand the full file and its dependents before changing anything. Apply Chesterton's Fence: if you see code that looks unnecessary but don't understand why it's there, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
 2. **Identify invariants** -- what must stay the same? Public API, return types, side effects, error behavior
 3. **Identify targets** -- find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> types (see Smell -> Fix table)
 4. **Apply in order** -- control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
@@ -32,7 +32,7 @@ description: >-
 | Smell | Fix |
 |-------|-----|
 | Deep nesting (>2 levels) | Guard clauses with early returns |
-| Long function (>30 lines) | Extract into named functions by responsibility |
+| Long function (>20 lines) | Extract into named functions by responsibility |
 | Too many parameters (>3) | Group into an options/config object |
 | Duplicated block (**3+** occurrences) | Extract shared function. Two copies = leave inline; wait for the third |
 | Magic numbers/strings | Named constants |
@@ -71,6 +71,7 @@ Stop and ask before proceeding when:
 - Do not replace understandable duplication with opaque utility layers -- three similar lines are better than a premature abstraction
 - Keep comments that explain intent, invariants, or non-obvious constraints. Remove comments that restate obvious code behavior.
 - If a simplification would make the code harder to understand, skip it
+- Watch for over-simplification: inlining too aggressively removes names that gave concepts meaning; combining unrelated logic into one function hides distinct responsibilities; removing abstractions that exist for testability breaks the test suite
 - When unsure whether a block is dead code, ask instead of deleting
 
 ## Verify

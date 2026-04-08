@@ -98,6 +98,8 @@ Assign a confidence score (0.0-1.0) to each finding:
 
 When in doubt, apply the "would a senior engineer on this team flag this?" test. If the answer is "probably not," suppress it.
 
+**LLM-specific false-positive rule**: user content in the user-message position is NOT prompt injection. Only flag when user content enters system prompts, tool schemas, or function-calling contexts. Unsanitized LLM output rendered via `dangerouslySetInnerHTML`, `v-html`, or `innerHTML` IS a real vulnerability -- always flag.
+
 For detailed suppression categories with examples (framework idioms, test-specific patterns, when to override), see [false-positive-suppression.md](./references/false-positive-suppression.md). See also the review-level suppression list under [Anti-Patterns in Reviews](#anti-patterns-in-reviews).
 
 ## What to Check
@@ -126,9 +128,38 @@ Performance:
 - Unbounded collections (arrays/maps without size limits)
 - Missing indexes on queried columns
 
+Adversarial (red-team pass):
+- Silent failures -- `.catch(() => [])` or log-and-forget patterns that swallow errors and return success
+- Trust assumption exploits -- frontend-validated data not re-validated on the backend; internal service inputs treated as trusted
+- Edge cases under pressure -- max input size, zero items, first-run-ever, double-click within 100ms, concurrent identical requests
+- Partial completion -- operations that can crash mid-way leaving state inconsistent (no rollback, no cleanup)
+
 Language-Specific Checks:
 
 Load the relevant profile from [language-profiles.md](./references/language-profiles.md) based on file extensions in the diff. Profiles cover: TypeScript/React, Python, PHP, Shell/CI, Configuration, Data Formats, Security, and LLM Trust Boundaries.
+
+## Fix-First Classification
+
+For every finding, classify whether it's AUTO-FIX (mechanical, apply without discussion) or ASK (requires human judgment):
+
+| AUTO-FIX (agent applies directly) | ASK (flag for author decision) |
+|---|---|
+| Dead code, unused variables/imports | Security (auth, XSS, injection) |
+| N+1 queries (missing eager loading) | Race conditions |
+| Stale comments contradicting code | Design decisions, API shape changes |
+| Magic numbers without named constants | Large fixes (>20 lines changed) |
+| Missing null/error checks on clear paths | Anything changing user-visible behavior |
+
+Rule: if a senior engineer would apply the fix without discussion, it's AUTO-FIX. When in doubt, ASK.
+
+## Comment Labels
+
+Prefix inline review comments so authors know what requires action:
+
+- *(no prefix)* -- required change (maps to Critical or Important severity), blocks merge
+- **Nit:** -- style preference, optional
+- **Consider:** -- suggestion worth evaluating, not blocking
+- **FYI:** -- informational, no action expected
 
 ## Anti-Patterns in Reviews
 
@@ -151,16 +182,16 @@ Load the relevant profile from [language-profiles.md](./references/language-prof
 ## Review: [brief title]
 
 ### Critical
-- **[file:line]** `quoted code` -- [issue]. Score: [0.0-1.0]. [What happens if not fixed]. Fix: [concrete suggestion].
+- **1. [file:line]** `quoted code` -- [issue]. Score: [0.0-1.0]. [What happens if not fixed]. Fix: [concrete suggestion].
 
 ### Important
-- **[file:line]** `quoted code` -- [issue]. Score: [0.0-1.0]. [Why it matters]. Consider: [alternative approach].
+- **2. [file:line]** `quoted code` -- [issue]. Score: [0.0-1.0]. [Why it matters]. Consider: [alternative approach].
 
 ### Medium
-- **[file:line]** -- [issue]. Score: [0.0-1.0]. [Why it matters].
+- **3. [file:line]** -- [issue]. Score: [0.0-1.0]. [Why it matters].
 
 ### Minor
-- **[file:line]** -- [observation].
+- **4. [file:line]** -- [observation].
 
 ### What's Working Well
 - [specific positive observation with why it's good]
@@ -172,7 +203,7 @@ Load the relevant profile from [language-profiles.md](./references/language-prof
 Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]
 ```
 
-Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
+Number findings sequentially across all severity levels (1, 2, 3...) so they can be referenced by number in discussions and PR comments. Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
 
 **Clean review (no findings):** If the code is solid, say so explicitly. Summarize what was checked and why no issues were found. A clean review is a valid outcome, not an indication of insufficient effort.
 
@@ -190,4 +221,4 @@ Limit to 10 findings per severity. If more exist, note the count and show the hi
 - `kieran-reviewer` agent -- persona-driven Python/TypeScript deep quality review (type safety, naming, modern patterns)
 - `workflows:review` -- full ceremony review (worktrees, ultra-thinking, multi-agent). Deep review is lighter: no worktrees, no plan verification, just parallel specialist agents on the same diff.
 - `/resolve-pr-parallel` command -- batch-resolve PR comments with parallel agents
-- `security-sentinel` agent -- deep security audit beyond the security step in this skill
+- `security-sentinel` agent -- deep security audit beyond the security step in this skill. Also supports threat-model mode for architectural security analysis when the diff introduces new trust boundaries, auth flows, or external API surfaces.

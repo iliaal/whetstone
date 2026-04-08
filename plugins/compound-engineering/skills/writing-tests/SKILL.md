@@ -25,9 +25,17 @@ Good:  "rejects user with duplicate email"
 Bad:   "creates user and sends welcome email and updates counter"
 ```
 
-### Derive test cases from user journeys
+### Derive test cases from three sources
 
-Before writing test cases for a new feature, enumerate user journeys: "As a [role], I want to [action], so that [benefit]." Generate test cases from each journey -- this ensures tests cover user-visible behavior, not implementation details.
+Build test coverage from three independent sources and verify every item maps to at least one test:
+
+1. **User requirements** -- what was requested (spec, issue, conversation)
+2. **Features implemented** -- what the code actually does (scan the diff)
+3. **Claims in the response** -- what you're about to tell the user works
+
+Anything that appears in any source but has no corresponding test is a coverage gap. This catches the common failure mode where implemented features work but aren't tested, or where claimed behavior isn't verified.
+
+For each source, enumerate user journeys: "As a [role], I want to [action], so that [benefit]." Generate test cases from each journey -- this ensures tests cover user-visible behavior, not implementation details.
 
 ### DAMP over DRY in tests
 

@@ -107,6 +107,8 @@ Skip for greenfield projects where no tests exist yet.
 
 **Numbered outputs for long sessions.** For multi-phase implementations, write numbered intermediate files to `.plan/` (e.g., `01-setup.md`, `02-phase1-complete.md`) so state survives context compaction. Read from files, not conversation memory, when resuming work after compaction or across sessions.
 
+**Session continuity.** At session start or after compaction: read `.plan/progress.md` → check which tasks are complete → review the current phase. At session end: update progress with what was done, note blockers, commit in-progress work. Mark interrupted tasks with a stopping-point note so the next session resumes without re-discovery.
+
 **SHA recording.** When a task completes and is committed, note the commit SHA inline: `- [x] Task 1.1 \`abc1234\``. Creates traceability from plan to code.
 
 **Deviation documentation.** When the implementation deviates from the plan, document why inline: `**Deviation**: [what changed and why]` under the affected task. Silent deviation breaks trust -- the orchestrator assumes the plan was followed.
@@ -220,6 +222,7 @@ Deepening is additive -- it fills gaps without restructuring what already works.
 
 - **This skill** is methodology (file persistence, phase sizing, context management). `workflows:plan` is the structured workflow (research agents, issue templates). Use this skill's principles during any planning; use `workflows:plan` for full feature plans.
 - **Architecture decisions:** when the plan involves significant trade-offs (choosing between approaches, accepting constraints), use `/adr` to document the decision and what was given up. ADRs outlive the plan.
+- **Threat modeling:** when the plan introduces auth flows, payment handling, external API surfaces, or new trust boundaries, dispatch the `security-sentinel` agent in threat-model mode before implementation. Architectural security gaps are cheaper to fix in the plan than in the code.
 - **Predecessor:** `brainstorming` -- use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
 - **Prose quality:** `writing` -- use to humanize plan language and remove AI slop from plan documents
 - **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline

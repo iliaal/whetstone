@@ -30,7 +30,11 @@ Scan the full conversation. For each finding, cite the specific exchange (quote 
 
 Skip one-time typos, external tool failures, and issues outside agent control.
 
-### 2. Improvements
+### 2. Operational Learnings
+
+Before listing improvements, scan the session for operational insights worth preserving. Apply the 5-minute filter: would knowing this save 5+ minutes in a future session? If yes, include it. Examples: a project-specific quirk, a command that failed unexpectedly, an approach that worked better than expected.
+
+### 3. Improvements
 
 Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10.
 
@@ -38,7 +42,7 @@ Ask: *"Which of these should I remember for future chats?"*
 
 Save approved items to memory files at `~/.claude/projects/.../memory/` using the Write tool with proper frontmatter (see MEMORY.md index).
 
-### 3. Skill Audit (if skills were used)
+### 4. Skill Audit (if skills were used)
 
 For each skill invoked during the session:
 
@@ -52,7 +56,7 @@ For each skill invoked during the session:
 
 Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
 
-### 4. Pattern Detection
+### 5. Pattern Detection
 
 If 2+ similar tasks appear that no existing skill covers, suggest a new skill (1-2 sentence description). Create only after confirmation.
 

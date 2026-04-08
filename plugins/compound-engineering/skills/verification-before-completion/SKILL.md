@@ -14,6 +14,12 @@ No completion claims without fresh verification evidence. If the verification co
 
 "Should pass", "probably works", and "looks correct" are not verification. Only command output confirming the claim counts (typically exit code 0). If pre-existing failures cause non-zero exits unrelated to your changes, see "When Verification Fails" below.
 
+## Pre-Verification Check
+
+Before running verification, check the working tree state: `git status --porcelain`. If there are uncommitted changes unrelated to the current task, handle them first (commit, stash, or acknowledge). Adding verification commits on top of a dirty tree creates tangled history.
+
+When verifying work delegated to a subagent, do not trust the implementer's own report. Read the actual code or test output independently. Spec compliance and quality are separate concerns -- verify both.
+
 ## Gate Function
 
 Before any success claim, run through these five steps:

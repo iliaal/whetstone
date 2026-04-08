@@ -111,6 +111,17 @@ Rules for when and how to dispatch agents. Getting these wrong wastes tokens and
 
 Assess 5 signals: file count, module span, dependency chain, risk surface, parallelism potential. If 3+ fall in the "complex" column, dispatch a team. Below 3, do it yourself. When in doubt, prefer the simple path -- team overhead is only justified when parallelism provides a real speedup.
 
+**Task description template (for every dispatched task):**
+
+Every task prompt must include these fields to prevent integration failures:
+- **Objective**: what to accomplish (one sentence)
+- **Owned Files**: files this agent creates or modifies (exclusive -- no file assigned to multiple agents)
+- **Interface Contracts**: what to import from other agents' work, what to export for downstream agents
+- **Acceptance Criteria**: how the agent knows the task is correct
+- **Out of Scope**: what NOT to touch, even if it looks related
+
+Cardinal rule: one owner per file. When files must be shared, designate a single owner; other agents send change requests, owner applies sequentially. If an upstream dependency isn't ready yet, write a stub/mock so downstream work can continue unblocked.
+
 **No parallel implementation agents (without worktrees):**
 
 Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review, research, and analysis agents are always safe to parallelize (read-only).
@@ -130,7 +141,7 @@ When passing work between agents (leader→implementer, implementer→reviewer, 
 2. **Deliverable**: specific output expected from the receiving agent
 3. **Acceptance criteria**: how the receiving agent knows the work is correct
 
-Copy the necessary context into the prompt directly. Never tell the next agent "read the previous agent's output" -- paste it. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
+The controller reads all tasks from the plan upfront and provides full task text directly to subagents. Never make subagents read plan files themselves -- they waste tokens navigating, may read different versions, and inherit unclear context. Paste the task content into the prompt. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
 
 **Standardize implementer status signals:**
 
@@ -155,9 +166,10 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 ## Best Practices
 
 1. **Use task dependencies** -- let the system manage unblocking via `addBlockedBy`.
-2. **Prefer `write` over `broadcast`** -- broadcast sends N messages for N teammates.
+2. **Prefer `write` over `broadcast`** -- broadcast sends N messages for N teammates, consuming API resources proportional to team size. Reserve broadcasts for critical shared-resource changes only.
 3. **Handle failures** -- workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
 4. **Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
+5. **Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts: do not use AskUserQuestion, auto-choose the conservative/safe default, skip upgrade checks and telemetry. Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
 
 ---
 
@@ -202,6 +214,8 @@ Swarm failures are inevitable. Contain blast radius and recover partial value ra
 
 Set timeout boundaries per agent. If one agent fails or hangs, do not let it cascade into abandoning the entire swarm's work. The orchestrator treats each agent as independently failable -- other agents continue their work unaffected. Terminate unresponsive agents after the timeout rather than waiting indefinitely.
 
+Apply circuit-breaker logic to agent types: after N consecutive failures from the same agent type, stop dispatching to it and route to an alternative (different model, different decomposition). Apply bulkhead isolation: a failing agent type cannot exhaust the shared task queue or block other agent types from proceeding.
+
 **Recovery strategy:**
 
 When an agent fails, classify the failure before acting:
@@ -210,6 +224,10 @@ When an agent fails, classify the failure before acting:
 - **Escalate** -- systemic problem (bad spec, missing dependency, impossible constraint). Surface to the orchestrator or user with an [Escalation Report](./references/handoff-templates.md).
 
 Never retry blindly. Repeating the same prompt in the same conditions produces the same failure.
+
+**Mid-pipeline compensation:**
+
+When an agent fails mid-pipeline after earlier agents have already written files or made changes, classify whether those earlier effects are reversible before deciding the recovery path. If reversible (file writes, uncommitted changes), revert and retry the pipeline segment. If irreversible (committed code, external API calls, database writes), compensate rather than retry -- apply a corrective action that accounts for the partial state. Never retry blindly when earlier stages have produced side effects.
 
 **Post-failure synthesis:**
 

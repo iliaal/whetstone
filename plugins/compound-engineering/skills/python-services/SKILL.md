@@ -20,7 +20,9 @@ paths: "**/*.py"
 
 - `uv init --package myproject` for distributable packages, `uv init` for apps
 - `uv add <pkg>`, `uv add --group dev <pkg>`, never edit pyproject.toml deps manually
-- `uv run <cmd>` instead of activating venvs
+- `uv run <cmd>` instead of activating venvs -- auto-activates the venv without explicit activation
+- `uv add --upgrade <pkg>` to upgrade a single package without touching others
+- `uv tree --outdated` to preview what would be upgraded before committing
 - `uv.lock` goes in version control
 - Use `[dependency-groups]` (PEP 735) for dev/test/docs, not `[project.optional-dependencies]`
 - PEP 723 inline metadata for standalone scripts with deps
@@ -119,6 +121,11 @@ def call_api(url: str) -> dict: ...
 
 **Connection pooling** is mandatory for production: reuse `httpx.AsyncClient()` across requests, configure SQLAlchemy `pool_size`/`max_overflow`, use `aiohttp.TCPConnector(limit=N)`.
 
+## Production Resilience
+
+- **Fail-fast config validation**: use a Pydantic `BaseSettings` model with `model_validator` to parse and validate all environment variables at startup. If invalid, crash before serving traffic. Never discover a missing secret on the first request that needs it.
+- **Health endpoints**: expose `/health` (shallow liveness -- returns 200 if the process responds) and `/ready` (deep readiness -- verifies database, Redis, and critical dependencies are reachable). Load balancers route traffic based on `/ready`; orchestrators restart based on `/health`.
+
 ## Observability
 
 - **structlog** for JSON structured logging. Configure once at startup with `JSONRenderer`, `TimeStamper`, `merge_contextvars`
@@ -156,6 +163,14 @@ def call_api(url: str) -> dict: ...
 - Batch processing: `BatchResult(succeeded={}, failed={})` -- don't let one item abort the batch
 - Pydantic `BaseModel` with `field_validator` for complex input validation
 
+## Migrations
+
+- Separate schema and data migrations -- data backfills in their own migration file
+- Renames/removals use expand-contract: add new column → backfill → switch reads → drop old (see `postgresql` skill for the full pattern)
+- Never edit a migration that has already run in a shared environment
+- Alembic: use `--autogenerate` as a starting point, always review generated SQL before committing
+- Test migrations against production-sized data -- a migration that takes 2ms on dev can lock a table for minutes in production
+
 ## API Design
 
 - **Contract-first**: define Pydantic `BaseModel` request/response schemas and FastAPI `response_model` before writing endpoint logic. The schema is the contract -- implementation follows. Generate OpenAPI docs from these models automatically.
@@ -163,6 +178,7 @@ def call_api(url: str) -> dict: ...
 - **Addition over modification**: add new optional fields (`field: str | None = None`) rather than changing or removing existing ones. Removing a Pydantic field from a response model breaks callers silently. Deprecate first (`Field(deprecated=True)`), remove in a later version.
 - **Consistent error structure**: all exceptions should produce the same envelope: `{"error": {"code": "...", "message": "...", "details": ...}}`. Register `@app.exception_handler` for `RequestValidationError`, `HTTPException`, and application-specific exceptions to normalize into one format. Callers build error handling once.
 - **Boundary validation via Pydantic**: validate at the endpoint/handler level with Pydantic models and FastAPI's automatic request parsing. Internal services and repositories trust that input was validated at entry -- no redundant validation scattered through business logic.
+- **Third-party responses are untrusted data**: validate shape and content of external API responses before using them in logic, rendering, or decision-making. A compromised or misbehaving service can return unexpected types, malicious content, or missing fields. Parse through a Pydantic model before use.
 
 ## Verify
 

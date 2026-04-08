@@ -73,6 +73,7 @@ Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 confl
 - **Addition over modification**: add new optional fields rather than changing or removing existing ones. Removing a field from a response schema breaks callers silently. Deprecate first (mark in OpenAPI spec), remove in a later version.
 - **Consistent error envelope**: all errors -- validation, auth, not-found, application -- must produce the same `{ error: { code, message, details? } }` structure. Centralize in the error handler middleware. Callers build error handling once; inconsistent errors force per-endpoint special cases.
 - **Boundary validation**: validate at the middleware/route handler level (Zod `.parse()` on request body/params, Fastify schema validation). Services and repositories trust that input was validated at entry -- no redundant checks scattered through business logic.
+- **Third-party responses are untrusted data**: validate shape and content of external API responses before using them in logic, rendering, or decision-making. A compromised or misbehaving service can return unexpected types, malicious content, or missing fields. Parse through a Zod schema before use.
 - **Resources**: plural nouns (`/users`), max 2 nesting levels (`/users/:id/orders`)
 - **Methods**: GET read | POST create | PUT replace | PATCH partial | DELETE remove
 - **Versioning**: URL path `/api/v1/`
@@ -93,6 +94,8 @@ Never use readFileSync or other sync methods in production -- use `fs.promises` 
 
 ## Production Resilience
 
+- **Fail-fast env validation**: parse and validate all environment variables at startup with a Zod schema (`const env = envSchema.parse(process.env)`). If invalid, crash before serving traffic. Never discover a missing env var on the first request that needs it.
+- **Health endpoints**: expose both `/health` (shallow, always 200 if process is alive) and `/ready` (deep, verifies database, cache, and critical dependencies are reachable). Load balancers probe `/ready` for traffic routing; monitoring probes `/health` for process liveness. Don't conflate them.
 - **Caching**: Redis cache-aside for DB/API responses; in-memory LRU with TTL for hot paths. Always invalidate on writes.
 - **Load shedding**: `@fastify/under-pressure` (or equivalent) -- monitor event loop delay, heap, RSS; return 503 when thresholds exceeded.
 - **Response schemas**: In Fastify, always define response schemas -- enables `fast-json-stringify` for 2-3x faster serialization.

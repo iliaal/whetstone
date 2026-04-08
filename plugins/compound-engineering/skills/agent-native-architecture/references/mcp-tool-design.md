@@ -480,6 +480,71 @@ For each entity type in your app, verify:
 If any operation is missing, users will eventually ask for it and the agent will fail.
 </principle>
 
+<principle name="tool-annotations">
+## Tool Annotations
+
+Every tool must declare its behavioral hints so clients can make safe decisions without reading implementation:
+
+| Annotation | Values | Purpose |
+|-----------|--------|---------|
+| `readOnlyHint` | `true`/`false` | Tool does not modify state. Clients can auto-approve. |
+| `destructiveHint` | `true`/`false` | Tool may irreversibly delete or overwrite data. |
+| `idempotentHint` | `true`/`false` | Calling twice with same args produces same result. |
+| `openWorldHint` | `true`/`false` | Tool interacts with external entities beyond the server's control. |
+
+```typescript
+tool("delete_item", "Delete an item by key", {
+  key: z.string()
+}, async ({ key }) => { /* ... */ }, {
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  }
+});
+```
+</principle>
+
+<principle name="structured-output">
+## Structured Output and Actionable Errors
+
+Define `outputSchema` where possible so agents process structured data instead of parsing text. Use `structuredContent` in tool responses when returning complex data.
+
+Error messages must guide agents toward solutions, not just report failure:
+
+```typescript
+// Wrong: opaque error
+return { text: "Error: too many results", isError: true };
+
+// Right: actionable error with recovery suggestion
+return {
+  text: "Query returned 5,000 results (limit 100). Try filter='active_only' to reduce results, or add a date range.",
+  isError: true
+};
+```
+
+**Pagination contract:** List endpoints must return `has_more`, `next_offset`, and `total_count`. Default page size 20-50 items. Never load all results into memory.
+</principle>
+
+<principle name="transport-selection">
+## Transport Selection
+
+| Transport | When to use |
+|-----------|------------|
+| **stdio** | Local/single-client tools, CLI integrations, same-machine only |
+| **Streamable HTTP** | Remote/multi-client, production deployments, cross-network |
+| **SSE** | Deprecated -- avoid for new servers |
+
+For local HTTP servers, bind to `127.0.0.1` (not `0.0.0.0`) and validate the `Origin` header to prevent DNS rebinding attacks.
+</principle>
+
+<principle name="tool-naming-multi-server">
+## Tool Naming for Multi-Server Environments
+
+When multiple MCP servers coexist, prefix tool names with the service: `slack_send_message`, `github_create_issue`, `sentry_list_issues`. Without prefixes, tool name collisions across servers cause ambiguous routing.
+</principle>
+
 <checklist>
 ## MCP Tool Design Checklist
 
@@ -491,6 +556,10 @@ If any operation is missing, users will eventually ask for it and the agent will
 - [ ] No business logic in tool implementations
 - [ ] Error states clearly communicated via `isError`
 - [ ] Descriptions explain what the tool does, not when to use it
+- [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
+- [ ] Error messages include recovery suggestions, not just failure descriptions
+- [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`
+- [ ] Multi-server tool names use service prefix (`service_action_resource`)
 
 **Dynamic Capability Discovery (for agent-native apps):**
 - [ ] For external APIs where agent should have full access, use dynamic discovery
