@@ -205,6 +205,9 @@ python3 distillery/scripts/distiller.py evolve <skill> [--optimizer gepa|mipro|b
 # Identify skills injected into tasks where they're not needed (misfire detection)
 python3 distillery/scripts/distiller.py analyze-misfires [--min-examples 30] [--include-stale]
 
+# Analyze skill injection outcomes by project context (surface anomalies)
+python3 distillery/scripts/distiller.py analyze-outcomes [--min-examples 5] [--include-stale]
+
 # Analyze negative-signal sessions to find failure patterns and suggest skill fixes
 python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10] [--include-stale]
 
@@ -221,8 +224,8 @@ python3 scripts/generate-manifest.py
 These commands are integrated into the release pipeline (`/sync-from-repos` > `/audit-plugin` > `/release` > `/announce`):
 
 - `harvest-sessions` runs in `/sync-from-repos` Phase 1 (background, parallel with inventory)
-- `discover-signals` runs in `/sync-from-repos` Phase 6 (surfaces new negative patterns before audit)
-- `analyze-misfires` and `diagnose-negatives` run in `/audit-plugin` Phase 2 (trigger coverage checks)
+- `discover-signals` and `analyze-outcomes` run in `/sync-from-repos` Phase 6 (surfaces new patterns and project-context anomalies before audit)
+- `analyze-misfires`, `analyze-outcomes`, and `diagnose-negatives` run in `/audit-plugin` Phase 2 (trigger coverage checks)
 - `test-triggers` and `test-semantic` run in `/audit-plugin` Phase 7 and `/release` pre-commit gates
 
 All commands can also be run standalone for targeted analysis.
@@ -239,8 +242,10 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 | `scripts/generate-manifest.py` | Update `distillery/.skill-versions.json` with current skill/pattern hashes | Automatically during release |
 | `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | After editing or adding skills |
 | `scripts/generate-skill-hooks.sh` | Generate draft `hooks/skill-patterns.sh` from SKILL.md frontmatter | After adding/removing skills (hand-tune regex after) |
+| `scripts/publish-clawhub.sh` | Publish skills to clawhub.ai registry (handles rate limits, skips existing versions) | During release (automatic) or manually |
 | `scripts/sync-to-tools.sh` | Symlink plugin skills to `~/.agents/skills`, `~/.codex/skills`, `~/.kilocode/skills` | After editing or adding skills |
 | `scripts/update-plugin.sh` | Update locally installed plugin to latest pushed version | After pushing a new version to GitHub |
+| `scripts/post-thread.py` | Post tweet threads to X via Playwright CDP to Edge | After `/announce` drafts are approved |
 
 ## Marketplace.json spec
 

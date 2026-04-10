@@ -17,6 +17,7 @@ Run the full release pipeline for the compound-engineering plugin.
    - Commit all plugin changes + CHANGELOG + marketplace.json
    - Push to origin/main
    - Mirror skills to ~/ai/ai-skills and push
+   - Publish skills to ClawHub registry via publish-clawhub.sh
    - Sync skills to other tools (Codex, Kilocode) via sync-to-tools.sh
    - Update locally installed plugin via update-plugin.sh
 4. Report the version that was released
