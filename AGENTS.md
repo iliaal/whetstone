@@ -55,26 +55,28 @@ compound-engineering-plugin/
 
 ## Versioning
 
-Every change MUST include:
+**Version bumps, CHANGELOG entries, and README count updates happen during `/release`, not per-change.** Editing a skill, agent, or command does not trigger any version ceremony. Make the change, commit it with a descriptive message, move on. Let work accumulate across multiple commits until a release is cut.
 
-1. **Version bump** in `plugins/compound-engineering/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
-2. **CHANGELOG.md** entry using Keep a Changelog format
-3. **README.md** — verify/update component counts and tables
-4. **`bash scripts/update-metadata.sh`** — updates descriptions and counts
+Why this rule exists: per-change ceremony fragmented CHANGELOG.md into dozens of micro-entries and made "what actually shipped in v2.55" hard to reconstruct. Consolidating the bump into `/release` produces one clean summary per ship and makes individual edits cheap.
 
-Semver rules:
-- **MAJOR** (1.0.0 → 2.0.0): Breaking changes, major reorganization
-- **MINOR** (1.0.0 → 1.1.0): New agents, commands, or skills
-- **PATCH** (1.0.0 → 1.0.1): Bug fixes, doc updates, minor improvements
+When `/release` runs, it:
 
-Pre-commit checklist:
+1. Bumps the version in `plugins/compound-engineering/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+2. Appends a CHANGELOG.md entry summarizing the commits since the last release
+3. Updates README.md component counts and tables
+4. Runs `bash scripts/update-metadata.sh` to sync descriptions and counts
+5. Validates JSON and runs pre-commit gates (trigger tests, semantic tests)
+6. Commits, pushes, mirrors to ai-skills, publishes to ClawHub, syncs to other tools
 
-- [ ] Version bumped in both JSON files
-- [ ] CHANGELOG.md updated
-- [ ] README.md component counts verified
-- [ ] README.md tables accurate (agents, commands, skills)
-- [ ] `bash scripts/update-metadata.sh` run
-- [ ] `jq . .claude-plugin/marketplace.json && jq . plugins/compound-engineering/.claude-plugin/plugin.json`
+Semver rules applied by `/release`:
+- **MAJOR** (1.0.0 → 2.0.0): breaking changes, major reorganization
+- **MINOR** (1.0.0 → 1.1.0): new agents, commands, or skills since last release
+- **PATCH** (1.0.0 → 1.0.1): bug fixes, doc updates, improvements to existing components
+
+Enforcement:
+- Do not touch `plugin.json`, `marketplace.json`, `CHANGELOG.md`, or README component counts on regular edits. Commit the actual change and stop.
+- If a session-end summary says "bumped to vX.Y.Z" without the user invoking `/release`, that is a regression — back out the bump before handing off.
+- Exception: if the user explicitly asks for a version bump outside `/release`, do it. Otherwise `/release` is the sole authority for version state.
 
 ## Command naming convention
 

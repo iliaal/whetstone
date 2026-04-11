@@ -12,11 +12,31 @@ Deep analysis of all skills, agents, and commands in the compound-engineering pl
 
 ```
 PLUGIN_DIR=plugins/compound-engineering
+SYNC_LOG=~/ai/wiki/tools/compound-engineering-sync-log.md
 ```
 
 If `$ARGUMENTS` specifies a name or category, narrow to that. Otherwise audit everything.
 
 **Reactive mode:** If invoked after a skill/agent failed during use, detect the failing component from conversation context and focus the audit on that component first.
+
+## Phase 0: Pre-flight — read prior decision log
+
+Read `$SYNC_LOG` in full before any checks run. Build an in-memory set of already-evaluated findings keyed by `(component, issue-signature)` across every run entry. Use it as a filter during Phase 3 presentation:
+
+- **Previously applied, exact match** — drop silently.
+- **Previously rejected, exact match** — drop silently unless new evidence contradicts the prior reason; if so, surface with a `RE-EVALUATE` flag and quote the prior rejection reason.
+- **Previously deferred, exact match** — surface with a `PREVIOUSLY DEFERRED` tag and the original defer reason so the user can judge whether conditions have changed.
+- **No match** — present normally.
+
+While reading, also detect prune triggers and emit a one-line reminder at the end of Phase 3 if any fire:
+
+- Any entry older than 30 days.
+- Any entry referencing a component that no longer exists under `$PLUGIN_DIR`.
+- Any entry whose reasoning has been superseded by a feedback-memory rule.
+
+Reminder format: "Sync log has N prune candidates — run `/prune-sync-log`."
+
+If `$SYNC_LOG` doesn't exist, note it and continue — the post-apply step in Phase 5b creates it.
 
 ## Phase 1: Mechanical validation (deterministic, no AI)
 
@@ -211,6 +231,29 @@ For approved items:
 - Make surgical edits — fix the specific issue, don't restructure
 - After all edits, run `python3 distillery/scripts/distiller.py validate <name>` on modified distilled skills
 - Run `bash scripts/update-metadata.sh` if components were added/removed
+
+## Phase 5b: Append to decision log
+
+After applying changes (or deciding to skip everything), append one run entry to `$SYNC_LOG` under the `## Log` marker. Every finding presented in Phase 3 must land in exactly one bucket — applied, rejected, or deferred — with one-line reasoning. Rejection reasons (especially for false-positive validator findings and stress-test drops from Phase 4) are the most valuable forensic record.
+
+Entry format:
+
+```markdown
+## [YYYY-MM-DD] audit | Scope: <full | component-name | category>
+
+Run context: <reactive mode target or full-audit scope>
+
+### Applied
+- `<component>`: <fix> (severity: H|M|L) -- <brief reason if non-obvious>
+
+### Rejected
+- `<component>`: <proposed fix> -- <specific reason: false positive, fix worse than issue, invalid assumption, etc.>
+
+### Deferred
+- `<component>`: <proposed fix> -- <reason + revisit condition>
+```
+
+If a rejection reason generalizes to a reusable rule, propose promoting it to a feedback-memory entry (e.g., `feedback_audit_false_positives.md`) and reference the memory file from the log bullet rather than repeating the reasoning.
 
 ## Phase 6: Verify changes
 

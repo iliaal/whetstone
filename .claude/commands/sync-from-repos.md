@@ -13,7 +13,28 @@ Scan reference repositories, compare against plugin skills/agents/commands, and 
 ```
 REPOS_DIR=~/ai/repos
 PLUGIN_DIR=plugins/compound-engineering
+SYNC_LOG=~/ai/wiki/tools/compound-engineering-sync-log.md
 ```
+
+## Phase 0: Pre-flight — read prior decision log
+
+Read `$SYNC_LOG` in full before any analysis. Build an in-memory set of already-evaluated findings keyed by `(component, pattern-signature)` across every run entry. Use it as a filter during Phase 3 and Phase 4:
+
+- **Previously applied, exact match** — drop silently.
+- **Previously rejected, exact match** — drop silently unless new evidence contradicts the prior reason; if so, surface with a `RE-EVALUATE` flag and quote the prior rejection reason.
+- **Previously deferred, exact match** — surface with a `PREVIOUSLY DEFERRED` tag and the original defer reason so the user can judge whether conditions have changed.
+- **No match** — present normally.
+
+While reading, also detect prune triggers. Emit a one-line reminder at the end of Phase 4 if any fire:
+
+- Any entry older than 30 days.
+- Any entry referencing a component that no longer exists under `$PLUGIN_DIR` (skill, agent, or command path missing).
+- Any entry referencing an external repo no longer present in `$REPOS_DIR`.
+- Any entry whose rejection reason duplicates a rule now in `MEMORY.md` (superseded).
+
+Reminder format: "Sync log has N prune candidates (age: X, stale-ref: Y, abandoned-source: Z, superseded: W) — run `/prune-sync-log`."
+
+If `$SYNC_LOG` doesn't exist, note it and continue — the post-apply step in Phase 5b creates it.
 
 ## Phase 1: Pull latest and refresh eval data
 
@@ -166,6 +187,29 @@ For approved items:
 2. Make surgical edits — add content, don't restructure
 3. Validate against skill compliance checklist (CLAUDE.md) for skills; check agent frontmatter patterns for agents; verify command orchestration delegates to skills for commands
 4. Run `bash scripts/update-metadata.sh` if components were added/removed
+
+## Phase 5b: Append to decision log
+
+After applying changes (or deciding to skip everything), append one run entry to `$SYNC_LOG` under the `## Log` marker. Every proposed finding from Phase 4 must land in exactly one bucket — applied, rejected, or deferred — with one-line reasoning. Rejection reasons are the most valuable part of this log; do not omit them.
+
+Entry format:
+
+```markdown
+## [YYYY-MM-DD] sync | Scope: <full | skill-name | repo-name>
+
+Run context: <external repos scanned or specific focus>
+
+### Applied
+- `<component>`: <what changed> (impact: H|M|L) -- <source>
+
+### Rejected
+- `<component>`: <proposed change> -- <specific reason>
+
+### Deferred
+- `<component>`: <proposed change> -- <reason + revisit condition>
+```
+
+If a rejection reason generalizes to "we never do X because Y", also propose promoting it to a feedback-memory entry and link to the memory file from the log bullet instead of repeating the reasoning.
 
 ## Phase 6: Discover new signals and outcome anomalies
 
