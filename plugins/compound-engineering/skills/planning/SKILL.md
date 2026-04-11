@@ -177,11 +177,15 @@ Context management rules, error protocol (3-attempt escalation), iterative plan 
 
 Plans can carry lightweight metadata per phase that shapes how `workflows:work` sequences implementation. These are optional annotations, not requirements.
 
-- **test-first**: Write failing tests before implementation. Use when behavior is well-defined and testable upfront.
+**Default**: tests-after — `workflows:work` writes tests alongside implementation for new features. No posture signal needed in this case.
+
+Opt-in postures for phases that need different sequencing:
+
+- **test-first**: Write failing tests before implementation. Use when behavior is well-defined and testable upfront (bug fixes always qualify; new features qualify when the contract is clear before coding).
 - **characterization-first**: Capture existing behavior with tests before changing it. Use when modifying code without existing test coverage.
 - **external-delegate**: Mark self-contained units suitable for parallel execution (separate worktree, separate agent). Use when a phase has no dependencies on other phases.
 
-Add posture signals in the phase header: `## Phase 2: Auth middleware [test-first]`. The executor inherits these silently without interrupting questions -- they shape sequencing, not scope.
+Add posture signals in the phase header: `## Phase 2: Auth middleware [test-first]`. The executor inherits these silently without interrupting questions — they shape sequencing, not scope.
 
 ## Plan Deepening
 
@@ -193,20 +197,56 @@ When asked to "deepen" or "strengthen" an existing plan, don't re-run the full p
 4. Expand the weak sections with concrete file paths, code patterns, and verification steps
 5. Preserve everything that's already specific enough
 
-Deepening is additive -- it fills gaps without restructuring what already works. The `/deepen-plan` command orchestrates this with parallel research agents per section.
+Deepening is additive — it fills gaps without restructuring what already works. The `/deepen-plan` command orchestrates this with parallel research agents per section.
 
-## Anti-Patterns
+### Enhancement format per section
 
-| Don't | Do Instead |
-|-------|------------|
-| Start coding without a plan | Create .plan/task_plan.md first |
-| Plan horizontal layers (all DB, then all API, then all UI) | Vertical slices: one complete feature path per phase (DB + API + UI) delivering working end-to-end functionality |
-| State goals once and forget | Re-read plan before decisions |
-| Hide errors and retry silently | Log errors, mutate approach |
-| Keep everything in context | Write large content to files |
-| Repeat failed actions | Track attempts in plan file |
-| Create vague tasks ("improve X") | Concrete verb-first tasks with file paths |
-| Plan at 100% capacity | Budget for verification, fixes, and unknowns |
+When a section is deepened by research agents, append the findings using this structure (preserve the original section content above it):
+
+```markdown
+## [Original Section Title]
+
+[Original content preserved verbatim]
+
+### Research Insights
+
+**Best Practices:**
+- [Concrete recommendation with rationale]
+
+**Performance Considerations:**
+- [Optimization opportunity or benchmark to target]
+
+**Implementation Details:**
+​```[language]
+// Concrete code example from research
+​```
+
+**Edge Cases:**
+- [Edge case and handling strategy]
+
+**References:**
+- [Documentation URL]
+```
+
+### Enhancement summary block
+
+At the top of the deepened plan, add a summary so reviewers can see what changed without diffing:
+
+```markdown
+## Enhancement Summary
+
+**Deepened on:** [Date]
+**Sections enhanced:** [Count]
+**Research agents used:** [List]
+
+### Key Improvements
+1. [Major improvement]
+
+### New Considerations Discovered
+- [Important finding]
+```
+
+Both blocks are owned by this skill — commands that orchestrate deepening (e.g., `/deepen-plan`) delegate format decisions here rather than restating the templates.
 
 ## Verify
 

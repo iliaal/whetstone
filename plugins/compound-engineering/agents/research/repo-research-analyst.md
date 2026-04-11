@@ -1,7 +1,9 @@
 ---
 name: repo-research-analyst
+model: sonnet
 autoApprove: read
-description: "Conducts thorough research on this codebase's structure, documentation, conventions, and project-specific implementation patterns. Use when onboarding to the repo or understanding its conventions. For external best practices, use best-practices-researcher."
+tools: Read, Grep, Glob, Bash
+description: "Researches this codebase's structure, conventions, and project-specific patterns. Use when onboarding or understanding internal conventions."
 ---
 
 <examples>

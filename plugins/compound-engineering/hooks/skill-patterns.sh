@@ -14,7 +14,7 @@ declare -A SKILL_TIERS
 SKILL_PATTERNS[planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
 SKILL_TIERS[planning]=1
 
-SKILL_PATTERNS[debugging]='debug|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
+SKILL_PATTERNS[debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
 SKILL_TIERS[debugging]=1
 
 SKILL_PATTERNS[code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'
@@ -50,7 +50,7 @@ SKILL_TIERS[nodejs-backend]=2
 SKILL_PATTERNS[python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
 SKILL_TIERS[python-services]=2
 
-SKILL_PATTERNS[postgresql]='postgres.{0,30}(query|schema|index|optim|migrat|constraint|trigger|function|extension|permission)|jsonb|row.?level.?security|\brls\b|\bcte[s]?\b|window.?function|explain.?analyze|partition.*(table|range|list|hash)|connection.?pool.*(pg|postgres|bouncer)|upsert|full.?text.?search|tsvector'
+SKILL_PATTERNS[postgresql]='postgres(ql)?|\bpgbouncer\b|jsonb|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b|tsvector|pg_stat_|pg_class'
 SKILL_TIERS[postgresql]=2
 
 SKILL_PATTERNS[terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'

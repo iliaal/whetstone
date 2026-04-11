@@ -47,14 +47,13 @@ Agents are organized into categories for easier discovery.
 | [`design-iterator`](agents/design/design-iterator.md) | Iteratively refine UI through systematic design iterations |
 | [`figma-design-sync`](agents/design/figma-design-sync.md) | Compare UI against Figma designs, report discrepancies, and optionally implement fixes |
 
-### Workflow (5)
+### Workflow (4)
 
 | Agent | Description |
 |-------|-------------|
 | [`bug-reproduction-validator`](agents/workflow/bug-reproduction-validator.md) | Systematically reproduce and validate bug reports |
-| [`deployment-engineer`](agents/workflow/deployment-engineer.md) | CI/CD pipeline design, deployment strategies, GitOps workflows |
 | [`deployment-verification-agent`](agents/workflow/deployment-verification-agent.md) | Create Go/No-Go deployment checklists for risky data changes |
-| [`devops-engineer`](agents/workflow/devops-engineer.md) | Docker containerization, monitoring/observability, incident management |
+| [`infrastructure-engineer`](agents/workflow/infrastructure-engineer.md) | CI/CD pipelines, Docker containerization, observability, and incident management |
 | [`pr-comment-resolver`](agents/workflow/pr-comment-resolver.md) | Address PR comments and implement fixes |
 
 ## Commands

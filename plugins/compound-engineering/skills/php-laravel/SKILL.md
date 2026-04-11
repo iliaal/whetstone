@@ -123,7 +123,7 @@ Use these when applicable -- do not add explanatory comments in generated code (
 - `Gate::forUser($user)->allows('update', $post)` for authorization assertions
 - `assertDatabaseHas` / `assertDatabaseMissing` to verify persistence
 - Coverage target: 80%+ with `pcov` or `XDEBUG_MODE=coverage` in CI
-General testing discipline (anti-patterns, rationalization resistance): see [writing-tests](../writing-tests/SKILL.md) skill.
+For generic test discipline (anti-patterns, mock rules, rationalization resistance), see the `writing-tests` skill — this skill covers Laravel-specific patterns that sit on top of that foundation.
 See [testing patterns and examples](./references/testing.md) for PHPUnit essentials, data providers, and running tests.
 See [feature testing](./references/feature-testing.md) for auth, validation, API, console, and DB assertions.
 See [mocking and faking](./references/mocking-and-faking.md) for facade fakes and action mocking.

@@ -57,7 +57,6 @@ After refining, offer to save the result to `.ai/PROMPT.md` -- do not write with
 
 ## Constraints
 
-- Never invent missing information -- if context is ambiguous, ask instead of inferring
 - Stop refining if the original intent is unclear -- clarify first
 - Do not refine prompts for harmful or illegal tasks
 

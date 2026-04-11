@@ -22,72 +22,23 @@ Do not proceed until you have a clear feature description from the user.
 
 ### 0. Idea Refinement
 
-**Check for brainstorm output first:**
-
-Before asking questions, look for recent brainstorm documents in `docs/brainstorms/` that match this feature:
+**Check for brainstorm output first.** Look for recent relevant brainstorms in `docs/brainstorms/`:
 
 ```bash
 ls -la docs/brainstorms/*.md 2>/dev/null | head -10
 ```
 
-**Relevance criteria:** A brainstorm is relevant if:
-- The topic (from filename or YAML frontmatter) semantically matches the feature description
-- Created within the last 14 days
-- If multiple candidates match, use the most recent one
+A brainstorm is relevant if its topic matches the feature description, created within the last 14 days, and (if multiple match) prefer the most recent.
 
-**If a relevant brainstorm exists:**
-1. Read the brainstorm document **thoroughly** -- every section matters
-2. Announce: "Found brainstorm from [date]: [topic]. Using as foundation for planning."
-3. Extract and carry forward **ALL** of the following into the plan:
-   - Key decisions and their rationale
-   - Chosen approach and why alternatives were rejected
-   - Constraints and requirements discovered during brainstorming
-   - Open questions (flag these for resolution during planning)
-   - Success criteria and scope boundaries
-   - Any specific technical choices or patterns discussed
-4. **Skip the baseline idea refinement questions** -- the brainstorm already answered WHAT to build
-5. **Run a gap-analysis interview** focused on implementation-specific concerns the brainstorm didn't cover:
-   - Deployment and rollback strategy
-   - Monitoring and observability
-   - Data migration (if applicable)
-   - Performance under load
-   - Security implications at the implementation level
-   - Use AskUserQuestion to probe only the gaps. Categorize by severity -- auto-skip gaps that don't apply to this feature's domain.
-6. Use brainstorm content as the **primary input** to research and planning phases
-7. **Critical: The brainstorm is the origin document.** Throughout the plan, reference specific decisions with `(see brainstorm: docs/brainstorms/<filename>)` when carrying forward conclusions. Do not paraphrase decisions in a way that loses their original context -- link back to the source.
-8. **Do not omit brainstorm content** -- if the brainstorm discussed it, the plan must address it (even if briefly). Scan each brainstorm section before finalizing the plan to verify nothing was dropped.
+**If a relevant brainstorm exists:** Read it thoroughly, announce "Found brainstorm from [date]: [topic]. Using as foundation." and carry forward all decisions, constraints, success criteria, and technical choices into the plan. Skip baseline idea refinement and run a gap-analysis interview focused only on implementation concerns the brainstorm didn't cover (deployment/rollback, monitoring, data migration, performance, security at the implementation level). The brainstorm is the origin document — reference it with `(see brainstorm: docs/brainstorms/<filename>)` throughout the plan and scan each brainstorm section before finalizing to verify nothing was dropped.
 
-**If multiple brainstorms could match:**
-Use **AskUserQuestion tool** to ask which brainstorm to use, or whether to proceed without one.
+If multiple brainstorms could match, use `AskUserQuestion` to ask which to use.
 
-**If no brainstorm found (or not relevant), run idea refinement with deep interview:**
+**If no brainstorm found (or not relevant):** Run idea refinement using the `brainstorming` skill's Phase 1 interview protocol and the deep interview protocol in CLAUDE.md. Use `AskUserQuestion` for all prompts. Continue until the idea is clear OR the user says "proceed."
 
-Refine the idea through collaborative dialogue using the **AskUserQuestion tool**:
+**Gather signals for the research decision** during refinement: user familiarity with the codebase, intent (speed vs thoroughness), topic risk (security/payments/external APIs warrant more caution), and uncertainty level.
 
-- Ask questions one at a time to understand the idea fully
-- Prefer multiple choice questions when natural options exist
-- Focus on understanding: purpose, constraints and success criteria
-- Continue until the idea is clear OR user says "proceed"
-
-**Apply the deep interview protocol (see CLAUDE.md) throughout refinement:**
-
-- Probe assumptions the user hasn't stated. Surface hidden dependencies.
-- Ask about second-order effects: "If this works, what pressure does it create elsewhere?"
-- Cluster 2-3 related questions when probing a single dimension (e.g., data model). Switch to one-at-a-time across dimensions.
-- Fire background research on technology claims. Challenge contradictions with cited sources. Briefly confirm when research supports a choice.
-- Flag user contradictions immediately: "Earlier you said X, but this implies Y."
-- Capture anti-requirements inline when they surface organically.
-- Before proceeding, assess completeness and signal confidence: "Critical areas covered. Rollback strategy and monitoring are still thin -- want to explore those?"
-
-**Gather signals for research decision.** During refinement, note:
-
-- **User's familiarity**: Do they know the codebase patterns? Are they pointing to examples?
-- **User's intent**: Speed vs thoroughness? Exploration vs execution?
-- **Topic risk**: Security, payments, external APIs warrant more caution
-- **Uncertainty level**: Is the approach clear or open-ended?
-
-**Skip option:** If the feature description is already detailed, offer:
-"Your description is clear. Should I proceed with research, or would you like to refine it further?"
+**Skip option:** If the feature description is already detailed, offer: "Your description is clear. Should I proceed with research, or refine further?"
 
 ## Main Tasks
 
@@ -144,31 +95,13 @@ After all research steps complete, consolidate findings:
 
 **Optional validation:** Briefly summarize findings and ask if anything looks off or missing before proceeding to planning.
 
-### 2. Issue Planning & Structure
+### 2. Plan Structure & Naming
 
-<thinking>
-Think like a product manager - what would make this issue clear and actionable? Consider multiple perspectives
-</thinking>
+Draft a clear, searchable title using conventional format (`feat:`, `fix:`, `refactor:`) and convert it to a filename: `YYYY-MM-DD-<type>-<kebab-case-title>-plan.md`. Keep the descriptive portion 3-5 words so plans are findable by context.
 
-**Title & Categorization:**
+Example: `feat: Add User Authentication` → `2026-01-21-feat-add-user-authentication-plan.md`
 
-- [ ] Draft clear, searchable issue title using conventional format (e.g., `feat: Add user authentication`, `fix: Cart total calculation`)
-- [ ] Determine issue type: enhancement, bug, refactor
-- [ ] Convert title to filename: add today's date prefix, strip prefix colon, kebab-case, add `-plan` suffix
-  - Example: `feat: Add User Authentication` → `2026-01-21-feat-add-user-authentication-plan.md`
-  - Keep it descriptive (3-5 words after prefix) so plans are findable by context
-
-**Stakeholder Analysis:**
-
-- [ ] Identify who will be affected by this issue (end users, developers, operations)
-- [ ] Consider implementation complexity and required expertise
-
-**Content Planning:**
-
-- [ ] Choose appropriate detail level based on issue complexity and audience
-- [ ] List all necessary sections for the chosen template
-- [ ] Gather supporting materials (error logs, screenshots, design mockups)
-- [ ] Prepare code examples or reproduction steps if applicable, name the mock filenames in the lists
+Choose the detail level in Step 4 based on scope. The `planning` skill's Plan Template owns the section structure — do not restate sections here.
 
 ### 3. SpecFlow Analysis
 

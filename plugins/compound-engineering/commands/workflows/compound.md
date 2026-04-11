@@ -81,8 +81,14 @@ Launch these subagents IN PARALLEL. Each returns text data to the orchestrator.
 
 The orchestrating agent (main conversation) performs these steps:
 
-1. Collect all text results from Phase 1 subagents
-2. Invoke the `compound-docs` skill with the assembled content -- the skill handles YAML frontmatter validation, directory creation, file writing, and cross-referencing
+1. Collect all text results from Phase 1 subagents into a single assembled payload (YAML frontmatter + timeline + impact + solution + root cause + prevention + path).
+2. Invoke the `compound-docs` skill via an explicit Skill tool call (not a prose instruction):
+
+   ```
+   Skill({ skill: "compound-docs", args: "<assembled payload from step 1>" })
+   ```
+
+   The skill owns YAML frontmatter validation, category/path resolution, directory creation, file writing, and cross-reference linking. Do NOT reimplement any of those steps here — if the write behavior needs to change, update the skill.
 
 </sequential_tasks>
 

@@ -166,9 +166,8 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 | Agent | Description |
 |-------|------------|
 | [bug-reproduction-validator](plugins/compound-engineering/agents/workflow/bug-reproduction-validator.md) | Reproduces bug reports and identifies root causes without applying fixes. Validates whether reports are genuine bugs before engineers invest. |
-| [deployment-engineer](plugins/compound-engineering/agents/workflow/deployment-engineer.md) | CI/CD pipeline design using blue-green, canary, and rolling strategies with GitOps patterns. Not for Docker review (use devops-engineer). |
-| [deployment-verification-agent](plugins/compound-engineering/agents/workflow/deployment-verification-agent.md) | Generates Go/No-Go deployment checklists with SQL verification queries, rollback procedures, and monitoring plans for high-risk changes. |
-| [devops-engineer](plugins/compound-engineering/agents/workflow/devops-engineer.md) | Docker configuration review, observability stack design, and incident response. Not for CI/CD pipeline design (use deployment-engineer). |
+| [deployment-verification-agent](plugins/compound-engineering/agents/workflow/deployment-verification-agent.md) | Generates Go/No-Go deployment runbooks with SQL verification queries, rollback procedures, and monitoring plans for high-risk changes. Runs after database-guardian validates migration code. |
+| [infrastructure-engineer](plugins/compound-engineering/agents/workflow/infrastructure-engineer.md) | Full deployment-lifecycle coverage: CI/CD pipelines (blue-green, canary, rolling, feature flags), Docker and containerization, observability stacks (metrics/logs/traces), and incident management. Not for DB migration verification (use deployment-verification-agent). |
 | [pr-comment-resolver](plugins/compound-engineering/agents/workflow/pr-comment-resolver.md) | Implements a single pre-triaged PR comment where the action is already agreed on. For mechanical fixes, not judgment calls. |
 
 ## Commands

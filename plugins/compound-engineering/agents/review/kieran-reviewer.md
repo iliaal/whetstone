@@ -1,5 +1,6 @@
 ---
 name: kieran-reviewer
+model: opus
 autoApprove: read
 description: "Persona-driven Python and TypeScript code review with extremely high bar for type safety, naming conventions, and modern patterns. Use after implementing features or modifying code. For broader review workflow, use the code-review skill."
 ---

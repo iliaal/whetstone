@@ -5,6 +5,59 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.55.0] - 2026-04-10
+
+Cross-repo sync (14 external references) + full plugin audit + command delegation cleanup. Agent count: 20 → 19 (deployment-engineer + devops-engineer merged into infrastructure-engineer).
+
+### Added
+
+- **tools** restriction added to 5 analysis-only agents (`bug-reproduction-validator`, `spec-flow-analyzer`, `repo-research-analyst`, `best-practices-researcher`, `code-simplicity-reviewer`) — all are explicitly read-only but previously inherited full write access.
+- **model: sonnet** declared on `design-iterator`, `figma-design-sync`, `repo-research-analyst`, `spec-flow-analyzer` — mechanical or low-judgment work where sonnet is sufficient and cheaper than opus.
+- **Agent model tier policy**: `model: opus` declared on `architecture-strategist`, `kieran-reviewer`, `database-guardian`, `cloud-architect`, `performance-oracle`, and `security-sentinel` to guarantee high-judgment agents use Opus regardless of the calling session's default model.
+- **Postgresql trigger regression fixtures** (5 new cases) covering the actual misfire samples from session harvesting (letter-review, plugin-audit, PHP-extension-upgrade contexts).
+
+### Changed — skills
+
+- **writing**: Named-tag lookup table with severity suffixes (`+H`, `+S`) — `[STACCATO]`, `[FALSE-AGENCY]`, `[BINARY-CONTRAST]`, `[ELEGANT-VAR]`, `[EM-DASH]`, `[META-COMMENTARY]`, `[INFLATED]`, `[VAGUE-DECLARATIVE]`. Per-tag fix action table and structured AUDIT/CORRECTED TEXT/CHANGELOG output format. Cross-referenced the "Kill on Sight" and "Long-form audit workflow" vocabulary sections (short-form vs long-form use). Sourced from `ai-writing-audit` and `stop-slop`.
+- **orchestrating-swarms**: Preset Team Compositions table extracted to `references/team-compositions.md` (Review, Debug, Feature, Fullstack, Migration, Security, Research). Cardinal `subagent_type` rule added calling out read-only agents silently failing on writes. Sourced from agents repo.
+- **frontend-design**: Mandatory Interactive States section (loading/empty/error/tactile press), Performance Guardrails (grain filter on scrolling containers, `transform`/`opacity` only, z-index restraint, perpetual animation isolation), and RSC/Client Component boundaries extracted to `references/rsc-client-boundaries.md` (`useMotionValue` vs `useState`, `'use client'` leaf isolation, `staggerChildren` parent-child colocation). Typography and Backgrounds bullets split from ~200-word run-on paragraphs into sub-bulleted rules. Sourced from `taste-skill`.
+- **brainstorming**: Phase 3b inline spec self-review checklist (placeholder scan, internal consistency, scope containment, ambiguity sweep, assumption validation, non-goals) before handing off to planning. Sourced from `superpowers`.
+- **code-review**: Merge algorithm for multi-agent output moved to `references/deep-review.md` (same-line-same-issue = merge higher severity, same-line-different-issue = co-located, conflicting severity = take higher, conflicting recommendations = `NEEDS DECISION`, convergence = boost confidence). Findings use `CR-001` IDs (previously the output template used `**1.**` which contradicted the CR-numbering instruction — fixed). Review Process step 1 (Context) split from a dense 5-sentence paragraph into sub-bulleted actions (Scope Drift Check, intent read, existing-discussion fetch, automated gates). Sourced from gstack, agents repo.
+- **verification-before-completion**: Structured Completion Report Format with `DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT` status, mandatory `Things I didn't touch (intentionally)` section for visible scope discipline, and verification evidence block. Rationalization table collapsed from 14 rows to 6 by consolidating near-identical entries. Sourced from gstack, google-agent-skills.
+- **simplifying-code**: Orchestrator Mode section with canonical `Resolved scope` fenced block passed verbatim to every chained sub-skill, preventing scope drift and double work. Sourced from `agent-skills/code-polish`.
+- **receiving-code-review**: Batched clarification pattern for ambiguous critical-path findings (up to 4 items in one `AskUserQuestion` call with `Valid / False positive / Defer` options); documents fallback behavior when `AskUserQuestion` tool isn't available. Sourced from `agent-skills/coderabbit`.
+- **debugging**: STATUS line gained `NEEDS_CONTEXT` option to match the canonical 4-status taxonomy used by `orchestrating-swarms` and `verification-before-completion`. Verify section corrected from "all five fields" to "all seven fields" (Debug Report has 7 fields: SYMPTOM, ROOT CAUSE, FIX, EVIDENCE, REGRESSION, RELATED, STATUS). Anti-patterns table collapsed from 12 rows to 6 by merging duplicate "guessing / shotgun / fixing symptoms" rationalizations.
+- **planning**: Execution Posture Signals clarified — **tests-after is the default**, test-first/characterization-first/external-delegate are opt-in annotations. Added the per-section enhancement format and Enhancement Summary block to Plan Deepening (content moved from the `/deepen-plan` command). Removed redundant Anti-Patterns table — content was already enforced by Plan Quality Rules and Phase Sizing Rules.
+- **postgresql**: Removed duplicated slow-query and table-bloat SQL from Query Optimization section (the full versions already exist in Detection Queries below). Trigger pattern tightened to require SQL/database context anchors — previously matched bare keywords like `trigger`, `function`, `extension`, causing **90% misfire rate** (9/10 injections) on letter-review and plugin-audit sessions.
+- **debugging**: Trigger pattern tightened to require the word "debug" within 30 chars of a failure indicator (error/bug/fail/crash/issue/broken/problem/trace/stack/regression), avoiding matches on "debug mode" or "debug output" in non-bug contexts.
+- **reflect**: Memory path placeholder `~/.claude/projects/.../memory/` replaced with concrete `<project-slug>` placeholder explanation.
+- **refine-prompt**: Removed duplicate "Never invent" rule (was stated in both Rules and Constraints sections).
+- **md-docs**: Writing Style section rewritten — replaced vague meta-instructions ("terse", "accurate") with measurable criteria (lead-with-answer, verify-every-command, no-passive-voice in directives, headings every ~20 lines).
+- **php-laravel**: Converted cross-skill markdown link `[writing-tests](../writing-tests/SKILL.md)` to prose reference matching the plugin's cross-skill convention.
+
+### Changed — agents
+
+- **Merged `deployment-engineer` + `devops-engineer` → `infrastructure-engineer`**. The split between CI/CD and containerization/observability created routing ambiguity — both agents were called in similar contexts and contained cross-reference preambles pointing at the other. Merged agent covers CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker and containerization, observability (metrics/logs/traces), and incident management. Scope boundary defers database-migration verification to `deployment-verification-agent`, cloud architecture to `cloud-architect`, and IaC to the `terraform` skill.
+- **security-sentinel**: Security Test Coverage Checklist extracted to `references/security-test-coverage.md` as an explicit audit deliverable — auth edge cases (`alg=none`, wrong issuer), IDOR, mass assignment, TOCTOU, file upload magic-byte validation, session cookie flags, business-logic bypass. Each finding requires CVSS 3.1, exploit proof, and copy-paste-ready remediation. Promoted to `model: opus`. Sourced from `agency-agents`.
+- **bug-reproduction-validator**: Description clarified as "reproduce-first stage" with explicit handoff to `debugging` skill for fixing.
+- **deployment-verification-agent**: Description sharpened to distinguish from `database-guardian` — this agent builds the deploy *runbook*; database-guardian reviews the migration *code*. Run database-guardian first.
+- **best-practices-researcher** and **repo-research-analyst**: Descriptions trimmed to remove bloated cross-reference preambles.
+
+### Changed — commands
+
+- **workflows:review**: Always-on red-team adversarial pass after parallel specialists return, targeting cross-category compound vulnerabilities, happy-path assumptions, silent failures in auth/payment code, and trust boundary violations. Severity taxonomy aligned with `code-review` skill's 4-level scale (Critical / Important / Medium / Minor) — previously used a P1/P2/P3 scale with "Nice-to-Have" that didn't match the skill's merge algorithm. Sourced from gstack.
+- **workflows:work**: Subagent Execution Discipline section replaced with a one-line delegation to `orchestrating-swarms` skill (which owns the fresh-agent-per-task rule, two-stage review gate, model-selection-by-complexity table, and four-status reporting protocol). Phase 2 Test Continuously explicitly sets tests-after as the default for new features; test-first is opt-in via the `planning` skill's posture signal. Command drops from ~4300 to 3774 tokens.
+- **workflows:plan**: Idea Refinement (Phase 0) trimmed by ~65 lines — delegation to `brainstorming` skill for the interview protocol. Step 2 (Plan Structure & Naming) consolidated from three checklists to the orchestration essentials. Command drops from ~4100 to 3234 tokens.
+- **workflows:brainstorm**: Further thinned to defer Phase 2-3 details to `brainstorming` skill; removed duplicated "NEVER CODE" line (the skill's Hard Gate owns this).
+- **workflows:compound**: Phase 2 changed from prose instruction ("Invoke the compound-docs skill") to an explicit `Skill({ skill: "compound-docs", args: ... })` tool call, making the delegation actionable rather than advisory.
+- **deepen-plan**: Step 4 learnings-discovery replaced with a single `learnings-researcher` agent dispatch (removed ~90 lines of inline filesystem traversal, frontmatter filtering, and example prompts). Step 8 enhancement format replaced with a pointer to `planning` skill's Plan Deepening section. Command drops from ~3900 to 3006 tokens.
+- **agent-native-audit**: Collapsed 8 per-principle sub-agent prompts (~230 lines) into a single parameterized template that references the `agent-native-architecture` skill for principle definitions. Command drops from ~2500 to 1637 tokens.
+- **adr**: Added explicit Argument handling section covering empty, `list`, short title, longer topic, and `deprecate <NNNN>` cases.
+
+### Removed
+
+- **deployment-engineer** agent and **devops-engineer** agent — consolidated into `infrastructure-engineer`.
+
 ## [2.53.2] - 2026-04-08
 
 ### Changed

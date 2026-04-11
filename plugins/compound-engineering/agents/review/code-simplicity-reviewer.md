@@ -1,6 +1,7 @@
 ---
 name: code-simplicity-reviewer
 autoApprove: read
+tools: Read, Grep, Glob, Bash
 description: "Produces a simplification analysis report (no code changes). Use after implementation to identify YAGNI violations and simplification opportunities. For actual refactoring, use the simplifying-code skill."
 ---
 

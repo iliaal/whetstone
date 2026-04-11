@@ -92,6 +92,12 @@ Additionally, always run these regardless of settings:
 - Task agent-native-reviewer(PR content) - Verify new features are agent-accessible
 - Task learnings-researcher(PR content) - Search docs/solutions/ for past issues related to this PR's modules and patterns
 
+**Red-team adversarial pass (runs last, after all parallel specialists return):**
+
+- Task security-sentinel(PR content + consolidated findings so far + "Run the Adversarial Pass section from your agent definition. Target gaps in the other specialists' coverage -- cross-category compounds, happy-path assumptions, silent failures, trust boundary violations.")
+
+This runs AFTER the parallel pass so it can target the gaps in the specialists' coverage rather than duplicate their work. The detailed red-team methodology lives in the `security-sentinel` agent's Adversarial Pass section.
+
 #### Conditional Agents (Run if applicable):
 
 These agents are run ONLY when the PR matches specific criteria. Check the PR files list to determine if they apply:
@@ -216,8 +222,10 @@ Consolidate all agent reports into a categorized list of findings. Remove duplic
 - [ ] Surface learnings-researcher results: if past solutions are relevant, flag them as "Known Pattern" with links to docs/solutions/ files
 - [ ] Discard any findings that recommend deleting or gitignoring files in `docs/plans/` or `docs/solutions/` (see Protected Artifacts above)
 - [ ] Categorize by type: security, performance, architecture, quality, etc.
-- [ ] Assign severity levels: 🔴 CRITICAL (P1), 🟡 IMPORTANT (P2), 🔵 NICE-TO-HAVE (P3)
-- [ ] Deduplicate findings: same file:line + same issue class from different agents = merge, keep the higher severity rating
+- [ ] Assign severity levels using the `code-review` skill's four-level scale: **Critical** (blocks merge), **Important** (should fix before merge), **Medium** (should fix, non-blocking), **Minor** (optional). Treat legacy `P1`/`P2`/`P3` aliases as Critical/Important/Medium respectively.
+- [ ] Assign sequential `CR-001`, `CR-002`... IDs across all severities so findings can be referenced by ID in PR threads and follow-up todos
+- [ ] Deduplicate using the merge algorithm from `code-review` skill (Merge Algorithm section): same file:line + same issue = merge with higher severity; same file:line + different issue = keep both tagged "co-located"; conflicting severity = take the higher; conflicting recommendations = mark `NEEDS DECISION` and present both; convergence (3+ agents agree) = boost confidence by 0.1
+- [ ] Surface red-team findings separately in the summary under a "Cross-cutting / adversarial" heading so reviewers see what the parallel specialists missed
 - [ ] Estimate effort for each finding (Small/Medium/Large)
 
 #### Step 2: Create Todo Files
@@ -238,25 +246,26 @@ After creating all todo files, present comprehensive summary:
 ### Findings Summary:
 
 - **Total Findings:** [X]
-- **🔴 CRITICAL (P1):** [count] - BLOCKS MERGE
-- **🟡 IMPORTANT (P2):** [count] - Should Fix
-- **🔵 NICE-TO-HAVE (P3):** [count] - Enhancements
+- **Critical:** [count] - BLOCKS MERGE
+- **Important:** [count] - Should fix before merge
+- **Medium:** [count] - Should fix, non-blocking
+- **Minor:** [count] - Optional
 
 ### Created Todo Files:
 
-**P1 - Critical (BLOCKS MERGE):**
+**Critical (BLOCKS MERGE):**
 
-- `001-pending-p1-{finding}.md` - {description}
-- `002-pending-p1-{finding}.md` - {description}
+- `001-pending-critical-{finding}.md` - {description}
+- `002-pending-critical-{finding}.md` - {description}
 
-**P2 - Important:**
+**Important:**
 
-- `003-pending-p2-{finding}.md` - {description}
-- `004-pending-p2-{finding}.md` - {description}
+- `003-pending-important-{finding}.md` - {description}
+- `004-pending-important-{finding}.md` - {description}
 
-**P3 - Nice-to-Have:**
+**Medium:**
 
-- `005-pending-p3-{finding}.md` - {description}
+- `005-pending-medium-{finding}.md` - {description}
 
 ### Review Agents Used:
 
@@ -268,9 +277,9 @@ After creating all todo files, present comprehensive summary:
 
 ### Next Steps:
 
-1. **Address P1 Findings**: CRITICAL - must be fixed before merge
+1. **Address Critical Findings**: must be fixed before merge
 
-   - Review each P1 todo in detail
+   - Review each Critical todo in detail
    - Implement fixes or request exemption
    - Verify fixes before merging PR
 
@@ -340,7 +349,7 @@ The subagent will:
 
 **Standalone:** `/test-browser [PR number]`
 
-### Important: P1 Findings Block Merge
+### Important: Critical Findings Block Merge
 
-Any **🔴 P1 (CRITICAL)** findings must be addressed before merging the PR. Present these prominently and ensure they're resolved before accepting the PR.
+Any **Critical** findings must be addressed before merging the PR. Present these prominently and ensure they're resolved before accepting the PR.
 ```

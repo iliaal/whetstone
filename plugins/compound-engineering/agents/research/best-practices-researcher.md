@@ -1,7 +1,8 @@
 ---
 name: best-practices-researcher
 autoApprove: read
-description: "Researches best practices, framework documentation, and implementation patterns for any technology. Use when you need official docs, version-specific constraints, industry standards, or community conventions."
+tools: Read, Grep, Glob, WebFetch, WebSearch
+description: "Researches external framework docs, version-specific constraints, and industry conventions for any technology. Use when you need authoritative external documentation."
 ---
 
 <examples>

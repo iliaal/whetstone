@@ -1,5 +1,6 @@
 ---
 name: security-sentinel
+model: opus
 autoApprove: read
 description: "Performs security audits for vulnerabilities, input validation, auth/authz, hardcoded secrets, and OWASP compliance. Use when reviewing code for security issues or before deployment."
 ---
@@ -67,6 +68,10 @@ You will systematically execute these security scans:
    - For APIs: check against OWASP API Security Top 10 (Broken Object-Level Auth, Unrestricted Resource Consumption, SSRF, etc.)
    - Document compliance status for each category
    - Provide specific remediation steps for any gaps
+
+## Audit Deliverable Format
+
+Every audit must produce an explicit test coverage checklist as an artifact, not just a narrative report. Load [security-test-coverage.md](../../skills/code-review/references/security-test-coverage.md) for the full checklist covering authentication edge cases, authorization, input boundary, concurrency, session hygiene, and output boundary. Emit findings as `SS-001`, `SS-002`... with CVSS 3.1 base score, exploit proof (curl/test/PoC), and copy-paste-ready remediation code. Uncovered checklist items are findings too — mark them `UNCOVERED: no test exists for <item>`.
 
 ## Security Requirements Checklist
 

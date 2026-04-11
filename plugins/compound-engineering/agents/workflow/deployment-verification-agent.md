@@ -1,7 +1,8 @@
 ---
 name: deployment-verification-agent
 autoApprove: read
-description: "Produces Go/No-Go deployment checklists with SQL verification queries, rollback procedures, and monitoring plans. Use after database-guardian validates migration code, when PRs touch production data, migrations, or risky data changes."
+tools: Read, Grep, Glob, Bash
+description: "Produces Go/No-Go deployment runbooks with SQL verification queries, rollback steps, and monitoring plans. Scope boundary: this agent builds the *runbook* for the deploy (pre-check queries, watch commands, rollback procedure). For reviewing the migration *code* itself (schema changes, constraint correctness, lock safety), use database-guardian first. Run this agent AFTER database-guardian approves the code."
 ---
 
 <examples>

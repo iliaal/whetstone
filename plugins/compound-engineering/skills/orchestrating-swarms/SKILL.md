@@ -126,6 +126,8 @@ Cardinal rule: one owner per file. When files must be shared, designate a single
 
 Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review, research, and analysis agents are always safe to parallelize (read-only).
 
+**Preset team compositions:** Start from a named preset before designing a custom team. See [team-compositions.md](./references/team-compositions.md) for the full table (Review / Debug / Feature / Fullstack / Migration / Security / Research), the cardinal `subagent_type` rule (read-only agents cannot implement), and custom-team guidelines. Use the smallest preset that covers all required dimensions — overlap between reviewers is a sizing signal to redefine focus areas, not add more agents.
+
 **Model selection by task complexity:**
 
 | Task shape | Model |
@@ -244,6 +246,7 @@ Even partial results from a failed swarm run have value. When some agents succee
 
 | Document | When to load | What it covers |
 |----------|-------------|----------------|
+| [team-compositions.md](./references/team-compositions.md) | Sizing a team or choosing a preset | 7 preset compositions, subagent_type cardinal rule, custom-team guidelines |
 | [agent-types.md](./references/agent-types.md) | Choosing which agent to spawn | Built-in and plugin agent types with examples |
 | [teammate-operations.md](./references/teammate-operations.md) | Using TeammateTool for persistent agents | All 13 operations (spawnTeam, write, broadcast, requestShutdown, etc.) |
 | [task-system.md](./references/task-system.md) | Managing work items and dependencies | TaskCreate, TaskList, TaskGet, TaskUpdate, file structure |

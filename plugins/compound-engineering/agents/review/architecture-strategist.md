@@ -1,5 +1,6 @@
 ---
 name: architecture-strategist
+model: opus
 autoApprove: read
 description: "Analyzes code for architectural compliance, design patterns, naming conventions, and structural integrity. Use after code review to assess structural patterns, when adding services, evaluating refactors, or checking codebase consistency. For granular code-level review, use the code-review skill."
 ---

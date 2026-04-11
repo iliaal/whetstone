@@ -35,6 +35,8 @@ When feedback is ambiguous or incomplete:
 - Ask specific questions: "Are you suggesting X or Y?" not "Can you elaborate?"
 - If the reviewer's intent is clear but the technical approach is wrong, say so
 
+**Batched clarification for critical-path ambiguity:** When multiple ambiguous findings land on critical-path code (auth, payments, data migrations, permission checks) AND the `AskUserQuestion` tool is available, batch up to 4 of them into a single call rather than asking one at a time. Each question's header is the truncated filename and line, and the options are `Valid / False positive / Defer`. Skip the batched ask entirely when ambiguous findings are only on non-critical paths — just auto-triage those and move on. If `AskUserQuestion` is not available, fall back to a single prose block listing all ambiguous items numbered, asking for Valid/False-positive/Defer decisions. The batching limit is 4 because it caps cleanly at that size; asking more becomes noise rather than judgment.
+
 ## Source-Specific Handling
 
 ### From the user (project owner)

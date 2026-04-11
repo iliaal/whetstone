@@ -99,14 +99,14 @@ Never delete backups automatically.
 
 ## Writing Style
 
-- Terse: omit needless words, lead with the answer
-- Imperative: "Build the project" not "The project is built"
-- Expert-to-expert: skip basic explanations, assume competence
-- Scannable: headings, lists, code blocks
-- Accurate: verify every command and path against codebase
-- Sentence case headings, no emoji headers
-- Actionable headings: "Set SAML before adding users" not "SAML configuration timing"
-- Collapse depth with `<details>` blocks instead of deleting it (blank line after `<summary>` required for GitHub rendering)
+- **Lead with the answer.** First sentence of each section states the conclusion; reasoning follows. No "In this section, we'll..." preamble.
+- **Imperative form** for instructions: "Build the project" not "The project is built" — verify no passive voice in any directive sentence.
+- **Expert-to-expert**: cut explanations of concepts the target reader already knows. For CLAUDE.md/AGENTS.md, assume familiarity with git, package managers, test runners, and the project's main language.
+- **Scannable**: headings every ~20 lines, bullet lists for ≥3 parallel items, fenced code blocks for every command.
+- **Verify every command and path against the codebase.** Run each command before committing; grep for each referenced path. Stale paths and untested commands are the most common doc defect.
+- **Sentence case headings**, no emoji decoration (exception: changelog entries may use emoji per project convention).
+- **Actionable headings**: "Set SAML before adding users" — not "SAML configuration timing". Reader should know what to do from the heading alone.
+- **Collapse depth** with `<details>` blocks instead of deleting content (blank line required after `<summary>` for GitHub rendering).
 
 ## README Anti-Patterns
 

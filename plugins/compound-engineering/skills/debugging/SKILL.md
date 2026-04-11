@@ -69,7 +69,7 @@ FIX:        [What changed]
 EVIDENCE:   [Verification output proving the fix]
 REGRESSION: [Test added to prevent recurrence]
 RELATED:    [Prior bugs in same area, known issues, architectural notes]
-STATUS:     DONE | DONE_WITH_CONCERNS (fix applied, known risk remains) | BLOCKED (needs external input)
+STATUS:     DONE | DONE_WITH_CONCERNS (fix applied, known risk remains) | BLOCKED (cannot proceed, needs external input) | NEEDS_CONTEXT (missing information to continue investigation)
 ```
 
 ## Three-Fix Threshold
@@ -124,18 +124,12 @@ When you catch yourself doing or thinking these things, **stop and return to Ste
 
 | What You're Doing / Thinking | What It Really Means |
 |-----------------------------|---------------------|
-| Shotgun debugging -- random changes without a hypothesis | You're guessing. Form a hypothesis first, then revert and test one change. |
-| Multiple simultaneous changes | You're making the problem harder to diagnose. One change at a time. |
-| Fixing the symptom, not the cause | The same bug will resurface differently. Trace to root cause. |
-| Ignoring intermittent failures ("works on my machine") | Instrument and reproduce under load instead. |
-| "Skip the test, I can see it works" | You can't. Run the verification. See `verification-before-completion`. |
-| "It's probably X" | "Probably" means you haven't verified. Trace the actual execution path. |
-| "I see the problem, let me fix it" | Seeing symptoms is not understanding root cause. Trace the actual execution path first. |
-| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the working example completely and apply it exactly. |
+| Shotgun debugging / "I see the problem, let me fix it" / "It's probably X" | Reasoning is not evidence. Form a hypothesis, make one change, test, revert if wrong. Trace the actual execution path. |
+| Ignoring intermittent failures ("works on my machine") | Instrument and reproduce under load. Isolation success doesn't explain integration failure. |
 | "I'll clean up the debugging later" | Remove diagnostic code now or it ships to production. |
 | "This failure is pre-existing, not related to our changes" | Prove it: run the test suite on the base branch. No receipts = no claim. |
-| "The test is wrong, not the code" | Verify before dismissing. Read the test's intent. If the test is genuinely wrong, fix the test with a clear rationale, not a silent update. |
-| "It works in isolation, must be an environment issue" | Isolation success doesn't explain integration failure. Instrument the integration boundary. |
+| "The test is wrong, not the code" | Verify before dismissing. Read the test's intent. If the test is genuinely wrong, fix it with a clear rationale, not a silent update. |
+| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the working example completely and apply it exactly. |
 
 See [specialized-patterns.md](./references/specialized-patterns.md) for anti-pattern signals and specialized debugging patterns.
 
@@ -143,7 +137,7 @@ See [specialized-patterns.md](./references/specialized-patterns.md) for anti-pat
 
 - Root cause identified with `file:line` evidence (not just "it failed here")
 - Regression test exists and fails without the fix, passes with it
-- Debug Report emitted with all five fields
+- Debug Report emitted with all seven fields (SYMPTOM, ROOT CAUSE, FIX, EVIDENCE, REGRESSION, RELATED, STATUS)
 - No diagnostic instrumentation left in code (`git diff` shows no leftover logging)
 
 ## Integration
@@ -153,7 +147,7 @@ This skill is referenced by:
 - `writing-tests` -- creating failing tests to reproduce bugs
 - `verification-before-completion` -- before claiming a bug is fixed
 - `bug-reproduction-validator` agent -- follows Root Cause Analysis methodology
-- `devops-engineer` agent -- follows Postmortem template for production incidents
+- `infrastructure-engineer` agent -- follows Postmortem template for production incidents
 - `reproduce-bug` command -- automated bug reproduction workflow
 
 ## Postmortem

@@ -65,14 +65,18 @@ Red-team findings merge into the main report with a `[red-team]` tag. Use defaul
 
 ## Merge Algorithm
 
-After all agents return:
+After all agents return, apply these rules in order. Each consolidated finding carries its original `CR-XXX` ID from the first agent that reported it so PR threads can reference specific findings unambiguously.
 
-1. **Deduplicate** -- same file:line appearing in multiple agents' findings: keep the highest-severity version, note which lenses flagged it (cross-lens agreement increases confidence)
-2. **Cross-lens boost** -- if 2+ agents independently flag the same location, bump confidence by 0.10 (capped at 1.0). Convergent findings from independent perspectives are more trustworthy.
-3. **Apply confidence rubric** -- suppress findings below threshold per the main skill's rubric
-4. **Apply FP suppression** -- remove false positives per the main skill's categories
-5. **Sort by severity** (Critical > Important > Medium > Minor), then by confidence within each level
-6. **Cap total findings** at 20 across all agents. If more exist, note the overflow count.
+1. **Same file:line + same issue class** → merge into one finding. Keep the higher-severity rating and the more actionable fix text.
+2. **Same file:line + different issue class** → keep both. Tag as "co-located" in the output so the author sees they share a line.
+3. **Conflicting severity on the same merged finding** → always take the higher severity. Do not average.
+4. **Conflicting recommendations** → present both and mark as `NEEDS DECISION`. Do not silently pick one.
+5. **One agent flags, others don't** → keep the finding if confidence ≥0.70; suppress otherwise. A single agent's low-confidence hit is usually noise.
+6. **All agents agree (3+)** → boost confidence by 0.10 (capped at 1.0). Convergent findings from independent perspectives are more trustworthy.
+7. **Apply confidence rubric** → suppress findings below threshold per the main skill's rubric.
+8. **Apply false-positive suppression** → remove entries matching the categories in the main skill.
+9. **Sort by severity** (Critical > Important > Medium > Minor), then by confidence within each level.
+10. **Cap total findings** at 20 across all agents. If more exist, note the overflow count.
 
 ## Output Format
 

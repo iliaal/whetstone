@@ -148,6 +148,19 @@ Summarize key decisions in a structured format. For each major component, verify
 
 **Design Doc:** Save to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`. Required sections: What We're Building, Why This Approach, Key Decisions (with rationale), Open Questions, Next Steps. Collapse the Q&A interview log in a `<details>` block. Include YAML frontmatter with `date` and `topic`. Commit to git -- design decisions are project history.
 
+### Phase 3b: Spec Self-Review
+
+Before presenting the design doc, run this checklist against the draft. Any failure means return to Phase 2 or Phase 3, not Phase 4.
+
+- **Placeholder scan**: no "TBD", "figure out later", "appropriate error handling", bracketed gaps, or tasks without concrete criteria
+- **Internal consistency**: names, types, and verbs referenced in one section match every other section (no `createOrder()` in one place and `placeOrder()` in another)
+- **Scope containment**: every decision traces back to a stated goal. If a decision doesn't, cut it or surface it as an explicit scope expansion with rationale
+- **Ambiguity sweep**: read each Key Decision and ask "could a reasonable implementer interpret this two ways?" If yes, tighten the wording before handoff
+- **Assumption validation**: every assumption has a stated validation method (not just "we assume X" but "we assume X — we'll confirm by Y")
+- **Non-goals list present**: the explicit "Not Doing" list exists and is specific, not boilerplate
+
+Silent pass is a valid outcome. If the draft is clean, say so and move to Phase 4.
+
 ### Phase 4: Review and Handoff
 
 Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `workflows:brainstorm`, the command handles spec review dispatch and next-step orchestration.

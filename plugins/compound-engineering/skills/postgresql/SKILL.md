@@ -142,8 +142,7 @@ Always index columns referenced in RLS policies. For complex multi-table checks,
 ## Query Optimization
 
 - Always `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` before optimizing
-- `pg_stat_statements` for slow query detection: `SELECT query, mean_exec_time, calls FROM pg_stat_statements WHERE mean_exec_time > 100 ORDER BY mean_exec_time DESC LIMIT 20`
-- Table bloat check: `SELECT relname, n_dead_tup, last_vacuum FROM pg_stat_user_tables WHERE n_dead_tup > 10000 ORDER BY n_dead_tup DESC`
+- Use `pg_stat_statements` for slow-query detection and `pg_stat_user_tables` for bloat (see Detection queries below for the full SQL)
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping
 - High `rows removed by filter` -> index doesn't match predicate
 - CTEs are inlined by default; use `MATERIALIZED`/`NOT MATERIALIZED` hints to control optimization

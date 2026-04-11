@@ -1,5 +1,6 @@
 ---
 name: database-guardian
+model: opus
 autoApprove: read
 description: "Reviews database schema, constraints, and migration code for safety. Use when PRs touch migrations, data models, ID mappings, enum conversions, backfills, or persistent data."
 ---

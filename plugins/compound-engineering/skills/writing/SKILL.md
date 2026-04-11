@@ -107,13 +107,66 @@ Before delivering prose, run two checks:
 
 Below 35/50: revise before delivering.
 
-**Long-form audit workflow** -- for documents, essays, and research content, run a two-phase pass to avoid fix-as-you-go bias (fixing one tell while missing three others):
+**Long-form audit workflow** -- for documents, essays, and research content, run a two-phase pass to avoid fix-as-you-go bias (fixing one tell while missing three others). This section reuses the vocabulary and structural tells from "AI Patterns -- Kill on Sight" above but adds named tags for tracking and a structured fix table. Short-form edits can use the Kill-on-Sight list directly; long-form audits should use the tag-based workflow below.
 
-*Phase 1 -- Audit*: Read the full text without changing anything. Tag every tell with its category: `[FALSE-AGENCY]`, `[BINARY-CONTRAST]`, `[META-COMMENTARY]`, `[JARGON]`, `[PASSIVE]`, `[ADVERB]`, `[BANNED-PHRASE]`. Complete the full scan before any edits.
+*Phase 1 -- Audit*: Read the full text without changing anything. Quote the shortest offending snippet (≤12 words) and append every applicable tag. Stack tags if multiple tells land in one sentence. One numbered line per offense. End with `— END AUDIT: [n] issues found —`. If zero, write `— AUDIT COMPLETE: 0 issues —` and skip Phase 2.
 
-*Phase 2 -- Rewrite*: Correct tagged items in a single pass. Verify no new tells were introduced during rewriting.
+Tag vocabulary (extend the earlier prose rules with these named IDs):
+
+| Tag | What it catches |
+|-----|-----------------|
+| `[FALSE-AGENCY]` | Inanimate subject with a human verb ("the data tells us") |
+| `[BINARY-CONTRAST]` | "Not X, it's Y" / "It's not about X. It's about Y." constructions |
+| `[STACCATO]` | Punchy fragment sequences simulating manufactured rhythm ("This matters. A lot. Here's why.") |
+| `[ELEGANT-VAR]` | Synonym cycling: four names for the same entity across four sentences |
+| `[NOT-ONLY-BUT]` | False-pivot contrasts: "Not only X, but also Y" and variants |
+| `[RULE-OF-3]` | Forced triads ("streamline, optimize, and enhance") |
+| `[INFLATED]` / `[PROMO]` | Puffery and promotional gloss without a verifiable claim |
+| `[SUPERFICIAL-ING]` | Trailing -ing phrases that add no information ("ensuring reliability") |
+| `[AI-LEX]` | Vocabulary tells (delve, crucial, pivotal, leverage, tapestry, robust...) |
+| `[VAGUE-ATTR]` / `[WEASEL]` | "Experts argue", "studies show" without specific source |
+| `[META-COMMENTARY]` | Structural self-reference ("In this section, we'll...", "Let me walk you through...") |
+| `[EM-DASH]` | Any em or en dash -- restructure, don't preserve |
+| `[INLINE-BOLD]` / `[INLINE-LIST]` / `[TITLE-CASE]` | Mechanical formatting tells |
+| `[VAGUE-DECLARATIVE]` | "The implications are significant" without naming the implication |
+| `[PASSIVE]` / `[ADVERB]` / `[BANNED-PHRASE]` | Standard corrections |
+
+**Severity suffixes** when tagging: `+H` for high severity (strong tell or compound patterns), `+S` for structural (affects document structure, not just wording).
+
+*Phase 2 -- Rewrite*: Correct tagged items in a single pass using the fix table below. Preserve everything not flagged; no scope creep. Verify no new tells were introduced during rewriting.
+
+| Tags | Fix action |
+|------|------------|
+| `[INFLATED]` `[PROMO]` `[VAGUE-DECLARATIVE]` | Delete puffery or replace with a specific factual claim. If no fact exists, cut entirely. |
+| `[SUPERFICIAL-ING]` | Remove the -ing phrase or convert to a separate sentence with substance. |
+| `[AI-LEX]` | Replace with a plainer synonym or restructure to eliminate the word. |
+| `[NOT-ONLY-BUT]` `[RULE-OF-3]` `[BINARY-CONTRAST]` | Break the pattern. State Y directly. |
+| `[STACCATO]` | Reconstruct into a single flowing sentence that matches the source material's natural rhythm. |
+| `[ELEGANT-VAR]` | Pick one term and use it consistently (or use pronouns). |
+| `[VAGUE-ATTR]` `[WEASEL]` | Name the source, add a quantifier, or delete the claim. |
+| `[EM-DASH]` | Remove entirely. Restructure the sentence: split, comma, colon, or rewrite. Never preserve the dash. |
+| `[FALSE-AGENCY]` | Name the human actor; put them at the front of the sentence. |
+| `[META-COMMENTARY]` | Delete. Let the text move without announcing itself. |
+| `[INLINE-BOLD]` `[INLINE-LIST]` `[TITLE-CASE]` | Strip excess formatting; sentence case for headings. |
 
 For documents with references or citations, also tag: `[OAICITE]` (malformed AI citation artifacts), `[LINK-ROT]` (dead or placeholder URLs), `[ISBN-DOI-FAIL]` (invalid identifiers), `[REF-BUG]` (misformatted references, wrong numbering, dangling footnotes). See [references/audit-workflow.md](./references/audit-workflow.md) for the full procedure.
+
+**Output format:**
+
+```
+## AUDIT
+1. "quoted snippet" [TAG] [TAG +H]
+2. "quoted snippet" [TAG]
+...
+— END AUDIT: [n] issues found —
+
+## CORRECTED TEXT
+[full corrected text]
+
+## CHANGELOG
+- Line/section: brief description of change
+- Line/section: brief description of change
+```
 
 ## Voice
 

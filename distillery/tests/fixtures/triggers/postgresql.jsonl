@@ -9,3 +9,8 @@
 {"prompt": "add a Laravel queue job", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a bash script for backups", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "create a Terraform module for networking", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "Read EVERY line of these 11 SKILL.md files completely and do a deep quality review", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
+{"prompt": "Final writing quality review of Rasmus Lerdorf's EB-1A recommendation letter", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
+{"prompt": "You are an immigration attorney reviewing an EB-1A recommendation letter for legal sufficiency", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
+{"prompt": "add a Python function to extract metadata from this PDF", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
+{"prompt": "the PHP extension needs updating for compatibility", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}

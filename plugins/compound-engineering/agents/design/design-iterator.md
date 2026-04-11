@@ -1,5 +1,6 @@
 ---
 name: design-iterator
+model: sonnet
 description: "Iteratively refines UI design through N screenshot-analyze-improve cycles. Use PROACTIVELY when design changes aren't coming together after 1-2 attempts, or when user requests iterative refinement."
 ---
 

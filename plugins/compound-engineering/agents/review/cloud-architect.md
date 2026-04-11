@@ -1,5 +1,6 @@
 ---
 name: cloud-architect
+model: opus
 autoApprove: read
 description: "Cloud infrastructure design: multi-cloud, Well-Architected Framework, cost optimization, disaster recovery, migration strategies. Use when reviewing cloud architecture or planning infrastructure."
 ---

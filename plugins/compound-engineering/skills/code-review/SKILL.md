@@ -54,7 +54,11 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 
 **Standard reviews only.** If mode selection triggered deep review, specialist agents handle the review per [deep-review.md](./references/deep-review.md) -- do not run these steps yourself.
 
-1. **Context** -- run a Scope Drift Check first: compare `git diff --stat` against the PR's stated intent. Classify as CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING. If DRIFT, note drifted files and ask: ship as-is, split, or remove unrelated changes? Then read the PR description, linked issue, or task spec. **Intent verification**: if the code does something the intent doesn't describe, or fails to do something the intent promises, flag as a finding -- correct code that solves the wrong problem is still wrong. **Fetch existing review comments and discussions first** -- prior conversations may have already resolved issues you'd otherwise re-raise. Run the project's test/lint suite if available (check CI config for the canonical test command) to catch automated failures before manual review.
+1. **Context** — do these before reading code:
+   - **Scope Drift Check**: compare `git diff --stat` against the PR's stated intent. Classify as CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING. If DRIFT, note the drifted files and ask the author: ship as-is, split, or remove unrelated changes?
+   - **Read the intent**: PR description, linked issue, or task spec. If the code does something the intent doesn't describe, or fails to do something the intent promises, flag as a finding — correct code that solves the wrong problem is still wrong.
+   - **Fetch existing discussions**: prior review comments may have already resolved issues you'd otherwise re-raise. Check `gh api repos/{owner}/{repo}/pulls/{pr}/comments` before starting.
+   - **Run automated gates**: execute the project's test/lint suite if available (check CI config for the canonical commands) to catch failures before manual review.
 2. **Structural scan** -- architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly -- don't attempt to read them from the working tree when reviewing a remote branch.
 3. **Line-by-line** -- correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
 4. **Security** -- input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization). Flag race conditions (TOCTOU, check-then-act). Use [security-patterns.md](./references/security-patterns.md) for grep-able detection patterns across 11 vulnerability classes.
@@ -182,16 +186,16 @@ Prefix inline review comments so authors know what requires action:
 ## Review: [brief title]
 
 ### Critical
-- **1. [file:line]** `quoted code` -- [issue]. Score: [0.0-1.0]. [What happens if not fixed]. Fix: [concrete suggestion].
+- **CR-001.** [file:line] `quoted code` -- [issue]. Score: [0.0-1.0]. [What happens if not fixed]. Fix: [concrete suggestion].
 
 ### Important
-- **2. [file:line]** `quoted code` -- [issue]. Score: [0.0-1.0]. [Why it matters]. Consider: [alternative approach].
+- **CR-002.** [file:line] `quoted code` -- [issue]. Score: [0.0-1.0]. [Why it matters]. Consider: [alternative approach].
 
 ### Medium
-- **3. [file:line]** -- [issue]. Score: [0.0-1.0]. [Why it matters].
+- **CR-003.** [file:line] -- [issue]. Score: [0.0-1.0]. [Why it matters].
 
 ### Minor
-- **4. [file:line]** -- [observation].
+- **CR-004.** [file:line] -- [observation].
 
 ### What's Working Well
 - [specific positive observation with why it's good]
@@ -203,7 +207,9 @@ Prefix inline review comments so authors know what requires action:
 Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]
 ```
 
-Number findings sequentially across all severity levels (1, 2, 3...) so they can be referenced by number in discussions and PR comments. Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
+Number findings as `CR-001`, `CR-002`... sequentially across all severity levels so they can be referenced by ID in discussions, PR comments, and follow-up todos. Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
+
+For multi-agent consolidation (deep review, parallel specialists), apply the merge algorithm in [deep-review.md](./references/deep-review.md) — it handles same-line dedupe, conflicting severity, `NEEDS DECISION` flagging, and cross-lens confidence boosting.
 
 **Clean review (no findings):** If the code is solid, say so explicitly. Summarize what was checked and why no issues were found. A clean review is a valid outcome, not an indication of insufficient effort.
 
@@ -212,6 +218,7 @@ Number findings sequentially across all severity levels (1, 2, 3...) so they can
 | Document | When to load | What it covers |
 |----------|-------------|----------------|
 | [security-patterns.md](./references/security-patterns.md) | Security review step or deep review security agent | Grep-able detection patterns across 11 vulnerability classes |
+| [security-test-coverage.md](./references/security-test-coverage.md) | Full security audit deliverable (used by `security-sentinel` agent) | Auth edge cases, authorization, input boundary, concurrency, session hygiene, output boundary checklist |
 | [language-profiles.md](./references/language-profiles.md) | Language-specific checks step | TypeScript/React, Python, PHP, Shell/CI, Config, Security, LLM Trust |
 | [deep-review.md](./references/deep-review.md) | When mode selection triggers deep review | Specialist agents, prompt template, merge algorithm, model selection |
 

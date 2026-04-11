@@ -79,126 +79,13 @@ Spawn all skill sub-agents in parallel, one per matched skill. Cap at 10 skill a
 
 ### 4. Discover and Apply Learnings/Solutions
 
-<thinking>
-Check for documented learnings from /workflows:compound. These are solved problems stored as markdown files. Spawn a sub-agent for each learning to check if it's relevant.
-</thinking>
-
-**LEARNINGS LOCATION - Check these exact folders:**
+Dispatch the `learnings-researcher` agent with the plan content. It handles the full flow: scanning `docs/solutions/` (and fallbacks in `.claude/docs/` or `~/.claude/docs/`), reading frontmatter, filtering by tag/category/module/symptom against the plan, and returning only learnings that apply with a specific explanation of how.
 
 ```
-docs/solutions/           <-- PRIMARY: Project-level learnings (created by /workflows:compound)
-├── performance-issues/
-│   └── *.md
-├── debugging-patterns/
-│   └── *.md
-├── configuration-fixes/
-│   └── *.md
-├── integration-issues/
-│   └── *.md
-├── deployment-issues/
-│   └── *.md
-└── [other-categories]/
-    └── *.md
+Task learnings-researcher("Plan content:\n---\n[full plan content]\n---\n\nFind documented learnings in docs/solutions/ that apply to this plan. For each relevant learning: quote the key insight, explain how it applies, and suggest where to incorporate it. Skip non-applicable learnings with a one-line reason.")
 ```
 
-**Step 1: Find ALL learning markdown files**
-
-Run these commands to get every learning file:
-
-```bash
-# PRIMARY LOCATION - Project learnings
-find docs/solutions -name "*.md" -type f 2>/dev/null
-
-# If docs/solutions doesn't exist, check alternate locations:
-find .claude/docs -name "*.md" -type f 2>/dev/null
-find ~/.claude/docs -name "*.md" -type f 2>/dev/null
-```
-
-**Step 2: Read frontmatter of each learning to filter**
-
-Each learning file has YAML frontmatter with metadata. Read the first ~20 lines of each file to get:
-
-```yaml
----
-title: "N+1 Query Fix for Briefs"
-category: performance-issues
-tags: [orm, n-plus-one, eager-loading, performance]
-module: Briefs
-symptom: "Slow page load, multiple queries in logs"
-root_cause: "Missing includes on association"
----
-```
-
-**For each .md file, quickly scan its frontmatter:**
-
-```bash
-# Read first 20 lines of each learning (frontmatter + summary)
-head -20 docs/solutions/**/*.md
-```
-
-**Step 3: Filter - only spawn sub-agents for LIKELY relevant learnings**
-
-Compare each learning's frontmatter against the plan:
-- `tags:` - Do any tags match technologies/patterns in the plan?
-- `category:` - Is this category relevant? (e.g., skip deployment-issues if plan is UI-only)
-- `module:` - Does the plan touch this module?
-- `symptom:` / `root_cause:` - Could this problem occur with the plan?
-
-**SKIP learnings that are clearly not applicable:**
-- Plan is frontend-only → skip `database-migrations/` learnings
-- Plan is Python → skip `framework-specific/` learnings
-- Plan has no auth → skip `authentication-issues/` learnings
-
-**SPAWN sub-agents for learnings that MIGHT apply:**
-- Any tag overlap with plan technologies
-- Same category as plan domain
-- Similar patterns or concerns
-
-**Step 4: Spawn sub-agents for filtered learnings**
-
-For each learning that passes the filter:
-
-```
-Task general-purpose: "
-LEARNING FILE: [full path to .md file]
-
-1. Read this learning file completely
-2. This learning documents a previously solved problem
-
-Check if this learning applies to this plan:
-
----
-[full plan content]
----
-
-If relevant:
-- Explain specifically how it applies
-- Quote the key insight or solution
-- Suggest where/how to incorporate it
-
-If NOT relevant after deeper analysis:
-- Say 'Not applicable: [reason]'
-"
-```
-
-**Example filtering:**
-```
-# Found 15 learning files, plan is about "API caching layer"
-
-# SPAWN (likely relevant):
-docs/solutions/performance-issues/n-plus-one-queries.md      # tags: [orm, database] ✓
-docs/solutions/performance-issues/redis-cache-stampede.md    # tags: [caching, redis] ✓
-docs/solutions/configuration-fixes/redis-connection-pool.md  # tags: [redis] ✓
-
-# SKIP (clearly not applicable):
-docs/solutions/deployment-issues/heroku-memory-quota.md      # not about caching
-docs/solutions/frontend-issues/stimulus-race-condition.md    # plan is API, not frontend
-docs/solutions/authentication-issues/jwt-expiry.md           # plan has no auth
-```
-
-**Spawn sub-agents in PARALLEL for all filtered learnings.**
-
-**These learnings are institutional knowledge - applying them prevents repeating past mistakes.**
+These learnings are institutional knowledge — applying them prevents repeating past mistakes. The agent encapsulates the filter logic so this command doesn't need to restate it.
 
 ### 5. Launch Per-Section Research Agents
 
@@ -308,63 +195,9 @@ Record all interview outcomes (revised decisions, confirmed choices, anti-requir
 
 ### 8. Enhance Plan Sections
 
-<thinking>
-Merge research findings and interview outcomes back into the plan, adding depth without changing the original structure.
-</thinking>
+Apply the enhancement format from the `planning` skill's Plan Deepening section — it owns the canonical structure (Research Insights, Best Practices, Performance Considerations, Implementation Details, Edge Cases, References per section + top-level Enhancement Summary). Preserve all original plan content; deepening is additive. Do NOT restate the template here — changes land in the skill.
 
-**Enhancement format for each section:**
-
-```markdown
-## [Original Section Title]
-
-[Original content preserved]
-
-### Research Insights
-
-**Best Practices:**
-- [Concrete recommendation 1]
-- [Concrete recommendation 2]
-
-**Performance Considerations:**
-- [Optimization opportunity]
-- [Benchmark or metric to target]
-
-**Implementation Details:**
-```[language]
-// Concrete code example from research
-```
-
-**Edge Cases:**
-- [Edge case 1 and how to handle]
-- [Edge case 2 and how to handle]
-
-**References:**
-- [Documentation URL 1]
-- [Documentation URL 2]
-```
-
-### 9. Add Enhancement Summary
-
-At the top of the plan, add a summary section:
-
-```markdown
-## Enhancement Summary
-
-**Deepened on:** [Date]
-**Sections enhanced:** [Count]
-**Research agents used:** [List]
-
-### Key Improvements
-1. [Major improvement 1]
-2. [Major improvement 2]
-3. [Major improvement 3]
-
-### New Considerations Discovered
-- [Important finding 1]
-- [Important finding 2]
-```
-
-### 10. Update Plan File
+### 9. Update Plan File
 
 **Write the enhanced plan:**
 - Preserve original filename
@@ -373,7 +206,7 @@ At the top of the plan, add a summary section:
 
 ## Output Format
 
-Update the plan file in place (or if user requests a separate file, append `-deepened` after `-plan`, e.g., `2026-01-15-feat-auth-plan-deepened.md`).
+Update the plan file in place (or if user requests a separate file, append `-deepened` after `-plan`, e.g., `2026-01-15-feat-auth-plan-deepened.md`). The per-section enhancement format and top-level Enhancement Summary template are owned by the `planning` skill's Plan Deepening section — apply them as-is.
 
 ## Quality Checks
 

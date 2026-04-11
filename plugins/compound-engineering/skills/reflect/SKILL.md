@@ -55,7 +55,7 @@ Numbered list of **concrete improvements**, ranked by impact. Each item: one sen
 
 Ask: *"Which of these should I remember for future chats?"*
 
-Save approved items to memory files at `~/.claude/projects/.../memory/` using the Write tool with proper frontmatter (see MEMORY.md index).
+Save approved items to memory files at `~/.claude/projects/<project-slug>/memory/` (replace `<project-slug>` with the slug matching the current working directory, e.g., `-home-ilia-ai-compound-engineering-plugin`) using the Write tool with proper frontmatter (see MEMORY.md index).
 
 ### 5. Skill Audit (if skills were used)
 

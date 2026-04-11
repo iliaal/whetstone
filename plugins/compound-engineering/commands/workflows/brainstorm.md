@@ -35,19 +35,11 @@ Focus on: similar features, established patterns, CLAUDE.md guidance.
 
 **1.2 Collaborative Dialogue**
 
-Use the **AskUserQuestion tool** to ask questions **one at a time**. Follow the `brainstorming` skill Phase 1 for question techniques and topic coverage.
+Use the **AskUserQuestion tool** to ask questions one at a time per the `brainstorming` skill Phase 1.
 
-**Exit condition:** Continue until the idea is clear OR user says "proceed."
+### Phase 2-3: Explore and Capture
 
-### Phase 2: Explore Approaches
-
-Per the `brainstorming` skill Phase 2. Use **AskUserQuestion tool** to ask which approach the user prefers.
-
-### Phase 3: Capture the Design
-
-Write to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` using the template from the `brainstorming` skill Phase 3. Ensure directory exists before writing.
-
-**IMPORTANT:** Before proceeding, check for Open Questions. If any exist, ask the user about each one using AskUserQuestion. Move resolved questions to a "Resolved Questions" section.
+Per `brainstorming` skill Phases 2-3. Use AskUserQuestion for approach selection. Write the design to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (ensure directory exists). Before moving to Phase 4, resolve any Open Questions via AskUserQuestion and move them to a "Resolved Questions" section.
 
 ### Phase 4: Spec Review
 
@@ -81,4 +73,4 @@ Key decisions:
 Next: Run `/workflows:plan` when ready to implement.
 ```
 
-NEVER CODE! Just explore and document decisions.
+The `brainstorming` skill's Hard Gate prohibits code writing during this workflow — the skill enforces this, don't restate it here.

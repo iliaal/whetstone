@@ -10,12 +10,21 @@ Create, list, or update ADRs in `docs/decisions/`.
 
 **Input:** #$ARGUMENTS
 
+## Argument handling
+
+- **Empty** (no argument): scan `docs/decisions/` and present existing ADRs as a numbered list with status, title, and date. Then ask: "Create a new ADR? Provide a title."
+- **`list`**: same as empty — scan and list existing ADRs. Do not create anything.
+- **A short title** (≤8 words): create a new ADR with that title. Ask the user to pick a format (Y-statement, Lightweight, Full MADR, RFC, Deprecation) before generating.
+- **A longer topic or question** (>8 words): treat as context for a Full MADR or RFC. Extract the decision subject from the input, confirm the extracted title with the user, then proceed.
+- **`deprecate <NNNN>`**: create a Deprecation ADR superseding the referenced ADR number. Read the superseded ADR first to capture its context.
+
 ## Process
 
 ### 1. Determine action
 
 - If input is `list` or empty: scan `docs/decisions/` and present existing ADRs with status
 - If input is a title or topic: create a new ADR
+- If input starts with `deprecate`: create a Deprecation ADR (see Argument handling above)
 
 ### 2. Choose format
 

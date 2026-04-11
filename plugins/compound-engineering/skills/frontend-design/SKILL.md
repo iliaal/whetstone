@@ -54,13 +54,48 @@ Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 ## Frontend Aesthetics Guidelines
 
 Focus on:
-- **Typography**: Choose fonts with character. Avoid Inter, Roboto, Arial, system fonts. Use distinctive choices like `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Pair a display font with a refined body font. Headlines: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust -- the typical AI default is undersized, timid headings that lack presence. Tighten letter-spacing, reduce line-height, use weight contrast (Medium 500, SemiBold 600) beyond just Regular/Bold. Body text: limit to ~65 characters wide, increase line-height. Use `font-variant-numeric: tabular-nums` or monospace for data-heavy numbers. Fix orphaned words with `text-wrap: balance`.
+- **Typography** — choose fonts with character:
+  - **Font selection**: avoid Inter, Roboto, Arial, system fonts. Use `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Pair a display font with a refined body font.
+  - **Headlines**: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust. AI defaults are undersized and timid — lack presence.
+  - **Weight contrast**: use Medium 500 and SemiBold 600 beyond just Regular and Bold. Tighten letter-spacing, reduce line-height.
+  - **Body text**: limit to ~65 characters wide, increase line-height.
+  - **Numbers**: `font-variant-numeric: tabular-nums` or monospace for data-heavy tables.
+  - **Orphaned words**: fix with `text-wrap: balance`.
 - **Color & Theme**: Commit to a cohesive palette. Max one accent color, saturation below 80%. Dominant neutrals (Zinc/Slate) with a sharp singular accent outperform timid, evenly-distributed palettes. Use CSS variables for consistency. Tint all grays consistently (warm OR cool, never both). Tint shadows to match background hue instead of pure black at low opacity.
 - **Motion**: Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions. Use spring physics over linear easing. Animate exclusively via `transform` and `opacity` (GPU-composited). Use `IntersectionObserver` for scroll reveals. See [motion-patterns.md](./references/motion-patterns.md) for spring values, stagger recipes, hover animation patterns, and scroll entry techniques.
 - **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density. Use CSS Grid over complex flexbox percentage math (`w-[calc(33%-1rem)]`). Contain layouts with `max-w-7xl mx-auto` or similar. Use `min-h-[100dvh]` instead of `h-screen` (prevents iOS Safari viewport jumping). Bottom padding often needs to be slightly larger than top for optical balance. **Anti-card overuse:** at high density (dashboards, data-heavy UIs), don't wrap everything in card containers (border + shadow + white). Use `border-t`, `divide-y`, or negative space to separate content instead. Cards should exist only when elevation communicates hierarchy. **Bento grid archetypes:** when building dashboard grids, use named patterns: Intelligent List (filterable, sortable data), Command Input (search/action bar), Live Status (real-time metrics), Wide Data Stream (timeline/activity feed), Contextual UI (details panel that responds to selection).
-- **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting to solid colors. Add contextual effects and textures that match the overall aesthetic. Apply creative forms like gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, and grain overlays. Use radial gradients, noise overlays, or mesh gradients over standard linear 45-degree fades. For premium depth, use the double-bezel pattern: outer wrapper with `ring-1` hairline + padding + large radius, inner content with its own background + `shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]` + derived inner radius (`rounded-[calc(2rem-0.375rem)]`). Add glassmorphism inner borders with `border-white/10` for refraction effects. Use reliable placeholders like `https://picsum.photos/seed/{name}/800/600` when real assets are unavailable.
+- **Backgrounds & visual details** — create atmosphere and depth, not solid colors:
+  - **Textures**: apply gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, or grain overlays.
+  - **Gradients**: prefer radial, noise-overlay, or mesh gradients over standard linear 45-degree fades.
+  - **Double-bezel pattern** for premium depth: outer wrapper with `ring-1` hairline + padding + large radius; inner content with its own background + `shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]` + derived inner radius (`rounded-[calc(2rem-0.375rem)]`).
+  - **Glassmorphism refraction**: add `border-white/10` inner borders.
+  - **Placeholder images**: `https://picsum.photos/seed/{name}/800/600` when real assets unavailable.
 
 **Utility Copy for Product UI**: Product UI copy prioritizes orientation, status, and action over promise, mood, or brand voice. If a sentence could appear in a homepage hero or ad, rewrite it until it sounds like product UI. Litmus check: if an operator scans only headings, labels, and numbers, can they understand the page immediately? Error messages: be direct ("Connection failed. Please try again."), not performative ("Oops! Something went wrong!"). No exclamation marks in success messages -- be confident, not loud.
+
+### Mandatory Interactive States
+
+LLMs default to "static successful state" output. Every interactive component MUST ship with all four state treatments — static success alone is an incomplete implementation:
+
+- **Loading** — skeletal loaders that match the real layout's shape and sizing. No generic circular spinners.
+- **Empty** — a composed empty state that shows how to populate the data, not the string "No data" or a bare icon.
+- **Error** — inline error reporting next to the affected field or component. Never `window.alert()`, never a generic toast for form-level errors.
+- **Tactile press** — on `:active`, apply `-translate-y-[1px]` or `scale-[0.98]` so clicks feel like a physical push, not a color flicker.
+
+Missing states are the most common reported AI UI defect. Generating only the success state is incomplete work, not a stretch goal.
+
+### Performance Guardrails
+
+These are architecture-level errors, not style preferences. Violating any one of them causes continuous GPU repaints, mobile jank, or z-index collisions that are hard to undo later.
+
+- **Grain and noise filters** apply exclusively to fixed, `pointer-events-none` pseudo-elements (e.g., `fixed inset-0 z-50 pointer-events-none`). Never on scrolling containers — the filter re-rasterizes every scroll frame and collapses mobile performance.
+- **Animate only `transform` and `opacity`**. Never animate `top`, `left`, `width`, or `height` — these trigger layout on every frame and cannot be GPU-composited.
+- **Z-index restraint**: reserve `z-*` values for systemic layer contexts (sticky navbars, modals, overlays). Never spam arbitrary `z-10` or `z-50` to push elements around — that's what stacking contexts and DOM order are for.
+- **Perpetual animations must be memoized and isolated** in their own tiny Client Component (`React.memo`-wrapped). An infinite loop inside a large layout causes the parent to re-render every frame.
+
+### Server / Client Component Safety (Next.js App Router)
+
+For Next.js App Router projects, load [rsc-client-boundaries.md](./references/rsc-client-boundaries.md) — it covers the Server vs Client decision table, leaf-component isolation rules, the `useMotionValue` vs `useState` rule for continuous animations, and the common failure modes (`'use client'` hoisting, context providers in Server Components, async data inside motion trees).
 
 Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
 
@@ -98,6 +133,10 @@ See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the full cat
 - Dependency check done before any new library import
 - Code renders without errors in the browser
 - No `outline: none` without replacement focus indicator
+- All four interactive states present (loading, empty, error, tactile press) for any interactive component
+- No animation of `top`/`left`/`width`/`height` (transform/opacity only)
+- Grain/noise filters only on fixed `pointer-events-none` layers
+- Interactive/animated components isolated as leaf `'use client'` components (Next.js App Router)
 
 ## References
 
@@ -105,4 +144,5 @@ See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the full cat
 - [Creative arsenal](./references/creative-arsenal.md) -- navigation, layout, card, typography, and micro-interaction patterns
 - [Redesigning existing interfaces](./references/redesigning-existing.md) -- audit-first upgrade workflow for existing projects
 - [Redesign audit checklist](./references/redesign-audit.md) -- 60+ checks across typography, color, layout, interactivity, content, and component patterns
+- [RSC / Client Component boundaries](./references/rsc-client-boundaries.md) -- Next.js App Router rules for Server vs Client Components, continuous animations, and provider isolation
 - For WCAG accessibility audits, use the `accessibility-tester` agent
