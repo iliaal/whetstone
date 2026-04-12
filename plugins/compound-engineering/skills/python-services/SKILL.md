@@ -184,4 +184,5 @@ def call_api(url: str) -> dict: ...
 
 - `uv run pytest` passes with zero failures
 - `uv run ruff check .` passes with zero warnings
+- `uv run ty check .` passes with zero errors
 - Coverage target: 80%+ (`uv run pytest --cov`)

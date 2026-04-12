@@ -37,7 +37,7 @@ Use these when applicable -- do not add explanatory comments in generated code (
 
 ## Laravel Architecture
 
-- **Fat models, thin controllers** -- controllers only: validate, call service/action, return response
+- **Thin controllers** -- controllers only: validate, call service/action, return response. Domain behavior (scopes, accessors, relationships) lives in models; cross-cutting orchestration lives in service classes.
 - **Service classes** for business logic with readonly DI: `__construct(private readonly PaymentService $payments)`
 - **Action classes** (single-purpose invokable) for operations that cross service boundaries
 - **Form Requests** for all validation -- never validate inline in controllers. Add `toDto()` method to convert validated data to typed service parameters.

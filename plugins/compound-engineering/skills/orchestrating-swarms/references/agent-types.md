@@ -115,7 +115,6 @@ Task({
 ```
 
 **All review agents from compound-engineering:**
-- `agent-native-reviewer` - Ensures features work for agents too
 - `architecture-strategist` - Architectural compliance
 - `code-simplicity-reviewer` - YAGNI and minimalism
 - `database-guardian` - Database safety and migration validation

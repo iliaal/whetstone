@@ -1,8 +1,8 @@
 ---
 name: accessibility-tester
-model: haiku
+model: sonnet
 autoApprove: read
-description: "WCAG 2.1 accessibility audit: keyboard navigation, screen reader, contrast, ARIA, forms, cognitive. Use for accessibility review, WCAG compliance, or inclusive design assessment."
+description: "WCAG 2.1/2.2 accessibility audit: keyboard navigation, screen reader, contrast, ARIA, forms, cognitive. Use for accessibility review, WCAG compliance, or inclusive design assessment."
 ---
 
 <examples>

@@ -1,5 +1,6 @@
 ---
 name: infrastructure-engineer
+model: sonnet
 autoApprove: read
 description: "CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker containerization, monitoring and observability (metrics/logs/traces), and incident management. Use for pipeline design or optimization, Dockerfile/container review, observability stack setup, deployment strategy selection, or incident response. For database migration verification, use deployment-verification-agent. For cloud architecture and cost optimization, use cloud-architect. For infrastructure-as-code (Terraform/OpenTofu), use the terraform skill."
 ---

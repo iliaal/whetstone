@@ -89,7 +89,7 @@ Form state           → React Hook Form
 - `React.memo` only for expensive subtrees with stable props
 - Hoist static JSX outside components
 
-**React Compiler** (React 19): auto-memoizes -- write idiomatic React, remove manual `useMemo`/`useCallback`/`memo`. Install `babel-plugin-react-compiler`, keep components pure.
+**React Compiler** (React 19): auto-memoizes -- write idiomatic React, remove manual `useMemo`/`useCallback`/`memo`. Enable via framework config (Next.js: `reactCompiler: true` in next.config). Non-framework: install `babel-plugin-react-compiler`. Keep components pure.
 
 ## React 19
 

@@ -110,23 +110,7 @@ If the output does not confirm the claim:
 
 ## Rationalization Prevention
 
-Stop and re-verify when you catch yourself thinking any of these:
-
-| Rationalization | Reality |
-|----------------|---------|
-| "Should work" / "probably" / "I'm confident" / "the logic is obvious" | Reasoning and confidence are not evidence. Run it. |
-| "Trivial change" / "just a refactor" / "I already verified something similar" | Trivial changes break builds. Similar is not identical. Refactors are the #1 source of subtle regressions. Run the full verification fresh. |
-| Verifying only part of the claim ("new tests pass") | "New tests pass" is not "all tests pass". Run the full suite. |
-| Trusting a subagent's report without checking | Subagent claims require independent verification. Run it yourself. |
-| Rephrasing to dodge the rule ("looks good" instead of "tests pass") | Spirit over letter. Any satisfaction expression triggers verification. |
-| "The CI will catch it" / "It worked on my machine" | Verification happens *before* the claim, not after. Environment mismatches are the #1 source of "works for me" failures. Run locally in the target environment. |
-
-**Red flags that verification was skipped:**
-
-- Using words like "should", "probably", "seems to" when describing outcomes
-- Expressing confidence without citing specific test output or command results
-- Claiming completion based on reasoning alone ("the logic is correct, so it should work")
-- Referencing a previous test run instead of a fresh one
+If you're reasoning about the outcome instead of running the command, the Gate is not satisfied. "Should work", "trivial change", "just a refactor", "new tests pass" (not "all tests pass"), "CI will catch it" -- these are all the same failure mode: substituting confidence for evidence. Any satisfaction expression ("looks good", "seems correct") triggers the Gate, spirit over letter.
 
 ## Completion Report Format
 

@@ -65,7 +65,7 @@ Adjust question style accordingly. Technical users get architecture-level probin
 
 **Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality.
 
-Ask questions **one at a time** by default. When probing a single dimension (e.g., data model, auth flow), 2-3 related questions together is acceptable -- see Question Clustering below.
+Ask questions **one at a time** by default. When probing a single dimension (e.g., data model, auth flow), clustering 2-3 related questions together is acceptable.
 
 **Question Techniques:**
 

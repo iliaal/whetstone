@@ -89,7 +89,6 @@ Task {agent-name}(PR content + review context from settings body)
 ```
 
 Additionally, always run these regardless of settings:
-- Task agent-native-reviewer(PR content) - Verify new features are agent-accessible
 - Task learnings-researcher(PR content) - Search docs/solutions/ for past issues related to this PR's modules and patterns
 
 **Red-team adversarial pass (runs last, after all parallel specialists return):**
@@ -117,100 +116,11 @@ These agents are run ONLY when the PR matches specific criteria. Check the PR fi
 - `database-guardian`: Verifies hard-coded mappings match production reality (prevents swapped IDs), checks for orphaned associations, validates dual-write patterns
 - `deployment-verification-agent`: Produces executable pre/post-deploy checklists with SQL queries, rollback procedures, and monitoring plans
 
-### 2. Ultra-Thinking Deep Dive Phases
-
-**For each phase below, spend maximum cognitive effort. Think step by step. Consider all angles. Question assumptions. And bring all reviews in a synthesis to the user.**
-
-**Deliverable:** Complete system context map with component interactions.
-
-#### Phase 1: Stakeholder Perspective Analysis
-
-**ULTRA-THINK: Put yourself in each stakeholder's shoes. What matters to them? What are their pain points?**
-
-1. **Developer Perspective**
-
-   - How easy is this to understand and modify?
-   - Are the APIs intuitive?
-   - Is debugging straightforward?
-   - Can I test this easily?
-
-2. **Operations Perspective**
-
-   - How do I deploy this safely?
-   - What metrics and logs are available?
-   - How do I troubleshoot issues?
-   - What are the resource requirements?
-
-3. **End User Perspective**
-
-   - Is the feature intuitive?
-   - Are error messages helpful?
-   - Is performance acceptable?
-   - Does it solve my problem?
-
-4. **Security Team Perspective**
-
-   - What's the attack surface?
-   - Are there compliance requirements?
-   - How is data protected?
-   - What are the audit capabilities?
-
-5. **Business Perspective**
-   - What's the ROI?
-   - Are there legal/compliance risks?
-   - How does this affect time-to-market?
-   - What's the total cost of ownership?
-
-#### Phase 2: Scenario Exploration
-
-**ULTRA-THINK: Explore edge cases and failure scenarios. What could go wrong? How does the system behave under stress?**
-
-- [ ] **Happy Path**: Normal operation with valid inputs
-- [ ] **Invalid Inputs**: Null, empty, malformed data
-- [ ] **Boundary Conditions**: Min/max values, empty collections
-- [ ] **Concurrent Access**: Race conditions, deadlocks
-- [ ] **Scale Testing**: 10x, 100x, 1000x normal load
-- [ ] **Network Issues**: Timeouts, partial failures
-- [ ] **Resource Exhaustion**: Memory, disk, connections
-- [ ] **Security Attacks**: Injection, overflow, DoS
-- [ ] **Data Corruption**: Partial writes, inconsistency
-- [ ] **Cascading Failures**: Downstream service issues
-
-### 3. Multi-Angle Review Perspectives
-
-#### Technical Excellence Angle
-
-- Code craftsmanship evaluation
-- Engineering best practices
-- Technical documentation quality
-- Tooling and automation assessment
-
-#### Business Value Angle
-
-- Feature completeness validation
-- Performance impact on users
-- Cost-benefit analysis
-- Time-to-market considerations
-
-#### Risk Management Angle
-
-- Security risk assessment
-- Operational risk evaluation
-- Compliance risk verification
-- Technical debt accumulation
-
-#### Team Dynamics Angle
-
-- Code review etiquette
-- Knowledge sharing effectiveness
-- Collaboration patterns
-- Mentoring opportunities
-
-### 4. Simplification and minimalism review
+### 2. Simplification and minimalism review
 
 Run the Task code-simplicity-reviewer() to see if we can simplify the code. Note: `code-simplicity-reviewer` always runs here -- exclude it from `review_agents` in `compound-engineering.local.md` to avoid running it twice.
 
-### 5. Findings synthesis and todo creation
+### 3. Findings synthesis and todo creation
 
 **ALL findings MUST be stored in the todos/ directory using the file-todos skill.** Create todo files immediately after synthesis -- do NOT present findings for user approval first. Use the skill for structured todo management.
 
@@ -272,7 +182,6 @@ After creating all todo files, present comprehensive summary:
 - security-sentinel
 - performance-oracle
 - architecture-strategist
-- agent-native-reviewer
 - [other agents]
 
 ### Next Steps:
@@ -303,7 +212,7 @@ After creating all todo files, present comprehensive summary:
 
 ```
 
-### 6. End-to-end testing (optional)
+### 4. End-to-end testing (optional)
 
 **First, detect the project type from PR files:**
 

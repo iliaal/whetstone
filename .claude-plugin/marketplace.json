@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code extensions",
-    "version": "2.55.0"
+    "version": "2.55.1"
   },
   "plugins": [
     {
       "name": "compound-engineering",
       "description": "AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes 19 specialized agents, 22 commands, 29 skills, and 1 hook, 1 MCP server.",
-      "version": "2.55.0",
+      "version": "2.55.1",
       "author": {
         "name": "Ilia Alshanetsky",
         "url": "https://github.com/iliaal"

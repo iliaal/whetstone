@@ -165,13 +165,11 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 ---
 
-## Best Practices
+## Integration Rules
 
-1. **Use task dependencies** -- let the system manage unblocking via `addBlockedBy`.
-2. **Prefer `write` over `broadcast`** -- broadcast sends N messages for N teammates, consuming API resources proportional to team size. Reserve broadcasts for critical shared-resource changes only.
-3. **Handle failures** -- workers have 5-minute heartbeat timeout. Crashed workers' tasks can be reclaimed.
-4. **Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
-5. **Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts: do not use AskUserQuestion, auto-choose the conservative/safe default, skip upgrade checks and telemetry. Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
+**Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
+
+**Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts: do not use AskUserQuestion, auto-choose the conservative/safe default, skip upgrade checks and telemetry. Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
 
 ---
 

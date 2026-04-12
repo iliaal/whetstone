@@ -9,7 +9,7 @@ description: "Produces a simplification analysis report (no code changes). Use a
 <example>
 Context: The user has just implemented a new feature and wants to ensure it's as simple as possible.
 user: "I've finished implementing the user authentication system"
-assistant: "Great! Let me review the implementation for simplicity and minimalism using the code-simplicity-reviewer agent"
+assistant: "Let me review the implementation for simplicity and minimalism using the code-simplicity-reviewer agent"
 <commentary>Since implementation is complete, use the code-simplicity-reviewer agent to identify simplification opportunities.</commentary>
 </example>
 <example>

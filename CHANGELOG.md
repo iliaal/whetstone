@@ -5,6 +5,32 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.55.1] - 2026-04-12
+
+Model tier review and full plugin audit. Haiku was assigned to review tasks that require reasoning about absence (untested paths, missing error handling, breaking API changes), producing shallow or missed findings. Upgraded all deep-review specialists and key agents to appropriate tiers. Cleaned up dead references, dangling cross-refs, and redundant content.
+
+### Changed
+
+- **deep-review specialists**: all 6 former-haiku slots (testing, maintainability, performance, reliability, cloud-infra, api-contract) upgraded to opus. These reason about what's absent in code, not pattern-match what's present.
+- **pr-comment-resolver**: haiku → opus. Implementing PR review comments is authoring-level work.
+- **accessibility-tester**: haiku → sonnet, description updated to WCAG 2.1/2.2 (2.2 current since Oct 2023).
+- **infrastructure-engineer**: added `model: sonnet` (CI/CD, Docker, tracing, incident triage).
+- **deployment-verification-agent**: added `model: sonnet` (runbooks with SQL queries and rollback procedures).
+- **php-laravel**: replaced ambiguous "Fat models, thin controllers" with clear boundary -- models own domain behavior, services own orchestration.
+- **react-frontend**: React Compiler install instruction updated to framework-first config path (Next.js `reactCompiler: true`).
+- **python-services**: added `uv run ty check .` to Verify section -- ty was listed as a tool but never enforced.
+- **repo-research-analyst**: replaced off-stack Ruby ast-grep example with PHP.
+- **code-simplicity-reviewer**: removed "Great!" filler from invocation example.
+- **orchestrating-swarms**: trimmed redundant "Best Practices" section (3 items already covered by Dispatch Discipline and QA retry loop) down to 2 unique "Integration Rules" (post-integration verification, spawned-session behavior).
+- **verification-before-completion**: collapsed 6-row Rationalization Prevention table into a 2-sentence paragraph -- the Gate Function already covers these rules.
+- **workflows:review**: removed ~90 lines of generic "Ultra-Thinking" checklists (stakeholder perspectives, scenario exploration, multi-angle reviews) that duplicated specialist agent coverage. Sections renumbered 1-4.
+- **update-plugin.sh**: modernized to use `claude` CLI commands.
+
+### Fixed
+
+- 5 dead references to `agent-native-reviewer` (removed in v2.55.0) cleaned up across `workflows/review.md`, `setup.md`, `README.md`, and `orchestrating-swarms/agent-types.md`. The dispatch at review.md:92 would error at runtime.
+- Brainstorming skill: dangling "see Question Clustering below" forward reference -- no such section existed. Rule folded inline.
+
 ## [2.55.0] - 2026-04-10
 
 Cross-repo sync (14 external references) + full plugin audit + command delegation cleanup. Agent count: 20 → 19 (deployment-engineer + devops-engineer merged into infrastructure-engineer).

@@ -21,7 +21,6 @@ Agents are organized into categories for easier discovery.
 | Agent | Description |
 |-------|-------------|
 | [`accessibility-tester`](agents/review/accessibility-tester.md) | WCAG 2.1 accessibility audit: keyboard, screen reader, contrast, ARIA, forms |
-| [`agent-native-reviewer`](agents/review/agent-native-reviewer.md) | Verify features are agent-native (action + context parity) |
 | [`architecture-strategist`](agents/review/architecture-strategist.md) | Architecture, design patterns, naming conventions, and structural integrity |
 | [`cloud-architect`](agents/review/cloud-architect.md) | Cloud infrastructure review, cost optimization, DR, migration strategies |
 | [`code-simplicity-reviewer`](agents/review/code-simplicity-reviewer.md) | Final pass for simplicity and minimalism |
