@@ -5,6 +5,23 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.56.0] - 2026-04-14
+
+New `rust-systems` skill brings the language-skill roster to four (Python, Node, PHP, Rust). Covers edition-2024 Rust across CLI tools, axum services, and cargo workspaces, with discipline that targets the gaps LLMs consistently miss in Rust code: `unwrap` creep, unsafe without SAFETY comments, silent feature-flag degradation, and `tokio::sync::Mutex` where `RwLock` or `ArcSwap` would fit. Two focused references for clap-derive CLIs and axum service layout.
+
+### Added
+
+- **rust-systems skill**: new language skill for application-layer Rust (no embedded / no_std). Core SKILL.md covers cargo/clippy/rustfmt/nextest tooling, workspace layout with inward-only deps, `thiserror` in libraries / `anyhow` in binaries, ownership signatures, tokio patterns (JoinSet, CancellationToken, bounded mpsc, Semaphore, RwLock for read-heavy state), unsafe discipline with SAFETY comments and miri, production resilience (fail-fast config, `/health` vs `/ready`, graceful shutdown, backon retries, connection pools), tracing+metrics observability. Feature gates must error on runtime mismatch, never silently degrade.
+- **rust-systems/references/cli-tools.md**: clap derive patterns, layered `LowArgs → HiArgs` parsing for non-trivial CLIs (ripgrep-style), config layering (defaults → XDG → project → env → flags), stderr logging with TTY-aware progress, `assert_cmd` CLI testing.
+- **rust-systems/references/axum-service.md**: project layout (routes → services → repos), AppState with `Arc` inside, `IntoResponse` error envelope from `thiserror`, `ValidatedJson` extractor, tower middleware order, `tokio::signal` graceful shutdown, `sqlx::query_as!` compile-time macros with offline `.sqlx/` cache, `tower::ServiceExt::oneshot` for router tests.
+- **rust-systems trigger pattern**: added to `hooks/skill-patterns.sh` (Tier 2) with 18 regression fixtures at precision 1.0 / recall 1.0. Handles `cargo`, `clippy`, `tokio`, `axum`, `clap`, `async rust`, `JoinSet`, and `Cargo.toml` triggers without misfiring on Python/Node/PHP/bash/Terraform prompts.
+
+### Changed
+
+- **code-review**: merged Maintainability and Readability subsections under "What to Check" — three of five Maintainability items (naming, function length, nesting depth) duplicated the Readability list. Consolidated section preserves Readability's measurable thresholds ("3 levels of indentation", "forces scrolling") and keeps Maintainability-unique items (God classes / SRP, leaky abstractions).
+- **code-review**: test-file exclusion added to Review Mode Selection signals. Lines/files/directory counts now exclude `tests/`, `__tests__/`, `*.test.*`, `*.spec.*`, `*_test.*` paths so boilerplate-heavy test expansions don't falsely trigger deep review. Both totals reported for transparency.
+- **code-review/references/false-positive-suppression.md**: clarified the vague "already addressed in the diff" example under Readability-aiding redundancy. Now explicit: author fixed it in a later commit within the same diff, flagged it in their own PR comments, or a prior reviewer resolved it.
+
 ## [2.55.1] - 2026-04-12
 
 Model tier review and full plugin audit. Haiku was assigned to review tasks that require reasoning about absence (untested paths, missing error handling, breaking API changes), producing shallow or missed findings. Upgraded all deep-review specialists and key agents to appropriate tiers. Cleaned up dead references, dangling cross-refs, and redundant content.

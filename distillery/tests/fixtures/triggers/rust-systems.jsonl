@@ -1,0 +1,18 @@
+{"prompt": "write a rust CLI tool using clap derive", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "build an axum service with tokio", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "set up a cargo workspace with multiple crates", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "configure clippy for this rust project", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "add thiserror to our library crate", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "how should I structure error handling with anyhow in a rust binary", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "refactor this async rust code to use JoinSet", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "add a subcommand to the rust CLI", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "update Cargo.toml dependencies for the workspace", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "run cargo nextest on the workspace", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "implement graceful shutdown for the axum server", "expect": true, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "write a FastAPI endpoint for user registration", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "add a Laravel queue job for emails", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "write a React component for the navbar", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "create a Terraform module for S3 buckets", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "write a bash deployment script", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "help me debug this stack trace", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "review the diff in this PR", "expect": false, "added_in": "2.56.0", "source": "initial"}

@@ -33,12 +33,14 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
 | Signal | Threshold | Detect from |
 |--------|-----------|-------------|
-| Lines changed | >300 | `git diff --stat` insertion + deletion totals |
-| Files touched | >8 | File count from scope resolution |
-| Modules/directories spanned | >3 | Unique top-level directories from file list |
+| Lines changed | >300 | `git diff --stat` insertion + deletion totals, **excluding test files** |
+| Files touched | >8 | File count from scope resolution, **excluding test files** |
+| Modules/directories spanned | >3 | Unique top-level directories from non-test file list |
 | Security-sensitive files (auth, crypto, payments, permissions) | any | File path matching |
 | Database migrations present | any | File path matching |
 | API surface changes (public endpoints, exported interfaces) | any | File path matching |
+
+**Test file exclusion:** test files inflate complexity signals without adding review risk -- they're boilerplate-heavy and follow repetitive patterns. Exclude paths matching `tests/`, `test/`, `__tests__/`, `*.test.*`, `*.spec.*`, `*_test.*` from the lines, files, and directories signals. Use `git diff --stat -- ':!tests/' ':!test/' ':!__tests__/' ':!*.test.*' ':!*.spec.*' ':!*_test.*'` for the filtered count. Report both totals for transparency: "450 lines changed (280 excluding tests)."
 
 **3+ signals → deep review.** Inform the user, then dispatch parallel specialist agents per [deep-review.md](./references/deep-review.md). Pass the diff to agents -- do NOT read it first. Reading and analyzing the diff yourself before dispatching agents defeats the purpose of deep review. **Stop here -- do not proceed to the Review Process section.**
 
@@ -114,18 +116,13 @@ Correctness:
 - Type safety (implicit conversions, `any` types, unchecked casts)
 - New enum/status/type values -- trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff. Missing handler = wrong default at runtime.
 
-Maintainability:
-- Functions doing too much (split by responsibility, not size)
-- Deeply nested logic (extract early returns instead)
-- Naming that obscures intent
-- God classes / SRP violations (class with unrelated responsibilities -- split into focused classes)
-- Leaky abstractions (implementation details exposed in interfaces or public APIs)
-
-Readability:
-- Naming clarity -- variables, functions, and classes convey purpose without needing surrounding context
-- Function length -- long functions that force scrolling to understand; prefer extractable blocks with clear names
+Maintainability & Readability:
+- Naming -- variables, functions, and classes convey purpose without needing surrounding context
+- Function length -- long functions that force scrolling; prefer extractable blocks with clear names. Split by responsibility, not line count
 - Nesting depth -- more than 3 levels of indentation signals a need for early returns, guard clauses, or extraction
-- Comment quality -- comments that explain WHY (constraints, workarounds, non-obvious decisions), not WHAT the code does. Flag comments that restate the code or will rot as the code changes
+- Comment quality -- comments explain WHY (constraints, workarounds, non-obvious decisions), not WHAT. Flag comments that restate code or will rot as the code changes
+- God classes / SRP violations -- class with unrelated responsibilities. Split into focused classes
+- Leaky abstractions -- implementation details exposed in interfaces or public APIs
 
 Performance:
 - N+1 queries (loop with query per item -- use batch/join instead)

@@ -36,7 +36,7 @@ Test code follows different rules than production code. Don't flag: hardcoded te
 
 ### 8. Readability-aiding redundancy
 
-"X is redundant with Y" when the redundancy aids readability. "Add a comment explaining this threshold" when thresholds change during tuning and comments rot. "This assertion could be tighter" when it already covers the behavior. Consistency-only reformatting to match adjacent code style. "Regex doesn't handle edge case X" when input is constrained and X never occurs. Anything already addressed in the diff being reviewed.
+"X is redundant with Y" when the redundancy aids readability. "Add a comment explaining this threshold" when thresholds change during tuning and comments rot. "This assertion could be tighter" when it already covers the behavior. Consistency-only reformatting to match adjacent code style. "Regex doesn't handle edge case X" when input is constrained and X never occurs. Anything the author already fixed in a later commit within the same diff, flagged in their own PR comments, or resolved by a prior reviewer.
 
 ## When to Override Suppression
 

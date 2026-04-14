@@ -1,6 +1,6 @@
 {
-  "plugin_version": "2.55.1",
-  "generated_at": "2026-04-12T14:28:40.060367+00:00",
+  "plugin_version": "2.56.0",
+  "generated_at": "2026-04-14T12:37:51.866024+00:00",
   "skills": {
     "agent-native-architecture": {
       "content_hash": "f38909a48a00940ab210cbc1ce2c0012671e4998c777d8dfa68ed420072e28ec",
@@ -15,8 +15,8 @@
       "pattern_changed": "2.50.0"
     },
     "code-review": {
-      "content_hash": "4aefa704c9e4177e36b8531a091e0e27bb8cb8649d95b7e49ad8527e2d82d695",
-      "content_changed": "2.55.0",
+      "content_hash": "1d3933b47b18c30defca637c14e1a18382b7502591d15da2842aeb379c60bd5a",
+      "content_changed": "2.56.0",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
       "pattern_changed": "2.50.0"
     },
@@ -139,6 +139,12 @@
       "content_changed": "2.55.0",
       "pattern_hash": "573bbc9db1736873dac6a9effe1b3778673edd397d23923c801e9f99201c9202",
       "pattern_changed": "2.50.0"
+    },
+    "rust-systems": {
+      "content_hash": "bc16fd0865e4bb5ea4618e9731f4e2ef7a90ee2c1071a846e136d23debe94ff1",
+      "content_changed": "2.56.0",
+      "pattern_hash": "3d5fcdb8252f2edc517caf23eaf50dd2cd3e0bbd95e890075e5961e3538f41ad",
+      "pattern_changed": "2.56.0"
     },
     "simplifying-code": {
       "content_hash": "267222ebbd827c7735faabd6f45809e643f956d9fc044556049f8455e57f85b1",

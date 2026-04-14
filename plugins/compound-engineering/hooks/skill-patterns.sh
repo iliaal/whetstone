@@ -50,6 +50,9 @@ SKILL_TIERS[nodejs-backend]=2
 SKILL_PATTERNS[python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
 SKILL_TIERS[python-services]=2
 
+SKILL_PATTERNS[rust-systems]='\brust\b.{0,30}(cli|service|binary|crate|workspace|backend|api|server|handler|async|tokio|axum|code|project|module)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\.rs\b.*(test|module|crate)'
+SKILL_TIERS[rust-systems]=2
+
 SKILL_PATTERNS[postgresql]='postgres(ql)?|\bpgbouncer\b|jsonb|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b|tsvector|pg_stat_|pg_class'
 SKILL_TIERS[postgresql]=2
 
