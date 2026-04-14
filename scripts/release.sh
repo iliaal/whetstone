@@ -71,6 +71,7 @@ echo "[1/6] Commit & push..."
 git add -A -- \
   .claude-plugin/marketplace.json \
   CHANGELOG.md \
+  README.md \
   distillery/.skill-versions.json \
   distillery/scripts/ \
   distillery/tests/ \
