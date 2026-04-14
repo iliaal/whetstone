@@ -55,32 +55,21 @@ Tweet 2 (XXX chars):
 
 Do not post anything. Present for user approval only.
 
-## Step 5: Post to X
+## Step 5: Draft in X
 
-After user approves the thread:
+After user approves the thread, draft it into X for manual review and posting. Claude never clicks Post -- the user does that in the browser.
 
-1. Write the approved tweets to a JSON file: `/tmp/thread-vX.Y.Z.json` (array of strings)
-2. Launch Edge with debug port (if not already running):
+1. Write the approved tweets to `/tmp/thread-vX.Y.Z.json` (JSON array of strings).
+2. Launch Edge with the dedicated compound-engineering profile + CDP debug port, if not already running:
    ```bash
-   "/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" \
-       --remote-debugging-port=9225 --remote-debugging-address=0.0.0.0 \
-       --remote-allow-origins=* --user-data-dir=/tmp/edge-profile &
+   bash scripts/launch-edge.sh
    ```
-3. If first time, open login page and wait for user to log in:
+   Profile lives at `C:\Users\ilia\edge-compound-engineering` on the Windows side (local disk, not the WSL 9P bridge) on CDP port 9225. First run: log in to X in the opened window; subsequent runs reuse the session.
+3. Compose the thread (types all tweets, does NOT click Post):
    ```bash
    python3 scripts/post-thread.py /tmp/thread-vX.Y.Z.json
    ```
-   The script detects login state. If not logged in, it opens the login page and exits.
-4. Compose the thread (types all tweets, does NOT post):
-   ```bash
-   python3 scripts/post-thread.py /tmp/thread-vX.Y.Z.json
-   ```
-5. Ask user to review the composed thread in the browser
-6. When user confirms, post:
-   ```bash
-   python3 scripts/post-thread.py /tmp/thread-vX.Y.Z.json --post-now
-   ```
-
-Edge session persists at `/tmp/edge-profile`. Subsequent runs in the same session skip login.
+   The script detects login state. If not logged in, it opens the login page and exits -- log in, then re-run.
+4. Tell the user the draft is ready and to review + click Post in the Edge window.
 
 **Important:** Close all Edge windows before the first launch. Edge ignores `--remote-debugging-port` if an instance is already running.
