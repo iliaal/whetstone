@@ -17,26 +17,38 @@ Generate an announcement post for the latest compound-engineering plugin release
 
 ## Step 2: Draft the post
 
-The account is X Premium — each post can hold up to 25,000 characters, so most releases fit in one post. Thread only when a second distinct theme genuinely benefits from visual pacing, not to chunk content that belongs together.
+X posts are marketing. Assume the reader is scrolling a busy feed — you have the first ~250 characters to earn a click-through. Craft them as a compelling hook that tells the reader what this release is about and why they should care. Everything past that is only read by readers who already opted in.
 
-**Single post structure (preferred):**
+The account is X Premium (25,000 character limit per post), so most releases fit in one post. Thread only when a second distinct theme genuinely benefits from visual pacing, not to chunk content that belongs together.
 
-Open with the bookend (version + component counts + install links) — this is what shows in the feed before "Show more." Front-load the hook in the first ~250 chars; everything below that is only seen by readers who click through.
+**Target 1,500-2,500 chars for most releases.** Rich releases (10+ user-visible changes) condense into 3-5 top-impact bullets plus a link to the full CHANGELOG — do not list every change. Small releases (1-3 user-visible changes) fit in ~800-1,200 chars and skip the changelog link. Practical ceiling is 3,500 chars; beyond that you trade reader attention for completeness.
 
-- compound-engineering + ai-skills vX.Y.Z (if versions match, list once; if different, list both)
-- Component counts: N agents, N commands, N skills
-- Install: `claude plugins add iliaal/compound-engineering-plugin`
-- Portable skills: `npx skills add https://github.com/iliaal/ai-skills`
-- Link to github.com/iliaal/compound-engineering-plugin
+**Single post structure:**
 
-After the bookend, list the user-visible changes grouped by theme:
+1. **Opener (first ~250 chars, the feed preview — marketing copy that has to earn the click):**
+   - Version line: `compound-engineering vX.Y.Z` (add `+ ai-skills` only if versions differ)
+   - **Thematic hook**: one sentence enumerating the themes this release touches (e.g., "Sharper rules for deploys, code review, swarm orchestration, frontend discipline, and scope creep"). **Never cut the hook when trimming.** It's the attention bait for feed scrollers and maps top-level themes so a reader can self-select what matters.
+   - Component counts: N agents, N commands, N skills
+   - Top-N pivot line (e.g., "Top 5:") introducing the bullets
 
-- Focus on what changed that users will notice. Skip internals.
-- Group by theme, not by file. Within each theme, 2-5 bullets max.
-- Lead each bullet with the user benefit, not the implementation detail
-- Skip internal changes (script fixes, comment updates, metadata, trigger tests, regex expansions) unless they affect users
-- Small release (1-3 changes)? A compact single post is fine. Don't pad to fill the character budget.
-- Practical ceiling: ~5,000 chars per post reads well. Beyond that, readers disengage even on Premium. Hard technical ceiling is 25,000.
+2. **Body (the 3-5 top-impact bullets):**
+   - Focus on what changed that users will notice. Skip internals.
+   - Group by theme, not by file. One bullet per theme, 1-3 sentences max.
+   - Lead each bullet with the user benefit, not the implementation detail.
+   - Skip internal changes (script fixes, comment updates, metadata, trigger tests, regex expansions) unless they affect users.
+
+3. **Full-changelog link with theme teaser** (rich releases only):
+   - One line pointing at the CHANGELOG with a parenthetical teaser of 3-5 themes NOT covered in the top-N bullets.
+   - Format: `Full changelog (theme-A, theme-B, theme-C, and the rest): github.com/iliaal/compound-engineering-plugin/blob/main/CHANGELOG.md`
+   - The teaser lets readers judge whether clicking through will find what they need.
+
+4. **Install commands:**
+   - `Install: claude plugins add iliaal/compound-engineering-plugin`
+   - `Portable skills: npx skills add https://github.com/iliaal/ai-skills`
+
+5. **Repo URL footer (standalone final line):**
+   - `github.com/iliaal/compound-engineering-plugin`
+   - On its own line, separated from install commands by a blank line. Acts as a click target for readers who want the repo after scanning the post.
 
 **Thread fallback (only when justified):**
 
@@ -47,11 +59,21 @@ Split across multiple posts when the release has two or more clearly distinct th
 
 ## Step 3: Apply writing skill
 
-Invoke the `writing` skill and run every tweet through it. The skill catches em dashes, AI filler, passive voice, and throat-clearing that are easy to miss in short-form copy. Do not skip this step or substitute a manual check.
+Invoke the `writing` skill in audit mode on the drafted post. The skill returns an AUDIT (tagged offenses), CORRECTED TEXT, and 5-dimension scores (Directness / Rhythm / Trust / Authenticity / Density, 1-10 each). Present the audit alongside the corrected draft so the reader can see what was fixed and why.
+
+Expect the score to land above 40/50 before presenting. If below, run another pass focusing on the weakest dimension.
+
+**Note on changelog-style false agency.** Changelog bullets routinely use concept-as-subject ("Action Routing replaces the Fix-First binary", "feature flags now require…") which the writing skill flags as FALSE-AGENCY. For announcement bullets, accept concept-as-subject when the concept IS the shipped artifact (a skill, a pattern, a rule). Rewrite to actor-first (`you`, `we`, imperative) only when doing so adds clarity — don't force it when the original is already direct.
+
+Always fix: em dashes, AI lexicon (delve, crucial, pivotal, leverage, seamless, robust, etc.), passive voice when an actor exists, and adverb filler (silently, explicitly, absolutely, etc.).
 
 ## Step 4: Present for review
 
-Show the complete post (or thread) with character counts per post. Flag any post over 24,500 chars (leave headroom under the 25,000 Premium limit). Separately flag any post where the first 250 chars don't stand alone as a coherent hook — that's what the feed shows before "Show more."
+Show the complete post (or thread) with character counts per post. Three checks, all required:
+
+1. **Length**: flag any post over 3,500 chars (practical reader-engagement ceiling — warn that condensing with a changelog link will read better). Flag any post over 24,500 chars (hard Premium-limit headroom).
+2. **Feed-preview hook**: flag any post whose first 250 chars don't stand alone as a compelling marketing hook — that's what the feed shows before "Show more," and it must earn the click-through on its own.
+3. **Writing-skill score**: state the 5-dimension score from Step 3. If below 40/50, re-run before presenting.
 
 Format:
 ```
