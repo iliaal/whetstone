@@ -4,6 +4,7 @@
 node_modules/
 .codex/
 todos/
+.announce/
 distillery/.env
 distillery/.skill-distiller/
 distillery/.eval-data/
