@@ -1,5 +1,10 @@
 # Compound Engineering Plugin
 
+[![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue?logo=anthropic&logoColor=white)](https://code.claude.com/docs/en/plugins)
+[![Version](https://img.shields.io/github/v/release/iliaal/compound-engineering-plugin)](https://github.com/iliaal/compound-engineering-plugin/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Follow @iliaa](https://img.shields.io/badge/Follow-@iliaa-000000?style=flat&logo=x&logoColor=white)](https://x.com/intent/follow?screen_name=iliaa)
+
 A Claude Code plugin that makes AI coding agents follow engineering discipline. Plan before coding. Verify before claiming done. Find root cause before patching. Review before merge. The agent picks up the right methodology based on what you're working on, no manual activation needed.
 
 Bundles agents, skills, workflow commands, and a skill distillery for PHP, Python, TypeScript, React, and infrastructure workflows.

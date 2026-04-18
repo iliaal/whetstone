@@ -8,6 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_DIR="$REPO_ROOT/plugins/compound-engineering/skills"
 TARGET_DIR="$HOME/ai/ai-skills/skills"
+SOURCE_LICENSE="$REPO_ROOT/LICENSE"
+TARGET_LICENSE="$HOME/ai/ai-skills/LICENSE"
 
 DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
@@ -67,6 +69,14 @@ for skill_dir in "$TARGET_DIR"/*/; do
         fi
     fi
 done
+
+# Mirror LICENSE from upstream
+if [[ -f "$SOURCE_LICENSE" ]]; then
+    if [[ ! -f "$TARGET_LICENSE" ]] || ! diff -q "$SOURCE_LICENSE" "$TARGET_LICENSE" >/dev/null 2>&1; then
+        printf "  %-10s %s\n" "license" "LICENSE"
+        [[ "$DRY_RUN" == false ]] && cp "$SOURCE_LICENSE" "$TARGET_LICENSE"
+    fi
+fi
 
 printf "\n--- Mirror Summary ---\n"
 printf "  Added:     %d\n" "$added"
