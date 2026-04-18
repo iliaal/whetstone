@@ -49,7 +49,7 @@ python3 distillery/scripts/distiller.py test-triggers
 
 `validate-plugin` checks every skill, agent, and command for:
 - Frontmatter: exists, valid YAML, no inert fields, name format, description length (<80 tokens), "Use when" trigger phrase
-- Anti-patterns: OVER_CONSTRAINED, BLOATED_SKILL, EMPTY_DESCRIPTION, MISSING_TRIGGER, ORPHAN_REFERENCE, DEAD_CROSS_REF, DUPLICATE_TRIGGER, STALE_VERSION_PIN
+- Anti-patterns: OVER_CONSTRAINED, BLOATED_SKILL, EMPTY_DESCRIPTION, MISSING_TRIGGER, VAGUE_DESCRIPTION, ORPHAN_REFERENCE, DEAD_CROSS_REF, DUPLICATE_TRIGGER, STALE_VERSION_PIN
 - Structural: placeholder text, empty sections, missing headings
 - Body size: skills >4K, agents >3K, commands >4K tokens
 - Reference integrity: orphaned files in references/scripts dirs, backtick references to nonexistent components

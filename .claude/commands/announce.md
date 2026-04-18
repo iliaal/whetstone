@@ -1,12 +1,12 @@
 ---
 name: announce
-description: Draft X/Twitter announcement thread for the latest plugin release
+description: Draft X/Twitter announcement post (or thread) for the latest plugin release
 argument-hint: "[optional: version to announce, defaults to current]"
 ---
 
 # Draft release announcement for X
 
-Generate a thread of tweets announcing the latest compound-engineering plugin release. Apply the `writing` skill throughout -- no filler, no AI slop, no throat-clearing.
+Generate an announcement post for the latest compound-engineering plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing. Apply the `writing` skill throughout — no filler, no AI slop, no throat-clearing.
 
 ## Step 1: Gather context
 
@@ -15,24 +15,35 @@ Generate a thread of tweets announcing the latest compound-engineering plugin re
 3. Get the ai-skills repo version: `cd ~/ai/ai-skills && git log --oneline -1 && cd -`
 4. Count components: `bash scripts/update-metadata.sh`
 
-## Step 2: Draft the thread
+## Step 2: Draft the post
 
-**Tweet 1 (bookend -- version + install + links):**
+The account is X Premium — each post can hold up to 25,000 characters, so most releases fit in one post. Thread only when a second distinct theme genuinely benefits from visual pacing, not to chunk content that belongs together.
+
+**Single post structure (preferred):**
+
+Open with the bookend (version + component counts + install links) — this is what shows in the feed before "Show more." Front-load the hook in the first ~250 chars; everything below that is only seen by readers who click through.
+
 - compound-engineering + ai-skills vX.Y.Z (if versions match, list once; if different, list both)
 - Component counts: N agents, N commands, N skills
 - Install: `claude plugins add iliaal/compound-engineering-plugin`
 - Portable skills: `npx skills add https://github.com/iliaal/ai-skills`
 - Link to github.com/iliaal/compound-engineering-plugin
-- No process details (no "synced from N repos", no "N files changed"). Just the version, what's in the box, and how to get it.
 
-**Tweets 2+N (key changes only):**
+After the bookend, list the user-visible changes grouped by theme:
+
 - Focus on what changed that users will notice. Skip internals.
-- Group by theme, not by file
-- Each tweet: one theme, 2-3 bullet points max
+- Group by theme, not by file. Within each theme, 2-5 bullets max.
 - Lead each bullet with the user benefit, not the implementation detail
 - Skip internal changes (script fixes, comment updates, metadata, trigger tests, regex expansions) unless they affect users
-- No tweet should exceed 280 characters
-- If the release is small (1-3 changes), a single follow-up tweet is fine. Don't pad.
+- Small release (1-3 changes)? A compact single post is fine. Don't pad to fill the character budget.
+- Practical ceiling: ~5,000 chars per post reads well. Beyond that, readers disengage even on Premium. Hard technical ceiling is 25,000.
+
+**Thread fallback (only when justified):**
+
+Split across multiple posts when the release has two or more clearly distinct themes that benefit from visual pacing in the feed — not because one post would be "too long." Each continuation post still gets the Premium character budget; don't chunk at 280.
+
+- No tweet should exceed 25,000 characters (hard Premium limit)
+- No artificial chunking — if content belongs together, keep it together
 
 ## Step 3: Apply writing skill
 
@@ -40,14 +51,15 @@ Invoke the `writing` skill and run every tweet through it. The skill catches em 
 
 ## Step 4: Present for review
 
-Show the complete thread with character counts per tweet. Flag any tweet over 270 chars (leave room for formatting).
+Show the complete post (or thread) with character counts per post. Flag any post over 24,500 chars (leave headroom under the 25,000 Premium limit). Separately flag any post where the first 250 chars don't stand alone as a coherent hook — that's what the feed shows before "Show more."
 
 Format:
 ```
-Tweet 1 (XXX chars):
+Post 1 (XXX chars):
 [text]
 
-Tweet 2 (XXX chars):
+(if thread)
+Post 2 (XXX chars):
 [text]
 
 ...
