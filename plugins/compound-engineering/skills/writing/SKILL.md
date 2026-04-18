@@ -201,4 +201,8 @@ For documents with references or citations, also tag: `[OAICITE]` (malformed AI 
 - **User-facing vs internal**: internal changes (refactors, dependency bumps, CI fixes) belong in a separate "For contributors" subsection, not mixed with user-facing bullets
 - **Verb tense**: past tense for what changed ("Added", "Fixed"), not present ("Adds", "Fixes")
 
+## PR / MR Descriptions
+
+For pull-request and merge-request descriptions, match length to change complexity (1 sentence for trivial, full narrative for architecturally significant). Lead with Before / After / Scope rationale; describe net end state, not iteration journey; pick Mermaid for topology, tables for grids. See [references/pr-descriptions.md](./references/pr-descriptions.md) for the sizing matrix, narrative frame, GitHub-specific hazards (`#NN` auto-link trap), and the self-check list.
+
 See [references/examples.md](./references/examples.md) for before/after transformations.

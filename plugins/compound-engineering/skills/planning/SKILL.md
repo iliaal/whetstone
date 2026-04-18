@@ -1,9 +1,10 @@
 ---
 name: planning
 description: >-
-  Software implementation planning with file-based persistence (.plan/). Use when
-  asked to plan, break down a feature, or starting complex tasks. Apply
-  proactively before non-trivial coding.
+  Software implementation planning with file-based persistence (.plan/). Use
+  when asked to plan, break down a feature, or when a task touches 3+ files,
+  has ambiguous scope, or requires architectural decisions. Skip for typos,
+  single-file fixes, and obvious one-shots.
 ---
 
 # Planning

@@ -1,6 +1,6 @@
 ---
 name: workflows:compound
-description: Parallel-agent workflow to document a solved problem for team reuse. Use after debugging, fixing, or resolving a non-trivial issue.
+description: Parallel-agent workflow to document a solved problem for team reuse. Use after debugging, fixing, or resolving a bug, incident, or tricky edge case worth capturing for future sessions.
 argument-hint: "[optional: brief context about the fix]"
 ---
 

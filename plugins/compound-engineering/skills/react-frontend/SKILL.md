@@ -44,7 +44,19 @@ Effects are escape hatches -- most logic should NOT use effects.
 - Move objects/functions inside effects to stabilize dependencies
 - `useEffectEvent` for non-reactive values (e.g., theme in a connection effect)
 - Always return cleanup for subscriptions, connections, listeners
-- Data fetching: use `ignore` flag pattern or React Query
+- Data fetching cancellation (pick by situation): `AbortController` for fetch; `ignore` flag for non-cancellable promises; React Query handles both automatically
+
+## Concurrency & Race Classes
+
+Frontend bugs that survive type-checking and unit tests usually land in one of five race classes. Hunt each one explicitly during review:
+
+1. **Lifecycle cleanup gaps** -- in-production signal: "Can't perform state update on an unmounted component" warnings, slow-burn memory leaks under rapid navigation, duplicate event handlers firing. Root cause: `useEffect` registered a listener/timer/observer without returning cleanup (see Effect rules above for the rule).
+2. **Remount-timing mistakes** -- async callbacks mutate DOM or state after swap / disconnect / route change. Classic cases: a `fetch().then(setData)` resolves after navigation to a different route; a `requestAnimationFrame` fires after the parent unmounts. See "Data fetching" in Effect rules for the cancellation hierarchy (AbortController for fetch; ignore-flag for non-cancellable promises; React Query handles both automatically).
+3. **Boolean-as-state for UI that isn't binary** -- `isLoading: boolean` can't represent `idle | loading | success | error | retry` without creating inconsistent combinations (`isLoading: true, error: Error` is contradictory). Prefer an explicit state constant (`'idle' | 'loading' | 'success' | 'error'`) with a transition function so invalid states are unreachable.
+4. **Stale promises and timers with no cancel path** -- a promise chain or `setTimeout` holds a reference to `setState` after the component's moved on. Bind every async operation to a cancel mechanism (`AbortController`, cleanup function, `ignore` flag) and verify the cleanup path is exercised by a test.
+5. **Per-element handlers where delegation would be safer** -- attaching `onClick` to every row in a list creates N closures and N subscriptions; delegated listeners (single handler on the parent reading `event.target.closest(...)`) are safer under rapid re-renders, avoid stale-closure bugs, and scale to large lists. Use delegation when the list exceeds ~50 items or updates frequently.
+
+These classes produce bugs that are intermittent, environment-dependent, and invisible to type-checking -- exactly the ones that reach production. Review for them deliberately, not just as "subscriptions need cleanup."
 
 ## State Management
 

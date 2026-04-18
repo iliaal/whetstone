@@ -21,6 +21,7 @@ Review lens for operational resilience: what happens when things go wrong at run
 - **Retry without backoff**: immediate retries under failure just amplify load. Use exponential backoff with jitter.
 - **Unbounded retries**: max attempts must be finite. Infinite retry loops become resource exhaustion.
 - **Retry surface**: retry at the right layer. Retrying an entire transaction because one HTTP call failed wastes work. Retry the call, not the transaction.
+- **Double retry (stacked retry layers)**: application `@retry` wrapping a client SDK that already auto-retries multiplies attempts (3×3 = 9) and the backoff compounds — a nominal 5s timeout becomes 30s+. Audit the client's default retry policy before wrapping it. Retry at exactly one layer: if the SDK retries, configure its policy; do not add another `@retry` on top.
 
 ## Circuit Breakers
 

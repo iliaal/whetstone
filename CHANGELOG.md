@@ -5,6 +5,49 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.56.1] - 2026-04-18
+
+Broad hardening pass. Sync + audit cycle applied ~56 refinements across 10 skills, 3 agents, 1 command, and the root context files, plus two new reference files. No new components; existing content got sharper rules, tighter cross-references, and structural fixes exposed by the audit.
+
+### Added
+
+- **orchestrating-swarms/references/context-carry-forward.md**: decision table for long orchestrated sessions — Continue / Rewind / `/compact` / Subagent / `/clear`+brief. Rewind beats "correcting in place" because it drops the failed path from context instead of leaving it as a negative anchor.
+- **writing/references/pr-descriptions.md**: PR/MR description style guide. Sizing matrix (1 sentence for trivial, full narrative for architecturally significant), Before / After / Scope-rationale frame, Mermaid-for-topology / table-for-grid rule, GitHub `#NN` auto-link trap, self-check list.
+- **agent-native-architecture/references/dynamic-context-injection.md**: new Trust Levels principle. Three-tier model (trusted / semi-trusted / untrusted) with a concrete prompt-injection defense test — inject "ignore all prior rules" into a retrieved document and confirm the agent refuses.
+
+### Changed
+
+- **react-frontend**: 5-class race taxonomy — lifecycle cleanup gaps, remount-timing mistakes, boolean-as-state when UI has more than two modes, stale promises / timers without cancel, per-element handlers where delegation is safer. Each class framed around its production signal, not the rule. Data-fetching cancellation unified: `AbortController` for fetch, `ignore`-flag for non-cancellable promises, React Query covers both.
+- **code-review**: Fix-First Classification renamed to Action Routing with a 4-tier split (`safe_auto` / `gated_auto` / `manual` / `advisory`) plus a conservative-route merge rule so a loose classification never promotes a boundary-crossing change to auto-fix. Integration section maps these to `receiving-code-review`'s AUTO-FIX / ESCALATE vocabulary. Configuration profile in `language-profiles.md` promoted from 4 prose bullets to numbered CFG-001 through CFG-006 checks (magnitude-change, timeout hierarchy inversion, pool mismatch, env drift, rollback gap, observability gap).
+- **code-review/references/deep-review.md**: reviewer prompt gains DO / DON'T preamble — read the actual code, don't take the PR description at face value, don't rubber-stamp sections you didn't open. Merge algorithm gains a fingerprint-first preamble; two-agent overlap now tags `MULTI-SPECIALIST CONFIRMED (s1 + s2)` with +0.05 confidence, three-agent with +0.10 (applied once per group). Output header reports K-at-3+ / M-at-2 counts so reviewers can scan for convergent signal without reading every finding.
+- **code-review/references/reliability-patterns.md**: double-retry stacked anti-pattern. Application `@retry` on an auto-retrying SDK multiplies attempts (3×3 = 9) and the backoff compounds; audit the client's default retry policy before wrapping it, and retry at exactly one layer.
+- **orchestrating-swarms**: BLOCKED triage decision tree — missing context re-dispatches same agent, reasoning ceiling escalates model, task-too-large splits, spec-wrong escalates to human. Pre-dispatch file-intersection check as a runnable safety gate with a "no git / no test suite in parallel" constraint embedded in dispatch prompts. Fresh-agent rule on every reviewer re-dispatch across rounds — reviewers carrying memory from a prior round anchor on their earlier verdicts and miss regressions from fixes. NEEDS_CONTEXT aligned to "start or continue" across orchestrating-swarms / verification-before-completion / debugging.
+- **deployment-verification-agent**: Rollout Decision Thresholds table with quantified advance / hold / rollback bands for error-rate delta, p95 latency delta, client JS errors, and business metric delta. Stages protocol with SEV-level calibration note. Feature-Flag Lifecycle requirements: owner, expiration date, 2-week cleanup after 100% rollout, no nested flags, both states exercised by CI.
+- **performance-oracle**: Core Web Vitals thresholds section. LCP (≤2.5s / ≤4.0s / >4.0s), INP (≤200ms / ≤500ms / >), CLS (≤0.1 / ≤0.25 / >) with Poor-band classification as Critical and Needs-improvement as Important.
+- **verification-before-completion**: Scope Confirmation pre-Edit gate for ambiguous-scope imperatives ("migrate my project", "refactor everywhere", "update across the app"). Surface concrete blast radius with `rg` breakdown before any Write or Edit — imperative phrasing is not the same as defined scope.
+- **agent-native-architecture**: Context Injection checklist gains a trust-levels bullet pointing at the new Trust Levels principle. Tool Design checklist adds Eval Gate — 10 Q/A pairs, 9/10 CI threshold, closed-data multi-hop tests — surfaced into the body from the MCP tool-design reference.
+- **receiving-code-review**: 4-tag false-positive taxonomy for dismissed suggestions — FP-ASSUMPTION / FP-CONVENTION / FP-ALREADY-HANDLED / FP-OUT-OF-SCOPE — with a push-back mapping column so dismissals cite structured reasoning. Integration section cross-maps to code-review action-routing tiers.
+- **workflows:review**: per-agent `.review/NN-<agent>.md` artifact persistence for large reviews (8+ agents OR diff with more than 500 changed lines per `git diff --shortstat`). Missing-file recovery rule so a crashed specialist doesn't silently lose coverage at synthesis. `.review/` is transient scratch (gitignored), NOT a Protected Artifact.
+- **repo-research-analyst**: iterative retrieval pattern. Cycle 1 uses broad terms to discover the repo's own vocabulary ("throttle" not "rate-limit"); cycle 2 refines with learned terminology; stop at 3+ relevant hits or 3 cycles.
+- **frontend-design**: H1 2-3 line iron rule (ultra-wide containers like `max-w-5xl`, `clamp(3rem, 5vw, 5.5rem)` for fonts that scale down instead of wrapping). Mobile Collapse Mandate — asymmetric layouts above `md:` must collapse to `w-full px-4` below 768px, 44×44px minimum touch targets, no rotations or negative-margin overlaps on mobile. Bento-grid `grid-flow-dense` rule and hero scroll-filler ban added to `banned-ai-patterns.md`. Cross-card baseline alignment check added to `redesign-audit.md`.
+- **md-docs**: Monorepo Context Loading section. Ancestors load at startup walking up, descendants lazy-load on subtree access, siblings never load — put shared conventions at the root, package-specific at each package root.
+- **simplifying-code**: Step 6 pre-submit scope audit. Walk every changed line and ask "does the task explicitly require this?" If no, revert and list as a follow-up.
+- **writing**: PR / MR Descriptions section cross-references the new reference file.
+- **CLAUDE.md / AGENTS.md**: description must describe *when* to invoke the skill (trigger conditions), never *how* the skill proceeds step-by-step. Restating the body's procedure in the description causes Claude to follow the description and skip the skill content.
+- Description refinements on `brainstorming`, `meta-prompting`, `planning`, `verify`, `agent-native-audit`, `deepen-plan`, and `workflows:compound` for sharper trigger fit.
+- **distillery**: new `analyze-outcomes` command surfaces (skill, project) pairs whose negative rate exceeds the global average by more than 10pp. `model_baseline_prefixes` tracking in the skill manifest filters stale sessions from retired runtime models. `VAGUE_DESCRIPTION` added to the validator's anti-pattern taxonomy.
+- Keep a Changelog reference updated from 1.0.0 to 1.1.0.
+
+### Fixed
+
+- `deployment-verification-agent`: Rollout Decision Thresholds and Feature-Flag Lifecycle promoted from H3 inside the Go/No-Go checklist template to H2 peers after it. Restored "Sample console verification" as the tail of section 6 Post-Deploy Monitoring — the earlier insertion had orphaned it.
+- `workflows:review`: heading renamed "Per-phase artifact persistence" to "Per-agent artifact persistence" (files are per-agent; "phase" already means the command's numbered sections). "500 lines" threshold made measurable as "500 changed lines per `git diff --shortstat`".
+- `code-review/references/deep-review.md`: merge-algorithm preamble clarifies that fingerprinting runs before the numbered rules, so the single-agent rule has a defined basis to operate on. Confidence boost applied once per group, not stacked across rules 6 and 7.
+- `code-review/references/language-profiles.md`: dropped the false "same way as TS-003 or PY-002" precedent claim — sibling profiles have no numbered IDs, so the comparison didn't hold.
+- `frontend-design/references/redesign-audit.md`: check #16 reformatted from 3-sentence declarative to single-question interrogative matching siblings 1 through 15.
+- `announce` (internal): Edge profile moved to the Windows path. `post-thread.py` now defaults to draft-only.
+- `README`: `rust-systems` row added to the skills table; `release.sh` now stages the README so documentation ships with each release.
+
 ## [2.56.0] - 2026-04-14
 
 New `rust-systems` skill brings the language-skill roster to four (Python, Node, PHP, Rust). Covers edition-2024 Rust across CLI tools, axum services, and cargo workspaces, with discipline that targets the gaps LLMs consistently miss in Rust code: `unwrap` creep, unsafe without SAFETY comments, silent feature-flag degradation, and `tokio::sync::Mutex` where `RwLock` or `ArcSwap` would fit. Two focused references for clap-derive CLIs and axum service layout.

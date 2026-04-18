@@ -12,6 +12,7 @@ version, establishing a clean baseline for staleness tracking.
 
 import hashlib
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -23,6 +24,12 @@ SKILLS_DIR = PLUGIN_DIR / "skills"
 PATTERNS_FILE = PLUGIN_DIR / "hooks" / "skill-patterns.sh"
 PLUGIN_JSON = PLUGIN_DIR / ".claude-plugin" / "plugin.json"
 MANIFEST_PATH = REPO_ROOT / "distillery" / ".skill-versions.json"
+
+# Accepted model prefixes for skill-behavior eval. Sessions whose assistant turns
+# don't start with any of these are filtered. Must include each model that legitimately
+# runs skills today: opus for main sessions, haiku for built-in subagents (Plan, Explore).
+# Env override: SKILL_MODEL_BASELINE (comma-separated prefixes).
+MODEL_BASELINE_PREFIXES = ["claude-opus-4-7", "claude-haiku-4-5", "claude-sonnet-4-6"]
 
 
 def _sha256_file(path: Path) -> str:
@@ -109,8 +116,15 @@ def generate() -> dict:
 
         skills[skill_name] = entry
 
+    env_baseline = os.environ.get("SKILL_MODEL_BASELINE")
+    if env_baseline:
+        model_baseline = [p.strip() for p in env_baseline.split(",") if p.strip()]
+    else:
+        model_baseline = list(MODEL_BASELINE_PREFIXES)
+
     return {
         "plugin_version": version,
+        "model_baseline_prefixes": model_baseline,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "skills": skills,
     }

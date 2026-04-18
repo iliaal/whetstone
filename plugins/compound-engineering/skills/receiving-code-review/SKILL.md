@@ -74,6 +74,19 @@ Push back (with evidence) when a suggestion:
 
 **Valid evidence:** code references (`file:line`), test output, git blame/log, framework docs, reproduction steps, grep results showing usage patterns. **Not evidence:** "I think", "it should work", "it's fine", appeals to convention without citing the convention, or restating the original code as justification.
 
+### False-Positive Taxonomy (for dismissed suggestions)
+
+When dismissing a suggestion (AUTO-DECLINE, manual push-back), tag the dismissal with one of four categories so the reviewer sees structured reasoning, not a bare "no":
+
+| Category | Reviewer's response cited | Evidence required | Maps to "When to Push Back" |
+|----------|--------------------------|-------------------|------------------------------|
+| **FP-ASSUMPTION** | Reviewer assumed behavior that doesn't match the code | Quote the specific line that contradicts the assumption | "Is technically incorrect" |
+| **FP-CONVENTION** | Suggestion conflicts with this project's conventions | Cite the CLAUDE.md rule, ADR, or the established pattern in `file:line` | "Violates project conventions" |
+| **FP-ALREADY-HANDLED** | The concern is handled elsewhere (parent function, middleware, framework) | Show the existing handler in `file:line` | "Adds unnecessary complexity" |
+| **FP-OUT-OF-SCOPE** | Valid concern but belongs in a separate change | State where it will be tracked (issue, todo, next PR) | YAGNI / scope creep |
+
+Use the tag in the reply: "FP-ALREADY-HANDLED: null check happens in `auth/middleware.ts:42` before this handler runs. Keeping as-is." Structured tags prevent the "you're wrong because reasons" reply pattern and make future triage faster (if the same comment class keeps hitting `FP-CONVENTION`, the convention needs better documentation).
+
 ## When NOT to Push Back
 
 Accept feedback when:
@@ -173,6 +186,6 @@ When the `pr-comment-resolver` agent encounters feedback that requires judgment 
 ## Integration
 
 This skill pairs with:
-- `code-review` -- the outbound side (requesting reviews)
+- `code-review` -- the outbound side (requesting reviews). Their action-routing tiers (`safe_auto`/`gated_auto`/`manual`/`advisory`) roughly map to this skill's AUTO-FIX / ESCALATE-for-approval / ESCALATE / FYI.
 - `pr-comment-resolver` agent -- for mechanical PR comment resolution (see scope table above)
 - `verification-before-completion` -- verify each fix before marking resolved

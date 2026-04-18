@@ -77,6 +77,16 @@ Structure CLAUDE.md (and AGENTS.md) content by priority so the most critical inf
 
 Rules that prevent mistakes outweigh background information. Place them at the top so they survive aggressive context compaction.
 
+## Monorepo Context Loading
+
+Claude Code's context-file loading in monorepos follows three rules -- understanding them determines where content belongs:
+
+- **Ancestors load immediately**: walking UP from the current working directory, every AGENTS.md / CLAUDE.md encountered is loaded at startup. Put shared conventions at the repo root.
+- **Descendants load lazily**: an AGENTS.md deeper in the tree loads only when Claude reads or edits a file inside that subtree. Put package-specific conventions at each package's root (`packages/api/AGENTS.md`, `apps/web/AGENTS.md`).
+- **Siblings never load**: `packages/a/AGENTS.md` will NOT auto-load when working in `packages/b/`. Do not rely on sibling-package context leaking across.
+
+Implication for monorepo layouts: duplicate any rule that must apply across sibling packages into each package's AGENTS.md (or hoist it to the repo root). The loader will not discover it laterally. Conversely, avoid putting package-specific rules at the root -- they'll load into every session regardless of relevance and burn context.
+
 ## Arguments
 
 All workflows support:

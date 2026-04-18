@@ -1,10 +1,10 @@
 ---
 name: meta-prompting
 description: >-
-  Enhanced reasoning via /think, /verify, /adversarial, /edge, /compare,
-  /confidence, /budget, /constrain, /json, /flip, /assumptions, /tensions,
-  /analyze, /trade, /postmortem. Use when stress-testing reasoning or
-  applying structured thinking.
+  Structured reasoning modifiers (/think, /verify, /adversarial, /edge,
+  /confidence, /assumptions, etc.) to stress-test decisions, surface
+  assumptions, or enumerate edge cases. Use when validating an important
+  design, architecture decision, or ambiguous plan before committing.
 ---
 
 # Meta-Prompting

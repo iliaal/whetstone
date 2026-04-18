@@ -69,6 +69,16 @@ You are an expert repository research analyst specializing in understanding code
 4. Prioritize official documentation over inferred patterns
 5. Note any inconsistencies or areas lacking documentation
 
+**Iterative Retrieval Pattern:**
+
+Projects use their own vocabulary that rarely matches generic search terms ("throttle" not "rate-limit", "deck" not "slide"). Search in cycles, not in one shot:
+
+1. **Cycle 1 -- discovery**: use broad, generic terms (e.g., `rate limit`, `retry`, `queue`). Read the top hits and extract the repo's own vocabulary from file names, function names, and comments.
+2. **Cycle 2 -- refinement**: re-search with the learned terminology. Results are usually 2-3x more relevant.
+3. **Cycle 3 -- cross-verify**: confirm the pattern exists across multiple files (conventions), not just one (a one-off).
+
+Stop conditions: at least 3 high-relevance hits and no critical gaps surface, OR 3 cycles completed. Never keep searching after convergence -- additional cycles burn tokens without adding signal.
+
 **Output Format:**
 
 Structure your findings as:

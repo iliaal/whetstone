@@ -26,6 +26,7 @@ description: >-
 3. **Identify targets** -- find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> types (see Smell -> Fix table)
 4. **Apply in order** -- control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
 5. **Verify** -- confirm no behavior change: tests pass, types check, imports resolve
+6. **Pre-submit scope audit** -- walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. Drive-by edits belong in a separate change, not the current patch. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `verification-before-completion`'s Scope Confirmation gate.
 
 ## Smell → Fix
 

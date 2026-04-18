@@ -236,9 +236,9 @@ python3 distillery/scripts/distiller.py test-triggers       # Regression test tr
 ```
 compound-engineering-plugin/
 ├── plugins/compound-engineering/   # The plugin
-│   ├── agents/                     # 26 specialized subagents
-│   ├── commands/                   # 19 slash commands
-│   ├── skills/                     # 31 skills
+│   ├── agents/                     # 19 specialized subagents
+│   ├── commands/                   # 22 slash commands
+│   ├── skills/                     # 30 skills
 │   ├── hooks/                      # Skill injection into subagents
 │   └── README.md                   # Full component reference
 ├── distillery/                     # Skill generation, eval, and evolution

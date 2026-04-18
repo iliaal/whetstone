@@ -135,6 +135,8 @@ Attach the completed runbook to the deployment checklist so it is available with
 
 ### 6. Post-Deploy Monitoring (First 24 Hours)
 
+Post-100% monitoring thresholds (after the staged rollout completes — for rollout-phase bands see "Rollout Decision Thresholds" below):
+
 | Metric/Log | Alert Condition | Dashboard Link |
 |------------|-----------------|----------------|
 | Error rate | > 1% for 5 min | /dashboard/errors |
@@ -153,6 +155,33 @@ SELECT old_column, new_column FROM records
 ORDER BY RANDOM() LIMIT 10;
 -- Verify mapping is correct
 ```
+
+## Rollout Decision Thresholds (Canary / Staged Deploys)
+
+For any canary, percentage rollout, or feature-flag ramp, define quantified advance / hold / rollback bands per metric so the deploy has concrete go/no-go signals during the ramp. These bands govern the staged rollout; post-100%, the Post-Deploy Monitoring table inside the checklist template applies instead. Fill with deployment-specific values — defaults below are starting points.
+
+| Metric | Advance | Hold | Rollback |
+|--------|---------|------|----------|
+| Error rate delta (vs baseline) | < +0.1% | +0.1% to +0.5% | > +0.5% |
+| p95 latency delta | < +10% | +10% to +25% | > +25% |
+| Client JS error rate (if web) | < baseline | = baseline | > baseline |
+| Business metric delta (conversion, completion rate) | ≥ baseline | slight dip (< 2%) | > 2% dip |
+
+**Decision protocol**: advance to the next stage only if ALL metrics are in the Advance band over the stage's observation window. If ANY metric enters Hold, pause and investigate before advancing (do not rollback yet). If ANY metric enters Rollback, revert immediately per the Rollback Plan above.
+
+**Example stages (calibrate per SEV level — see Severity Matrix)**: `1% for 30 min → 10% for 1h → 50% for 2h → 100%`. SEV1/SEV2 deploys warrant longer observation windows and tighter Advance bands than SEV3/SEV4. Do not ramp faster than the observation window — you lose the ability to detect a regression before the blast radius grows.
+
+## Feature-Flag Lifecycle
+
+Every feature flag introduced by this deployment requires:
+
+- **Owner**: a specific engineer or team named in the flag's metadata / registry.
+- **Expiration date**: concrete calendar date when the flag will be removed (not "eventually").
+- **Cleanup target**: within 2 weeks of the feature reaching 100% rollout, the flag and its dead branch must be deleted.
+- **No nesting**: a flag's code path must not contain another flag check. Nested flags create 2^N paths and destroy testability.
+- **Both branches tested in CI**: both flag states (on and off) must be exercised by the test suite until the flag is removed. Un-tested flag branches accumulate bugs silently.
+
+Flags that outlive their expiration date become permanent feature drift and hide the fact that the codebase is supporting paths no one intends to ship.
 
 ## Output Format
 

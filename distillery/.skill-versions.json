@@ -1,22 +1,27 @@
 {
-  "plugin_version": "2.56.0",
-  "generated_at": "2026-04-14T12:37:51.866024+00:00",
+  "plugin_version": "2.56.1",
+  "model_baseline_prefixes": [
+    "claude-opus-4-7",
+    "claude-haiku-4-5",
+    "claude-sonnet-4-6"
+  ],
+  "generated_at": "2026-04-18T13:28:20.811636+00:00",
   "skills": {
     "agent-native-architecture": {
-      "content_hash": "f38909a48a00940ab210cbc1ce2c0012671e4998c777d8dfa68ed420072e28ec",
-      "content_changed": "2.53.0",
+      "content_hash": "5a487f69a3f566c46535576df9acf4869bf09b1a47433f693fb26baf5248a2e4",
+      "content_changed": "2.56.1",
       "pattern_hash": "f903c705a8d6d7ac00565411f2d6f0f160a78b929446337f7f41bc2b4d5ab42e",
       "pattern_changed": "2.53.0"
     },
     "brainstorming": {
-      "content_hash": "990d38e65f52340d7d48be29c218328b705582d68955bd061419a94e3806aac9",
-      "content_changed": "2.55.1",
+      "content_hash": "3d6be50f144e55ff4a863dd388bdcf4f63a9a381173c7825c1be370853b2f613",
+      "content_changed": "2.56.1",
       "pattern_hash": "d037718f8bcd5a3759270eb727f59fb67be182963e7727306e7e56343ab4ec1f",
       "pattern_changed": "2.50.0"
     },
     "code-review": {
-      "content_hash": "1d3933b47b18c30defca637c14e1a18382b7502591d15da2842aeb379c60bd5a",
-      "content_changed": "2.56.0",
+      "content_hash": "6d2c237719b8822797537908a1a9db897a42732da6dadf746174d6ac01f5d54a",
+      "content_changed": "2.56.1",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
       "pattern_changed": "2.50.0"
     },
@@ -45,8 +50,8 @@
       "pattern_changed": "2.50.0"
     },
     "frontend-design": {
-      "content_hash": "3e451c440429e54f1b5fef6d3857218724acc1260521bcc3881c258587e852a8",
-      "content_changed": "2.55.0",
+      "content_hash": "1312df2f2590ef82f3d9639e015e28732e3790322d10f74c9e5ec40775f81052",
+      "content_changed": "2.56.1",
       "pattern_hash": "f3a466e28c5e241dbb61a2e439a93633237ad5ffd554876dbbce299d6f934488",
       "pattern_changed": "2.53.0"
     },
@@ -63,14 +68,14 @@
       "pattern_changed": "2.50.0"
     },
     "md-docs": {
-      "content_hash": "f0644692d2307296fe8eb1e16746f9a9d1c00bffd9d4ecfc8013ac958fb0ab1f",
-      "content_changed": "2.55.0",
+      "content_hash": "e283b6d225ca997469c1b0e60dca2d07ee87e630dcb4ba207dabc4f034a1f430",
+      "content_changed": "2.56.1",
       "pattern_hash": "9d097cbe03f1ba966517e68e94406b298ef5b35f466881c14ce30d5fe0e8fbc4",
       "pattern_changed": "2.53.0"
     },
     "meta-prompting": {
-      "content_hash": "89e574da2ecd3099c8704f90a364cf065f27fd332e79f5931766af4b1b3d9076",
-      "content_changed": "2.52.0",
+      "content_hash": "7e1a6f8939ab87cca65fd56fb9bc0320a81b1e7a85322105202a019512fc4462",
+      "content_changed": "2.56.1",
       "pattern_hash": "d94356a1a339fd3cc4f3dfbcec818070bb2e2b708a87ff874bec3cc6e0d6259f",
       "pattern_changed": "2.50.0"
     },
@@ -81,8 +86,8 @@
       "pattern_changed": "2.53.0"
     },
     "orchestrating-swarms": {
-      "content_hash": "f90bf39a6db7ddc8874e7ad7f2066ca5ceda7264790827fd8a040434ea3aa400",
-      "content_changed": "2.55.1",
+      "content_hash": "d40e4849599b6dcd4e05e8703a0d75e349eff5ee908a80d217f88628f0769dc4",
+      "content_changed": "2.56.1",
       "pattern_hash": "5ff4d38d87cd363f2256033ea3b0371a9668b7da2e86674da929d6788d4bbfb6",
       "pattern_changed": "2.50.0"
     },
@@ -99,8 +104,8 @@
       "pattern_changed": "2.50.0"
     },
     "planning": {
-      "content_hash": "2244ef3b4286ac3a126642ed11136fdc9b8c398e9d88337d66505563bd0d7a83",
-      "content_changed": "2.55.0",
+      "content_hash": "631b700aafd0c33e24613934866a1824a7fcf541aa248b15b0029b95a9a95bc8",
+      "content_changed": "2.56.0",
       "pattern_hash": "23f9ea13ac9da79fd06313529b228beb2667f76c70901128794d1e335c590647",
       "pattern_changed": "2.53.0"
     },
@@ -117,14 +122,14 @@
       "pattern_changed": "2.50.0"
     },
     "react-frontend": {
-      "content_hash": "cfca9660d0420f9c34f5cfe4735c644542c0d7fc8e85465b3d77b205de135e29",
-      "content_changed": "2.55.1",
+      "content_hash": "e8d35de8e97bbf34bfe311afeb89a71260a07227d553a9935210b913932dc2ec",
+      "content_changed": "2.56.1",
       "pattern_hash": "4e2cb0dc61c6a496639cbc967fa3b0c1948e17d3edd8c2effdabe50efaf3d217",
       "pattern_changed": "2.50.0"
     },
     "receiving-code-review": {
-      "content_hash": "97c5b175f26ad4be552e8793aeed33fe590e2afd3776a77037a0a42160562f3a",
-      "content_changed": "2.55.0",
+      "content_hash": "74c67db261896afa30ef7c26e89ec6b59465f416eb6248273671d23084ea5e49",
+      "content_changed": "2.56.1",
       "pattern_hash": "36aa32d58037c3d2c118a19fbbad50d1d20eafc37e3aa9e96715030e3b124903",
       "pattern_changed": "2.50.0"
     },
@@ -147,8 +152,8 @@
       "pattern_changed": "2.56.0"
     },
     "simplifying-code": {
-      "content_hash": "267222ebbd827c7735faabd6f45809e643f956d9fc044556049f8455e57f85b1",
-      "content_changed": "2.55.0",
+      "content_hash": "529304e451550170e78bc3a68e0f1cbfeb38cfa48a2b76e0367aeb72a9e09a93",
+      "content_changed": "2.56.1",
       "pattern_hash": "0d4c8a0e629d3ea5a5109f7965ffee18a7de3e277895d4cec73d0c3e4b8da5f5",
       "pattern_changed": "2.50.0"
     },
@@ -165,14 +170,14 @@
       "pattern_changed": "2.50.0"
     },
     "verification-before-completion": {
-      "content_hash": "9d7e8ff74069fc5515e9a4b28fbc3660f599dd4c3084b5426348fd40553122bd",
-      "content_changed": "2.55.1",
+      "content_hash": "de8a26192f9e964f69f455beb6614f762c15c2a1b0e69b1e018ad7e866954d4e",
+      "content_changed": "2.56.1",
       "pattern_hash": "99dfeadc1d36a057149470f1c8ce2fe4d50104e0ae0f11996d63d84755d77555",
       "pattern_changed": "2.50.0"
     },
     "writing": {
-      "content_hash": "43415442841b6ccdd3d66f777650d00ef4067281309b7d644d53c8f20f5e8f47",
-      "content_changed": "2.55.0",
+      "content_hash": "4a0d57d1dd6459eb8ea94cb978c60498568d6cd6281c6c14c8db59d91bf216eb",
+      "content_changed": "2.56.1",
       "pattern_hash": "816be739f046898e86cd2c26e7a4d113dbaaf8c060973a18b337db8eb52f7af1",
       "pattern_changed": "2.53.0"
     },

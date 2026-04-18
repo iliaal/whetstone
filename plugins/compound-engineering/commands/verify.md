@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Run comprehensive pre-PR verification (build, types, lint, tests, security scan, diff review)
+description: Run pre-PR verification chain: build, types, lint, tests, security scan, diff review
 argument-hint: "[mode: quick|full|pre-commit|pre-pr]"
 ---
 

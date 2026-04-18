@@ -1,6 +1,6 @@
 ---
 name: agent-native-audit
-description: Run comprehensive agent-native architecture review with scored principles
+description: Score each of the 5 agent-native principles (parity, granularity, composability, emergent capability, improvement-over-time) against a codebase and report gaps
 argument-hint: "[optional: specific principle to audit]"
 disable-model-invocation: true
 ---

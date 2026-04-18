@@ -13,6 +13,7 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Everything inside cards (border + shadow + white bg) | Card overuse dilutes hierarchy | Use `border-t`, `divide-y`, or negative space for separation |
 | Cookie-cutter section rhythm (every section follows identical structure) | Monotonous, signals templated generation | Vary section types: hero, split, bento, full-bleed, editorial |
 | Colored left-border accent cards | Common AI component pattern | Use top borders, background tints, or typography weight for emphasis |
+| Bento grids with empty/dead cells | Missing `grid-flow-dense` lets grids render with visible gaps that read as broken | Apply `grid-auto-flow: dense` (Tailwind: `grid-flow-dense`); verify `col-span`/`row-span` values interlock mathematically; zero empty cells |
 
 ## Color Patterns
 
@@ -72,3 +73,4 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Broken Unsplash links (`source.unsplash.com` or expired URLs) | Renders as broken images, amateurish | Use `https://picsum.photos/seed/{name}/800/600` or local assets |
 | Perfectly aligned testimonial cards with star ratings | Template pattern | Varied formats, pull quotes, inline mentions |
 | Oversized H1s without proportional hierarchy below | Single-level typography signals "just make it big" | Scale the full type ramp: H1 through H4 with intentional ratio |
+| Scroll-prompt filler UI ("Scroll to explore", "Swipe down", bouncing chevrons, scroll-arrow icons) | Signature AI landing-page tell; padding to avoid writing actual below-the-fold content | If content below is worth scrolling to, its first heading is the cue. Delete the prompt. |

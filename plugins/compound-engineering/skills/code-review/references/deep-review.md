@@ -25,6 +25,18 @@ Each specialist receives:
 ```
 Review this diff as a {lens} specialist. Focus exclusively on {focus area}.
 
+DO:
+- Read the actual code line-by-line. Trace logic through the diff, not around it.
+- Compare every claim made in the PR description against what the diff actually does.
+- Quote the specific code that triggers each finding so the author can locate it.
+- Treat the PR description as a claim to verify, not a truth to accept.
+
+DON'T:
+- Take the author's summary at face value. "Refactored X" may hide behavioral changes.
+- Accept "this is covered by tests" without checking the test files in the diff.
+- Rubber-stamp sections you didn't open. If you didn't read it, you didn't review it.
+- Extrapolate from the description when the code contradicts it -- the code wins.
+
 DIFF:
 {full diff content}
 
@@ -67,16 +79,19 @@ Red-team findings merge into the main report with a `[red-team]` tag. Use defaul
 
 After all agents return, apply these rules in order. Each consolidated finding carries its original `CR-XXX` ID from the first agent that reported it so PR threads can reference specific findings unambiguously.
 
+**Preamble — fingerprint first.** Before applying any numbered rule, group findings across agents by fingerprint `path:line:issue_class`. The rules below operate on these groups: a group of size 1 is handled by rule 5 (single-agent hit), a group of size 2 by rule 6, a group of size 3+ by rule 7. Confidence boosts apply once per group, not per matching rule — use rule 7 if applicable, otherwise rule 6.
+
 1. **Same file:line + same issue class** → merge into one finding. Keep the higher-severity rating and the more actionable fix text.
 2. **Same file:line + different issue class** → keep both. Tag as "co-located" in the output so the author sees they share a line.
 3. **Conflicting severity on the same merged finding** → always take the higher severity. Do not average.
 4. **Conflicting recommendations** → present both and mark as `NEEDS DECISION`. Do not silently pick one.
 5. **One agent flags, others don't** → keep the finding if confidence ≥0.70; suppress otherwise. A single agent's low-confidence hit is usually noise.
-6. **All agents agree (3+)** → boost confidence by 0.10 (capped at 1.0). Convergent findings from independent perspectives are more trustworthy.
-7. **Apply confidence rubric** → suppress findings below threshold per the main skill's rubric.
-8. **Apply false-positive suppression** → remove entries matching the categories in the main skill.
-9. **Sort by severity** (Critical > Important > Medium > Minor), then by confidence within each level.
-10. **Cap total findings** at 20 across all agents. If more exist, note the overflow count.
+6. **Two agents agree (2+)** → fingerprint findings as `path:line:issue_class`; when two specialists hit the same fingerprint, tag the merged finding `MULTI-SPECIALIST CONFIRMED ({s1} + {s2})` and boost confidence by +0.05 (capped at 1.0). Two-agent overlap is evidence-worthy even when it's below the 3-agent threshold.
+7. **All agents agree (3+)** → boost confidence by 0.10 (capped at 1.0). Convergent findings from independent perspectives are more trustworthy. Tag as `MULTI-SPECIALIST CONFIRMED ({s1} + {s2} + {s3}...)`.
+8. **Apply confidence rubric** → suppress findings below threshold per the main skill's rubric.
+9. **Apply false-positive suppression** → remove entries matching the categories in the main skill.
+10. **Sort by severity** (Critical > Important > Medium > Minor), then by confidence within each level.
+11. **Cap total findings** at 20 across all agents. If more exist, note the overflow count.
 
 ## Output Format
 
@@ -85,11 +100,13 @@ Same as the standard review output format, with an additional header:
 ```
 ## Review: [brief title] (deep)
 Agents: correctness, security, testing, maintainability, performance, reliability [+ conditional: api-contract, data-migration, cloud-infra] [+ red-team if triggered]
-Cross-lens agreements: N findings flagged by 2+ agents
+Cross-lens agreements: N findings tagged MULTI-SPECIALIST CONFIRMED (K at 3+, M at 2)
 
 ### Critical
 ...
 ```
+
+Include the count of multi-specialist-confirmed findings in the header so reviewers can scan for convergent signal without reading every finding.
 
 ## When Deep Review Adds Less Value
 

@@ -12,7 +12,7 @@ import time
 import urllib.request
 import urllib.error
 import urllib.parse
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 
@@ -1032,7 +1032,44 @@ def _openrouter_request(api_key, model_id, provider_slug, messages, max_tokens, 
         return {"response": "", "error": str(e), "status": "error"}
 
 
-DEFAULT_CLI_MODEL = "sonnet"
+DEFAULT_CLI_MODEL = "opus"
+
+# Abstract/aspirational phrases that Opus 4.7 under-fires on. Flag when they
+# appear in a component description (not body). These are puff words that
+# don't convey operational meaning -- 4.7 matches descriptions literally,
+# so a description of "Enhanced reasoning" won't trigger on user queries
+# that actually need it. Keep conservative: only phrases where the anti-pattern
+# is strong; legitimate qualifiers like "modern PHP 8.4" or "advanced React"
+# are excluded.
+_VAGUE_DESCRIPTION_PHRASES = (
+    "first-class", "first class",
+    "enhanced",
+    "comprehensive",
+    "best practices",
+    "clean code",
+    "non-trivial",
+    "seamless",
+    "streamlined",
+    "cutting-edge", "cutting edge",
+    "state-of-the-art", "state of the art",
+    "sophisticated",
+    "intelligent",
+    "robust",
+    "powerful",
+)
+
+
+def _find_vague_description_phrases(desc):
+    """Return any vague/abstract phrases from the description lead (first ~30 words).
+
+    Only checks the lead because late-section phrases may be legitimate
+    (e.g., "remove robust error handling" as guidance content in a body).
+    Descriptions are short so 30 words covers most of them regardless.
+    """
+    if not desc:
+        return []
+    lead = " ".join(desc.split()[:30]).lower()
+    return [p for p in _VAGUE_DESCRIPTION_PHRASES if p in lead]
 
 def _claude_cli_request(prompt, model=None):
     """Call claude -p and return the response. Returns dict with response/tokens/status."""
@@ -1246,6 +1283,11 @@ def validate_plugin(component_filter=None):
                 add_finding(skill_name, "description", f"Description exceeds 80 tokens (~{desc_tokens})", "HIGH")
             if "use when" not in desc.lower():
                 add_finding(skill_name, "description", "Description missing 'Use when' trigger phrase", "MEDIUM")
+            vague = _find_vague_description_phrases(desc)
+            if vague:
+                add_finding(skill_name, "VAGUE_DESCRIPTION",
+                            f"Abstract phrases in description lead: {', '.join(vague)} -- replace with concrete trigger vocabulary",
+                            "MEDIUM")
 
         # --- Body size ---
         if body_tokens > 4000:
@@ -1339,6 +1381,13 @@ def validate_plugin(component_filter=None):
         if desc and "use " not in desc.lower():
             add_finding(agent_name, "MISSING_TRIGGER", "Agent description missing trigger phrase", "MEDIUM")
 
+        if desc:
+            vague = _find_vague_description_phrases(desc)
+            if vague:
+                add_finding(agent_name, "VAGUE_DESCRIPTION",
+                            f"Abstract phrases in description lead: {', '.join(vague)} -- replace with concrete trigger vocabulary",
+                            "MEDIUM")
+
         if body_tokens > 3000:
             add_finding(agent_name, "body_size", f"Agent body exceeds 3K tokens (~{body_tokens})", "MEDIUM")
 
@@ -1367,6 +1416,12 @@ def validate_plugin(component_filter=None):
 
         if not desc:
             add_finding(cmd_name, "EMPTY_DESCRIPTION", "Command missing description", "HIGH")
+        else:
+            vague = _find_vague_description_phrases(desc)
+            if vague:
+                add_finding(cmd_name, "VAGUE_DESCRIPTION",
+                            f"Abstract phrases in description lead: {', '.join(vague)} -- replace with concrete trigger vocabulary",
+                            "MEDIUM")
 
         if body_tokens > 4000:
             add_finding(cmd_name, "body_size", f"Command body exceeds 4K tokens (~{body_tokens})", "MEDIUM")
@@ -1572,7 +1627,7 @@ def test_semantic(max_tests=None, fixtures_path=None):
             env["TEST_INJECTION_LOG"] = log_path
 
             proc = subprocess.run(
-                ["claude", "-p", prompt, "--model", "sonnet", "--max-turns", "2", "--output-format", "json"],
+                ["claude", "-p", prompt, "--model", DEFAULT_CLI_MODEL, "--max-turns", "2", "--output-format", "json"],
                 capture_output=True, text=True, timeout=120, env=env,
             )
 
@@ -1662,26 +1717,40 @@ def _parse_semver(version_str):
 
 
 def _is_example_stale(example, skill_name, manifest):
-    """Check if an eval example predates the current skill content or pattern.
+    """Check if an eval example predates the current skill content, pattern, or runtime model.
 
-    Returns {"content_stale": bool, "pattern_stale": bool}.
+    Returns {"content_stale": bool, "pattern_stale": bool, "model_stale": bool}.
     Null skill_version (local dev) is treated as stale.
+    Missing model_id passes through (unknown, can't determine) to stay backward-compatible
+    with eval data harvested before model tracking landed.
     """
     if manifest is None:
-        return {"content_stale": False, "pattern_stale": False}
+        return {"content_stale": False, "pattern_stale": False, "model_stale": False}
 
     skill_info = manifest.get("skills", {}).get(skill_name, {})
     if not skill_info:
-        return {"content_stale": False, "pattern_stale": False}
+        return {"content_stale": False, "pattern_stale": False, "model_stale": False}
 
     ex_version = _parse_semver(example.get("skill_version"))
 
     content_changed = _parse_semver(skill_info.get("content_changed"))
     pattern_changed = _parse_semver(skill_info.get("pattern_changed"))
 
+    # Support both old single-prefix and new list-of-prefixes manifest formats
+    baselines = manifest.get("model_baseline_prefixes")
+    if baselines is None:
+        legacy = manifest.get("model_baseline_prefix")
+        baselines = [legacy] if legacy else []
+    ex_model = example.get("model_id")
+    if not baselines or ex_model is None:
+        model_stale = False
+    else:
+        model_stale = not any(ex_model.startswith(p) for p in baselines)
+
     return {
         "content_stale": ex_version < content_changed,
         "pattern_stale": ex_version < pattern_changed,
+        "model_stale": model_stale,
     }
 
 
@@ -1775,6 +1844,7 @@ def _parse_session(jsonl_path):
     session_id = None
     git_branch = None
     claude_version = None
+    models = []
     is_subagent = "subagents" in str(jsonl_path)
 
     with open(jsonl_path) as f:
@@ -1801,6 +1871,12 @@ def _parse_session(jsonl_path):
                 session_id = obj.get("sessionId")
                 git_branch = obj.get("gitBranch")
                 claude_version = obj.get("version")
+
+            # Track model per assistant turn for staleness filtering
+            if role == "assistant":
+                turn_model = msg.get("model")
+                if turn_model:
+                    models.append(turn_model)
 
             # Extract text content
             content = msg.get("content", "")
@@ -1877,6 +1953,8 @@ def _parse_session(jsonl_path):
     user_messages = [t["content_text"] for t in turns if t["role"] == "user"]
     signal = _classify_signal(user_messages)
 
+    model_id = Counter(models).most_common(1)[0][0] if models else None
+
     return {
         "session_id": session_id or jsonl_path.stem,
         "project": project,
@@ -1887,6 +1965,7 @@ def _parse_session(jsonl_path):
         "signal": signal,
         "git_branch": git_branch,
         "claude_version": claude_version,
+        "model_id": model_id,
         "source_file": str(jsonl_path),
     }
 
@@ -1937,6 +2016,7 @@ def _build_eval_example(parsed_session):
         "project": parsed_session["project"],
         "session_id": parsed_session["session_id"],
         "claude_version": parsed_session["claude_version"],
+        "model_id": parsed_session.get("model_id"),
     }
     return example
 
@@ -2021,7 +2101,8 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
                 staleness = _is_example_stale(example, skill_name, manifest)
                 example["content_stale"] = staleness["content_stale"]
                 example["pattern_stale"] = staleness["pattern_stale"]
-                if not include_stale and staleness["content_stale"]:
+                example["model_stale"] = staleness["model_stale"]
+                if not include_stale and (staleness["content_stale"] or staleness["model_stale"]):
                     stale_count += 1
                     continue
                 skill_examples[skill_name].append(example)
@@ -2655,7 +2736,7 @@ def analyze_outcomes(min_examples=5, include_stale=False):
                 ex = json.loads(line)
                 if not include_stale:
                     staleness = _is_example_stale(ex, skill_name, manifest)
-                    if staleness["content_stale"]:
+                    if staleness["content_stale"] or staleness["model_stale"]:
                         stale_count += 1
                         continue
                 signal = ex.get("signal", "ambiguous")
@@ -2763,7 +2844,7 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
                 continue
             if not include_stale:
                 staleness = _is_example_stale(ex, skill_name, manifest)
-                if staleness["content_stale"]:
+                if staleness["content_stale"] or staleness["model_stale"]:
                     stale_count += 1
                     continue
             negatives.append(ex)
@@ -2817,7 +2898,7 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
         f'"summary": "one paragraph overall diagnosis"}}'
     )
 
-    result = _claude_cli_request(prompt, model="sonnet")
+    result = _claude_cli_request(prompt, model=DEFAULT_CLI_MODEL)
 
     if result["status"] != "ok":
         return {"skill": skill_name, "error": result.get("error", "unknown")}
@@ -2873,7 +2954,7 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
         dataset: "sessions" for harvested data, or path to a custom JSONL file
         max_examples: max examples to score (default 20, controls cost)
         model: override eval model (default depends on backend)
-        backend: "openrouter" (DeepSeek V3.2) or "claude-cli" (Sonnet 4.6 via claude -p)
+        backend: "openrouter" (DeepSeek V3.2) or "claude-cli" (Opus 4.7 via claude -p)
 
     Returns dict with per-example scores and aggregated metrics.
     """
@@ -3268,7 +3349,7 @@ def main():
     p_eval.add_argument("--max-examples", type=int, default=20, help="Max examples to score (default: 20)")
     p_eval.add_argument("--model", default=None, help=f"Override eval model (default depends on backend)")
     p_eval.add_argument("--backend", default="claude-cli", choices=["openrouter", "claude-cli"],
-                         help="LLM backend: 'claude-cli' (Sonnet 4.6 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
+                         help="LLM backend: 'claude-cli' (Opus 4.7 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
 
     # build-golden
     p_golden = sub.add_parser("build-golden", help="Build golden eval dataset from harvested sessions")

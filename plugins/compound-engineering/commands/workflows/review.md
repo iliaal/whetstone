@@ -82,7 +82,7 @@ If no settings file exists, run `/setup` to create one. Then read the newly crea
 
 #### Parallel Agents to review the PR:
 
-Run all configured review agents in parallel using Task tool. For each agent in the `review_agents` list:
+Dispatch all configured review agents in a SINGLE assistant message containing one Task tool call per agent. Do NOT issue them across multiple messages -- that serializes what should run concurrently. For each agent in the `review_agents` list:
 
 ```
 Task {agent-name}(PR content + review context from settings body)
@@ -90,6 +90,27 @@ Task {agent-name}(PR content + review context from settings body)
 
 Additionally, always run these regardless of settings:
 - Task learnings-researcher(PR content) - Search docs/solutions/ for past issues related to this PR's modules and patterns
+
+#### Per-agent artifact persistence
+
+For large reviews -- 8+ agents OR diff with more than 500 changed lines (added + deleted, per `git diff --shortstat`) -- persist each agent's output to a numbered file under `.review/` in the working directory:
+
+```
+.review/
+├── 01-security-sentinel.md
+├── 02-performance-oracle.md
+├── 03-architecture-strategist.md
+├── 04-correctness.md
+└── ...
+```
+
+At the start of synthesis (section 3 below), read each `.review/NN-*.md` file fresh rather than relying on prior message context. This survives compaction between dispatch and synthesis on large reviews -- main context can lose specialist outputs when the window fills, and rebuilding from file is deterministic where re-running specialists is not.
+
+**Missing-file recovery**: before synthesis, list `.review/NN-*.md`. If any expected file is missing or empty (e.g., a specialist agent crashed or timed out mid-run), re-dispatch that specific agent before proceeding — silently missing a specialist loses coverage in the synthesis and nobody notices.
+
+**Lifecycle**: `.review/` is transient scratch state, NOT a Protected Artifact like `docs/plans/` or `docs/solutions/`. Add `.review/` to `.gitignore` (or project root `.gitignore`). Delete `.review/` when the review completes (success or abandoned).
+
+Skip this step on small reviews (≤ 7 agents AND ≤ 500 changed lines) -- the filesystem overhead isn't justified when prior outputs fit comfortably in context.
 
 **Red-team adversarial pass (runs last, after all parallel specialists return):**
 
@@ -142,7 +163,7 @@ Consolidate all agent reports into a categorized list of findings. Remove duplic
 
 Create todo files for ALL findings immediately using the `file-todos` skill. Do not present findings one-by-one for user approval -- create all todos, then summarize.
 
-For large PRs (15+ findings), launch parallel sub-agents grouped by severity (one per P1/P2/P3 batch). Always add `code-review` tag plus relevant domain tags (`security`, `performance`, `architecture`, etc.).
+For large PRs (15+ findings), launch parallel sub-agents grouped by severity (one per P1/P2/P3 batch) -- all sub-agent Task calls issued in a single message, not one message per batch. Always add `code-review` tag plus relevant domain tags (`security`, `performance`, `architecture`, etc.).
 
 #### Step 3: Summary Report
 

@@ -20,6 +20,26 @@ Before running verification, check the working tree state: `git status --porcela
 
 When verifying work delegated to a subagent, do not trust the implementer's own report. Read the actual code or test output independently. Spec compliance and quality are separate concerns -- verify both.
 
+## Scope Confirmation (Pre-Edit Gate)
+
+When a request uses ambiguous spatial scope -- "migrate my project", "refactor the codebase", "update everywhere", "fix this across the app", "my code/repo/project" -- confirm the concrete scope before any Write or Edit. Imperative phrasing is not the same as defined scope.
+
+Run a breakdown command to surface the real blast radius, then present it for confirmation:
+
+```bash
+# How many files actually match?
+rg -l 'pattern' | cut -d/ -f1 | sort | uniq -c | sort -rn
+
+# Which directories are affected?
+rg -l 'pattern' | xargs dirname | sort -u
+```
+
+Present the result and ask: "This touches N files across M subsystems. Scope options: (a) everything, (b) just <subset>, (c) let me pick specific files." Do not start editing until the user commits to one.
+
+This is cheap insurance: the alternative is shipping a sprawling diff that the user then has to unwind. "Migrate my project" is the #1 request shape that produces accidental cross-cutting damage.
+
+**When this applies**: any request whose scope could plausibly span more than one directory AND where the user has not enumerated files. For a request with explicit file paths, skip this gate.
+
 ## Gate Function
 
 Before any success claim, run through these five steps:

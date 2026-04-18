@@ -79,6 +79,18 @@ When analyzing code, you systematically evaluate:
 - Verify efficient DOM manipulation
 - Monitor JavaScript execution time
 
+### 7. Core Web Vitals Thresholds
+
+Classify frontend-performance findings against Google's canonical bands rather than qualitative "slow" / "acceptable" ratings:
+
+| Metric | Good | Needs improvement | Poor |
+|--------|------|-------------------|------|
+| LCP (Largest Contentful Paint) | ≤ 2.5s | ≤ 4.0s | > 4.0s |
+| INP (Interaction to Next Paint) | ≤ 200ms | ≤ 500ms | > 500ms |
+| CLS (Cumulative Layout Shift) | ≤ 0.1 | ≤ 0.25 | > 0.25 |
+
+Flag Poor-band violations as Critical, Needs-improvement as Important. Tie each CWV finding to the likely cause (render-blocking resource, unoptimized hero image, late-loading font, layout-shifting ads, oversized main-thread task) rather than just the metric value.
+
 ## Performance Benchmarks
 
 Default thresholds (calibrate per project):

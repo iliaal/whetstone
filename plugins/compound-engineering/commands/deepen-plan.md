@@ -1,6 +1,6 @@
 ---
 name: deepen-plan
-description: Enhance a plan with parallel research agents for each section to add depth, best practices, and implementation details
+description: Expand each section of a plan via parallel research agents that add framework specifics, library conventions, and concrete implementation steps
 argument-hint: "[path to plan file]"
 ---
 

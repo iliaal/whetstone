@@ -139,19 +139,20 @@ Language-Specific Checks:
 
 Load the relevant profile from [language-profiles.md](./references/language-profiles.md) based on file extensions in the diff. Profiles cover: TypeScript/React, Python, PHP, Shell/CI, Configuration, Data Formats, Security, and LLM Trust Boundaries.
 
-## Fix-First Classification
+## Action Routing
 
-For every finding, classify whether it's AUTO-FIX (mechanical, apply without discussion) or ASK (requires human judgment):
+For every finding, classify the action routing — how the fix should be applied. The binary AUTO-FIX/ASK is a special case of a 4-tier split that prevents "mechanical fix across a risky boundary" from sliding into AUTO-FIX:
 
-| AUTO-FIX (agent applies directly) | ASK (flag for author decision) |
-|---|---|
-| Dead code, unused variables/imports | Security (auth, XSS, injection) |
-| N+1 queries (missing eager loading) | Race conditions |
-| Stale comments contradicting code | Design decisions, API shape changes |
-| Magic numbers without named constants | Large fixes (>20 lines changed) |
-| Missing null/error checks on clear paths | Anything changing user-visible behavior |
+| Tier | When it applies | Action |
+|------|-----------------|--------|
+| `safe_auto` | Deterministic, local, behavior-preserving fix (dead code, unused import, stale comment, magic number, formatting, null-check on a clearly-nullable local) | Apply directly. No prompt. |
+| `gated_auto` | A concrete fix exists, but the change crosses a behavior, contract, permission, or API boundary (auth header cleanup, retry at a new layer, error-message rewording surfaced to users) | Present the fix, wait for explicit human sign-off before applying. |
+| `manual` | Actionable hand-off work: the author needs to make a call, rewrite logic, or redesign something (missing validation in an ambiguous code path, performance refactor that needs benchmarking) | Flag with the fix intent; do not auto-apply. |
+| `advisory` | Report-only learning or risk signal (pattern concern, maintenance debt, future-proofing observation) | Record in the "Residual Risks" section. No expected action. |
 
-Rule: if a senior engineer would apply the fix without discussion, it's AUTO-FIX. When in doubt, ASK.
+**Conflict-resolution rule**: when multiple agents disagree on tier for the same finding, always take the more conservative route (`safe_auto` → `gated_auto` → `manual` → `advisory` is the escalation direction). Never promote a `gated_auto` to `safe_auto` because one agent classified it loosely -- that's how security fixes ship unreviewed.
+
+Rule: if a senior engineer would apply the fix without discussion AND the change doesn't cross a behavior/contract/permission boundary, it's `safe_auto`. When in doubt, escalate to `gated_auto`.
 
 ## Comment Labels
 
@@ -221,7 +222,7 @@ For multi-agent consolidation (deep review, parallel specialists), apply the mer
 
 ## Integration
 
-- `receiving-code-review` -- the inbound side (processing review feedback received from others)
+- `receiving-code-review` -- the inbound side (processing review feedback received from others). Action-routing terminology maps across: `safe_auto` ≈ AUTO-FIX, `gated_auto` ≈ ESCALATE-for-approval, `manual` ≈ ESCALATE, `advisory` ≈ FYI (no-op).
 - `kieran-reviewer` agent -- persona-driven Python/TypeScript deep quality review (type safety, naming, modern patterns)
 - `workflows:review` -- full ceremony review (worktrees, ultra-thinking, multi-agent). Deep review is lighter: no worktrees, no plan verification, just parallel specialist agents on the same diff.
 - `/resolve-pr-parallel` command -- batch-resolve PR comments with parallel agents

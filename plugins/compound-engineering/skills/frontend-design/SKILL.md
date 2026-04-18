@@ -57,13 +57,14 @@ Focus on:
 - **Typography** — choose fonts with character:
   - **Font selection**: avoid Inter, Roboto, Arial, system fonts. Use `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Pair a display font with a refined body font.
   - **Headlines**: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust. AI defaults are undersized and timid — lack presence.
+  - **H1 iron rule (2-3 lines max)**: every hero H1 must render in 2-3 lines, never 4-6. The fix is always wider container + smaller font, not the reverse. Minimum container: `max-w-5xl` (wider for longer headlines); adjust font with `clamp(3rem, 5vw, 5.5rem)` so it scales down instead of wrapping. A 6-line heading wall is a catastrophic failure, not a design choice.
   - **Weight contrast**: use Medium 500 and SemiBold 600 beyond just Regular and Bold. Tighten letter-spacing, reduce line-height.
   - **Body text**: limit to ~65 characters wide, increase line-height.
   - **Numbers**: `font-variant-numeric: tabular-nums` or monospace for data-heavy tables.
   - **Orphaned words**: fix with `text-wrap: balance`.
 - **Color & Theme**: Commit to a cohesive palette. Max one accent color, saturation below 80%. Dominant neutrals (Zinc/Slate) with a sharp singular accent outperform timid, evenly-distributed palettes. Use CSS variables for consistency. Tint all grays consistently (warm OR cool, never both). Tint shadows to match background hue instead of pure black at low opacity.
 - **Motion**: Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions. Use spring physics over linear easing. Animate exclusively via `transform` and `opacity` (GPU-composited). Use `IntersectionObserver` for scroll reveals. See [motion-patterns.md](./references/motion-patterns.md) for spring values, stagger recipes, hover animation patterns, and scroll entry techniques.
-- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density. Use CSS Grid over complex flexbox percentage math (`w-[calc(33%-1rem)]`). Contain layouts with `max-w-7xl mx-auto` or similar. Use `min-h-[100dvh]` instead of `h-screen` (prevents iOS Safari viewport jumping). Bottom padding often needs to be slightly larger than top for optical balance. **Anti-card overuse:** at high density (dashboards, data-heavy UIs), don't wrap everything in card containers (border + shadow + white). Use `border-t`, `divide-y`, or negative space to separate content instead. Cards should exist only when elevation communicates hierarchy. **Bento grid archetypes:** when building dashboard grids, use named patterns: Intelligent List (filterable, sortable data), Command Input (search/action bar), Live Status (real-time metrics), Wide Data Stream (timeline/activity feed), Contextual UI (details panel that responds to selection).
+- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density. Use CSS Grid over complex flexbox percentage math (`w-[calc(33%-1rem)]`). Contain layouts with `max-w-7xl mx-auto` or similar. Use `min-h-[100dvh]` instead of `h-screen` (prevents iOS Safari viewport jumping). Bottom padding often needs to be slightly larger than top for optical balance. **Anti-card overuse:** at high density (dashboards, data-heavy UIs), don't wrap everything in card containers (border + shadow + white). Use `border-t`, `divide-y`, or negative space to separate content instead. Cards should exist only when elevation communicates hierarchy. **Bento grid archetypes:** when building dashboard grids, use named patterns: Intelligent List (filterable, sortable data), Command Input (search/action bar), Live Status (real-time metrics), Wide Data Stream (timeline/activity feed), Contextual UI (details panel that responds to selection). Apply `grid-flow-dense` to prevent empty/dead cells — see [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the rule.
 - **Backgrounds & visual details** — create atmosphere and depth, not solid colors:
   - **Textures**: apply gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, or grain overlays.
   - **Gradients**: prefer radial, noise-overlay, or mesh gradients over standard linear 45-degree fades.
@@ -83,6 +84,17 @@ LLMs default to "static successful state" output. Every interactive component MU
 - **Tactile press** — on `:active`, apply `-translate-y-[1px]` or `scale-[0.98]` so clicks feel like a physical push, not a color flicker.
 
 Missing states are the most common reported AI UI defect. Generating only the success state is incomplete work, not a stretch goal.
+
+### Mobile Collapse Mandate
+
+Any layout using asymmetry, rotations, negative-margin overlaps, or `md:` / `lg:` grid variations above 768px MUST declare an explicit mobile fallback. Mobile is not "just narrower" -- it's a different layout mode.
+
+- **Collapse to single-column below `md:`**: reset widths to `w-full`, reset `grid-cols-*` to 1, apply `px-4 py-8` for baseline spacing.
+- **Remove rotations and negative overlaps on mobile**: `md:-translate-y-8` and `md:rotate-2` should not carry over; they collide with touch targets at small widths.
+- **Minimum 44×44px touch targets**: hit areas below that fail WCAG 2.5.5 and cause fat-finger misses. Apply `min-h-[44px] min-w-[44px]` on every button, link, and interactive icon.
+- **No horizontal overflow**: wrap the outermost layout container with `overflow-x-hidden w-full max-w-full` to prevent off-canvas animations or oversized grids from creating a horizontal scrollbar.
+
+Missing mobile collapse is the second-most-common reported AI UI defect after missing interactive states. Test the narrowest breakpoint before considering an asymmetric layout done.
 
 ### Performance Guardrails
 

@@ -545,6 +545,28 @@ For local HTTP servers, bind to `127.0.0.1` (not `0.0.0.0`) and validate the `Or
 When multiple MCP servers coexist, prefix tool names with the service: `slack_send_message`, `github_create_issue`, `sentry_list_issues`. Without prefixes, tool name collisions across servers cause ambiguous routing.
 </principle>
 
+<principle name="evaluation-methodology">
+## Evaluation: How to Prove an MCP Server Works
+
+Do not ship an MCP server without a quality gate. Build a 10-question evaluation set before the server is merged:
+
+- **10 human-readable Q/A pairs** -- each question is a realistic user ask (`"How many commits did Alice land on the payments module in Q3 2025?"`), each answer is a single string-comparable value (`"27"`, `"2024-08-14"`, `"kieran@example.com"`).
+- **Multi-hop**: each question requires calling 2-3 tools in sequence (list → filter → aggregate). Single-tool questions don't stress the capability graph.
+- **Read-only**: questions never mutate state. Every eval run must be reproducible.
+- **Closed / historical data**: answers derive from data that doesn't change over time (a closed quarter, an archived project, a committed git range). Live data makes answers drift and the eval becomes noise.
+- **Dozens of invocations per run**: the full eval should fire 20-40 tool calls. Servers that look fine on a single call often break on the 15th (rate limits, pagination edge cases, state pollution).
+
+Run the eval in CI. Scoring is binary per question: exact string match or fail. Pass threshold: 9/10. Investigate any drop from a prior run -- eval regressions usually indicate a tool schema change broke client inference.
+
+**What the eval catches that unit tests don't:**
+- Vague tool descriptions that cause the agent to call the wrong tool
+- Missing `outputSchema` fields that force the agent to parse error-prone text
+- Pagination that works for page 1 but breaks on page 3
+- Error messages that don't surface the recovery path, so the agent gives up
+
+The eval is the single best proxy for "does a real agent successfully use this server?". Skipping it ships servers that pass unit tests and fail in practice.
+</principle>
+
 <checklist>
 ## MCP Tool Design Checklist
 
@@ -560,6 +582,7 @@ When multiple MCP servers coexist, prefix tool names with the service: `slack_se
 - [ ] Error messages include recovery suggestions, not just failure descriptions
 - [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`
 - [ ] Multi-server tool names use service prefix (`service_action_resource`)
+- [ ] 10 Q/A eval pairs defined before merge (read-only, multi-hop, closed-data); eval passes ≥ 9/10 in CI on every PR; regressions investigated before shipping. See the Evaluation principle above.
 
 **Dynamic Capability Discovery (for agent-native apps):**
 - [ ] For external APIs where agent should have full access, use dynamic discovery

@@ -36,10 +36,14 @@ Load the relevant profile(s) based on file extensions present in the diff.
 
 ## Configuration (.env, .yml, .yaml, .json, .toml)
 
-- Secrets in plaintext (API keys, passwords, tokens)
-- Missing timeouts, retries, or pool limits on service connections
-- Overly permissive CORS or security headers
-- Default/development values left in production configs
+Use numbered IDs (CFG-001 ... CFG-006) so config-specific findings can be referenced unambiguously when a review turns up several related config issues:
+
+- **CFG-001 Plaintext secrets**: API keys, passwords, tokens, DB URIs committed in config files. Use secret managers or `.env` excluded from VCS.
+- **CFG-002 Magnitude-change without baseline**: a config value shifts by >2x (rate limits, batch sizes, pool caps, retry counts) without a PR-body justification or pre-change baseline measurement. High-magnitude shifts need explicit reasoning.
+- **CFG-003 Timeout / retry hierarchy inversion**: inner call has a longer timeout than outer, or retries compound across layers (client 3× on top of SDK 3× = 9 attempts). Either cascades into thundering-herd failures.
+- **CFG-004 Pool / limit mismatch**: connection pool, worker count, or queue depth does not match the downstream capacity (DB max_connections, upstream rate limit, available memory). Starves under load or overwhelms the downstream.
+- **CFG-005 Env drift**: development values (localhost, short timeouts, verbose logging, permissive CORS) copied to production config without proportional scaling.
+- **CFG-006 Rollback / observability gap**: risky config change lacks a feature flag, canary rollout, or reversible plan; or lacks the metric/alert needed to detect a regression post-deploy.
 
 ## Data Formats (.csv, .json ingestion, parsers)
 

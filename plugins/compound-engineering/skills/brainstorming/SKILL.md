@@ -1,10 +1,10 @@
 ---
 name: brainstorming
 description: >-
-  Pre-implementation brainstorming process: deep interview protocol, approach
-  exploration, and design doc generation. Provides process knowledge for
-  `/workflows:brainstorm`. Use when brainstorming inline without the full
-  command workflow, or when clarifying ambiguous requirements.
+  Pre-implementation exploration: deep interview, approach comparison, design
+  doc. Use when exploring a vague feature idea, clarifying ambiguous
+  requirements, or comparing approaches before coding. For the full workflow,
+  use `/workflows:brainstorm`.
 ---
 
 # Brainstorming

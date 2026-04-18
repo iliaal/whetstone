@@ -32,7 +32,7 @@ Font swap (highest ROI, lowest risk) -> Color cleanup -> Hover/active states -> 
 7. Completely flat design with no depth hierarchy?
 8. Linear 45-degree gradients (prefer radial, mesh, or noise)?
 
-## Layout (15 checks)
+## Layout (16 checks)
 
 1. Everything centered with no asymmetry or visual tension?
 2. Three equal-width cards in a row (the AI default)?
@@ -49,6 +49,7 @@ Font swap (highest ROI, lowest risk) -> Color cleanup -> Hover/active states -> 
 13. Every element wrapped in a card container (border + shadow + padding)?
 14. Grid items all same size (no spanning or featured items)?
 15. Mobile layout is just desktop squeezed (no responsive redesign)?
+16. Cross-card element baselines misaligned in pricing, comparison, or feature grids (titles, prices, CTAs, and feature lists not sharing Y positions across columns, even when outer card heights match)?
 
 ## Interactivity and States (11 checks)
 
