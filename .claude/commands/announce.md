@@ -94,16 +94,16 @@ Do not post anything. Present for user approval only.
 After user approves the thread, draft it into X for manual review and posting. Claude never clicks Post -- the user does that in the browser.
 
 1. Write the approved tweets to `~/ai/compound-engineering-plugin/.announce/thread-vX.Y.Z.json` (JSON array of strings). `.announce/` is gitignored and persists across reboots, unlike `/tmp` which wipes on system restart.
-2. Launch Edge with the dedicated compound-engineering profile + CDP debug port, if not already running:
+2. Ensure the compound-engineering Edge profile is running (no-op if already up):
    ```bash
    bash scripts/launch-edge.sh
    ```
-   Profile lives at `C:\Users\ilia\edge-compound-engineering` on the Windows side (local disk, not the WSL 9P bridge) on CDP port 9225. First run: log in to X in the opened window; subsequent runs reuse the session.
+   Thin wrapper for `edge-cdp ensure compound-engineering`. Profile lives at `C:\Users\ilia\edge-compound-engineering` on CDP port 9225. First run: log in to X in the opened window; subsequent runs reuse the session.
 3. Compose the thread (types all tweets, does NOT click Post):
    ```bash
    python3 scripts/post-thread.py ~/ai/compound-engineering-plugin/.announce/thread-vX.Y.Z.json
    ```
-   The script detects login state. If not logged in, it opens the login page and exits -- log in, then re-run.
+   The script auto-launches the profile if needed and detects login state. If not logged in, it opens the login page and exits -- log in, then re-run.
 4. Tell the user the draft is ready and to review + click Post in the Edge window.
 
-**Important:** Close all Edge windows before the first launch. Edge ignores `--remote-debugging-port` if an instance is already running.
+Different profiles on different CDP ports run in parallel. The pinescript profile on 9229 can stay open while compound-engineering runs on 9225.

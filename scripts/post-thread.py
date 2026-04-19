@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-"""Compose a thread on X (Twitter) via Playwright CDP connection to Edge.
+"""Compose a thread on X (Twitter) via the compound-engineering Edge profile.
 
-This script drafts the thread only. The user clicks Post manually in the browser.
+Drafts the thread only -- the user clicks Post manually in the browser.
 
 Prerequisites:
-    1. Launch Edge with debug port (close all Edge windows first):
-         scripts/launch-edge.sh
-    2. If first run, log in to X in the Edge window.
-    3. Run this script with a JSON file of tweets.
+    1. Auto-launches the compound-engineering Edge profile if not already running
+       (via edge-cdp ensure compound-engineering). First run: log in to X manually.
+    2. Provide a JSON file containing an array of tweet strings.
 
 Usage:
     python3 scripts/post-thread.py tweets.json
 
-Input: JSON array of strings (one per tweet).
-
 Environment:
-    CDP_URL  Browser debug endpoint (default: http://localhost:9225)
+    EDGE_PROFILE  Override profile name (default: compound-engineering)
 """
 
 import json
@@ -23,8 +20,10 @@ import os
 import sys
 import time
 
-from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
+from edge_cdp import connect
+from playwright.sync_api import TimeoutError as PwTimeout
 
+PROFILE = os.environ.get("EDGE_PROFILE", "compound-engineering")
 COMPOSE_URL = "https://x.com/compose/post"
 MAX_TWEET_LEN = 25000  # X Premium / Pro limit; free accounts get 280.
 
@@ -45,14 +44,6 @@ def load_tweets(source: str) -> list[str]:
     return data
 
 
-def connect(cdp_url: str):
-    pw = sync_playwright().start()
-    browser = pw.chromium.connect_over_cdp(cdp_url)
-    context = browser.contexts[0] if browser.contexts else browser.new_context()
-    page = context.new_page()
-    return pw, browser, context, page
-
-
 def check_login(page) -> bool:
     page.goto("https://x.com/home", wait_until="domcontentloaded")
     time.sleep(3)
@@ -71,8 +62,8 @@ def check_login(page) -> bool:
             return False
 
 
-def compose_thread(tweets: list[str], cdp_url: str):
-    pw, browser, context, page = connect(cdp_url)
+def compose_thread(tweets: list[str], profile: str):
+    pw, browser, context, page = connect(profile)
 
     if not check_login(page):
         print("Not logged in. Opening login page.")
@@ -112,8 +103,6 @@ def compose_thread(tweets: list[str], cdp_url: str):
 
 
 def main():
-    cdp_url = os.environ.get("CDP_URL", "http://localhost:9225")
-
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
     if not args:
@@ -121,11 +110,12 @@ def main():
         sys.exit(1)
 
     tweets = load_tweets(args[0])
+    print(f"Profile: {PROFILE}")
     print(f"Thread: {len(tweets)} tweet(s)")
     for i, t in enumerate(tweets):
         print(f"  {i + 1}. ({len(t)} chars) {t[:80]}{'...' if len(t) > 80 else ''}")
 
-    compose_thread(tweets, cdp_url)
+    compose_thread(tweets, PROFILE)
 
 
 if __name__ == "__main__":
