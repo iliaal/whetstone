@@ -12,3 +12,6 @@ __pycache__/
 .pytest_cache/
 skills-lock.json
 .env
+
+# Local audit logs (operational history, not shared)
+docs/audit/
