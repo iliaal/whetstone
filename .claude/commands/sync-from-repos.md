@@ -69,6 +69,8 @@ Build two inventories in parallel:
 
 Every repo must be analyzed. Do not skip repos based on surface-level impressions. Repos that look simple may contain high-quality patterns in non-obvious locations.
 
+**Loose notes at `$REPOS_DIR/` root** — also scan `*.md` files sitting directly in `$REPOS_DIR/` (not inside a repo subdirectory). These are reference docs Ilia dropped in for cross-repo harvesting. Read each in full, extract actionable patterns, and feed them into Phase 3 the same way as repo content. Source tag: `loose:<filename>`. Skip if the file is obviously not a reference doc (e.g., a stray export, a tarball listing).
+
 If `$ARGUMENTS` specifies a skill or repo, narrow scope to that.
 
 ## Phase 2b: Skills.sh marketplace scan
