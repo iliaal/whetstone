@@ -28,12 +28,16 @@ if [[ ! -d "$TARGET_DIR" ]]; then
     exit 1
 fi
 
-# Mirror: source → target
+# Mirror: source → target. Plugin dirs are "ia-<name>"; strip the ia- prefix
+# before writing into ai-skills so existing installs keep working with the
+# original skill names (debugging/, writing/, etc.).
 for skill_dir in "$SOURCE_DIR"/*/; do
     [[ -d "$skill_dir" ]] || continue
-    skill_name="$(basename "$skill_dir")"
+    plugin_name="$(basename "$skill_dir")"
     [[ -f "$skill_dir/SKILL.md" ]] || continue
 
+    # Strip the in-plugin ia- prefix for the mirror destination
+    skill_name="${plugin_name#ia-}"
     target_dir="$TARGET_DIR/$skill_name"
 
     if [[ -d "$target_dir" ]]; then
@@ -53,15 +57,20 @@ for skill_dir in "$SOURCE_DIR"/*/; do
     if [[ "$DRY_RUN" == false ]]; then
         rm -rf "$target_dir"
         cp -r "$skill_dir" "$target_dir"
+        # Rewrite the mirrored SKILL.md frontmatter name: back to the un-prefixed form
+        if [[ -f "$target_dir/SKILL.md" ]]; then
+            sed -i -E "0,/^name: *ia-$skill_name$/s//name: $skill_name/" "$target_dir/SKILL.md"
+        fi
     fi
 done
 
-# Cleanup: remove from target if not in source
+# Cleanup: remove from target if the corresponding "ia-<name>" dir is absent in source
 for skill_dir in "$TARGET_DIR"/*/; do
     [[ -d "$skill_dir" ]] || continue
     skill_name="$(basename "$skill_dir")"
 
-    if [[ ! -d "$SOURCE_DIR/$skill_name" ]]; then
+    # Source uses the ia- prefix; reverse the strip to check existence
+    if [[ ! -d "$SOURCE_DIR/ia-$skill_name" && ! -d "$SOURCE_DIR/$skill_name" ]]; then
         printf "  %-10s %s\n" "removed" "$skill_name"
         removed=$((removed + 1))
         if [[ "$DRY_RUN" == false ]]; then

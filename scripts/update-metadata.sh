@@ -19,7 +19,7 @@ DRY_RUN=false
 
 # --- Count components ---
 
-agent_count=$(find "$PLUGIN_DIR/agents" -name "*.md" -type f | wc -l)
+agent_count=$(find "$PLUGIN_DIR/agents" -name "*.md" -type f -not -path "*/references/*" | wc -l)
 command_count=$(find "$PLUGIN_DIR/commands" -name "*.md" -type f -not -path "*/references/*" | wc -l)
 skill_count=$(find "$SKILLS_DIR" -name "SKILL.md" -type f | wc -l)
 hook_count=0

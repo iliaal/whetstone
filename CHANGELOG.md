@@ -5,6 +5,77 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-04-23
+
+**Breaking**: every skill, agent, and command now carries an `ia-` prefix. The `workflows:` command namespace is gone — `/workflows:plan` is now `/ia-plan`. Any project referencing `compound-engineering:code-review` or similar must update to `compound-engineering:ia-code-review`. See migration note below.
+
+The release bundles the prefix rename with a heavy sync + audit pass: 19 new reference files across 10 skills and 3 agents, walker fixes in the validator, a new Bun CLI `cleanup` subcommand for stale Codex/OpenCode installs, and substantial content additions sourced from EveryInc's compound-engineering-plugin and openai/claude-code-security-review.
+
+### Migration
+
+- Replace every `/workflows:<name>` with `/ia-<name>`.
+- Replace every `compound-engineering:<name>` plugin-namespaced reference with `compound-engineering:ia-<name>`.
+- ClawHub slugs (`compound-eng-<name>`) and the `ai-skills` mirror (`npx skills add iliaal/ai-skills -s <name>`) are unchanged — existing installs keep working. The `ia-` prefix lives only inside the plugin directory.
+- External-project refs already updated for known sites: `~/.claude/commands/dual-review.md`, `~/ai/codesage/.claude/commands/release.md`, `~/ai/php/.claude/commands/{php-improve,php-respond}.md`, `~/ai/php/.claude/skills/php-bug-fixer/SKILL.md`, `~/ai/last30days-skill/REFACTOR_TODO.md`.
+- Historical artifacts (`docs/brainstorms/*`, `.claude-cycles/*`) left as-is — frozen records.
+
+### Added
+
+- **Bun CLI `cleanup` subcommand** (`src/commands/cleanup.ts`): moves stale installs to a timestamped backup under `~/.cache/compound-engineering/legacy-backup/`. Supports `--target codex|opencode|kilocode|agents` and `--dry-run`.
+- **README install sections**: per-target Codex and OpenCode headings with copy-paste commands and cleanup instructions. Acknowledgements section crediting EveryInc/compound-engineering-plugin and ComposioHQ/awesome-claude-skills.
+- **code-review/references/review-traps-catalog.md**: 15 portable review-trap patterns with Trap / Reality / Fix — reachability-before-severity, docs-idiom smoke test, convention-from-3-files, speculative future-design, paired-enum drift, cross-repo contract staleness, PHP 8 null-property-access semantics, Laravel 11+ UUID-v7 chronological sort.
+- **code-review/references/{check-categories,action-routing,severity-and-confidence}.md**: What-to-Check lists, 4-tier fix-application taxonomy, 5-band confidence rubric extracted for load-on-demand.
+- **security-sentinel references**: `security-fp-suppression.md` (hard exclusions, confidence floor, severity gates, project-level overrides), `security-threat-modeling.md` (STRIDE process + output format), `security-adversarial-pass.md` (happy-path hunt, silent failures, trust-boundary tracing), `security-requirements-checklist.md` (13-item pre-report pass).
+- **rust-systems references**: `build-profiles.md` (release/release-dbg/release-min + mold linker), `ci-pipeline.md` (rustsec audit, cargo-llvm-cov, rust-cache, matrix strategy), `production-resilience.md` (fail-fast config, health endpoints, graceful shutdown, retries, timeouts), `observability.md` (tracing init recipe, correlation IDs, metrics, distributed tracing).
+- **orchestrating-swarms references**: `resilience-patterns.md` (cascade prevention, recovery strategy, mid-pipeline compensation, post-failure synthesis), `anti-sycophancy.md` (cold-start isolation, fresh instances per round, label randomization, convergence detection), `quick-reference.md` (spawn/message/task/shutdown snippets), `primitives.md` (glossary + file layout), `dispatch-anti-patterns.md` (router persona, persona-calls-persona, sequential paraphraser, deep persona trees).
+- **frontend-design references**: `premium-details.md` (`<kbd>` keystroke rendering, faux-OS window chrome, hero image fade, banned meta-labels, baseline alignment, browser-automation safety boundary), `mobile-and-performance.md` (single-column below `md:`, 44x44 touch targets, rotation-on-mobile, GPU-composited animation, z-index discipline).
+- **planning/references/plan-deepening.md**: `/deepen-plan` workflow, per-section enhancement format, Enhancement Summary block.
+- **writing-tests/references/rationalization-table.md**: 13 rationalization-vs-reality rows for test-skipping pressure.
+- **php-laravel/references/production-performance.md**: OPcache, JIT, preloading, Laravel deploy caches. Plus new **Common Pitfalls** section in the main SKILL.md documenting four Laravel-specific recurring bugs (mass-update event bypass, observer parent-scope cleanup, jsonb migration clobber, date-cast wire-format).
+- **agents/review/references/database-review-triggers.md**: grep-first review triggers for JSON-column migration clobber, query-builder update skipping observers/audit, column rename missing JSON copies, DynamoDB FilterExpression+Limit pagination, full-attribute replace, paired-enum drift.
+- **agents/workflow/references/docker-containerization.md**: Dockerfile best practices, image optimization, container security, graceful shutdown, Docker Compose dev-setup extracted from infrastructure-engineer.
+
+### Changed
+
+- **All skill / agent / command names renamed with `ia-` prefix**. 30 skills + 19 agents + 22 commands. The `workflows:` command namespace is dropped; those 6 commands now live directly under `commands/`. See migration.
+- **`hooks/skill-patterns.sh`**: all array keys prefixed with `ia-`; regex strings unchanged (they match user speech, not skill names).
+- **30 trigger regression fixture files** renamed to match (`distillery/tests/fixtures/triggers/ia-<name>.jsonl`).
+- **security-sentinel**: three-phase methodology (Phase 0 project baseline, Phase 1 comparative analysis, Phase 2 category scans) replaces generic OWASP-style scanning. FP suppression is now a structured framework with hard exclusions, confidence floor (≥0.8), language-gated exclusions, and project-level override honoring — explicitly stricter than `code-review`'s general rubric for a deliberate precision trade-off. Exploit Scenario is now a required field for Critical/High findings.
+- **verification-before-completion**: Verification Strategies by Change Type table (Frontend / Backend / CLI / Infra / DB migration / Refactoring). Mandatory adversarial probe for production-logic changes (boundary value, concurrency, idempotency, or orphan op).
+- **orchestrating-swarms**: four named dispatch anti-patterns (router persona, persona calls persona, sequential paraphraser, deep persona trees) with why-it-fails for each.
+- **code-review**: AI-generated code lens (over-engineering, defensive noise, cost bloat, scope drift) in the Adversarial pass with pointer to `code-simplicity-reviewer` for the 6-trap taxonomy. Project-level override discipline in Anti-Patterns in Reviews.
+- **brainstorming**: info-dump + numbered clarifiers pattern for when user opens with rich context.
+- **planning**: Execution Handoff section offering explicit Subagent-driven vs Inline choice after plan approval.
+- **writing-tests**: Silent Failure Coverage subsection (empty catch, swallowed rejections, converted errors, missing async, no rollback) with assertion-pattern guidance. AI-Generated Test Smells anti-pattern section.
+- **rust-systems**: `bytes::Bytes` zero-copy idiom, workspace-level `[workspace.lints.*]`, hot-path allocation reduction (`SmallVec`, `ArrayVec`, `dashmap`+`Box::leak` interning), Tower resilience layer stack naming, `cargo fuzz` for parsers.
+- **writing**: `[CURLY-QUOTES]`, `[EMOJI]`, `[FALSE-RANGE]` tags added to long-form audit vocabulary.
+- **frontend-design**: Premium Detail Patterns and Browser-Assisted Verification boundary folded in (both extracted to references for body-size discipline).
+- **code-simplicity-reviewer**: six named over-production traps (while-I'm-here, for-future-flexibility, defensive-coding, modernization, consistency, cleanup) with scope self-check template.
+- **reflect**: `remember:` high-confidence capture marker convention; optional UserPromptSubmit hook pattern documented.
+- **document-review**: Step 7 Reader Test strengthened with concrete methodology — predict 5-10 questions, dispatch fresh subagent, interpret confident-correct / confident-wrong / hedged / ambiguity-flagged outcomes.
+- **Review and research agents**: `tools: Read, Grep, Glob, Bash` restriction added to accessibility-tester, architecture-strategist, cloud-architect, database-guardian, kieran-reviewer, performance-oracle, security-sentinel, git-history-analyzer. `tools: Read, Grep, Glob` (no Bash) on learnings-researcher.
+- **CLAUDE.md working agreement**: added "no personal-machine paths in plugin files" rule (grep -rn '~/ai/' plugins/ pre-flight). Skill compliance checklist now documents the description-as-shortcut failure mode with concrete evidence.
+- **Scripts**: `update-metadata.sh` walker excludes `*/references/*` (count fix). `publish-clawhub.sh` strips `ia-` before composing slug (existing URLs preserved). `mirror-to-ai-skills.sh` strips `ia-` on mirror write and rewrites SKILL.md frontmatter (existing `npx skills add` commands preserved). `generate-skill-hooks.sh` TIER_MAP and PROJECT_TYPE_MAP keys prefixed.
+- **`distillery/scripts/distiller.py`**: walker skips `*/references/*` when enumerating commands and agents. Placeholder detection strips code blocks and skips forbidding-context sentences (`never use "TBD"`, `Forbid: TBD...`) before matching.
+
+### Fixed
+
+- **`commands/verify.md`**: YAML parse error from unquoted colon in description; frontmatter is now double-quoted.
+- **security-sentinel Reporting Protocol** no longer conflicts with Audit Deliverable Format — bridge sentence clarifies the outer-envelope vs SS-NNN finding relationship.
+- **`hooks/skill-patterns.sh`**: stale `Total skills: 29` annotation corrected to 30.
+- **Body-size discipline**: 10 components brought at-or-near budget through reference extraction — `security-sentinel` 4793 → 3017 tokens; `orchestrating-swarms` 5818 → under 4K; `code-review` 5572 → 4021; `rust-systems` 5282 → 4179; `frontend-design` 5110 → 4183; `planning` 4481 → 4051; `writing-tests` 4254 → under 4K; `php-laravel` 4007 → under 4K; `database-guardian` 3671 → under 3K; `infrastructure-engineer` 3249 → under 3K.
+- **Mechanical false positives** eliminated from validate-plugin output (4 reference-file EMPTY_DESCRIPTION walker bugs, 2 TBD-in-forbidding-rule placeholder bugs).
+- Edge CDP framework migration (Edge launcher + `post-thread.py` now use the shared `edge-cdp` package).
+- Announce tooling: marketing-hook pattern, top-N condensing, `.announce/` thread persistence instead of `/tmp`.
+- Audit-plugin VAGUE_DESCRIPTION check, AGENTS.md workflow-description warning.
+- README badges added; LICENSE mirrored to ai-skills.
+
+### Removed
+
+- **`workflows:` command namespace**: the 6 commands (`brainstorm`, `plan`, `work`, `review`, `compound`, `document-release`) moved from `commands/workflows/` to flat `commands/` with `ia-` prefix.
+- **security-sentinel Operational Guidelines vague bullets**: "Always assume worst-case" and "Don't just find problems" removed; redundant with Adversarial Pass and Remediation Roadmap.
+- **Sync log at `~/ai/wiki/tools/compound-engineering-sync-log.md`**: relocated to `docs/audit/audit-log.md` (in-repo, gitignored operational log).
+
 ## [2.56.1] - 2026-04-18
 
 Broad hardening pass. Sync + audit cycle applied ~56 refinements across 10 skills, 3 agents, 1 command, and the root context files, plus two new reference files. No new components; existing content got sharper rules, tighter cross-references, and structural fixes exposed by the audit.

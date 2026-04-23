@@ -877,16 +877,30 @@ def validate(name):
     issues.extend(gate4_issues)
 
     # --- Gate 5: No placeholder text ---
+    # Strip code blocks and inline code so examples inside ``` ``` don't trigger
+    body_stripped = re.sub(r'```[\s\S]*?```', '', body)
+    body_stripped = re.sub(r'`[^`]*`', '', body_stripped)
     placeholder_patterns = [
         r'\[TODO\b', r'\[FILL\s*IN\b', r'\[INSERT\b', r'\[REPLACE\b',
         r'\bTBD\b', r'\bFIXME\b', r'\bXXX\b', r'\[YOUR\b', r'\[EXAMPLE\b',
         r'<your[_-]', r'<insert[_-]', r'<add[_-]',
     ]
+    forbidding_context = re.compile(
+        r'(?:no|never|avoid|forbid|don\'?t\s+(?:use|include|write|add)|'
+        r'placeholder[s]?\s*(?:like|such\s+as|scan|check)|'
+        r'without|exclude|reject|ban(?:ned)?|'
+        r'skip\s+if|stop\s+if|return\s+to|prevent|disallow)\b',
+        re.IGNORECASE,
+    )
     placeholder_hits = []
     for pat in placeholder_patterns:
-        matches = re.findall(pat, body, re.IGNORECASE)
-        if matches:
-            placeholder_hits.extend(matches)
+        for m in re.finditer(pat, body_stripped, re.IGNORECASE):
+            start = max(0, m.start() - 200)
+            end = min(len(body_stripped), m.end() + 50)
+            window = body_stripped[start:end]
+            if forbidding_context.search(window):
+                continue
+            placeholder_hits.append(m.group(0))
     gate5_issues = []
     if placeholder_hits:
         gate5_issues.append(f"Found {len(placeholder_hits)} placeholder(s): {', '.join(placeholder_hits[:5])}")
@@ -1199,10 +1213,17 @@ def validate_plugin(component_filter=None):
             known_skills[d.name] = d / "SKILL.md"
 
     for f in sorted(agents_dir.rglob("*.md")) if agents_dir.exists() else []:
-        if f.name != "README.md":
-            known_agents[f.stem] = f
+        if f.name == "README.md":
+            continue
+        # Skip reference files (agents/*/references/*.md) — they're not agents
+        if "references" in f.relative_to(agents_dir).parts:
+            continue
+        known_agents[f.stem] = f
 
     for f in sorted(commands_dir.rglob("*.md")) if commands_dir.exists() else []:
+        # Skip reference files (commands/*/references/*.md, commands/workflows/references/*.md)
+        if "references" in f.relative_to(commands_dir).parts:
+            continue
         known_commands[f.stem] = f
 
     findings = []
@@ -1298,15 +1319,36 @@ def validate_plugin(component_filter=None):
         # --- Placeholder text ---
         # Strip markdown links first to avoid false positives on [example-file.md](...)
         body_no_links = re.sub(r'\[[^\]]+\]\([^)]+\)', '', body)
+        # Strip code blocks and inline code to avoid matching examples within them
+        body_stripped = re.sub(r'```[\s\S]*?```', '', body_no_links)
+        body_stripped = re.sub(r'`[^`]*`', '', body_stripped)
         placeholder_patterns = [
             r'\[TODO\b', r'\[FILL\s*IN\b', r'\[INSERT\b', r'\[REPLACE\b',
             r'\bTBD\b', r'\bFIXME\b', r'\bXXX\b', r'\[YOUR\b', r'\[EXAMPLE\b',
             r'<your[_-]', r'<insert[_-]', r'<add[_-]',
         ]
+        # Sentences that FORBID placeholder tokens (the skill is telling the reader NOT to use them).
+        # Matches are not findings — they're anti-pattern documentation.
+        forbidding_context = re.compile(
+            r'(?:no|never|avoid|forbid|don\'?t\s+(?:use|include|write|add)|'
+            r'placeholder[s]?\s*(?:like|such\s+as|scan|check)|'
+            r'without|exclude|reject|ban(?:ned)?|'
+            r'skip\s+if|stop\s+if|return\s+to|prevent|disallow)\b',
+            re.IGNORECASE,
+        )
         for pat in placeholder_patterns:
-            hits = re.findall(pat, body_no_links, re.IGNORECASE)
-            if hits:
-                add_finding(skill_name, "placeholder", f"Placeholder text found: {hits[0]}", "HIGH")
+            real_hits = []
+            for m in re.finditer(pat, body_stripped, re.IGNORECASE):
+                # Look at the surrounding sentence — find the sentence-start before the match
+                # and the sentence-end (period/colon/newline) after.
+                start = max(0, m.start() - 200)
+                end = min(len(body_stripped), m.end() + 50)
+                window = body_stripped[start:end]
+                if forbidding_context.search(window):
+                    continue  # match is inside a forbidding-sentence; not a finding
+                real_hits.append(m.group(0))
+            if real_hits:
+                add_finding(skill_name, "placeholder", f"Placeholder text found: {real_hits[0]}", "HIGH")
                 break
 
         # --- Structural: headings and empty sections ---

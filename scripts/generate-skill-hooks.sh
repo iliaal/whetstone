@@ -19,37 +19,38 @@ OUTPUT="$PLUGIN_DIR/hooks/skill-patterns.sh"
 
 declare -A TIER_MAP=(
   # Tier 1: Methodology
-  [planning]=1
-  [debugging]=1
-  [code-review]=1
-  [simplifying-code]=1
-  [brainstorming]=1
+  [ia-planning]=1
+  [ia-debugging]=1
+  [ia-code-review]=1
+  [ia-simplifying-code]=1
+  [ia-brainstorming]=1
+  [ia-verification-before-completion]=1
+  [ia-receiving-code-review]=1
+  [ia-writing-tests]=1
   # Tier 2: Domain/Language
-  [php-laravel]=2
-  [testing-laravel]=2
-  [react-frontend]=2
-  [testing-react]=2
-  [nodejs-backend]=2
-  [python-services]=2
-  [postgresql]=2
-  [terraform]=2
-  [linux-bash-scripting]=2
-  [pinescript]=2
-  [frontend-design]=2
-  [agent-native-architecture]=2
+  [ia-php-laravel]=2
+  [ia-react-frontend]=2
+  [ia-nodejs-backend]=2
+  [ia-python-services]=2
+  [ia-rust-systems]=2
+  [ia-postgresql]=2
+  [ia-terraform]=2
+  [ia-linux-bash-scripting]=2
+  [ia-pinescript]=2
+  [ia-frontend-design]=2
+  [ia-tailwind-css]=2
+  [ia-agent-native-architecture]=2
   # Tier 3: Supporting/Workflow
-  [writing]=3
-  [md-docs]=3
-  [refine-prompt]=3
-  [meta-prompting]=3
-  [reflect]=3
-  [compound-docs]=3
-  [document-review]=3
-  [file-todos]=3
-  [orchestrating-swarms]=3
-  [git-worktree]=3
-  [resolve-pr-parallel]=3
-  [setup]=3
+  [ia-writing]=3
+  [ia-md-docs]=3
+  [ia-refine-prompt]=3
+  [ia-meta-prompting]=3
+  [ia-reflect]=3
+  [ia-compound-docs]=3
+  [ia-document-review]=3
+  [ia-file-todos]=3
+  [ia-orchestrating-swarms]=3
+  [ia-git-worktree]=3
 )
 
 # --- Project-type constraints ---
@@ -57,15 +58,13 @@ declare -A TIER_MAP=(
 # Skills not listed pass unconditionally (cross-stack, methodology, workflow).
 # Types: php, js, python, rust, go, terraform
 declare -A PROJECT_TYPE_MAP=(
-  [php-laravel]="php"
-  [testing-laravel]="php"
-  [react-frontend]="js"
-  [testing-react]="js"
-  [nodejs-backend]="js"
-  [python-services]="python"
-  [terraform]="terraform"
-  [tailwind-css]="js"
-  [frontend-design]="js"
+  [ia-php-laravel]="php"
+  [ia-react-frontend]="js"
+  [ia-nodejs-backend]="js"
+  [ia-python-services]="python"
+  [ia-terraform]="terraform"
+  [ia-tailwind-css]="js"
+  [ia-frontend-design]="js"
 )
 
 # Ensure hooks directory exists

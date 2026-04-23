@@ -1,191 +1,191 @@
 {
-  "plugin_version": "2.56.1",
+  "plugin_version": "3.0.0",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-04-18T13:28:20.811636+00:00",
+  "generated_at": "2026-04-23T19:26:02.579958+00:00",
   "skills": {
-    "agent-native-architecture": {
-      "content_hash": "5a487f69a3f566c46535576df9acf4869bf09b1a47433f693fb26baf5248a2e4",
+    "ia-agent-native-architecture": {
+      "content_hash": "bfad0dfa0250cc23252814f7e0f408a07490ea50ea6660428cd90e785a1fd1d2",
       "content_changed": "2.56.1",
       "pattern_hash": "f903c705a8d6d7ac00565411f2d6f0f160a78b929446337f7f41bc2b4d5ab42e",
-      "pattern_changed": "2.53.0"
+      "pattern_changed": "2.56.1"
     },
-    "brainstorming": {
-      "content_hash": "3d6be50f144e55ff4a863dd388bdcf4f63a9a381173c7825c1be370853b2f613",
+    "ia-brainstorming": {
+      "content_hash": "0a957984c2209eca277bc32c306f73c5f0123e102153cd2637692cb3a0602036",
       "content_changed": "2.56.1",
       "pattern_hash": "d037718f8bcd5a3759270eb727f59fb67be182963e7727306e7e56343ab4ec1f",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "code-review": {
-      "content_hash": "6d2c237719b8822797537908a1a9db897a42732da6dadf746174d6ac01f5d54a",
-      "content_changed": "2.56.1",
+    "ia-code-review": {
+      "content_hash": "70d807172fd053784e183ff48090040d585022c7ba4e20b94abae556f67877cd",
+      "content_changed": "3.0.0",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "compound-docs": {
-      "content_hash": "fa4c6521ca54139cea45854f2581df0f59ed23b3c156ff7cb230f83205a422b9",
-      "content_changed": "2.52.0",
+    "ia-compound-docs": {
+      "content_hash": "5aa756fd9098892f9ced3fd1c10deed5ba650502c8ab7b72cb8ef9f3a93ec74d",
+      "content_changed": "2.56.1",
       "pattern_hash": "602dcd5759f057aae2d542c909129e1d0053b90c8b3b80d26845319c897d4bde",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "debugging": {
-      "content_hash": "a8b2acaf2daba43acf3219669d57b5ae34edf36bdf6de5b03e7718ceefe87211",
-      "content_changed": "2.55.0",
+    "ia-debugging": {
+      "content_hash": "a4cc42a8c74cec0ebb059f73702663347a8c72758094f4fcc8809fbf04386473",
+      "content_changed": "2.56.1",
       "pattern_hash": "a627fd9892d245298ed0361d888166f79b1a196f1fc4137944fdced4aada360d",
-      "pattern_changed": "2.55.0"
+      "pattern_changed": "2.56.1"
     },
-    "document-review": {
-      "content_hash": "5ef96d880f3146ff4245a734cd6fe740074063b763e1174e21b201783c6873b5",
-      "content_changed": "2.50.0",
+    "ia-document-review": {
+      "content_hash": "b64076967e3897d7f7a59be362cdb09d505a0c3da0730264397ce4c2429641bb",
+      "content_changed": "2.56.1",
       "pattern_hash": "3db4c6013627991fe2c7aeff58dc164894ab7bcac28dd67f49f05bc02900dda1",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "file-todos": {
-      "content_hash": "0ca794514532d4f97e36556b6d8552dfb408eaa553d60b3f6210e4710f70c7e0",
-      "content_changed": "2.50.0",
+    "ia-file-todos": {
+      "content_hash": "74b91df7a7ff80380787b3a7392cb689a6853c4e2f9e9bcc335e5063d337af6b",
+      "content_changed": "2.56.1",
       "pattern_hash": "8049ee058f1a5aed26f6b48f83315c4144174b243430f0872ef7f1e615c499fa",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "frontend-design": {
-      "content_hash": "1312df2f2590ef82f3d9639e015e28732e3790322d10f74c9e5ec40775f81052",
+    "ia-frontend-design": {
+      "content_hash": "d0aefb7e2d9e7448a7032bf8516ea4999f3ff17cd4147c6573f4565816c58570",
       "content_changed": "2.56.1",
       "pattern_hash": "f3a466e28c5e241dbb61a2e439a93633237ad5ffd554876dbbce299d6f934488",
-      "pattern_changed": "2.53.0"
+      "pattern_changed": "2.56.1"
     },
-    "git-worktree": {
-      "content_hash": "11bd4be88c3d12a6f83e87ed29cff1c26330871a02652a01e1c2394dc2db8da0",
-      "content_changed": "2.53.2",
+    "ia-git-worktree": {
+      "content_hash": "4b4b9fed065c60c020b352820f9f5e586a8682462a5fde24b1c133ee12aefca3",
+      "content_changed": "2.56.1",
       "pattern_hash": "59ac396bd6f70774badd968766a3f73d4cd7a1b842728cde3e6fa48ad8fd4221",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "linux-bash-scripting": {
-      "content_hash": "e940803200b9fff11c2c480f41748b176aa3aa208dff349434b90fad85e30333",
-      "content_changed": "2.50.0",
+    "ia-linux-bash-scripting": {
+      "content_hash": "1763763d3b582880eb41873be8c47f9c482d524f2e19a2a21888d0ea3f5ddc44",
+      "content_changed": "2.56.1",
       "pattern_hash": "ece33477de88f1b689b905a70b184b27a9c2e64873a5dd4c6193757a2a46fe00",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "md-docs": {
-      "content_hash": "e283b6d225ca997469c1b0e60dca2d07ee87e630dcb4ba207dabc4f034a1f430",
+    "ia-md-docs": {
+      "content_hash": "426444df56d58c99b31a36532b3d4c83d276f457e576ab49bcd85f2b75c1ebe1",
       "content_changed": "2.56.1",
       "pattern_hash": "9d097cbe03f1ba966517e68e94406b298ef5b35f466881c14ce30d5fe0e8fbc4",
-      "pattern_changed": "2.53.0"
+      "pattern_changed": "2.56.1"
     },
-    "meta-prompting": {
-      "content_hash": "7e1a6f8939ab87cca65fd56fb9bc0320a81b1e7a85322105202a019512fc4462",
+    "ia-meta-prompting": {
+      "content_hash": "d49cb4636c0f2727e47f083f70e8a68d1c3cce17bbaf157e4a39272c527b4906",
       "content_changed": "2.56.1",
       "pattern_hash": "d94356a1a339fd3cc4f3dfbcec818070bb2e2b708a87ff874bec3cc6e0d6259f",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "nodejs-backend": {
-      "content_hash": "e3e2953917e93919097c73c08076a29e03ca59c29007e347d41f1e91d16cef3f",
-      "content_changed": "2.53.2",
+    "ia-nodejs-backend": {
+      "content_hash": "4ca6f8d74dd8c7d3fc6c0c835062f5c0acfc080e2a2b8a64ca18bda834358f37",
+      "content_changed": "2.56.1",
       "pattern_hash": "ccac10aeeddc3bc433233f87b7a88e808648ec08581e031508d0ca865b2e6871",
-      "pattern_changed": "2.53.0"
+      "pattern_changed": "2.56.1"
     },
-    "orchestrating-swarms": {
-      "content_hash": "d40e4849599b6dcd4e05e8703a0d75e349eff5ee908a80d217f88628f0769dc4",
+    "ia-orchestrating-swarms": {
+      "content_hash": "16078606c72dfbedf71cc801317365a06c4aab31d9b5d3fb97d927930a2ca5e4",
       "content_changed": "2.56.1",
       "pattern_hash": "5ff4d38d87cd363f2256033ea3b0371a9668b7da2e86674da929d6788d4bbfb6",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "php-laravel": {
-      "content_hash": "c4ddbc66c3410764d972b1dcbf74b5db69dcb5346ce12b164179dbebe7369504",
-      "content_changed": "2.55.1",
+    "ia-php-laravel": {
+      "content_hash": "608ca171011ef8be12417b52ac1e2af0b282eea67892b79a3f69b2dcf4281bfc",
+      "content_changed": "2.56.1",
       "pattern_hash": "6f8a9059e67336c648e92e9d52b8ab3ff3eca6ebf8cf65b802a42df4bdee4987",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "pinescript": {
-      "content_hash": "5c31dbab0109dcb73f1d679832dab4dea34de10b8d077629788b8e35e96e67d3",
-      "content_changed": "2.50.0",
+    "ia-pinescript": {
+      "content_hash": "e9647303cdfc3c63e8b0d21b41075b6eee7171a895e8cac0ea8719d0fd064db8",
+      "content_changed": "2.56.1",
       "pattern_hash": "4e9e26260cd02b9a347574701119b57c7cf57ed6313c46582f0e2b3dc665d614",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "planning": {
-      "content_hash": "631b700aafd0c33e24613934866a1824a7fcf541aa248b15b0029b95a9a95bc8",
-      "content_changed": "2.56.0",
+    "ia-planning": {
+      "content_hash": "8848e0fe86da981e983e40c6d3bcb2e7d17479365e65c94ec9b696ad75640a2a",
+      "content_changed": "2.56.1",
       "pattern_hash": "23f9ea13ac9da79fd06313529b228beb2667f76c70901128794d1e335c590647",
-      "pattern_changed": "2.53.0"
+      "pattern_changed": "2.56.1"
     },
-    "postgresql": {
-      "content_hash": "613fc37d1b797cd6dce371d6a63696e683081e9aae4d29cf4c8ab76a8cdaf4f7",
-      "content_changed": "2.55.0",
+    "ia-postgresql": {
+      "content_hash": "3d86a4799d4af09e12dc2ff9d96028f192e37baf052c751e3dee1e13acec9006",
+      "content_changed": "2.56.1",
       "pattern_hash": "21d75a0bcedeb38c3e164f1495b5b1cd04216091c66e0edb1bf553306c4cedb4",
-      "pattern_changed": "2.55.0"
+      "pattern_changed": "2.56.1"
     },
-    "python-services": {
-      "content_hash": "3f3ef7919fd478ac9f6bbd26930f87ad9680805b87dd7685f822fffb2144df72",
-      "content_changed": "2.55.1",
+    "ia-python-services": {
+      "content_hash": "e406564891d2ea09b9efde0628d9858e309c8ac44da3a161e1289156cd159c2a",
+      "content_changed": "2.56.1",
       "pattern_hash": "cdf67475aa0f5aa56c8ec9625cd995ba28dbeeaf1c95948016c73e6662eab6c1",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "react-frontend": {
-      "content_hash": "e8d35de8e97bbf34bfe311afeb89a71260a07227d553a9935210b913932dc2ec",
+    "ia-react-frontend": {
+      "content_hash": "81eb665f415fdc6bc2a69e687114deb5f0d30f8ce8c6fd70aa964003d0e6f270",
       "content_changed": "2.56.1",
       "pattern_hash": "4e2cb0dc61c6a496639cbc967fa3b0c1948e17d3edd8c2effdabe50efaf3d217",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "receiving-code-review": {
-      "content_hash": "74c67db261896afa30ef7c26e89ec6b59465f416eb6248273671d23084ea5e49",
+    "ia-receiving-code-review": {
+      "content_hash": "0b4bb0d69b83477d48eaf4996e39516a8fddd1ca26fe531bd5fd35a30c5b0f94",
       "content_changed": "2.56.1",
       "pattern_hash": "36aa32d58037c3d2c118a19fbbad50d1d20eafc37e3aa9e96715030e3b124903",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "refine-prompt": {
-      "content_hash": "cee64ea44d938a6042837d88e9324674879e12cd1ea394d5f64d78b74e64d5bc",
-      "content_changed": "2.55.0",
+    "ia-refine-prompt": {
+      "content_hash": "e34d37b004365c1fb90cd9f7b52bd078e4b5ba5601b7d0d98e0d4863c4f5e008",
+      "content_changed": "2.56.1",
       "pattern_hash": "572118320b69e6254a14e407103262856308b27cc563e08c3a7b732899d0bae5",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "reflect": {
-      "content_hash": "627eb8f4f20cacd81dc2d123dd0b1f83df0a714db1f031a9b30e6624309b1442",
-      "content_changed": "2.55.0",
+    "ia-reflect": {
+      "content_hash": "ec04d21de3ab414376ef8a5625b76549a33e5fc0ddf8fbbf9f303d4bdf4bbba9",
+      "content_changed": "2.56.1",
       "pattern_hash": "573bbc9db1736873dac6a9effe1b3778673edd397d23923c801e9f99201c9202",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "rust-systems": {
-      "content_hash": "bc16fd0865e4bb5ea4618e9731f4e2ef7a90ee2c1071a846e136d23debe94ff1",
-      "content_changed": "2.56.0",
+    "ia-rust-systems": {
+      "content_hash": "f920343b6b07b6f5e9210b1c014ce2e5e265a99d5e3e55c971c78ce8bb5198e7",
+      "content_changed": "2.56.1",
       "pattern_hash": "3d5fcdb8252f2edc517caf23eaf50dd2cd3e0bbd95e890075e5961e3538f41ad",
-      "pattern_changed": "2.56.0"
+      "pattern_changed": "2.56.1"
     },
-    "simplifying-code": {
-      "content_hash": "529304e451550170e78bc3a68e0f1cbfeb38cfa48a2b76e0367aeb72a9e09a93",
+    "ia-simplifying-code": {
+      "content_hash": "d4bdd6e65e737236d2959510c563aa4efc459ef238e566a9403587db37c97890",
       "content_changed": "2.56.1",
       "pattern_hash": "0d4c8a0e629d3ea5a5109f7965ffee18a7de3e277895d4cec73d0c3e4b8da5f5",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "tailwind-css": {
-      "content_hash": "378d0184be7d941ba9da9c770b202ae80246b08f8dd82d4aa3df41642083fb48",
-      "content_changed": "2.53.0",
+    "ia-tailwind-css": {
+      "content_hash": "a41751abcd4573566a5a1aac3561089251689c8bdd43424205e8291ee3f0803b",
+      "content_changed": "2.56.1",
       "pattern_hash": "0688448f47bcd5fe4377e1066ce5c3c363f25619f1caa9092b5da1f80e187b43",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "terraform": {
-      "content_hash": "e150cea154d4012cd90d2374b0794bf6541c28d06fc687a28a7b183aac8dcdac",
-      "content_changed": "2.50.0",
+    "ia-terraform": {
+      "content_hash": "5572ea8bc5be4ce6c4be3074673f8093d623aa8d49b7d6d3e44e6991b0f25064",
+      "content_changed": "2.56.1",
       "pattern_hash": "5d164ecb393ca9d60cccb13ef505099a2b5f016c004e8f95f5114e2a055a4b6f",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "verification-before-completion": {
-      "content_hash": "de8a26192f9e964f69f455beb6614f762c15c2a1b0e69b1e018ad7e866954d4e",
+    "ia-verification-before-completion": {
+      "content_hash": "4aa9ce210e2c68be95c17dbe3ab2fd9cc1ba2ac9f56bacce996235f148533dfb",
       "content_changed": "2.56.1",
       "pattern_hash": "99dfeadc1d36a057149470f1c8ce2fe4d50104e0ae0f11996d63d84755d77555",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     },
-    "writing": {
-      "content_hash": "4a0d57d1dd6459eb8ea94cb978c60498568d6cd6281c6c14c8db59d91bf216eb",
+    "ia-writing": {
+      "content_hash": "3e059bcf8861f6635f03d29629f3550228bfdd96030724c3cab9776a7cf4fd5b",
       "content_changed": "2.56.1",
       "pattern_hash": "816be739f046898e86cd2c26e7a4d113dbaaf8c060973a18b337db8eb52f7af1",
-      "pattern_changed": "2.53.0"
+      "pattern_changed": "2.56.1"
     },
-    "writing-tests": {
-      "content_hash": "2e7efb4bc622d5d4c5aaeedff4396f43ddc799ce35c35475b6361b7b6c44467d",
-      "content_changed": "2.53.2",
+    "ia-writing-tests": {
+      "content_hash": "42bf8cb09c4dabe386646930a6cb7a230ef1c440cd3397f2abc2947d3646b9e7",
+      "content_changed": "2.56.1",
       "pattern_hash": "d3b32b5edcafd10d5ee44960ea1dbce87f55c3ab80d204cfd5509954fe45928a",
-      "pattern_changed": "2.50.0"
+      "pattern_changed": "2.56.1"
     }
   }
 }

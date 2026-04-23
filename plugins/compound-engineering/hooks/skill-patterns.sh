@@ -11,100 +11,100 @@ declare -A SKILL_TIERS
 
 # --- Tier 1: Methodology (process/approach skills) ---
 
-SKILL_PATTERNS[planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
-SKILL_TIERS[planning]=1
+SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
+SKILL_TIERS[ia-planning]=1
 
-SKILL_PATTERNS[debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
-SKILL_TIERS[debugging]=1
+SKILL_PATTERNS[ia-debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
+SKILL_TIERS[ia-debugging]=1
 
-SKILL_PATTERNS[code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'
-SKILL_TIERS[code-review]=1
+SKILL_PATTERNS[ia-code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'
+SKILL_TIERS[ia-code-review]=1
 
-SKILL_PATTERNS[simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
-SKILL_TIERS[simplifying-code]=1
+SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
+SKILL_TIERS[ia-simplifying-code]=1
 
-SKILL_PATTERNS[brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.*approach'
-SKILL_TIERS[brainstorming]=1
+SKILL_PATTERNS[ia-brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.*approach'
+SKILL_TIERS[ia-brainstorming]=1
 
-SKILL_PATTERNS[verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,12}(commit|push|pr|merge)'
-SKILL_TIERS[verification-before-completion]=1
+SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,12}(commit|push|pr|merge)'
+SKILL_TIERS[ia-verification-before-completion]=1
 
-SKILL_PATTERNS[receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.*(review|feedback).?comment|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
-SKILL_TIERS[receiving-code-review]=1
+SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.*(review|feedback).?comment|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
+SKILL_TIERS[ia-receiving-code-review]=1
 
-SKILL_PATTERNS[writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline'
-SKILL_TIERS[writing-tests]=1
+SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline'
+SKILL_TIERS[ia-writing-tests]=1
 
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
-SKILL_PATTERNS[php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|phpunit|phpstan|composer\.(json|lock)|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.*\.php|unit.?test.*\.php|test.*(controller|model|service|action|job|command|endpoint).*\.php'
-SKILL_TIERS[php-laravel]=2
+SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|phpunit|phpstan|composer\.(json|lock)|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.*\.php|unit.?test.*\.php|test.*(controller|model|service|action|job|command|endpoint).*\.php'
+SKILL_TIERS[ia-php-laravel]=2
 
-SKILL_PATTERNS[react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
-SKILL_TIERS[react-frontend]=2
+SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
+SKILL_TIERS[ia-react-frontend]=2
 
-SKILL_PATTERNS[nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
-SKILL_TIERS[nodejs-backend]=2
+SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
+SKILL_TIERS[ia-nodejs-backend]=2
 
-SKILL_PATTERNS[python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
-SKILL_TIERS[python-services]=2
+SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
+SKILL_TIERS[ia-python-services]=2
 
-SKILL_PATTERNS[rust-systems]='\brust\b.{0,30}(cli|service|binary|crate|workspace|backend|api|server|handler|async|tokio|axum|code|project|module)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\.rs\b.*(test|module|crate)'
-SKILL_TIERS[rust-systems]=2
+SKILL_PATTERNS[ia-rust-systems]='\brust\b.{0,30}(cli|service|binary|crate|workspace|backend|api|server|handler|async|tokio|axum|code|project|module)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\.rs\b.*(test|module|crate)'
+SKILL_TIERS[ia-rust-systems]=2
 
-SKILL_PATTERNS[postgresql]='postgres(ql)?|\bpgbouncer\b|jsonb|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b|tsvector|pg_stat_|pg_class'
-SKILL_TIERS[postgresql]=2
+SKILL_PATTERNS[ia-postgresql]='postgres(ql)?|\bpgbouncer\b|jsonb|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b|tsvector|pg_stat_|pg_class'
+SKILL_TIERS[ia-postgresql]=2
 
-SKILL_PATTERNS[terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'
-SKILL_TIERS[terraform]=2
+SKILL_PATTERNS[ia-terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'
+SKILL_TIERS[ia-terraform]=2
 
-SKILL_PATTERNS[linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script'
-SKILL_TIERS[linux-bash-scripting]=2
+SKILL_PATTERNS[ia-linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script'
+SKILL_TIERS[ia-linux-bash-scripting]=2
 
-SKILL_PATTERNS[pinescript]='pine.?script|tradingview|pinescript|\bindicator\b.{0,20}(pine|trading.?view)|\.pine\b'
-SKILL_TIERS[pinescript]=2
+SKILL_PATTERNS[ia-pinescript]='pine.?script|tradingview|pinescript|\bindicator\b.{0,20}(pine|trading.?view)|\.pine\b'
+SKILL_TIERS[ia-pinescript]=2
 
-SKILL_PATTERNS[frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|build.*(web.?component|web.?page|landing.?page|dashboard)|design.*too.?generic|ai.?generated.*(design|look)'
-SKILL_TIERS[frontend-design]=2
+SKILL_PATTERNS[ia-frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|build.*(web.?component|web.?page|landing.?page|dashboard)|design.*too.?generic|ai.?generated.*(design|look)'
+SKILL_TIERS[ia-frontend-design]=2
 
-SKILL_PATTERNS[tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|dark.?mode.*css'
-SKILL_TIERS[tailwind-css]=2
+SKILL_PATTERNS[ia-tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|dark.?mode.*css'
+SKILL_TIERS[ia-tailwind-css]=2
 
-SKILL_PATTERNS[agent-native-architecture]='autonomous.?agent|mcp.?tool|self.?modif|agent.?native|prompt.?native|pretooluse|posttooluse|agent.?hook'
-SKILL_TIERS[agent-native-architecture]=2
+SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?tool|self.?modif|agent.?native|prompt.?native|pretooluse|posttooluse|agent.?hook'
+SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
 
-SKILL_PATTERNS[writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
-SKILL_TIERS[writing]=3
+SKILL_PATTERNS[ia-writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
+SKILL_TIERS[ia-writing]=3
 
-SKILL_PATTERNS[md-docs]='update.*readme|update.*agents|init.*agents|create.*agents\.md|update.*contributing|update.*context.?files|claude\.md'
-SKILL_TIERS[md-docs]=3
+SKILL_PATTERNS[ia-md-docs]='update.*readme|update.*agents|init.*agents|create.*agents\.md|update.*contributing|update.*context.?files|claude\.md'
+SKILL_TIERS[ia-md-docs]=3
 
-SKILL_PATTERNS[refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction'
-SKILL_TIERS[refine-prompt]=3
+SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction'
+SKILL_TIERS[ia-refine-prompt]=3
 
-SKILL_PATTERNS[meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt'
-SKILL_TIERS[meta-prompting]=3
+SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt'
+SKILL_TIERS[ia-meta-prompting]=3
 
-SKILL_PATTERNS[reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong'
-SKILL_TIERS[reflect]=3
+SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong'
+SKILL_TIERS[ia-reflect]=3
 
-SKILL_PATTERNS[compound-docs]='document.*(solution|problem)|capture.*(knowledge|solved)|compound.*(doc|knowledge)'
-SKILL_TIERS[compound-docs]=3
+SKILL_PATTERNS[ia-compound-docs]='document.*(solution|problem)|capture.*(knowledge|solved)|compound.*(doc|knowledge)'
+SKILL_TIERS[ia-compound-docs]=3
 
-SKILL_PATTERNS[document-review]='refine.*(brainstorm|plan)|review.*(document|brainstorm|plan)'
-SKILL_TIERS[document-review]=3
+SKILL_PATTERNS[ia-document-review]='refine.*(brainstorm|plan)|review.*(document|brainstorm|plan)'
+SKILL_TIERS[ia-document-review]=3
 
-SKILL_PATTERNS[file-todos]='todo.?directory|manage.?todo|file.?based.?todo'
-SKILL_TIERS[file-todos]=3
+SKILL_PATTERNS[ia-file-todos]='todo.?directory|manage.?todo|file.?based.?todo'
+SKILL_TIERS[ia-file-todos]=3
 
-SKILL_PATTERNS[orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|task)|divide.?and.?conquer'
-SKILL_TIERS[orchestrating-swarms]=3
+SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|task)|divide.?and.?conquer'
+SKILL_TIERS[ia-orchestrating-swarms]=3
 
-SKILL_PATTERNS[git-worktree]='worktree|parallel.?development'
-SKILL_TIERS[git-worktree]=3
+SKILL_PATTERNS[ia-git-worktree]='worktree|parallel.?development'
+SKILL_TIERS[ia-git-worktree]=3
 
 
 # --- Project-type constraints (Tier 2 domain skills only) ---
@@ -113,12 +113,12 @@ SKILL_TIERS[git-worktree]=3
 # and cross-stack domain skills like postgresql, linux-bash-scripting).
 declare -A SKILL_PROJECT_TYPES
 
-SKILL_PROJECT_TYPES[php-laravel]="php"
-SKILL_PROJECT_TYPES[react-frontend]="js"
-SKILL_PROJECT_TYPES[nodejs-backend]="js"
-SKILL_PROJECT_TYPES[python-services]="python"
-SKILL_PROJECT_TYPES[terraform]="terraform"
-SKILL_PROJECT_TYPES[tailwind-css]="js"
-SKILL_PROJECT_TYPES[frontend-design]="js"
+SKILL_PROJECT_TYPES[ia-php-laravel]="php"
+SKILL_PROJECT_TYPES[ia-react-frontend]="js"
+SKILL_PROJECT_TYPES[ia-nodejs-backend]="js"
+SKILL_PROJECT_TYPES[ia-python-services]="python"
+SKILL_PROJECT_TYPES[ia-terraform]="terraform"
+SKILL_PROJECT_TYPES[ia-tailwind-css]="js"
+SKILL_PROJECT_TYPES[ia-frontend-design]="js"
 
-# Total skills: 29
+# Total skills: 30

@@ -64,7 +64,10 @@ publish_skill() {
         return
     fi
 
-    local slug="${SLUG_PREFIX}-${skill_name}"
+    # Strip the in-plugin ia- prefix before composing the clawhub slug —
+    # skill dirs are "ia-<name>", clawhub slugs stay "compound-eng-<name>".
+    local slug_base="${skill_name#ia-}"
+    local slug="${SLUG_PREFIX}-${slug_base}"
     local display_name
     display_name=$(grep -m1 '^name:' "$skill_dir/SKILL.md" | sed 's/^name: *//' | tr -d "'\"")
 
