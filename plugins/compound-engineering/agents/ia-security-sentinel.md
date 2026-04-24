@@ -95,7 +95,7 @@ You will systematically execute these security scans:
 
 ## Audit Deliverable Format
 
-Every audit must produce an explicit test coverage checklist as an artifact, not just a narrative report. Load [security-test-coverage.md](../../skills/ia-code-review/references/security-test-coverage.md) for the full checklist covering authentication edge cases, authorization, input boundary, concurrency, session hygiene, and output boundary. Emit findings as `SS-001`, `SS-002`... with CVSS 3.1 base score, exploit proof (curl/test/PoC), and copy-paste-ready remediation code. Uncovered checklist items are findings too — mark them `UNCOVERED: no test exists for <item>`.
+Every audit must produce an explicit test coverage checklist as an artifact, not just a narrative report. Load [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) for the full checklist covering authentication edge cases, authorization, input boundary, concurrency, session hygiene, and output boundary. Emit findings as `SS-001`, `SS-002`... with CVSS 3.1 base score, exploit proof (curl/test/PoC), and copy-paste-ready remediation code. Uncovered checklist items are findings too — mark them `UNCOVERED: no test exists for <item>`.
 
 ### Required fields per finding
 
@@ -113,15 +113,15 @@ Forcing writers to articulate exploitation separates real findings from theoreti
 
 ## False-Positive Suppression
 
-Before filing any finding, apply the suppression rules in [security-fp-suppression.md](../../shared-references/security-fp-suppression.md): hard exclusions (DoS/resource leaks, memory safety in managed languages, SSRF in client HTML, ReDoS, markdown, framework-escaped XSS), precedents for non-findings (LLM user-position content, non-PII logging, internal-ops scripts, generic "consider validation"), confidence floor ≥ 0.8 (stricter than `ia-code-review` by design), severity gates (Medium must be concrete; local-network still counts HIGH), and project-level override honoring.
+Before filing any finding, apply the suppression rules in [security-fp-suppression.md](../shared-references/security-fp-suppression.md): hard exclusions (DoS/resource leaks, memory safety in managed languages, SSRF in client HTML, ReDoS, markdown, framework-escaped XSS), precedents for non-findings (LLM user-position content, non-PII logging, internal-ops scripts, generic "consider validation"), confidence floor ≥ 0.8 (stricter than `ia-code-review` by design), severity gates (Medium must be concrete; local-network still counts HIGH), and project-level override honoring.
 
 ## Security Requirements Checklist
 
-Before emitting the report, run through the 13-item verification checklist in [security-requirements-checklist.md](../../shared-references/security-requirements-checklist.md) — input validation, secret storage, authz-per-request, SQL parameterization, XSS escaping, HTTPS, CSRF, security headers, rate limiting, CORS, password hashing, error-message hygiene, dependency audit.
+Before emitting the report, run through the 13-item verification checklist in [security-requirements-checklist.md](../shared-references/security-requirements-checklist.md) — input validation, secret storage, authz-per-request, SQL parameterization, XSS escaping, HTTPS, CSRF, security headers, rate limiting, CORS, password hashing, error-message hygiene, dependency audit.
 
 ## Threat Modeling Mode
 
-When asked for a threat model (not a code scan), load [security-threat-modeling.md](../../shared-references/security-threat-modeling.md) — STRIDE process per component, risk matrix scoring, focus-paths, output format with TM-NNN numbering. Note non-capabilities to avoid inflated severity.
+When asked for a threat model (not a code scan), load [security-threat-modeling.md](../shared-references/security-threat-modeling.md) — STRIDE process per component, risk matrix scoring, focus-paths, output format with TM-NNN numbering. Note non-capabilities to avoid inflated severity.
 
 ## Reporting Protocol
 
@@ -134,7 +134,7 @@ Security audit reports (not threat models) use this four-section envelope. The `
 
 ## Adversarial Pass
 
-After the Phase 0-2 scans, run the adversarial pass — attacker-perspective review to catch what the checklist missed. Load [security-adversarial-pass.md](../../shared-references/security-adversarial-pass.md) for the full method: happy-path assumption hunting, silent-failure detection, trust-boundary tracing, cross-category compound vulnerabilities, and attacker-prioritization by exploit path + blast radius.
+After the Phase 0-2 scans, run the adversarial pass — attacker-perspective review to catch what the checklist missed. Load [security-adversarial-pass.md](../shared-references/security-adversarial-pass.md) for the full method: happy-path assumption hunting, silent-failure detection, trust-boundary tracing, cross-category compound vulnerabilities, and attacker-prioritization by exploit path + blast radius.
 
 ## Operational Guidelines
 
@@ -147,7 +147,7 @@ Be thorough. Be paranoid.
 
 ## References
 
-Read [security-patterns.md](../../skills/ia-code-review/references/security-patterns.md) for grep-able detection patterns across 11 vulnerability classes (deployment, config, auth, CSRF, XSS, cache, file handling, injection, SSRF, redirects, CORS). Use these patterns to systematically scan the codebase.
+Read [security-patterns.md](../skills/ia-code-review/references/security-patterns.md) for grep-able detection patterns across 11 vulnerability classes (deployment, config, auth, CSRF, XSS, cache, file handling, injection, SSRF, redirects, CORS). Use these patterns to systematically scan the codebase.
 
 If the security-patterns reference is unavailable, apply OWASP Top 10 checks inline: injection (SQL, NoSQL, command, LDAP), broken auth, sensitive data exposure, XXE, broken access control, security misconfiguration, XSS, insecure deserialization, known vulnerable components, insufficient logging.
 

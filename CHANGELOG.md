@@ -5,6 +5,21 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.2] - 2026-04-24
+
+Flattens the agents directory. All 19 agents move from `agents/<category>/ia-X.md` to `agents/ia-X.md`, shortening each agent's fully-qualified identifier from `compound-engineering:<category>:ia-X` to `compound-engineering:ia-X` and freeing another ~43 tokens in the session system prompt. Category grouping survives editorially in README.md.
+
+### Changed
+
+- **Agent layout flattened** — the `review/`, `workflow/`, `research/`, `design/` subdirectories are gone; all agents live directly under `plugins/compound-engineering/agents/`. This matches the existing flat `skills/` convention.
+- **Link paths in agents** updated from `../../shared-references/X.md` → `../shared-references/X.md` and `../../skills/Y/references/Z.md` → `../skills/Y/references/Z.md` in the four agents that load cross-tree references (ia-security-sentinel, ia-database-guardian, ia-infrastructure-engineer, ia-learnings-researcher).
+- **README.md agent tables** keep the Review/Research/Design/Workflow grouping manually — the categories remain useful for human navigation even though the filesystem no longer reflects them. Agent link paths updated from `agents/<category>/<name>.md` → `agents/ia-<name>.md`, also fixing pre-existing broken links that were missing the `ia-` prefix.
+- **AGENTS.md / CLAUDE.md** directory tree and naming rules updated to reflect the flat layout.
+
+### Notes
+
+- Anyone invoking agents via `Task(compound-engineering:<category>:ia-X, ...)` must drop the category segment. No files in this repo used the fully-qualified form, so internal callers are unaffected.
+
 ## [3.0.1] - 2026-04-24
 
 Patch release bundling v3.0.0 migration stragglers with plugin-hygiene cleanup. Fixes six phantom subagents registered from `agents/*/references/`, trims four over-budget agent descriptions, rewrites `/ia-setup` as a diagnostic-first command with a bundled health check, and adds local tag-sync to `release.sh` so `git tag` stays consistent with remote after each ship.

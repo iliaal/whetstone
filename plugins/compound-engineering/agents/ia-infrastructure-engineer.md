@@ -120,7 +120,7 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 
 ## Docker & Containerization
 
-For Dockerfile, image optimization, container security, graceful shutdown, and docker-compose dev-setup patterns, load [docker-containerization.md](../../shared-references/docker-containerization.md). Covers multi-stage builds, minimal base images, non-root user, image-size targets, Trivy/Grype scanning, SIGTERM handling, and dev/prod topology parity.
+For Dockerfile, image optimization, container security, graceful shutdown, and docker-compose dev-setup patterns, load [docker-containerization.md](../shared-references/docker-containerization.md). Covers multi-stage builds, minimal base images, non-root user, image-size targets, Trivy/Grype scanning, SIGTERM handling, and dev/prod topology parity.
 
 ## Monitoring & Observability
 

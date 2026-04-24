@@ -14,46 +14,46 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 ## Agents
 
-Agents are organized into categories for easier discovery.
+All agent files live flat under `agents/`. Categories below are editorial — grouped by purpose for easier discovery, not by filesystem layout.
 
-### Review (10)
+### Review (9)
 
 | Agent | Description |
 |-------|-------------|
-| [`ia-accessibility-tester`](agents/review/accessibility-tester.md) | WCAG 2.1 accessibility audit: keyboard, screen reader, contrast, ARIA, forms |
-| [`ia-architecture-strategist`](agents/review/architecture-strategist.md) | Architecture, design patterns, naming conventions, and structural integrity |
-| [`ia-cloud-architect`](agents/review/cloud-architect.md) | Cloud infrastructure review, cost optimization, DR, migration strategies |
-| [`ia-code-simplicity-reviewer`](agents/review/code-simplicity-reviewer.md) | Final pass for simplicity and minimalism |
-| [`ia-database-guardian`](agents/review/database-guardian.md) | Database schema, constraints, and migration code validation |
-| [`ia-kieran-reviewer`](agents/review/kieran-reviewer.md) | Python and TypeScript code review with strict conventions |
-| [`ia-performance-oracle`](agents/review/performance-oracle.md) | Performance analysis and optimization |
-| [`ia-security-sentinel`](agents/review/security-sentinel.md) | Security audits and vulnerability assessments |
-| [`ia-spec-flow-analyzer`](agents/review/spec-flow-analyzer.md) | Analyze user flows and identify gaps in specifications |
+| [`ia-accessibility-tester`](agents/ia-accessibility-tester.md) | WCAG 2.1 accessibility audit: keyboard, screen reader, contrast, ARIA, forms |
+| [`ia-architecture-strategist`](agents/ia-architecture-strategist.md) | Architecture, design patterns, naming conventions, and structural integrity |
+| [`ia-cloud-architect`](agents/ia-cloud-architect.md) | Cloud infrastructure review, cost optimization, DR, migration strategies |
+| [`ia-code-simplicity-reviewer`](agents/ia-code-simplicity-reviewer.md) | Final pass for simplicity and minimalism |
+| [`ia-database-guardian`](agents/ia-database-guardian.md) | Database schema, constraints, and migration code validation |
+| [`ia-kieran-reviewer`](agents/ia-kieran-reviewer.md) | Python and TypeScript code review with strict conventions |
+| [`ia-performance-oracle`](agents/ia-performance-oracle.md) | Performance analysis and optimization |
+| [`ia-security-sentinel`](agents/ia-security-sentinel.md) | Security audits and vulnerability assessments |
+| [`ia-spec-flow-analyzer`](agents/ia-spec-flow-analyzer.md) | Analyze user flows and identify gaps in specifications |
 
 ### Research (4)
 
 | Agent | Description |
 |-------|-------------|
-| [`ia-best-practices-researcher`](agents/research/best-practices-researcher.md) | Best practices, framework docs, and implementation patterns |
-| [`ia-git-history-analyzer`](agents/research/git-history-analyzer.md) | Analyze git history and code evolution |
-| [`ia-learnings-researcher`](agents/research/learnings-researcher.md) | Search institutional learnings for relevant past solutions |
-| [`ia-repo-research-analyst`](agents/research/repo-research-analyst.md) | Research repository structure and conventions |
+| [`ia-best-practices-researcher`](agents/ia-best-practices-researcher.md) | Best practices, framework docs, and implementation patterns |
+| [`ia-git-history-analyzer`](agents/ia-git-history-analyzer.md) | Analyze git history and code evolution |
+| [`ia-learnings-researcher`](agents/ia-learnings-researcher.md) | Search institutional learnings for relevant past solutions |
+| [`ia-repo-research-analyst`](agents/ia-repo-research-analyst.md) | Research repository structure and conventions |
 
 ### Design (2)
 
 | Agent | Description |
 |-------|-------------|
-| [`ia-design-iterator`](agents/design/design-iterator.md) | Iteratively refine UI through systematic design iterations |
-| [`ia-figma-design-sync`](agents/design/figma-design-sync.md) | Compare UI against Figma designs, report discrepancies, and optionally implement fixes |
+| [`ia-design-iterator`](agents/ia-design-iterator.md) | Iteratively refine UI through systematic design iterations |
+| [`ia-figma-design-sync`](agents/ia-figma-design-sync.md) | Compare UI against Figma designs, report discrepancies, and optionally implement fixes |
 
 ### Workflow (4)
 
 | Agent | Description |
 |-------|-------------|
-| [`ia-bug-reproduction-validator`](agents/workflow/bug-reproduction-validator.md) | Systematically reproduce and validate bug reports |
-| [`ia-deployment-verification-agent`](agents/workflow/deployment-verification-agent.md) | Create Go/No-Go deployment checklists for risky data changes |
-| [`ia-infrastructure-engineer`](agents/workflow/infrastructure-engineer.md) | CI/CD pipelines, Docker containerization, observability, and incident management |
-| [`ia-pr-comment-resolver`](agents/workflow/pr-comment-resolver.md) | Address PR comments and implement fixes |
+| [`ia-bug-reproduction-validator`](agents/ia-bug-reproduction-validator.md) | Systematically reproduce and validate bug reports |
+| [`ia-deployment-verification-agent`](agents/ia-deployment-verification-agent.md) | Create Go/No-Go deployment checklists for risky data changes |
+| [`ia-infrastructure-engineer`](agents/ia-infrastructure-engineer.md) | CI/CD pipelines, Docker containerization, observability, and incident management |
+| [`ia-pr-comment-resolver`](agents/ia-pr-comment-resolver.md) | Address PR comments and implement fixes |
 
 ## Commands
 

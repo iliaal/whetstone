@@ -1,11 +1,11 @@
 {
-  "plugin_version": "3.0.1",
+  "plugin_version": "3.0.2",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-04-24T11:29:00.462618+00:00",
+  "generated_at": "2026-04-24T11:48:17.591302+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "bfad0dfa0250cc23252814f7e0f408a07490ea50ea6660428cd90e785a1fd1d2",
