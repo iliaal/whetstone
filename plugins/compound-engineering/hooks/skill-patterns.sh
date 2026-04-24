@@ -121,4 +121,17 @@ SKILL_PROJECT_TYPES[ia-terraform]="terraform"
 SKILL_PROJECT_TYPES[ia-tailwind-css]="js"
 SKILL_PROJECT_TYPES[ia-frontend-design]="js"
 
+# --- Maintenance-context suppression ---
+# Skills listed here fire on any prompt mentioning their name (e.g., "the brainstorming
+# skill" or "skills/ia-writing-tests/SKILL.md"), which causes high false-positive rates
+# during plugin-maintenance tasks (/sync-from-repos, /audit-plugin, distiller runs).
+# These skills are suppressed when the prompt is recognized as plugin-maintenance context.
+# Evidence: 2026-04-24 audit — brainstorming 85%, writing-tests 100%, planning 100% of
+# negative-signal sessions were plugin-maintenance prompts where skill names appeared as
+# references rather than user requests.
+declare -A SKILL_MAINT_SUPPRESS
+SKILL_MAINT_SUPPRESS[ia-brainstorming]=1
+SKILL_MAINT_SUPPRESS[ia-writing-tests]=1
+SKILL_MAINT_SUPPRESS[ia-planning]=1
+
 # Total skills: 30

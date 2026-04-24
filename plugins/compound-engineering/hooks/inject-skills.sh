@@ -38,6 +38,19 @@ if ! declare -p SKILL_PROJECT_TYPES &>/dev/null; then
   declare -A SKILL_PROJECT_TYPES
 fi
 
+# Guard: older pattern files may not declare SKILL_MAINT_SUPPRESS
+if ! declare -p SKILL_MAINT_SUPPRESS &>/dev/null; then
+  declare -A SKILL_MAINT_SUPPRESS
+fi
+
+# Detect plugin-maintenance context. When the prompt mentions plugin internals,
+# skill files, or maintenance commands, skills whose names appear as references
+# shouldn't fire as if the user is invoking them.
+IS_MAINT_CONTEXT=false
+if printf '%s' "$PROMPT" | grep -qE 'plugins/compound-engineering/(skills|agents|commands)/|distiller\.py|skill-patterns\.sh|/sync-from-repos\b|/audit-plugin\b|/analyze-misfires\b|/diagnose-negatives\b|/evolve-skill\b|/eval-skills\b' 2>/dev/null; then
+  IS_MAINT_CONTEXT=true
+fi
+
 # Detect project types from marker files in working directory.
 # Used as a negative filter: domain skills that declare a project type
 # are suppressed when the project stack doesn't match.
@@ -62,6 +75,12 @@ for skill_name in "${!SKILL_PATTERNS[@]}"; do
   if printf '%s' "$PROMPT_LOWER" | grep -qE "$pattern" 2>/dev/null; then
     skill_path="$PLUGIN_ROOT/skills/$skill_name/SKILL.md"
     [[ -f "$skill_path" ]] || continue
+
+    # Suppress skills whose name tends to appear as a reference in plugin-maintenance
+    # prompts (skill name in file path, command discussion, distiller output, etc.).
+    if $IS_MAINT_CONTEXT && [[ -n "${SKILL_MAINT_SUPPRESS[$skill_name]+x}" ]]; then
+      continue
+    fi
 
     # Suppress skills whose project-type constraint doesn't match.
     # Only filters when both: (a) skill declares a type, (b) we detected types.

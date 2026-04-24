@@ -5,6 +5,24 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.3] - 2026-04-24
+
+Fixes a meta-task injection misfire surfaced by session-based audit: plugin-maintenance prompts (`/sync-from-repos`, `/audit-plugin`, `distiller.py` runs) were injecting ia-brainstorming, ia-writing-tests, and ia-planning whenever those skill names appeared as file-path or command references, even though the user wasn't invoking them. Session evidence: 85% / 100% / 100% of each skill's negative-signal sessions were maintenance prompts, not genuine usage.
+
+### Changed
+
+- **`hooks/inject-skills.sh`** — added maintenance-context detection. The hook now inspects the prompt for plugin-internal markers (`plugins/compound-engineering/{skills,agents,commands}/`, `distiller.py`, `skill-patterns.sh`, `/sync-from-repos`, `/audit-plugin`, `/analyze-misfires`, `/diagnose-negatives`, `/evolve-skill`, `/eval-skills`). When any match, skills listed in the new `SKILL_MAINT_SUPPRESS` array are skipped.
+- **`hooks/skill-patterns.sh`** — new `SKILL_MAINT_SUPPRESS` associative array listing `ia-brainstorming`, `ia-writing-tests`, `ia-planning`. Complements the existing `SKILL_PROJECT_TYPES` negative filter. Additions go here when future audits surface skills whose names over-match in maintenance contexts.
+- **AGENTS.md** — directory tree updated to reflect the flat `agents/` layout (the straggler from v3.0.2 that release.sh's staging list didn't pick up).
+
+### Fixed
+
+- **Injection misfires on plugin-maintenance tasks** — three skills that used to fire whenever their name was mentioned in a sync/audit/distiller prompt now correctly stay out of the way. Expected impact: brainstorming's global negative rate drops from 38.2% toward ~5%; writing-tests 22.7% → near-zero; planning 50% → near-zero.
+
+### Added
+
+- **`distillery/tests/fixtures/semantic-triggers.jsonl`** — three regression cases locking in the maint-context suppression. Each exercises a distinct maintenance marker (skill path reference, distiller command, repo comparison) and asserts the three suppressed skills stay out.
+
 ## [3.0.2] - 2026-04-24
 
 Flattens the agents directory. All 19 agents move from `agents/<category>/ia-X.md` to `agents/ia-X.md`, shortening each agent's fully-qualified identifier from `compound-engineering:<category>:ia-X` to `compound-engineering:ia-X` and freeing another ~43 tokens in the session system prompt. Category grouping survives editorially in README.md.

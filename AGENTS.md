@@ -26,11 +26,8 @@ compound-engineering-plugin/
     └── compound-engineering/     # The plugin
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
-        ├── agents/              # Agents (review, research, design, workflow)
-        │   ├── review/          # Code review agents
-        │   ├── research/        # Research and analysis agents
-        │   ├── design/          # Design and UI agents
-        │   └── workflow/        # Workflow automation agents
+        ├── agents/              # Agents (all `ia-<name>.md`, flat layout)
+        ├── shared-references/   # Cross-agent reference content loaded by agents via Read
         ├── commands/            # Slash commands (all `ia-<name>.md`)
         │   └── references/      # Non-invocable reference content (not prefixed)
         ├── skills/              # Skills (all `ia-<name>/`)
@@ -90,7 +87,7 @@ The old `workflows:` command namespace was dropped as part of the rename — pre
 
 Rules:
 - Every directory under `plugins/compound-engineering/skills/` starts with `ia-`.
-- Every agent file under `plugins/compound-engineering/agents/*/` starts with `ia-`.
+- Every agent file under `plugins/compound-engineering/agents/` starts with `ia-` (flat layout, no category subdirectories).
 - Every command file under `plugins/compound-engineering/commands/` starts with `ia-`.
 - The `name:` frontmatter field matches the directory/file stem exactly.
 - Trigger regex patterns in `hooks/skill-patterns.sh` do NOT change — they match user speech, not skill names. Only the array keys (`SKILL_PATTERNS[ia-debugging]`) carry the prefix.
@@ -145,7 +142,7 @@ grep -E '^description:' skills/*/SKILL.md
 
 ### Adding a new agent
 
-1. Create `plugins/compound-engineering/agents/<category>/new-agent.md`
+1. Create `plugins/compound-engineering/agents/ia-new-agent.md` (flat layout)
 2. Run `bash scripts/update-metadata.sh`
 3. Update README tables
 4. Test with `claude agent new-agent "test"`
