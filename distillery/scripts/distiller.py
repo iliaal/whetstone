@@ -1212,11 +1212,17 @@ def validate_plugin(component_filter=None):
         if d.is_dir() and (d / "SKILL.md").exists():
             known_skills[d.name] = d / "SKILL.md"
 
+    # Phantom-agent guard: Claude Code registers every .md under agents/ as an
+    # invokable subagent. Reference files must live outside agents/ (e.g., at
+    # plugins/compound-engineering/shared-references/) or they pollute /context
+    # and the agent tool list. Flag any stragglers as HIGH.
+    phantom_agent_paths = []
     for f in sorted(agents_dir.rglob("*.md")) if agents_dir.exists() else []:
         if f.name == "README.md":
             continue
-        # Skip reference files (agents/*/references/*.md) — they're not agents
-        if "references" in f.relative_to(agents_dir).parts:
+        rel_parts = f.relative_to(agents_dir).parts
+        if "references" in rel_parts:
+            phantom_agent_paths.append(f.relative_to(PLUGIN_DIR))
             continue
         known_agents[f.stem] = f
 
@@ -1236,6 +1242,14 @@ def validate_plugin(component_filter=None):
             "message": message,
             "severity": severity,
         })
+
+    for p in phantom_agent_paths:
+        add_finding(
+            str(p),
+            "PHANTOM_AGENT",
+            f"Reference file under agents/ gets registered as a subagent by Claude Code. Move to plugins/compound-engineering/shared-references/ and update link paths.",
+            "HIGH",
+        )
 
     def parse_frontmatter(content):
         """Parse YAML frontmatter from markdown content."""
@@ -1417,8 +1431,12 @@ def validate_plugin(component_filter=None):
             "body_tokens": body_tokens,
         })
 
+        desc_tokens = round(len(desc.encode()) / 3.5) if desc else 0
+
         if not desc or len(desc) < 20:
             add_finding(agent_name, "EMPTY_DESCRIPTION", f"Agent description too short ({len(desc)} chars)", "HIGH")
+        elif desc_tokens > 80:
+            add_finding(agent_name, "description", f"Description exceeds 80 tokens (~{desc_tokens}) -- trim routing guidance or redundant phrasing", "HIGH")
 
         if desc and "use " not in desc.lower():
             add_finding(agent_name, "MISSING_TRIGGER", "Agent description missing trigger phrase", "MEDIUM")

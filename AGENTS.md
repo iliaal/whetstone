@@ -31,11 +31,10 @@ compound-engineering-plugin/
         │   ├── research/        # Research and analysis agents
         │   ├── design/          # Design and UI agents
         │   └── workflow/        # Workflow automation agents
-        ├── commands/            # Slash commands
-        │   ├── workflows/       # Core workflow commands (workflows:plan, etc.)
-        │   └── *.md             # Utility commands
-        ├── skills/              # Skills (all native)
-        │   └── <skill-name>/
+        ├── commands/            # Slash commands (all `ia-<name>.md`)
+        │   └── references/      # Non-invocable reference content (not prefixed)
+        ├── skills/              # Skills (all `ia-<name>/`)
+        │   └── ia-<skill-name>/
         │       ├── SKILL.md        # Skill content
         │       ├── references/     # Optional supplementary docs
         │       └── scripts/        # Optional bundled scripts
@@ -52,6 +51,7 @@ compound-engineering-plugin/
 - **Read before claiming "new"**: Before presenting sync/improvement findings, read the target skill to verify the pattern isn't already covered. Saves round-trips.
 - **Present changes one at a time** for review decisions. Batch presentation only when explicitly asked.
 - **No off-stack content**: Skip or replace code examples, references, and patterns for languages/frameworks the team doesn't use (Ruby/Rails, Java, Swift, etc.). Use PHP, Python, or TypeScript equivalents. Generic SQL or framework-agnostic examples are fine when no specific stack fits.
+- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/compound-engineering/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `grep -rn '~/ai/\|/home/' plugins/` before shipping to catch stragglers.
 
 ## Versioning
 
@@ -78,16 +78,23 @@ Enforcement:
 - If a session-end summary says "bumped to vX.Y.Z" without the user invoking `/release`, that is a regression — back out the bump before handing off.
 - Exception: if the user explicitly asks for a version bump outside `/release`, do it. Otherwise `/release` is the sole authority for version state.
 
-## Command naming convention
+## Naming convention
 
-Workflow commands use `workflows:` prefix to avoid collisions with built-in commands:
-- `/workflows:brainstorm` — explore requirements and approaches before planning
-- `/workflows:plan` — create implementation plans
-- `/workflows:review` — run comprehensive code reviews
-- `/workflows:work` — execute work items systematically
-- `/workflows:compound` — document solved problems
+All skills, agents, and commands in the plugin carry an `ia-` prefix (introduced in v4.0.0). The prefix:
 
-Why `workflows:`? Claude Code has built-in `/plan` and `/review`. Using `name: workflows:plan` in frontmatter creates a unique command with no collision.
+- Prevents collisions with Claude Code built-ins (`/plan`, `/review`) and with sibling plugins (EveryInc's `ce-` family).
+- Groups plugin artifacts visibly in shared tool directories (`~/.codex/skills/`, `~/.agents/skills/`).
+- Keeps command invocations short and consistent: `/ia-plan`, `/ia-review`, `/ia-brainstorm`, `/ia-work`, `/ia-compound`.
+
+The old `workflows:` command namespace was dropped as part of the rename — previous `/workflows:plan` is now `/ia-plan`. See CHANGELOG 4.0.0 migration note.
+
+Rules:
+- Every directory under `plugins/compound-engineering/skills/` starts with `ia-`.
+- Every agent file under `plugins/compound-engineering/agents/*/` starts with `ia-`.
+- Every command file under `plugins/compound-engineering/commands/` starts with `ia-`.
+- The `name:` frontmatter field matches the directory/file stem exactly.
+- Trigger regex patterns in `hooks/skill-patterns.sh` do NOT change — they match user speech, not skill names. Only the array keys (`SKILL_PATTERNS[ia-debugging]`) carry the prefix.
+- Reference files (`*/references/*.md`) are NOT prefixed — they're content, not invocable components.
 
 ## Skill compliance checklist
 
@@ -100,6 +107,8 @@ When adding or modifying skills, verify:
 - [ ] `name:` present and matches directory name (lowercase-with-hyphens)
 - [ ] `description:` describes **what it does and when to use it** (e.g., "Explains code with diagrams. Use when exploring how code works.")
 - [ ] `description:` describes *when* to invoke the skill (trigger conditions); never *how* the skill proceeds step-by-step. Restating the body's procedure in the description causes Claude to follow the description and skip the skill content.
+
+**Description-as-shortcut failure mode (documented evidence):** a skill whose description summarizes the procedure will be *followed* instead of *read*. Observed case from external test runs: a skill with a two-stage flowchart (spec-compliance review, then quality review) had its description paraphrased as "code review between tasks." Claude ran ONE review, not TWO, because the description compressed the workflow. The fix is always the same: description = trigger conditions only. Process lives in the body. If you find yourself writing "this skill does X, then Y, then Z" in the description, you are writing a procedure shortcut and the body will be skipped.
 
 ### Reference Links (Required if references/ exists)
 

@@ -12,7 +12,7 @@ Deep analysis of all skills, agents, and commands in the compound-engineering pl
 
 ```
 PLUGIN_DIR=plugins/compound-engineering
-SYNC_LOG=~/ai/wiki/tools/compound-engineering-sync-log.md
+SYNC_LOG=docs/audit/audit-log.md
 ```
 
 If `$ARGUMENTS` specifies a name or category, narrow to that. Otherwise audit everything.

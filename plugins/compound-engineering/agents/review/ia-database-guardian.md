@@ -170,7 +170,7 @@ WHERE new_column = '<expected_value>';
 
 ## Review Triggers (grep-first)
 
-Before reading the diff end-to-end, run the grep suite in [database-review-triggers.md](./references/database-review-triggers.md). Six known classes of silent data corruption, each with a concrete grep pattern and the fix: JSON-column migration clobber, query-builder update skipping observers/audit, column rename missing JSON-embedded copies, DynamoDB FilterExpression+Limit pagination, full-attribute replace clobber, paired-enum drift.
+Before reading the diff end-to-end, run the grep suite in [database-review-triggers.md](../../shared-references/database-review-triggers.md). Six known classes of silent data corruption, each with a concrete grep pattern and the fix: JSON-column migration clobber, query-builder update skipping observers/audit, column rename missing JSON-embedded copies, DynamoDB FilterExpression+Limit pagination, full-attribute replace clobber, paired-enum drift.
 
 ## Analysis Approach
 

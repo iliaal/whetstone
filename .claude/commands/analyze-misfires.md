@@ -77,4 +77,4 @@ Compare before/after misfire rates for the changed skills.
 
 - The relevance check uses keyword overlap, which is imperfect. A skill with 0% misfire but keyword overlap of 100% might still be injected into irrelevant tasks if the keywords are too generic. Use the irrelevant task samples to verify.
 - Regex changes affect all future sessions. Test changes with `distiller.py eval-triggers` before committing.
-- Some misfire is acceptable -- skills like `debugging` (19%) are broadly useful even when not the primary task. Focus on skills above 30%.
+- Some misfire is acceptable -- skills like `ia-debugging` (19%) are broadly useful even when not the primary task. Focus on skills above 30%.

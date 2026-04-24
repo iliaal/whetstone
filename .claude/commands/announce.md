@@ -6,7 +6,7 @@ argument-hint: "[optional: version to announce, defaults to current]"
 
 # Draft release announcement for X
 
-Generate an announcement post for the latest compound-engineering plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing. Apply the `writing` skill throughout — no filler, no AI slop, no throat-clearing.
+Generate an announcement post for the latest compound-engineering plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing. Apply the `ia-writing` skill throughout — no filler, no AI slop, no throat-clearing.
 
 ## Step 1: Gather context
 
@@ -59,7 +59,7 @@ Split across multiple posts when the release has two or more clearly distinct th
 
 ## Step 3: Apply writing skill
 
-Invoke the `writing` skill in audit mode on the drafted post. The skill returns an AUDIT (tagged offenses), CORRECTED TEXT, and 5-dimension scores (Directness / Rhythm / Trust / Authenticity / Density, 1-10 each). Present the audit alongside the corrected draft so the reader can see what was fixed and why.
+Invoke the `ia-writing` skill in audit mode on the drafted post. The skill returns an AUDIT (tagged offenses), CORRECTED TEXT, and 5-dimension scores (Directness / Rhythm / Trust / Authenticity / Density, 1-10 each). Present the audit alongside the corrected draft so the reader can see what was fixed and why.
 
 Expect the score to land above 40/50 before presenting. If below, run another pass focusing on the weakest dimension.
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { defineCommand, runMain } from "citty"
+import cleanup from "./commands/cleanup"
 import convert from "./commands/convert"
 import install from "./commands/install"
 import listCommand from "./commands/list"
@@ -12,6 +13,7 @@ const main = defineCommand({
     description: "Convert Claude Code plugins into other agent formats",
   },
   subCommands: {
+    cleanup: () => cleanup,
     convert: () => convert,
     install: () => install,
     list: () => listCommand,

@@ -49,7 +49,7 @@ Group PRs into review batches of 4-6 based on apparent type:
 - **Bug fixes** - titles with `fix`, `bug`, error descriptions
 - **Features** - titles with `feat`, `add`, new functionality
 - **Documentation** - titles with `docs`, `readme`, terminology
-- **Configuration/Setup** - titles with `config`, `setup`, `install`
+- **Configuration/Setup** - titles with `config`, `ia-setup`, `install`
 - **Stale/Old** - PRs older than 30 days
 
 ## Step 3: Parallel Review (Team of Agents)
@@ -179,7 +179,7 @@ After all PRs are reviewed:
 Use **AskUserQuestion**:
 
 1. **Run `/release-docs`** - Update documentation site if components changed
-2. **Run `/changelog`** - Generate changelog for merged PRs
+2. **Run `/ia-changelog`** - Generate changelog for merged PRs
 3. **Commit any local changes** - If version bumps needed
 4. **Done** - Wrap up
 

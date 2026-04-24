@@ -5,13 +5,13 @@ description: Prune stale entries from the compound-engineering sync decision log
 
 # Prune sync log
 
-Archive entries in `~/ai/wiki/tools/compound-engineering-sync-log.md` that are no longer load-bearing, so the pre-flight filter in `/sync-from-repos` and `/audit-plugin` stays lean and current.
+Archive entries in `docs/audit/audit-log.md` that are no longer load-bearing, so the pre-flight filter in `/sync-from-repos` and `/audit-plugin` stays lean and current.
 
 ## Configuration
 
 ```
-SYNC_LOG=~/ai/wiki/tools/compound-engineering-sync-log.md
-ARCHIVE=~/ai/wiki/tools/compound-engineering-sync-log-archive.md
+SYNC_LOG=docs/audit/audit-log.md
+ARCHIVE=docs/audit/audit-log-archive.md
 PLUGIN_DIR=plugins/compound-engineering
 REPOS_DIR=~/ai/repos
 TODAY=YYYY-MM-DD  # resolve to actual date at run time
@@ -76,14 +76,6 @@ For approved entries:
    ```
 
 4. **Remove the entry** from `$SYNC_LOG` using Edit. Do not leave a placeholder or a "see archive" comment — the whole point is to shrink the live log.
-
-5. **Append a prune log line** to `~/ai/wiki/log.md`:
-
-   ```markdown
-   ## [YYYY-MM-DD] lint | Pruned N entries from compound-engineering-sync-log
-
-   <One-line summary of what was pruned and why>
-   ```
 
 ## Phase 5: Verify
 

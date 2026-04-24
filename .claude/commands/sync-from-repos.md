@@ -13,7 +13,7 @@ Scan reference repositories, compare against plugin skills/agents/commands, and 
 ```
 REPOS_DIR=~/ai/repos
 PLUGIN_DIR=plugins/compound-engineering
-SYNC_LOG=~/ai/wiki/tools/compound-engineering-sync-log.md
+SYNC_LOG=docs/audit/audit-log.md
 ```
 
 ## Phase 0: Pre-flight — read prior decision log

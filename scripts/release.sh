@@ -174,7 +174,15 @@ bash "$SCRIPT_DIR/sync-to-tools.sh"
 echo "[7/8] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
-# --- 8. Summary ---
+# --- 8. Sync tags ---
+# `gh release create --target main` above creates the tag on the remote. Pull
+# it back locally so `git tag` / `git log v<ver>..HEAD` stay consistent. Without
+# this, local tags drift further behind origin with every release.
+echo "[8/9] Sync tags from origin..."
+git fetch --tags --quiet
+echo "  Tags synced"
+
+# --- 9. Summary ---
 echo ""
-echo "[8/8] Done. v${version} released."
+echo "[9/9] Done. v${version} released."
 echo "  Restart Claude Code to pick up the new version."

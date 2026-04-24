@@ -2,7 +2,7 @@
 name: ia-bug-reproduction-validator
 autoApprove: read
 tools: Read, Grep, Glob, Bash, WebFetch
-description: "Validates, reproduces, and root-cause analyzes bug reports (does not fix). Use when a bug report needs verification and root cause identification before committing to a fix — this is the reproduce-first stage. For fixing after validation, hand off to the debugging skill. For GitHub issue bugs with visual reproduction, use the /reproduce-bug command."
+description: "Validates, reproduces, and root-cause analyzes bug reports (does not fix). Use when a bug report needs verification and root cause identification before committing to a fix — the reproduce-first stage."
 ---
 
 <examples>

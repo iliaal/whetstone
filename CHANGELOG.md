@@ -5,6 +5,32 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-04-24
+
+Patch release bundling v3.0.0 migration stragglers with plugin-hygiene cleanup. Fixes six phantom subagents registered from `agents/*/references/`, trims four over-budget agent descriptions, rewrites `/ia-setup` as a diagnostic-first command with a bundled health check, and adds local tag-sync to `release.sh` so `git tag` stays consistent with remote after each ship.
+
+### Added
+
+- **`plugins/compound-engineering/scripts/check-health.sh`** — declarative deps array (git, gh, jq, python3, claude recommended; node, npm, codex, playwright, edge-cdp optional) with traffic-light diagnostic output. Platform-aware (apt vs brew) and supports `--version` for plugin version display.
+- **Validator checks** (`distillery/scripts/distiller.py validate-plugin`): `PHANTOM_AGENT` (HIGH) flags `.md` files under `agents/*/references/` that get auto-registered by Claude Code as phantom subagents; description-length check on agents mirrors the existing skill check at >80 tokens (HIGH).
+- **`plugins/compound-engineering/shared-references/`** — new plugin-root directory for cross-agent reference content that shouldn't be scanned as invokable agents. Six files relocated from `agents/*/references/`.
+- **v3.0.0 migration stragglers** finally landing in git: `src/commands/cleanup.ts` Bun CLI subcommand for stale Codex/OpenCode installs, AGENTS.md ia- naming convention section with the "No personal-machine paths" and "description-as-shortcut" rules, and `.claude/commands/*.md` reference updates from `workflows:` → `ia-` and wiki paths → `docs/audit/`.
+
+### Changed
+
+- **`/ia-setup`** rewritten as diagnostic-first. Phase 1 runs `check-health.sh` and offers per-tool install loop with approval and post-install verification. Phase 2 preserves the existing review-agent wizard so `/ia-review` and `/ia-work` keep reading `compound-engineering.local.md` unchanged. Adds PHP to stack detection.
+- **Agent descriptions trimmed** to fit the 80-token budget (freed ~195 tokens in every session's system prompt):
+  - `ia-infrastructure-engineer`: 157 → 74 tokens
+  - `ia-deployment-verification-agent`: 117 → 65 tokens
+  - `ia-bug-reproduction-validator`: 101 → 58 tokens
+  - `ia-architecture-strategist`: 85 → 68 tokens
+  - Common pattern cut: inline cross-agent routing ("For X, use Y-agent"). Routing belongs in dispatching commands, not every agent's description.
+- **`scripts/release.sh`** appends `git fetch --tags` after `gh release create`. Previous releases created tags on the remote via GitHub releases, but local never auto-fetched them, so local `git tag` drifted far behind origin (7 local vs 15 remote as of v3.0.0).
+
+### Fixed
+
+- **Phantom subagents** — Claude Code's plugin loader recursively registers every `.md` under `agents/` as an invokable subagent. Six reference files under `agents/review/references/` and `agents/workflow/references/` were polluting `/context` and the agent tool list as `compound-engineering:*:references:*` entries with no frontmatter. Moved to `shared-references/` outside the agents tree; link paths in three parent agents updated from `./references/X.md` to `../../shared-references/X.md`. ~260 tokens freed per session.
+
 ## [3.0.0] - 2026-04-23
 
 **Breaking**: every skill, agent, and command now carries an `ia-` prefix. The `workflows:` command namespace is gone — `/workflows:plan` is now `/ia-plan`. Any project referencing `compound-engineering:code-review` or similar must update to `compound-engineering:ia-code-review`. See migration note below.

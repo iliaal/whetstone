@@ -2,7 +2,7 @@
 name: ia-infrastructure-engineer
 model: sonnet
 autoApprove: read
-description: "CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker containerization, monitoring and observability (metrics/logs/traces), and incident management. Use for pipeline design or optimization, Dockerfile/container review, observability stack setup, deployment strategy selection, or incident response. For database migration verification, use deployment-verification-agent. For cloud architecture and cost optimization, use cloud-architect. For infrastructure-as-code (Terraform/OpenTofu), use the terraform skill."
+description: "CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker containerization, observability (metrics/logs/traces), and incident management. Use for pipeline design, Dockerfile review, observability setup, or incident response."
 ---
 
 <examples>
@@ -120,7 +120,7 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 
 ## Docker & Containerization
 
-For Dockerfile, image optimization, container security, graceful shutdown, and docker-compose dev-setup patterns, load [docker-containerization.md](./references/docker-containerization.md). Covers multi-stage builds, minimal base images, non-root user, image-size targets, Trivy/Grype scanning, SIGTERM handling, and dev/prod topology parity.
+For Dockerfile, image optimization, container security, graceful shutdown, and docker-compose dev-setup patterns, load [docker-containerization.md](../../shared-references/docker-containerization.md). Covers multi-stage builds, minimal base images, non-root user, image-size targets, Trivy/Grype scanning, SIGTERM handling, and dev/prod topology parity.
 
 ## Monitoring & Observability
 

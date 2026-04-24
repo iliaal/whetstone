@@ -113,15 +113,15 @@ Forcing writers to articulate exploitation separates real findings from theoreti
 
 ## False-Positive Suppression
 
-Before filing any finding, apply the suppression rules in [security-fp-suppression.md](./references/security-fp-suppression.md): hard exclusions (DoS/resource leaks, memory safety in managed languages, SSRF in client HTML, ReDoS, markdown, framework-escaped XSS), precedents for non-findings (LLM user-position content, non-PII logging, internal-ops scripts, generic "consider validation"), confidence floor ≥ 0.8 (stricter than `ia-code-review` by design), severity gates (Medium must be concrete; local-network still counts HIGH), and project-level override honoring.
+Before filing any finding, apply the suppression rules in [security-fp-suppression.md](../../shared-references/security-fp-suppression.md): hard exclusions (DoS/resource leaks, memory safety in managed languages, SSRF in client HTML, ReDoS, markdown, framework-escaped XSS), precedents for non-findings (LLM user-position content, non-PII logging, internal-ops scripts, generic "consider validation"), confidence floor ≥ 0.8 (stricter than `ia-code-review` by design), severity gates (Medium must be concrete; local-network still counts HIGH), and project-level override honoring.
 
 ## Security Requirements Checklist
 
-Before emitting the report, run through the 13-item verification checklist in [security-requirements-checklist.md](./references/security-requirements-checklist.md) — input validation, secret storage, authz-per-request, SQL parameterization, XSS escaping, HTTPS, CSRF, security headers, rate limiting, CORS, password hashing, error-message hygiene, dependency audit.
+Before emitting the report, run through the 13-item verification checklist in [security-requirements-checklist.md](../../shared-references/security-requirements-checklist.md) — input validation, secret storage, authz-per-request, SQL parameterization, XSS escaping, HTTPS, CSRF, security headers, rate limiting, CORS, password hashing, error-message hygiene, dependency audit.
 
 ## Threat Modeling Mode
 
-When asked for a threat model (not a code scan), load [security-threat-modeling.md](./references/security-threat-modeling.md) — STRIDE process per component, risk matrix scoring, focus-paths, output format with TM-NNN numbering. Note non-capabilities to avoid inflated severity.
+When asked for a threat model (not a code scan), load [security-threat-modeling.md](../../shared-references/security-threat-modeling.md) — STRIDE process per component, risk matrix scoring, focus-paths, output format with TM-NNN numbering. Note non-capabilities to avoid inflated severity.
 
 ## Reporting Protocol
 
@@ -134,7 +134,7 @@ Security audit reports (not threat models) use this four-section envelope. The `
 
 ## Adversarial Pass
 
-After the Phase 0-2 scans, run the adversarial pass — attacker-perspective review to catch what the checklist missed. Load [security-adversarial-pass.md](./references/security-adversarial-pass.md) for the full method: happy-path assumption hunting, silent-failure detection, trust-boundary tracing, cross-category compound vulnerabilities, and attacker-prioritization by exploit path + blast radius.
+After the Phase 0-2 scans, run the adversarial pass — attacker-perspective review to catch what the checklist missed. Load [security-adversarial-pass.md](../../shared-references/security-adversarial-pass.md) for the full method: happy-path assumption hunting, silent-failure detection, trust-boundary tracing, cross-category compound vulnerabilities, and attacker-prioritization by exploit path + blast radius.
 
 ## Operational Guidelines
 
