@@ -5,7 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Follow @iliaa](https://img.shields.io/badge/Follow-@iliaa-000000?style=flat&logo=x&logoColor=white)](https://x.com/intent/follow?screen_name=iliaa)
 
-A Claude Code plugin that makes AI coding agents follow engineering discipline. Plan before coding. Verify before claiming done. Find root cause before patching. Review before merge. The agent picks up the right methodology based on what you're working on, no manual activation needed.
+![Compound Engineering Plugin](images/compound-hero.png)
+
+A Claude Code plugin that makes AI coding agents follow engineering discipline. Plan before coding. Verify before claiming done. Find root cause before patching. Review before merge. Skills activate based on file type and task signals, not manual toggling.
 
 Bundles agents, skills, workflow commands, and a skill distillery for PHP, Python, TypeScript, React, and infrastructure workflows.
 
@@ -16,6 +18,12 @@ Bundles agents, skills, workflow commands, and a skill distillery for PHP, Pytho
 **Solo developers who want consistency.** Write a Bash script and the agent enforces `set -Eeuo pipefail` and ShellCheck compliance. Touch a Laravel controller and it applies strict types and thin-controller patterns. No setup, no toggling.
 
 **Anyone building with AI agents.** Includes skills for multi-agent orchestration, agent-native architecture design, and a distillery that generates new skills from top-rated community sources.
+
+## The Problem
+
+AI coding agents skip planning, claim "done" without verifying, patch symptoms over root causes, and forget what they learned when context resets. The output looks polished. The behavior underneath is undisciplined.
+
+The long-form argument is at [AI Agents Don't Lack Capability. They Lack Process.](https://ilia.ws/blog/ai-agents-dont-lack-capability-they-lack-process). This plugin enforces it.
 
 ## Install
 
@@ -65,7 +73,7 @@ Backups land under `~/.cache/compound-engineering/legacy-backup/`.
 
 ### OpenCode
 
-Same converter, different target. OpenCode reads skills from its per-project config — the converter translates the plugin's `SKILL.md` format into OpenCode's expected shape and writes output into the current project (override with `--output <dir>`).
+Same converter, different target. OpenCode reads skills from its per-project config. The converter translates the plugin's `SKILL.md` format into OpenCode's expected shape and writes output into the current project (override with `--output <dir>`).
 
 ```bash
 bun run src/index.ts install ./plugins/compound-engineering --to opencode
@@ -90,6 +98,11 @@ bash scripts/sync-to-tools.sh              # symlink into all three tool dirs
 bash scripts/sync-to-tools.sh --dry-run    # preview changes
 ```
 
+## Works well with
+
+- **[codesage](https://github.com/iliaal/codesage)** adds structural code intelligence (find symbols, references, dependencies, blast-radius analysis) as an MCP server. The plugin enforces discipline; codesage gives the agent the map of the codebase to apply that discipline against.
+- **[ai-skills](https://github.com/iliaal/ai-skills)** is the read-only mirror of this plugin's skills, packaged for non-Claude-Code agents. Use the plugin if you're on Claude Code; use the mirror if you're on Cursor, Codex, Gemini CLI, or similar.
+
 ## The workflow
 
 Five commands form a loop: explore the problem, plan the solution, build it, review it, document what you learned. Each pass makes the next one faster because solutions accumulate as searchable docs.
@@ -103,6 +116,8 @@ Five commands form a loop: explore the problem, plan the solution, build it, rev
 | `/ia-compound` | Captures what you just solved as searchable documentation in `docs/solutions/` so the next person (or the agent) doesn't re-debug it. |
 
 You don't have to use all five. `/ia-review` on its own is a solid pre-merge check. `/ia-plan` works standalone for scoping. Mix and match.
+
+![Without the plugin vs with the plugin](images/compound-before-after.png)
 
 ## Skills
 
@@ -218,9 +233,9 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 
 ## Commands
 
-### Workflow commands
+All commands carry the `ia-` prefix to avoid collisions with Claude Code built-ins and sibling plugins. The full list:
 
-Core workflow commands use `workflows:` prefix to avoid collisions with built-in commands:
+### Workflow commands
 
 | Command | Description |
 |---------|------------|
@@ -245,7 +260,7 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | `/ia-test-browser` | Run browser tests on pages affected by the current PR or branch. |
 | `/ia-feature-video` | Record a video walkthrough of a feature and add it to the PR description. |
 | `/ia-compound-refresh` | Review `docs/solutions/` for stale learnings: keep, update, replace, or archive. |
-| `/ia-changelog` | Create engaging changelogs from recent merges. |
+| `/ia-changelog` | Build changelogs from recent merges. |
 | `/ia-reproduce-bug` | Reproduce bugs using logs and console output. |
 | `/ia-report-bug` | Report a bug in the plugin. |
 | `/ia-triage` | Triage and prioritize issues. |
@@ -297,11 +312,13 @@ compound-engineering-plugin/
 
 Two projects informed the shape of this plugin. Worth reading their sources directly if you're building something similar.
 
-- **[EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)** — the original "compound engineering" framing (each unit of engineering work should make the next one easier), the brainstorm → plan → work → review → compound loop, and the multi-target install model for Codex / OpenCode / Copilot / Gemini / Kiro / Pi.
-- **[ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills)** — curated catalog of Claude skills the distillery mines for source material, alongside skills.sh.
-
-Specific patterns borrowed, adapted, or rejected on a per-finding basis are recorded in `docs/audit/audit-log.md` (local operational log).
+- **[EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)**: the original "compound engineering" framing (each unit of engineering work should make the next one easier), the brainstorm > plan > work > review > compound loop, and the multi-target install model for Codex / OpenCode / Copilot / Gemini / Kiro / Pi.
+- **[ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills)**: curated catalog of Claude skills the distillery mines for source material, alongside skills.sh.
 
 ## License
 
 MIT
+
+---
+
+[Follow @iliaa on X](https://x.com/iliaa) • [Blog](https://ilia.ws) • If this improved your AI workflow, [star it](https://github.com/iliaal/compound-engineering-plugin)!
