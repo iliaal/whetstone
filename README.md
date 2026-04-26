@@ -321,4 +321,4 @@ MIT
 
 ---
 
-[Follow @iliaa on X](https://x.com/iliaa) • [Blog](https://ilia.ws) • If this improved your AI workflow, [star it](https://github.com/iliaal/compound-engineering-plugin)!
+[Follow @iliaa on X](https://x.com/iliaa) • [Blog](https://ilia.ws) • If this improved your AI workflow, star it!
