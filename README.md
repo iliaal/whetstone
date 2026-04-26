@@ -25,7 +25,7 @@ AI coding agents skip planning, claim "done" without verifying, patch symptoms o
 
 The long-form argument is at [AI Agents Don't Lack Capability. They Lack Process.](https://ilia.ws/blog/ai-agents-dont-lack-capability-they-lack-process). This plugin enforces it.
 
-## Install
+## 🚀 Install
 
 ### Claude Code (recommended)
 
@@ -98,12 +98,12 @@ bash scripts/sync-to-tools.sh              # symlink into all three tool dirs
 bash scripts/sync-to-tools.sh --dry-run    # preview changes
 ```
 
-## Works well with
+## 🔗 Works well with
 
 - **[codesage](https://github.com/iliaal/codesage)** adds structural code intelligence (find symbols, references, dependencies, blast-radius analysis) as an MCP server. The plugin enforces discipline; codesage gives the agent the map of the codebase to apply that discipline against.
 - **[ai-skills](https://github.com/iliaal/ai-skills)** is the read-only mirror of this plugin's skills, packaged for non-Claude-Code agents. Use the plugin if you're on Claude Code; use the mirror if you're on Cursor, Codex, Gemini CLI, or similar.
 
-## The workflow
+## 🛠️ The workflow
 
 Five commands form a loop: explore the problem, plan the solution, build it, review it, document what you learned. Each pass makes the next one faster because solutions accumulate as searchable docs.
 
@@ -119,7 +119,7 @@ You don't have to use all five. `/ia-review` on its own is a solid pre-merge che
 
 ![Without the plugin vs with the plugin](images/compound-before-after.png)
 
-## Skills
+## ✨ Skills
 
 Skills are instructions that activate based on what you're working on. They shape how the agent behaves, enforcing procedures and anti-patterns rather than adding knowledge.
 
@@ -188,7 +188,7 @@ Skills are instructions that activate based on what you're working on. They shap
 |-------|------------|
 | [ia-orchestrating-swarms](plugins/compound-engineering/skills/ia-orchestrating-swarms/SKILL.md) | Distinguishes short-lived subagents from persistent teammates, prescribes when to use each, and enforces dispatch discipline: worktree isolation for parallel implementation, direct context over delegated navigation, fresh agents for failed tasks. Four standardized status signals. For tasks large enough to benefit from parallelism. |
 
-## Agents
+## 🤖 Agents
 
 Specialized subagents dispatched by the main agent or by workflow commands. Each runs in isolation with its own tools and context.
 
@@ -231,7 +231,7 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 | [ia-infrastructure-engineer](plugins/compound-engineering/agents/workflow/infrastructure-engineer.md) | Full deployment-lifecycle coverage: CI/CD pipelines (blue-green, canary, rolling, feature flags), Docker and containerization, observability stacks (metrics/logs/traces), and incident management. Not for DB migration verification (use deployment-verification-agent). |
 | [ia-pr-comment-resolver](plugins/compound-engineering/agents/workflow/pr-comment-resolver.md) | Implements a single pre-triaged PR comment where the action is already agreed on. For mechanical fixes, not judgment calls. |
 
-## Commands
+## ⚡ Commands
 
 All commands carry the `ia-` prefix to avoid collisions with Claude Code built-ins and sibling plugins. The full list:
 
@@ -321,4 +321,4 @@ MIT
 
 ---
 
-[Follow @iliaa on X](https://x.com/iliaa) • [Blog](https://ilia.ws) • If this improved your AI workflow, star it!
+[Follow @iliaa on X](https://x.com/iliaa) • [Blog](https://ilia.ws) • If this improved your AI workflow, ⭐ star it!
