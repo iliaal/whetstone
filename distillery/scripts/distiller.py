@@ -1117,6 +1117,64 @@ SPEC_REQUIRED_HEADINGS = (
     "Maintenance Notes",
 )
 
+# Coverage matrix discipline: rows whose status is partial/missing/incomplete/todo/unknown
+# must carry a concrete next step in their evidence column. Action verbs taken from
+# skill-writer's ACTION_TOKENS plus a couple our own pipeline uses.
+_COVERAGE_PARTIAL_TOKENS = ("partial", "missing", "incomplete", "todo", "unknown", "stale")
+_COVERAGE_ACTION_TOKENS = (
+    "add", "collect", "document", "retrieve", "validate", "test", "confirm",
+    "expand", "review", "map", "populate", "build", "harvest", "rerun", "fix",
+)
+
+
+def _parse_coverage_matrix(spec_content):
+    """Extract rows from the SPEC.md `### Coverage matrix` table.
+
+    Returns a list of (dimension, status, evidence) tuples. Skips the table
+    header and separator rows. If no matrix is found, returns an empty list.
+    """
+    lines = spec_content.splitlines()
+    start = None
+    for i, ln in enumerate(lines):
+        if _re.match(r"^###\s+Coverage matrix\s*$", ln.strip(), _re.IGNORECASE):
+            start = i + 1
+            break
+    if start is None:
+        return []
+
+    rows: list[tuple[str, str, str]] = []
+    for ln in lines[start:]:
+        stripped = ln.strip()
+        if stripped.startswith("##"):  # next heading — table ended
+            break
+        if not stripped.startswith("|"):
+            if rows:  # blank line after table rows
+                break
+            continue
+        if _re.match(r"^\|\s*-+\s*\|", stripped):  # header separator
+            continue
+        cols = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cols) < 3:
+            continue
+        if cols[0].lower() in {"dimension", "dim"}:  # header row
+            continue
+        rows.append((cols[0], cols[1], cols[2]))
+    return rows
+
+
+def _coverage_row_has_action(evidence):
+    """True if the evidence column contains an action verb hinting at a next step."""
+    text = evidence.lower()
+    return any(_re.search(rf"\b{tok}\b", text) for tok in _COVERAGE_ACTION_TOKENS)
+
+
+def _coverage_status_is_partial(status):
+    """True if the status column flags the row as not-yet-complete."""
+    text = status.lower()
+    if "<!--" in text:  # placeholder comment — treat as partial too
+        return True
+    return any(tok in text for tok in _COVERAGE_PARTIAL_TOKENS)
+
 
 def _find_machine_paths(text):
     """Return distinct machine-specific path matches, capped at 5 hits per source.
@@ -1521,6 +1579,13 @@ def validate_plugin(component_filter=None):
                 add_finding(skill_name, "MACHINE_PATH_LEAK",
                             f"Machine-specific path(s) in SPEC.md: {', '.join(spec_path_hits[:3])}",
                             "HIGH")
+
+            coverage_rows = _parse_coverage_matrix(spec_content)
+            for dim, status, evidence in coverage_rows:
+                if _coverage_status_is_partial(status) and not _coverage_row_has_action(evidence):
+                    add_finding(skill_name, "COVERAGE_GAP_NO_ACTION",
+                                f"Coverage matrix row '{dim}' is not complete ('{status[:40]}') but evidence column lacks an actionable next step",
+                                "MEDIUM")
 
     # --- Validate agents ---
     for agent_name, agent_path in known_agents.items():
