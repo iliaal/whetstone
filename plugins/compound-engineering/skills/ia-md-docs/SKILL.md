@@ -132,15 +132,15 @@ Flag during `Update README` workflows:
 After every operation, display a summary:
 
 ```
-✓ Updated AGENTS.md
+[OK] Updated AGENTS.md
   - Fixed build command
   - Added new directory to structure
 
-✓ Updated README.md
+[OK] Updated README.md
   - Added installation section
   - Updated badges
 
-⊘ CONTRIBUTING.md not found (skipped)
+[--] CONTRIBUTING.md not found (skipped)
 ```
 
 ## Verify

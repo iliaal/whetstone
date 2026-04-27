@@ -120,7 +120,7 @@ During triage, the following status updates occurred:
 2. Start work on approved items:
 
    ```bash
-   /resolve-todo-parallel  # Work on multiple approved items efficiently
+   /ia-resolve-todo-parallel  # Work on multiple approved items efficiently
    ```
 
 3. Or pick individual items to work on
@@ -184,7 +184,7 @@ When done give these options
 ```markdown
 What would you like to do next?
 
-1. run /resolve-todo-parallel to resolve the todos
+1. run /ia-resolve-todo-parallel to resolve the todos
 2. commit the todos
 3. nothing, go chill
 ```

@@ -5,7 +5,51 @@ All notable changes to the compound-engineering plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.3] - 2026-04-24
+## [3.0.4] - 2026-04-27
+
+Audit-driven hardening pass and Tier 1+2 validator/contract upgrades. No new components — all changes tighten existing skills, agents, and commands. Cost-of-runtime drops via four opus → sonnet agent downgrades (architecture, cloud, database, performance, plus the dishonestly-labeled pr-comment-resolver). Stale `/feature-video`, `/test-browser`, `/triage`, and `/resolve-todo-parallel` invocations from the v4 rename sweep finally caught and fixed across seven command files. Validator gains coverage-matrix rules, fixture floors, and SPEC.md MACHINE_PATH_LEAK enforcement.
+
+### Added
+
+- **`class:` frontmatter taxonomy** on every skill (`language` / `discipline` / `workflow` / `meta` / `tool`). Validator rejects unknown values; `/write-skill` asks for the class up front. Helps disambiguate routing and surfaces scope mismatches.
+- **Per-skill `SPEC.md` maintenance contract** for all 30 skills. Seven required headings define lookup-need, scope, success criteria, and references. New `scripts/generate-spec.py` scaffolds these from the SKILL.md + fixtures.
+- **`/write-skill` command** (project-local) — author a new skill from scratch with paired trigger fixtures and full validation, including Skill Independence rule, SOURCES.md ledger, and SPEC.md scaffolding.
+- **Validator tier 1 gates**: fixture coverage floors (5 positive + 5 negative cases minimum per skill), MACHINE_PATH_LEAK gate extended from SKILL.md to SPEC.md, coverage-matrix `partial → actionable` rule.
+- **`v3-to-v4-migration.md`** reference under `ia-tailwind-css/` — extracted breaking-change table out of the SKILL body to keep current v4 patterns front and center.
+- **`/diagnose-negatives` smallest-failing-decision rubric** — diagnose runs now include an `EX-NNN` evidence schema (kind/origin/source/status/expected/observed/skill_delta/anonymization).
+
+### Changed
+
+- **Four agents downgraded opus → sonnet**: `ia-architecture-strategist`, `ia-cloud-architect`, `ia-database-guardian`, `ia-performance-oracle`. Read-only review work; opus reserved for adversarial reasoning (`ia-security-sentinel`) and persona judgment (`ia-kieran-reviewer`).
+- **`ia-pr-comment-resolver`** demoted opus → sonnet, gained a `tools:` allowlist, and had its description and body rewritten to drop the "mechanical" framing — the agent does side-effect tracing, pattern compliance, and push-back judgment, not pure typo work. Now also threads resolution replies inline via `gh api ... in_reply_to=`.
+- **Three agents** (`ia-best-practices-researcher`, `ia-bug-reproduction-validator`, `ia-code-simplicity-reviewer`) added explicit `model: sonnet` instead of inheriting the default.
+- **Three agents** (`ia-infrastructure-engineer`, `ia-figma-design-sync`, `ia-design-iterator`) added explicit `tools:` allowlists for auditable capability surfaces.
+- **Three agent descriptions** tightened for trigger differentiation: architecture-strategist now triggers on multi-module refactors, simplicity-reviewer on YAGNI suspicion, kieran-reviewer on line-level Py/TS quality.
+- **Stale slash-command refs eliminated** across `ia-review`, `ia-feature-video`, `ia-test-browser`, `ia-triage`, `ia-work` — `/feature-video` → `/ia-feature-video` (×4), `/test-browser` → `/ia-test-browser` (×6), `/resolve-todo-parallel` → `/ia-resolve-todo-parallel` (×4), `/triage` removed (no such command), and a corrupted mid-sentence injection at `ia-review.md:35` rewritten cleanly.
+- **STATUS enum deduplicated** — DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT now defined once in `ia-verification-before-completion`; `ia-debugging` and `ia-orchestrating-swarms` link instead of redefining.
+- **`ia-meta-prompting`**: `/ia-verify` pattern renamed to `/verify-think` to resolve collision with the `/ia-verify` slash command. `/flip` directive rewritten with concrete trigger ("identify the default approach, then propose an alternative using a different mechanism").
+- **`ia-react-frontend`**: removed two restated AbortController/ignore-flag cancellation lists in race-class items 2 and 4; canonical hierarchy lives in Effect rules only.
+- **`ia-frontend-design`**: dropped overly broad `paths` trigger (was firing on every TSX/JSX edit, not just visual design work). Banned-AI-patterns body collapsed to one-line summary; reference owns the explanations.
+- **`ia-debugging`**: process steps renumbered from `0/1/1b/1c/2/3/4` to flat `0–6`. Description triggers expanded to include "broken" and "not working as expected".
+- **`ia-orchestrating-swarms`**: file-overlap detection now ships as a runnable bash one-liner, not just prose.
+- **`ia-document-review`**: hard ceiling at 4 refinement passes ("converged — further changes require new direction"). Was previously unbounded on user "continue".
+- **`ia-postgresql`**: "drop unused indexes" rule gained the uptime caveat (`pg_stat_database.stats_reset` check) — prevents dropping a primary key on a freshly restarted DB or read replica.
+- **`ia-rust-systems` and `ia-nodejs-backend`**: removed "2-3x faster" benchmark claims (date-pinned and unverified).
+- **`ia-nodejs-backend`** description: appended trigger keywords (REST endpoints, middleware, Koa, tRPC, Bun).
+- **`ia-md-docs`** report format: replaced Unicode `✓` / `⊘` with `[OK]` / `[--]` to keep AI-tells out of generated output.
+- **`ia-reflect`**: 10-item cap consolidated to single source with rationale (drop noise rather than batch/split).
+- **`ia-resolve-todo-parallel`**: subagent contract spelled out (todo path, verification command, structured STATUS return); references `ia-orchestrating-swarms` for the dispatch contract.
+- **`ia-review` and `ia-verify`** now state their boundary explicitly: verify is the pre-PR static gate, review is the multi-agent design-level analysis.
+- **README rewrite** — hero/before-after images, tightened structure, emoji section headers, plain-text star CTA.
+- **9 trigger-pattern blind spots** tightened in `skill-patterns.sh` based on Tier 1 backfill evidence.
+- **`ia-agent-native-architecture/references/mobile-patterns.md`** split by lookup need into `mobile-cost.md`, `mobile-execution.md`, `mobile-storage.md` — easier to load just the relevant slice.
+
+### Fixed
+
+- **`distillery/scripts/test_distiller.py::test_perfect_fixture_passes`** — pre-existing unit test that predated the coverage-floor gate; updated fixture from 1+1 to 5+5 cases to match the contract that's now enforced.
+- **Trigger fixtures** for 22 skills bumped to meet the new 5+5 coverage floor.
+
+
 
 Fixes a meta-task injection misfire surfaced by session-based audit: plugin-maintenance prompts (`/sync-from-repos`, `/audit-plugin`, `distiller.py` runs) were injecting ia-brainstorming, ia-writing-tests, and ia-planning whenever those skill names appeared as file-path or command references, even though the user wasn't invoking them. Session evidence: 85% / 100% / 100% of each skill's negative-signal sessions were maintenance prompts, not genuine usage.
 

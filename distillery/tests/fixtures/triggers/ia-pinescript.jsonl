@@ -8,3 +8,5 @@
 {"prompt": "write a Python pandas script to backtest", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "plot the chart in matplotlib", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "query OHLC data from the broker API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "audit this tradingview-mcp server for test coverage", "expect": false, "added_in": "3.0.4", "source": "diagnose-negatives-2026-04-27"}
+{"prompt": "review the JS MCP server that connects to TradingView API", "expect": false, "added_in": "3.0.4", "source": "diagnose-negatives-2026-04-27"}

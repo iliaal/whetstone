@@ -57,10 +57,8 @@ This command takes a work document (plan, specification, or todo file) and execu
    Use a meaningful name based on the work (e.g., `feat/user-authentication`, `fix/email-validation`).
 
    **Option B: Use a worktree (recommended for parallel development)**
-   ```bash
-   skill: git-worktree
-   # The skill will create a new branch from the default branch in an isolated worktree
-   ```
+
+   Invoke the `ia-git-worktree` skill to create a new branch from the default branch in an isolated worktree.
 
    **Option C: Continue on the default branch**
    - Requires explicit user confirmation
@@ -322,6 +320,6 @@ Before creating PR, verify:
 
 ## Integration
 
-- **Predecessor:** `workflows:plan` (provides the plan to execute)
+- **Predecessor:** `/ia-plan` (provides the plan to execute)
 - **During execution:** `ia-verification-before-completion`, `ia-writing-tests`, `ia-debugging`
 - **Next step:** Phase 4 Ship It (merge / PR / keep / discard)

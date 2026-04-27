@@ -3,8 +3,8 @@ name: ia-nodejs-backend
 class: language
 description: >-
   Node.js backend patterns: layered architecture, TypeScript, validation, error
-  handling, security, deployment. Use when building REST APIs, Express/Fastify/Hono/NestJS
-  servers, or server-side TypeScript.
+  handling, security, deployment. Use when building REST APIs, REST endpoints, middleware,
+  Express/Fastify/Hono/NestJS/Koa servers, tRPC procedures, Bun servers, or server-side TypeScript.
 paths: "**/*.ts,**/*.js,**/*.mjs,**/*.cjs"
 ---
 
@@ -17,7 +17,7 @@ paths: "**/*.ts,**/*.js,**/*.mjs,**/*.cjs"
 | Context | Choose | Why |
 |---------|--------|-----|
 | Edge/Serverless | Hono | Zero-dep, fastest cold starts |
-| Performance API | Fastify | 2-3x faster than Express, built-in schema validation |
+| Performance API | Fastify | Higher throughput than Express, built-in schema validation |
 | Enterprise/team | NestJS | DI, decorators, structured conventions |
 | Legacy/ecosystem | Express | Most middleware, widest adoption |
 

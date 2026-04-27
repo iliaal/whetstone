@@ -118,7 +118,7 @@ After changes are complete, ask:
 
 ### Iteration Guidance
 
-After 2 refinement passes, recommend completion--diminishing returns are likely. But if the user wants to continue, allow it.
+After 2 refinement passes, recommend completion--diminishing returns are likely. If the user wants to continue, allow up to 4 passes total. After 4, stop and report "review converged -- further changes require new direction." Do not continue past 4 even on user request without a fresh framing.
 
 Return control to the caller (workflow or user) after selection.
 

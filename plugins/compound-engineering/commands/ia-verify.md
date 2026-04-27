@@ -8,6 +8,8 @@ argument-hint: "[mode: quick|full|pre-commit|pre-pr]"
 
 Run a structured verification pipeline and produce a single READY / NOT READY report.
 
+**Boundary vs `/ia-review`:** `/ia-verify` is the pre-PR static gate (pass/fail on build/types/lint/tests/security). `/ia-review` is the multi-agent code review with findings synthesis. Use `/ia-verify` first to confirm shippable; use `/ia-review` for design-level assessment.
+
 ## Mode
 
 `$ARGUMENTS` -- defaults to `full` if omitted.

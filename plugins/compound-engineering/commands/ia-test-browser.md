@@ -294,13 +294,13 @@ After all tests complete, present summary:
 
 ```bash
 # Test current branch changes
-/test-browser
+/ia-test-browser
 
 # Test specific PR
-/test-browser 847
+/ia-test-browser 847
 
 # Test specific branch
-/test-browser feature/new-dashboard
+/ia-test-browser feature/new-dashboard
 ```
 
 ## agent-browser CLI Reference

@@ -5,7 +5,6 @@ description: >-
   Visual design and aesthetic direction for frontend interfaces. Use when
   building web pages, landing pages, dashboards, or applications where visual
   identity matters. For React patterns and testing, use react-frontend.
-paths: "**/*.html,**/*.css,**/*.tsx,**/*.jsx"
 ---
 
 # Frontend Design
@@ -110,18 +109,7 @@ State the chosen values in the design philosophy comment. These prevent the "eve
 
 ### Banned AI Design Patterns
 
-These patterns are hallmarks of AI-generated interfaces. Avoid them. See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the comprehensive list covering layout, color, typography, decoration, interaction, and content patterns.
-
-Top 6 AI slop patterns (highest detection priority):
-
-1. **Purple/violet gradients** (`#6366f1`--`#8b5cf6`) -- the single most recognizable AI color signature. Pick a different palette entirely.
-2. **3-column feature grid with icons in circles** -- the most common AI layout. Use asymmetric layouts, split screens, or bento grids instead.
-3. **Icons in colored circles as decoration** -- primary-color background circle + white icon is default AI component styling. Use inline icons or subtle background tints.
-4. **Center-heavy layouts** (>60% `text-align: center`) -- left-align body text; reserve centering for headings and CTAs only.
-5. **Uniform bubbly border-radius** (>80% of elements sharing the same value >=16px) -- vary by purpose: sharp for data, rounded for interactive, pill for tags.
-6. **Generic hero copy** ("Welcome to X", "Unlock the power of...", "Revolutionize your...") -- write specific, benefit-driven copy tied to the actual product.
-
-See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the full catalog beyond these top 6.
+Top detection priorities: purple/violet gradients, 3-column icon grids, icon-in-circle decorations, center-heavy layouts, uniform bubbly border-radius, generic hero copy. See [banned-ai-patterns.md](./references/banned-ai-patterns.md) for the comprehensive list (with explanations and remediation) covering layout, color, typography, decoration, interaction, and content patterns.
 
 ### Premium Detail Patterns + Browser Verification
 

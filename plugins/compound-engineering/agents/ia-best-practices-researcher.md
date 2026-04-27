@@ -1,5 +1,6 @@
 ---
 name: ia-best-practices-researcher
+model: sonnet
 autoApprove: read
 tools: Read, Grep, Glob, WebFetch, WebSearch
 description: "Researches external framework docs, version-specific constraints, and industry conventions for any technology. Use when you need authoritative external documentation."

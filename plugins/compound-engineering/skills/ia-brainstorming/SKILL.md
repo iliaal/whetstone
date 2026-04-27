@@ -183,7 +183,7 @@ Silent pass is a valid outcome. If the draft is clean, say so and move to Phase 
 
 ### Phase 4: Review and Handoff
 
-Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `workflows:brainstorm`, the command handles spec review dispatch and next-step orchestration.
+Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `/ia-brainstorm`, the command handles spec review dispatch and next-step orchestration.
 
 ## Anti-Patterns to Avoid
 
@@ -204,8 +204,8 @@ Present the design doc to the user for approval. The user explicitly confirming 
 
 ## Integration
 
-Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `workflows:plan` detects it and skips idea refinement.
+Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `/ia-plan` detects it and skips idea refinement.
 
-- **Next step:** `workflows:plan` (always)
+- **Next step:** `/ia-plan` (always)
 - **Threat modeling:** when the brainstorm involves auth, payments, external API surfaces, or multi-tenant data, suggest a `ia-security-sentinel` threat model before moving to planning. Catching trust boundary issues at the design stage prevents costly rework.
 - **Predecessor:** user request or ambiguous feature description

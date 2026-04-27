@@ -1,5 +1,6 @@
 ---
 name: ia-bug-reproduction-validator
+model: sonnet
 autoApprove: read
 tools: Read, Grep, Glob, Bash, WebFetch
 description: "Validates, reproduces, and root-cause analyzes bug reports (does not fix). Use when a bug report needs verification and root cause identification before committing to a fix — the reproduce-first stage."

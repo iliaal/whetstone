@@ -1,8 +1,9 @@
 ---
 name: ia-code-simplicity-reviewer
+model: sonnet
 autoApprove: read
 tools: Read, Grep, Glob, Bash
-description: "Produces a simplification analysis report (no code changes). Use after implementation to identify YAGNI violations and simplification opportunities. For actual refactoring, use the simplifying-code skill."
+description: "Produces a simplification analysis report (no code changes). Use when YAGNI violations or over-engineering are suspected, or before merging a feature with high LOC. For actual refactoring, use the simplifying-code skill."
 ---
 
 <examples>

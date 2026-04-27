@@ -1,9 +1,9 @@
 ---
 name: ia-architecture-strategist
-model: opus
+model: sonnet
 autoApprove: read
 tools: Read, Grep, Glob, Bash
-description: "Analyzes code for architectural compliance, design patterns, naming conventions, and structural integrity. Use after code review to assess structural patterns, when adding services, evaluating refactors, or checking codebase consistency."
+description: "Analyzes code for architectural compliance, design patterns, naming conventions, and structural integrity. Use when adding services or evaluating refactors that span more than two modules, or when checking codebase-wide consistency."
 ---
 
 <examples>

@@ -2,9 +2,9 @@
 name: ia-debugging
 class: discipline
 description: >-
-  Systematic root-cause debugging with verification. Use when debugging,
-  troubleshooting, or facing errors, stack traces, broken tests, flaky tests,
-  or regressions. For validating bug reports before fixing, use
+  Systematic root-cause debugging with verification. Use for errors, stack
+  traces, broken tests, flaky tests, regressions, or anything not working as
+  expected. For validating bug reports before fixing, use
   bug-reproduction-validator agent.
 ---
 
@@ -36,11 +36,11 @@ Capture environment state with `bash collect-diagnostics.sh` ([script](./scripts
 
 **1. Reproduce** -- make the bug consistent. If intermittent, run N times under stress or simulate poor conditions (slow network, low memory) until it triggers reliably.
 
-**1b. Form initial hypotheses** -- before investigating broadly, form 2-3 hypotheses based on the reproduction. What are the most likely causes given the symptoms? This focuses the investigation on plausible paths rather than searching aimlessly.
+**2. Form initial hypotheses** -- before investigating broadly, form 2-3 hypotheses based on the reproduction. What are the most likely causes given the symptoms? This focuses the investigation on plausible paths rather than searching aimlessly.
 
-**1c. Reduce** -- strip the reproduction to the minimal failing case. Remove unrelated code, data, and configuration until removing one more piece makes the bug disappear. That remaining piece is the trigger.
+**3. Reduce** -- strip the reproduction to the minimal failing case. Remove unrelated code, data, and configuration until removing one more piece makes the bug disappear. That remaining piece is the trigger.
 
-**2. Investigate** -- trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
+**4. Investigate** -- trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
 
 **Multi-component systems** (CI -> build -> deploy, API -> service -> DB): before proposing fixes, instrument each component boundary:
 - Log what data **enters** the component
@@ -53,9 +53,9 @@ Run once to gather evidence showing WHERE it breaks, then investigate that speci
 
 **Before external searches** (web, docs, forums): strip hostnames, IPs, file paths, SQL fragments, and customer data from the query. Raw stack traces leak privacy and return noise.
 
-**3. Hypothesize and test** -- one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to find regressions efficiently. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set. Do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
+**5. Hypothesize and test** -- one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to find regressions efficiently. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set. Do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
 
-**4. Fix and verify** -- create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).
+**6. Fix and verify** -- create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).
 
 ## Debug Report
 
@@ -70,7 +70,7 @@ FIX:        [What changed]
 EVIDENCE:   [Verification output proving the fix]
 REGRESSION: [Test added to prevent recurrence]
 RELATED:    [Prior bugs in same area, known issues, architectural notes]
-STATUS:     DONE | DONE_WITH_CONCERNS (fix applied, known risk remains) | BLOCKED (cannot proceed, needs external input) | NEEDS_CONTEXT (missing information to continue investigation)
+STATUS:     DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT (definitions in `ia-verification-before-completion`)
 ```
 
 ## Three-Fix Threshold
@@ -144,7 +144,7 @@ See [specialized-patterns.md](./references/specialized-patterns.md) for anti-pat
 ## Integration
 
 This skill is referenced by:
-- `workflows:work` -- during task execution for bug investigation
+- `/ia-work` -- during task execution for bug investigation
 - `ia-writing-tests` -- creating failing tests to reproduce bugs
 - `ia-verification-before-completion` -- before claiming a bug is fixed
 - `ia-bug-reproduction-validator` agent -- follows Root Cause Analysis methodology

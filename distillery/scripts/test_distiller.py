@@ -1144,7 +1144,15 @@ class TestTestTriggers:
         fixtures_dir.mkdir()
         (fixtures_dir / "my-skill.jsonl").write_text(
             '{"prompt": "hello there", "expect": true}\n'
+            '{"prompt": "say hello", "expect": true}\n'
+            '{"prompt": "hello again", "expect": true}\n'
+            '{"prompt": "world peace", "expect": true}\n'
+            '{"prompt": "world wide", "expect": true}\n'
             '{"prompt": "goodbye now", "expect": false}\n'
+            '{"prompt": "see you later", "expect": false}\n'
+            '{"prompt": "farewell friend", "expect": false}\n'
+            '{"prompt": "nothing here", "expect": false}\n'
+            '{"prompt": "another test", "expect": false}\n'
         )
         # Temporarily override the patterns file path
         old_default = distiller.SKILL_PATTERNS_DEFAULT

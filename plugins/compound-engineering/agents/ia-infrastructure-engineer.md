@@ -2,6 +2,7 @@
 name: ia-infrastructure-engineer
 model: sonnet
 autoApprove: read
+tools: Read, Grep, Glob, Bash
 description: "CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker containerization, observability (metrics/logs/traces), and incident management. Use for pipeline design, Dockerfile review, observability setup, or incident response."
 ---
 

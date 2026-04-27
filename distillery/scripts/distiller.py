@@ -2,6 +2,8 @@
 """Skill distiller helper — mechanical operations for search, fetch, staging, checksums, and manifest management."""
 
 import argparse
+import ast
+import datetime as _dt
 import hashlib
 import json
 import os
@@ -163,6 +165,10 @@ _NEGATIVE_SIGNAL_PATTERNS = _re.compile(
     r"|\bCI/?CD\s+(?:failed|still\s+failing)\b"
     # Latest changes broke — regression (3 hits)
     r"|\bbroke\s+things\b|\bregressed\b|\blatest\s+changes\s+broke\b"
+    # User repeating an instruction the agent missed (2 hits, distinct from "i already said")
+    r"|^\s*i\s+said\b"
+    # User rejecting agent's addition / over-engineering (18 hits combined)
+    r"|\b(?:no|not)\s+need(?:ed)?\b"
     r")",
     _re.IGNORECASE,
 )
@@ -1126,6 +1132,52 @@ _COVERAGE_ACTION_TOKENS = (
     "expand", "review", "map", "populate", "build", "harvest", "rerun", "fix",
 )
 
+# Skill Independence (getsentry-skills/skill-writer/references/design-principles.md):
+# A skill's runtime body must not instruct the agent to invoke another skill by name.
+# Other skills may be missing, renamed, or user-overridden — name-invocation silently
+# breaks in all three cases. State the intent directly and let skill discovery match.
+# This catches "run the ia-X skill", "use the `ia-X` skill", "invoke vendor:Y", etc.
+# Naming an *agent* (Agent tool dispatch) is fine; this only flags the word "skill".
+_SKILL_NAME_INVOCATION_PATTERN = _re.compile(
+    r"\b(?:run|use|invoke|call|launch|trigger)\s+(?:the\s+)?`?"
+    r"(?:ia-[a-z0-9-]+\s+skill|[a-z][a-z0-9-]+:[a-z0-9-]+)`?",
+    _re.IGNORECASE,
+)
+_SKILL_HANDOFF_PATTERN = _re.compile(
+    r"\bhand(?:s|ing|ed)?\s+off\s+to\s+(?:the\s+)?`?"
+    r"(?:ia-[a-z0-9-]+|[a-z][a-z0-9-]+:[a-z0-9-]+)`?\b",
+    _re.IGNORECASE,
+)
+# Backtick-wrapped vendor:slug references in runtime body, regardless of leading verb.
+# A skill writing `workflows:plan` or `compound-engineering:ia-debugging` is treating
+# another component as a runtime resource — same fragility as verb-prefixed invocation.
+# Both sides require lowercase-letter start to skip version pins (`python:3.11`),
+# HTTP-header-like patterns, and other non-component colon syntax. Scanned on the
+# fenced-stripped body (inline backticks preserved) to constrain matches to references
+# the author explicitly marked as code/component identifiers.
+_VENDOR_SLUG_BACKTICK_PATTERN = _re.compile(
+    r"`([a-z][a-z0-9-]*:[a-z][a-z0-9-]*)`"
+)
+# Allowlist of legitimate non-plugin colon-syntax references documented inside skills.
+# Each entry is a slug-shaped form that matches the regex but is NOT a runtime
+# component invocation. Add narrowly, with reason. Bar for entry: documented format
+# convention (file:line) or third-party CLI command name (Laravel artisan, etc.).
+_VENDOR_SLUG_ALLOWLIST = frozenset({
+    "file:line",       # error/code location format, used across debugging skills
+    "host:port",       # network address format
+    "key:value",       # generic data format
+    "config:cache",    # Laravel artisan deploy cache command (php artisan config:cache)
+    "config:clear",
+    "route:cache",
+    "view:cache",
+    "queue:work",
+    "schedule:run",
+    "migrate:fresh",
+    "mode:headless",   # parameter form ("when invoked with mode:headless"), not a component
+    "mode:silent",
+    "mode:debug",
+})
+
 
 def _parse_coverage_matrix(spec_content):
     """Extract rows from the SPEC.md `### Coverage matrix` table.
@@ -1557,6 +1609,44 @@ def validate_plugin(component_filter=None):
         for ref in backtick_refs:
             if ref not in known_skills and ref not in known_agents and ref not in known_commands:
                 add_finding(skill_name, "DEAD_CROSS_REF", f"References nonexistent component: `{ref}`", "HIGH")
+
+        # --- Skill Independence: no runtime invocation of another skill by name ---
+        # Strip code fences but keep inline `code` *content* (backticks dropped) so
+        # `ia-foo` skill mentions are still scannable. Skip matches inside a
+        # forbidding context (the skill is documenting the anti-pattern itself).
+        body_no_fence = re.sub(r'```[\s\S]*?```', '', body_no_links)
+        body_for_invocation = re.sub(r'`([^`\n]+)`', r'\1', body_no_fence)
+        invocation_flagged = False
+        for invocation_re in (_SKILL_NAME_INVOCATION_PATTERN, _SKILL_HANDOFF_PATTERN):
+            for m in invocation_re.finditer(body_for_invocation):
+                start = max(0, m.start() - 200)
+                end = min(len(body_for_invocation), m.end() + 50)
+                window = body_for_invocation[start:end]
+                if forbidding_context.search(window):
+                    continue
+                add_finding(skill_name, "SKILL_NAME_INVOCATION",
+                            f"Runtime invokes another skill by name: '{m.group(0)}' -- state intent directly so skill discovery matches",
+                            "HIGH")
+                invocation_flagged = True
+                break  # one finding per pattern is enough; agent will see the rule
+            if invocation_flagged:
+                break
+        # Backtick-wrapped vendor:slug — catches "Predecessor: `workflows:plan`",
+        # "during `workflows:work`", etc. that the verb-prefixed patterns miss.
+        # Scanned on body_no_fence (backticks intact) since the wrapping IS the signal.
+        if not invocation_flagged:
+            for m in _VENDOR_SLUG_BACKTICK_PATTERN.finditer(body_no_fence):
+                if m.group(1).lower() in _VENDOR_SLUG_ALLOWLIST:
+                    continue  # documented format convention or third-party CLI name
+                start = max(0, m.start() - 200)
+                end = min(len(body_no_fence), m.end() + 50)
+                window = body_no_fence[start:end]
+                if forbidding_context.search(window):
+                    continue
+                add_finding(skill_name, "SKILL_NAME_INVOCATION",
+                            f"Runtime references another component by name: `{m.group(1)}` -- replace with the current command (e.g. `/ia-foo`) or state intent directly",
+                            "HIGH")
+                break
 
         # --- SPEC.md (Tier 2) ---
         spec_md = skill_dir / "SPEC.md"
@@ -3114,6 +3204,207 @@ def _validate_diagnosis_finding(finding):
     return issues
 
 
+# --- Budget regression detection (gstack/test/helpers/eval-store.ts pattern) ---
+#
+# Track per-skill resource budgets (turn count, tool variety) over time so silent
+# bloat from refactors gets caught. Baseline lives at <skill>/budget.json. Compare
+# current aggregates against it; flag if ratio > cap AND baseline >= floor.
+#
+# Floors avoid noise on small baselines (a 2x increase from 1 to 2 turns is not
+# a regression; a 2x increase from 10 to 20 is).
+
+BUDGET_DEFAULT_RATIO_CAP = 2.0
+BUDGET_DEFAULT_MIN_PRIOR_TURNS = 3
+BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY = 5
+
+
+def _percentile(values, pct):
+    """Approx percentile without numpy; values must be sorted."""
+    if not values:
+        return 0
+    if len(values) == 1:
+        return values[0]
+    rank = pct / 100.0 * (len(values) - 1)
+    lo = int(rank)
+    hi = min(lo + 1, len(values) - 1)
+    frac = rank - lo
+    return values[lo] + (values[hi] - values[lo]) * frac
+
+
+def _load_skill_sessions(skill_name, fresh_only=True):
+    """Load harvested sessions for a skill. fresh_only filters out stale rows."""
+    sessions_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
+    if not sessions_path.exists():
+        return []
+    rows = []
+    with open(sessions_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if fresh_only:
+                stale_flags = (rec.get("content_stale"), rec.get("pattern_stale"), rec.get("model_stale"))
+                if any(str(f).lower() == "true" for f in stale_flags):
+                    continue
+            rows.append(rec)
+    return rows
+
+
+def _compute_budget_metrics(sessions):
+    """Aggregate turn_count and tool variety across sessions. Returns dict or None."""
+    turns = []
+    tool_variety = []
+    for s in sessions:
+        try:
+            turns.append(int(s.get("turn_count") or 0))
+        except (ValueError, TypeError):
+            pass
+        tools_field = s.get("tools_used")
+        if isinstance(tools_field, str):
+            try:
+                tools_field = ast.literal_eval(tools_field)
+            except (ValueError, SyntaxError):
+                tools_field = []
+        if isinstance(tools_field, (list, tuple)):
+            tool_variety.append(len(tools_field))
+    if not turns:
+        return None
+    turns_sorted = sorted(turns)
+    variety_sorted = sorted(tool_variety) if tool_variety else [0]
+    return {
+        "sample_size": len(sessions),
+        "turn_count": {
+            "mean": round(sum(turns) / len(turns), 2),
+            "p50": round(_percentile(turns_sorted, 50), 2),
+            "p95": round(_percentile(turns_sorted, 95), 2),
+        },
+        "tool_variety": {
+            "mean": round(sum(tool_variety) / len(tool_variety), 2) if tool_variety else 0,
+            "p50": round(_percentile(variety_sorted, 50), 2),
+            "p95": round(_percentile(variety_sorted, 95), 2),
+        },
+    }
+
+
+def record_budget(skill_name):
+    """Record current budget aggregates as the new baseline at <skill>/budget.json."""
+    sessions = _load_skill_sessions(skill_name, fresh_only=True)
+    if not sessions:
+        print(f"No fresh sessions for '{skill_name}'. Run harvest-sessions first.", file=sys.stderr)
+        return 1
+    metrics = _compute_budget_metrics(sessions)
+    if metrics is None:
+        print(f"Could not compute metrics for '{skill_name}' (no usable turn_count values).", file=sys.stderr)
+        return 1
+
+    skill_versions = _read_manifest_for_skill(skill_name)
+    payload = {
+        "recorded_at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+        "skill_name": skill_name,
+        "skill_content_hash": skill_versions.get("content_hash"),
+        "skill_pattern_hash": skill_versions.get("pattern_hash"),
+        "fresh_only": True,
+        **metrics,
+    }
+    out_path = EVAL_DATA_DIR / skill_name / "budget.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(payload, indent=2) + "\n")
+    print(f"Recorded budget for {skill_name}: turns mean={metrics['turn_count']['mean']} (n={metrics['sample_size']})")
+    print(f"  -> {out_path}")
+    return 0
+
+
+def _read_manifest_for_skill(skill_name):
+    """Best-effort read of the per-skill content/pattern hashes from the manifest."""
+    manifest_path = DISTILLERY_DIR / ".skill-versions.json"
+    if not manifest_path.exists():
+        return {}
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    skills = manifest.get("skills") or {}
+    return skills.get(skill_name) or skills.get(f"ia-{skill_name}") or {}
+
+
+def check_budget(skill_name, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
+                 min_prior_turns=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
+                 min_prior_tool_variety=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY):
+    """Compare current aggregates against the recorded baseline. Returns (regressions, current_metrics)."""
+    baseline_path = EVAL_DATA_DIR / skill_name / "budget.json"
+    if not baseline_path.exists():
+        return None, None  # no baseline yet
+    try:
+        baseline = json.loads(baseline_path.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"  {skill_name}: baseline unreadable ({exc})", file=sys.stderr)
+        return None, None
+
+    sessions = _load_skill_sessions(skill_name, fresh_only=True)
+    if not sessions:
+        return None, None
+    current = _compute_budget_metrics(sessions)
+    if current is None:
+        return None, None
+
+    regressions = []
+    for metric, floor in (("turn_count", min_prior_turns), ("tool_variety", min_prior_tool_variety)):
+        prior_mean = (baseline.get(metric) or {}).get("mean", 0)
+        cur_mean = current[metric]["mean"]
+        if prior_mean < floor:
+            continue  # below floor: noise, not signal
+        if prior_mean == 0:
+            continue
+        ratio = cur_mean / prior_mean
+        if ratio > ratio_cap:
+            regressions.append({
+                "metric": metric,
+                "baseline_mean": prior_mean,
+                "current_mean": cur_mean,
+                "ratio": round(ratio, 2),
+                "ratio_cap": ratio_cap,
+            })
+    return regressions, current
+
+
+def check_budget_cli(skill_name=None, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
+                     min_prior_turns=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
+                     min_prior_tool_variety=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY):
+    """CLI dispatcher: scan one or all skills with budget.json, report regressions."""
+    if skill_name:
+        skill_dirs = [EVAL_DATA_DIR / skill_name]
+    else:
+        skill_dirs = sorted(p for p in EVAL_DATA_DIR.iterdir()
+                            if p.is_dir() and (p / "budget.json").exists())
+    any_regression = False
+    report = []
+    for skill_dir in skill_dirs:
+        name = skill_dir.name
+        if not (skill_dir / "budget.json").exists():
+            report.append({"skill": name, "status": "no_baseline"})
+            continue
+        regressions, current = check_budget(name, ratio_cap, min_prior_turns, min_prior_tool_variety)
+        if regressions is None:
+            report.append({"skill": name, "status": "no_data"})
+            continue
+        if regressions:
+            any_regression = True
+            report.append({
+                "skill": name,
+                "status": "regression",
+                "regressions": regressions,
+                "current_sample_size": current["sample_size"],
+            })
+        else:
+            report.append({"skill": name, "status": "ok", "current_sample_size": current["sample_size"]})
+    print(json.dumps({"all_passed": not any_regression, "skills": report}, indent=2))
+    return 1 if any_regression else 0
+
+
 def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
 
@@ -3721,6 +4012,20 @@ def main():
     p_diag.add_argument("--max-examples", type=int, default=10, help="Max negative examples to analyze (default: 10)")
     p_diag.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
 
+    # budget — record/check per-skill resource budget (turn count + tool variety)
+    p_budget_check = sub.add_parser("budget", help="Record or check per-skill resource budget (catches silent skill bloat)")
+    p_budget_check.add_argument("name", nargs="?", help="Skill name (required for --record; omit for --check-all)")
+    mode = p_budget_check.add_mutually_exclusive_group()
+    mode.add_argument("--record", action="store_true", help="Record current aggregates as the new baseline")
+    mode.add_argument("--check", action="store_true", help="Compare current aggregates against the baseline (default mode)")
+    mode.add_argument("--check-all", action="store_true", help="Check every skill that has a recorded baseline")
+    p_budget_check.add_argument("--ratio-cap", type=float, default=BUDGET_DEFAULT_RATIO_CAP,
+                                help=f"Regression threshold (default: {BUDGET_DEFAULT_RATIO_CAP}x baseline)")
+    p_budget_check.add_argument("--min-prior-turns", type=int, default=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
+                                help=f"Floor: skip turn_count check if baseline mean < N (default: {BUDGET_DEFAULT_MIN_PRIOR_TURNS})")
+    p_budget_check.add_argument("--min-prior-tool-variety", type=int, default=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY,
+                                help=f"Floor: skip tool_variety check if baseline mean < N (default: {BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY})")
+
     # evolve
     p_evolve = sub.add_parser("evolve", help="Run DSPy GEPA optimization on a skill (outputs diff for review)")
     p_evolve.add_argument("name", help="Skill name")
@@ -3917,6 +4222,20 @@ def main():
         print(json.dumps(report, indent=2))
         if report.get("schema_violations"):
             sys.exit(2)
+
+    elif args.command == "budget":
+        if args.record:
+            if not args.name:
+                print("Error: --record requires a skill name.", file=sys.stderr)
+                sys.exit(2)
+            sys.exit(record_budget(args.name))
+        if args.check_all:
+            sys.exit(check_budget_cli(None, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety))
+        # Default: --check on a single skill
+        if not args.name:
+            print("Error: budget requires a skill name (or --check-all).", file=sys.stderr)
+            sys.exit(2)
+        sys.exit(check_budget_cli(args.name, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety))
 
     elif args.command == "evolve":
         from evolve import evolve_skill

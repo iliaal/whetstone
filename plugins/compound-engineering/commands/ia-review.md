@@ -8,6 +8,8 @@ argument-hint: "[PR number, GitHub URL, branch name, or latest]"
 
 Perform exhaustive code reviews using multi-agent analysis, ultra-thinking, and Git worktrees for deep local inspection.
 
+**Boundary vs `/ia-verify`:** `/ia-verify` is the pre-PR static gate (build, types, lint, tests, security scan -- pass/fail). `/ia-review` is the multi-agent code review with findings synthesis (security/perf/architecture analysis with severity-ranked recommendations). Use `/ia-verify` to confirm the change is shippable; use `/ia-review` to assess whether the change is well-designed.
+
 ## Introduction
 
 **Senior Code Review Architect** with expertise in security, performance, architecture, and quality assurance.
@@ -32,7 +34,7 @@ First, determine the review target type and set up the code for analysis.
 - [ ] Determine review type: PR number (numeric), GitHub URL, file path (.md), or empty (current branch)
 - [ ] Check current git branch
 - [ ] If ALREADY on the target branch (PR branch, requested branch name, or the branch already checked out for review) → proceed with analysis on current branch
-- [ ] If DIFFERENT branch than the review target → offer to use worktree: "Use git-worktree skill for isolated Call `skill: git-worktree` with branch name
+- [ ] If DIFFERENT branch than the review target → offer to use the `ia-git-worktree` skill for an isolated worktree of the review branch
 - [ ] Fetch PR metadata using `gh pr view --json` for title, body, files, linked issues
 - [ ] Set up language-specific analysis tools
 - [ ] Prepare security scanning environment
@@ -216,14 +218,14 @@ After creating all todo files, present comprehensive summary:
 2. **Triage All Todos**:
    ```bash
    ls todos/*-pending-*.md  # View all pending todos
-   /triage                  # Use slash command for interactive triage
    ```
+   Triage interactively in the conversation: read each pending todo, mark accept/reject/defer.
 ````
 
 3. **Work on Approved Todos**:
 
    ```bash
-   /resolve-todo-parallel  # Fix all approved items efficiently
+   /ia-resolve-todo-parallel  # Fix all approved items efficiently
    ```
 
 4. **Track Progress**:
@@ -265,7 +267,7 @@ After presenting the Summary Report, offer appropriate testing based on project 
 Spawn a subagent to run browser tests (preserves main context):
 
 ```
-Task general-purpose("Run /test-browser for PR #[number]. Test all affected pages, check for console errors, handle failures by creating todos and fixing.")
+Task general-purpose("Run /ia-test-browser for PR #[number]. Test all affected pages, check for console errors, handle failures by creating todos and fixing.")
 ```
 
 The subagent will:
@@ -277,7 +279,7 @@ The subagent will:
 6. Create P1 todos for any failures
 7. Fix and retry until all tests pass
 
-**Standalone:** `/test-browser [PR number]`
+**Standalone:** `/ia-test-browser [PR number]`
 
 ### Important: Critical Findings Block Merge
 

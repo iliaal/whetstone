@@ -62,7 +62,7 @@ SKILL_TIERS[ia-terraform]=2
 SKILL_PATTERNS[ia-linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script'
 SKILL_TIERS[ia-linux-bash-scripting]=2
 
-SKILL_PATTERNS[ia-pinescript]='pine.?script|tradingview|pinescript|\bindicator\b.{0,20}(pine|trading.?view)|\.pine\b'
+SKILL_PATTERNS[ia-pinescript]='pine.?script|pinescript|tradingview.{0,30}(pine|indicator|strategy|chart|script)|\bindicator\b.{0,20}(pine|trading.?view)|\bstrategy\b.{0,20}(pine|trading.?view)|\.pine\b'
 SKILL_TIERS[ia-pinescript]=2
 
 SKILL_PATTERNS[ia-frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|(build|design).{0,30}(web.?component|web.?page|landing.?page|dashboard)|design.{0,20}too.?generic|ai.?generated.*(design|look)|color.?palette|visual.?identity'
@@ -133,5 +133,11 @@ declare -A SKILL_MAINT_SUPPRESS
 SKILL_MAINT_SUPPRESS[ia-brainstorming]=1
 SKILL_MAINT_SUPPRESS[ia-writing-tests]=1
 SKILL_MAINT_SUPPRESS[ia-planning]=1
+# Added 2026-04-27 from analyze-outcomes anomalies (sync run):
+# all five fire on plugin-maintenance prompts (audit/sync/release commands name them as references).
+SKILL_MAINT_SUPPRESS[ia-verification-before-completion]=1  # 24 sessions, 45.8% neg, +19pp -- "verification" appears in /audit-plugin, /release pre-commit gates
+SKILL_MAINT_SUPPRESS[ia-postgresql]=1                       # 10 sessions, 70% neg, +52pp -- "postgresql" mentioned in distiller/audit prompts
+SKILL_MAINT_SUPPRESS[ia-react-frontend]=1                   # 6 sessions, 33% neg, +24pp -- plugin lacks `js` project-type guard so PROJECT_TYPES doesn't fire
+SKILL_MAINT_SUPPRESS[ia-writing]=1                          # 10 sessions, 20% neg, +12pp -- fires on plugin-doc work
 
 # Total skills: 30

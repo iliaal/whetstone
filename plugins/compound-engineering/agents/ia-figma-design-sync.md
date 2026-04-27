@@ -1,6 +1,7 @@
 ---
 name: ia-figma-design-sync
 model: sonnet
+tools: Read, Grep, Glob, Edit, Write, Bash
 description: "Compares web UI against Figma designs and reports discrepancies. Optionally implements fixes. Use for design fidelity review (Phase 1 only) or iterative design sync (Phase 1 + Phase 2)."
 ---
 

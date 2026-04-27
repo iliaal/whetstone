@@ -87,7 +87,11 @@ Implementation agents share state via git by default, so parallel dispatch cause
 **Pre-dispatch file-intersection check** -- operationalize the one-owner-per-file rule with a runnable safety gate before every parallel dispatch:
 
 1. Collect each unit's declared Owned Files / Test Paths / Modify Paths from its task spec.
-2. Build a `{file → unit}` map. If any file appears under more than one unit, the dispatch is unsafe.
+2. Build a `{file → unit}` map. If any file appears under more than one unit, the dispatch is unsafe. Quick check on Markdown task specs:
+   ```bash
+   grep -h "^Owned Files:" -A 20 tasks/*.md | grep -v "^Owned Files:" | grep -v "^--$" | sort | uniq -d
+   ```
+   Any output is an overlapping file path that needs resolution.
 3. On overlap: either downgrade to serial (log the overlap and the reason), or assign worktree isolation (`isolation: "worktree"` per agent), or rewrite unit boundaries so files become exclusive.
 4. Even with no declared overlap, include this constraint verbatim in every parallel-dispatch prompt: *"Do not run `git add`, `git commit`, or the project's test suite while other parallel agents are active -- you'd race on the git index or thrash the test cache. Stage changes for the orchestrator to commit after integration."*
 
@@ -114,11 +118,7 @@ The controller reads all tasks from the plan upfront and provides full task text
 
 **Standardize implementer status signals:**
 
-Include these four statuses in every teammate prompt so they know the reporting format. Expect teammates to report one of:
-- **DONE** -- task complete, all tests pass
-- **DONE_WITH_CONCERNS** -- complete but flagging risks (include what and why)
-- **BLOCKED** -- cannot proceed. See BLOCKED triage decision tree below.
-- **NEEDS_CONTEXT** -- missing information to start or continue. Provide context before re-dispatching.
+Include the four statuses defined in `ia-verification-before-completion` (DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT) in every teammate prompt so they know the reporting format. Expect teammates to report one. BLOCKED responses get further triage via the decision tree below.
 
 **BLOCKED triage decision tree** -- when a teammate reports BLOCKED, classify the root cause before acting. Never retry the same prompt on the same model without changing a variable.
 

@@ -38,7 +38,7 @@ This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` -- e
 
 Planning files are ephemeral working state -- do not commit them. When starting a new feature, old `.plan/` files are overwritten. Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases.
 
-**Note:** `.plan/` is for ephemeral working state during implementation (scratch notes, progress tracking). `docs/plans/` is for the formal plan document created by `workflows:plan` (committed, living documents). Both coexist -- `.plan/` supports the work session, `docs/plans/` stores the committed plan.
+**Note:** `.plan/` is for ephemeral working state during implementation (scratch notes, progress tracking). `docs/plans/` is for the formal plan document produced by a structured planning workflow (committed, living documents). Both coexist -- `.plan/` supports the work session, `docs/plans/` stores the committed plan.
 
 | File | Purpose | Update When |
 |------|---------|-------------|
@@ -177,9 +177,9 @@ Context management rules, error protocol (3-attempt escalation), iterative plan 
 
 ## Execution Posture Signals
 
-Plans can carry lightweight metadata per phase that shapes how `workflows:work` sequences implementation. These are optional annotations, not requirements.
+Plans can carry lightweight metadata per phase that shapes how `/ia-work` sequences implementation. These are optional annotations, not requirements.
 
-**Default**: tests-after — `workflows:work` writes tests alongside implementation for new features. No posture signal needed in this case.
+**Default**: tests-after — `/ia-work` writes tests alongside implementation for new features. No posture signal needed in this case.
 
 Opt-in postures for phases that need different sequencing:
 
@@ -214,9 +214,9 @@ State the recommendation with a one-sentence reason, then wait for the user to p
 
 ## Integration
 
-- **This skill** is methodology (file persistence, phase sizing, context management). `workflows:plan` is the structured workflow (research agents, issue templates). Use this skill's principles during any planning; use `workflows:plan` for full feature plans.
+- **This skill** is methodology (file persistence, phase sizing, context management). For full feature plans, the structured planning workflow handles research agents, issue templates, and formal output to `docs/plans/`. Apply this skill's principles whenever planning is required; reach for the full workflow when the task spans multiple files or requires architectural decisions.
 - **Architecture decisions:** when the plan involves significant trade-offs (choosing between approaches, accepting constraints), use `/ia-adr` to document the decision and what was given up. ADRs outlive the plan.
 - **Threat modeling:** when the plan introduces auth flows, payment handling, external API surfaces, or new trust boundaries, dispatch the `ia-security-sentinel` agent in threat-model mode before implementation. Architectural security gaps are cheaper to fix in the plan than in the code.
 - **Predecessor:** `ia-brainstorming` -- use first when requirements are ambiguous. When a brainstorm spec exists (`docs/brainstorms/`), use it as input and skip idea refinement
 - **Prose quality:** `ia-writing` -- use to humanize plan language and remove AI slop from plan documents
-- **Execution handoff:** after the plan is approved, proceed to `workflows:work` or execute inline
+- **Execution handoff:** after the plan is approved, proceed to `/ia-work` or execute inline

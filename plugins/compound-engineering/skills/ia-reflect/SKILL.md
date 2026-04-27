@@ -12,7 +12,7 @@ description: >-
 ## Success Criteria
 
 - Every mistake/friction point cites the specific moment and its impact
-- Improvements are actionable, prioritized, and <= 10 items
+- Improvements are actionable and prioritized (cap defined in step 4)
 - Each skill audit proposes measurable changes (not vague suggestions)
 - User is asked which items to persist to memory
 - If review activity occurred, review-trap patterns are captured to persistent memory, or explicitly marked as "none"
@@ -52,7 +52,7 @@ Before listing improvements, scan the session for operational insights worth pre
 
 ### 4. Improvements
 
-Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10.
+Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10 items: if more surface, the bottom items are noise -- drop them rather than batching or splitting.
 
 Ask: *"Which of these should I remember for future chats?"*
 

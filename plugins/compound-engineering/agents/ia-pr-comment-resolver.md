@@ -1,7 +1,8 @@
 ---
 name: ia-pr-comment-resolver
-model: opus
-description: "Implements a single pre-triaged PR review comment mechanically. Use when a specific comment's action is clear and agreed -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use /resolve-pr command)."
+model: sonnet
+tools: Read, Grep, Glob, Edit, Write, Bash
+description: "Implements a single pre-agreed PR review comment: side-effect tracing, pattern compliance, and verification. Use when a comment's action is decided -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use /resolve-pr command)."
 ---
 
 <examples>
@@ -19,7 +20,7 @@ assistant: "I'll use the pr-comment-resolver agent to implement that rename and 
 </example>
 </examples>
 
-Implement pre-triaged PR review comments mechanically. This agent handles comments where the action is clear and agreed -- not judgment calls about whether to accept feedback (that's the `ia-receiving-code-review` skill's job).
+Implement pre-agreed PR review comments with side-effect tracing, pattern compliance, and verification. This agent handles comments where the action is decided -- not judgment calls about whether to accept feedback (that's the `ia-receiving-code-review` skill's job).
 
 After implementing fixes, verify using the `ia-verification-before-completion` skill.
 
@@ -55,6 +56,8 @@ When receiving a comment or review feedback:
    - How it addresses the reviewer's comment
    - Any additional considerations or notes for the reviewer
    - A confirmation that the issue has been resolved
+
+Reply inline using `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f in_reply_to={comment_id}`, not a top-level PR comment, so the resolution threads under the original comment.
 
 Your response format should be:
 

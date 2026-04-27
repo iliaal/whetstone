@@ -167,6 +167,6 @@ For multi-agent consolidation (deep review, parallel specialists), apply the mer
 
 - `ia-receiving-code-review` -- the inbound side (processing review feedback received from others). Action-routing terminology maps across: `safe_auto` ≈ AUTO-FIX, `gated_auto` ≈ ESCALATE-for-approval, `manual` ≈ ESCALATE, `advisory` ≈ FYI (no-op).
 - `ia-kieran-reviewer` agent -- persona-driven Python/TypeScript deep quality review (type safety, naming, modern patterns)
-- `workflows:review` -- full ceremony review (worktrees, ultra-thinking, multi-agent). Deep review is lighter: no worktrees, no plan verification, just parallel specialist agents on the same diff.
+- `/ia-review` -- full ceremony review (worktrees, ultra-thinking, multi-agent). Deep review is lighter: no worktrees, no plan verification, just parallel specialist agents on the same diff.
 - `/resolve-pr-parallel` command -- batch-resolve PR comments with parallel agents
 - `ia-security-sentinel` agent -- deep security audit beyond the security step in this skill. Also supports threat-model mode for architectural security analysis when the diff introduces new trust boundaries, auth flows, or external API surfaces.

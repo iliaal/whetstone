@@ -1,6 +1,6 @@
 ---
 name: ia-database-guardian
-model: opus
+model: sonnet
 autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Reviews database schema, constraints, and migration code for safety. Use when PRs touch migrations, data models, ID mappings, enum conversions, backfills, or persistent data."

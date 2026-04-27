@@ -329,16 +329,16 @@ Present completion summary:
 
 ```bash
 # Record video for current branch's PR
-/feature-video
+/ia-feature-video
 
 # Record video for specific PR
-/feature-video 847
+/ia-feature-video 847
 
 # Record with custom base URL
-/feature-video 847 http://localhost:5000
+/ia-feature-video 847 http://localhost:5000
 
 # Record for staging environment
-/feature-video current https://staging.example.com
+/ia-feature-video current https://staging.example.com
 ```
 
 ## Tips

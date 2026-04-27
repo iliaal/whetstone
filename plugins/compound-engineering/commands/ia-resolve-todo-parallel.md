@@ -12,7 +12,7 @@ Resolve TODO comments using parallel processing.
 
 ### 1. Analyze
 
-Get unresolved TODOs from the /todos/\*.md directory. If a filter is specified, only process todos matching that ID or pattern.
+Get unresolved TODOs from the project-root `todos/*.md` directory (file format: see `ia-file-todos` skill). If a filter is specified, only process todos matching that ID or pattern.
 
 If any todo recommends deleting, removing, or gitignoring files in `docs/plans/` or `docs/solutions/`, skip it and mark it as `wont_fix`. These are compound-engineering pipeline artifacts that are intentional and permanent.
 
@@ -24,7 +24,12 @@ Create a TodoWrite list of all unresolved items grouped by type.
 
 ### 3. Implement (PARALLEL)
 
-Spawn a general-purpose agent for each unresolved todo item in parallel:
+Spawn a general-purpose agent for each unresolved todo item in parallel. See `ia-orchestrating-swarms` for the dispatch contract (file-intersection check, isolation, status enum).
+
+Each subagent prompt must include:
+- The exact path to the todo file (`todos/<id>.md`)
+- The verification command to run after the fix (test runner, lint, type-check as applicable)
+- A required structured return: `STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT` plus the list of files modified
 
 1. Task general-purpose(todo1)
 2. Task general-purpose(todo2)

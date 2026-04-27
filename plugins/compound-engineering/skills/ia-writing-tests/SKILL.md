@@ -212,7 +212,7 @@ Before considering tests complete:
 ## Integration
 
 This skill is referenced by:
-- `workflows:work` -- when adding tests for new functionality (Phase 2)
+- `/ia-work` -- when adding tests for new functionality (Phase 2)
 - `ia-debugging` -- when creating failing tests to reproduce bugs
 - `ia-verification-before-completion` -- tests as primary verification evidence
 
