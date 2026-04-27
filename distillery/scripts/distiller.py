@@ -3060,19 +3060,76 @@ def analyze_outcomes(min_examples=5, include_stale=False):
     }
 
 
+_NEGATIVE_DIAGNOSIS_RUBRIC = (
+    ("wrong_trigger",
+     "Skill fired when not relevant, or didn't fire when it should have.",
+     "hooks/skill-patterns.sh regex; SKILL.md description trigger phrasing"),
+    ("missing_source",
+     "Skill ran but didn't load a reference it needed.",
+     "Add or expand a file under references/; update SKILL.md routing table"),
+    ("skipped_reference",
+     "Reference exists and was accessible but agent didn't read it.",
+     "Tighten SKILL.md routing condition; promote content from reference into SKILL.md if always needed"),
+    ("weak_output",
+     "Output format was loose or missing structure (no template, no schema, ad-hoc shape).",
+     "Add output template or table format to SKILL.md"),
+    ("missing_validation",
+     "Skill claimed completion without running a verification step.",
+     "Add a gate to SKILL.md (e.g. run tests, run validator); add corresponding check to validate-plugin if catchable"),
+    ("unsafe_path",
+     "Skill took a destructive or irreversible action without confirmation.",
+     "Add confirmation requirement; ban destructive verbs in instructions"),
+    ("other",
+     "None of the above. Use only with a deferred_reason explaining the failure mode.",
+     "No fixed target -- requires manual decision"),
+)
+_NEGATIVE_DIAGNOSIS_CATEGORIES = frozenset(name for name, _, _ in _NEGATIVE_DIAGNOSIS_RUBRIC)
+
+
+def _format_diagnosis_rubric():
+    """Return the rubric section for the diagnosis prompt."""
+    lines = []
+    for cat, desc, target in _NEGATIVE_DIAGNOSIS_RUBRIC:
+        lines.append(f"- {cat}: {desc} (typical edit target: {target})")
+    return "\n".join(lines)
+
+
+def _validate_diagnosis_finding(finding):
+    """Return list of validation issues for a single LLM-emitted finding (empty list = ok)."""
+    issues: list[str] = []
+    cat = finding.get("category", "")
+    if cat not in _NEGATIVE_DIAGNOSIS_CATEGORIES:
+        issues.append(f"category '{cat}' not in rubric")
+    if not finding.get("smallest_failing_decision", "").strip():
+        issues.append("smallest_failing_decision is empty")
+    edit = finding.get("proposed_edit") or {}
+    edit_file = (edit.get("file") or "").strip().lower()
+    deferred = (finding.get("deferred_reason") or "").strip()
+    if edit_file == "deferred" or not edit_file:
+        if not deferred:
+            issues.append("proposed_edit is deferred but deferred_reason is empty")
+    else:
+        if not (edit.get("change") or "").strip():
+            issues.append("proposed_edit.file is set but proposed_edit.change is empty")
+    return issues
+
+
 def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
 
     Reads harvested sessions where the user expressed dissatisfaction (negative signal),
     extracts the task, the agent output, and the user's negative feedback, then uses
-    Claude to identify patterns and suggest specific skill text improvements.
+    Claude to classify failures by the smallest-failing-decision rubric (seven fixed
+    categories) and propose concrete edits with explicit deferral reasons when no edit
+    will be made.
 
     Args:
         skill_name: skill to diagnose
         max_examples: max negative examples to analyze (default 10)
         include_stale: include examples from before the skill was last changed (default False)
 
-    Returns dict with failure patterns and suggested skill improvements.
+    Returns dict with summary, findings list (each with category, smallest_failing_decision,
+    proposed_edit, and validation issues if the LLM output didn't conform).
     """
     # Load skill text
     skill_path = _find_skill_path(skill_name)
@@ -3138,21 +3195,33 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
 
     cases_text = "\n\n".join(cases)
 
-    # Ask Claude to analyze the failure patterns
+    # Ask Claude to analyze failures using the smallest-failing-decision rubric.
+    rubric_text = _format_diagnosis_rubric()
     prompt = (
-        f"You are analyzing why a skill file produces negative outcomes. "
+        f"You are diagnosing why a skill file produces negative outcomes. "
         f"The skill is injected into AI agent sessions to guide behavior.\n\n"
         f"SKILL FILE ({skill_name}):\n{skill_text[:6000]}\n\n"
         f"NEGATIVE-SIGNAL SESSIONS (user expressed dissatisfaction):\n\n{cases_text[:12000]}\n\n"
-        f"Analyze these failures and respond with ONLY valid JSON:\n"
-        f'{{"patterns": ['
-        f'{{"pattern": "description of recurring failure", "frequency": "N of M cases", "example_case": 1}},'
-        f'...], '
-        f'"suggestions": ['
-        f'{{"section": "which part of the skill to change", "current": "current text (brief)", '
-        f'"proposed": "proposed replacement (brief)", "rationale": "why this fixes the pattern"}},'
-        f'...], '
-        f'"summary": "one paragraph overall diagnosis"}}'
+        f"For each recurring failure pattern, identify the SMALLEST single decision the skill "
+        f"got wrong, then classify it under EXACTLY ONE category from this rubric:\n\n"
+        f"{rubric_text}\n\n"
+        f"Hard rules:\n"
+        f"- Each finding maps to either (a) a concrete edit (proposed_edit.file + proposed_edit.change), "
+        f"or (b) deferred status with a deferred_reason explaining why no edit will be made now.\n"
+        f"- Vague entries like 'improve general guidance' are not allowed. If you cannot identify "
+        f"the smallest failing decision precisely, classify as 'other' with a deferred_reason "
+        f"naming what additional information would be needed.\n"
+        f"- 'smallest_failing_decision' must be ONE sentence naming the single decision.\n\n"
+        f"Respond with ONLY valid JSON, no commentary:\n"
+        f'{{"summary": "one paragraph overall diagnosis", '
+        f'"findings": ['
+        f'{{"category": "<one of: {", ".join(sorted(_NEGATIVE_DIAGNOSIS_CATEGORIES))}>", '
+        f'"smallest_failing_decision": "one sentence", '
+        f'"frequency": "N of M cases", '
+        f'"example_cases": [1, 3], '
+        f'"proposed_edit": {{"file": "concrete path or \\"deferred\\"", "change": "concrete change or empty if deferred"}}, '
+        f'"deferred_reason": "explanation if deferred, else empty"}},'
+        f'...]}}'
     )
 
     result = _claude_cli_request(prompt, model=DEFAULT_CLI_MODEL)
@@ -3175,7 +3244,7 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
         analysis = json.loads(response_text)
     except json.JSONDecodeError:
         # Try to find JSON in the response
-        for m in _re.finditer(r'\{[\s\S]*"patterns"[\s\S]*"suggestions"[\s\S]*\}', response_text):
+        for m in _re.finditer(r'\{[\s\S]*"findings"[\s\S]*\}', response_text):
             try:
                 analysis = json.loads(m.group())
                 break
@@ -3188,14 +3257,32 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
                 "error": f"Could not parse analysis: {response_text[:200]}",
             }
 
+    # Validate every finding against the rubric. Surface schema violations rather than
+    # silently shipping malformed data downstream.
+    findings = analysis.get("findings", []) or []
+    invalid: list[dict] = []
+    for i, f in enumerate(findings):
+        issues = _validate_diagnosis_finding(f)
+        if issues:
+            invalid.append({"index": i, "issues": issues})
+
+    # Group findings by category for stable, action-oriented output ordering.
+    category_order = [name for name, _, _ in _NEGATIVE_DIAGNOSIS_RUBRIC]
+    findings_by_category = sorted(
+        findings,
+        key=lambda f: category_order.index(f.get("category"))
+        if f.get("category") in _NEGATIVE_DIAGNOSIS_CATEGORIES
+        else len(category_order),
+    )
+
     return {
         "skill": skill_name,
         "negative_count": len(negatives),
         "relevant_negatives": len(relevant_negatives),
         "analyzed": len(sample),
-        "patterns": analysis.get("patterns", []),
-        "suggestions": analysis.get("suggestions", []),
         "summary": analysis.get("summary", ""),
+        "findings": findings_by_category,
+        "schema_violations": invalid,
         "cost_usd": result.get("cost_usd", 0),
     }
 
@@ -3797,20 +3884,39 @@ def main():
 
     elif args.command == "diagnose-negatives":
         report = diagnose_negatives(args.name, args.max_examples, args.include_stale)
-        # Print summary to stderr
+        # Print summary to stderr, grouped by smallest-failing-decision category.
         if report.get("summary"):
             print(f"\n  Diagnosis for '{args.name}':", file=sys.stderr)
             print(f"  {report['summary']}", file=sys.stderr)
-            if report.get("patterns"):
-                print(f"\n  Failure patterns ({len(report['patterns'])}):", file=sys.stderr)
-                for p in report["patterns"]:
-                    print(f"    - {p.get('pattern', '?')} ({p.get('frequency', '?')})", file=sys.stderr)
-            if report.get("suggestions"):
-                print(f"\n  Suggested changes ({len(report['suggestions'])}):", file=sys.stderr)
-                for s in report["suggestions"]:
-                    print(f"    [{s.get('section', '?')}] {s.get('rationale', '?')}", file=sys.stderr)
+            findings = report.get("findings", [])
+            if findings:
+                # Group findings by category for action-oriented reading.
+                from collections import defaultdict as _dd
+                by_cat: dict[str, list[dict]] = _dd(list)
+                for f in findings:
+                    by_cat[f.get("category", "other")].append(f)
+                print(f"\n  Findings ({len(findings)} total):", file=sys.stderr)
+                for cat, items in by_cat.items():
+                    print(f"\n  [{cat}] {len(items)} finding(s):", file=sys.stderr)
+                    for f in items:
+                        decision = f.get("smallest_failing_decision", "?")
+                        freq = f.get("frequency", "?")
+                        edit = f.get("proposed_edit") or {}
+                        edit_file = (edit.get("file") or "").strip()
+                        if edit_file and edit_file.lower() != "deferred":
+                            target = f"-> edit {edit_file}: {edit.get('change', '')[:80]}"
+                        else:
+                            target = f"-> deferred: {f.get('deferred_reason', '')[:120]}"
+                        print(f"    - {decision} ({freq})", file=sys.stderr)
+                        print(f"      {target}", file=sys.stderr)
+            if report.get("schema_violations"):
+                print(f"\n  Schema violations ({len(report['schema_violations'])} finding(s) malformed):", file=sys.stderr)
+                for v in report["schema_violations"]:
+                    print(f"    finding[{v['index']}]: {', '.join(v['issues'])}", file=sys.stderr)
             print("", file=sys.stderr)
         print(json.dumps(report, indent=2))
+        if report.get("schema_violations"):
+            sys.exit(2)
 
     elif args.command == "evolve":
         from evolve import evolve_skill

@@ -27,28 +27,42 @@ python3 distillery/scripts/distiller.py harvest-sessions
 python3 distillery/scripts/distiller.py diagnose-negatives <skill> --max-examples 10
 ```
 
-Present:
+The judge classifies each finding under exactly one of seven smallest-failing-decision categories:
+
+| Category | Failure mode | Default edit target |
+|---|---|---|
+| `wrong_trigger` | Skill fired when not relevant, or didn't fire when it should | `hooks/skill-patterns.sh` regex; SKILL.md `description` |
+| `missing_source` | Skill ran but didn't load a reference it needed | Add or expand `references/`; update SKILL.md routing table |
+| `skipped_reference` | Reference exists, agent had access, didn't read it | Tighten SKILL.md routing; promote content into SKILL.md |
+| `weak_output` | Output format loose or missing structure | Add output template / table format to SKILL.md |
+| `missing_validation` | Skill claimed completion without running a check | Add gate to SKILL.md; add validator check if catchable |
+| `unsafe_path` | Destructive action without confirmation | Add confirmation requirement; ban destructive verbs |
+| `other` | None of the above; only valid with `deferred_reason` | Manual decision |
+
+Present, grouped by category:
 - Number of negative sessions analyzed (and how many were relevant to the skill)
 - The summary diagnosis
-- Each failure pattern with frequency
-- Each suggested change with section, rationale, and proposed text
+- For each category that has findings: each finding's `smallest_failing_decision` (one sentence), frequency, and either `proposed_edit` (file + change) or `deferred_reason`
 
-### Step 2: Validate suggestions
+If the report includes `schema_violations`, surface them — those are findings the judge emitted that didn't conform to the rubric. Re-run or treat as low-confidence.
 
-For each suggested change, before applying:
+### Step 2: Validate findings
 
-1. Read the current skill text at the referenced section
-2. Verify the suggestion makes sense in context (the diagnosis is based on session data, not the current skill version -- the skill may have already been updated)
+For each non-deferred finding, before applying:
+
+1. Read the current skill text at the file referenced by `proposed_edit.file`
+2. Verify the change makes sense in context (the diagnosis is based on session data, not the current skill version -- the skill may have already been updated)
 3. Check that the proposed change doesn't conflict with other skill sections
 4. Confirm the change stays within the skill's token budget (2K-8K chars optimal, 15K max)
 
-Present each validated change for approval. Skip suggestions that reference content no longer in the skill.
+Present each validated change for approval. Skip findings that reference content no longer in the skill, and skip any finding whose `proposed_edit.file == "deferred"` -- those are explicitly not for action this round.
 
 ### Step 3: Apply approved changes
 
-For each approved change:
-- Edit the skill's SKILL.md using the Edit tool
+For each approved finding:
+- Edit the file at `proposed_edit.file` using the Edit tool, applying `proposed_edit.change`
 - Verify the edit didn't break YAML frontmatter or markdown structure
+- If the finding was `wrong_trigger`, also update the corresponding fixture entry in `distillery/tests/fixtures/triggers/<skill>.jsonl` so future regressions catch it
 
 ### Step 4: Verify
 
@@ -70,5 +84,6 @@ bash scripts/update-metadata.sh
 
 - The diagnosis uses Sonnet 4.6 via `claude -p` to analyze failure patterns. Cost is ~$0.10-0.15 per run.
 - Suggestions are based on real user dissatisfaction, not synthetic benchmarks. This makes them high-signal but potentially biased toward the specific projects and tasks in the session history.
-- Common patterns to expect: missing scope gates (skill is too eager), unbounded steps (agent over-reads), vague directives (agent guesses wrong), missing "not for" exclusions in descriptions.
+- Most common categories observed: `wrong_trigger` (skill too eager / missing exclusions in description), `missing_source` (agent answers without reading the right reference), `weak_output` (no output template, agent improvises shape), `missing_validation` (claims done without checking).
 - If the skill has very few relevant negatives (< 3), the diagnosis may be unreliable. Consider running on sessions data instead of golden.
+- The exit code is non-zero (2) if any finding violates the rubric schema. Re-run or open the JSON output to inspect `schema_violations` before treating the report as actionable.
