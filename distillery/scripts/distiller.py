@@ -1158,6 +1158,15 @@ _SKILL_HANDOFF_PATTERN = _re.compile(
 _VENDOR_SLUG_BACKTICK_PATTERN = _re.compile(
     r"`([a-z][a-z0-9-]*:[a-z][a-z0-9-]*)`"
 )
+# Stale slash-command references: any plugin file mentioning a command by its
+# unprefixed legacy name (e.g. `/feature-video` instead of `/ia-feature-video`,
+# or the dropped `/workflows:foo` namespace) is a v4-rename leftover. Built once
+# from the known_commands inventory plus the dropped-namespace prefix.
+_STALE_SLASH_COMMAND_PATTERN = _re.compile(
+    r"(?<![\w/-])(/(?:workflows:[a-z][a-z0-9-]*|[a-z][a-z0-9-]*))\b",
+    _re.IGNORECASE,
+)
+
 # Allowlist of legitimate non-plugin colon-syntax references documented inside skills.
 # Each entry is a slug-shaped form that matches the regex but is NOT a runtime
 # component invocation. Add narrowly, with reason. Bar for entry: documented format
@@ -1803,6 +1812,70 @@ def validate_plugin(component_filter=None):
         version_pins = re.findall(r'(?:as of v\d|since 20\d{2}|if using .{3,20} \d+)', content, re.IGNORECASE)
         if version_pins:
             add_finding(name, "STALE_VERSION_PIN", f"Version-pinned statement: '{version_pins[0]}'", "LOW")
+
+    # --- Stale slash-command references (v4 rename leftovers) ---
+    # Build the set of legacy unprefixed names from the current command inventory,
+    # plus the dropped `workflows:` namespace. Any /<name> reference matching either
+    # is a v4-rename straggler. Built-in Claude Code commands (/help, /clear, etc.)
+    # and unknown slash commands are ignored to keep this check conservative.
+    stale_command_names = set()
+    for cmd in known_commands:
+        if cmd.startswith("ia-"):
+            stale_command_names.add(cmd[3:])  # `feature-video`, `test-browser`, etc.
+    # Drop names also used as built-in Claude Code commands or known false-positive
+    # words (e.g. "review" is both a built-in /review and our /ia-review — skip).
+    _BUILTIN_SLASH_COMMANDS = {
+        "review", "init", "help", "clear", "config", "memory", "agents",
+        "compact", "cost", "doctor", "export", "upgrade", "resume", "vim",
+        "mcp", "security-review", "model",
+    }
+    stale_command_names -= _BUILTIN_SLASH_COMMANDS
+
+    _stale_forbidding = re.compile(
+        r"(?:legacy|stale|deprecated|v3|old\s+name|previously|formerly|"
+        r"renamed|migrated\s+from|drop|remove|fix(?:ed)?\s+up|never\s+use)",
+        re.IGNORECASE,
+    )
+    # Meta-prompting pattern markers — when a window contains multiple of these,
+    # /verify is the meta-prompting reasoning pattern, not the /ia-verify command.
+    _META_PROMPT_MARKERS = re.compile(
+        r"/(?:think|edge|adversarial|confidence|assumptions|premortem|"
+        r"tensions|flip|compare|trade|analyze|break|alt|conf|presume|"
+        r"postmortem|perspectives|vs|check)\b"
+    )
+    for name, path in {**known_skills, **known_agents, **known_commands}.items():
+        if component_filter and name != component_filter:
+            continue
+        content = path.read_text()
+        # Strip code fences (examples documenting the rename are noise) but keep inline backticks.
+        scan_body = re.sub(r'```[\s\S]*?```', '', content)
+        # File-level meta-prompting context: if the file has 3+ sibling pattern
+        # markers anywhere, /verify and /check references are reasoning patterns,
+        # not slash commands. Skip the whole file's STALE_SLASH check.
+        if len(_META_PROMPT_MARKERS.findall(scan_body)) >= 3:
+            continue
+        for m in _STALE_SLASH_COMMAND_PATTERN.finditer(scan_body):
+            ref = m.group(1)  # e.g. /feature-video or /workflows:plan
+            tail = ref[1:]    # strip leading slash
+            is_workflows = tail.startswith("workflows:")
+            is_stale_unprefixed = tail in stale_command_names
+            if not (is_workflows or is_stale_unprefixed):
+                continue
+            # Skip context that documents the rename rule itself (CLAUDE.md, audit logs, etc.)
+            start = max(0, m.start() - 200)
+            end = min(len(scan_body), m.end() + 50)
+            window = scan_body[start:end]
+            if _stale_forbidding.search(window):
+                continue
+            # Skip meta-prompting pattern lists: if 2+ sibling pattern markers appear
+            # in the window, the match is a reasoning-pattern marker, not a command.
+            if len(_META_PROMPT_MARKERS.findall(window)) >= 2:
+                continue
+            suggested = f"/ia-{tail.split(':', 1)[1] if is_workflows else tail}"
+            add_finding(name, "STALE_SLASH_COMMAND",
+                        f"Stale v3 command reference `{ref}` -- use `{suggested}` (v4.0 rename)",
+                        "HIGH")
+            break  # one finding per file is enough
 
     # --- Hook pattern count check ---
     if patterns_file.exists() and not component_filter:
