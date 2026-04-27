@@ -11,3 +11,4 @@
 {"prompt": "set up a Terraform module for the VPC", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "design a REST API contract for the orders endpoint in Laravel", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
 {"prompt": "add boundary validation to the Laravel form request", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "set up a new Django project", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

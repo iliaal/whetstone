@@ -3,3 +3,8 @@
 {"prompt": "fix the flaky integration test for payments", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add Redis caching to the product listing", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "structure the CLAUDE.md with the most important rules first", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "update the project's CLAUDE.md with the new convention", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "create the AGENTS.md for this repo", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "rewrite this skill's SKILL.md body", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write a blog post explaining the architecture", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "draft the RFC document for the new protocol", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

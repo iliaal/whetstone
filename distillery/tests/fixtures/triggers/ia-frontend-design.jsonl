@@ -4,3 +4,7 @@
 {"prompt": "configure nginx reverse proxy for the API", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add spring animation to the card hover effect", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "code implementation, not design direction — react-frontend territory"}
 {"prompt": "the design looks too generic and AI-generated, make it more distinctive", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "build a dashboard with proper frontend design", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "frontend design for this landing page", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write the React component for the sidebar", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "add a unit test for the form validator", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

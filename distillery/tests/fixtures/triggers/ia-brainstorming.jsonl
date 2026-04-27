@@ -2,3 +2,9 @@
 {"prompt": "help me think through the authentication redesign", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add a new column to the users table", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "fix the broken unit test in the auth module", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "brainstorm the new feature before I write code", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "explore approaches for the new auth flow", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "help me think through the ambiguous requirements", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "implement the feature exactly as specced", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "commit the staged changes", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "run the migration script", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

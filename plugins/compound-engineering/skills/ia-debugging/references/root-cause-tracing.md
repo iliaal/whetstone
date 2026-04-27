@@ -16,7 +16,7 @@ Bugs often manifest deep in the call stack. The instinct is to fix where the err
 ### 1. Observe the symptom
 
 ```
-Error: git init failed in /Users/dev/project/packages/core
+Error: git init failed in <repo-root>/packages/core
 ```
 
 ### 2. Find the immediate cause

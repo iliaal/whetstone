@@ -53,7 +53,7 @@ Task({
       "planModeRequired": false,
       "joinedAt": 1706000001000,
       "tmuxPaneId": "in-process",
-      "cwd": "/Users/me/project",
+      "cwd": "<repo-root>",
       "backendType": "in-process"
     }
   ]

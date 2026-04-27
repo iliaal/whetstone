@@ -4,3 +4,7 @@
 {"prompt": "add validation to the registration form", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "prevent agents from echoing each other in the multi-agent review", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
 {"prompt": "one of the parallel agents failed, how do I handle partial results", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "kick off three parallel reviewer agents on this PR", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write a unit test for one helper function", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "explain how a single agent loop works", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "debug this single subprocess call", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

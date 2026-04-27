@@ -2,3 +2,9 @@
 {"prompt": "what went wrong with the last deployment", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "implement the webhook handler for Stripe events", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "update the Docker compose file for local dev", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "retrospective on this debugging session", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "audit what went well and what went wrong this sprint", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "review the lessons learned from the migration", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "plan the next feature", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write the implementation", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "commit and push", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

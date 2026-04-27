@@ -2,3 +2,9 @@
 {"prompt": "create a deployment script for the production servers", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "build a React form with validation", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add a new Laravel middleware for API throttling", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a bash script to rotate the nightly backups", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "turn this one-liner into a safe production shell script", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "audit this cron job script for shellcheck issues", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write a Python CLI for log parsing", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "convert this bash logic into a Node.js script", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "rewrite this in Go", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

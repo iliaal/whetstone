@@ -8,3 +8,4 @@
 {"prompt": "refactor the controller layer", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "create a new database migration", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a test that proves this bug exists before fixing it", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
+{"prompt": "explain the architecture of the queue worker", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

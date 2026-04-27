@@ -2,3 +2,9 @@
 {"prompt": "fix the TradingView strategy backtest results", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "set up a PostgreSQL replication cluster", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write unit tests for the checkout service", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Pine Script v6 indicator for ATR-based stops", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "backtest this TradingView strategy on hourly data", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "debug why my pinescript indicator is repainting", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write a Python pandas script to backtest", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "plot the chart in matplotlib", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "query OHLC data from the broker API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

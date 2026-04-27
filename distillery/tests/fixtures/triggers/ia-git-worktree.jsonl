@@ -2,3 +2,9 @@
 {"prompt": "set up parallel development branches using worktrees", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write an Eloquent model for the invoices table", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add rate limiting to the public API", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up an isolated worktree to review this PR", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "create a parallel worktree branch for the experiment", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "clean up the stale worktrees on my machine", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "merge the PR into main", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "rebase my branch onto main", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "squash the last three commits", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

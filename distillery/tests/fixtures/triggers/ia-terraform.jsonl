@@ -2,3 +2,9 @@
 {"prompt": "review the infrastructure as code for the staging environment", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "implement the shopping cart feature in React", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add PHPUnit tests for the order service", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "write a Terraform module for the VPC", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "review this HCL config for state management issues", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "migrate from Terraform to OpenTofu", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write a Pulumi program for the same setup", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "deploy via the AWS console", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write a CloudFormation template", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

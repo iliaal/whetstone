@@ -1085,6 +1085,35 @@ def _find_vague_description_phrases(desc):
     lead = " ".join(desc.split()[:30]).lower()
     return [p for p in _VAGUE_DESCRIPTION_PHRASES if p in lead]
 
+
+# Machine-specific filesystem paths that must not appear in published plugin files.
+# The plugin is mirrored to ai-skills, shipped to ClawHub, and synced to .agents/.codex.
+# Anything bound to one machine or one user's home directory leaks into strangers' tools.
+_MACHINE_PATH_PATTERNS = (
+    _re.compile(r"~/ai/[^\s`\"'<>)]+"),
+    _re.compile(r"/home/[A-Za-z0-9_.-]+/[^\s`\"'<>)]+"),
+    _re.compile(r"/Users/[A-Za-z0-9_.-]+/[^\s`\"'<>)]+"),
+    _re.compile(r"[A-Za-z]:\\Users\\[A-Za-z0-9_.-]+\\[^\s`\"'<>)]+"),
+    _re.compile(r"/var/folders/[^\s`\"'<>)]+"),
+    _re.compile(r"/private/var/folders/[^\s`\"'<>)]+"),
+)
+
+REFERENCE_LINE_WARN = 150
+REFERENCE_LINE_ERROR = 800
+
+
+def _find_machine_paths(text):
+    """Return distinct machine-specific path matches, capped at 5 hits per source."""
+    seen = []
+    for pattern in _MACHINE_PATH_PATTERNS:
+        for match in pattern.finditer(text):
+            hit = match.group(0)
+            if hit not in seen:
+                seen.append(hit)
+            if len(seen) >= 5:
+                return seen
+    return seen
+
 def _claude_cli_request(prompt, model=None):
     """Call claude -p and return the response. Returns dict with response/tokens/status."""
     model = model or DEFAULT_CLI_MODEL
@@ -1181,6 +1210,8 @@ def eval_triggers(name, queries, pattern=None, patterns_file=None):
 
 
 TRIGGER_FIXTURES_DIR = DISTILLERY_DIR / "tests" / "fixtures" / "triggers"
+TRIGGER_POSITIVE_FLOOR = 5
+TRIGGER_NEGATIVE_FLOOR = 5
 
 
 def validate_plugin(component_filter=None):
@@ -1330,6 +1361,13 @@ def validate_plugin(component_filter=None):
         elif body_tokens < 100:
             add_finding(skill_name, "body_size", f"Suspiciously short (~{body_tokens} tokens)", "HIGH")
 
+        # --- Machine-specific path leak (publishing blocker) ---
+        skill_path_hits = _find_machine_paths(content)
+        if skill_path_hits:
+            add_finding(skill_name, "MACHINE_PATH_LEAK",
+                        f"Machine-specific path(s) in SKILL.md: {', '.join(skill_path_hits[:3])}",
+                        "HIGH")
+
         # --- Placeholder text ---
         # Strip markdown links first to avoid false positives on [example-file.md](...)
         body_no_links = re.sub(r'\[[^\]]+\]\([^)]+\)', '', body)
@@ -1401,6 +1439,24 @@ def validate_plugin(component_filter=None):
             for orphan in sorted(orphans):
                 add_finding(skill_name, "ORPHAN_REFERENCE", f"references/{orphan} not linked from SKILL.md", "MEDIUM")
 
+            for ref_path in sorted(refs_dir.rglob("*.md")):
+                ref_text = ref_path.read_text()
+                ref_label = f"references/{ref_path.relative_to(refs_dir)}"
+                line_count = ref_text.count('\n') + 1
+                if line_count > REFERENCE_LINE_ERROR:
+                    add_finding(skill_name, "REFERENCE_BLOAT",
+                                f"{ref_label} is {line_count} lines (>{REFERENCE_LINE_ERROR}) -- split by lookup need",
+                                "HIGH")
+                elif line_count > REFERENCE_LINE_WARN:
+                    add_finding(skill_name, "reference_length",
+                                f"{ref_label} is {line_count} lines (>{REFERENCE_LINE_WARN}) -- consider splitting or adding navigation",
+                                "MEDIUM")
+                ref_path_hits = _find_machine_paths(ref_text)
+                if ref_path_hits:
+                    add_finding(skill_name, "MACHINE_PATH_LEAK",
+                                f"Machine-specific path(s) in {ref_label}: {', '.join(ref_path_hits[:3])}",
+                                "HIGH")
+
         if scripts_dir_path.is_dir():
             linked_scripts = set(re.findall(r'\]\(\./scripts/([^)]+)\)', content))
             actual_scripts = {f.name for f in scripts_dir_path.iterdir() if f.is_file()}
@@ -1451,6 +1507,12 @@ def validate_plugin(component_filter=None):
         if body_tokens > 3000:
             add_finding(agent_name, "body_size", f"Agent body exceeds 3K tokens (~{body_tokens})", "MEDIUM")
 
+        agent_path_hits = _find_machine_paths(content)
+        if agent_path_hits:
+            add_finding(agent_name, "MACHINE_PATH_LEAK",
+                        f"Machine-specific path(s) in agent: {', '.join(agent_path_hits[:3])}",
+                        "HIGH")
+
         # Cross-reference check
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
         for ref in skill_refs:
@@ -1488,6 +1550,12 @@ def validate_plugin(component_filter=None):
 
         if fm.get("argument-hint") and "$ARGUMENTS" not in body:
             add_finding(cmd_name, "missing_arg_handling", "Declares argument-hint but body doesn't reference $ARGUMENTS", "MEDIUM")
+
+        cmd_path_hits = _find_machine_paths(content)
+        if cmd_path_hits:
+            add_finding(cmd_name, "MACHINE_PATH_LEAK",
+                        f"Machine-specific path(s) in command: {', '.join(cmd_path_hits[:3])}",
+                        "HIGH")
 
         # Cross-reference check
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
@@ -1621,9 +1689,20 @@ def test_triggers(skill_filter=None, fixtures_dir=None):
         if not should_trigger and not should_not_trigger:
             continue
 
+        coverage_errors = []
+        if len(should_trigger) < TRIGGER_POSITIVE_FLOOR:
+            coverage_errors.append(
+                f"only {len(should_trigger)} should_trigger cases (floor: {TRIGGER_POSITIVE_FLOOR})"
+            )
+        if len(should_not_trigger) < TRIGGER_NEGATIVE_FLOOR:
+            coverage_errors.append(
+                f"only {len(should_not_trigger)} should_not_trigger cases (floor: {TRIGGER_NEGATIVE_FLOOR})"
+            )
+
         queries = {"should_trigger": should_trigger, "should_not_trigger": should_not_trigger}
         report = eval_triggers(skill_name, queries)
-        passed = report["metrics"]["f1"] == 1.0
+        f1_pass = report["metrics"]["f1"] == 1.0
+        passed = f1_pass and not coverage_errors
         if not passed:
             all_pass = False
 
@@ -1632,6 +1711,7 @@ def test_triggers(skill_filter=None, fixtures_dir=None):
             "passed": passed,
             "metrics": report["metrics"],
             "failures": [m for m in report["matches"] if not m["correct"]],
+            "coverage_errors": coverage_errors,
         })
 
     return {"results": results, "all_passed": all_pass}
@@ -3509,6 +3589,8 @@ def main():
                 for f in r["failures"]:
                     expected = "should trigger" if f["expected"] else "should NOT trigger"
                     print(f"    {r['skill']}: \"{f['query']}\" — {expected} but {'matched' if f['matched'] else 'did not match'}", file=sys.stderr)
+                for ce in r.get("coverage_errors", []):
+                    print(f"    {r['skill']}: coverage shortfall — {ce}", file=sys.stderr)
         else:
             print(f"\n  All {len(report['results'])} skills passed", file=sys.stderr)
         print(json.dumps(report, indent=2))

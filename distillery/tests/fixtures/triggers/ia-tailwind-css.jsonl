@@ -2,3 +2,9 @@
 {"prompt": "create a reusable button component using cva variants", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a bash script to rotate log files", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add a new GraphQL resolver for products", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "set up Tailwind v4 in this Next.js project", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "migrate this Tailwind v3 config to v4 @theme", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "build this card with tailwind utility classes in css", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write CSS modules for the layout", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "set up styled-components", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "convert this to vanilla CSS", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
