@@ -56,6 +56,9 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | 9, "self-modify", "evolve", "git" | Read [self-modification.md](./references/self-modification.md) |
 | 10, "product", "progressive", "approval", "latent demand" | Read [product-implications.md](./references/product-implications.md) |
 | 11, "mobile", "ios", "android", "background", "checkpoint" | Read [mobile-patterns.md](./references/mobile-patterns.md) |
+| 11a, "icloud", "storage", "documents", "file state", "entitlement" | Read [mobile-storage.md](./references/mobile-storage.md) |
+| 11b, "background task", "battery", "on-device", "cloud routing" | Read [mobile-execution.md](./references/mobile-execution.md) |
+| 11c, "model tier", "token budget", "cost-aware", "batch", "caching" | Read [mobile-cost.md](./references/mobile-cost.md) |
 | 12, "test", "testing", "verify", "validate" | Read [agent-native-testing.md](./references/agent-native-testing.md) |
 | 13, "review", "refactor", "existing" | Read [refactoring-to-prompt-native.md](./references/refactoring-to-prompt-native.md) |
 | 14, "anti-pattern", "mistake", "wrong" | Read [anti-patterns.md](./references/anti-patterns.md) |
