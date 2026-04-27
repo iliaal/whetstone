@@ -3,8 +3,8 @@
 {"prompt": "set up a Kubernetes deployment for the API", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a migration to add soft deletes", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "rewrite this prompt to be precise and structured", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "refine my prompt into a tight system prompt", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "improve the prompt for this query template", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "turn my vague instructions into a tight system prompt", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "do prompt engineering on this query template", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "write the documentation for this API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "fix the bug in the prompt parser", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "review my pull request description", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

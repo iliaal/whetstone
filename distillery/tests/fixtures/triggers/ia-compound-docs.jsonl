@@ -2,9 +2,9 @@
 {"prompt": "capture the knowledge from debugging the cache invalidation bug", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a new React hook for form state management", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "configure the CI pipeline for the monorepo", "expect": false, "added_in": "2.51.0", "source": "initial"}
-{"prompt": "document the solution to the outage we just resolved", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "capture the knowledge from this debugging session", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "document the problem and workaround for the flaky migration", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "write up the postmortem for the outage we just resolved", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "capture this debugging session as a reusable solution doc", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "document the workaround we found for the flaky migration", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "write the user-facing docs for this feature", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "update the README with new install steps", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "draft the API reference page", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

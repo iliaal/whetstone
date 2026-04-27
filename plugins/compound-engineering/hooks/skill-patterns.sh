@@ -23,13 +23,13 @@ SKILL_TIERS[ia-code-review]=1
 SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
 SKILL_TIERS[ia-simplifying-code]=1
 
-SKILL_PATTERNS[ia-brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.*approach'
+SKILL_PATTERNS[ia-brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.{0,40}(approach|idea|option|feature)|compare.{0,30}approach|clarify.{0,30}(requirement|ambigu)|vague.{0,30}(idea|feature|requirement)'
 SKILL_TIERS[ia-brainstorming]=1
 
-SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,12}(commit|push|pr|merge)'
+SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,15}(commit|push|pr|merge|complet)|mark.{0,15}(done|complet)|ready.?to.?merge|claim.{0,30}(fixed|done|complete)'
 SKILL_TIERS[ia-verification-before-completion]=1
 
-SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.*(review|feedback).?comment|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
+SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
 SKILL_TIERS[ia-receiving-code-review]=1
 
 SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline'
@@ -65,13 +65,13 @@ SKILL_TIERS[ia-linux-bash-scripting]=2
 SKILL_PATTERNS[ia-pinescript]='pine.?script|tradingview|pinescript|\bindicator\b.{0,20}(pine|trading.?view)|\.pine\b'
 SKILL_TIERS[ia-pinescript]=2
 
-SKILL_PATTERNS[ia-frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|build.*(web.?component|web.?page|landing.?page|dashboard)|design.*too.?generic|ai.?generated.*(design|look)'
+SKILL_PATTERNS[ia-frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|(build|design).{0,30}(web.?component|web.?page|landing.?page|dashboard)|design.{0,20}too.?generic|ai.?generated.*(design|look)|color.?palette|visual.?identity'
 SKILL_TIERS[ia-frontend-design]=2
 
-SKILL_PATTERNS[ia-tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|dark.?mode.*css'
+SKILL_PATTERNS[ia-tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|style.{0,30}utility.?class|dark.?mode.*css'
 SKILL_TIERS[ia-tailwind-css]=2
 
-SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?tool|self.?modif|agent.?native|prompt.?native|pretooluse|posttooluse|agent.?hook'
+SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?(tool|server)|self.?modif|agent.?(native|loop|hook)|prompt.?native|pretooluse|posttooluse'
 SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
@@ -82,7 +82,7 @@ SKILL_TIERS[ia-writing]=3
 SKILL_PATTERNS[ia-md-docs]='update.*readme|update.*agents|init.*agents|create.*agents\.md|update.*contributing|update.*context.?files|claude\.md'
 SKILL_TIERS[ia-md-docs]=3
 
-SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction'
+SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt'
 SKILL_TIERS[ia-refine-prompt]=3
 
 SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt'
@@ -91,10 +91,10 @@ SKILL_TIERS[ia-meta-prompting]=3
 SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong'
 SKILL_TIERS[ia-reflect]=3
 
-SKILL_PATTERNS[ia-compound-docs]='document.*(solution|problem)|capture.*(knowledge|solved)|compound.*(doc|knowledge)'
+SKILL_PATTERNS[ia-compound-docs]='document.{0,40}(solution|problem|workaround)|capture.{0,40}(knowledge|solved|solution|debug)|compound.{0,30}(doc|knowledge)|post.?mortem'
 SKILL_TIERS[ia-compound-docs]=3
 
-SKILL_PATTERNS[ia-document-review]='refine.*(brainstorm|plan)|review.*(document|brainstorm|plan)'
+SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|spec)'
 SKILL_TIERS[ia-document-review]=3
 
 SKILL_PATTERNS[ia-file-todos]='todo.?directory|manage.?todo|file.?based.?todo'

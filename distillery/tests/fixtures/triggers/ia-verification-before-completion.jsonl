@@ -2,9 +2,9 @@
 {"prompt": "verify that tests pass before committing", "expect": true, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "write a new middleware for rate limiting", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "refactor the payment gateway integration", "expect": false, "added_in": "2.51.0", "source": "initial"}
-{"prompt": "I'm confident the refactor didn't break anything", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "behavioral trigger, not regex-appropriate — too many false positives"}
-{"prompt": "verify before commit that the work is complete", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "verify the tests pass before merge", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "completion claim: bug is fixed", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "I'm confident the refactor didn't break anything", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "behavioral trigger, not regex-appropriate \u2014 too many false positives"}
+{"prompt": "about to mark this done -- verify first", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "ready to merge, did the tests actually pass?", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "claim the bug is fixed and hand off", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "explore approaches for the new feature", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "brainstorm naming options for the API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

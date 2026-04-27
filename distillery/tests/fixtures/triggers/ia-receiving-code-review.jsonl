@@ -4,7 +4,7 @@
 {"prompt": "create a new database migration for orders", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "respond to the reviewer comments on my PR", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "the reviewer asked me to refactor \u2014 should I push back?", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "address the review comments on my MR", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "address the feedback on my MR before merging", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "review someone else's PR", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write a code review for this diff", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "audit this branch for security issues", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

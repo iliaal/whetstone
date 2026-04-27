@@ -3,8 +3,8 @@
 {"prompt": "add error handling to the file upload endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "set up monitoring alerts for the production database", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "review my plan doc for gaps before I implement", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "review this brainstorm document", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "review this plan for clarity", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "polish this brainstorm document", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "audit this ADR for clarity and completeness", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "review this pull request for code quality", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "review the security implications of this change", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "review my test coverage", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}

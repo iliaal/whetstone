@@ -3,8 +3,8 @@
 {"prompt": "add pagination to the REST API", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "update the database schema for multi-tenancy", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "configure PreToolUse hooks for the agent to control permissions", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
-{"prompt": "design an MCP tool for our agent", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
-{"prompt": "build an agent-native workflow that uses pretooluse hooks", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "how should I structure an MCP server for a custom tool", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
+{"prompt": "design the agent loop for our automation pipeline", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "port this CRUD form to a chat-style frontend", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write integration tests for the REST API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "debug the failing pytest fixture", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
