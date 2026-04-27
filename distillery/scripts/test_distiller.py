@@ -1331,3 +1331,451 @@ class TestAnalyzeOutcomes:
         expected_delta = round(bad_neg_rate - global_neg_rate, 3)
         bad_outcome = [o for o in result["outcomes"] if o["project"] == "bad"][0]
         assert bad_outcome["delta"] == expected_delta
+
+
+# ---------------------------------------------------------------------------
+# Pure helpers added in 3.0.4 cycle
+# ---------------------------------------------------------------------------
+
+class TestPercentile:
+    def test_known_values(self):
+        assert distiller._percentile([1, 2, 3, 4, 5], 50) == 3.0
+        assert distiller._percentile([1, 2, 3, 4, 5], 0) == 1.0
+        assert distiller._percentile([1, 2, 3, 4, 5], 100) == 5.0
+
+    def test_empty_list_zero(self):
+        assert distiller._percentile([], 50) == 0
+        assert distiller._percentile([], 95) == 0
+
+    def test_single_element(self):
+        assert distiller._percentile([7], 50) == 7
+        assert distiller._percentile([7], 95) == 7
+
+    def test_p95_interpolation(self):
+        # 5 sorted values; rank at p95 = 0.95 * 4 = 3.8 -> between idx 3 (4) and idx 4 (5)
+        # 4 + 0.8 * (5 - 4) = 4.8
+        assert distiller._percentile([1, 2, 3, 4, 5], 95) == 4.8
+
+
+class TestComputeBudgetMetrics:
+    def test_aggregates_turns_and_variety(self):
+        sessions = [
+            {"turn_count": 5, "tools_used": ["Read", "Edit", "Bash"]},
+            {"turn_count": 7, "tools_used": ["Read", "Bash"]},
+            {"turn_count": 3, "tools_used": ["Read"]},
+        ]
+        m = distiller._compute_budget_metrics(sessions)
+        assert m["sample_size"] == 3
+        assert m["turn_count"]["mean"] == 5.0
+        assert m["tool_variety"]["mean"] == 2.0
+
+    def test_stringified_tools_list_parsed(self):
+        sessions = [
+            {"turn_count": 4, "tools_used": "['Read', 'Edit']"},
+            {"turn_count": 4, "tools_used": "['Read']"},
+        ]
+        m = distiller._compute_budget_metrics(sessions)
+        assert m["tool_variety"]["mean"] == 1.5
+
+    def test_missing_tools_field_handled(self):
+        sessions = [{"turn_count": 5}, {"turn_count": 7, "tools_used": ["Read"]}]
+        m = distiller._compute_budget_metrics(sessions)
+        assert m is not None
+        assert m["sample_size"] == 2
+        assert m["tool_variety"]["mean"] == 1.0  # only the one that had tools
+
+    def test_empty_returns_none(self):
+        assert distiller._compute_budget_metrics([]) is None
+
+    def test_invalid_turn_count_skipped(self):
+        sessions = [
+            {"turn_count": "not-a-number", "tools_used": ["Read"]},
+            {"turn_count": 5, "tools_used": ["Read"]},
+        ]
+        m = distiller._compute_budget_metrics(sessions)
+        assert m["turn_count"]["mean"] == 5.0
+
+
+class TestRecordCheckBudget:
+    @pytest.fixture(autouse=True)
+    def _isolate_eval_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", tmp_path)
+        self.eval_dir = tmp_path
+
+    def _write_sessions(self, skill, sessions):
+        d = self.eval_dir / skill
+        d.mkdir(exist_ok=True)
+        with open(d / "sessions.jsonl", "w") as f:
+            for s in sessions:
+                f.write(json.dumps(s) + "\n")
+
+    def test_record_writes_baseline(self):
+        self._write_sessions("foo", [
+            {"turn_count": 5, "tools_used": ["Read", "Edit"]},
+            {"turn_count": 7, "tools_used": ["Read", "Edit", "Bash"]},
+        ])
+        rc = distiller.record_budget("foo")
+        assert rc == 0
+        baseline = json.loads((self.eval_dir / "foo" / "budget.json").read_text())
+        assert baseline["sample_size"] == 2
+        assert baseline["turn_count"]["mean"] == 6.0
+
+    def test_record_no_sessions_exits_nonzero(self):
+        rc = distiller.record_budget("nope")
+        assert rc != 0
+
+    def test_check_floor_skips_low_baseline(self):
+        # Baseline aggregates below the floor; check should bail out without flagging.
+        baseline = {
+            "sample_size": 3,
+            "turn_count": {"mean": 2.0, "p50": 2.0, "p95": 2.0},
+            "tool_variety": {"mean": 4.0, "p50": 4.0, "p95": 4.0},
+        }
+        d = self.eval_dir / "foo"
+        d.mkdir()
+        (d / "budget.json").write_text(json.dumps(baseline))
+        # Baseline below floor for both metrics -> no regressions even with 5x growth.
+        self._write_sessions("foo", [
+            {"turn_count": 12, "tools_used": ["A", "B", "C", "D"]} for _ in range(3)
+        ])
+        regressions, current = distiller.check_budget("foo")
+        assert regressions == []
+        assert current is not None
+
+    def test_check_ratio_cap_triggers(self):
+        baseline = {
+            "sample_size": 5,
+            "turn_count": {"mean": 5.0, "p50": 5.0, "p95": 5.0},
+            "tool_variety": {"mean": 6.0, "p50": 6.0, "p95": 6.0},
+        }
+        d = self.eval_dir / "foo"
+        d.mkdir()
+        (d / "budget.json").write_text(json.dumps(baseline))
+        # Current mean ~11 vs baseline 5 -> ratio 2.2, exceeds 2.0 cap.
+        self._write_sessions("foo", [
+            {"turn_count": 11, "tools_used": ["A", "B", "C", "D", "E", "F"]} for _ in range(5)
+        ])
+        regressions, current = distiller.check_budget("foo", ratio_cap=2.0)
+        assert any(r["metric"] == "turn_count" for r in regressions)
+        assert current["turn_count"]["mean"] == 11.0
+
+    def test_check_within_ratio_passes(self):
+        baseline = {
+            "sample_size": 5,
+            "turn_count": {"mean": 5.0, "p50": 5.0, "p95": 5.0},
+            "tool_variety": {"mean": 6.0, "p50": 6.0, "p95": 6.0},
+        }
+        d = self.eval_dir / "foo"
+        d.mkdir()
+        (d / "budget.json").write_text(json.dumps(baseline))
+        self._write_sessions("foo", [
+            {"turn_count": 6, "tools_used": ["A", "B", "C", "D", "E", "F"]} for _ in range(5)
+        ])
+        regressions, current = distiller.check_budget("foo", ratio_cap=2.0)
+        assert regressions == []
+
+
+class TestParseCoverageMatrix:
+    def test_extracts_rows(self):
+        spec = """## Coverage
+
+### Coverage matrix
+
+| dimension | status | evidence |
+|-----------|--------|----------|
+| triggers  | full   | fixture passes |
+| outputs   | partial | needs review |
+| edges     | none   | document |
+
+## Next
+"""
+        rows = distiller._parse_coverage_matrix(spec)
+        assert len(rows) == 3
+        assert rows[0] == ("triggers", "full", "fixture passes")
+        assert rows[1][1] == "partial"
+
+    def test_no_matrix_returns_empty(self):
+        rows = distiller._parse_coverage_matrix("# nothing\n\nbody only.")
+        assert rows == []
+
+    def test_partial_status_detected(self):
+        assert distiller._coverage_status_is_partial("partial")
+        assert distiller._coverage_status_is_partial("PARTIAL — pending review")
+        assert distiller._coverage_status_is_partial("<!-- TBD -->")
+        assert not distiller._coverage_status_is_partial("full")
+        assert not distiller._coverage_status_is_partial("complete")
+
+    def test_action_token_detection(self):
+        assert distiller._coverage_row_has_action("add a fixture for X")
+        assert distiller._coverage_row_has_action("validate against schema")
+        assert not distiller._coverage_row_has_action("looks fine")
+        assert not distiller._coverage_row_has_action("see notes")
+
+
+class TestFindHelpers:
+    def test_machine_paths_caught(self):
+        text = "see ~/ai/wiki/foo.md and /home/ilia/repos/x"
+        hits = distiller._find_machine_paths(text)
+        assert len(hits) >= 1
+
+    def test_machine_paths_inside_inline_backticks_skipped(self):
+        text = "Don't use `~/ai/wiki/foo.md` -- the gate forbids it."
+        hits = distiller._find_machine_paths(text)
+        assert hits == []
+
+    def test_machine_paths_inside_fenced_block_caught(self):
+        # Fenced blocks are example commands; they MUST be portable, so still scanned.
+        text = "Run this:\n\n```bash\ncat /home/ilia/notes.md\n```\n"
+        hits = distiller._find_machine_paths(text)
+        assert len(hits) >= 1
+
+    def test_vague_description_phrases(self):
+        from distiller import _find_vague_description_phrases as fn
+        # Empty input returns empty.
+        assert fn("") == []
+        # A description that opens with a clear trigger phrase ("Use when ...") should be clean.
+        assert fn("Use when debugging stack traces or flaky tests.") == []
+
+
+# ---------------------------------------------------------------------------
+# validate-plugin gates added in 3.0.4 cycle
+# ---------------------------------------------------------------------------
+
+def _make_minimal_plugin(root):
+    """Build a minimal plugin tree at `root` so validate_plugin can run."""
+    (root / ".claude-plugin").mkdir()
+    (root / ".claude-plugin" / "plugin.json").write_text(json.dumps({
+        "name": "test-plugin", "version": "0.0.1",
+        "description": "0 agents, 0 commands, 0 skills, 0 hooks",
+    }))
+    (root / "skills").mkdir()
+    (root / "agents").mkdir()
+    (root / "commands").mkdir()
+    (root / "hooks").mkdir()
+    (root / "hooks" / "skill-patterns.sh").write_text("# empty\n")
+    (root / "README.md").write_text("# test\n")
+
+
+def _add_skill(root, name, body, frontmatter_extra=""):
+    sk = root / "skills" / name
+    sk.mkdir()
+    (sk / "SKILL.md").write_text(
+        f"---\nname: {name}\nclass: discipline\n"
+        f"description: Use when triggering test fixtures.\n"
+        f"{frontmatter_extra}---\n\n{body}\n"
+    )
+    # Minimal SPEC.md so SPEC_MISSING doesn't fire on every test.
+    (sk / "SPEC.md").write_text(_minimal_spec(name))
+    return sk
+
+
+SPEC_REQUIRED_HEADINGS_FIXTURE = [
+    "Lookup need", "Scope", "Out of scope",
+    "Success criteria", "Failure modes", "References", "Coverage",
+]
+
+
+def _minimal_spec(name):
+    parts = [f"# {name}\n"]
+    for h in SPEC_REQUIRED_HEADINGS_FIXTURE:
+        parts.append(f"## {h}\n\nplaceholder body.\n")
+    parts.append("### Coverage matrix\n\n| dimension | status | evidence |\n|---|---|---|\n| triggers | full | fixture passes |\n")
+    return "\n".join(parts)
+
+
+def _add_command(root, name, body):
+    (root / "commands" / f"{name}.md").write_text(
+        f"---\nname: {name}\ndescription: Use when running test commands.\n---\n\n{body}\n"
+    )
+
+
+def _add_agent(root, name, body):
+    (root / "agents" / f"{name}.md").write_text(
+        f"---\nname: {name}\nmodel: sonnet\n"
+        f"description: Use when triggering this agent.\n---\n\n{body}\n"
+    )
+
+
+def _findings(report, component=None, check=None):
+    out = report["findings"]
+    if component is not None:
+        out = [f for f in out if f["component"] == component]
+    if check is not None:
+        out = [f for f in out if f["check"] == check]
+    return out
+
+
+@pytest.fixture
+def fake_plugin(tmp_path, monkeypatch):
+    root = tmp_path / "plugin"
+    root.mkdir()
+    _make_minimal_plugin(root)
+    monkeypatch.setattr(distiller, "PLUGIN_DIR", root)
+    return root
+
+
+class TestStaleSlashCommand:
+    def test_legacy_unprefixed_command_flagged(self, fake_plugin):
+        _add_command(fake_plugin, "ia-feature-video", "Records videos.")
+        _add_skill(fake_plugin, "demo", "Run /feature-video to capture the demo.")
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "STALE_SLASH_COMMAND")
+
+    def test_workflows_namespace_flagged(self, fake_plugin):
+        _add_command(fake_plugin, "ia-plan", "Plans work.")
+        _add_skill(fake_plugin, "demo", "Predecessor: `/workflows:plan`.")
+        report = distiller.validate_plugin()
+        f = _findings(report, "demo", "STALE_SLASH_COMMAND")
+        assert f and "/ia-plan" in f[0]["message"]
+
+    def test_forbidding_context_skips(self, fake_plugin):
+        _add_command(fake_plugin, "ia-feature-video", "Records videos.")
+        _add_skill(fake_plugin, "demo",
+                   "The legacy /feature-video name was renamed in v4. Use the new form.")
+        report = distiller.validate_plugin()
+        assert not _findings(report, "demo", "STALE_SLASH_COMMAND")
+
+    def test_meta_prompt_pattern_file_exempt(self, fake_plugin):
+        _add_command(fake_plugin, "ia-verify", "Verify.")
+        body = (
+            "Patterns: /think /edge /adversarial /verify /check /flip /confidence."
+            "\n\nUse /verify and /check together for rigorous review."
+        )
+        _add_skill(fake_plugin, "demo", body)
+        report = distiller.validate_plugin()
+        assert not _findings(report, "demo", "STALE_SLASH_COMMAND")
+
+    def test_builtin_review_not_flagged(self, fake_plugin):
+        _add_command(fake_plugin, "ia-review", "Review.")
+        _add_skill(fake_plugin, "demo", "Run /review on the diff.")
+        report = distiller.validate_plugin()
+        assert not _findings(report, "demo", "STALE_SLASH_COMMAND")
+
+    def test_correct_prefix_passes(self, fake_plugin):
+        _add_command(fake_plugin, "ia-feature-video", "Records videos.")
+        _add_skill(fake_plugin, "demo", "Run /ia-feature-video to capture.")
+        report = distiller.validate_plugin()
+        assert not _findings(report, "demo", "STALE_SLASH_COMMAND")
+
+
+class TestSkillNameInvocation:
+    def test_verb_prefixed_runtime_invocation_flagged(self, fake_plugin):
+        _add_skill(fake_plugin, "demo", "Run the ia-debugging skill next.")
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "SKILL_NAME_INVOCATION")
+
+    def test_handoff_phrase_flagged(self, fake_plugin):
+        _add_skill(fake_plugin, "demo", "Hand off to ia-planning skill once done.")
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "SKILL_NAME_INVOCATION")
+
+    def test_vendor_slug_backtick_flagged(self, fake_plugin):
+        _add_skill(fake_plugin, "demo", "Predecessor: `compound-engineering:ia-debugging`.")
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "SKILL_NAME_INVOCATION")
+
+    def test_allowlisted_colon_form_skipped(self, fake_plugin):
+        _add_skill(fake_plugin, "demo",
+                   "Format errors as `file:line` and addresses as `host:port`. "
+                   "Run `php artisan config:cache` after deploy.")
+        report = distiller.validate_plugin()
+        assert not _findings(report, "demo", "SKILL_NAME_INVOCATION")
+
+    def test_forbidding_context_skips_invocation(self, fake_plugin):
+        _add_skill(fake_plugin, "demo",
+                   "Never run `compound-engineering:ia-debugging` directly -- skill "
+                   "discovery handles routing.")
+        report = distiller.validate_plugin()
+        assert not _findings(report, "demo", "SKILL_NAME_INVOCATION")
+
+
+class TestSpecGates:
+    def test_spec_missing_flagged(self, fake_plugin):
+        sk = _add_skill(fake_plugin, "demo", "Body.")
+        (sk / "SPEC.md").unlink()
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "SPEC_MISSING")
+
+    def test_spec_missing_heading_flagged(self, fake_plugin):
+        sk = _add_skill(fake_plugin, "demo", "Body.")
+        (sk / "SPEC.md").write_text("# demo\n\n## Lookup need\n\nbody.\n")
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "SPEC_HEADINGS")
+
+    def test_spec_machine_path_flagged(self, fake_plugin):
+        sk = _add_skill(fake_plugin, "demo", "Body.")
+        spec = _minimal_spec("demo") + "\n\nSee /home/ilia/notes.md for context.\n"
+        (sk / "SPEC.md").write_text(spec)
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "MACHINE_PATH_LEAK")
+
+    def test_coverage_partial_no_action_flagged(self, fake_plugin):
+        sk = _add_skill(fake_plugin, "demo", "Body.")
+        spec = (
+            f"# demo\n"
+            + "".join(f"## {h}\n\nbody.\n\n" for h in SPEC_REQUIRED_HEADINGS_FIXTURE)
+            + "### Coverage matrix\n\n| dimension | status | evidence |\n"
+            + "|---|---|---|\n"
+            + "| triggers | partial | looks fine |\n"
+        )
+        (sk / "SPEC.md").write_text(spec)
+        report = distiller.validate_plugin()
+        assert _findings(report, "demo", "COVERAGE_GAP_NO_ACTION")
+
+
+class TestTriggerFloor:
+    def test_below_positive_floor_fails(self, tmp_path):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        patterns_file.write_text("SKILL_PATTERNS[my-skill]='hello'\n")
+        fixtures_dir = tmp_path / "fixtures"
+        fixtures_dir.mkdir()
+        # 4 positive + 5 negative -> below positive floor of 5.
+        lines = [
+            '{"prompt": "hello a", "expect": true}',
+            '{"prompt": "hello b", "expect": true}',
+            '{"prompt": "hello c", "expect": true}',
+            '{"prompt": "hello d", "expect": true}',
+            '{"prompt": "n1", "expect": false}',
+            '{"prompt": "n2", "expect": false}',
+            '{"prompt": "n3", "expect": false}',
+            '{"prompt": "n4", "expect": false}',
+            '{"prompt": "n5", "expect": false}',
+        ]
+        (fixtures_dir / "my-skill.jsonl").write_text("\n".join(lines) + "\n")
+        old = distiller.SKILL_PATTERNS_DEFAULT
+        distiller.SKILL_PATTERNS_DEFAULT = patterns_file
+        try:
+            result = distiller.test_triggers(fixtures_dir=str(fixtures_dir))
+        finally:
+            distiller.SKILL_PATTERNS_DEFAULT = old
+        assert not result["all_passed"]
+        coverage = result["results"][0]["coverage_errors"]
+        assert any("should_trigger" in c for c in coverage)
+
+    def test_below_negative_floor_fails(self, tmp_path):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        patterns_file.write_text("SKILL_PATTERNS[my-skill]='hello'\n")
+        fixtures_dir = tmp_path / "fixtures"
+        fixtures_dir.mkdir()
+        # 5 positive + 4 negative -> below negative floor of 5.
+        lines = [
+            '{"prompt": "hello a", "expect": true}',
+            '{"prompt": "hello b", "expect": true}',
+            '{"prompt": "hello c", "expect": true}',
+            '{"prompt": "hello d", "expect": true}',
+            '{"prompt": "hello e", "expect": true}',
+            '{"prompt": "n1", "expect": false}',
+            '{"prompt": "n2", "expect": false}',
+            '{"prompt": "n3", "expect": false}',
+            '{"prompt": "n4", "expect": false}',
+        ]
+        (fixtures_dir / "my-skill.jsonl").write_text("\n".join(lines) + "\n")
+        old = distiller.SKILL_PATTERNS_DEFAULT
+        distiller.SKILL_PATTERNS_DEFAULT = patterns_file
+        try:
+            result = distiller.test_triggers(fixtures_dir=str(fixtures_dir))
+        finally:
+            distiller.SKILL_PATTERNS_DEFAULT = old
+        assert not result["all_passed"]
+        coverage = result["results"][0]["coverage_errors"]
+        assert any("should_not_trigger" in c for c in coverage)

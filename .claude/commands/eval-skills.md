@@ -1,7 +1,7 @@
 ---
 name: eval-skills
 description: Eval all skills with sufficient data, rank by composite score, identify candidates for optimization
-argument-hint: "[--min-examples 10] [--top 10]"
+argument-hint: "[--min-examples 30] [--top 10]"
 ---
 
 # Evaluate and rank all skills
