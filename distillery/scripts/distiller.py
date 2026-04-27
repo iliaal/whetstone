@@ -1105,6 +1105,18 @@ REFERENCE_LINE_ERROR = 800
 # frontmatter. Values map to lookup-need clusters; see CLAUDE.md "Skill class taxonomy".
 SKILL_CLASSES = frozenset({"language", "discipline", "workflow", "meta", "tool"})
 
+# Tier 2 SPEC.md required headings (mirrors getsentry-skills/skill-writer).
+# Maintenance contract per skill: intent, scope, triggers, sources, eval, limits, upkeep.
+SPEC_REQUIRED_HEADINGS = (
+    "Intent",
+    "Scope",
+    "Trigger Context",
+    "Source And Evidence Model",
+    "Evaluation",
+    "Known Limitations",
+    "Maintenance Notes",
+)
+
 
 def _find_machine_paths(text):
     """Return distinct machine-specific path matches, capped at 5 hits per source."""
@@ -1480,6 +1492,23 @@ def validate_plugin(component_filter=None):
         for ref in backtick_refs:
             if ref not in known_skills and ref not in known_agents and ref not in known_commands:
                 add_finding(skill_name, "DEAD_CROSS_REF", f"References nonexistent component: `{ref}`", "HIGH")
+
+        # --- SPEC.md (Tier 2) ---
+        spec_md = skill_dir / "SPEC.md"
+        if not spec_md.exists():
+            add_finding(skill_name, "SPEC_MISSING",
+                        "SPEC.md not found -- run scripts/generate-spec.py or author manually",
+                        "MEDIUM")
+        else:
+            spec_content = spec_md.read_text()
+            missing_headings = [
+                h for h in SPEC_REQUIRED_HEADINGS
+                if not re.search(rf"^##\s+{re.escape(h)}\s*$", spec_content, re.MULTILINE)
+            ]
+            if missing_headings:
+                add_finding(skill_name, "SPEC_HEADINGS",
+                            f"SPEC.md missing required heading(s): {', '.join(missing_headings)}",
+                            "HIGH")
 
     # --- Validate agents ---
     for agent_name, agent_path in known_agents.items():

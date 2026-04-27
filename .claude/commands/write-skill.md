@@ -41,7 +41,7 @@ Read the SKILL.md of every skill the user named in question 4 (and any others th
 
 ## Phase 4: Scaffold
 
-Generate three artifacts atomically. Do not split across phases.
+Generate four artifacts atomically. Do not split across phases.
 
 ### 4a. SKILL.md
 
@@ -82,7 +82,48 @@ Drafting guidance:
 
 Read the current plugin version from `plugins/compound-engineering/.claude-plugin/plugin.json` for the `added_in` field.
 
-### 4c. Hook regex pattern
+### 4c. SPEC.md (maintenance contract)
+
+Path: `plugins/compound-engineering/skills/<name>/SPEC.md`
+
+Seven required headings (the validator rejects missing ones as HIGH):
+
+```markdown
+# <name> Specification
+
+## Intent
+<one paragraph: what this skill exists for, primary purpose, class context>
+
+## Scope
+In scope:
+- <bullets pulled from SKILL.md routing>
+Out of scope:
+- <adjacent skills that should not overlap>
+
+## Trigger Context
+- Class: <one of language, discipline, workflow, meta, tool>
+- Hook regex: SKILL_PATTERNS[<name>]
+- Common requests: <3 should_trigger samples>
+- Should not trigger for: <3 should_not_trigger samples>
+
+## Source And Evidence Model
+<canonical sources, data-not-stored rules, coverage matrix>
+
+## Evaluation
+<lightweight + deeper command snippets, acceptance gates>
+
+## Known Limitations
+<placeholder; fill in over time as drift surfaces>
+
+## Maintenance Notes
+<when each artifact must be updated>
+```
+
+For an example of the exact shape, read any existing `plugins/compound-engineering/skills/ia-*/SPEC.md`. To auto-generate a starter SPEC.md from the SKILL.md and fixture pair, run `python3 scripts/generate-spec.py` (it skips skills that already have SPEC.md, so it's safe to re-run).
+
+SPEC.md must not contain machine-specific paths, secrets, or unredacted personal data. The same `MACHINE_PATH_LEAK` gate that scans SKILL.md and references applies here.
+
+### 4d. Hook regex pattern
 
 Append to `plugins/compound-engineering/hooks/skill-patterns.sh`:
 
