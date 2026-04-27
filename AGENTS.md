@@ -93,6 +93,27 @@ Rules:
 - Trigger regex patterns in `hooks/skill-patterns.sh` do NOT change — they match user speech, not skill names. Only the array keys (`SKILL_PATTERNS[ia-debugging]`) carry the prefix.
 - Reference files (`*/references/*.md`) are NOT prefixed — they're content, not invocable components.
 
+## Skill class taxonomy
+
+Every shipped skill declares a `class:` field in frontmatter. Five values, chosen by the dominant lookup need a user has when they reach for the skill:
+
+| Class | What lives here | Examples |
+|---|---|---|
+| `language` | Stack-specific patterns: a language, framework, or service the skill wraps. | `ia-php-laravel`, `ia-react-frontend`, `ia-postgresql`, `ia-tailwind-css` |
+| `discipline` | Engineering practices not tied to one stack: how to do X well in any project. | `ia-debugging`, `ia-code-review`, `ia-writing-tests`, `ia-simplifying-code` |
+| `workflow` | Multi-step processes with phases and outputs. | `ia-planning`, `ia-brainstorming`, `ia-md-docs`, `ia-orchestrating-swarms` |
+| `meta` | About prompts, agents, design itself. The skill's subject is AI-native work. | `ia-meta-prompting`, `ia-refine-prompt`, `ia-agent-native-architecture`, `ia-frontend-design` |
+| `tool` | Niche utilities — narrow, scoped to a single capability. | `ia-git-worktree`, `ia-file-todos`, `ia-reflect` |
+
+Picking a class:
+- If the skill content reads like a stack reference (install, config, idioms, migrations), it's `language`.
+- If the content is "how to do X well" without naming a stack, it's `discipline`.
+- If the content is a phased process producing artifacts, it's `workflow`.
+- If the subject of the skill is agents, prompts, or skills themselves, it's `meta`.
+- Default to `tool` only if none of the above fit and the scope is genuinely narrow.
+
+The validator (`validate-plugin`) requires the field and rejects unknown values. `/write-skill` asks for the class up front when scaffolding a new skill.
+
 ## Skill compliance checklist
 
 The master reference for what can/cannot/should/should not be used in skills is https://code.claude.com/docs/en/skills -- consult it when uncertain about frontmatter fields, supported features, or behavioral constraints.
@@ -220,6 +241,11 @@ python3 distillery/scripts/distiller.py analyze-outcomes [--min-examples 5] [--i
 # Analyze negative-signal sessions to find failure patterns and suggest skill fixes
 python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10] [--include-stale]
 
+# Record or check per-skill resource budget (turn count + tool variety; catches silent skill bloat)
+python3 distillery/scripts/distiller.py budget <skill> --record       # baseline current aggregates
+python3 distillery/scripts/distiller.py budget <skill>                # check vs baseline (default)
+python3 distillery/scripts/distiller.py budget --check-all            # scan every skill with a baseline
+
 # Run regex trigger regression tests (release gate)
 python3 distillery/scripts/distiller.py test-triggers [--skill <name>]
 
@@ -248,6 +274,7 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 | Script | Purpose | When to run |
 |--------|---------|-------------|
 | `scripts/update-metadata.sh` | Count components, update `plugin.json` + `marketplace.json` descriptions | After any component change |
+| `scripts/generate-spec.py` | Generate starter `SPEC.md` per skill from SKILL.md + fixture; skips skills that already have one | When adding a new skill, or after `class:` taxonomy refresh |
 | `scripts/generate-manifest.py` | Update `distillery/.skill-versions.json` with current skill/pattern hashes | Automatically during release |
 | `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | After editing or adding skills |
 | `scripts/generate-skill-hooks.sh` | Generate draft `hooks/skill-patterns.sh` from SKILL.md frontmatter | After adding/removing skills (hand-tune regex after) |

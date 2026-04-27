@@ -62,6 +62,7 @@ Body rules:
 - No placeholder text (`TODO`, `FIXME`, `XXX`, `[YOUR ...]`).
 - No MUST/ALWAYS/NEVER spam (>15 directives is flagged as OVER_CONSTRAINED).
 - If creating `references/`, link every file with `[name](./references/name.md)` syntax — orphans are flagged. Each reference under 150 lines (warning) and 800 lines (error).
+- **Skill Independence**: do not instruct the agent to invoke another skill by name. Forms to avoid: `run the ia-X skill`, `use the \`ia-X\` skill`, `hand off to ia-X`, `<vendor>:Y` runtime references. Other skills may be missing, renamed, or user-overridden — name-invocation silently breaks in all three cases. Instead, state the intent directly (`If on \`main\`, create a feature branch first.`) and trust skill discovery to surface the right skill, or load a local file via `[name](./references/name.md)`. Naming an agent (Agent tool dispatch) or referencing a skill in non-runtime prose (provenance, audit allowlist) is fine.
 
 ### 4b. Trigger fixtures
 
@@ -119,11 +120,46 @@ Out of scope:
 <when each artifact must be updated>
 ```
 
-For an example of the exact shape, read any existing `plugins/compound-engineering/skills/ia-*/SPEC.md`. To auto-generate a starter SPEC.md from the SKILL.md and fixture pair, run `python3 scripts/generate-spec.py` (it skips skills that already have SPEC.md, so it's safe to re-run).
+For an existing filled example to model after, read any `plugins/compound-engineering/skills/ia-*/SPEC.md`. To auto-generate a starter SPEC.md from the SKILL.md and fixture pair, run `python3 scripts/generate-spec.py` (it skips skills that already have SPEC.md, so it's safe to re-run).
+
+File-relationship matrix — what each artifact owns (don't duplicate across files):
+
+| File | Purpose |
+|---|---|
+| `SKILL.md` | Runtime activation and execution instructions loaded by agents. |
+| `SPEC.md` | Maintenance contract for humans and agents improving the skill. |
+| `SOURCES.md` | Source inventory, decisions, coverage matrix, gaps, changelog (optional). |
+| `references/` | Runtime-loadable domain/process detail. |
+| `references/evidence/` | Persistent positive/negative iteration examples. |
+
+SPEC.md design rules (apply when filling the template):
+
+1. Describe intent and maintenance contract; do not add runtime instructions that belong in SKILL.md.
+2. Summarize source categories and link to SOURCES.md (if present) — do not duplicate full source tables.
+3. Describe evidence classes and storage policy; keep raw examples in `references/evidence/`.
+4. Include out-of-scope behavior and known limitations so future edits do not expand the skill accidentally.
+5. Include evaluation expectations that explain what "good" means; link to runnable prompts rather than duplicating them.
+6. Keep private or sensitive evidence redacted; store only what is needed to reproduce and improve behavior.
 
 SPEC.md must not contain machine-specific paths, secrets, or unredacted personal data. The same `MACHINE_PATH_LEAK` gate that scans SKILL.md and references applies here.
 
-### 4d. Hook regex pattern
+### 4d. SOURCES.md (optional source-provenance ledger)
+
+Path: `plugins/compound-engineering/skills/<name>/SOURCES.md`
+
+Recommended for skills synthesized from external repos, marketplace skills, a mixed source pack, or any skill that accumulates persistent iteration evidence under `references/evidence/` — anything where future maintainers will need to know *what shaped this skill*. Skip for skills authored from scratch with no external source pack and no evidence ledger (the SPEC.md "Source And Evidence Model" section already covers them).
+
+Three sections:
+
+1. **Source inventory** — markdown table: `| Source | Type | Trust tier | Retrieved | Confidence | Contribution | Usage constraints | Notes |`. Trust tiers: `canonical` (official spec, repo CLAUDE.md, owner-blessed) > `secondary` (well-regarded blog post, prior-art pattern). Avoid scraping low-tier content.
+2. **Decisions** — numbered list of synthesis decisions and the constraint that drove each (e.g., "Path guidance avoids host-specific absolutes because plugin is mirrored to ai-skills"). One line per decision.
+3. **Changelog** — date-stamped entries for source additions, scope changes, or rule reversals.
+
+Keep SOURCES.md ledger-style. Do not duplicate runtime content from SKILL.md or maintenance contract content from SPEC.md.
+
+If iteration evidence (positive/negative examples, holdout set) accumulates, store it under `references/evidence/EX-NNN.md` instead of in SOURCES.md — see `/diagnose-negatives` for the schema.
+
+### 4e. Hook regex pattern
 
 Append to `plugins/compound-engineering/hooks/skill-patterns.sh`:
 

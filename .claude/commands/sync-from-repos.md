@@ -140,7 +140,7 @@ After classifying each external finding by its direct type match, also ask:
 - Could an agent's persona technique or tool restriction inform a skill's constraints?
 - Could a command's phased workflow reveal a general pattern worth embedding as ambient skill behavior?
 
-When a cross-type insight exists, log it as a separate finding row with the actual target component, not the source type. Example: an external skill about code review contains a "present findings sorted by severity" pattern — if our `workflows:review` command doesn't do that, the finding targets the command, not our code-review skill.
+When a cross-type insight exists, log it as a separate finding row with the actual target component, not the source type. Example: an external skill about code review contains a "present findings sorted by severity" pattern — if our `/ia-review` command doesn't do that, the finding targets the command, not our code-review skill.
 
 **Quality filters** (reject content that fails any of these):
 - "Claude already knows this" — skip content explaining what a technology is, how basic concepts work, or general programming knowledge

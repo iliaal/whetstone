@@ -63,6 +63,23 @@ For each approved finding:
 - Edit the file at `proposed_edit.file` using the Edit tool, applying `proposed_edit.change`
 - Verify the edit didn't break YAML frontmatter or markdown structure
 - If the finding was `wrong_trigger`, also update the corresponding fixture entry in `distillery/tests/fixtures/triggers/<skill>.jsonl` so future regressions catch it
+- Append an evidence record to `plugins/compound-engineering/skills/<skill>/references/evidence/findings-log.md` (create the file with a one-line header if it doesn't exist). The record is one paragraph, not a code block; the schema below is the field set, not a literal template:
+
+  ```markdown
+  ## EX-NNN: <short label, ~7 words>
+
+  - Label: negative
+  - Kind: <wrong_trigger | missing_source | skipped_reference | weak_output | missing_validation | unsafe_path | other>
+  - Origin: human-verified  (the diagnose-negatives reviewer accepted it)
+  - Source: <session id or short reproducer>
+  - Status: resolved
+  - Expected behavior: <one line>
+  - Observed behavior: <one line>
+  - Skill delta: <file:line and one-line summary; use a sub-bulleted list when the fix touches multiple files>
+  - Anonymization: <what was redacted, or "none needed">
+  ```
+
+  Pick the next free `EX-NNN` number by scanning the file (or start at `EX-001`). Redact secrets, customer data, and private URLs before writing. The evidence directory is meant for findings that should outlive the current task — for tiny one-off wording fixes, skip the record.
 
 ### Step 4: Verify
 
