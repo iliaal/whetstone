@@ -1,5 +1,6 @@
 ---
 name: ia-tailwind-css
+class: language
 description: >-
   Tailwind CSS v4 patterns: CSS-first config, utility classes, component
   variants, v3 migration. Use when styling with Tailwind, configuring

@@ -1,5 +1,6 @@
 ---
 name: ia-planning
+class: workflow
 description: >-
   Software implementation planning with file-based persistence (.plan/). Use
   when asked to plan, break down a feature, or when a task touches 3+ files,

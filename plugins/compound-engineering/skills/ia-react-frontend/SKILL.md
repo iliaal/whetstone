@@ -1,5 +1,6 @@
 ---
 name: ia-react-frontend
+class: language
 description: >-
   React architecture patterns, TypeScript, Next.js, hooks, and testing. Use when
   working with React component structure, state management, Next.js routing,

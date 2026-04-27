@@ -1,5 +1,6 @@
 ---
 name: ia-receiving-code-review
+class: discipline
 description: >-
   Process code review feedback critically: check correctness before acting, push back
   on incorrect suggestions, no performative agreement. Use when responding to

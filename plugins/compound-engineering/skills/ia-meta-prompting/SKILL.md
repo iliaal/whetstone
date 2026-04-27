@@ -1,5 +1,6 @@
 ---
 name: ia-meta-prompting
+class: meta
 description: >-
   Structured reasoning modifiers (/think, /verify, /adversarial, /edge,
   /confidence, /assumptions, etc.) to stress-test decisions, surface

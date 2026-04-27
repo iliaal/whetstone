@@ -1,5 +1,6 @@
 ---
 name: ia-agent-native-architecture
+class: meta
 description: >-
   Design agent-native applications where agents replace UI users as the primary
   actor. Use when designing MCP tools, agent-loop architectures, shared-workspace

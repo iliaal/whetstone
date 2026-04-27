@@ -1,5 +1,6 @@
 ---
 name: ia-linux-bash-scripting
+class: language
 description: >-
   Defensive Bash scripting for Linux: safe foundations, argument parsing,
   production patterns, ShellCheck compliance. Use when writing bash scripts,

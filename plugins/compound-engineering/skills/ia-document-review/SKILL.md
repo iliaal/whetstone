@@ -1,5 +1,6 @@
 ---
 name: ia-document-review
+class: workflow
 description: >-
   Structural review of documents for gaps, clarity, completeness, and
   organization. Use when a brainstorm, plan, spec, ADR, or any doc needs polish

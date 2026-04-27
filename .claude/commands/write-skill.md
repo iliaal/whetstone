@@ -26,7 +26,7 @@ Use `AskUserQuestion` once to collect everything needed before scaffolding. Do n
 
 Ask:
 
-1. **Class** — `language` (PHP, Python, Rust, etc.), `framework` (React, Laravel, Tailwind, etc.), `discipline` (testing, code review, debugging, verification), `workflow` (multi-step process, planning, documenting), `meta` (about prompts, agents, skills themselves).
+1. **Class** — one of the five values from `CLAUDE.md` "Skill class taxonomy": `language`, `discipline`, `workflow`, `meta`, `tool`. Read that section before asking so the option descriptions match what the validator will accept.
 2. **Scope summary** — one or two sentences: what this skill is for, when it fires.
 3. **Primary trigger vocabulary** — 3-6 distinctive phrases users would type.
 4. **Existing skills it should not overlap with** — names of any close-in-scope `ia-*` skills the user already has in mind.
@@ -50,6 +50,7 @@ Path: `plugins/compound-engineering/skills/<name>/SKILL.md`
 Frontmatter rules (all hard requirements — `validate-plugin` enforces them):
 
 - `name:` matches the directory name exactly.
+- `class:` one of `language`, `discipline`, `workflow`, `meta`, `tool` (the value from question 1). Required. The validator rejects unknown values.
 - `description:` describes **what + when**, not how. Lead with one sentence on what the skill does, then `Use when ...` with concrete trigger language. Stay under 80 tokens. No vague phrases (`comprehensive`, `best practices`, `robust`, `seamless`, `powerful` — see `_VAGUE_DESCRIPTION_PHRASES` in `distillery/scripts/distiller.py`). No second person, no provider names unless the skill is intentionally provider-specific.
 - No inert fields (`triggers`, `role`, `scope`, `domain`, `version`, `tags` — they're ignored by Claude Code).
 

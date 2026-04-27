@@ -1,5 +1,6 @@
 ---
 name: ia-writing
+class: discipline
 description: >-
   Prose editing, rewriting, and humanizing text for natural tone. Use when asked
   to write, rewrite, edit, humanize, proofread, fix tone, or remove AI language.

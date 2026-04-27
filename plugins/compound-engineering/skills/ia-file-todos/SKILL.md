@@ -1,5 +1,6 @@
 ---
 name: ia-file-todos
+class: tool
 description: >-
   File-based todo and task tracking in the todos/ directory. Use when creating,
   triaging, listing, or managing todo files, tracking work items, managing the

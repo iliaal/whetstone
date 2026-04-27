@@ -1,5 +1,6 @@
 ---
 name: ia-orchestrating-swarms
+class: workflow
 description: >-
   Coordinate multi-agent swarms for parallel and pipeline workflows. Use when
   coordinating multiple agents, running parallel reviews, building pipeline

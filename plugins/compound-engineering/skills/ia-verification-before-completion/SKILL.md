@@ -1,5 +1,6 @@
 ---
 name: ia-verification-before-completion
+class: discipline
 description: >-
   Enforces fresh verification evidence before any completion claim. Use when
   about to claim "tests pass", "bug fixed", "done", "ready to merge", or

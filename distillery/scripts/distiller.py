@@ -1101,6 +1101,10 @@ _MACHINE_PATH_PATTERNS = (
 REFERENCE_LINE_WARN = 150
 REFERENCE_LINE_ERROR = 800
 
+# Tier 2 skill class taxonomy. Every shipped skill declares one of these in its
+# frontmatter. Values map to lookup-need clusters; see CLAUDE.md "Skill class taxonomy".
+SKILL_CLASSES = frozenset({"language", "discipline", "workflow", "meta", "tool"})
+
 
 def _find_machine_paths(text):
     """Return distinct machine-specific path matches, capped at 5 hits per source."""
@@ -1325,6 +1329,13 @@ def validate_plugin(component_filter=None):
         found_inert = inert_fields & set(fm.keys())
         if found_inert:
             add_finding(skill_name, "inert_fields", f"Inert frontmatter fields: {', '.join(sorted(found_inert))}", "MEDIUM")
+
+        # --- Class gate (Tier 2) ---
+        fm_class = fm.get("class")
+        if fm_class is None:
+            add_finding(skill_name, "class", "Missing 'class' field in frontmatter (one of: language, discipline, workflow, meta, tool)", "HIGH")
+        elif fm_class not in SKILL_CLASSES:
+            add_finding(skill_name, "class", f"Invalid class '{fm_class}' (allowed: {', '.join(sorted(SKILL_CLASSES))})", "HIGH")
 
         # --- Name gates ---
         fm_name = fm.get("name", "")

@@ -1,5 +1,6 @@
 ---
 name: ia-debugging
+class: discipline
 description: >-
   Systematic root-cause debugging with verification. Use when debugging,
   troubleshooting, or facing errors, stack traces, broken tests, flaky tests,

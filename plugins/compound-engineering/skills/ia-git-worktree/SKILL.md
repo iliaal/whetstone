@@ -1,5 +1,6 @@
 ---
 name: ia-git-worktree
+class: tool
 description: >-
   Manage Git worktrees for isolated parallel development. Use when creating,
   listing, switching, or cleaning up git worktrees, or when needing isolated

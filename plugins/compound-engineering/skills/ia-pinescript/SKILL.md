@@ -1,5 +1,6 @@
 ---
 name: ia-pinescript
+class: language
 description: >-
   Pine Script v6 patterns: syntax, performance, error diagnosis, backtesting,
   visualization. Use when working with PineScript, TradingView, indicators,

@@ -1,5 +1,6 @@
 ---
 name: ia-brainstorming
+class: workflow
 description: >-
   Pre-implementation exploration: deep interview, approach comparison, design
   doc. Use when exploring a vague feature idea, clarifying ambiguous

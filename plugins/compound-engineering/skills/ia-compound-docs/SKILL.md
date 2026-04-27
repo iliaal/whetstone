@@ -1,5 +1,6 @@
 ---
 name: ia-compound-docs
+class: workflow
 description: >-
   Document solved problems for team reuse. Provides process knowledge for
   /ia-compound. Use when documenting a resolved issue, writing up

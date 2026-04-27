@@ -1,5 +1,6 @@
 ---
 name: ia-reflect
+class: tool
 description: >-
   Session retrospective and skill audit. Use when asked to reflect, do a
   retrospective, review lessons learned, audit what went well or wrong, or

@@ -1,5 +1,6 @@
 ---
 name: ia-python-services
+class: language
 description: >-
   Python patterns for CLI tools, async concurrency, and backend services. Use
   when working with Python code, building CLI apps, FastAPI services,

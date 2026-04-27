@@ -1,5 +1,6 @@
 ---
 name: ia-code-review
+class: discipline
 description: >-
   Structured code reviews with severity-ranked findings and deep multi-agent
   mode. Use when performing a code review, auditing code quality, or critiquing

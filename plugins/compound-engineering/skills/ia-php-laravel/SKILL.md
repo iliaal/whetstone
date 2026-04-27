@@ -1,5 +1,6 @@
 ---
 name: ia-php-laravel
+class: language
 description: >-
   Modern PHP 8.4 and Laravel patterns: architecture, Eloquent, queues, testing.
   Use when working with Laravel, Eloquent, Blade, artisan, PHPUnit, PHPStan,

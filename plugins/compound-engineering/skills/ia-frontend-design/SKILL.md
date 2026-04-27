@@ -1,5 +1,6 @@
 ---
 name: ia-frontend-design
+class: meta
 description: >-
   Visual design and aesthetic direction for frontend interfaces. Use when
   building web pages, landing pages, dashboards, or applications where visual

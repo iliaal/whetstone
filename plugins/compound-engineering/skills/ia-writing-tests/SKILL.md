@@ -1,5 +1,6 @@
 ---
 name: ia-writing-tests
+class: discipline
 description: >-
   Generic test writing discipline: test quality, real assertions, anti-patterns,
   and rationalization resistance. Use when writing tests, adding test coverage,
