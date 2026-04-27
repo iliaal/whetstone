@@ -1119,10 +1119,17 @@ SPEC_REQUIRED_HEADINGS = (
 
 
 def _find_machine_paths(text):
-    """Return distinct machine-specific path matches, capped at 5 hits per source."""
+    """Return distinct machine-specific path matches, capped at 5 hits per source.
+
+    Inline backtick code spans are stripped before scanning so meta-references
+    (e.g. documenting `~/ai/...` as a forbidden pattern) don't trip the gate.
+    Triple-backtick fenced blocks are still scanned -- example commands inside
+    them must be portable to plugin users.
+    """
+    scrubbed = _re.sub(r"`[^`\n]+`", " ", text)
     seen = []
     for pattern in _MACHINE_PATH_PATTERNS:
-        for match in pattern.finditer(text):
+        for match in pattern.finditer(scrubbed):
             hit = match.group(0)
             if hit not in seen:
                 seen.append(hit)
@@ -1508,6 +1515,11 @@ def validate_plugin(component_filter=None):
             if missing_headings:
                 add_finding(skill_name, "SPEC_HEADINGS",
                             f"SPEC.md missing required heading(s): {', '.join(missing_headings)}",
+                            "HIGH")
+            spec_path_hits = _find_machine_paths(spec_content)
+            if spec_path_hits:
+                add_finding(skill_name, "MACHINE_PATH_LEAK",
+                            f"Machine-specific path(s) in SPEC.md: {', '.join(spec_path_hits[:3])}",
                             "HIGH")
 
     # --- Validate agents ---
