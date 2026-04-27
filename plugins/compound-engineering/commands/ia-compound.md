@@ -4,7 +4,7 @@ description: Parallel-agent workflow to document a solved problem for team reuse
 argument-hint: "[optional: brief context about the fix]"
 ---
 
-# /compound
+# /ia-compound
 
 **Context:** #$ARGUMENTS
 

@@ -201,7 +201,7 @@ After writing the plan file, use the **AskUserQuestion tool** to present these o
 
 Based on selection:
 - **Open plan in editor** → Run `open docs/plans/<plan_filename>.md` to open the file in the user's default editor
-- **`/ia-deepen-plan`** → Call the /deepen-plan command with the plan file path to enhance with research
+- **`/ia-deepen-plan`** → Call the /ia-deepen-plan command with the plan file path to enhance with research
 - **`/ia-review`** → Call the /ia-review command with the plan file path
 - **Review and refine** → Load `ia-document-review` skill.
 - **`/ia-work`** → Call the /ia-work command with the plan file path

@@ -2,7 +2,7 @@
 name: ia-pr-comment-resolver
 model: sonnet
 tools: Read, Grep, Glob, Edit, Write, Bash
-description: "Implements a single pre-agreed PR review comment: side-effect tracing, pattern compliance, and verification. Use when a comment's action is decided -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use /resolve-pr command)."
+description: "Implements a single pre-agreed PR review comment: side-effect tracing, pattern compliance, and verification. Use when a comment's action is decided -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use /ia-resolve-pr command)."
 ---
 
 <examples>
@@ -16,7 +16,7 @@ assistant: "I'll use the pr-comment-resolver agent to address this comment by im
 Context: A reviewer has left a specific comment about a naming issue.
 user: "The reviewer says to rename processData to transformUserRecord for clarity"
 assistant: "I'll use the pr-comment-resolver agent to implement that rename and mark the comment resolved"
-<commentary>This is a single, clear-action comment -- exactly what pr-comment-resolver handles. For multiple comments at once, use the /resolve-pr-parallel command instead.</commentary>
+<commentary>This is a single, clear-action comment -- exactly what pr-comment-resolver handles. For multiple comments at once, use the /ia-resolve-pr command instead.</commentary>
 </example>
 </examples>
 
