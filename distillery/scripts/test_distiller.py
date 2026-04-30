@@ -1779,3 +1779,26 @@ class TestTriggerFloor:
         assert not result["all_passed"]
         coverage = result["results"][0]["coverage_errors"]
         assert any("should_not_trigger" in c for c in coverage)
+
+
+class TestNegativeSignalPatterns:
+    """Regression tests for _NEGATIVE_SIGNAL_PATTERNS — guards against drift in the patterns
+    that classify a session as negative based on user message content."""
+
+    def test_i_asked_matches_user_reminding_agent(self):
+        for msg in [
+            "i asked you to do X",
+            "I asked Claude already",
+            "i asked the agent for help",
+            "i asked already, do it",
+        ]:
+            assert distiller._NEGATIVE_SIGNAL_PATTERNS.search(msg), f"should match: {msg!r}"
+
+    def test_i_asked_skips_benign_narration(self):
+        for msg in [
+            "i asked the API to return JSON",
+            "I asked for a review of the code",
+            "i asked the team yesterday",
+            "as i asked previously",
+        ]:
+            assert not distiller._NEGATIVE_SIGNAL_PATTERNS.search(msg), f"should NOT match: {msg!r}"

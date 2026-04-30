@@ -1,11 +1,11 @@
 {
-  "plugin_version": "3.0.4",
+  "plugin_version": "3.0.5",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-04-27T14:37:01.170870+00:00",
+  "generated_at": "2026-04-30T00:01:07.476359+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -14,14 +14,14 @@
       "pattern_changed": "3.0.4"
     },
     "ia-brainstorming": {
-      "content_hash": "e23f2b6d7ee7a53e866ffe673e7c4bb60aed7458b46af8a3e7fc14249eb60327",
-      "content_changed": "3.0.4",
+      "content_hash": "45532b5dcde53b80593454937ec751c0645c58744412005b746d3c61dbdb5953",
+      "content_changed": "3.0.5",
       "pattern_hash": "b16621b32a482a146a1992e515f4c1594afc6c3e23e90d17683858983944eb07",
       "pattern_changed": "3.0.4"
     },
     "ia-code-review": {
-      "content_hash": "79bf68ce5abef4680b1ed0cce2a900858d274c0bd92ffaef10bb5c0966a99067",
-      "content_changed": "3.0.4",
+      "content_hash": "6d6f9928b7f427e6e43558112f828f00f15facb92f6fc0a285f6d5feeeaa95da",
+      "content_changed": "3.0.5",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
       "pattern_changed": "2.56.1"
     },
@@ -56,8 +56,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-git-worktree": {
-      "content_hash": "f35ae4e43a89f25f95711950f14fa683051e922c60e69ccaf77be8588c6208f7",
-      "content_changed": "3.0.4",
+      "content_hash": "e5ca3112ea254ff7270ad834a5c157644c694316aed8b30a1f5036a2df2bcb29",
+      "content_changed": "3.0.5",
       "pattern_hash": "59ac396bd6f70774badd968766a3f73d4cd7a1b842728cde3e6fa48ad8fd4221",
       "pattern_changed": "2.56.1"
     },
@@ -86,8 +86,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-orchestrating-swarms": {
-      "content_hash": "8c23ae7b14baa262dc86d6e8be1412ae8b14d72e534c09fee242956c9bfd73c1",
-      "content_changed": "3.0.4",
+      "content_hash": "6a65184753e2caff1f42d38044d22692eee7947e16bf6444768fe15fa58220f3",
+      "content_changed": "3.0.5",
       "pattern_hash": "5ff4d38d87cd363f2256033ea3b0371a9668b7da2e86674da929d6788d4bbfb6",
       "pattern_changed": "2.56.1"
     },

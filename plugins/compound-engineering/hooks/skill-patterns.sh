@@ -137,7 +137,11 @@ SKILL_MAINT_SUPPRESS[ia-planning]=1
 # all five fire on plugin-maintenance prompts (audit/sync/release commands name them as references).
 SKILL_MAINT_SUPPRESS[ia-verification-before-completion]=1  # 24 sessions, 45.8% neg, +19pp -- "verification" appears in /audit-plugin, /release pre-commit gates
 SKILL_MAINT_SUPPRESS[ia-postgresql]=1                       # 10 sessions, 70% neg, +52pp -- "postgresql" mentioned in distiller/audit prompts
-SKILL_MAINT_SUPPRESS[ia-react-frontend]=1                   # 6 sessions, 33% neg, +24pp -- plugin lacks `js` project-type guard so PROJECT_TYPES doesn't fire
+SKILL_MAINT_SUPPRESS[ia-react-frontend]=1                   # 6 sessions, 33% neg, +24pp -- skill name still appears in plugin-doc/audit prompts; the `js` project-type guard at line 117 doesn't suppress those references, so MAINT backstops misfires
 SKILL_MAINT_SUPPRESS[ia-writing]=1                          # 10 sessions, 20% neg, +12pp -- fires on plugin-doc work
+# Added 2026-04-29 from analyze-outcomes anomalies (sync run):
+SKILL_MAINT_SUPPRESS[ia-compound-docs]=1                    # 11 sessions, 36.4% neg, +11pp -- "compound" mentioned in /sync-from-repos and /audit-plugin
+SKILL_MAINT_SUPPRESS[ia-terraform]=1                        # 7 sessions, 28.6% neg, +10pp -- plugin doesn't use terraform; misfire on audit/sync prompts
+SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # 14 sessions, 21.4% neg, +10pp -- fires on distiller.py work in plugin maintenance
 
 # Total skills: 30

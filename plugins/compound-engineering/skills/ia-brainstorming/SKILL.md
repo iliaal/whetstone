@@ -162,6 +162,32 @@ After understanding the idea, propose 2-3 concrete approaches.
 
 **Assumptions with validation:** For each key assumption in the chosen approach, state how to test it. Not just "we assume X" but "we assume X -- we'll know by [validation method]."
 
+### Phase 2.5: Pre-Write Scope Synthesis
+
+Surface the scope interpretation so the user can correct it before Phase 3 writes the design doc. The synthesis is a chat-time scope checkpoint distinct from Phase 3b's post-draft self-review — 2.5 catches scope misalignment before the doc is written; 3b catches drafting issues after.
+
+Present three labeled buckets plus a 1-3 line prose gloss:
+
+**Three buckets:**
+- **Stated** — what the user said directly (original prompt, dialogue answers, approach selection). Each bullet has an explicit user-language anchor.
+- **Inferred** — gaps filled with assumptions. Scope boundaries the user never named, success criteria extrapolated from intent, technical assumptions the brief interview didn't probe. Most actionable bucket — bets the user can reject.
+- **Out of scope** — deliberately excluded items. Adjacent refactors, nice-to-haves, future-work items. Surfacing exclusions lets the user spot anything they wanted included.
+
+**Granularity rule:** each bullet must be affirmable or rejectable on product/scope grounds without reading code or implementation details. File names, exact JSON shapes, schema fields, error wording are Phase 3 doc-body content — not synthesis content. If a bullet requires architectural evaluation to judge, re-cut it at scope level.
+
+**Prose gloss (required for all but truly-trivial cases):** lead with a 1-3 line plain-language summary of *what's being proposed for the doc*. Forward-looking, not retrospective. The user may agree with each bullet but disagree with the framing — prose surfaces that gist. Skip only when the synthesis is ≤2 Stated bullets that just echo the prompt.
+
+**Anti-patterns:**
+- Synthesis written as a proposal pitch ("Recommendation:", "Behavior when X:", file paths, JSON shapes) — that content belongs in Phase 3, not here.
+- Buckets padded to look thorough when one bucket would suffice.
+- Floating questions outside the three buckets. Every scope-shaping question must land in Stated, Inferred, or Out by synthesis time. If new ambiguities surface during synthesis composition, batch them in one round (per the Phase 1 info-dump pattern) and resolve them before presenting — never present a synthesis with adjacent unanswered questions.
+
+**Re-present after revision; write only on confirm.** If the user revises any bullet (even trivially), integrate the change, re-present the revised synthesis, and wait for explicit confirmation before Phase 3. A revision is not a confirmation.
+
+**Headless mode** (invoked via `/ia-lfg` or any `disable-model-invocation` context): compose the synthesis but skip the confirmation step. Route Inferred bets to a `## Assumptions` section in the Phase 3 doc — explicitly labeled as un-validated bets — instead of into Key Decisions. Stated routes to Requirements; Out-of-scope routes to Non-Goals as usual.
+
+Skip Phase 2.5 entirely on the trivial fast path (Phase 0 detected requirements were already clear and the flow went straight to a short summary).
+
 ### Phase 3: Capture the Design
 
 Summarize key decisions in a structured format. For each major component, verify isolation and clarity: it must answer "what does it do, how do you use it, what does it depend on?" and be independently understandable and testable. If working in an existing codebase, note which existing patterns to follow and where targeted improvements fit naturally.
@@ -184,6 +210,8 @@ Silent pass is a valid outcome. If the draft is clean, say so and move to Phase 
 ### Phase 4: Review and Handoff
 
 Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `/ia-brainstorm`, the command handles spec review dispatch and next-step orchestration.
+
+**Headless mode** (invoked via `/ia-lfg` or any `disable-model-invocation` context): skip the user approval step at Phase 4 — same carve-out as Phase 2.5. The doc-write completes; the artifact is the audit surface for downstream review (`/ia-plan`, PR review, the `ia-document-review` skill), not chat confirmation.
 
 ## Anti-Patterns to Avoid
 

@@ -167,6 +167,10 @@ _NEGATIVE_SIGNAL_PATTERNS = _re.compile(
     r"|\bbroke\s+things\b|\bregressed\b|\blatest\s+changes\s+broke\b"
     # User repeating an instruction the agent missed (2 hits, distinct from "i already said")
     r"|^\s*i\s+said\b"
+    # User reminding agent of explicit prior instruction at start of message (6 hits, distinct
+    # from "i already asked"). Narrow to second-person targets to avoid matching benign narration
+    # like "I asked the API to return JSON" or "I asked Claude to explain".
+    r"|^\s*i\s+asked\s+(?:you|claude|the\s+agent|already)\b"
     # User rejecting agent's addition / over-engineering (18 hits combined)
     r"|\b(?:no|not)\s+need(?:ed)?\b"
     r")",

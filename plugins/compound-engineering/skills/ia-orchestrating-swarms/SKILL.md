@@ -53,6 +53,8 @@ Task({ subagent_type: "architecture-strategist", ... })
 
 Sequential dispatch (each Task in its own message, waiting on the previous to return) is a serialization bug, not a coordination pattern. If agents truly depend on each other's output, that is a pipeline -- see Coordination Models below.
 
+**Bounded parallelism when the harness caps active subagents.** Single-message fan-out (above) tells Opus to dispatch in parallel; the harness then decides how many to *run* concurrently. When the harness accepts the dispatch but caps active execution, queue the overflow rather than failing. Dispatch as many as the harness accepts in the first batch, treat transient capacity-related spawn errors as backpressure (any retryable error indicating the limiter rejected the dispatch — exact wording varies across harness versions and platforms; do not pattern-match on a fixed string list), and re-dispatch queued agents as active ones complete. Record an agent as failed only after a successful dispatch times out or returns an error, or when dispatch fails for a non-capacity reason (bad tool name, malformed prompt, missing permission). The fan-out is still parallel — it is just rate-capped to whatever the harness can run concurrently.
+
 ---
 
 ## Quick Reference
