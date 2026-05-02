@@ -85,7 +85,7 @@ The orchestrating agent (main conversation) performs these steps:
 2. Invoke the `ia-compound-docs` skill via an explicit Skill tool call (not a prose instruction):
 
    ```
-   Skill({ skill: "compound-docs", args: "<assembled payload from step 1>" })
+   Skill({ skill: "ia-compound-docs", args: "<assembled payload from step 1>" })
    ```
 
    The skill owns YAML frontmatter validation, category/path resolution, directory creation, file writing, and cross-reference linking. Do NOT reimplement any of those steps here — if the write behavior needs to change, update the skill.

@@ -1802,3 +1802,21 @@ class TestNegativeSignalPatterns:
             "as i asked previously",
         ]:
             assert not distiller._NEGATIVE_SIGNAL_PATTERNS.search(msg), f"should NOT match: {msg!r}"
+
+    def test_wrong_extensions_match_corrections(self):
+        for msg in [
+            "framing it as 'fixes a crash' was wrong",
+            "TP marker is in wrong spot, TP hit on entry candle",
+            "you doing %s wrong, it should be % of price not risk",
+            "dotted line is in the wrong place, should be at swing high",
+        ]:
+            assert distiller._NEGATIVE_SIGNAL_PATTERNS.search(msg), f"should match: {msg!r}"
+
+    def test_wrong_extensions_skip_benign_uses(self):
+        for msg in [
+            "replace unsound with wrong wording in the doc",
+            "the wrong button on the form is the cancel button — keep it that way",
+            "discuss what wrong means in this context",
+            "wrong-headed approach is a phrase from the article",
+        ]:
+            assert not distiller._NEGATIVE_SIGNAL_PATTERNS.search(msg), f"should NOT match: {msg!r}"

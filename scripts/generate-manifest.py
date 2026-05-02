@@ -86,7 +86,11 @@ def generate() -> dict:
         if not skill_file.exists():
             continue
 
-        # Content hash
+        # Content hash. Covers SKILL.md only, not references/ or scripts/.
+        # Limitation: a references-only change won't bump content_changed and
+        # publish-clawhub.sh will false-skip the republish. Editing references
+        # usually accompanies SKILL.md edits, so the gap is rare in practice.
+        # If it bites, run publish-clawhub.sh --force or --skill <name>.
         content_hash = _sha256_file(skill_file)
 
         # Pattern hash

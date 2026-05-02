@@ -3,9 +3,9 @@ name: ia-planning
 class: workflow
 description: >-
   Software implementation planning with file-based persistence (.plan/). Use
-  when asked to plan, break down a feature, or when a task touches 3+ files,
-  has ambiguous scope, or requires architectural decisions. Skip for typos,
-  single-file fixes, and obvious one-shots.
+  when planning code changes touching 3+ files or with ambiguous scope. Skip
+  for typos, single-file fixes, and research/scanning/audit work that
+  produces reports rather than code.
 ---
 
 # Planning

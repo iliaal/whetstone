@@ -1,9 +1,46 @@
 # Changelog
 
-All notable changes to the compound-engineering plugin will be documented in this file.
+All notable changes to the whetstone plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.0.0] - 2026-05-02
+
+Major: rename from `compound-engineering` to `whetstone`. Repo, plugin name, marketplace install string, env var, Bun bin, and cache path all change. Slash commands stay `/ia-<name>` (introduced in 3.x), so day-to-day usage is unaffected once the new marketplace is added. The release also bundles the post-rename sync, audit, and diagnose-negatives passes plus a long-overdue clawhub publishing fix that stops republishing every skill on every release.
+
+### Migration
+
+Existing installs need to repoint at the new marketplace. The old GitHub URL stays alive as a redirect via a squat repo, but the `/plugin install compound-engineering` command no longer works.
+
+```
+/plugin marketplace remove iliaal-marketplace
+/plugin marketplace add https://github.com/iliaal/whetstone
+/plugin install whetstone@iliaal-marketplace
+/reload-plugins
+```
+
+If you used the env var `COMPOUND_PLUGIN_GITHUB_SOURCE` or the Bun bin `compound-plugin`, they're now `WHETSTONE_GITHUB_SOURCE` and `whetstone` respectively. The local cache directory moved from `~/.cache/compound-engineering/` to `~/.cache/whetstone/`.
+
+### Changed
+
+- **Rename**: every reference to `compound-engineering` as the plugin or repo identity is now `whetstone`. The old GitHub repo (`iliaal/compound-engineering-plugin`) was renamed to `iliaal/whetstone`; a squat repo at the old slug holds a redirect README. ClawHub slugs (`compound-eng-<skill>`) are intentionally frozen — preserves existing `npx skills add` and `clawhub install` URLs. Edge profile name (`compound-engineering`, port 9225) frozen for the same reason — existing browser sessions stay valid.
+- **`scripts/publish-clawhub.sh`** — change-detection via `distillery/.skill-versions.json`. Skips skills whose `content_changed` is older than the version being released, so unchanged skills don't get a no-op republish on every release. Default behavior at v3.0.5 baseline: 4-7 skills publish per release instead of all 30. New `--force` flag bypasses the check (escape hatch for references-only edits, since the manifest hashes only `SKILL.md`). New `--skill <name>` mode also bypasses for one-off republishes. Pre-existing rate-limit handling and slug-prefix logic unchanged.
+- **`ia-simplifying-code`** Verify section — added a 5th bullet that anchors test scope to the importer count surfaced in step 1 (Surface assumptions). Replaces the prior vague guidance with a measurable signal: zero external importers means scoped tests; one or more or shared/utility code means tests covering each importer; full suite only when the runner has no path-scoping mechanism.
+- **`ia-brainstorming`** Phase 2.5 anti-patterns — tightened the "synthesis as proposal pitch" bullet with explicit position-independence. Plan-body content is banned regardless of where it appears, including nested inside a bucket bullet's commentary or sub-bullets. A structurally-legal placement does not legitimize plan-body content. (Position-independence is a defensive clarification; the original content-typed rule was already substantively correct.)
+- **`ia-planning`** description — scoped to implementation tasks only. Added explicit "research/scanning/audit work that produces reports rather than code" exclusion. Prior description was over-broad and 4/4 negative cases on codesage were research-task misfires that added file-based scaffolding to non-coding work. Source: diagnose-negatives.
+- **`hooks/skill-patterns.sh`** `SKILL_MAINT_SUPPRESS` — added `ia-debugging`. 4/4 negative cases were plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfiring as debugging because words "errors", "broken", "fix" appear in those prompts. Same pattern as the 10 skills already in the suppress list; analyze-outcomes showed 36% negative rate on `-home-ilia-ai-php` pre-rename data.
+- **`commands/ia-compound.md`** line 88 — fixed stale skill name in the pseudo-Skill code block (`compound-docs` → `ia-compound-docs`). Surrounding prose at line 87 was already correct; the code block was a post-rename leftover.
+- **`distillery/scripts/distiller.py`** `_NEGATIVE_SIGNAL_PATTERNS` — extended the existing `\bwrong\s+(?:file|approach|direction)\b` pattern with 10 additional nouns (place/spot/level/date/time/number/line/tag/column/reason). Added `\bwas\s+wrong\b` (corrective framing — "framing it…was wrong", ~5 hits) and `\bdoing\s+\S+\s+wrong\b` (process correction — "you doing %s wrong"). Conservative narrow patterns over bare `\bwrong\b` to preserve precision. Source: discover-signals (18 unique `wrong` hits).
+- **`distillery/scripts/test_distiller.py`** — added two `TestNegativeSignalPatterns` methods (4 TP + 4 TN, 16 assertions total) regression-testing the new wrong-extensions. Pytest now runs 4 methods in this class, all green.
+- **`README.md`** — install instructions corrected to qualified marketplace form (`/plugin install whetstone@iliaal-marketplace`) and `/reload-plugins` step added. Aligns with what `/plugin install` actually outputs.
+
+### Removed
+
+- **Repo identity `compound-engineering-plugin`** — gone (now redirects to `whetstone`).
+- **Plugin name `compound-engineering`** — gone (now `whetstone`).
+- **Env var `COMPOUND_PLUGIN_GITHUB_SOURCE`** — gone (now `WHETSTONE_GITHUB_SOURCE`).
+- **Bun bin `compound-plugin`** — gone (now `whetstone`).
 
 ## [3.0.5] - 2026-04-29
 

@@ -178,7 +178,7 @@ Present three labeled buckets plus a 1-3 line prose gloss:
 **Prose gloss (required for all but truly-trivial cases):** lead with a 1-3 line plain-language summary of *what's being proposed for the doc*. Forward-looking, not retrospective. The user may agree with each bullet but disagree with the framing — prose surfaces that gist. Skip only when the synthesis is ≤2 Stated bullets that just echo the prompt.
 
 **Anti-patterns:**
-- Synthesis written as a proposal pitch ("Recommendation:", "Behavior when X:", file paths, JSON shapes) — that content belongs in Phase 3, not here.
+- Synthesis written as a proposal pitch ("Recommendation:", "Behavior when X:", file paths, JSON shapes) — that content belongs in Phase 3, not here. Position-independent: the rule applies regardless of where the plan-body content appears, including nested inside a bucket bullet's commentary or sub-bullets. A structurally-legal placement (inside a bucket) does not legitimize plan-body content.
 - Buckets padded to look thorough when one bucket would suffice.
 - Floating questions outside the three buckets. Every scope-shaping question must land in Stated, Inferred, or Out by synthesis time. If new ambiguities surface during synthesis composition, batch them in one round (per the Phase 1 info-dump pattern) and resolve them before presenting — never present a synthesis with adjacent unanswered questions.
 

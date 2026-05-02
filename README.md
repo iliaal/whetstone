@@ -31,7 +31,8 @@ The long-form argument is at [AI Agents Don't Lack Capability. They Lack Process
 
 ```bash
 /plugin marketplace add https://github.com/iliaal/whetstone
-/plugin install whetstone
+/plugin install whetstone@iliaal-marketplace
+/reload-plugins
 ```
 
 ### Standalone skills (any AI coding agent)

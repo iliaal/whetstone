@@ -143,5 +143,7 @@ SKILL_MAINT_SUPPRESS[ia-writing]=1                          # 10 sessions, 20% n
 SKILL_MAINT_SUPPRESS[ia-compound-docs]=1                    # 11 sessions, 36.4% neg, +11pp -- "compound" mentioned in /sync-from-repos and /audit-plugin
 SKILL_MAINT_SUPPRESS[ia-terraform]=1                        # 7 sessions, 28.6% neg, +10pp -- plugin doesn't use terraform; misfire on audit/sync prompts
 SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # 14 sessions, 21.4% neg, +10pp -- fires on distiller.py work in plugin maintenance
+# Added 2026-05-02 from diagnose-negatives ia-debugging (post-rename signal verified against pre-rename data):
+SKILL_MAINT_SUPPRESS[ia-debugging]=1                        # 4/4 negative cases were plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfiring as debugging; analyze-outcomes 36% neg on -home-ilia-ai-php
 
 # Total skills: 30

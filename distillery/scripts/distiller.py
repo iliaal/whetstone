@@ -119,8 +119,12 @@ _NEGATIVE_SIGNAL_PATTERNS = _re.compile(
     r"|\byou\s+(?:broke|messed|screwed)\b"
     r"|\byou\s+keep\b"
     r"|\bi\s+already\s+(?:said|told|mentioned|asked)\b"
-    # Wrong target
-    r"|\bwrong\s+(?:file|approach|direction)\b"
+    # Wrong target / spec mismatch (extended noun list — see discover-signals 2026-05-02)
+    r"|\bwrong\s+(?:file|approach|direction|place|spot|level|date|time|number|line|tag|column|reason)\b"
+    # Corrective framing — "framing X was wrong", "the answer was wrong" (5+ hits)
+    r"|\bwas\s+wrong\b"
+    # Process correction — "doing X wrong", "doing it wrong"
+    r"|\bdoing\s+\S+\s+wrong\b"
     # Stop / don't
     r"|\bstop(?:\s+doing\s+that)?\b"
     r"|\bdon'?t\s+(?:do\s+that|mock|use|jump|commit)\b"

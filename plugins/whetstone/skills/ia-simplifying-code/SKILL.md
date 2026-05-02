@@ -81,6 +81,7 @@ Stop and ask before proceeding when:
 - Tests pass and types check after changes
 - No behavior change (same inputs produce same outputs)
 - Scope limited to requested files -- no drive-by cleanups
+- Match test scope to the importer count surfaced in step 1 (Surface assumptions). Zero external importers: scoped tests on the changed paths. One or more external importers, or shared/utility code edited: run tests covering each importer. Run the full suite when the test runner has no path-scoping mechanism.
 
 ## Orchestrator Mode (When Chained With Other Skills)
 
