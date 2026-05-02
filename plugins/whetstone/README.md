@@ -6,9 +6,9 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 | Component | Count |
 |-----------|-------|
-| Agents | 21 |
+| Agents | 19 |
 | Commands | 22 |
-| Skills | 29 |
+| Skills | 30 |
 | Hooks | 1 |
 | MCP Servers | 1 |
 
@@ -59,7 +59,7 @@ All agent files live flat under `agents/`. Categories below are editorial — gr
 
 ### Workflow Commands
 
-Core workflow commands use `workflows:` prefix to avoid collisions with built-in commands:
+All workflow commands use the `ia-` prefix to avoid collisions with built-in commands:
 
 | Command | Description |
 |---------|-------------|
@@ -88,7 +88,7 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | `/ia-adr` | Create Architecture Decision Records with format selection and lifecycle management |
 | `/ia-compound-refresh` | Review docs/solutions/ for stale learnings -- keep, update, replace, or archive |
 | `/ia-ideate` | Generate ranked improvement ideas by scanning the codebase |
-| `/resolve-pr-parallel` | Batch-resolve PR review comments via parallel subagents |
+| `/ia-resolve-pr` | Batch-resolve PR review comments via parallel subagents |
 | `/ia-verify` | Pre-PR verification pipeline (build, types, lint, tests, security) |
 
 ## Skills
@@ -110,6 +110,7 @@ Core workflow commands use `workflows:` prefix to avoid collisions with built-in
 | [`ia-nodejs-backend`](skills/ia-nodejs-backend/SKILL.md) | Node.js backend patterns: Express/Fastify, TypeScript, validation |
 | [`ia-php-laravel`](skills/ia-php-laravel/SKILL.md) | Modern PHP 8.4 and Laravel patterns, PHPUnit testing |
 | [`ia-python-services`](skills/ia-python-services/SKILL.md) | Python CLI tools, async parallelism, FastAPI services |
+| [`ia-rust-systems`](skills/ia-rust-systems/SKILL.md) | Rust CLI tools, axum services, async concurrency, and Cargo workspaces |
 | [`ia-terraform`](skills/ia-terraform/SKILL.md) | Terraform/OpenTofu configuration, modules, testing, state |
 | [`ia-postgresql`](skills/ia-postgresql/SKILL.md) | PostgreSQL schema design, query optimization, indexing |
 | [`ia-pinescript`](skills/ia-pinescript/SKILL.md) | Pine Script v6 patterns for TradingView |

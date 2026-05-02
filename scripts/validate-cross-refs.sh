@@ -30,13 +30,48 @@ declare -A known_commands
 while IFS= read -r f; do
     name=$(basename "$f" .md)
     known_commands["$name"]=1
-done < <(find "$PLUGIN_DIR/commands" -name "*.md" -type f 2>/dev/null)
+done < <(find "$PLUGIN_DIR/commands" -maxdepth 1 -name "ia-*.md" -type f 2>/dev/null)
 
 declare -A known_skills
 while IFS= read -r d; do
     name=$(basename "$d")
     known_skills["$name"]=1
 done < <(find "$PLUGIN_DIR/skills" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+
+# --- Helpers ---
+
+agent_name_from_ref() {
+    basename "$1" .md
+}
+
+check_markdown_links() {
+    local file="$1"
+    local base_dir="$2"
+    local label="$3"
+
+    [[ -f "$file" ]] || return 0
+
+    while IFS= read -r ref; do
+        if [[ ! -f "$base_dir/$ref" ]]; then
+            echo "  ERROR: $label links to missing file: $ref"
+            ((errors++))
+        fi
+    done < <(grep -oP '(plugins/whetstone/)?agents/[^)[:space:]]+\.md' "$file" 2>/dev/null || true)
+
+    while IFS= read -r ref; do
+        if [[ ! -f "$base_dir/$ref" ]]; then
+            echo "  ERROR: $label links to missing file: $ref"
+            ((errors++))
+        fi
+    done < <(grep -oP '(plugins/whetstone/)?skills/[^)[:space:]]+/SKILL\.md' "$file" 2>/dev/null || true)
+
+    while IFS= read -r ref; do
+        if [[ ! -f "$base_dir/$ref" ]]; then
+            echo "  ERROR: $label links to missing file: $ref"
+            ((errors++))
+        fi
+    done < <(grep -oP '(plugins/whetstone/)?commands/[^)[:space:]]+\.md' "$file" 2>/dev/null || true)
+}
 
 # --- Check references in commands ---
 
@@ -46,9 +81,9 @@ while IFS= read -r cmd_file; do
 
     content=$(strip_code_blocks "$cmd_file")
 
-    # Check agent references: agents/category/name.md
+    # Check agent references: agents/name.md or agents/category/name.md
     while IFS= read -r ref; do
-        agent_name=$(echo "$ref" | grep -oP 'agents/[^/]+/\K[^.]+' 2>/dev/null || true)
+        agent_name=$(agent_name_from_ref "$ref")
         if [[ -n "$agent_name" && -z "${known_agents[$agent_name]:-}" ]]; then
             echo "  ERROR: commands/$cmd_name.md references unknown agent: $agent_name"
             ((errors++))
@@ -64,7 +99,7 @@ while IFS= read -r cmd_file; do
         fi
     done < <(echo "$content" | grep -oP 'skills/[a-z][a-z0-9-]+' 2>/dev/null || true)
 
-done < <(find "$PLUGIN_DIR/commands" -name "*.md" -type f 2>/dev/null)
+done < <(find "$PLUGIN_DIR/commands" -maxdepth 1 -name "ia-*.md" -type f 2>/dev/null)
 
 # --- Check references in agents ---
 
@@ -115,32 +150,8 @@ done < <(find "$PLUGIN_DIR/skills" -name "SKILL.md" -type f 2>/dev/null)
 # --- Check README table entries ---
 
 echo "Checking README tables for broken links..."
-readme="$PLUGIN_DIR/README.md"
-if [[ -f "$readme" ]]; then
-    # Check agent links in README
-    while IFS= read -r ref; do
-        if [[ ! -f "$PLUGIN_DIR/$ref" ]]; then
-            echo "  ERROR: README.md links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP 'agents/[^)]+\.md' "$readme" 2>/dev/null || true)
-
-    # Check skill links in README
-    while IFS= read -r ref; do
-        if [[ ! -f "$PLUGIN_DIR/$ref" ]]; then
-            echo "  ERROR: README.md links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP 'skills/[^)]+/SKILL\.md' "$readme" 2>/dev/null || true)
-
-    # Check command links in README
-    while IFS= read -r ref; do
-        if [[ ! -f "$PLUGIN_DIR/$ref" ]]; then
-            echo "  ERROR: README.md links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP 'commands/[^)]+\.md' "$readme" 2>/dev/null || true)
-fi
+check_markdown_links "$REPO_ROOT/README.md" "$REPO_ROOT" "README.md"
+check_markdown_links "$PLUGIN_DIR/README.md" "$PLUGIN_DIR" "plugins/whetstone/README.md"
 
 # --- Summary ---
 

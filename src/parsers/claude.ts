@@ -75,7 +75,7 @@ async function loadAgents(agentsDirs: string[]): Promise<ClaudeAgent[]> {
 }
 
 async function loadCommands(commandsDirs: string[]): Promise<ClaudeCommand[]> {
-  const files = await collectMarkdownFiles(commandsDirs)
+  const files = await collectMarkdownFiles(commandsDirs, { excludeSupportDirs: true })
 
   const commands: ClaudeCommand[] = []
   for (const file of files) {
@@ -196,9 +196,22 @@ function toPathList(value?: string | string[]): string[] {
   return [value]
 }
 
-async function collectMarkdownFiles(dirs: string[]): Promise<string[]> {
+type CollectMarkdownOptions = {
+  excludeSupportDirs?: boolean
+}
+
+const SUPPORT_DIR_NAMES = new Set(["references", "assets", "scripts"])
+
+async function collectMarkdownFiles(
+  dirs: string[],
+  options: CollectMarkdownOptions = {},
+): Promise<string[]> {
   const entries = await collectFiles(dirs)
-  return entries.filter((file) => file.endsWith(".md"))
+  return entries.filter((file) => {
+    if (!file.endsWith(".md")) return false
+    if (options.excludeSupportDirs && isInSupportDir(file, dirs)) return false
+    return true
+  })
 }
 
 async function collectFiles(dirs: string[]): Promise<string[]> {
@@ -209,6 +222,18 @@ async function collectFiles(dirs: string[]): Promise<string[]> {
     files.push(...entries)
   }
   return files
+}
+
+function isInSupportDir(file: string, roots: string[]): boolean {
+  for (const root of roots) {
+    const relative = path.relative(root, file)
+    if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+      continue
+    }
+    const parts = relative.split(path.sep)
+    if (parts.some((part) => SUPPORT_DIR_NAMES.has(part))) return true
+  }
+  return false
 }
 
 function mergeHooks(hooksList: ClaudeHooks[]): ClaudeHooks {

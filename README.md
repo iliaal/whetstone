@@ -197,40 +197,40 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 
 | Agent | Description |
 |-------|------------|
-| [ia-accessibility-tester](plugins/whetstone/agents/review/accessibility-tester.md) | WCAG 2.1 audit across keyboard navigation, screen reader compatibility, contrast ratios, ARIA attributes, and form accessibility. For compliance checks before launch. |
-| [ia-architecture-strategist](plugins/whetstone/agents/review/architecture-strategist.md) | Evaluates architectural soundness, design pattern compliance, and structural consistency. For service additions, refactors, or codebase pattern audits. |
-| [ia-cloud-architect](plugins/whetstone/agents/review/cloud-architect.md) | Analyzes infrastructure against Well-Architected Framework principles: cost optimization, scalability, disaster recovery across AWS, Azure, and GCP. |
-| [ia-code-simplicity-reviewer](plugins/whetstone/agents/review/code-simplicity-reviewer.md) | Produces a simplification report (no code changes) identifying YAGNI violations and over-engineering. For post-implementation analysis. |
-| [ia-database-guardian](plugins/whetstone/agents/review/database-guardian.md) | Validates migration safety, referential constraints, and data integrity. For PRs touching migrations, backfills, or data transformations. |
-| [ia-kieran-reviewer](plugins/whetstone/agents/review/kieran-reviewer.md) | Opinionated Python and TypeScript review with a high bar for type safety, naming clarity, and modern patterns. |
-| [ia-performance-oracle](plugins/whetstone/agents/review/performance-oracle.md) | Identifies bottlenecks in algorithmic complexity, database queries, memory usage, and scalability limits. |
-| [ia-security-sentinel](plugins/whetstone/agents/review/security-sentinel.md) | Threat modeling and vulnerability scanning across authentication, input validation, secrets management, and OWASP categories. |
-| [ia-spec-flow-analyzer](plugins/whetstone/agents/review/spec-flow-analyzer.md) | Maps user flows through specifications to surface edge cases, missing clarifications, and completeness gaps before implementation. |
+| [ia-accessibility-tester](plugins/whetstone/agents/ia-accessibility-tester.md) | WCAG 2.1 audit across keyboard navigation, screen reader compatibility, contrast ratios, ARIA attributes, and form accessibility. For compliance checks before launch. |
+| [ia-architecture-strategist](plugins/whetstone/agents/ia-architecture-strategist.md) | Evaluates architectural soundness, design pattern compliance, and structural consistency. For service additions, refactors, or codebase pattern audits. |
+| [ia-cloud-architect](plugins/whetstone/agents/ia-cloud-architect.md) | Analyzes infrastructure against Well-Architected Framework principles: cost optimization, scalability, disaster recovery across AWS, Azure, and GCP. |
+| [ia-code-simplicity-reviewer](plugins/whetstone/agents/ia-code-simplicity-reviewer.md) | Produces a simplification report (no code changes) identifying YAGNI violations and over-engineering. For post-implementation analysis. |
+| [ia-database-guardian](plugins/whetstone/agents/ia-database-guardian.md) | Validates migration safety, referential constraints, and data integrity. For PRs touching migrations, backfills, or data transformations. |
+| [ia-kieran-reviewer](plugins/whetstone/agents/ia-kieran-reviewer.md) | Opinionated Python and TypeScript review with a high bar for type safety, naming clarity, and modern patterns. |
+| [ia-performance-oracle](plugins/whetstone/agents/ia-performance-oracle.md) | Identifies bottlenecks in algorithmic complexity, database queries, memory usage, and scalability limits. |
+| [ia-security-sentinel](plugins/whetstone/agents/ia-security-sentinel.md) | Threat modeling and vulnerability scanning across authentication, input validation, secrets management, and OWASP categories. |
+| [ia-spec-flow-analyzer](plugins/whetstone/agents/ia-spec-flow-analyzer.md) | Maps user flows through specifications to surface edge cases, missing clarifications, and completeness gaps before implementation. |
 
 ### Research
 
 | Agent | Description |
 |-------|------------|
-| [ia-best-practices-researcher](plugins/whetstone/agents/research/best-practices-researcher.md) | Gathers official framework docs, version-specific best practices, and industry standards for any technology. |
-| [ia-git-history-analyzer](plugins/whetstone/agents/research/git-history-analyzer.md) | Excavates git history to explain code evolution: traces commits, authors, and context around decisions. |
-| [ia-learnings-researcher](plugins/whetstone/agents/research/learnings-researcher.md) | Mines `docs/solutions/` for documented solutions and patterns relevant to the current task. Prevents repeating past mistakes. |
-| [ia-repo-research-analyst](plugins/whetstone/agents/research/repo-research-analyst.md) | Analyzes repository architecture, naming conventions, and implementation patterns. For onboarding or understanding project conventions. |
+| [ia-best-practices-researcher](plugins/whetstone/agents/ia-best-practices-researcher.md) | Gathers official framework docs, version-specific best practices, and industry standards for any technology. |
+| [ia-git-history-analyzer](plugins/whetstone/agents/ia-git-history-analyzer.md) | Excavates git history to explain code evolution: traces commits, authors, and context around decisions. |
+| [ia-learnings-researcher](plugins/whetstone/agents/ia-learnings-researcher.md) | Mines `docs/solutions/` for documented solutions and patterns relevant to the current task. Prevents repeating past mistakes. |
+| [ia-repo-research-analyst](plugins/whetstone/agents/ia-repo-research-analyst.md) | Analyzes repository architecture, naming conventions, and implementation patterns. For onboarding or understanding project conventions. |
 
 ### Design
 
 | Agent | Description |
 |-------|------------|
-| [ia-design-iterator](plugins/whetstone/agents/design/design-iterator.md) | Iterative UI refinement through screenshot-analyze-improve cycles. For when initial design changes produce mediocre results. |
-| [ia-figma-design-sync](plugins/whetstone/agents/design/figma-design-sync.md) | Compares implemented UI against Figma designs, reports discrepancies, and optionally applies fixes. |
+| [ia-design-iterator](plugins/whetstone/agents/ia-design-iterator.md) | Iterative UI refinement through screenshot-analyze-improve cycles. For when initial design changes produce mediocre results. |
+| [ia-figma-design-sync](plugins/whetstone/agents/ia-figma-design-sync.md) | Compares implemented UI against Figma designs, reports discrepancies, and optionally applies fixes. |
 
 ### Workflow
 
 | Agent | Description |
 |-------|------------|
-| [ia-bug-reproduction-validator](plugins/whetstone/agents/workflow/bug-reproduction-validator.md) | Reproduces bug reports and identifies root causes without applying fixes. Validates whether reports are genuine bugs before engineers invest. |
-| [ia-deployment-verification-agent](plugins/whetstone/agents/workflow/deployment-verification-agent.md) | Generates Go/No-Go deployment runbooks with SQL verification queries, rollback procedures, and monitoring plans for high-risk changes. Runs after database-guardian validates migration code. |
-| [ia-infrastructure-engineer](plugins/whetstone/agents/workflow/infrastructure-engineer.md) | Full deployment-lifecycle coverage: CI/CD pipelines (blue-green, canary, rolling, feature flags), Docker and containerization, observability stacks (metrics/logs/traces), and incident management. Not for DB migration verification (use deployment-verification-agent). |
-| [ia-pr-comment-resolver](plugins/whetstone/agents/workflow/pr-comment-resolver.md) | Implements a single pre-triaged PR comment where the action is already agreed on. For mechanical fixes, not judgment calls. |
+| [ia-bug-reproduction-validator](plugins/whetstone/agents/ia-bug-reproduction-validator.md) | Reproduces bug reports and identifies root causes without applying fixes. Validates whether reports are genuine bugs before engineers invest. |
+| [ia-deployment-verification-agent](plugins/whetstone/agents/ia-deployment-verification-agent.md) | Generates Go/No-Go deployment runbooks with SQL verification queries, rollback procedures, and monitoring plans for high-risk changes. Runs after database-guardian validates migration code. |
+| [ia-infrastructure-engineer](plugins/whetstone/agents/ia-infrastructure-engineer.md) | Full deployment-lifecycle coverage: CI/CD pipelines (blue-green, canary, rolling, feature flags), Docker and containerization, observability stacks (metrics/logs/traces), and incident management. Not for DB migration verification (use deployment-verification-agent). |
+| [ia-pr-comment-resolver](plugins/whetstone/agents/ia-pr-comment-resolver.md) | Implements a single pre-triaged PR comment where the action is already agreed on. For mechanical fixes, not judgment calls. |
 
 ## ⚡ Commands
 
