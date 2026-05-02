@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "compound-plugin",
+      "name": "whetstone",
       "dependencies": {
         "citty": "^0.1.6",
         "js-yaml": "^4.1.0",

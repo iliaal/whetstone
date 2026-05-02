@@ -8,7 +8,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PLUGIN_DIR="$REPO_ROOT/plugins/compound-engineering"
+PLUGIN_DIR="$REPO_ROOT/plugins/whetstone"
 
 errors=0
 

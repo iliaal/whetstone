@@ -12,7 +12,7 @@ Scan reference repositories, compare against plugin skills/agents/commands, and 
 
 ```
 REPOS_DIR=~/ai/repos
-PLUGIN_DIR=plugins/compound-engineering
+PLUGIN_DIR=plugins/whetstone
 SYNC_LOG=docs/audit/audit-log.md
 ```
 

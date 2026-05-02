@@ -4,11 +4,15 @@ set -Eeuo pipefail
 # Symlink plugin skills to non-Claude tool directories.
 # Claude Code gets skills via the plugin; other tools need symlinks.
 #
+# Shared-dir destination names match plugin source names (ia-<name>) — keeps
+# invocations short. Slug rebranding to whetstone-<name> would double the
+# typed length for no functional gain in shared dirs.
+#
 # Usage: bash scripts/sync-to-tools.sh [--dry-run]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKILLS_DIR="$REPO_ROOT/plugins/compound-engineering/skills"
+SKILLS_DIR="$REPO_ROOT/plugins/whetstone/skills"
 
 TOOL_DIRS=(
   "$HOME/.agents/skills"

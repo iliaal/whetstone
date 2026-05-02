@@ -112,7 +112,7 @@ Present the user with:
 2. The score comparison from Step 6 (or note if no changes)
 3. Constraint status (growth %, size)
 
-Ask: "Apply the evolved skill to `plugins/compound-engineering/skills/<skill>/SKILL.md`?"
+Ask: "Apply the evolved skill to `plugins/whetstone/skills/<skill>/SKILL.md`?"
 
 If approved:
 - Copy the evolved text to the skill's SKILL.md

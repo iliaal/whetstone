@@ -32,7 +32,7 @@ Present the full misfire table. Flag skills with misfire rate > 15%.
 
 For each of the top `TOP` misfiring skills:
 
-1. Read the current regex from `plugins/compound-engineering/hooks/skill-patterns.sh` (grep for `SKILL_PATTERNS[<skill-name>]`)
+1. Read the current regex from `plugins/whetstone/hooks/skill-patterns.sh` (grep for `SKILL_PATTERNS[<skill-name>]`)
 2. Read the skill's YAML description from its SKILL.md
 3. Review the irrelevant task samples from the analyze-misfires output
 4. Identify what the regex is matching that it shouldn't (e.g., "database" matching audit tasks that mention databases)
@@ -58,7 +58,7 @@ Description change: Add "Not for tasks that merely use PostgreSQL as a backend"
 ### Step 4: Apply approved changes
 
 For each approved change:
-- Edit `plugins/compound-engineering/hooks/skill-patterns.sh` with the new regex
+- Edit `plugins/whetstone/hooks/skill-patterns.sh` with the new regex
 - Edit the skill's SKILL.md description if a description change was approved
 - Run `bash scripts/update-metadata.sh`
 

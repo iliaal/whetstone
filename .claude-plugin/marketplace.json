@@ -10,23 +10,23 @@
   },
   "plugins": [
     {
-      "name": "compound-engineering",
+      "name": "whetstone",
       "description": "AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes 19 specialized agents, 22 commands, 30 skills, and 1 hook, 1 MCP server.",
       "version": "3.0.5",
       "author": {
         "name": "Ilia Alshanetsky",
         "url": "https://github.com/iliaal"
       },
-      "homepage": "https://github.com/iliaal/compound-engineering-plugin",
+      "homepage": "https://github.com/iliaal/whetstone",
       "tags": [
         "ai-powered",
-        "compound-engineering",
+        "whetstone",
         "workflow-automation",
         "code-review",
         "quality",
         "knowledge-management"
       ],
-      "source": "./plugins/compound-engineering"
+      "source": "./plugins/whetstone"
     }
   ]
 }

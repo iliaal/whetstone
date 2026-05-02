@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare external skill/agent repos against the compound-engineering plugin.
+"""Compare external skill/agent repos against the whetstone plugin.
 
 Catalogs components from any Claude Code plugin repo structure, finds overlaps
 with our plugin, and generates a structured markdown comparison report.
@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-PLUGIN_ROOT = Path(__file__).resolve().parent.parent / "plugins" / "compound-engineering"
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent / "plugins" / "whetstone"
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".compare-cache"
 REPORT_DIR = Path(__file__).resolve().parent.parent / "reports"
 
@@ -473,7 +473,7 @@ def load_catalog(cache_path: Path) -> list[Component]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Compare external repos against compound-engineering plugin"
+        description="Compare external repos against whetstone plugin"
     )
     parser.add_argument(
         "repos",
@@ -512,8 +512,8 @@ def main() -> None:
     # Scan our plugin
     print("Scanning our plugin...", file=sys.stderr)
     our_components = scan_repo(PLUGIN_ROOT.parent.parent)
-    # Filter to only compound-engineering components
-    our_components = [c for c in our_components if "compound-engineering" in c.repo]
+    # Filter to only whetstone components
+    our_components = [c for c in our_components if "whetstone" in c.repo]
     print(f"  Found {len(our_components)} components", file=sys.stderr)
     save_catalog(our_components, CACHE_DIR / "ours.json")
 

@@ -14,7 +14,7 @@ import json
 import re
 from pathlib import Path
 
-SKILLS_DIR = Path("plugins/compound-engineering/skills")
+SKILLS_DIR = Path("plugins/whetstone/skills")
 FIXTURES_DIR = Path("distillery/tests/fixtures/triggers")
 
 CLASS_BLURBS = {
@@ -84,7 +84,7 @@ def render_spec(skill: str, fm: dict, body: str, klass: str, ref_count: int,
         ("Trigger fixtures", "complete",
          f"distillery/tests/fixtures/triggers/{skill}.jsonl (>=5 should_trigger, >=5 should_not_trigger)"),
         ("Hook regex pattern", "complete",
-         f"plugins/compound-engineering/hooks/skill-patterns.sh (`SKILL_PATTERNS[{skill}]`)"),
+         f"plugins/whetstone/hooks/skill-patterns.sh (`SKILL_PATTERNS[{skill}]`)"),
         ("Reference architecture",
          "complete" if ref_count > 0 else "n/a",
          f"{ref_count} file(s) under references/" if ref_count else "no references; SKILL.md is self-contained"),
@@ -114,7 +114,7 @@ Out of scope:
 ## Trigger Context
 
 - Class: `{klass}`
-- Hook regex: `plugins/compound-engineering/hooks/skill-patterns.sh` -> `SKILL_PATTERNS[{skill}]`
+- Hook regex: `plugins/whetstone/hooks/skill-patterns.sh` -> `SKILL_PATTERNS[{skill}]`
 - Common requests (from fixture should_trigger):
 {quote_list(pos_samples)}
 - Should not trigger for (from fixture should_not_trigger):
@@ -127,7 +127,7 @@ Authoritative sources:
 - `SKILL.md` -- runtime instructions and reference routing.
 - `references/*.md` -- bundled supplementary content ({ref_count} file(s)).
 - `distillery/tests/fixtures/triggers/{skill}.jsonl` -- positive and negative trigger phrasings under regression test.
-- `plugins/compound-engineering/hooks/skill-patterns.sh` -- regex pattern that fires this skill.
+- `plugins/whetstone/hooks/skill-patterns.sh` -- regex pattern that fires this skill.
 - `distillery/.eval-data/{skill}/` -- harvested session examples (when present).
 
 Data that must not be stored in this skill or its references:

@@ -6,15 +6,15 @@ argument-hint: "[optional: commit message]"
 
 # Release
 
-Run the full release pipeline for the compound-engineering plugin. This command owns all version ceremony — per-change edits do NOT bump versions or touch CHANGELOG.md. Those steps happen here, once, summarizing everything that accumulated since the last release.
+Run the full release pipeline for the whetstone plugin. This command owns all version ceremony — per-change edits do NOT bump versions or touch CHANGELOG.md. Those steps happen here, once, summarizing everything that accumulated since the last release.
 
 ## Phase 1: Survey what changed since the last release
 
-1. Find the current version in `plugins/compound-engineering/.claude-plugin/plugin.json`.
+1. Find the current version in `plugins/whetstone/.claude-plugin/plugin.json`.
 2. Run `git log v<current-version>..HEAD --oneline` (fallback: `git log --since="<last release date>" --oneline`) to list commits since the last tag.
 3. Run `git diff v<current-version>..HEAD --stat` to see which files changed.
 4. Classify the changes into added/changed/fixed/removed buckets per Keep a Changelog. Scan specifically for:
-   - New files under `plugins/compound-engineering/{skills,agents,commands}/` → Added
+   - New files under `plugins/whetstone/{skills,agents,commands}/` → Added
    - Deletions under the same paths → Removed
    - Edits to existing components → Changed
    - Commits with `fix:` prefix or bug-fix language → Fixed
@@ -29,11 +29,11 @@ Ask the user to confirm the bump type before writing anything, and offer a short
 
 ## Phase 3: Apply the bump
 
-1. Update `version` field in both `plugins/compound-engineering/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`. Both must match.
+1. Update `version` field in both `plugins/whetstone/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`. Both must match.
 2. Prepend a new CHANGELOG.md entry with today's date, the new version, a one-line summary, and buckets of commits grouped under `### Added` / `### Changed` / `### Fixed` / `### Removed`. Use the writing skill to polish the tone before committing.
 3. Run `bash scripts/update-metadata.sh` to sync component counts into plugin.json and marketplace.json descriptions.
 4. Verify README.md agent/command/skill counts and tables still match reality — update if drift.
-5. Validate JSON: `jq . .claude-plugin/marketplace.json && jq . plugins/compound-engineering/.claude-plugin/plugin.json`.
+5. Validate JSON: `jq . .claude-plugin/marketplace.json && jq . plugins/whetstone/.claude-plugin/plugin.json`.
 
 ## Phase 4: Ship
 

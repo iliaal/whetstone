@@ -6,6 +6,6 @@
 {"prompt": "Write comprehensive tests for the payment processor module", "should_trigger": ["writing-tests"], "should_not_trigger": ["frontend-design"]}
 {"prompt": "The React component re-renders every time state changes in the parent", "should_trigger": ["react-frontend"], "should_not_trigger": ["php-laravel", "postgresql"]}
 {"prompt": "Set up Terraform modules for our AWS VPC and subnets", "should_trigger": ["terraform"], "should_not_trigger": ["react-frontend", "php-laravel"]}
-{"prompt": "Review plugins/compound-engineering/skills/ia-brainstorming/SKILL.md for consistency issues with the writing skill", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
+{"prompt": "Review plugins/whetstone/skills/ia-brainstorming/SKILL.md for consistency issues with the writing skill", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
 {"prompt": "Run python3 distillery/scripts/distiller.py analyze-misfires and diagnose why brainstorming, writing-tests, and planning keep misfiring", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
 {"prompt": "Compare skills/ia-planning/SKILL.md against the version in ~/ai/repos/other-plugin/ and note differences", "should_trigger": [], "should_not_trigger": ["ia-planning"]}

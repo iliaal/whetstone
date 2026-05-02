@@ -1670,7 +1670,7 @@ class TestSkillNameInvocation:
         assert _findings(report, "demo", "SKILL_NAME_INVOCATION")
 
     def test_vendor_slug_backtick_flagged(self, fake_plugin):
-        _add_skill(fake_plugin, "demo", "Predecessor: `compound-engineering:ia-debugging`.")
+        _add_skill(fake_plugin, "demo", "Predecessor: `whetstone:ia-debugging`.")
         report = distiller.validate_plugin()
         assert _findings(report, "demo", "SKILL_NAME_INVOCATION")
 
@@ -1683,7 +1683,7 @@ class TestSkillNameInvocation:
 
     def test_forbidding_context_skips_invocation(self, fake_plugin):
         _add_skill(fake_plugin, "demo",
-                   "Never run `compound-engineering:ia-debugging` directly -- skill "
+                   "Never run `whetstone:ia-debugging` directly -- skill "
                    "discovery handles routing.")
         report = distiller.validate_plugin()
         assert not _findings(report, "demo", "SKILL_NAME_INVOCATION")

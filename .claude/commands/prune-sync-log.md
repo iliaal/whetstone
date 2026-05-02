@@ -1,6 +1,6 @@
 ---
 name: prune-sync-log
-description: Prune stale entries from the compound-engineering sync decision log
+description: Prune stale entries from the whetstone sync decision log
 ---
 
 # Prune sync log
@@ -12,7 +12,7 @@ Archive entries in `docs/audit/audit-log.md` that are no longer load-bearing, so
 ```
 SYNC_LOG=docs/audit/audit-log.md
 ARCHIVE=docs/audit/audit-log-archive.md
-PLUGIN_DIR=plugins/compound-engineering
+PLUGIN_DIR=plugins/whetstone
 REPOS_DIR=~/ai/repos
 TODAY=YYYY-MM-DD  # resolve to actual date at run time
 ```
@@ -36,7 +36,7 @@ For every run entry, assign one of four statuses. Classification happens at the 
 
 Stale-ref detection: for each bullet, resolve the backtick-quoted component name to a path under `$PLUGIN_DIR` (skills/agents/commands). Use Glob or Grep to confirm existence. If the entry references an external repo by name (e.g., "Source repo: gstack"), check for `$REPOS_DIR/gstack/`.
 
-Supersession detection: read `~/.claude/projects/-home-ilia-ai-compound-engineering-plugin/memory/MEMORY.md` and scan feedback entries. If a rejection reason in a log bullet matches the rule in a feedback entry (same pattern, same target), mark the bullet as superseded. When more than half of an entry's bullets are superseded, prune the entry.
+Supersession detection: read `~/.claude/projects/-home-ilia-ai-whetstone/memory/MEMORY.md` and scan feedback entries. If a rejection reason in a log bullet matches the rule in a feedback entry (same pattern, same target), mark the bullet as superseded. When more than half of an entry's bullets are superseded, prune the entry.
 
 ## Phase 3: Report
 
@@ -64,7 +64,7 @@ For approved entries:
    ```markdown
    # Compound Engineering Sync Log — Archive
 
-   Pruned entries from `compound-engineering-sync-log.md`. Each entry retains its original heading and body, with a prune footer noting the date and reason.
+   Pruned entries from `whetstone-sync-log.md`. Each entry retains its original heading and body, with a prune footer noting the date and reason.
    ```
 
 2. **Move each approved entry** to `$ARCHIVE`. Append under the `# Compound Engineering Sync Log — Archive` heading (archive is not ordered, just a dumping ground for history).

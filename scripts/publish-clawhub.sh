@@ -12,8 +12,8 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKILLS_DIR="$REPO_ROOT/plugins/compound-engineering/skills"
-PLUGIN_JSON="$REPO_ROOT/plugins/compound-engineering/.claude-plugin/plugin.json"
+SKILLS_DIR="$REPO_ROOT/plugins/whetstone/skills"
+PLUGIN_JSON="$REPO_ROOT/plugins/whetstone/.claude-plugin/plugin.json"
 
 SLUG_PREFIX="compound-eng"
 DRY_RUN=false

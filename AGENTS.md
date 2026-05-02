@@ -1,4 +1,4 @@
-# Compound Engineering Plugin
+# Whetstone
 
 Claude Code plugin for PHP/React/Python/JavaScript/TypeScript workflows. Includes the plugin (agents, commands, skills, hooks), a skill distillery, and a CLI for cross-tool conversion.
 
@@ -7,7 +7,7 @@ When you see a `<session-commands>` tag in hook context, briefly list those comm
 ## Repository structure
 
 ```
-compound-engineering-plugin/
+whetstone/
 ├── .claude-plugin/
 │   └── marketplace.json          # Marketplace catalog
 ├── distillery/                   # Skill distillery (generate skills from skills.sh)
@@ -23,7 +23,7 @@ compound-engineering-plugin/
 │   └── update-plugin.sh          # Update locally installed plugin to latest version
 ├── CHANGELOG.md                 # Version history
 └── plugins/
-    └── compound-engineering/     # The plugin
+    └── whetstone/     # The plugin
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
         ├── agents/              # Agents (all `ia-<name>.md`, flat layout)
@@ -48,7 +48,7 @@ compound-engineering-plugin/
 - **Read before claiming "new"**: Before presenting sync/improvement findings, read the target skill to verify the pattern isn't already covered. Saves round-trips.
 - **Present changes one at a time** for review decisions. Batch presentation only when explicitly asked.
 - **No off-stack content**: Skip or replace code examples, references, and patterns for languages/frameworks the team doesn't use (Ruby/Rails, Java, Swift, etc.). Use PHP, Python, or TypeScript equivalents. Generic SQL or framework-agnostic examples are fine when no specific stack fits.
-- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/compound-engineering/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `grep -rn '~/ai/\|/home/' plugins/` before shipping to catch stragglers.
+- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/whetstone/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `grep -rn '~/ai/\|/home/' plugins/` before shipping to catch stragglers.
 
 ## Versioning
 
@@ -58,7 +58,7 @@ Why this rule exists: per-change ceremony fragmented CHANGELOG.md into dozens of
 
 When `/release` runs, it:
 
-1. Bumps the version in `plugins/compound-engineering/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+1. Bumps the version in `plugins/whetstone/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
 2. Appends a CHANGELOG.md entry summarizing the commits since the last release
 3. Updates README.md component counts and tables
 4. Runs `bash scripts/update-metadata.sh` to sync descriptions and counts
@@ -86,9 +86,9 @@ All skills, agents, and commands in the plugin carry an `ia-` prefix (introduced
 The old `workflows:` command namespace was dropped as part of the rename — previous `/workflows:plan` is now `/ia-plan`. See CHANGELOG 4.0.0 migration note.
 
 Rules:
-- Every directory under `plugins/compound-engineering/skills/` starts with `ia-`.
-- Every agent file under `plugins/compound-engineering/agents/` starts with `ia-` (flat layout, no category subdirectories).
-- Every command file under `plugins/compound-engineering/commands/` starts with `ia-`.
+- Every directory under `plugins/whetstone/skills/` starts with `ia-`.
+- Every agent file under `plugins/whetstone/agents/` starts with `ia-` (flat layout, no category subdirectories).
+- Every command file under `plugins/whetstone/commands/` starts with `ia-`.
 - The `name:` frontmatter field matches the directory/file stem exactly.
 - Trigger regex patterns in `hooks/skill-patterns.sh` do NOT change — they match user speech, not skill names. Only the array keys (`SKILL_PATTERNS[ia-debugging]`) carry the prefix.
 - Reference files (`*/references/*.md`) are NOT prefixed — they're content, not invocable components.
@@ -163,21 +163,21 @@ grep -E '^description:' skills/*/SKILL.md
 
 ### Adding a new agent
 
-1. Create `plugins/compound-engineering/agents/ia-new-agent.md` (flat layout)
+1. Create `plugins/whetstone/agents/ia-new-agent.md` (flat layout)
 2. Run `bash scripts/update-metadata.sh`
 3. Update README tables
 4. Test with `claude agent new-agent "test"`
 
 ### Adding a new command
 
-1. Create `plugins/compound-engineering/commands/new-command.md`
+1. Create `plugins/whetstone/commands/new-command.md`
 2. Run `bash scripts/update-metadata.sh`
 3. Update README tables
 4. Test with `claude /new-command`
 
 ### Adding a new skill
 
-1. Create `plugins/compound-engineering/skills/skill-name/SKILL.md`
+1. Create `plugins/whetstone/skills/skill-name/SKILL.md`
 2. Run `bash scripts/update-metadata.sh`
 3. Update README tables and `hooks/skill-patterns.sh` (add trigger pattern)
 4. Add trigger regression fixtures to `distillery/tests/fixtures/triggers/skill-name.jsonl`
@@ -186,8 +186,8 @@ grep -E '^description:' skills/*/SKILL.md
 
 ### Adding a new hook
 
-1. Add hook entry to `plugins/compound-engineering/hooks/hooks.json`
-2. Create hook script in `plugins/compound-engineering/hooks/`
+1. Add hook entry to `plugins/whetstone/hooks/hooks.json`
+2. Create hook script in `plugins/whetstone/hooks/`
 3. Run `bash scripts/update-metadata.sh`
 4. Update README tables
 
@@ -202,7 +202,7 @@ python3 distillery/scripts/distiller.py fetch --skills '<json>'
 # ... analyze, synthesize, validate → distillery/generated-skills/<name>/
 
 # Promote to plugin
-cp -r distillery/generated-skills/<name> plugins/compound-engineering/skills/<name>
+cp -r distillery/generated-skills/<name> plugins/whetstone/skills/<name>
 bash scripts/update-metadata.sh
 
 # Mirror to ai-skills (read-only public distribution)

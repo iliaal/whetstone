@@ -63,7 +63,7 @@ For each approved finding:
 - Edit the file at `proposed_edit.file` using the Edit tool, applying `proposed_edit.change`
 - Verify the edit didn't break YAML frontmatter or markdown structure
 - If the finding was `wrong_trigger`, also update the corresponding fixture entry in `distillery/tests/fixtures/triggers/<skill>.jsonl` so future regressions catch it
-- Append an evidence record to `plugins/compound-engineering/skills/<skill>/references/evidence/findings-log.md` (create the file with a one-line header if it doesn't exist). The record is one paragraph, not a code block; the schema below is the field set, not a literal template:
+- Append an evidence record to `plugins/whetstone/skills/<skill>/references/evidence/findings-log.md` (create the file with a one-line header if it doesn't exist). The record is one paragraph, not a code block; the schema below is the field set, not a literal template:
 
   ```markdown
   ## EX-NNN: <short label, ~7 words>

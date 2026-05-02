@@ -71,7 +71,7 @@ export default defineCommand({
     const home = os.homedir()
     const paths = spec.paths(home)
     const stamp = new Date().toISOString().replace(/[:.]/g, "-")
-    const backupRoot = path.join(home, ".cache", "compound-engineering", "legacy-backup", `${spec.name}-${stamp}`)
+    const backupRoot = path.join(home, ".cache", "whetstone", "legacy-backup", `${spec.name}-${stamp}`)
 
     const result: CleanupResult = { backupDir: backupRoot, moved: 0, skipped: 0 }
 

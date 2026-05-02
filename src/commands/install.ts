@@ -164,7 +164,7 @@ function resolveTargetOutputRoot(targetName: string, outputRoot: string, codexHo
 }
 
 async function resolveGitHubPluginPath(pluginName: string): Promise<ResolvedPluginPath> {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compound-plugin-"))
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "whetstone-"))
   const source = resolveGitHubSource()
   try {
     await cloneGitHubRepo(source, tempRoot)
@@ -188,9 +188,9 @@ async function resolveGitHubPluginPath(pluginName: string): Promise<ResolvedPlug
 }
 
 function resolveGitHubSource(): string {
-  const override = process.env.COMPOUND_PLUGIN_GITHUB_SOURCE
+  const override = process.env.WHETSTONE_GITHUB_SOURCE
   if (override && override.trim()) return override.trim()
-  return "https://github.com/iliaal/compound-engineering-plugin"
+  return "https://github.com/iliaal/whetstone"
 }
 
 async function cloneGitHubRepo(source: string, destination: string): Promise<void> {

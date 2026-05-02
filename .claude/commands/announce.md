@@ -6,11 +6,11 @@ argument-hint: "[optional: version to announce, defaults to current]"
 
 # Draft release announcement for X
 
-Generate an announcement post for the latest compound-engineering plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing. Apply the `ia-writing` skill throughout — no filler, no AI slop, no throat-clearing.
+Generate an announcement post for the latest whetstone plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing. Apply the `ia-writing` skill throughout — no filler, no AI slop, no throat-clearing.
 
 ## Step 1: Gather context
 
-1. Read the current version from `plugins/compound-engineering/.claude-plugin/plugin.json`
+1. Read the current version from `plugins/whetstone/.claude-plugin/plugin.json`
 2. Read CHANGELOG.md -- extract entries for the version being announced (default: current version). If multiple versions were released in the same session, combine them into one announcement.
 3. Get the ai-skills repo version: `cd ~/ai/ai-skills && git log --oneline -1 && cd -`
 4. Count components: `bash scripts/update-metadata.sh`
@@ -26,7 +26,7 @@ The account is X Premium (25,000 character limit per post), so most releases fit
 **Single post structure:**
 
 1. **Opener (first ~250 chars, the feed preview — marketing copy that has to earn the click):**
-   - Version line: `compound-engineering vX.Y.Z` (add `+ ai-skills` only if versions differ)
+   - Version line: `whetstone vX.Y.Z` (add `+ ai-skills` only if versions differ)
    - **Thematic hook**: one sentence enumerating the themes this release touches (e.g., "Sharper rules for deploys, code review, swarm orchestration, frontend discipline, and scope creep"). **Never cut the hook when trimming.** It's the attention bait for feed scrollers and maps top-level themes so a reader can self-select what matters.
    - Component counts: N agents, N commands, N skills
    - Top-N pivot line (e.g., "Top 5:") introducing the bullets
@@ -39,15 +39,15 @@ The account is X Premium (25,000 character limit per post), so most releases fit
 
 3. **Full-changelog link with theme teaser** (rich releases only):
    - One line pointing at the CHANGELOG with a parenthetical teaser of 3-5 themes NOT covered in the top-N bullets.
-   - Format: `Full changelog (theme-A, theme-B, theme-C, and the rest): github.com/iliaal/compound-engineering-plugin/blob/main/CHANGELOG.md`
+   - Format: `Full changelog (theme-A, theme-B, theme-C, and the rest): github.com/iliaal/whetstone/blob/main/CHANGELOG.md`
    - The teaser lets readers judge whether clicking through will find what they need.
 
 4. **Install commands:**
-   - `Install: claude plugins add iliaal/compound-engineering-plugin`
+   - `Install: claude plugins add iliaal/whetstone`
    - `Portable skills: npx skills add https://github.com/iliaal/ai-skills`
 
 5. **Repo URL footer (standalone final line):**
-   - `github.com/iliaal/compound-engineering-plugin`
+   - `github.com/iliaal/whetstone`
    - On its own line, separated from install commands by a blank line. Acts as a click target for readers who want the repo after scanning the post.
 
 **Thread fallback (only when justified):**
@@ -93,17 +93,17 @@ Do not post anything. Present for user approval only.
 
 After user approves the thread, draft it into X for manual review and posting. Claude never clicks Post -- the user does that in the browser.
 
-1. Write the approved tweets to `~/ai/compound-engineering-plugin/.announce/thread-vX.Y.Z.json` (JSON array of strings). `.announce/` is gitignored and persists across reboots, unlike `/tmp` which wipes on system restart.
-2. Ensure the compound-engineering Edge profile is running (no-op if already up):
+1. Write the approved tweets to `~/ai/whetstone/.announce/thread-vX.Y.Z.json` (JSON array of strings). `.announce/` is gitignored and persists across reboots, unlike `/tmp` which wipes on system restart.
+2. Ensure the whetstone Edge profile is running (no-op if already up):
    ```bash
    bash scripts/launch-edge.sh
    ```
-   Thin wrapper for `edge-cdp ensure compound-engineering`. Profile lives at `C:\Users\ilia\edge-compound-engineering` on CDP port 9225. First run: log in to X in the opened window; subsequent runs reuse the session.
+   Thin wrapper for `edge-cdp ensure whetstone`. Profile lives at `C:\Users\ilia\edge-whetstone` on CDP port 9225. First run: log in to X in the opened window; subsequent runs reuse the session.
 3. Compose the thread (types all tweets, does NOT click Post):
    ```bash
-   python3 scripts/post-thread.py ~/ai/compound-engineering-plugin/.announce/thread-vX.Y.Z.json
+   python3 scripts/post-thread.py ~/ai/whetstone/.announce/thread-vX.Y.Z.json
    ```
    The script auto-launches the profile if needed and detects login state. If not logged in, it opens the login page and exits -- log in, then re-run.
 4. Tell the user the draft is ready and to review + click Post in the Edge window.
 
-Different profiles on different CDP ports run in parallel. The pinescript profile on 9229 can stay open while compound-engineering runs on 9225.
+Different profiles on different CDP ports run in parallel. The pinescript profile on 9229 can stay open while whetstone runs on 9225.

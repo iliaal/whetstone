@@ -11,7 +11,7 @@ AI_SKILLS_DIR="$HOME/ai/ai-skills"
 # --- Preflight ---
 cd "$ROOT_DIR"
 
-version=$(python3 -c "import json; print(json.load(open('plugins/compound-engineering/.claude-plugin/plugin.json'))['version'])")
+version=$(python3 -c "import json; print(json.load(open('plugins/whetstone/.claude-plugin/plugin.json'))['version'])")
 marketplace_version=$(python3 -c "import json; print(json.load(open('.claude-plugin/marketplace.json'))['plugins'][0]['version'])")
 
 if [[ "$version" != "$marketplace_version" ]]; then
@@ -21,7 +21,7 @@ fi
 
 # Check JSON validity
 jq . .claude-plugin/marketplace.json > /dev/null || { echo "ERROR: marketplace.json is invalid JSON"; exit 1; }
-jq . plugins/compound-engineering/.claude-plugin/plugin.json > /dev/null || { echo "ERROR: plugin.json is invalid JSON"; exit 1; }
+jq . plugins/whetstone/.claude-plugin/plugin.json > /dev/null || { echo "ERROR: plugin.json is invalid JSON"; exit 1; }
 
 # --- Pre-commit gates ---
 echo "[Pre-commit] Running trigger regression tests..."
@@ -76,7 +76,7 @@ git add -A -- \
   distillery/scripts/ \
   distillery/tests/ \
   scripts/ \
-  plugins/compound-engineering/
+  plugins/whetstone/
 # Also stage project-level skill changes if any
 git add -A -- .claude/skills/ 2>/dev/null || true
 git commit -m "$commit_msg"
@@ -85,7 +85,7 @@ echo "  Pushed to origin/main"
 
 # --- 2. Sync GitHub repo description ---
 echo "[2/7] Sync repo description..."
-repo_desc=$(jq -r '.description' plugins/compound-engineering/.claude-plugin/plugin.json)
+repo_desc=$(jq -r '.description' plugins/whetstone/.claude-plugin/plugin.json)
 gh repo edit --description "$repo_desc" 2>/dev/null && echo "  Updated repo description" || echo "  Failed to update repo description (non-fatal)"
 
 # --- 3. Create GitHub release on plugin repo ---
@@ -109,7 +109,7 @@ bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
 # Sync changelog: extract skill-related entries from plugin changelog
 echo "  Syncing changelog..."
 # Build allowlist from actual skill directories (longest names first to avoid prefix conflicts)
-skill_names=$(ls -1 "$ROOT_DIR/plugins/compound-engineering/skills" | awk '{print length, $0}' | sort -rn | awk '{print $2}' | tr '\n' '|' | sed 's/|$//')
+skill_names=$(ls -1 "$ROOT_DIR/plugins/whetstone/skills" | awk '{print length, $0}' | sort -rn | awk '{print $2}' | tr '\n' '|' | sed 's/|$//')
 # Keep ### headers and lines referencing known skills
 skill_notes=$(printf '%s\n' "$release_notes" | grep -E "^### |^- \*\*(${skill_names})(\*\*|/)" || true)
 # Strip orphan ### headers (headers with no entries after them)
@@ -139,7 +139,7 @@ fi
 cd "$AI_SKILLS_DIR"
 if [[ -n "$(git status --porcelain)" ]]; then
   git add -A
-  git commit -m "sync: v${version} from compound-engineering plugin"
+  git commit -m "sync: v${version} from whetstone plugin"
   git push origin master
   echo "  ai-skills pushed"
 else
@@ -152,7 +152,7 @@ if gh release view "v${version}" &>/dev/null; then
 else
   gh release create "v${version}" \
     --title "v${version}" \
-    --notes "Synced from compound-engineering plugin v${version}" \
+    --notes "Synced from whetstone plugin v${version}" \
     --target master
   echo "  ai-skills release v${version} created"
 fi

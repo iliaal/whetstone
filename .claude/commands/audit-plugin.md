@@ -6,12 +6,12 @@ argument-hint: "[optional: specific skill/agent/command name or category to focu
 
 # Audit plugin content
 
-Deep analysis of all skills, agents, and commands in the compound-engineering plugin. Surfaces quality issues that degrade skill effectiveness, waste tokens, or confuse the model.
+Deep analysis of all skills, agents, and commands in the whetstone plugin. Surfaces quality issues that degrade skill effectiveness, waste tokens, or confuse the model.
 
 ## Scope
 
 ```
-PLUGIN_DIR=plugins/compound-engineering
+PLUGIN_DIR=plugins/whetstone
 SYNC_LOG=docs/audit/audit-log.md
 ```
 
@@ -261,7 +261,7 @@ After applying fixes, run the verification chain (stop on first failure):
 
 1. **Validate modified skills** — `python3 distillery/scripts/distiller.py validate <name>` for each changed distilled skill. All must pass 7/7 gates.
 2. **Trigger regression tests** — `python3 distillery/scripts/distiller.py test-triggers`. All skills must pass. If a pattern was modified, update fixtures in `distillery/tests/fixtures/triggers/<skill>.jsonl`.
-3. **JSON integrity** — `jq . .claude-plugin/marketplace.json && jq . plugins/compound-engineering/.claude-plugin/plugin.json`
+3. **JSON integrity** — `jq . .claude-plugin/marketplace.json && jq . plugins/whetstone/.claude-plugin/plugin.json`
 4. **Cross-reference check** — grep all modified files for references to other skills/agents/commands. Verify each target exists.
 5. **Token budget check** — `python3 distillery/scripts/distiller.py token-count <file>` for each modified skill. Flag any above 4K tokens.
 6. **Diff review** — `git diff` on all modified files. Confirm changes match approved items only, no unintended edits.

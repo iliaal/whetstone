@@ -1,0 +1,27 @@
+{
+  "name": "whetstone",
+  "version": "3.0.5",
+  "description": "AI-powered development tools. 19 agents, 22 commands, 30 skills, 1 hook, 1 MCP server for code review, research, design, and workflow automation.",
+  "author": {
+    "name": "Ilia Alshanetsky",
+    "url": "https://github.com/iliaal"
+  },
+  "homepage": "https://github.com/iliaal/whetstone",
+  "repository": "https://github.com/iliaal/whetstone",
+  "license": "MIT",
+  "keywords": [
+    "ai-powered",
+    "whetstone",
+    "workflow-automation",
+    "code-review",
+    "python",
+    "typescript",
+    "knowledge-management"
+  ],
+  "mcpServers": {
+    "docfork": {
+      "type": "http",
+      "url": "https://mcp.docfork.com/mcp"
+    }
+  }
+}

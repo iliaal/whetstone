@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Update the locally installed compound-engineering plugin to the latest
+# Update the locally installed whetstone plugin to the latest
 # pushed version by driving the modern Claude Code CLI commands.
 #
 # This script used to hand-roll the update (pull marketplace clone, copy
@@ -22,7 +22,7 @@ set -Eeuo pipefail
 # nothing changed upstream.
 
 MARKETPLACE_NAME="iliaal-marketplace"
-PLUGIN_KEY="compound-engineering@${MARKETPLACE_NAME}"
+PLUGIN_KEY="whetstone@${MARKETPLACE_NAME}"
 
 echo "Refreshing marketplace clone: $MARKETPLACE_NAME"
 claude plugin marketplace update "$MARKETPLACE_NAME"

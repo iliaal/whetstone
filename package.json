@@ -1,10 +1,10 @@
 {
-  "name": "compound-engineering-plugin",
+  "name": "whetstone",
   "version": "0.9.1",
   "type": "module",
   "private": true,
   "bin": {
-    "compound-plugin": "./src/index.ts"
+    "whetstone": "./src/index.ts"
   },
   "scripts": {
     "dev": "bun run src/index.ts",

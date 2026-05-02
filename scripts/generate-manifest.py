@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PLUGIN_DIR = REPO_ROOT / "plugins" / "compound-engineering"
+PLUGIN_DIR = REPO_ROOT / "plugins" / "whetstone"
 SKILLS_DIR = PLUGIN_DIR / "skills"
 PATTERNS_FILE = PLUGIN_DIR / "hooks" / "skill-patterns.sh"
 PLUGIN_JSON = PLUGIN_DIR / ".claude-plugin" / "plugin.json"

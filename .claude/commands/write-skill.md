@@ -15,9 +15,9 @@ Scaffold a new plugin skill from scratch, generate paired trigger fixtures, regi
 1. If `$ARGUMENTS` is empty or doesn't start with `ia-`, ask for the skill name.
 2. Validate format: must match `^ia-[a-z0-9][a-z0-9-]*$`, no consecutive hyphens, no banned tokens (`anthropic`, `claude`).
 3. Confirm the skill doesn't already exist:
-   - `plugins/compound-engineering/skills/<name>/SKILL.md` must NOT exist.
+   - `plugins/whetstone/skills/<name>/SKILL.md` must NOT exist.
    - `distillery/tests/fixtures/triggers/<name>.jsonl` must NOT exist.
-   - No matching `SKILL_PATTERNS[<name>]=` line in `plugins/compound-engineering/hooks/skill-patterns.sh`.
+   - No matching `SKILL_PATTERNS[<name>]=` line in `plugins/whetstone/hooks/skill-patterns.sh`.
 4. Read `CLAUDE.md` "Skill compliance checklist" section to refresh the gates this skill must pass.
 
 ## Phase 2: Batch up-front interview
@@ -45,7 +45,7 @@ Generate four artifacts atomically. Do not split across phases.
 
 ### 4a. SKILL.md
 
-Path: `plugins/compound-engineering/skills/<name>/SKILL.md`
+Path: `plugins/whetstone/skills/<name>/SKILL.md`
 
 Frontmatter rules (all hard requirements — `validate-plugin` enforces them):
 
@@ -81,11 +81,11 @@ Drafting guidance:
 - Negatives: 5+ phrasings that look superficially related but should not trigger. Include phrasings that match adjacent skills' descriptions (the `validate-plugin` DUPLICATE_TRIGGER detector catches this kind of overlap).
 - Do not use AI-flavored placeholders. Each prompt should be a thing a real user would type.
 
-Read the current plugin version from `plugins/compound-engineering/.claude-plugin/plugin.json` for the `added_in` field.
+Read the current plugin version from `plugins/whetstone/.claude-plugin/plugin.json` for the `added_in` field.
 
 ### 4c. SPEC.md (maintenance contract)
 
-Path: `plugins/compound-engineering/skills/<name>/SPEC.md`
+Path: `plugins/whetstone/skills/<name>/SPEC.md`
 
 Seven required headings (the validator rejects missing ones as HIGH):
 
@@ -120,7 +120,7 @@ Out of scope:
 <when each artifact must be updated>
 ```
 
-For an existing filled example to model after, read any `plugins/compound-engineering/skills/ia-*/SPEC.md`. To auto-generate a starter SPEC.md from the SKILL.md and fixture pair, run `python3 scripts/generate-spec.py` (it skips skills that already have SPEC.md, so it's safe to re-run).
+For an existing filled example to model after, read any `plugins/whetstone/skills/ia-*/SPEC.md`. To auto-generate a starter SPEC.md from the SKILL.md and fixture pair, run `python3 scripts/generate-spec.py` (it skips skills that already have SPEC.md, so it's safe to re-run).
 
 File-relationship matrix — what each artifact owns (don't duplicate across files):
 
@@ -145,7 +145,7 @@ SPEC.md must not contain machine-specific paths, secrets, or unredacted personal
 
 ### 4d. SOURCES.md (optional source-provenance ledger)
 
-Path: `plugins/compound-engineering/skills/<name>/SOURCES.md`
+Path: `plugins/whetstone/skills/<name>/SOURCES.md`
 
 Recommended for skills synthesized from external repos, marketplace skills, a mixed source pack, or any skill that accumulates persistent iteration evidence under `references/evidence/` — anything where future maintainers will need to know *what shaped this skill*. Skip for skills authored from scratch with no external source pack and no evidence ledger (the SPEC.md "Source And Evidence Model" section already covers them).
 
@@ -161,7 +161,7 @@ If iteration evidence (positive/negative examples, holdout set) accumulates, sto
 
 ### 4e. Hook regex pattern
 
-Append to `plugins/compound-engineering/hooks/skill-patterns.sh`:
+Append to `plugins/whetstone/hooks/skill-patterns.sh`:
 
 ```bash
 SKILL_PATTERNS[<name>]='<regex>'

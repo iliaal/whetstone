@@ -6,7 +6,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SOURCE_DIR="$REPO_ROOT/plugins/compound-engineering/skills"
+SOURCE_DIR="$REPO_ROOT/plugins/whetstone/skills"
 TARGET_DIR="$HOME/ai/ai-skills/skills"
 SOURCE_LICENSE="$REPO_ROOT/LICENSE"
 TARGET_LICENSE="$HOME/ai/ai-skills/LICENSE"

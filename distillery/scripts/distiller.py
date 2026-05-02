@@ -22,7 +22,7 @@ DISTILLERY_DIR = Path(__file__).resolve().parent.parent
 STAGING_DIR = DISTILLERY_DIR / ".skill-distiller" / "sources"
 GENERATED_DIR = DISTILLERY_DIR / "generated-skills"
 ENV_FILE = DISTILLERY_DIR / ".env"
-PLUGIN_DIR = DISTILLERY_DIR.parent / "plugins" / "compound-engineering"
+PLUGIN_DIR = DISTILLERY_DIR.parent / "plugins" / "whetstone"
 # CWD-relative paths for npx skills add cleanup (fetch creates these in CWD)
 SKILLS_AGENT_DIR = Path(".agents/skills")
 SKILLS_SYMLINK_DIR = Path(".claude/skills")
@@ -184,11 +184,11 @@ _SKILL_INJECTION_RE = _re.compile(
 )
 
 # Extracts skill name and version from injection path like:
-#   /home/.../.claude/plugins/cache/iliaal-marketplace/compound-engineering/2.47.2/skills/code-review/SKILL.md
+#   /home/.../.claude/plugins/cache/iliaal-marketplace/whetstone/2.47.2/skills/code-review/SKILL.md
 # or local dev path like:
-#   /home/.../compound-engineering-plugin/plugins/compound-engineering/skills/planning/SKILL.md
+#   /home/.../whetstone/plugins/whetstone/skills/planning/SKILL.md
 _SKILL_PATH_RE = _re.compile(
-    r"/(?:compound-engineering)/(?:(\d+\.\d+\.\d+)/)?skills/([a-z0-9-]+)/SKILL\.md"
+    r"/(?:whetstone)/(?:(\d+\.\d+\.\d+)/)?skills/([a-z0-9-]+)/SKILL\.md"
 )
 
 
@@ -1153,7 +1153,7 @@ _SKILL_HANDOFF_PATTERN = _re.compile(
     _re.IGNORECASE,
 )
 # Backtick-wrapped vendor:slug references in runtime body, regardless of leading verb.
-# A skill writing `workflows:plan` or `compound-engineering:ia-debugging` is treating
+# A skill writing `workflows:plan` or `whetstone:ia-debugging` is treating
 # another component as a runtime resource — same fragility as verb-prefixed invocation.
 # Both sides require lowercase-letter start to skip version pins (`python:3.11`),
 # HTTP-header-like patterns, and other non-component colon syntax. Scanned on the
@@ -1391,7 +1391,7 @@ def validate_plugin(component_filter=None):
 
     # Phantom-agent guard: Claude Code registers every .md under agents/ as an
     # invokable subagent. Reference files must live outside agents/ (e.g., at
-    # plugins/compound-engineering/shared-references/) or they pollute /context
+    # plugins/whetstone/shared-references/) or they pollute /context
     # and the agent tool list. Flag any stragglers as HIGH.
     phantom_agent_paths = []
     for f in sorted(agents_dir.rglob("*.md")) if agents_dir.exists() else []:
@@ -1424,7 +1424,7 @@ def validate_plugin(component_filter=None):
         add_finding(
             str(p),
             "PHANTOM_AGENT",
-            f"Reference file under agents/ gets registered as a subagent by Claude Code. Move to plugins/compound-engineering/shared-references/ and update link paths.",
+            f"Reference file under agents/ gets registered as a subagent by Claude Code. Move to plugins/whetstone/shared-references/ and update link paths.",
             "HIGH",
         )
 
