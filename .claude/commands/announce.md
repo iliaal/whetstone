@@ -6,7 +6,22 @@ argument-hint: "[optional: version to announce, defaults to current]"
 
 # Draft release announcement for X
 
-Generate an announcement post for the latest whetstone plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing. Apply the `ia-writing` skill throughout — no filler, no AI slop, no throat-clearing.
+Generate an announcement post for the latest whetstone plugin release. The account is X Premium — one long post usually covers a release; only thread when a second distinct theme justifies the visual pacing.
+
+This command is the dedicated X drafter for whetstone releases. For other repos, other platforms, or non-release posts (benchmark drops, opinion takes, real-time engagement), use `/ia-promote <repo> <platform>` instead.
+
+## Step 0: Load promotion-workspace rules
+
+Before drafting, read these to anchor voice, platform constraints, and ethics:
+
+- `~/ai/promotion/rules/platforms/x.md` — X-specific rules (Premium char limits, hook discipline, when to thread vs single-post)
+- `~/ai/promotion/rules/voice.md` — voice rules (directness, density, banned constructions)
+- `~/ai/promotion/rules/ethics.md` — non-negotiables (no shadow personas, no manufactured urgency, no fake testimonials, no manufactured social proof)
+- `~/ai/promotion/rules/humanizer-check.md` — anti-AI-detection patterns specific to social posts
+
+When this command's inline guidance disagrees with those rules, the rules win — the rules are the canonical source, this command is the orchestration wrapper. Apply the `ia-writing` skill throughout for prose hygiene (no filler, no AI slop, no throat-clearing).
+
+Also check `~/ai/promotion/announcement-matrix.md` for the whetstone row. If `Last announced` already equals the version being drafted, ask the user whether to skip, redraft anyway, or target a different version.
 
 ## Step 1: Gather context
 
@@ -43,8 +58,8 @@ The account is X Premium (25,000 character limit per post), so most releases fit
    - The teaser lets readers judge whether clicking through will find what they need.
 
 4. **Install commands:**
-   - `Install: claude plugins add iliaal/whetstone`
-   - `Portable skills: npx skills add https://github.com/iliaal/ai-skills`
+   - `Install: /plugin marketplace add https://github.com/iliaal/whetstone && /plugin install whetstone@iliaal-marketplace && /reload-plugins`
+   - `Portable skills: npx skills add iliaal/ai-skills`
 
 5. **Repo URL footer (standalone final line):**
    - `github.com/iliaal/whetstone`
@@ -94,11 +109,11 @@ Do not post anything. Present for user approval only.
 After user approves the thread, draft it into X for manual review and posting. Claude never clicks Post -- the user does that in the browser.
 
 1. Write the approved tweets to `~/ai/whetstone/.announce/thread-vX.Y.Z.json` (JSON array of strings). `.announce/` is gitignored and persists across reboots, unlike `/tmp` which wipes on system restart.
-2. Ensure the whetstone Edge profile is running (no-op if already up):
+2. Ensure the `compound-engineering` Edge profile is running (no-op if already up):
    ```bash
    bash scripts/launch-edge.sh
    ```
-   Thin wrapper for `edge-cdp ensure whetstone`. Profile lives at `C:\Users\ilia\edge-whetstone` on CDP port 9225. First run: log in to X in the opened window; subsequent runs reuse the session.
+   Thin wrapper for `edge-cdp ensure compound-engineering`. The profile is bound to `@iliaa` on CDP port 9225 and was intentionally not renamed during the v4.0.0 plugin rename — browser sessions, login cookies, and per-platform composer state all live in that profile dir. First run: log in to X in the opened window; subsequent runs reuse the session. Profile registry and CDP framework details: `~/ai/wiki/tools/edge-automation.md`.
 3. Compose the thread (types all tweets, does NOT click Post):
    ```bash
    python3 scripts/post-thread.py ~/ai/whetstone/.announce/thread-vX.Y.Z.json
@@ -106,4 +121,12 @@ After user approves the thread, draft it into X for manual review and posting. C
    The script auto-launches the profile if needed and detects login state. If not logged in, it opens the login page and exits -- log in, then re-run.
 4. Tell the user the draft is ready and to review + click Post in the Edge window.
 
-Different profiles on different CDP ports run in parallel. The pinescript profile on 9229 can stay open while whetstone runs on 9225.
+Different profiles on different CDP ports run in parallel. The `pinescript` profile on 9229 can stay open while `compound-engineering` runs on 9225.
+
+## Step 6: Stamp the announcement matrix
+
+After the user manually clicks Post in X and confirms it landed, the post needs to be recorded so future `/ia-announce-scan` runs don't re-flag this version as needing a draft. Tell the user:
+
+> "Post it in the Edge window when you're ready. Once it's live, run `/ia-announced whetstone x` to stamp the matrix."
+
+Do not stamp the matrix yourself — `/ia-announced` is the canonical command and it cross-checks `gh release list` for the version. Stamping before the post actually goes up creates a false-positive in the matrix that future scans rely on.
