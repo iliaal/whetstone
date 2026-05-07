@@ -1,11 +1,11 @@
 {
-  "plugin_version": "4.0.0",
+  "plugin_version": "4.0.1",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-05-02T16:12:30.633471+00:00",
+  "generated_at": "2026-05-07T23:16:09.818846+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -20,8 +20,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-code-review": {
-      "content_hash": "6d6f9928b7f427e6e43558112f828f00f15facb92f6fc0a285f6d5feeeaa95da",
-      "content_changed": "3.0.5",
+      "content_hash": "b7ce5f43729ab7f99a1e66611b5489f2b38438e95b9aa8b0cb5b4ad7d2988112",
+      "content_changed": "4.0.1",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
       "pattern_changed": "2.56.1"
     },
@@ -32,8 +32,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-debugging": {
-      "content_hash": "9c33563c5bb72e05c1d9dced4fc80ebb3f17910647d4f3e8b6384b0a66476b79",
-      "content_changed": "3.0.4",
+      "content_hash": "970c1ef55fd854aba288b98e181f952d5cc71728435abe6e1c02ed66b1c8435d",
+      "content_changed": "4.0.1",
       "pattern_hash": "a627fd9892d245298ed0361d888166f79b1a196f1fc4137944fdced4aada360d",
       "pattern_changed": "2.56.1"
     },
@@ -68,8 +68,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-md-docs": {
-      "content_hash": "64c442685b3ec5ae07cbb950d494ddb55fe8b0028764c796ed53ee644253a12f",
-      "content_changed": "3.0.4",
+      "content_hash": "c08eab34d3e974bfa5e366d0f5f5fd6abd4224f9120aa4d2bb5aa0af8b83030e",
+      "content_changed": "4.0.1",
       "pattern_hash": "9d097cbe03f1ba966517e68e94406b298ef5b35f466881c14ce30d5fe0e8fbc4",
       "pattern_changed": "2.56.1"
     },

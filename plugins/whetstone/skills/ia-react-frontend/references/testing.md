@@ -1,5 +1,7 @@
 # Testing React (Vitest + RTL)
 
+> When to read: when adding or fixing component tests with Vitest + React Testing Library — setup, queries, user-event, async assertions, mocking.
+
 ## Setup
 
 Vitest config: `environment: 'jsdom'`, `globals: true`, `setupFiles` pointing to a file that imports `@testing-library/jest-dom/vitest`. Use `@vitejs/plugin-react` and mirror path aliases from `tsconfig.json`.

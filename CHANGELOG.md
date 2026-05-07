@@ -5,6 +5,29 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.1] - 2026-05-07
+
+Patch: post-rename sync + audit pass. Reconciles a contradiction in `ia-md-docs`, hardens `ia-debugging` Step 1 around feedback-loop construction, gives `ia-lfg` a bounded CI autofix loop with a loud "do not weaken the assertion" rule, and cleans up outcome analytics so pre-rename project sessions stop polluting reports. Also adds the agent-skills `> When to read:` blockquote convention to 18 reference files that lacked discoverability prose.
+
+### Changed
+
+- `ia-debugging` Process Step 1 (Reproduce) rewrites with feedback-loop-first framing: the loop is the deliverable, not the analysis. Lists 8 distinct loop construction patterns (failing test, curl/httpie harness, CLI/REPL, headless browser, log replay, throwaway harness, property test, HITL bash) and adds an explicit "cannot build a loop → STOP and ask" gate. `git bisect` and differential analysis are clarified as Step 5 / Pattern Comparison strategies, not feedback loops.
+- `ia-md-docs` gains a new "What Belongs in Context Files" section. AGENTS.md / CLAUDE.md must not enumerate installed skills, plugins, tool versions outside the source-of-truth file (`package.json` engines, `.nvmrc`, `pyproject.toml`), linter rule restatements, or README content. The drift test: if a fact will be wrong in two months without anyone touching the file, it does not belong here. The hierarchy section's tech-stack bullet now points at SoT files for exact versions instead of repeating them inline.
+- `ia-lfg` gains Steps 8 and 9: poll CI on the new PR, fix-and-push on failure, cap at 3 iterations; do not weaken, skip, or mock failing assertions to make CI green; document genuine flakes as residuals in the PR body and stop.
+- `ia-code-review` Output Format adds a one-line markdown safety note: when aggregating findings into a table, escape literal `|` in cell content as `\|` so code excerpts with pipe operators do not silently split rows.
+- 18 reference files across `ia-orchestrating-swarms` (8), `ia-nodejs-backend` (3), `ia-php-laravel` (3), `ia-python-services` (2), and `ia-react-frontend` (2) now carry a `> When to read:` blockquote header at the top, mirroring the agent-skills modularization convention. Mechanical change; no body content moved.
+- Distillery `analyze_outcomes` outcome analytics: the pre-rename project path (`-home-ilia-ai-compound-engineering-plugin`) is filtered by default. The filter now lives in `harvest_sessions` so `analyze_misfires` and `diagnose_negatives` inherit the same exclusion. Pass `include_stale=True` to bypass.
+
+### Fixed
+
+- Codex conversion no longer rewrites command references when converting plugin content for the Codex target. Commands stay command-shaped instead of being mangled into skill-style invocations.
+
+### Docs
+
+- Hero image refresh: replaced the legacy compound-hero asset with the Whetstone branding.
+- Blog post canonical-mirror update for the rename and current component counts (30 skills, 19 agents, 22 commands).
+- Announce + cross-promotion docs modernized for post-rename install paths and `~/ai/promotion/` integration.
+
 ## [4.0.0] - 2026-05-02
 
 Major: rename from `compound-engineering` to `whetstone`. Repo, plugin name, marketplace install string, env var, Bun bin, and cache path all change. Slash commands stay `/ia-<name>` (introduced in 3.x), so day-to-day usage is unaffected once the new marketplace is added. The release also bundles the post-rename sync, audit, and diagnose-negatives passes plus a long-overdue clawhub publishing fix that stops republishing every skill on every release.

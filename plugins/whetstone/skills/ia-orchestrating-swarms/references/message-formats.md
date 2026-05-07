@@ -1,5 +1,7 @@
 # Message Formats
 
+> When to read: when composing inter-agent messages and needing the canonical JSON shapes for regular messages, broadcasts, structured payloads, or QA handoffs.
+
 ## Regular Message
 
 ```json

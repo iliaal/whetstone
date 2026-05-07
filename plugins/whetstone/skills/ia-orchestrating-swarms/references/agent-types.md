@@ -1,5 +1,7 @@
 # Agent Types
 
+> When to read: when picking which agent type to spawn for a swarm role and weighing built-in vs plugin-defined options.
+
 ## Built-in Agent Types
 
 These are always available without plugins:

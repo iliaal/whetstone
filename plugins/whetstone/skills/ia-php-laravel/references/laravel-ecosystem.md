@@ -1,5 +1,7 @@
 # Laravel Ecosystem Patterns
 
+> When to read: when reaching for ecosystem features — notifications, queues, broadcasting, scheduling, file storage, mail — and needing the canonical Laravel approach.
+
 ## Notifications
 
 Multi-channel dispatch -- mail, SMS, Slack, database -- from a single notification class.

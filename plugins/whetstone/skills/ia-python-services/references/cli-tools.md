@@ -1,3 +1,7 @@
+# Python CLI Tools
+
+> When to read: when packaging a Python CLI — entry points, argparse vs typer vs click, structured logging, distribution.
+
 ## CLI Tools
 
 **Entry points** in pyproject.toml:

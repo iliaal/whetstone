@@ -1,3 +1,7 @@
+# FastAPI Services
+
+> When to read: when structuring a FastAPI app — project layout, dependency injection, async lifecycle, validation with Pydantic, OpenAPI generation.
+
 ## FastAPI Services
 
 **Project structure:**

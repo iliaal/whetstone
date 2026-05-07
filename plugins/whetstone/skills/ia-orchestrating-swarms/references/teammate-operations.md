@@ -1,5 +1,7 @@
 # TeammateTool Operations
 
+> When to read: when working with the `TeammateTool` orchestration backend and needing the spawnTeam, sendMessage, broadcast, or shutdown call signatures.
+
 ## 1. spawnTeam - Create a Team
 
 ```javascript

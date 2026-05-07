@@ -1,5 +1,7 @@
 # Factory Patterns
 
+> When to read: when writing or refactoring Laravel model factories — basic shapes, states, sequences, relationships, and seed-vs-test boundaries.
+
 ## Basic Factory
 
 ```php

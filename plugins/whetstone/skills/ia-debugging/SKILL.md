@@ -34,7 +34,24 @@ Capture environment state with `bash collect-diagnostics.sh` ([script](./scripts
 
 **0. Read the error.** Read the full error message, stack trace, and line numbers before doing anything. Error messages frequently contain the exact fix. Don't skim -- read the entire output.
 
-**1. Reproduce** -- make the bug consistent. If intermittent, run N times under stress or simulate poor conditions (slow network, low memory) until it triggers reliably.
+**1. Reproduce** -- build a feedback loop, *then* make the bug consistent. The loop is the deliverable of this step, not the analysis. Without a fast, deterministic signal that says "broken / fixed," every later step is guesswork.
+
+Pick the cheapest loop that triggers the bug:
+
+- Failing test (preferred -- becomes the regression test in step 6)
+- `curl` script or `httpie` invocation against a local server
+- CLI harness or REPL session
+- Headless browser script (Playwright, Puppeteer)
+- Log replay against a captured request body
+- Throwaway harness in `/tmp/` -- delete when done
+- Property-based test (Hypothesis, fast-check)
+- HITL bash session with manual reproduction steps documented
+
+(`git bisect` and differential analysis are *strategies* applied during Step 5 and Pattern Comparison, not feedback loops -- they answer "which change broke it?" or "how does broken differ from working?" rather than "is it broken right now?")
+
+If the bug is intermittent, run the loop N times under stress or simulate poor conditions (slow network, low memory) until it triggers reliably.
+
+**Cannot build a loop?** Stop. State exactly what is missing -- access, credentials, artifacts, repro steps -- and ask the user. Do not proceed to investigate without a signal; you will pattern-match instead of debug.
 
 **2. Form initial hypotheses** -- before investigating broadly, form 2-3 hypotheses based on the reproduction. What are the most likely causes given the symptoms? This focuses the investigation on plausible paths rather than searching aimlessly.
 

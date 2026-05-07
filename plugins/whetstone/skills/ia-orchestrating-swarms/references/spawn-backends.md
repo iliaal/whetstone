@@ -1,5 +1,7 @@
 # Spawn Backends
 
+> When to read: when picking or debugging the spawn backend (TeammateTool / Task / subprocess), checking compatibility, or reasoning about where teammates actually execute.
+
 A **backend** determines how teammate Claude instances actually run. Claude Code supports three backends, and **auto-detects** the best one based on your environment.
 
 ## Backend Comparison

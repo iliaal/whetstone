@@ -1332,6 +1332,26 @@ class TestAnalyzeOutcomes:
         bad_outcome = [o for o in result["outcomes"] if o["project"] == "bad"][0]
         assert bad_outcome["delta"] == expected_delta
 
+    def test_pre_rename_project_excluded_by_default(self):
+        # Sessions on the pre-rename project path should be filtered out unless
+        # include_stale=True is passed. Mirrors the harvest_sessions filter.
+        pre_rename = next(iter(distiller._PRE_RENAME_PROJECT_PATHS))
+        examples = (
+            [_make_example("positive", "current-project")] * 5 +
+            [_make_example("negative", pre_rename)] * 5 +
+            [_make_example("positive", pre_rename)] * 5
+        )
+        _write_session_examples(self.eval_dir, "debugging", examples)
+        # Default: pre-rename project filtered out
+        default = distiller.analyze_outcomes(min_examples=5, include_stale=False)
+        default_projects = {o["project"] for o in default["outcomes"]}
+        assert pre_rename not in default_projects
+        assert "current-project" in default_projects
+        # include_stale=True bypasses the filter
+        stale = distiller.analyze_outcomes(min_examples=5, include_stale=True)
+        stale_projects = {o["project"] for o in stale["outcomes"]}
+        assert pre_rename in stale_projects
+
 
 # ---------------------------------------------------------------------------
 # Pure helpers added in 3.0.4 cycle

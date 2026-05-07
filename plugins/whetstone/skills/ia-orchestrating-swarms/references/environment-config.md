@@ -1,5 +1,7 @@
 # Environment Variables & Team Config
 
+> When to read: when configuring teammate environment, scoping inheritance, or debugging missing env-var propagation across spawned instances.
+
 ## Environment Variables
 
 Spawned teammates automatically receive these:

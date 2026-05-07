@@ -1,5 +1,7 @@
 # Handoff Templates
 
+> When to read: when one agent is handing work back or forward (QA fail, implementation complete, blocked, escalation) and you want a structured template instead of free-form prose.
+
 ## QA FAIL
 
 Use when returning failed QA results to an implementer agent.

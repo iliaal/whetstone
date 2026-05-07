@@ -1,5 +1,7 @@
 # TypeScript Configuration & Patterns
 
+> When to read: when setting up tsconfig, picking strictness flags, or choosing between branded types / discriminated unions / utility types for a backend service.
+
 ## Configuration
 
 tsconfig essentials:

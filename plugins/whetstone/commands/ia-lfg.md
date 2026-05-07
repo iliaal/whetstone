@@ -36,4 +36,9 @@ Run these steps in order. Do not stop between steps -- complete every step throu
 6. `/ia-resolve-todo-parallel` -- resolve any findings from review
 7. `/ia-feature-video` -- record walkthrough and add to PR
 
+## CI watch (after PR opens)
+
+8. Poll CI for the new PR. On failure: read the job log, identify the root cause, fix, push. Cap at **3 fix iterations**.
+9. Do **NOT** weaken, skip, or mock the failing assertion to make CI green -- repair the actual issue. If genuinely flaky after 3 iterations, document the residual in the PR body and stop.
+
 Start now.

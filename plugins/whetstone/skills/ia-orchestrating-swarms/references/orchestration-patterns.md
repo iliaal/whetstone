@@ -1,5 +1,7 @@
 # Orchestration Patterns
 
+> When to read: when designing a multi-agent workflow shape — parallel specialists, sequential pipeline, hub-and-spoke, or hierarchical sub-teams.
+
 ## Pattern 1: Parallel Specialists (Leader Pattern)
 
 Multiple specialists review code simultaneously:

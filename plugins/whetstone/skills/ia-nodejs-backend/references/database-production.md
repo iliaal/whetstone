@@ -1,5 +1,7 @@
 # Database & Production
 
+> When to read: when picking an ORM, configuring connection pooling, planning a migration, or hardening a Node service for production deploy.
+
 ## Database
 
 ORM: **Drizzle** (SQL-like, lightweight) or **Prisma** (schema-first, migrations built-in)

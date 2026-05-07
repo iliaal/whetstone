@@ -66,12 +66,23 @@ Create AGENTS.md from scratch for projects without documentation. See [init-agen
 2. Generate terse, expert-to-expert context sections
 3. Write AGENTS.md, create CLAUDE.md symlink
 
+## What Belongs in Context Files
+
+Keep AGENTS.md / CLAUDE.md to durable signal. Do NOT enumerate:
+
+- **Installed skills, plugins, or extensions** -- these change with the user's environment, not the project. The list rots within weeks and turns into a confusing catalog of names that may not be installed for the next reader.
+- **Tool versions outside the project's source of truth** -- `package.json` engines, `.nvmrc`, `pyproject.toml` Python constraint, `composer.json` PHP version. List the source-of-truth file path; do not duplicate the version inline.
+- **Linter / formatter rule restatements** -- if `.eslintrc`, `ruff.toml`, `phpcs.xml` already enforce it, the file is the spec. List the command to run; do not paraphrase rules.
+- **README content** -- if information is already in README.md (install, badges, intro), reference it; do not re-paste.
+
+The test: if a fact will be wrong in two months without anyone touching this file, it does not belong here. The file is for project-specific rules that survive tool churn.
+
 ## Context File Hierarchy
 
 Structure CLAUDE.md (and AGENTS.md) content by priority so the most critical information loads first when context is compacted:
 
 1. **Rules** -- project constraints, forbidden patterns, required conventions. Override everything else.
-2. **Tech stack** -- languages, frameworks, versions, package managers.
+2. **Tech stack** -- languages, frameworks, package managers. For exact versions, point at the project's source-of-truth file (`package.json` engines, `.nvmrc`, `pyproject.toml`, `composer.json`); do not duplicate the version inline.
 3. **Commands** -- how to build, test, lint, deploy. Exact commands, not descriptions.
 4. **Conventions** -- naming patterns, file organization, architectural decisions.
 5. **Boundaries** -- what's off-limits, what requires approval, scope constraints.

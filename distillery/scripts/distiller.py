@@ -79,6 +79,14 @@ CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 EVAL_DATA_DIR = DISTILLERY_DIR / ".eval-data"
 MANIFEST_PATH = DISTILLERY_DIR / ".skill-versions.json"
 
+# Pre-rename project paths whose sessions reflect retired skill identities (4.0.0
+# rename, 2026-04-23, applied `ia-` prefix to all 30 skills + dropped `workflows:`
+# namespace). Excluded by default from outcome analyses; pass include_stale=True
+# to include them.
+_PRE_RENAME_PROJECT_PATHS = {
+    "-home-ilia-ai-compound-engineering-plugin",
+}
+
 import re as _re
 
 # Secret patterns — compiled once, used to scrub content before writing eval data.
@@ -2533,6 +2541,9 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
                 if not include_stale and (staleness["content_stale"] or staleness["model_stale"]):
                     stale_count += 1
                     continue
+                if not include_stale and example.get("project") in _PRE_RENAME_PROJECT_PATHS:
+                    stale_count += 1
+                    continue
                 skill_examples[skill_name].append(example)
 
         # For main sessions (no injection), still useful as general task examples
@@ -3169,6 +3180,9 @@ def analyze_outcomes(min_examples=5, include_stale=False):
                         continue
                 signal = ex.get("signal", "ambiguous")
                 project = ex.get("project", "_unknown")
+                if not include_stale and project in _PRE_RENAME_PROJECT_PATHS:
+                    stale_count += 1
+                    continue
                 skill_project[skill_name][project][signal] += 1
                 skill_global[skill_name][signal] += 1
 

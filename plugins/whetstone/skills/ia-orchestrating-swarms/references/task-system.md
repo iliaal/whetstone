@@ -1,5 +1,7 @@
 # Task System Integration
 
+> When to read: when integrating TaskCreate / TaskUpdate / TaskList into a swarm and needing the exact tool call shapes for work-item dispatch.
+
 ## TaskCreate - Create Work Items
 
 ```javascript

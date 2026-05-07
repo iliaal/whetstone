@@ -1,5 +1,7 @@
 # API Design Patterns
 
+> When to read: when designing a REST or RPC endpoint surface — pagination, error envelopes, idempotency, versioning, contract-first vs code-first.
+
 ## Pagination
 
 | Use case | Type | Why |

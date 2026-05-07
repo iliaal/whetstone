@@ -1,5 +1,7 @@
 # Feature Testing Patterns
 
+> When to read: when writing Laravel feature tests for HTTP, auth, session, file upload, or other request-cycle scenarios.
+
 ## Authentication Testing
 
 ```php

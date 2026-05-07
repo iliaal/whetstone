@@ -145,6 +145,8 @@ Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]
 
 Number findings as `CR-001`, `CR-002`... sequentially across all severity levels so they can be referenced by ID in discussions, PR comments, and follow-up todos. Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
 
+**Markdown safety:** When aggregating findings into a table, escape literal `|` in cell content as `\|`; code excerpts with pipe operators (`a | b`, `string | null`) split rows silently otherwise. Bullet output above is pipe-safe.
+
 For multi-agent consolidation (deep review, parallel specialists), apply the merge algorithm in [deep-review.md](./references/deep-review.md) — it handles same-line dedupe, conflicting severity, `NEEDS DECISION` flagging, and cross-lens confidence boosting.
 
 **Clean review (no findings):** If the code is solid, say so explicitly. Summarize what was checked and why no issues were found. A clean review is a valid outcome, not an indication of insufficient effort.

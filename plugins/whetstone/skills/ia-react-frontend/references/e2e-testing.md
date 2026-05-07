@@ -1,5 +1,7 @@
 # E2E Testing with Playwright
 
+> When to read: when authoring Playwright end-to-end tests — directory layout, fixtures, page objects, network mocking, CI integration.
+
 ## Directory Structure
 
 ```
