@@ -65,4 +65,15 @@ query FetchUnresolvedComments($owner: String!, $repo: String!, $pr: Int!) {
       }
     }
   }
-}' | jq '.data.repository.pullRequest.reviewThreads.edges | map(select(.node.isResolved == false and .node.isOutdated == false))'
+}' | jq '
+  .data.repository.pullRequest.reviewThreads.edges as $edges
+  | {
+      unresolved: ($edges | map(select(.node.isResolved == false and .node.isOutdated == false))),
+      cross_invocation: {
+        signal: (($edges | map(select(.node.isResolved == true)) | length) > 0
+                 and ($edges | map(select(.node.isResolved == false and .node.isOutdated == false)) | length) > 0),
+        resolved_threads: ($edges | map(select(.node.isResolved == true)) | map({
+          node: {id: .node.id, path: .node.path, line: .node.line}
+        }))
+      }
+    }'

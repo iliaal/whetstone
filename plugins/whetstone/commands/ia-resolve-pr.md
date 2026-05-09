@@ -14,13 +14,13 @@ Use the `ia-receiving-code-review` skill for how to handle each comment (verify 
 
 ## Phase 1: Fetch
 
-Fetch unresolved review threads:
+Fetch review threads:
 
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
-Returns only **unresolved, non-outdated** threads with file paths, line numbers, and comment bodies. Filter out bot comments (CI, linters, coverage).
+Returns `{unresolved: [...threads], cross_invocation: {signal, resolved_threads}}`. The `unresolved` array carries non-outdated threads with file paths, line numbers, and comment bodies — fix work targets these. The `cross_invocation` block exists so Phase 2 clustering can require cross-round evidence: `signal` is true when both resolved and unresolved threads coexist on the PR (multi-round review), and `resolved_threads` lists the resolved thread paths/IDs for spatial-overlap precheck. Filter out bot comments (CI, linters, coverage) from `unresolved` before processing.
 
 If the script fails, fall back to:
 ```bash
@@ -30,22 +30,30 @@ gh api repos/{owner}/{repo}/pulls/PR_NUMBER/comments
 
 ## Phase 2: Cluster Analysis
 
-When 3+ comments exist, analyze for thematic patterns before fixing individually:
+**Gate (skip clustering unless both pass):**
+1. **Cross-round signal**: `cross_invocation.signal == true` — resolved threads exist alongside new ones. First-round reviews fail this gate; dispatch comments individually.
+2. **Spatial-overlap precheck**: at least one unresolved thread shares an exact file path or directory subtree with a thread in `cross_invocation.resolved_threads`. Path comparison only, no LLM call. Skip this stage if `resolved_threads` lacks paths.
+
+If either stage fails, dispatch comments individually (skip to Phase 3). Single-round same-theme groupings are intentionally not clustered: evidence is too thin and the false-positive rate is high. First-round "one helper would fix all of these" opportunities surface naturally as individual fixes; recurring reviewer feedback across rounds promotes them into cluster mode.
+
+**If both gate stages pass**, analyze for thematic patterns spanning new and previously-resolved threads:
 
 | Theme | Signal |
 |-------|--------|
 | Error handling | Multiple comments about missing try/catch, unchecked returns, error paths |
-| Validation | Input checking, type guards, boundary conditions |
+| Validation | Input checking, boundary conditions, runtime range/format checks |
+| Type safety | Type guards, narrowing, generics, `unknown`/`any` removal, exhaustiveness |
 | Security | Auth, injection, secrets exposure, access control |
+| Performance | N+1 queries, missed memoization, unnecessary re-renders, allocation in hot paths |
 | Naming/clarity | Variable names, function names, confusing logic |
 | Testing | Missing tests, weak assertions, test quality |
 | Architecture | Coupling, responsibility boundaries, abstraction levels |
 
-**If a cluster has 3+ comments:** Fix the underlying pattern rather than addressing each comment individually. State the systemic fix and reference which comments it addresses.
+**If a cluster has 3+ comments AND at least one previously-resolved thread shares the category:** Fix the underlying pattern rather than addressing each comment individually. State the systemic fix and reference which comments it addresses.
 
-**If comments span multiple review rounds:** Prior unresolved comments alongside new ones indicate the reviewer isn't satisfied with previous fixes. Prioritize those threads.
+**If unresolved comments alongside resolved ones span the same area:** the reviewer isn't satisfied with previous fixes. Prioritize those threads.
 
-For fewer than 3 comments, skip clustering and resolve directly.
+For fewer than 3 unresolved comments, skip clustering and resolve directly.
 
 ## Phase 3: Resolve (parallel)
 
@@ -74,13 +82,13 @@ bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-pr-thread THREAD_ID
 bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
-Should return empty. If threads remain, repeat from Phase 1.
+The `unresolved` array should be empty. If threads remain there, repeat from Phase 1.
 
 Run `ia-verification-before-completion` before reporting done.
 
 ## Scripts
 
-- [scripts/get-pr-comments](scripts/get-pr-comments) - GraphQL query for unresolved review threads
+- [scripts/get-pr-comments](scripts/get-pr-comments) - GraphQL query returning `{unresolved, cross_invocation: {signal, resolved_threads}}`
 - [scripts/resolve-pr-thread](scripts/resolve-pr-thread) - GraphQL mutation to resolve a thread by ID
 
 ## Success Criteria
@@ -89,4 +97,4 @@ Run `ia-verification-before-completion` before reporting done.
 - Systemic patterns identified and fixed at the root (not comment-by-comment)
 - Changes committed and pushed
 - Threads resolved via GraphQL
-- Empty result from get-pr-comments on verify
+- Empty `unresolved` array from get-pr-comments on verify

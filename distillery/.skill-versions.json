@@ -1,11 +1,11 @@
 {
-  "plugin_version": "4.0.1",
+  "plugin_version": "4.0.2",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-05-07T23:16:09.818846+00:00",
+  "generated_at": "2026-05-09T12:14:52.715396+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -32,8 +32,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-debugging": {
-      "content_hash": "970c1ef55fd854aba288b98e181f952d5cc71728435abe6e1c02ed66b1c8435d",
-      "content_changed": "4.0.1",
+      "content_hash": "6ba35c8aeebc22f9fcdfa2fe2192a0306f36279bf518053f5022c0287681b8d6",
+      "content_changed": "4.0.2",
       "pattern_hash": "a627fd9892d245298ed0361d888166f79b1a196f1fc4137944fdced4aada360d",
       "pattern_changed": "2.56.1"
     },

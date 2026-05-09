@@ -55,6 +55,8 @@ If the bug is intermittent, run the loop N times under stress or simulate poor c
 
 **2. Form initial hypotheses** -- before investigating broadly, form 2-3 hypotheses based on the reproduction. What are the most likely causes given the symptoms? This focuses the investigation on plausible paths rather than searching aimlessly.
 
+For each hypothesis, cite **at least one concrete observation** that supports it: a runtime variable value, a log line, an instrumented boundary capture, a behavior delta against a working comparison case, or a specific code reference. "X seems off" is not evidence; "X equals null at line 42 because Y was never initialized in the path that runs under condition Z" is. Hypotheses without grounding observations are theorizing -- go back and instrument until you have an observable signal (extend the Step 1 loop, or add Step 4 boundary captures).
+
 **3. Reduce** -- strip the reproduction to the minimal failing case. Remove unrelated code, data, and configuration until removing one more piece makes the bug disappear. That remaining piece is the trigger.
 
 **4. Investigate** -- trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
@@ -73,6 +75,8 @@ Run once to gather evidence showing WHERE it breaks, then investigate that speci
 **5. Hypothesize and test** -- one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to find regressions efficiently. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set. Do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
 
 **6. Fix and verify** -- create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).
+
+**On a failed fix:** return to Step 5 and *explicitly invalidate the current hypothesis* before forming a new one. State what evidence ruled out the prior hypothesis, then form a new hypothesis with its own grounding observation. Do not retry variants of the same theory ("maybe it was the other branch", "let me also catch this case") -- that is rationalization, not iteration. The Three-Fix Threshold below counts cycles, not retries within a single broken theory.
 
 ## Debug Report
 

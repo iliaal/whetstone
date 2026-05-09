@@ -5,6 +5,18 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] - 2026-05-09
+
+Patch: 2-day delta sync + reactive audit. Tightens `ia-debugging` hypothesis discipline so each hypothesis has to point at observed evidence before becoming a fix theory, and gates `ia-resolve-pr` cluster analysis on cross-round evidence so first-round reviews dispatch individually instead of over-clustering on thin signal.
+
+### Changed
+
+- `ia-debugging` Step 2 (Form initial hypotheses) now requires each hypothesis to cite at least one concrete observation -- a runtime variable value, log line, instrumented boundary capture, behavior delta against a working comparison case, or specific code reference. "X seems off" is not evidence; "X equals null at line 42 because Y was never initialized in the path that runs under condition Z" is. Hypotheses without grounding observations route back to instrument (extend the Step 1 loop, or add Step 4 boundary captures) before proceeding.
+- `ia-debugging` Step 6 (Fix and verify) adds an explicit-invalidation rule for failed fixes. Return to Step 5, state what evidence ruled out the prior hypothesis, then form a new hypothesis with its own grounding observation. Names the rationalization spiral ("maybe it was the other branch", "let me also catch this case") as the failure mode rather than iteration. The Three-Fix Threshold counts hypothesis cycles, not retries within a single broken theory.
+- `ia-resolve-pr` Phase 2 cluster table extends to 8 categories: adds Type safety (type guards, narrowing, generics, `unknown`/`any` removal, exhaustiveness) and Performance (N+1 queries, missed memoization, unnecessary re-renders, hot-path allocation). Both have distinct fix patterns from the existing Validation and Architecture rows.
+- `ia-resolve-pr` Phase 2 gains a cross-round-evidence gate. Two stages must both pass before clustering: `cross_invocation.signal == true` (resolved and unresolved threads coexist on the PR), and a spatial-overlap precheck (at least one unresolved thread shares an exact file path or directory subtree with a resolved thread). Either stage failing dispatches comments individually. Single-round same-theme groupings are deliberately not clustered; the false-positive rate is too high without cross-round evidence.
+- `commands/scripts/get-pr-comments` rewrites its jq filter to return `{unresolved: [...threads], cross_invocation: {signal: bool, resolved_threads: [{node: {id, path, line}}]}}` instead of a bare array. `signal` is true when resolved and non-outdated-unresolved threads coexist. `resolved_threads` projects the minimal fields needed for the spatial-overlap precheck. Both arrays use the GraphQL `{node: {...}}` edge wrapper for consistent access.
+
 ## [4.0.1] - 2026-05-07
 
 Patch: post-rename sync + audit pass. Reconciles a contradiction in `ia-md-docs`, hardens `ia-debugging` Step 1 around feedback-loop construction, gives `ia-lfg` a bounded CI autofix loop with a loud "do not weaken the assertion" rule, and cleans up outcome analytics so pre-rename project sessions stop polluting reports. Also adds the agent-skills `> When to read:` blockquote convention to 18 reference files that lacked discoverability prose.
