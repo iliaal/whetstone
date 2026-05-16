@@ -162,6 +162,7 @@ For generic test discipline (anti-patterns, mock rules, rationalization resistan
 - Keep `unsafe` blocks minimal — wrap in a safe abstraction at module boundary, mark the module `pub(crate)`.
 - Use `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic — catches UB that optimizers mask.
 - Prefer `bytemuck`, `zerocopy`, `bytes` over hand-rolled transmutes for zero-copy patterns.
+- **`std::env::set_var` and `remove_var` are `unsafe` under edition 2024.** Concurrent `getenv` from another thread is UB at the libc level; the unsafety can't be wrapped away by `OnceLock::call_once` or `std::sync::Once` — they ensure the closure runs once, not that it runs while no other thread is reading the environment. Pin every env-var write to single-threaded startup, before `tokio::main` or any `std::thread::spawn`. Common offender: native-library discovery paths (`LD_LIBRARY_PATH`, `ORT_DYLIB_PATH`, `LIBTORCH`, plugin loader paths) set lazily on first use — compute and set them in `main` (or a `static` initializer that runs before the runtime) so they're written before any concurrent reader exists.
 
 ## Production Resilience
 

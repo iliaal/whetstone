@@ -183,6 +183,22 @@ Tests written by LLMs (including self-written) tend to produce a specific class 
 - **Over-broad matchers** — `expect(result).toBeTruthy()` on a function that returns an object. Passes for `{}`, `true`, `"anything"`, all equally. Pin to the specific shape.
 - **Implementation-echo assertions** — `expect(repo.save).toHaveBeenCalledTimes(1)` when the real contract is "the user exists in the database afterward." Assert on outcomes, not call counts.
 
+### Persistent test infrastructure state contamination
+
+**Symptom:** Integration tests fail with row-count multipliers — expected 2 rows, got 8; expected 3 jobs dispatched, got 12. The numbers look like a code bug ("the loop runs N times instead of once"), but they're clean integer multiples of the expected value, and the same test passes in CI on a fresh container.
+
+**Root cause:** Persistent test infrastructure (long-running `docker compose up`, a shared local database, a volume left between iterations) accumulates state across test runs. The current run's data sits on top of the previous run's data; assertions counting rows or jobs see the sum.
+
+**Diagnostic shortcut:** if expected vs. actual differs by a clean integer multiple (2x, 3x, 4x...), state contamination is more likely than a logic bug. Real logic bugs rarely produce uniform multipliers across unrelated assertions.
+
+**Fix:** reset infrastructure state between runs. In order of preference:
+
+- **Ephemeral containers per test session** (`testcontainers`, `pytest-postgresql`, or `docker compose run --rm <service>` for one-shot runs) — slowest to start, strongest isolation. Default for CI.
+- **Fixture-driven `TRUNCATE` / `DROP DATABASE`** in a session-scoped or per-test fixture — fast, requires careful coverage of every stateful table.
+- **Volume teardown** between iterations (`docker compose down -v` before each run) when running locally — manual but reliable.
+
+Never rely on tests "cleaning up after themselves." If a previous run errored mid-test, the cleanup didn't run, and the next run inherits the partial state.
+
 ## When Stuck
 
 | Stuck on... | Do this |

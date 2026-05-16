@@ -134,6 +134,7 @@ def call_api(url: str) -> dict: ...
 - **Log levels**: DEBUG=diagnostics, INFO=operations, WARNING=anomalies handled, ERROR=failures needing attention. Never log expected behavior at ERROR
 - **Prometheus metrics** -- track latency (Histogram), traffic (Counter), errors (Counter), saturation (Gauge). Keep label cardinality bounded (no user IDs)
 - **OpenTelemetry** for distributed tracing across services
+- **Never mutate `LogRecord` attributes from a `Formatter`.** A custom `logging.Formatter.format()` that rewrites `record.name` (or any record attribute) in place leaks to every other handler attached to the same logger and to pytest `caplog`. `Logger.callHandlers` passes the same `LogRecord` object to each handler — whichever formats first wins the mutation, and downstream handlers and test filters see the modified state. Tests filtering by full logger name (`if r.name == "src.services.foo"`) then silently miss; routing handlers doing `LOGGER_TO_MODEL.get(record.name)` fall through to defaults. Use a `logging.Filter` that adds a non-mutating attribute (`record.short_name`) and reference it in the format string as `%(short_name)s`, or override `formatMessage` instead of `format`. `try`/`finally` restore works for synchronous handler chains but is fragile under async handlers that interleave.
 
 ## Discipline
 

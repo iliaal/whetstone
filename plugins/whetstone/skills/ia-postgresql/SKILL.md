@@ -70,6 +70,14 @@ WHERE id IN (
 
 Run in a loop until zero rows affected.
 
+**Full-replace clobber on read-modify-write loops.** A migration that loops `SELECT col → mutate in app → UPDATE SET col = new_full_value WHERE id = ?` silently drops concurrent writes that landed between SELECT and UPDATE. Any column written by live traffic is exposed: `jsonb` documents, comma-separated tag fields, denormalized counters, JSON-encoded attribute blobs. Mitigations, in order of preference:
+
+- **In-place atomic update** when the edit is expressible as SQL: `UPDATE t SET col = jsonb_set(col, '{path}', :value) WHERE ...`, or `UPDATE t SET tags = array_append(tags, :tag) WHERE ...` — no read-modify-write window.
+- **Row-level lock during the loop:** wrap each iteration in a transaction, `SELECT ... WHERE id = ? FOR UPDATE`, then mutate and write. Cheaper to author, accepts more lock contention.
+- **Compare-and-swap retry:** include the original snapshot in `WHERE col = :original_value`, check the affected-row count; on 0, re-read and retry. Robust under contention, requires explicit retry-loop handling.
+
+Default chunked decode-encode loops are only safe during a maintenance window with writes blocked. ORM "chunkById + load + mutate + save" patterns hit this same trap.
+
 ## Index Strategy
 
 | Type | Use When |
@@ -114,6 +122,23 @@ SELECT * FROM items WHERE metadata->>'category' = 'electronics';
 Prefer typed columns over JSONB for frequently queried, well-structured data. Use JSONB for truly dynamic/variable attributes.
 
 Use `jsonb_path_ops` operator class for containment-only (`@>`) queries -- 2-3x smaller index. Use default `jsonb_ops` when key-existence (`?`, `?|`) is needed.
+
+**Delete operators:**
+
+| Operator | Operand | Behavior | Example |
+|----------|---------|----------|---------|
+| `-` | text | remove top-level key from object | `'{"a":1,"b":2}'::jsonb - 'a'` → `{"b":2}` |
+| `-` | text[] | remove multiple top-level keys | `'{"a":1,"b":2}'::jsonb - ARRAY['a','b']` → `{}` |
+| `-` | integer | remove array element by index | `'[1,2,3]'::jsonb - 1` → `[1,3]` |
+| `#-` | text[] | remove value at nested path | `'{"a":{"b":1}}'::jsonb #- '{a,b}'` → `{"a":{}}` |
+
+Common mistakes:
+
+- `col - 'a,b'` treats `'a,b'` as a single key name (no-op against a normally-structured document — the comma isn't a path separator).
+- `col - 'a' - 'b'` first removes the entire `a` subtree before attempting `- 'b'` on the result (data loss of `a.*`, then a no-op).
+- `jsonb_set(col, '{a,b}', 'null'::jsonb)` sets the value to JSON `null` rather than removing the key — strict "key absent" checks downstream then fail. Worse: `jsonb_set(col, '{a,b}', NULL)` with a bare SQL `NULL` makes the STRICT function return SQL `NULL`, clobbering the entire column on update. To delete the key, use `#-`; to set it explicitly to JSON null, use `'null'::jsonb` (and know that's distinct from absence).
+
+For nested deletes, use `#-` with a text-array path. Verify with one round-tripped row of the worst-case shape before committing the migration: `SELECT col #- '{a,b}' FROM t WHERE id = ? LIMIT 1`, then confirm the key is gone (not present-as-null, no sibling data loss).
 
 ## Row-Level Security (RLS)
 

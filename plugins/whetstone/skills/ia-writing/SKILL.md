@@ -44,7 +44,7 @@ description: >-
 **Formatting tells**:
 - Em dash overuse -- replace most with commas or periods
 - Mechanical bold on every other phrase
-- Emoji-decorated headers
+- Emoji-decorated headers (exception: README section headers; see README Rules below)
 - Bolded-header bullet lists (**Thing:** explanation of thing)
 - Title Case In Every Heading Word -- use sentence case instead
 
@@ -208,5 +208,20 @@ For documents with references or citations, also tag: `[OAICITE]` (malformed AI 
 ## PR / MR Descriptions
 
 For pull-request and merge-request descriptions, match length to change complexity (1 sentence for trivial, full narrative for architecturally significant). Lead with Before / After / Scope rationale; describe net end state, not iteration journey; pick Mermaid for topology, tables for grids. See [references/pr-descriptions.md](./references/pr-descriptions.md) for the sizing matrix, narrative frame, GitHub-specific hazards (`#NN` auto-link trap), and the self-check list.
+
+## README Rules
+
+READMEs are a different surface than blog posts, social posts, or PR descriptions. The general anti-AI-tells rules apply, with these carve-outs:
+
+- **Em dash sweep is mandatory.** Run `grep -c "—" README.md` before commit; result must be `0`. Em dashes are the highest-signal AI tell in technical marketing prose. Replace per role:
+  - Bold lead-in for a definition: `Term — explanation` → `**Term**: explanation`
+  - Inline parenthetical: `name — qualifier` → `name (qualifier)`
+  - Hard break mid-sentence: `clause — clause` → split into two sentences or use `;`
+  - Bullet attribution: `- foo — bar` → `- **foo**: bar`
+  - List/license style at the bottom: `Section — note` → `Section: note`
+- **Emoji headers are normal README idiom.** `## 🚀 Features`, `## ⚡ Performance`, `## 📦 Installation`, `## 🛠️ Usage` read as standard open-source convention, not as AI styling. The humanizer ban on emoji in social posts does NOT apply to README section headers. Use at most one per header, never inline in prose.
+- **Plain-text star link, not a markdown URL.** `If this saves you a debugging cycle, ⭐ star it!` reads as a human ask. `[⭐ Star on GitHub](https://...)` reads as marketing chrome.
+- **Hybrid merge on rewrites.** When rewriting an existing README rather than authoring from scratch, classify each existing section into PRESERVE (technical accuracy, version pins, install commands, working code blocks), ADD (missing context the new draft introduces), REJECT (AI fluff, marketing voice, padding), FIX (wrong claims, stale versions, broken links). The default rewrite instinct is wholesale replacement; resist it. The existing README's technical content is usually correct; the voice is what's wrong.
+- **The self-check is per-section, not per-paragraph.** A README has H2 sections that each serve one job (install, usage, configuration, troubleshooting). Each section is its own audit unit; one polished section next to a fluffy one is worse than uniform mediocrity.
 
 See [references/examples.md](./references/examples.md) for before/after transformations.
