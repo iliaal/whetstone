@@ -69,6 +69,16 @@ Mermaid for topology; table for grid. Neither for content that's genuinely prose
 - **Headings stay at H2 and below**: `#` (H1) is reserved for the PR title. Use `##` for section headings.
 - **Code blocks use triple backticks, not quadruple** -- GitHub renders quadruple-backtick blocks inconsistently across web vs API views.
 
+## Issue references: verify or omit
+
+Include issue references (`Fixes #1234`, `Closes JIRA-567`, `Related to #890`) only when the exact ID or URL is present in user input, the branch name, a commit message, or verified tracker output. If you cannot point to where the ID came from, omit the line entirely -- the PR can ship without it.
+
+Never emit placeholder IDs:
+- Wrong: `Fixes #XXXXX` / `Closes <issue>` / `Related to #TBD` / `Fixes ABC-???`
+- Right: omit the line; the PR description is complete without an issue ref.
+
+Hallucinated refs degrade the tracker (false links to the wrong issue, dead links to issues that don't exist) and noise up review threads. Verified refs are signal; placeholder refs are anti-signal.
+
 ## Anti-patterns to strip
 
 Apply the parent writing skill's banned-phrases list (no "delve", "leverage", "crucial", "game-changer", "in today's rapidly evolving landscape", etc.) in addition to these PR-specific offenders:

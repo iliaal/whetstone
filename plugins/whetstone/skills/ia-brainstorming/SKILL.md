@@ -26,23 +26,7 @@ Before diving into questions, do two things:
 
 **Right-size the artifact.** Match ceremony to problem size. If the brainstorm resolves in 3 messages, don't force a formal design doc -- a summary comment is enough. If it spans multiple sessions and touches architecture, write the full Phase 3 doc. No ceremony tax.
 
-**Assess whether brainstorming is needed:**
-
-**Signals that requirements are clear:**
-- User provided specific acceptance criteria
-- User referenced existing patterns to follow
-- User described exact behavior expected
-- Scope is constrained and well-defined
-
-**Signals that brainstorming is needed:**
-- User used vague terms ("make it better", "add something like")
-- Multiple reasonable interpretations exist
-- Trade-offs haven't been discussed
-- User seems unsure about the approach
-- User described a solution ("build a dashboard") instead of a problem
-- Request spans multiple independent subsystems -- decompose first (see Scope Decomposition below)
-
-If requirements are clear, suggest: "Your requirements seem clear. Consider proceeding directly to planning or implementation."
+**Assess whether brainstorming is needed.** Brainstorm when any of these fire: vague terms ("make it better", "add something like"), multiple reasonable interpretations, undiscussed trade-offs, user uncertainty, solution-framing instead of problem-framing ("build a dashboard"), or request spanning multiple independent subsystems (decompose first — see Scope Decomposition below). Otherwise, requirements are clear — suggest: "Your requirements seem clear. Consider proceeding directly to planning or implementation."
 
 ### Scope Decomposition Gate
 
@@ -70,39 +54,24 @@ Ask questions **one at a time** by default. When probing a single dimension (e.g
 
 **Info-dump gate (when user offers rich context up-front):** if the user's first message is substantial (>200 words, or dumps requirements in stream-of-consciousness), resist the urge to ask questions one-at-a-time. Instead, respond with 5-10 **numbered clarifying questions** the user can answer in shorthand (`1: yes, 2: channel #ops, 3: no because backwards compat`). Pick questions that remove ambiguity, not questions that show you read the dump. Exit this batched mode when the user's answers show they can be asked about edge cases without basics being explained back to them.
 
-Example — after the user dumps a spec:
+Example after a spec dump:
 
 ```
-Before I propose approaches, 8 quick clarifications:
+Before I propose approaches, quick clarifications:
 
 1. Auth — SSO (which provider?) or username/password?
-2. Data retention — forever, or N-day rolling window?
-3. Multi-tenant or single-tenant?
-4. Sync or async for the webhook delivery?
-5. Real users or service accounts allowed?
-6. Target latency on the read path — P50? P99?
-7. Which of the three integrations is P0?
-8. "Fast enough" in the spec — what's the actual number?
+2. Sync or async for the webhook delivery?
+3. Which of the three integrations is P0?
+4. "Fast enough" in the spec — what's the actual number?
 
 Answer whichever you know; leave blanks for the rest.
 ```
 
 **Question Techniques:**
 
-1. **Prefer multiple choice when natural options exist**
-   - Good: "Should the notification be: (a) email only, (b) in-app only, or (c) both?"
-   - Avoid: "How should users be notified?"
-
-2. **Start broad, then narrow**
-   - First: What is the core purpose?
-   - Then: Who are the users?
-   - Finally: What constraints exist?
-
-3. **Validate assumptions explicitly**
-   - "I'm assuming users will be logged in. Is that correct?"
-
-4. **Ask about success criteria early**
-   - "How will you know this feature is working well?"
+1. **Prefer multiple choice when natural options exist.** Good: "Notification: (a) email, (b) in-app, (c) both?" Avoid: "How should users be notified?"
+2. **Start broad, then narrow.** Core purpose → users → constraints.
+3. **Validate assumptions and probe success early.** "I'm assuming users are logged in — correct?" / "How will you know this is working?"
 
 **Key Topics to Explore:**
 
@@ -116,7 +85,7 @@ Answer whichever you know; leave blanks for the rest.
 | Existing Patterns | Are there similar features in the codebase to follow? |
 | Non-goals | What is explicitly NOT in scope? |
 
-See [deep-interview.md](./references/deep-interview.md) for deep interview techniques.
+See [deep-interview.md](./references/deep-interview.md) for deep interview techniques, including **rigor probes** (evidence/specificity/counterfactual/attachment as open-ended forced production, not menus) and the **integration check** that fires before Phase 1 exit when combining stated answers + agent defaults produces an unsurfaced downstream effect.
 
 **Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets and confirm with the user.
 
@@ -152,8 +121,6 @@ After understanding the idea, propose 2-3 concrete approaches.
 **Ideation lenses** (use 2-3 to stress-test approaches when the design space is wide):
 - **Inversion**: What if we solved the opposite problem?
 - **Constraint removal**: What would we build if [biggest constraint] didn't exist?
-- **Audience shift**: What if the primary user were [different persona]?
-- **Combination**: Can two weak approaches combine into a strong one?
 - **Simplification**: What's the version that ships in a day?
 - **10x version**: What if this needed to handle 10x the scale?
 - **Expert lens**: How would [domain expert] approach this?
@@ -164,29 +131,55 @@ After understanding the idea, propose 2-3 concrete approaches.
 
 ### Phase 2.5: Pre-Write Scope Synthesis
 
-Surface the scope interpretation so the user can correct it before Phase 3 writes the design doc. The synthesis is a chat-time scope checkpoint distinct from Phase 3b's post-draft self-review — 2.5 catches scope misalignment before the doc is written; 3b catches drafting issues after.
+Surface the scope interpretation so the user can correct it before Phase 3 writes the design doc. Phase 2.5 catches scope misalignment before the doc is written; Phase 3b catches drafting issues after.
 
-Present three labeled buckets plus a 1-3 line prose gloss:
+**Two-stage shape: internal draft, then chat-time scoping synthesis.** Compose in two stages. Stage 1 is an internal three-bucket thinking pass (Stated / Inferred / Out of scope) for comprehensive scope analysis. Stage 2 is what the user sees — shaped like what two product collaborators would confirm before writing a PRD. The internal draft never reaches the user verbatim; it routes into the Phase 3 doc body.
 
-**Three buckets:**
-- **Stated** — what the user said directly (original prompt, dialogue answers, approach selection). Each bullet has an explicit user-language anchor.
-- **Inferred** — gaps filled with assumptions. Scope boundaries the user never named, success criteria extrapolated from intent, technical assumptions the brief interview didn't probe. Most actionable bucket — bets the user can reject.
-- **Out of scope** — deliberately excluded items. Adjacent refactors, nice-to-haves, future-work items. Surfacing exclusions lets the user spot anything they wanted included.
+**Stage 1 — internal three-bucket draft (thinking, not output):**
+- **Stated** — what the user said directly. Explicit user-language anchors.
+- **Inferred** — gaps the agent filled with assumptions. Most actionable bucket; bets the user can correct.
+- **Out of scope** — deliberately excluded items.
 
-**Granularity rule:** each bullet must be affirmable or rejectable on product/scope grounds without reading code or implementation details. File names, exact JSON shapes, schema fields, error wording are Phase 3 doc-body content — not synthesis content. If a bullet requires architectural evaluation to judge, re-cut it at scope level.
+Use this as a thinking step. Do not paste it into chat.
 
-**Prose gloss (required for all but truly-trivial cases):** lead with a 1-3 line plain-language summary of *what's being proposed for the doc*. Forward-looking, not retrospective. The user may agree with each bullet but disagree with the framing — prose surfaces that gist. Skip only when the synthesis is ≤2 Stated bullets that just echo the prompt.
+**Stage 2 — user-facing scoping synthesis.** Up to four named sections, each render-conditional. Empty sections are omitted, not padded:
 
-**Anti-patterns:**
-- Synthesis written as a proposal pitch ("Recommendation:", "Behavior when X:", file paths, JSON shapes) — that content belongs in Phase 3, not here. Position-independent: the rule applies regardless of where the plan-body content appears, including nested inside a bucket bullet's commentary or sub-bullets. A structurally-legal placement (inside a bucket) does not legitimize plan-body content.
-- Buckets padded to look thorough when one bucket would suffice.
-- Floating questions outside the three buckets. Every scope-shaping question must land in Stated, Inferred, or Out by synthesis time. If new ambiguities surface during synthesis composition, batch them in one round (per the Phase 1 info-dump pattern) and resolve them before presenting — never present a synthesis with adjacent unanswered questions.
+1. **What we're building** (always present) — 1-3 sentences. The shape that emerged from dialogue, forward-looking, plain words. Not a transcript of "you said X".
+2. **Key trade-offs** (conditional) — 1-3 bullets, each with a brief why. Render only when real trade-offs were made.
+3. **What's not in scope** (conditional) — 1-3 bullets, or fold into a sentence. Render only when deferred items would surprise a downstream reader if absent.
+4. **Call-outs** (conditional) — 0-3 bullets. Residual forks the dialogue didn't resolve: post-dialogue consequences, silent agent inferences, or — in pre-loaded contexts — scope bets the user is seeing for the first time. Not "questions the agent could have asked during Phase 1 but didn't" — if a call-out reads like a missed dialogue question, Phase 1's integration check failed; flag the gap.
 
-**Re-present after revision; write only on confirm.** If the user revises any bullet (even trivially), integrate the change, re-present the revised synthesis, and wait for explicit confirmation before Phase 3. A revision is not a confirmation.
+Close with: *"Confirm and I'll write the design doc next. Or tell me what to change."*
 
-**Headless mode** (invoked via `/ia-lfg` or any `disable-model-invocation` context): compose the synthesis but skip the confirmation step. Route Inferred bets to a `## Assumptions` section in the Phase 3 doc — explicitly labeled as un-validated bets — instead of into Key Decisions. Stated routes to Requirements; Out-of-scope routes to Non-Goals as usual.
+**Path A vs Path B gate.** Routing depends on TWO signals: (1) did any *blocking* question fire before Phase 2.5? AND (2) what tier did Phase 0 classify? Blocking questions = scope disambiguation, dialogue probes, approach selection menus. Internal classification and pressure-tests do not count.
 
-Skip Phase 2.5 entirely on the trivial fast path (Phase 0 detected requirements were already clear and the flow went straight to a short summary).
+- **Path A** — Lightweight tier AND no blocking questions fired → announce-mode. Emit "What we're building" prose only (no other sections, no confirmation question), then proceed to Phase 3 doc-write in the same turn. Lightweight Path A docs are short; post-hoc revision is cheap.
+- **Path B** — Standard/Deep tier OR any blocking question fired → full synthesis with confirmation gate. Two scenarios fire Path B: the user invested answer-time in dialogue, or pre-loaded substantive scope content. Either way, the substance earns a real checkpoint. The tier guard catches pre-loaded Deep brainstorms that would otherwise shortcut via the no-questions branch.
+
+**Keep tests per section.** Each conditional section has its own keep test; failing items dissolve into the internal draft only.
+- **Trade-offs**: would the user be surprised if I didn't surface this acknowledgment? Mechanical or inevitable choices fail.
+- **Deferred**: is a reasonable downstream reader likely to ask "why isn't X here?" Mechanical excludes fail.
+- **Call-outs**: two-step test. (1) Affirmability: would the user need to read code to evaluate this? If yes, it's doc-body content — cut. (2) Keep only if it's a real scope fork, non-obvious inclusion/exclusion, cheap-now-expensive-later correction, or non-obvious consequence of combined multi-turn answers. (3) Phase 1 boundary: if the call-out depends only on Phase 1 facts (no Phase 2 approach, no later-surfaced default), Phase 1's integration check failed — cut and revisit Phase 1. Call-outs catch what Phase 1 *couldn't* surface, not what it *should have*.
+
+Cut re-statements of Q&A turns, re-statements of the picked Phase 2 approach, mechanical items, and implementation choices that settle during planning.
+
+**Bullet budget across sections 2-4 combined.** Heuristic, not law — the real discipline is each section's keep test:
+
+| Tier | Typical total | Hard ceiling |
+|---|---|---|
+| Lightweight | 0-1 | 2 |
+| Standard | 2-4 | 5 |
+| Deep | 3-7 | 9 |
+
+Above the ceiling means the synthesis is mis-shapen — re-cut at a higher level of abstraction, do not raise the cap.
+
+**Detail level: conversational, not documentary.** 1 line ideally, 2 max. Bullets that need semicolons stringing clauses or an internal list are two decisions sharing a bullet — split or drop.
+
+**Re-present after revision; write only on confirm.** If the user revises any bullet (even trivially), integrate the change, re-present, and wait for explicit confirmation. A revision is not a confirmation.
+
+**Headless mode** (`/ia-lfg` or any `disable-model-invocation` context): compose the synthesis but skip the confirmation step. Route internal-draft Inferred items to a `## Assumptions` section in the Phase 3 doc — explicitly labeled as un-validated bets — instead of into Key Decisions. Stated routes to Requirements; Out-of-scope routes to Non-Goals.
+
+Skip Phase 2.5 entirely when Phase 0.2 detected requirements were already clear and the flow proceeded straight to summary without a Phase 1 dialogue. Path A handles every other Lightweight case.
 
 ### Phase 3: Capture the Design
 
@@ -196,16 +189,16 @@ Summarize key decisions in a structured format. For each major component, verify
 
 ### Phase 3b: Spec Self-Review
 
-Before presenting the design doc, run this checklist against the draft. Any failure means return to Phase 2 or Phase 3, not Phase 4.
+Run this checklist before presenting the design doc. Any failure returns to Phase 2 or Phase 3, not Phase 4.
 
-- **Placeholder scan**: no "TBD", "figure out later", "appropriate error handling", bracketed gaps, or tasks without concrete criteria
-- **Internal consistency**: names, types, and verbs referenced in one section match every other section (no `createOrder()` in one place and `placeOrder()` in another)
-- **Scope containment**: every decision traces back to a stated goal. If a decision doesn't, cut it or surface it as an explicit scope expansion with rationale
-- **Ambiguity sweep**: read each Key Decision and ask "could a reasonable implementer interpret this two ways?" If yes, tighten the wording before handoff
-- **Assumption validation**: every assumption has a stated validation method (not just "we assume X" but "we assume X — we'll confirm by Y")
-- **Non-goals list present**: the explicit "Not Doing" list exists and is specific, not boilerplate
+- **Placeholder scan**: no TBD, "figure out later", "appropriate error handling", bracketed gaps, or tasks without concrete criteria.
+- **Internal consistency**: names, types, and verbs match across sections (no `createOrder()` in one place and `placeOrder()` in another).
+- **Scope containment**: every decision traces back to a stated goal; otherwise cut or surface as explicit scope expansion.
+- **Ambiguity sweep**: each Key Decision survives "could a reasonable implementer interpret this two ways?"
+- **Assumption validation**: every assumption names its validation method ("we assume X — we'll confirm by Y").
+- **Non-goals present**: the explicit "Not Doing" list exists and is specific.
 
-Silent pass is a valid outcome. If the draft is clean, say so and move to Phase 4.
+Silent pass is valid. Clean draft → move to Phase 4.
 
 ### Phase 4: Review and Handoff
 

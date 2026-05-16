@@ -28,6 +28,20 @@ When no specific files are given, resolve scope via this fallback chain:
 
 Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
+### Base-branch resolution for branch reviews
+
+This governs the *comparison range* for a branch review — distinct from the file-selection chain above. When the review target is a branch (not a working-tree diff), run base-branch resolution first; the file-selection fallbacks above are for in-progress local work, where `git diff HEAD` is the correct command. Do not stitch the two: a branch review needs the merge-base, not the working-tree delta.
+
+When reviewing a branch (no specific files, no PR), derive the comparison base via this fallback chain:
+
+1. **If a PR exists for the branch** -- use its base: `gh pr view --json baseRefName --jq .baseRefName`. Authoritative; no further detection needed.
+2. **Else infer the default branch**: try `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` (parses to `origin/<name>`). If unset, try `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
+3. **Else fallback list**: try `origin/main`, `origin/master`, `origin/develop`, `origin/trunk` in order; pick the first that resolves via `git rev-parse --verify`. Bare-local names are a last resort if no `origin/*` remote ref exists.
+4. **Compute the diff base**: `git merge-base HEAD <resolved-base>`. Review the range `<merge-base>..HEAD`, not `HEAD` against the working tree.
+5. **Shallow-clone retry**: if `git merge-base` returns nothing and `git rev-parse --is-shallow-repository` is `true`, run `git fetch --unshallow origin` and retry. Document this in the review output so the reviewer knows the comparison range only became available after unshallowing.
+
+**Never fall back to `git diff HEAD`** when base resolution fails -- that hides all committed work on the branch and reviews only the uncommitted delta. Stop and ask which base to use instead.
+
 ## Review Mode Selection
 
 **Run this BEFORE reading the full diff.** Use metadata only (`git diff --stat`, file list from scope resolution) to count signals. Reading the diff first creates analysis momentum that bypasses mode selection.

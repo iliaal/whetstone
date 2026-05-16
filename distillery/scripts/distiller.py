@@ -1371,6 +1371,16 @@ TRIGGER_FIXTURES_DIR = DISTILLERY_DIR / "tests" / "fixtures" / "triggers"
 TRIGGER_POSITIVE_FLOOR = 5
 TRIGGER_NEGATIVE_FLOOR = 5
 
+_CANONICAL_TRIGGER_PATTERN = _re.compile(
+    r"\b(?:should\s+be\s+)?used?\s+(?:this\s+skill\s+)?(?:immediately\s+)?"
+    r"(?:when|after|before|whenever)\b"
+    r"|\buse\s+(?:this\s+skill\s+)?for\b"
+    r"|\buse\s+proactively\b"
+    r"|\btrigger(?:s)?\s+(?:when|on)\b"
+    r"|\bauto[-\s]?loads?\s+(?:when|on)\b",
+    _re.IGNORECASE,
+)
+
 
 def validate_plugin(component_filter=None):
     """Run deterministic validation across all plugin skills, agents, and commands.
@@ -1512,8 +1522,8 @@ def validate_plugin(component_filter=None):
         else:
             if desc_tokens > 80:
                 add_finding(skill_name, "description", f"Description exceeds 80 tokens (~{desc_tokens})", "HIGH")
-            if "use when" not in desc.lower():
-                add_finding(skill_name, "description", "Description missing 'Use when' trigger phrase", "MEDIUM")
+            if not _CANONICAL_TRIGGER_PATTERN.search(desc):
+                add_finding(skill_name, "description", "Description missing canonical trigger phrase (Use when/after/before/whenever/for, Use proactively, Triggers on)", "MEDIUM")
             vague = _find_vague_description_phrases(desc)
             if vague:
                 add_finding(skill_name, "VAGUE_DESCRIPTION",
@@ -1726,8 +1736,8 @@ def validate_plugin(component_filter=None):
         elif desc_tokens > 80:
             add_finding(agent_name, "description", f"Description exceeds 80 tokens (~{desc_tokens}) -- trim routing guidance or redundant phrasing", "HIGH")
 
-        if desc and "use " not in desc.lower():
-            add_finding(agent_name, "MISSING_TRIGGER", "Agent description missing trigger phrase", "MEDIUM")
+        if desc and not _CANONICAL_TRIGGER_PATTERN.search(desc):
+            add_finding(agent_name, "MISSING_TRIGGER", "Agent description missing canonical trigger phrase (Use when/after/before/whenever/for, Use proactively, Triggers on)", "MEDIUM")
 
         if desc:
             vague = _find_vague_description_phrases(desc)

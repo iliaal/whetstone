@@ -8,6 +8,7 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 
 | Agent | Lens | Focus | Model |
 |-------|------|-------|-------|
+| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. | default |
 | correctness | Logic & behavior | Intent alignment (code matches stated PR intent), edge cases, off-by-ones, error paths, type safety, null handling, async ordering, state management | default |
 | security | Attack surface | Injection vectors (SQL, XSS, CSRF, SSRF, command), auth/authz gaps, secrets exposure, trust boundaries, race conditions. Load [security-patterns.md](./security-patterns.md) | default |
 | testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage | opus |
@@ -56,7 +57,7 @@ Limit to 10 findings, highest severity first.
 
 ### Model Selection
 
-- **correctness**, **security**, **data-migration**: use default model (these require deeper reasoning about logic, attack surfaces, or data safety)
+- **standards**, **correctness**, **security**, **data-migration**: use default model (standards reading is high-precision; the others require deeper reasoning about logic, attack surfaces, or data safety)
 - **testing**, **maintainability**, **performance**, **reliability**, **cloud-infra**, **api-contract**: use opus (reasoning about absence -- untested paths, missing error handling, breaking changes -- requires deep code comprehension)
 
 Override: if the diff touches auth, payments, or crypto, upgrade security to opus.
