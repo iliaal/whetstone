@@ -38,7 +38,13 @@ Run these steps in order. Do not stop between steps -- complete every step throu
 
 ## CI watch (after PR opens)
 
-8. Poll CI for the new PR. On failure: read the job log, identify the root cause, fix, push. Cap at **3 fix iterations**.
-9. Do **NOT** weaken, skip, or mock the failing assertion to make CI green -- repair the actual issue. If genuinely flaky after 3 iterations, document the residual in the PR body and stop.
+8. **Before polling: distinguish actionable CI failures from non-actionable gates.** Run `gh pr view --json isDraft,reviewDecision` plus `gh pr checks --json name,state,bucket,conclusion`. Classify by check conclusion, not vendor name:
+    - Check `conclusion: failure` on a required status check -> actionable, fix in Step 9.
+    - `isDraft: true` with no checks after a grace period -> stop and report `DRAFT_PR_WITH_NO_CHECKS`. Do not mark ready for review unless asked.
+    - `reviewDecision: REVIEW_REQUIRED` or any human-approval gate with no failing checks -> stop and report `BLOCKED_BY_REVIEW_GATE`. Human review is not an actionable failure.
+    - No checks registered after a grace period -> stop and report `NO_CHECKS_REGISTERED`.
+    - Check `conclusion: neutral`/`skipped` or pending non-required checks -> do not wait. Required-status-checks (configurable via `gh api repos/{owner}/{repo}/branches/{branch}/protection`) are the source of truth; common examples include test/lint/build jobs and code-review bots (Sentry, Codecov, Cursor, BugBot, etc.) — treat each by its conclusion, not its name.
+9. Poll CI for the new PR. On failure: read the job log, identify the root cause, fix, push. Cap at **3 fix iterations**.
+10. Do **NOT** weaken, skip, or mock the failing assertion to make CI green -- repair the actual issue. If genuinely flaky after 3 iterations, document the residual in the PR body and stop.
 
 Start now.

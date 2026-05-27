@@ -1,11 +1,11 @@
 {
-  "plugin_version": "4.0.3",
+  "plugin_version": "4.0.4",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-05-16T13:15:13.305592+00:00",
+  "generated_at": "2026-05-27T01:14:10.969302+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -68,8 +68,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-md-docs": {
-      "content_hash": "c08eab34d3e974bfa5e366d0f5f5fd6abd4224f9120aa4d2bb5aa0af8b83030e",
-      "content_changed": "4.0.1",
+      "content_hash": "ab3fabcc583dc899a90015ef86ba219198b05d829488410fe2941a51bf7ba515",
+      "content_changed": "4.0.4",
       "pattern_hash": "9d097cbe03f1ba966517e68e94406b298ef5b35f466881c14ce30d5fe0e8fbc4",
       "pattern_changed": "2.56.1"
     },
@@ -104,8 +104,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-planning": {
-      "content_hash": "e993a2456f415a13a2f3dc2e6759f8e4d9ea6c373fa86872bacfb657f8f51d3e",
-      "content_changed": "3.0.5",
+      "content_hash": "269ab3b89122e87cf3f37a87addc416a7b53584d9763b0cf4dfd613d55846c00",
+      "content_changed": "4.0.4",
       "pattern_hash": "23f9ea13ac9da79fd06313529b228beb2667f76c70901128794d1e335c590647",
       "pattern_changed": "2.56.1"
     },

@@ -1382,6 +1382,24 @@ _CANONICAL_TRIGGER_PATTERN = _re.compile(
 )
 
 
+def _skill_uses_description_trigger(fm):
+    """Return True if the skill/agent relies on its description to be auto-invoked.
+
+    Skills that opt out of model-driven invocation (`disable-model-invocation:
+    true`) or that auto-load on a path glob (`paths:` frontmatter, string or
+    list, with a non-empty value) use a different trigger mechanism and should
+    not be checked for a canonical "Use when ..." phrase in the description.
+    """
+    if fm.get("disable-model-invocation") is True:
+        return False
+    paths = fm.get("paths")
+    if isinstance(paths, str) and paths != "":
+        return False
+    if isinstance(paths, list) and len(paths) > 0:
+        return False
+    return True
+
+
 def validate_plugin(component_filter=None):
     """Run deterministic validation across all plugin skills, agents, and commands.
 
@@ -1522,7 +1540,7 @@ def validate_plugin(component_filter=None):
         else:
             if desc_tokens > 80:
                 add_finding(skill_name, "description", f"Description exceeds 80 tokens (~{desc_tokens})", "HIGH")
-            if not _CANONICAL_TRIGGER_PATTERN.search(desc):
+            if _skill_uses_description_trigger(fm) and not _CANONICAL_TRIGGER_PATTERN.search(desc):
                 add_finding(skill_name, "description", "Description missing canonical trigger phrase (Use when/after/before/whenever/for, Use proactively, Triggers on)", "MEDIUM")
             vague = _find_vague_description_phrases(desc)
             if vague:
@@ -1736,7 +1754,7 @@ def validate_plugin(component_filter=None):
         elif desc_tokens > 80:
             add_finding(agent_name, "description", f"Description exceeds 80 tokens (~{desc_tokens}) -- trim routing guidance or redundant phrasing", "HIGH")
 
-        if desc and not _CANONICAL_TRIGGER_PATTERN.search(desc):
+        if desc and _skill_uses_description_trigger(fm) and not _CANONICAL_TRIGGER_PATTERN.search(desc):
             add_finding(agent_name, "MISSING_TRIGGER", "Agent description missing canonical trigger phrase (Use when/after/before/whenever/for, Use proactively, Triggers on)", "MEDIUM")
 
         if desc:

@@ -20,11 +20,45 @@ Filesystem     = Disk (persistent, unlimited)
 
 Planning tokens are cheaper than implementation tokens. Front-load thinking; scale effort to complexity.
 
+## Goal Quality Gate
+
+Run this gate before reaching for *When to Plan* below — a weak goal makes either path (full plan, flat list, or skip) waste tokens. Confirm the goal is measurable; a weak goal produces a weak plan and an unverifiable skip. Answer these five questions before proceeding:
+
+1. **What concrete thing will be true when this is done?** (named artifact, system state, or user-visible behavior — not "improve X" or "investigate Y")
+2. **What evidence will prove it?** (specific test, command, screenshot, metric — not "looks right")
+3. **What quantitative or binary threshold defines success?** (p95 < 250ms; `npm run test:checkout` passes; `gh pr view 123` shows no unresolved threads)
+4. **What scope boundaries matter?** (which files/modules/environments are in scope; which are explicitly not)
+5. **What should cause the agent to stop and ask?** (which decisions belong to the user, not Claude)
+
+Repair weak goals before continuing. Reject pure-activity goals ("make progress", "keep investigating", "improve things") -- rewrite them into a verifiable outcome or ask one concise clarification before planning. Skip this gate only when the request already names a specific artifact AND a clear success signal in the user's own words -- e.g., "fix typo in README line 47", "rename `oldFn` to `newFn` across the repo", "bump lodash to 4.17.21". Anything vaguer than that runs the gate.
+
 ## When to Plan
+
+**Bias toward producing a plan.** A thin plan for small work is mild ceremony; skipping a plan when one was warranted costs real time (reinvented decisions, lost unit boundaries, no IDed requirements to verify against). When unsure, write the plan.
 
 - **Full plan** (.plan/ directory): multi-file changes, new features, refactors, >5 tool calls
 - **Flat list** (inline checklist): 3-5 file changes, clear scope, no research needed -- write a numbered task list in the conversation or a single progress.md, skip .plan/ scaffolding
-- **Skip planning**: single-file edits, quick lookups, simple questions
+
+**Skip planning only when ALL of these hold:**
+
+- The work is **atomic** — fits in one commit, no meaningful unit boundaries to break out independently
+- There are **no design choices that constrain implementation** — no Key Technical Decisions worth recording. If the work needs the implementer to choose between two approaches, those are KTDs and a plan is warranted
+- There are **no scope boundaries worth pinning** in writing — the work scope is self-evident from the user's request
+- **No upstream artifact** (a brainstorm, an incident report, a deferred-follow-up item from a prior plan) needs traceability through this plan
+
+**Stress test the "looks atomic" case.** Many requests look atomic at first glance but hide design decisions:
+
+- *"Add caching to this endpoint"* — sounds atomic, but TTL, invalidation, cache key shape, and backend selection are all KTDs. Write the plan.
+- *"Migrate from package A to package B"* — sounds mechanical, but semantic differences between the packages create migration KTDs. Write the plan.
+- *"Add rate limiting"* — sounds small, but algorithm, scope, and configurability are all KTDs. Write the plan.
+
+vs. genuine skip cases:
+
+- *"Fix typo in README line 47"* — atomic, no KTDs, skip the plan.
+- *"Rename `oldFn` to `newFn` across the repo"* — mechanical, no design choices, skip.
+- *"Bump dependency X to v2.3.1"* — mechanical, skip (unless breaking changes warrant unit-by-unit migration).
+
+When skipping the plan doc, work proceeds directly to `/ia-work` or to implementation, and any decisions made along the way land in the commit message or `docs/solutions/` if worth carrying forward.
 
 ## Planning Files
 

@@ -54,6 +54,8 @@ When updating, detect project conventions automatically:
 - Branch conventions from git history (feature/, fix/, chore/ prefixes)
 - Test commands from package.json scripts or pyproject.toml
 
+**Merge advisory.** When CONTRIBUTING.md sits next to an AGENTS.md (repo root or any package root), surface a one-line recommendation: merge the contribution workflow section into the sibling AGENTS.md so the context file owns dev workflow, branch conventions, and review process as a single source of truth. Then suggest the user delete CONTRIBUTING.md after the merge. Never auto-merge and never auto-delete -- the user performs both. Continue the requested workflow regardless; the CONTRIBUTING file is advisory only.
+
 ### Update DOCS
 
 If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md -- only update existing.
@@ -88,6 +90,44 @@ Structure CLAUDE.md (and AGENTS.md) content by priority so the most critical inf
 5. **Boundaries** -- what's off-limits, what requires approval, scope constraints.
 
 Rules that prevent mistakes outweigh background information. Place them at the top so they survive aggressive context compaction.
+
+## Monorepo Discovery (Authoring)
+
+Before invoking any `update-*` or `init-*` workflow on a multi-package repo, enumerate every package root that should own an AGENTS.md / README.md. Authoring is recursive by default; pass `--root-only` to collapse back to the repo root.
+
+**Resolve the repository root once:**
+
+```bash
+git rev-parse --show-toplevel
+```
+
+**Find existing context files to refresh (`update-*` discovery):**
+
+```bash
+git ls-files --cached --others --exclude-standard \
+  -- '**/README.md' 'README.md' '**/AGENTS.md' 'AGENTS.md'
+```
+
+**Find package roots that should get a new file (`init-*` discovery):** package roots are directories holding a language/tooling manifest -- the repo root plus the unique directories of these files:
+
+```bash
+git ls-files --cached --others --exclude-standard \
+  -- '**/package.json' 'package.json' '**/Cargo.toml' 'Cargo.toml' \
+     '**/pyproject.toml' 'pyproject.toml' '**/setup.py' 'setup.py' \
+     '**/go.mod' 'go.mod' '**/composer.json' 'composer.json'
+```
+
+If the repo uses workspace globs (`pnpm-workspace.yaml`, `package.json` `workspaces:`, `Cargo.toml` `[workspace]`, `go.work`), prefer those as ground truth over file enumeration — they declare the canonical package set and avoid false positives from nested vendored manifests.
+
+**Always exclude during discovery:** `.git`, `node_modules`, `vendor`, `.venv`, `target`, `dist`, `build`, `out`, `.next`, `coverage`, anything ignored by git, and hidden dot-directories that lack a manifest.
+
+**Per-file scoping.** Treat each target independently:
+- The metadata source is the nearest enclosing manifest (the one in its own directory; otherwise walk up to the repo root).
+- A nested `README.md` links to its **sibling** `AGENTS.md`, not the root one.
+- Each `AGENTS.md` gets a sibling `CLAUDE.md` symlink in the **same** directory (`ln -sf AGENTS.md CLAUDE.md`, run from that directory).
+- `CONTRIBUTING.md` is checked per directory; apply the merge advisory from the Update CONTRIBUTING section.
+
+Process deepest-first or root-first consistently, and report results grouped by path. When a sweep would create or rewrite more than a handful of files, list the planned targets and get confirmation before writing.
 
 ## Monorepo Context Loading
 
