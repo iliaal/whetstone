@@ -1,0 +1,45 @@
+# ──────────────────────────────────────────────────
+# SkillOpt Config Template — <Your Benchmark Name>
+# ──────────────────────────────────────────────────
+# Copy this file to configs/<your_benchmark>/default.yaml
+# and customize the values below.
+
+# Inherit global defaults
+_base_: ['../_base_/default.yaml']
+
+# ── Environment ──────────────────────────────────
+env:
+  name: your_benchmark            # Must match registry key
+  data_path: data/your_benchmark  # Path to your data
+  split_mode: ratio               # "ratio" or "split_dir"
+  split_ratio: "2:1:7"            # train:val:test
+  exec_timeout: 120               # Per-task timeout (seconds)
+
+# ── Training ─────────────────────────────────────
+train:
+  num_epochs: 4                   # Number of epochs
+  batch_size: 40                  # Tasks per step (batch size)
+  seed: 42
+
+# ── Gradient (Reflection) ───────────────────────
+gradient:
+  analyst_workers: 16             # Parallel reflection workers
+  minibatch_size: 8
+
+# ── Optimizer ────────────────────────────────────
+optimizer:
+  learning_rate: 4                # Max edits per step (edit budget)
+  lr_scheduler: cosine            # cosine | linear | constant | autonomous
+  use_slow_update: true           # Epoch-boundary momentum
+  use_meta_skill: true            # Cross-epoch optimizer memory
+
+# ── Evaluation ───────────────────────────────────
+evaluation:
+  use_gate: true                  # Validation gating
+  eval_test: true                 # Run test eval after training
+
+# ── Model ────────────────────────────────────────
+model:
+  backend: azure_openai           # azure_openai | openai_chat | claude_code_exec | qwen
+  optimizer: gpt-4o
+  target: gpt-4o

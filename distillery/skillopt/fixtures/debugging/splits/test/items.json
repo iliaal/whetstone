@@ -1,0 +1,24 @@
+[
+  {
+    "id": "dbg-009-accumulator",
+    "question": "running_max(seq) should return the running maximum at each position. It is returning the input values unchanged instead of the running max.",
+    "context": "Workspace files:\n  stats.py   (the module under test, contains a bug)\n  test_stats.py   (pytest; currently failing)\n\nBug class: wrong variable appended\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-009-accumulator",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-010-early-return",
+    "question": "all_positive(seq) should return True only if every element is > 0. It returns True for lists whose first element is positive even when later ones are not.",
+    "context": "Workspace files:\n  predicates.py   (the module under test, contains a bug)\n  test_predicates.py   (pytest; currently failing)\n\nBug class: early return inside loop\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-010-early-return",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

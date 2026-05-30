@@ -1,0 +1,68 @@
+[
+  {
+    "id": "dbg-001-offbyone",
+    "question": "chunked(seq, size) should split a list into consecutive chunks of `size`, keeping a final shorter chunk. It is dropping the last partial chunk.",
+    "context": "Workspace files:\n  chunker.py   (the module under test, contains a bug)\n  test_chunker.py   (pytest; currently failing)\n\nBug class: off-by-one (loop bound)\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-001-offbyone",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-002-overlap",
+    "question": "overlaps(a, b) tests whether two closed integer intervals (start, end) share any point. Intervals that touch at an endpoint, like (1,5) and (5,9), are wrongly reported as non-overlapping.",
+    "context": "Workspace files:\n  intervals.py   (the module under test, contains a bug)\n  test_intervals.py   (pytest; currently failing)\n\nBug class: wrong comparison operator (boundary)\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-002-overlap",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-003-mutable-default",
+    "question": "accumulate(value, into=None) should append value to a fresh list when no list is given. Independent calls are leaking state into each other.",
+    "context": "Workspace files:\n  acc.py   (the module under test, contains a bug)\n  test_acc.py   (pytest; currently failing)\n\nBug class: mutable default argument\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-003-mutable-default",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-004-dict-mutation",
+    "question": "drop_expired(store, now) should remove entries whose expiry is strictly less than now and return the store. It crashes with a RuntimeError on any removal.",
+    "context": "Workspace files:\n  cache_store.py   (the module under test, contains a bug)\n  test_cache_store.py   (pytest; currently failing)\n\nBug class: mutate dict during iteration\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-004-dict-mutation",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-005-error-swallow",
+    "question": "total_price(items) should sum the 'price' of each item, skipping items that have no 'price' key. When any item lacks a price the total comes back as 0.",
+    "context": "Workspace files:\n  pricing.py   (the module under test, contains a bug)\n  test_pricing.py   (pytest; currently failing)\n\nBug class: over-broad except swallows error\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-005-error-swallow",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-006-stale-cache",
+    "question": "Config caches a snapshot of its data on first get(). After calling update(key, value), get() still returns the old value instead of the updated one.",
+    "context": "Workspace files:\n  configcache.py   (the module under test, contains a bug)\n  test_configcache.py   (pytest; currently failing)\n\nBug class: stale cache not invalidated\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-006-stale-cache",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

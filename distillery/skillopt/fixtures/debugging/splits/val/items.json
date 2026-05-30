@@ -1,0 +1,24 @@
+[
+  {
+    "id": "dbg-007-async-ordering",
+    "question": "double_all(values) is an async function that should return each value doubled. It returns un-awaited task objects instead of the computed results.",
+    "context": "Workspace files:\n  asyncwork.py   (the module under test, contains a bug)\n  test_asyncwork.py   (pytest; currently failing)\n\nBug class: async: tasks never awaited\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-007-async-ordering",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "dbg-008-binary-search",
+    "question": "index_of(sorted_seq, target) should return the index of target in a sorted list, or -1 if absent. It returns -1 for values that are present.",
+    "context": "Workspace files:\n  search.py   (the module under test, contains a bug)\n  test_search.py   (pytest; currently failing)\n\nBug class: binary search boundary (off-by-one)\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "dbg-008-binary-search",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

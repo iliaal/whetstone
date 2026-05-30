@@ -1,0 +1,8 @@
+# Training run artifacts (rollout workspaces, predictions, skill snapshots)
+outputs/
+# Ratio-split materialization (we use pre-split fixtures/debugging/splits)
+_generated_splits/
+# Python scratch
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -209,6 +209,10 @@ bash scripts/update-metadata.sh
 bash scripts/mirror-to-ai-skills.sh
 ```
 
+### SkillOpt optimizer (offline)
+
+`distillery/skillopt/` is a vendored [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt) (MIT, see its `VENDORED.md`) plus a whetstone env that optimizes a process `SKILL.md` by running the target model **agentically** (Claude Code via `claude_code_exec`) against curated fixtures, with a hybrid reward: deterministic `hard` (fixture test red→green) + a per-skill process rubric `soft`. Pilot skill: `ia-debugging`. Run: `cd distillery/skillopt && PYTHONPATH=. python scripts/train.py --config configs/whetstone/default.yaml`. It is the higher-fidelity, higher-cost counterpart to the single-turn DSPy `evolve` — they coexist. **Offline only: not mirrored, not in the release pipeline; `best_skill.md` promotion stays manual and gated by `test-triggers`.** See `distillery/skillopt/README.md`.
+
 ## Session harvesting and eval
 
 The distillery includes tools for mining Claude Code session logs to build skill evaluation datasets, score skill effectiveness, and build golden eval datasets.

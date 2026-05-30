@@ -1,0 +1,62 @@
+# Whetstone process-skill optimizer — pilot config (ia-debugging).
+#
+# Target = Claude Code run agentically in a prepared workspace (claude_code_exec):
+# it reads the candidate skill, fixes the seeded bug, and we grade hard = the
+# fixture test going red->green. Optimizer/analyst/judge = Claude via claude_chat.
+#
+# Pilot is deliberately small (few epochs, tiny batch) — every rollout is a
+# multi-turn agentic Claude Code run and spends real tokens. Scale up only after
+# the loop is proven end-to-end.
+_base_: ../_base_/default.yaml
+
+model:
+  backend: claude_code_exec
+  optimizer_backend: claude_chat       # analyst / judge / skill-editor
+  target_backend: claude_code_exec     # the debugging agent
+  optimizer: claude-sonnet-4-6
+  target: claude-sonnet-4-6
+  # Empty: the claude_chat judge/analyst maps reasoning_effort -> `--thinking <val>`,
+  # but CLI 2.1's --thinking only accepts enabled/adaptive/disabled (not medium).
+  # The target rollout's thinking is set separately via claude_code_exec_effort (--effort).
+  reasoning_effort: ""
+  claude_code_exec_path: claude
+  claude_code_exec_use_sdk: cli        # force CLI exec path (no claude_code_sdk dep)
+  claude_code_exec_effort: medium
+  claude_code_exec_max_thinking_tokens: 0   # installed claude CLI (2.1.x) has no --max-thinking-tokens flag
+
+train:
+  num_epochs: 2
+  batch_size: 4
+  accumulation: 1
+  seed: 42
+
+gradient:
+  minibatch_size: 4
+  merge_batch_size: 4
+  analyst_workers: 4
+  failure_only: false
+
+optimizer:
+  learning_rate: 3                     # max skill edits per step
+  min_learning_rate: 1
+  lr_scheduler: cosine
+  skill_update_mode: patch
+  use_slow_update: false               # keep the pilot loop simple
+  use_meta_skill: false
+
+evaluation:
+  use_gate: true                       # accept an edit only if val improves
+  sel_env_num: 0
+  test_env_num: 0
+  eval_test: true
+
+env:
+  name: whetstone
+  skill_init: skillopt/envs/whetstone/skills/initial.md
+  split_mode: split_dir
+  split_dir: fixtures/debugging/splits
+  tasks_root: fixtures/debugging/tasks
+  skill_name: ia-debugging
+  exec_timeout: 300                    # per-rollout agentic Claude Code budget (s)
+  test_timeout: 120
+  workers: 4

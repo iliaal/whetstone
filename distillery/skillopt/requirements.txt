@@ -1,0 +1,12 @@
+# Runtime deps for the vendored SkillOpt + whetstone env.
+# Verified by import smoke test (see README.md / VENDORED.md).
+#
+# The optimizer/judge backend (claude_chat) and the target backend
+# (claude_code_exec) both shell out to the `claude` CLI — no Anthropic SDK
+# dependency. `openai` is only pulled because skillopt.model eagerly imports its
+# azure backend at package load; the azure path is never exercised by our config.
+pyyaml>=6.0
+numpy>=1.24.0
+openai>=1.30.0
+httpx>=0.27.0
+pytest>=7.0          # deterministic `hard` check runs the fixture test suite
