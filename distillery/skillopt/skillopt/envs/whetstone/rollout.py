@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import shutil
+import tempfile
 import traceback
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Callable
@@ -138,7 +139,18 @@ def process_one(
     item_id = str(item["id"])
     pred_dir = os.path.join(out_root, "predictions", item_id)
     os.makedirs(pred_dir, exist_ok=True)
-    work_dir = os.path.join(pred_dir, "work")
+
+    # SAFETY: run the agent in a workspace OUTSIDE the repo. Claude Code's Bash
+    # tool operates at the nearest .git ancestor, so a work_dir INSIDE the repo
+    # hands the bypassPermissions agent (its own sandbox disabled via
+    # CLAUDE_CODE_SANDBOXED, see _ensure_unsandboxed) write access to the whole
+    # repo -- a target model has run repo-relative `rm -rf` and deleted source
+    # files. A tmpdir with no .git ancestor confines relative-path operations to
+    # the disposable workspace. (Absolute-path access is still possible; fully
+    # untrusted use needs OS-level sandboxing -- run from a bare terminal, not
+    # nested inside another Claude Code session.)
+    work_root = tempfile.mkdtemp(prefix=f"skillopt-{item_id}-")
+    work_dir = os.path.join(work_root, "work")
 
     result: dict = {
         "id": item_id,
@@ -237,6 +249,24 @@ def process_one(
         result["infra_error"] = True
         with open(os.path.join(pred_dir, "error.txt"), "w", encoding="utf-8") as f:
             f.write(traceback.format_exc())
+    finally:
+        # Salvage the out-of-repo scratch into the (in-repo) pred_dir for
+        # inspection -- the raw transcript artifacts _persist_claude_artifacts
+        # wrote next to work_dir, plus a snapshot of the agent's final workspace
+        # -- then drop the tmpdir.
+        try:
+            for name in os.listdir(work_root):
+                src = os.path.join(work_root, name)
+                if os.path.isfile(src):
+                    shutil.copy2(src, os.path.join(pred_dir, name))
+            if os.path.isdir(work_dir):
+                snap = os.path.join(pred_dir, "work")
+                if os.path.exists(snap):
+                    shutil.rmtree(snap, ignore_errors=True)
+                shutil.copytree(work_dir, snap, ignore=_COPY_IGNORE)
+        except OSError:
+            pass
+        shutil.rmtree(work_root, ignore_errors=True)
 
     return result
 

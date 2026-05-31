@@ -1,0 +1,57 @@
+[
+  {
+    "id": "hard-snapshot",
+    "question": "Config.snapshot() must return an isolated copy of the config: mutating the returned snapshot (including nested values) must not change the live config, while Config.update() must still be reflected in later snapshots. Right now mutating a snapshot corrupts the live config.",
+    "context": "Workspace files:\n  config_store.py   (the module under test, contains a bug)\n  test_config_store.py   (pytest; currently failing)\n\nBug class: shallow vs deep copy (aliasing)\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-snapshot",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-billsplit",
+    "question": "split_bill(total_cents, n) must split a bill among n people so the shares sum EXACTLY to total_cents, differ by at most one cent, and the larger shares come first. It currently loses cents (the shares do not sum to the total).",
+    "context": "Workspace files:\n  billing.py   (the module under test, contains a bug)\n  test_billing.py   (pytest; currently failing)\n\nBug class: integer remainder distribution\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-billsplit",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-lru",
+    "question": "LRUCache is a fixed-capacity cache. A get() must count as a use so the key is not the next one evicted; put() of a new key when full evicts the least-recently-used key. Right now reading a key does not protect it from eviction.",
+    "context": "Workspace files:\n  lru_cache.py   (the module under test, contains a bug)\n  test_lru_cache.py   (pytest; currently failing)\n\nBug class: LRU recency not refreshed on read\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-lru",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-merge",
+    "question": "merge(*streams) merges event streams (each a list of (timestamp, label) already sorted by timestamp) into one timestamp-ordered list. On equal timestamps, events from an earlier stream argument must come before events from a later one, and original order within a stream is kept. Ties are currently ordered wrongly.",
+    "context": "Workspace files:\n  merge_streams.py   (the module under test, contains a bug)\n  test_merge_streams.py   (pytest; currently failing)\n\nBug class: unstable tie-break on sort\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-merge",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-parse",
+    "question": "format_total(amounts) sums currency strings like '$1,234.50' and returns the total as a '$<amount>' string. It raises a ValueError on any amount that uses a thousands separator. The traceback points inside format_total, but the total must come out correct.",
+    "context": "Workspace files:\n  money_report.py   (the module under test, contains a bug)\n  test_money_report.py   (pytest; currently failing)\n\nBug class: misdirected root cause (error surfaces in caller)\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-parse",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

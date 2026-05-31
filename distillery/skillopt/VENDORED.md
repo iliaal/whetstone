@@ -25,8 +25,17 @@ treat them as a pinned dependency. The whetstone-specific code lives in
   degrades to emitting `<function_calls>` markup as plain text and never runs
   tools. `--allowedTools` alone gives the correct allow-list. The change is
   marked with a `LOCAL VENDOR PATCH` comment at the edit site.
+- **Patched `skillopt/utils/scoring.py`** (`compute_score`): the validation gate
+  selects on `compute_score(results)[0]`, which upstream is the mean hard
+  pass-rate. For a *process* skill, hard saturates (capable models fix tractable
+  bugs), so a hard-only gate can never accept a process-improving edit. The patch
+  blends soft into the selection metric when `SKILLOPT_SOFT_WEIGHT` is set
+  (default 0 = upstream behavior): `selection = mean_hard + weight * mean_soft`.
+  Keep `weight < 1/n_val` so soft refines selection among correct fixes but never
+  offsets a lost fix (the deterministic floor holds). Per-item `hard` is
+  untouched. Marked `LOCAL VENDOR PATCH` at the edit site.
 - Everything else under `skillopt/` (engine, model, gradient, optimizer,
-  evaluation, scheduler, datasets, prompts, utils, config.py, types.py) is
+  evaluation, scheduler, datasets, prompts, config.py, types.py) is
   **unmodified** upstream.
 
 The whetstone rollout also sets `CLAUDE_CODE_SANDBOXED=1` for the target

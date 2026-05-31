@@ -1,0 +1,13 @@
+[
+  {
+    "id": "hard-parse",
+    "question": "format_total(amounts) sums currency strings like '$1,234.50' and returns the total as a '$<amount>' string. It raises a ValueError on any amount that uses a thousands separator. The traceback points inside format_total, but the total must come out correct.",
+    "context": "Workspace files:\n  money_report.py   (the module under test, contains a bug)\n  test_money_report.py   (pytest; currently failing)\n\nBug class: misdirected root cause (error surfaces in caller)\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-parse",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]
