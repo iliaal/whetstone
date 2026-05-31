@@ -28,15 +28,27 @@ fixtures, with a **hybrid reward**:
   workspace. Bug fixed → 1.
 - **`soft` (0–1)** — a per-skill process rubric (`skillopt/envs/whetstone/rubric.py`)
   judged by the optimizer model on the rollout trajectory, with **code-enforced
-  verbatim-evidence guarding**: `score_criteria` zeroes any criterion whose
-  evidence is not a literal substring of the trajectory (not just a judge
-  instruction — the score is dropped in code). The trajectory is augmented with
-  **harness-verified artifacts** (the real pre/post pytest runs + a harness-computed
-  diff of the agent's edits), so grounding bites against evidence the agent cannot
-  fabricate. This is what stops the optimizer learning skills that make the model
-  *claim* process it didn't follow. (Purely temporal criteria — "reproduced first",
-  "one change at a time" — still derive from the agent's report; faithful
-  action-sequence grading would need `--output-format stream-json`.)
+  verbatim-evidence grounding**: `score_criteria` zeroes any criterion whose
+  evidence does not share a contiguous run with the trajectory (not just a judge
+  instruction — the score is dropped in code). The trajectory is the target's
+  tool-use transcript plus **harness-verified artifacts** (the real pre/post
+  pytest runs + a harness-computed diff of the agent's edits). The transcript is
+  the full ordered stream (Read/Bash/Edit events) only when the rollout runs
+  nested in a Claude Code session (`CLAUDE_CODE_COORDINATOR_MODE=1`); standalone,
+  `--output-format text` returns just the final message — so the harness
+  artifacts are the always-present ground truth (outcome criteria ground either
+  way; temporal criteria need the stream). The
+  transcript is captured as stream-json, so the matcher un-escapes (`\n`, `\"`)
+  before comparing — without that, even verbatim quotes miss and soft collapses
+  to 0 (a bug the pilot caught).
+
+  > **soft does not gate.** The vendored validation gate (`evaluation/gate.py`)
+  > accepts a candidate skill purely on `hard`; `soft` is recorded and fed to the
+  > analyst's reflection, but it never decides accept/reject. Two consequences:
+  > (1) the fixtures must be calibrated so baseline `hard` < 1.0 or no edit can
+  > ever be accepted (trivial bugs the model already fixes leave the gate nothing
+  > to select on); (2) to optimize *process* rather than success-rate, the gate
+  > must be patched to blend `soft`.
 
 ```
 trainer (vendored)

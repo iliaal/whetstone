@@ -9,12 +9,15 @@ unrestored test file does not silently look like an unfixed bug.
 
 ``soft`` is the per-skill process rubric, judged by the optimizer model on the
 rollout trajectory with code-enforced verbatim-evidence grounding (rubric.py).
-The trajectory handed to the judge is augmented with HARNESS-VERIFIED artifacts
--- the real pre-fix and post-fix test runs and a harness-computed diff of the
-agent's source changes -- so the judge scores against evidence the agent cannot
-fabricate, not only the agent's own final report. (Strictly temporal criteria
--- "reproduced FIRST", "one change at a time" -- still derive from the agent's
-report; faithful action-sequence grading would need --output-format stream-json.)
+The trajectory is the target's tool-use transcript PLUS harness-verified
+artifacts -- the real pre/post test runs and a harness-computed diff of the
+agent's source changes. The transcript is the full ordered stream (Read/Bash/
+Edit events) only when the rollout runs nested in a Claude Code session
+(``CLAUDE_CODE_COORDINATOR_MODE=1``); standalone, ``--output-format text``
+returns just the final message. The harness artifacts are therefore the
+always-present ground truth: outcome criteria ("red->green", what changed)
+ground against them either way; temporal criteria ("reproduced FIRST") are fully
+grounded only when the transcript stream is present.
 """
 from __future__ import annotations
 

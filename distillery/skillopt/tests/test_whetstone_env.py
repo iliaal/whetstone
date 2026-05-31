@@ -10,7 +10,12 @@ import pytest
 
 from skillopt.envs.whetstone.dataloader import _resolve_fixture_dir
 from skillopt.envs.whetstone.evaluator import run_hard
-from skillopt.envs.whetstone.rubric import RUBRICS, score_criteria, weighted_soft
+from skillopt.envs.whetstone.rubric import (
+    RUBRICS,
+    _grounded,
+    score_criteria,
+    weighted_soft,
+)
 
 
 def _const_complete(payload: dict):
@@ -51,6 +56,32 @@ def test_shipped_rubric_weights_sum_to_one():
     for name, rubric in RUBRICS.items():
         total = round(sum(w for w, _ in rubric.values()), 6)
         assert total == 1.0, f"{name} weights sum to {total}, expected 1.0"
+
+
+def test_json_escaped_trajectory_grounds():
+    # The pilot's root cause: the transcript is JSON-escaped stream-json, so a
+    # verbatim quote spanning a `\n`/`\"` failed to match until normalization
+    # un-escapes it. The quote below spans an escaped newline.
+    traj = r'{"text": "1 passed, 1 failed\nAssertionError: assert [1, 2] == [2, 4]\n"}'
+    ev = "1 passed, 1 failed AssertionError: assert [1, 2] == [2, 4]"
+    assert _grounded(ev, traj) is True
+
+
+def test_stitched_quote_grounds():
+    # A cooperative judge stitches two real spans with an ellipsis; one of them
+    # is a long contiguous run, so it grounds.
+    traj = ("step1: ran python -m pytest -q and saw AssertionError in "
+            "test_doubles_all; step2: edited asyncwork.py line 15")
+    ev = "ran python -m pytest -q and saw AssertionError ... edited asyncwork.py line 15"
+    assert _grounded(ev, traj) is True
+
+
+def test_fabricated_evidence_rejected():
+    # Domain-plausible but fabricated: shares no long contiguous run.
+    traj = ("ran python -m pytest; 1 passed 1 failed; AssertionError in "
+            "test_doubles_all; edited asyncwork.py line 15")
+    fake = "the agent contemplated seventeen alternative architectures before refactoring"
+    assert _grounded(fake, traj) is False
 
 
 # --- CR-006: pytest infra exits are distinct from a genuine failure ----------

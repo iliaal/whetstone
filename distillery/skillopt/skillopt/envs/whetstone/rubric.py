@@ -12,13 +12,13 @@ ia-debugging criteria below track that skill's Iron Law, Process steps, and
 Three-Fix Threshold.
 
 The verbatim-evidence guard is CODE-ENFORCED, not merely a judge instruction:
-``score_criteria`` zeroes any criterion whose ``evidence`` is not a literal
-substring of the trajectory (case/whitespace-normalized). A judge that
-hallucinates or omits a supporting quote cannot raise ``soft``. Note this only
-makes the soft signal as trustworthy as the trajectory it is grounded in --
-see ``evaluator.py``, which augments the trajectory with harness-verified
-artifacts (real pre/post test runs + the agent's diff) so grounding bites
-against evidence the agent cannot fabricate, not only the agent's own report.
+``score_criteria`` zeroes any criterion whose ``evidence`` does not share a
+contiguous run with the trajectory (un-escaped + case/whitespace-normalized --
+see ``_grounded``). A judge that hallucinates or omits a supporting quote
+cannot raise ``soft``. The trajectory it grounds against is the target's full
+tool-use transcript (Read/Bash/Edit events, captured as stream-json) plus the
+harness-verified artifacts ``evaluator.py`` prepends (real pre/post test runs +
+the agent's diff) -- evidence the agent cannot fabricate.
 """
 from __future__ import annotations
 
@@ -105,20 +105,45 @@ def _regex_extract(raw: str, rubric: Rubric) -> dict[str, dict]:
     return out
 
 
-_MIN_EVIDENCE_LEN = 12
+# Min length of a contiguous trajectory quote that counts as grounded. Tuned on
+# the pilot: real judge quotes share 100+ char contiguous runs with the
+# trajectory, while fabricated/boilerplate evidence tops out near 18 chars.
+_MIN_EVIDENCE_RUN = 24
+
+
+def _normalize(s: str) -> str:
+    """Lowercase, un-escape the stream-json escapes the trajectory carries
+    (``\\n \\t \\r \\" \\/``), and collapse whitespace.
+
+    The target's transcript is captured as stream-json, so a verbatim judge
+    quote ("AssertionError: assert [1, 2]") is compared against an *escaped*
+    transcript (``...assert [1, 2]\\n...``). Without un-escaping, even an exact
+    quote misses -- which is what silently zeroed every soft score in the pilot.
+    """
+    s = s or ""
+    for esc, rep in (("\\n", " "), ("\\t", " "), ("\\r", " "), ('\\"', '"'), ("\\/", "/")):
+        s = s.replace(esc, rep)
+    return " ".join(s.split()).lower()
 
 
 def _grounded(evidence: str, trajectory: str) -> bool:
-    """True iff `evidence` is a real (normalized) substring of `trajectory`.
+    """True iff `evidence` shares a real contiguous run with `trajectory`.
 
-    Whitespace is collapsed and case folded on both sides so reflowed or
-    re-cased quotes still match, but a fabricated, paraphrased, or empty quote
-    does not. The length floor stops a trivially-common fragment ("the test")
-    from matching everything.
+    A cooperative judge quotes real spans but stitches them with ellipses and
+    annotations, so requiring the WHOLE evidence to be a substring is too strict
+    -- it zeroes genuine process (observed in the pilot). Instead require any
+    ``>=_MIN_EVIDENCE_RUN`` contiguous (normalized) span of the evidence to
+    appear in the trajectory: a summarizing judge still lands one long real
+    span; a fabricating one cannot manufacture 24 contiguous real chars. Short
+    evidence must appear in full.
     """
-    e = " ".join((evidence or "").split()).lower()
-    t = " ".join((trajectory or "").split()).lower()
-    return len(e) >= _MIN_EVIDENCE_LEN and e in t
+    e = _normalize(evidence)
+    t = _normalize(trajectory)
+    if not e:
+        return False
+    if len(e) < _MIN_EVIDENCE_RUN:
+        return len(e) >= 8 and e in t
+    return any(e[i:i + _MIN_EVIDENCE_RUN] in t for i in range(0, len(e) - _MIN_EVIDENCE_RUN + 1))
 
 
 def score_criteria(rubric: Rubric, task: str, trajectory_text: str,
