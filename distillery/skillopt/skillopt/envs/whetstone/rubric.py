@@ -10,6 +10,15 @@ Mirror the skill's own rules here. When a SKILL.md changes its rules, update
 the matching rubric or the optimizer trains against a stale target. The
 ia-debugging criteria below track that skill's Iron Law, Process steps, and
 Three-Fix Threshold.
+
+The verbatim-evidence guard is CODE-ENFORCED, not merely a judge instruction:
+``score_criteria`` zeroes any criterion whose ``evidence`` is not a literal
+substring of the trajectory (case/whitespace-normalized). A judge that
+hallucinates or omits a supporting quote cannot raise ``soft``. Note this only
+makes the soft signal as trustworthy as the trajectory it is grounded in --
+see ``evaluator.py``, which augments the trajectory with harness-verified
+artifacts (real pre/post test runs + the agent's diff) so grounding bites
+against evidence the agent cannot fabricate, not only the agent's own report.
 """
 from __future__ import annotations
 
@@ -96,6 +105,22 @@ def _regex_extract(raw: str, rubric: Rubric) -> dict[str, dict]:
     return out
 
 
+_MIN_EVIDENCE_LEN = 12
+
+
+def _grounded(evidence: str, trajectory: str) -> bool:
+    """True iff `evidence` is a real (normalized) substring of `trajectory`.
+
+    Whitespace is collapsed and case folded on both sides so reflowed or
+    re-cased quotes still match, but a fabricated, paraphrased, or empty quote
+    does not. The length floor stops a trivially-common fragment ("the test")
+    from matching everything.
+    """
+    e = " ".join((evidence or "").split()).lower()
+    t = " ".join((trajectory or "").split()).lower()
+    return len(e) >= _MIN_EVIDENCE_LEN and e in t
+
+
 def score_criteria(rubric: Rubric, task: str, trajectory_text: str,
                    complete: CompleteFn) -> dict[str, dict]:
     """Return {criterion: {"score": float, "evidence": str}} for every rubric key.
@@ -138,6 +163,16 @@ def score_criteria(rubric: Rubric, task: str, trajectory_text: str,
         for name in rubric:
             if out[name]["score"] == 0.0 and not out[name]["evidence"]:
                 out[name] = fallback[name]
+
+    # Code-enforced verbatim-evidence guard: a criterion only keeps its score
+    # if its evidence is an actual quote from the trajectory. This is the
+    # anti-reward-hacking backstop -- it does not depend on the judge obeying
+    # the "no quote -> 0.0" instruction.
+    for name in rubric:
+        is_grounded = _grounded(out[name]["evidence"], trajectory_text)
+        out[name]["grounded"] = is_grounded
+        if not is_grounded:
+            out[name]["score"] = 0.0
     return out
 
 

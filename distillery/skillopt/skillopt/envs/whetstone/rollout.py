@@ -10,7 +10,9 @@ single-turn QA agent to a multi-turn, file-editing debug agent.
 """
 from __future__ import annotations
 
+import difflib
 import glob
+import hashlib
 import json
 import os
 import shutil
@@ -21,10 +23,47 @@ from typing import Callable
 from skillopt.model import chat_optimizer, is_target_exec_backend
 from skillopt.model.codex_harness import prepare_workspace, render_skill_md, run_target_exec
 
-from .evaluator import evaluate
+from .evaluator import evaluate, run_hard
 from .rubric import Rubric
 
 _COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache", ".git")
+
+
+def _snapshot_sources(fixture_dir: str) -> dict[str, str]:
+    """Read the pristine (buggy) source files from a fixture, excluding tests.
+    Used to compute a harness-trusted diff of what the agent actually changed."""
+    out: dict[str, str] = {}
+    for p in glob.glob(os.path.join(fixture_dir, "*.py")):
+        b = os.path.basename(p)
+        if b.startswith("test_"):
+            continue
+        try:
+            with open(p, encoding="utf-8") as f:
+                out[b] = f.read()
+        except OSError:
+            pass
+    return out
+
+
+def _diff_sources(pre: dict[str, str], work_dir: str) -> str:
+    """Unified diff of the agent's source edits (pre-rollout vs post-rollout)."""
+    chunks: list[str] = []
+    for b, before in sorted(pre.items()):
+        after = ""
+        ap = os.path.join(work_dir, b)
+        if os.path.exists(ap):
+            try:
+                with open(ap, encoding="utf-8") as f:
+                    after = f.read()
+            except OSError:
+                pass
+        if before == after:
+            continue
+        chunks.extend(difflib.unified_diff(
+            before.splitlines(), after.splitlines(),
+            fromfile=f"a/{b}", tofile=f"b/{b}", lineterm="",
+        ))
+    return "\n".join(chunks)
 
 
 def _ensure_unsandboxed() -> None:
@@ -113,6 +152,7 @@ def process_one(
         "response": "",
         "agent_ok": False,
         "n_turns": 0,
+        "infra_error": False,
         "target_system_prompt": "",
         "target_user_prompt": "",
     }
@@ -128,7 +168,18 @@ def process_one(
 
         # Fixture (buggy source + failing test) goes in AFTER prepare_workspace,
         # which rmtree's work_dir. dirs_exist_ok lets it land alongside task.md.
-        shutil.copytree(item["_fixture_dir"], work_dir, dirs_exist_ok=True, ignore=_COPY_IGNORE)
+        # symlinks=True so a link inside a fixture is recreated as a link (and
+        # breaks harmlessly) rather than dereferenced into a host-file copy.
+        shutil.copytree(
+            item["_fixture_dir"], work_dir,
+            dirs_exist_ok=True, ignore=_COPY_IGNORE, symlinks=True,
+        )
+
+        # Harness-trusted baselines captured BEFORE the agent runs: the real
+        # red test output and a snapshot of the buggy source for the diff. These
+        # feed the judge evidence the agent cannot fabricate.
+        _, pre_test_output, _ = run_hard(work_dir, item.get("test_cmd"), timeout=test_timeout)
+        pre_sources = _snapshot_sources(item["_fixture_dir"])
 
         prompt = _build_prompt(item)
         response, raw = run_target_exec(
@@ -142,20 +193,26 @@ def process_one(
         )
         result["agent_ok"] = bool(response or raw)
         result["response"] = response
-        result["n_turns"] = 1 if response else 0
+        # --output-format text exposes no turn count; 0 means "not captured"
+        # (real per-turn tracking would require --output-format stream-json).
+        result["n_turns"] = 0
 
         # Integrity: grade `hard` against the PRISTINE fixture test, not the
         # agent's copy. The agent could otherwise pass by weakening the test.
-        # Its own regression test still counts toward `soft` via the trajectory.
         for tf in glob.glob(os.path.join(item["_fixture_dir"], "test_*.py")):
             shutil.copy2(tf, os.path.join(work_dir, os.path.basename(tf)))
 
-        trajectory_text = raw or response or "(empty trajectory)"
-        ev = evaluate(work_dir, item, trajectory_text, rubric, complete, test_timeout=test_timeout)
+        agent_diff = _diff_sources(pre_sources, work_dir)
+        ev = evaluate(
+            work_dir, item, response, rubric, complete,
+            test_timeout=test_timeout,
+            pre_test_output=pre_test_output, agent_diff=agent_diff,
+        )
         result["hard"] = ev["hard"]
         result["soft"] = ev["soft"]
         result["criteria"] = ev["criteria"]
         result["fail_reason"] = ev["fail_reason"]
+        result["infra_error"] = ev["infra_error"]
 
         user_prompt_text = task_text + "\n\n" + prompt
         result["target_system_prompt"] = skill_md
@@ -175,7 +232,9 @@ def process_one(
             json.dump(conversation, f, ensure_ascii=False, indent=2)
 
     except Exception as e:  # noqa: BLE001
+        # A harness exception is an infra failure, not a graded "bug unfixed".
         result["fail_reason"] = f"error: {e}"
+        result["infra_error"] = True
         with open(os.path.join(pred_dir, "error.txt"), "w", encoding="utf-8") as f:
             f.write(traceback.format_exc())
 
@@ -204,6 +263,11 @@ def run_batch(
     os.makedirs(out_root, exist_ok=True)
     results_path = os.path.join(out_root, "results.jsonl")
 
+    # Resume is keyed on (id, skill_hash): a cached result scored against a
+    # DIFFERENT skill revision is stale and must be re-run, or the gate would
+    # compare rewards computed against two different skills.
+    skill_hash = hashlib.sha1(skill_content.encode("utf-8")).hexdigest()[:12]
+
     done_ids: set[str] = set()
     existing: list[dict] = []
     if os.path.exists(results_path):
@@ -211,10 +275,12 @@ def run_batch(
             for line in f:
                 try:
                     r = json.loads(line)
-                    done_ids.add(str(r["id"]))
-                    existing.append(r)
                 except Exception:
-                    pass
+                    continue
+                if r.get("skill_hash") != skill_hash:
+                    continue  # stale: scored against another skill revision
+                done_ids.add(str(r["id"]))
+                existing.append(r)
 
     pending = [it for it in items if str(it["id"]) not in done_ids]
     if not pending:
@@ -248,7 +314,9 @@ def run_batch(
                             "id": str(item["id"]), "hard": 0, "soft": 0.0, "criteria": {},
                             "fail_reason": f"unexpected: {type(exc).__name__}: {exc}",
                             "task_type": "debugging", "agent_ok": False, "n_turns": 0,
+                            "infra_error": True,
                         }
+                    res["skill_hash"] = skill_hash
                     results.append(res)
                     completed += 1
                     if res.get("hard"):

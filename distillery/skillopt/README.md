@@ -27,10 +27,16 @@ fixtures, with a **hybrid reward**:
   the fixture's *pristine* test (restored, so a weakened test can't pass) in the
   workspace. Bug fixed → 1.
 - **`soft` (0–1)** — a per-skill process rubric (`skillopt/envs/whetstone/rubric.py`)
-  judged by the optimizer model on the rollout trajectory, with **verbatim-evidence
-  guarding**: no quote from the trajectory → 0.0 for that criterion. This is what
-  stops the optimizer learning skills that make the model *claim* process it didn't
-  follow.
+  judged by the optimizer model on the rollout trajectory, with **code-enforced
+  verbatim-evidence guarding**: `score_criteria` zeroes any criterion whose
+  evidence is not a literal substring of the trajectory (not just a judge
+  instruction — the score is dropped in code). The trajectory is augmented with
+  **harness-verified artifacts** (the real pre/post pytest runs + a harness-computed
+  diff of the agent's edits), so grounding bites against evidence the agent cannot
+  fabricate. This is what stops the optimizer learning skills that make the model
+  *claim* process it didn't follow. (Purely temporal criteria — "reproduced first",
+  "one change at a time" — still derive from the agent's report; faithful
+  action-sequence grading would need `--output-format stream-json`.)
 
 ```
 trainer (vendored)
@@ -112,6 +118,8 @@ for process skills whose value only shows up in agentic execution.
 - **Sandbox.** Rollouts run an autonomous `bypassPermissions` Claude Code agent and
   execute its edited code (pytest) in a disposable workspace under `outputs/`. Point
   it only at trusted, curated fixtures — never an untrusted task set.
-- **`soft` is an LLM judge.** Verbatim-evidence guarded, but editor and judge share a
-  model family. Inspect accepted edits in `history.json` for reward hacking.
+- **`soft` is an LLM judge.** Code-enforced verbatim-evidence grounding (ungrounded
+  quote → 0.0) and harness-verified artifacts in the trajectory blunt the obvious
+  reward-hacking paths, but editor and judge share a model family and the temporal
+  criteria are still report-derived. Inspect accepted edits in `history.json`.
 - **Vendoring drift.** Pinned in VENDORED.md; re-vendor deliberately.
