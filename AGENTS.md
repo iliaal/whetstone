@@ -211,7 +211,13 @@ bash scripts/mirror-to-ai-skills.sh
 
 ### SkillOpt optimizer (offline)
 
-`distillery/skillopt/` is a vendored [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt) (MIT, see its `VENDORED.md`) plus a whetstone env that optimizes a process `SKILL.md` by running the target model **agentically** (Claude Code via `claude_code_exec`) against curated fixtures, with a hybrid reward: deterministic `hard` (fixture test red→green) + a per-skill process rubric `soft`. Pilot skill: `ia-debugging`. Run: `cd distillery/skillopt && PYTHONPATH=. python scripts/train.py --config configs/whetstone/default.yaml`. It is the higher-fidelity, higher-cost counterpart to the single-turn DSPy `evolve` — they coexist. **Offline only: not mirrored, not in the release pipeline; `best_skill.md` promotion stays manual and gated by `test-triggers`.** See `distillery/skillopt/README.md`.
+`distillery/skillopt/` is a vendored [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt) (MIT, see its `VENDORED.md`) plus a whetstone env that optimizes a process `SKILL.md` by running the target model **agentically** (Claude Code via `claude_code_exec`) against curated fixtures, with a hybrid reward: deterministic `hard` (fixture test red→green) + a per-skill process rubric `soft`. It is the **Tier 3** rung of the skill-optimization ladder (`eval-skills` → `evolve` → SkillOpt) — the higher-fidelity, higher-cost path for process skills whose value is agentic, reached when the single-turn DSPy `evolve` plateaus.
+
+**Validated recipe** (full procedure in [SKILLOPT-RUNBOOK.md](distillery/skillopt/SKILLOPT-RUNBOOK.md)): optimize for the **weaker model that actually runs the skill** (capable models saturate `hard`; the process gap is in the weak model), and **blend `soft` into the gate** via `SKILLOPT_SOFT_WEIGHT` (keep `λ < 1/n_val` to preserve the deterministic floor) — a process skill cannot be optimized by the `hard`-only gate.
+
+**Safety:** the rollout drives a `bypassPermissions` agent with its bash sandbox off, so it can reach the host filesystem. Run it **from a bare terminal, never nested in a Claude Code session**, `git`-checkpoint first, keep fixtures tracked, and OS-sandbox anything beyond your own curated fixtures.
+
+**Offline only: not mirrored, not in the release pipeline; `best_skill.md` promotion stays manual and gated by `test-triggers`.** See `distillery/skillopt/README.md` and the runbook.
 
 ## Session harvesting and eval
 
