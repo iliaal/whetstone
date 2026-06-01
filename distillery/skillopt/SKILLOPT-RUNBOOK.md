@@ -88,14 +88,38 @@ for the per-step `selection_hard` / `action` (accept / reject) and diff
 
 ## 5. Onboarding a new process skill
 
-1. Add its rubric to `skillopt/envs/whetstone/rubric.py` — criteria mirror the
-   skill's own rules; weights sum to 1.0. Keep it in sync when the SKILL.md changes.
-2. Decide its deterministic `hard` in `evaluator.py` (debugging: test passes;
-   verification: the verify command appears as an executed tool call; planning: a
-   `.plan/` with the required sections).
-3. Build a fixture set under `fixtures/<skill>/` (model on `fixtures/debugging-hard/`).
-   Every fixture must be red-on-bug / green-on-fix — verify before any rollout.
-4. Choose `SKILLOPT_SOFT_WEIGHT < 1 / n_val` for your validation split size.
+Four pieces per skill (review skills swap the test for a detection spec). The
+wiring is the easy part; **fixture calibration is the real cost** — fixtures must
+leave the weak model headroom or the gate has nothing to optimize.
+
+1. **Rubric** — add `RUBRICS["<skill>"]` in `rubric.py`. Criteria mirror the
+   skill's own rules and must be POSITIVE, quotable actions: the grounding guard
+   zeroes any criterion whose evidence isn't a real trajectory quote, so "the
+   agent did NOT do X" can't be scored. Weights sum to 1.0. Re-sync on SKILL.md edits.
+2. **Hard signal** — pick the deterministic outcome and its evaluator:
+   - **pytest red→green** (`run_hard`) for skills that EDIT code — debugging
+     (fix the bug), simplifying (a structural check goes green), verification (the
+     edge test goes green). The fixture is RED on the seed, GREEN on a correct change.
+   - **detection-match** (`run_detection`) for skills that REPORT — code-review.
+     The agent emits findings; hard = the report localized to the defect AND named
+     the mechanism. The ground-truth `detection: {must_localize, must_include_any}`
+     lives in `splits/items.json` — NEVER copied into the workspace, so it can't be
+     read as an answer key. `evaluate()` routes on `item["detection"]`; review
+     fixtures also set `prompt`/`preamble`/`task_header` so the agent reviews
+     rather than "fixes a bug".
+3. **Fixtures** under `fixtures/<skill>/` with a `build_fixtures.py --verify` gate.
+   CALIBRATE for headroom — if the weak model + seed skill saturates (`hard`=1,
+   `soft`≈1) there is nothing to optimize. Add a trap: the obvious move passes a
+   structural check but breaks a behavior test (`simplifying-traps`), or the happy
+   path passes but an adversarial/edge test fails (`verification-hard`), or the
+   defect is subtle (`code-review-hard`). De-saturation is the goal.
+4. **Config** `configs/whetstone/<skill>.yaml` — set `env.skill_name`,
+   `env.skill_init` (seed from the real production SKILL.md), the fixture paths,
+   and `target: claude-haiku-4-5`. `/skillopt` resolves it by name.
+
+Verify before any rollout: `build_fixtures.py --verify`, rubric weights = 1.0,
+config paths resolve, `pytest tests/test_whetstone_env.py`. **Onboarded:**
+ia-debugging, ia-simplifying-code, ia-verification-before-completion, ia-code-review.
 
 ## 6. Promotion — manual and gated
 
@@ -122,3 +146,14 @@ while keeping `hard` at 1.0, and **rejected** a later edit that regressed `hard`
 (the floor held). The accepted edit added: *"When a test file already exists, run
 it immediately as the very first action — before reading any source or forming
 hypotheses,"* directly targeting haiku's observed skip-reproduction failure.
+
+**ia-simplifying-code (2026-06-01) — full loop, promoted.** Toy fixtures
+saturated (`hard`=1, `soft`=0.97); the calibrated `simplifying-traps` set (the
+obvious one-liner passes the structural check but breaks a behavior test)
+de-saturated to baseline `hard`=0.80, and the gate **accepted two edits**
+(selection 0.92 → 1.15). The learned edit — verify edge-case parity (empty /
+None / no-match / zero) before collapsing a loop to a stdlib one-liner — was
+genuine, not reward-hacking, and was promoted into the shipped skill. The run
+also surfaced and fixed a shared-env bug: the judge silently zeroed `soft`
+(`grounded=None`) on transcripts >~130K chars (see wiki
+`llm-judge-evidence-grounding` Failure 3).

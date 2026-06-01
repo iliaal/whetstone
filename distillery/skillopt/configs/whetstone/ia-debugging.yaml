@@ -1,0 +1,61 @@
+# Whetstone process-skill optimizer — ia-debugging (expanded hard set).
+#
+# Target = Claude Code run agentically in a prepared workspace: it reads the
+# candidate skill, fixes the seeded bug, and we grade hard = the fixture test
+# going red->green. Points at the 10-fixture debugging-hard set (constraint-
+# coupled bugs where the naive fix fails a sibling test) and seeds the REAL
+# production SKILL.md -- unlike configs/_base_ default.yaml, which uses the easy
+# fixtures/debugging set and a weakened skills/initial.md stub for the pilot demo.
+#
+# Recipe: weak target; blend soft via SKILLOPT_SOFT_WEIGHT with lambda < 1/n_val
+# (n_val = 10 here -> lambda < 0.1; use 0.08).
+_base_: ../_base_/default.yaml
+
+model:
+  backend: claude_code_exec
+  optimizer_backend: claude_chat
+  target_backend: claude_code_exec
+  optimizer: claude-sonnet-4-6
+  target: claude-haiku-4-5             # WEAK target — the model the skill must carry
+  reasoning_effort: ""
+  claude_code_exec_path: claude
+  claude_code_exec_use_sdk: cli
+  claude_code_exec_effort: medium
+  claude_code_exec_max_thinking_tokens: 0
+
+train:
+  num_epochs: 2
+  batch_size: 10
+  accumulation: 1
+  seed: 42
+
+gradient:
+  minibatch_size: 10
+  merge_batch_size: 10
+  analyst_workers: 4
+  failure_only: false
+
+optimizer:
+  learning_rate: 3
+  min_learning_rate: 1
+  lr_scheduler: cosine
+  skill_update_mode: patch
+  use_slow_update: false
+  use_meta_skill: false
+
+evaluation:
+  use_gate: true
+  sel_env_num: 0
+  test_env_num: 0
+  eval_test: false
+
+env:
+  name: whetstone
+  skill_init: ../../plugins/whetstone/skills/ia-debugging/SKILL.md
+  split_mode: split_dir
+  split_dir: fixtures/debugging-hard/splits
+  tasks_root: fixtures/debugging-hard/tasks
+  skill_name: ia-debugging
+  exec_timeout: 300
+  test_timeout: 120
+  workers: 4
