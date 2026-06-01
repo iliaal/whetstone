@@ -1,0 +1,62 @@
+# Whetstone process-skill optimizer — ia-simplifying-code.
+#
+# Target = Claude Code run agentically in a prepared workspace (claude_code_exec):
+# it reads the candidate skill, declutters the seeded module, and we grade
+# hard = the fixture's structural simplicity check going red->green WHILE the
+# behavior tests stay green. Optimizer/analyst/judge = Claude via claude_chat.
+#
+# Recipe (see SKILLOPT-RUNBOOK.md): optimize for the WEAK model that actually
+# runs the skill (a capable model saturates hard, leaving the gate no room), and
+# blend soft into the gate via SKILLOPT_SOFT_WEIGHT with lambda < 1/n_val
+# (n_val = 5 here, so lambda < 0.2; 0.15 is the default). Seed = the real
+# production SKILL.md so this optimizes the shipped skill, not a weak stub.
+_base_: ../_base_/default.yaml
+
+model:
+  backend: claude_code_exec
+  optimizer_backend: claude_chat       # analyst / judge / skill-editor
+  target_backend: claude_code_exec     # the simplifying agent
+  optimizer: claude-sonnet-4-6
+  target: claude-haiku-4-5             # WEAK target — the model the skill must carry
+  reasoning_effort: ""
+  claude_code_exec_path: claude
+  claude_code_exec_use_sdk: cli
+  claude_code_exec_effort: medium
+  claude_code_exec_max_thinking_tokens: 0
+
+train:
+  num_epochs: 2
+  batch_size: 5                        # n_train
+  accumulation: 1
+  seed: 42
+
+gradient:
+  minibatch_size: 5
+  merge_batch_size: 5
+  analyst_workers: 4
+  failure_only: false
+
+optimizer:
+  learning_rate: 3                     # max skill edits per step
+  min_learning_rate: 1
+  lr_scheduler: cosine
+  skill_update_mode: patch
+  use_slow_update: false
+  use_meta_skill: false
+
+evaluation:
+  use_gate: true                       # accept an edit only if val improves
+  sel_env_num: 0
+  test_env_num: 0
+  eval_test: false                     # n_test = 1; skip the held-out rollout by default
+
+env:
+  name: whetstone
+  skill_init: ../../plugins/whetstone/skills/ia-simplifying-code/SKILL.md
+  split_mode: split_dir
+  split_dir: fixtures/simplifying-hard/splits
+  tasks_root: fixtures/simplifying-hard/tasks
+  skill_name: ia-simplifying-code
+  exec_timeout: 300                    # per-rollout agentic Claude Code budget (s)
+  test_timeout: 120
+  workers: 4

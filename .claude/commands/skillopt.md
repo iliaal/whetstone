@@ -28,25 +28,31 @@ Therefore:
 ## Arguments
 
 - `skill` (default `ia-debugging`) — the process skill to optimize.
-- `--fixtures <dir>` (default `debugging-hard` for ia-debugging) — fixture set
-  under `distillery/skillopt/fixtures/<dir>/`.
-- `--target <model>` (default `claude-haiku-4-5`) — the **weak** target to optimize
-  for; capable models saturate `hard`, leaving no room.
+- `--fixtures <dir>` (advanced) — override the fixture set named in the skill's
+  config; defaults to whatever `configs/whetstone/<skill>.yaml` points at.
+- `--target <model>` (default: the config's weak target) — override the **weak**
+  target to optimize for; capable models saturate `hard`, leaving no room.
 - `--weight <λ>` (default auto) — soft blend weight; must be `< 1/n_val`.
 - `--epochs N` (default `2`).
 - `--run` — execute in-session (hardened) instead of printing the command.
 
 ## Procedure (follow exactly)
 
-1. **Resolve the fixture dir.** `FIXDIR = distillery/skillopt/fixtures/<--fixtures
-   or default>`. Confirm `FIXDIR/build_fixtures.py`, `FIXDIR/splits/{train,val,test}/items.json`,
-   and `FIXDIR/tasks/` exist. If not, tell the user to build/author the fixtures
-   (see the runbook §5) and STOP.
+1. **Resolve the per-skill config.** `CONFIG = distillery/skillopt/configs/whetstone/<skill>.yaml`.
+   If it does not exist, the skill is **not onboarded** — SkillOpt needs four pieces
+   per skill: fixtures, a `RUBRICS[<skill>]` entry in
+   `skillopt/envs/whetstone/rubric.py`, this config, and a seed (`env.skill_init`).
+   Tell the user to onboard it (see the runbook §5) and STOP. **Do not fall back to
+   `default.yaml`** — that silently optimizes ia-debugging's skill against the wrong
+   fixtures. Read `FIXDIR` from the config's `env.tasks_root`; confirm `FIXDIR`, the
+   sibling `splits/{train,val,test}/items.json`, and the set's `build_fixtures.py`
+   exist.
 
 2. **Validate fixtures** (deterministic, no tokens):
-   `cd distillery/skillopt && python3 fixtures/<dir>/build_fixtures.py --verify`.
-   Every line must read `[OK] … buggy=RED fixed=GREEN`. If any is `BROKEN`, STOP
-   and report — a malformed fixture corrupts the run.
+   `cd distillery/skillopt && python3 <FIXDIR>/build_fixtures.py --verify`. Every
+   line must be `[OK] …` (red-on-seed / green-on-fix — the exact wording varies per
+   set, e.g. `buggy=RED fixed=GREEN` or `cluttered=RED simplified=GREEN`). If any is
+   `BROKEN`, STOP and report — a malformed fixture corrupts the run.
 
 3. **Compute the soft weight.** Read `n = len(splits/val/items.json)`. The
    constraint is `λ < 1/n` (so soft can refine among correct fixes but never
@@ -57,13 +63,16 @@ Therefore:
 4. **Verify the target CLI** is present: `claude --version` (the rollout shells
    `claude -p --model <target>`). If missing, STOP.
 
-5. **Build the command** (fill in the resolved values; `--batch_size` = `n_train`):
+5. **Build the command** (the per-skill `CONFIG` already owns `skill_name`,
+   `skill_init`, the fixture paths, and the weak `target`; `--batch_size` = `n_train`):
    ```bash
    cd distillery/skillopt && SKILLOPT_SOFT_WEIGHT=<λ> PYTHONPATH=. python scripts/train.py \
-     --config configs/whetstone/default.yaml \
-     --cfg-options env.split_dir=fixtures/<dir>/splits env.tasks_root=fixtures/<dir>/tasks \
-     --target_model <target> --num_epochs <N> --batch_size <n_train> --eval_test false
+     --config configs/whetstone/<skill>.yaml \
+     --num_epochs <N> --batch_size <n_train> --eval_test false
    ```
+   Add `--target_model <target>` only to override the config's weak target, or
+   `--cfg-options env.tasks_root=fixtures/<dir>/tasks env.split_dir=fixtures/<dir>/splits`
+   only when `--fixtures` overrode the set.
 
 6. **Default (no `--run`)** — print the command above in a copy-paste block,
    preceded by: "Run this in a **bare terminal** (a separate shell, not inside

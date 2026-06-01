@@ -41,6 +41,13 @@ RUBRICS: dict[str, Rubric] = {
         "failing_test_first":    (0.20, "the failing test is run/confirmed red before the fix and re-run green after -- the red->green transition is visible in the trajectory"),
         "escalated_not_guessed": (0.15, "after repeated failed attempts the agent re-grounds (re-reads the code path, invalidates the prior hypothesis explicitly) rather than guessing variants of the same theory"),
     },
+    "ia-simplifying-code": {
+        "read_before_edit":          (0.20, "the target module and its test are read (file contents opened/printed) BEFORE the first edit to the module -- a Read/cat of the source precedes any Edit, quoted from the trajectory"),
+        "structural_target_removed": (0.25, "the cluttered construct is actually replaced in the diff -- the redundant branch / manual loop / nested if / unused local / duplicated call is removed and shown swapped for the simpler form, quoted from the agent's diff"),
+        "behavior_reverified_green": (0.25, "after editing, the test suite is RE-RUN and the behavior tests are observed passing post-edit -- a post-edit pytest invocation with a passing result appears in the trajectory (the harness-verified post-fix run counts)"),
+        "surgical_scope":            (0.15, "only the target function is changed -- the diff is confined to the cluttered construct with no new import, helper, dependency, or unrelated line; the small focused diff hunk is visible"),
+        "idiomatic_simplification":  (0.15, "the replacement uses an idiomatic stdlib/language construct (comprehension, a builtin like sum()/max(), a guard clause, or a single boolean expression) rather than a hand-rolled equivalent, visible in the diff"),
+    },
 }
 
 
@@ -54,7 +61,7 @@ def get(skill: str) -> Rubric:
 
 
 JUDGE_SYSTEM = (
-    "You score whether an agent FOLLOWED a debugging process, not whether the result looks polished.\n"
+    "You score whether an agent FOLLOWED the intended process, not whether the result looks polished.\n"
     "For each criterion give a score 0.0-1.0 and a VERBATIM quote from the trajectory as evidence.\n"
     "If no supporting evidence exists in the trajectory, the score is 0.0. Do not infer. Do not be generous.\n"
     "A claim without a concrete artifact (a command that ran, a file:line, a test result) is not evidence.\n"

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "sc-flag",
+    "question": "access.py works and its behavior tests pass, but can_access() is written as a nest of if/else branches that each return True or False. Simplify it to the equivalent single boolean expression WITHOUT changing behavior. A structural check (test_no_redundant_branching) currently fails because the function still uses if-statements; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  access.py   (works; behavior tests pass; cluttered)\n  test_access.py   (pytest; a structural simplicity check currently fails)\n\nClutter: redundant boolean branching (if/else returning True/False)\nKeep behavior identical -- the behavior tests guard it. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc-flag",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc-loop",
+    "question": "stats.py works and its behavior tests pass, but sum_even_squares() builds its result with a manual accumulator loop. Replace the loop with a builtin + generator expression WITHOUT changing behavior. A structural check (test_no_manual_loop) currently fails because a for-loop is still present; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  stats.py   (works; behavior tests pass; cluttered)\n  test_stats.py   (pytest; a structural simplicity check currently fails)\n\nClutter: manual accumulation loop instead of a builtin/comprehension\nKeep behavior identical -- the behavior tests guard it. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc-loop",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc-dead",
+    "question": "pricing.py works and its behavior tests pass, but final_price() assigns local variables that are never used and clamps with a verbose if/else. Remove the dead locals (and tidy the clamp) WITHOUT changing behavior. A structural check (test_no_unused_locals) currently fails because of the unused assignments; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  pricing.py   (works; behavior tests pass; cluttered)\n  test_pricing.py   (pytest; a structural simplicity check currently fails)\n\nClutter: variables assigned but never used (dead code)\nKeep behavior identical -- the behavior tests guard it. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc-dead",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc-nest",
+    "question": "shipping.py works and its behavior tests pass, but shipping_cost() is three if-levels deep. Flatten it (guard clause for the zero-weight case, then additive adjustments) WITHOUT changing behavior. A structural check (test_nesting_is_flat) currently fails because the if-nesting is too deep; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  shipping.py   (works; behavior tests pass; cluttered)\n  test_shipping.py   (pytest; a structural simplicity check currently fails)\n\nClutter: deep if-nesting instead of guard clauses\nKeep behavior identical -- the behavior tests guard it. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc-nest",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc-dup",
+    "question": "names.py works and its behavior tests pass, but format_full_name() repeats the same strip()+title() normalization separately for each field. De-duplicate it so the normalization appears once WITHOUT changing behavior. A structural check (test_normalization_not_duplicated) currently fails because strip/title each appear more than once; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  names.py   (works; behavior tests pass; cluttered)\n  test_names.py   (pytest; a structural simplicity check currently fails)\n\nClutter: duplicated normalization logic per field\nKeep behavior identical -- the behavior tests guard it. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc-dup",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "sc-dead",
+    "question": "pricing.py works and its behavior tests pass, but final_price() assigns local variables that are never used and clamps with a verbose if/else. Remove the dead locals (and tidy the clamp) WITHOUT changing behavior. A structural check (test_no_unused_locals) currently fails because of the unused assignments; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  pricing.py   (works; behavior tests pass; cluttered)\n  test_pricing.py   (pytest; a structural simplicity check currently fails)\n\nClutter: variables assigned but never used (dead code)\nKeep behavior identical -- the behavior tests guard it. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc-dead",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]
