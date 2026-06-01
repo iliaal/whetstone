@@ -39,6 +39,7 @@ description: >-
 | Duplicated block (**3+** occurrences) | Extract shared function. Two copies = leave inline; wait for the third |
 | Magic numbers/strings | Named constants |
 | Complex conditional | Extract to descriptively-named boolean or function |
+| Boolean-returning `if/else` (each branch returns a literal `True`/`False`) | Collapse to the boolean expression itself: `return a and b`, not a branch per literal |
 | Dense transform chain (3+ chained methods) | Break into named intermediates for debuggability |
 | Dead code / unreachable branches | Delete entirely -- no commented-out code |
 | Unnecessary `else` after return | Remove `else`, dedent |
@@ -54,7 +55,7 @@ When simplifying AI-generated code, specifically target:
 - **Inconsistent style** that drifts from the file's existing conventions -- match the file
 - **Placeholder stubs** (`// ...`, `// rest of code`, `// similar to above`, `// continue pattern`, `// add more as needed`) -- leave unsimplified code as-is rather than replacing it with stubs
 - **Redundant error wrapping** (`catch(e) { throw e; }`, `catch(e) { throw new Error(e.message); }`) that strips the original stack for no reason -- remove the try/catch entirely and let errors propagate
-- **Verbose stdlib reimplementations** (hand-rolled loops that replicate `array_filter`, `Array.from`, `Collection::pluck()`, `itertools`) -- replace with the stdlib/framework one-liner
+- **Verbose stdlib reimplementations** (hand-rolled loops that replicate `array_filter`, `Array.from`, `Collection::pluck()`, `itertools`) -- replace with the stdlib/framework one-liner, but verify edge-case parity first: empty input, null/None guard, no-match default, zero-value path. The one-liner can silently differ from the loop (an empty-input crash, a missing no-match default, lost ordering) -- a structurally cleaner version that changes behavior on an edge case is not a simplification
 
 ## Stop Conditions
 
