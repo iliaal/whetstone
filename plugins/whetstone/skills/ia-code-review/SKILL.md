@@ -30,17 +30,7 @@ Exclude: lockfiles, minified/bundled output, vendored/generated code.
 
 ### Base-branch resolution for branch reviews
 
-This governs the *comparison range* for a branch review — distinct from the file-selection chain above. When the review target is a branch (not a working-tree diff), run base-branch resolution first; the file-selection fallbacks above are for in-progress local work, where `git diff HEAD` is the correct command. Do not stitch the two: a branch review needs the merge-base, not the working-tree delta.
-
-When reviewing a branch (no specific files, no PR), derive the comparison base via this fallback chain:
-
-1. **If a PR exists for the branch** -- use its base: `gh pr view --json baseRefName --jq .baseRefName`. Authoritative; no further detection needed.
-2. **Else infer the default branch**: try `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` (parses to `origin/<name>`). If unset, try `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
-3. **Else fallback list**: try `origin/main`, `origin/master`, `origin/develop`, `origin/trunk` in order; pick the first that resolves via `git rev-parse --verify`. Bare-local names are a last resort if no `origin/*` remote ref exists.
-4. **Compute the diff base**: `git merge-base HEAD <resolved-base>`. Review the range `<merge-base>..HEAD`, not `HEAD` against the working tree.
-5. **Shallow-clone retry**: if `git merge-base` returns nothing and `git rev-parse --is-shallow-repository` is `true`, run `git fetch --unshallow origin` and retry. Document this in the review output so the reviewer knows the comparison range only became available after unshallowing.
-
-**Never fall back to `git diff HEAD`** when base resolution fails -- that hides all committed work on the branch and reviews only the uncommitted delta. Stop and ask which base to use instead.
+When the review target is a branch (not a working-tree diff), the comparison range is the **merge-base**, not the working-tree delta — resolve it before reading any diff. Full fallback chain (PR base → default-branch inference → `origin/*` fallback list → `git merge-base` → shallow-clone retry) and the "never fall back to `git diff HEAD`" rule in [scope-resolution.md](./references/scope-resolution.md).
 
 ## Review Mode Selection
 
@@ -55,7 +45,7 @@ When reviewing a branch (no specific files, no PR), derive the comparison base v
 | Database migrations present | any | File path matching |
 | API surface changes (public endpoints, exported interfaces) | any | File path matching |
 
-**Test file exclusion:** test files inflate complexity signals without adding review risk -- they're boilerplate-heavy and follow repetitive patterns. Exclude paths matching `tests/`, `test/`, `__tests__/`, `*.test.*`, `*.spec.*`, `*_test.*` from the lines, files, and directories signals. Use `git diff --stat -- ':!tests/' ':!test/' ':!__tests__/' ':!*.test.*' ':!*.spec.*' ':!*_test.*'` for the filtered count. Report both totals for transparency: "450 lines changed (280 excluding tests)."
+**Test file exclusion:** exclude test paths (`tests/`, `test/`, `__tests__/`, `*.test.*`, `*.spec.*`, `*_test.*`) from the lines/files/directories signals — they inflate complexity without adding review risk. Filter with `git diff --stat -- ':!tests/' ':!*.test.*' ':!*.spec.*' ':!*_test.*'` and report both totals: "450 lines changed (280 excluding tests)."
 
 **3+ signals → deep review.** Inform the user, then dispatch parallel specialist agents per [deep-review.md](./references/deep-review.md). Pass the diff to agents -- do NOT read it first. Reading and analyzing the diff yourself before dispatching agents defeats the purpose of deep review. **Stop here -- do not proceed to the Review Process section.**
 
@@ -74,7 +64,7 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 1. **Context** — do these before reading code:
    - **Scope Drift Check**: compare `git diff --stat` against the PR's stated intent. Classify as CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING. If DRIFT, note the drifted files and ask the author: ship as-is, split, or remove unrelated changes?
    - **Read the intent**: PR description, linked issue, or task spec. If the code does something the intent doesn't describe, or fails to do something the intent promises, flag as a finding — correct code that solves the wrong problem is still wrong.
-   - **Fetch existing discussions (when present)**: project `reviews` and `comments` to a presence flag first to avoid spawning empty work. `gh pr view <pr> --json reviews,comments --jq '(((.reviews // []) | map(select(.state != "APPROVED" or .body != "")) | length) > 0) or (((.comments // []) | length) > 0)'` returns `true` only when at least one substantive review or issue comment exists (approval-only clicks excluded; null-defensive on PRs with no review array). On `false`, skip the prior-comments pass entirely. On `true`, fetch the bodies via `gh api repos/{owner}/{repo}/pulls/{pr}/comments` and reconcile before raising findings — prior reviewers may have already resolved issues you'd otherwise re-raise.
+   - **Fetch existing discussions (when present)**: before raising findings, reconcile prior review comments so you don't re-raise issues other reviewers already resolved. Gate the fetch on a presence check to avoid empty work — the exact `gh pr view`/`gh api` commands are in [scope-resolution.md](./references/scope-resolution.md).
    - **Run automated gates**: execute the project's test/lint suite if available (check CI config for the canonical commands) to catch failures before manual review.
 2. **Structural scan** -- architecture, file organization, API surface changes. Flag breaking changes. For files marked as added (`A`) in the diff, use the diff content directly -- don't attempt to read them from the working tree when reviewing a remote branch.
 3. **Line-by-line** -- correctness, edge cases, error handling, naming, readability. Use question-based feedback ("What happens if `input` is empty here?") instead of declarative statements to encourage author thinking.
@@ -85,9 +75,7 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 8. **Verify** -- run formatter/lint/tests on touched files. State what was skipped and why. If code changes affect features described in README/ARCHITECTURE/CONTRIBUTING, note doc staleness as informational.
 9. **Summary** -- present findings grouped by severity with verdict: **Ready to merge / Ready with fixes / Not ready**.
 
-**Large diffs (>500 lines):** Review by module/directory rather than file-by-file. Summarize each module's changes first, then drill into high-risk areas. Flag if the PR should be split.
-
-**Change sizing:** Ideal PRs are ~100-300 lines of meaningful changes (excluding generated code, lockfiles, snapshots). PRs beyond this range have slower review cycles and higher defect rates. When a PR exceeds this, suggest splitting using one of these strategies: (a) **Stack** -- sequential PRs where each builds on the previous, merged in order; (b) **By file group** -- group related files (e.g., model + migration + tests) into separate PRs; (c) **Horizontal** -- split by layer (frontend, API, database); (d) **Vertical** -- split by feature slice (each PR delivers one user-visible behavior end-to-end).
+**Large diffs & PR sizing:** For diffs >500 lines, review by module rather than file-by-file. Flag oversized PRs (ideal ~100-300 meaningful lines, excluding generated code) and suggest a split. Module-review approach, sizing thresholds, and the four split strategies (stack / by-file-group / horizontal / vertical) in [pr-sizing.md](./references/pr-sizing.md).
 
 ## Severity and Confidence
 
@@ -122,7 +110,7 @@ Prefix inline review comments so authors know what requires action:
 - Rubber-stamping without reading -- always verify at least Stage 1
 - Reviewing code quality before verifying spec compliance -- do Stage 1 first
 - Recommending fix patterns without checking currency -- verify the pattern is current for the project's framework version before suggesting it. Prefer built-in alternatives from newer versions
-- Fighting documented overrides -- if the project's `CLAUDE.md`, `AGENTS.md`, or an inline comment documents a deliberate bypass of a general rule (e.g., "we intentionally allow X because Y"), honor it. Do not re-raise the underlying concern; do not "just to be safe" around it. If the override lacks rationale, suggest documenting the reason — don't argue the rule.
+- Fighting documented overrides -- if `CLAUDE.md`, `AGENTS.md`, or an inline comment documents a deliberate bypass (e.g., "we allow X because Y"), honor it: don't re-raise the concern or work around it "just to be safe". If the override lacks a rationale, suggest documenting one — don't argue the rule.
 
 ## When to Stop and Ask
 
@@ -157,28 +145,30 @@ Prefix inline review comments so authors know what requires action:
 Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]
 ```
 
-Number findings as `CR-001`, `CR-002`... sequentially across all severity levels so they can be referenced by ID in discussions, PR comments, and follow-up todos. Limit to 10 findings per severity. If more exist, note the count and show the highest-impact ones.
+Number findings `CR-001`, `CR-002`... sequentially across all severities so they're referenceable by ID. Limit to 10 per severity; if more exist, note the count and show the highest-impact ones.
 
-**Markdown safety:** When aggregating findings into a table, escape literal `|` in cell content as `\|`; code excerpts with pipe operators (`a | b`, `string | null`) split rows silently otherwise. Bullet output above is pipe-safe.
+**Markdown safety:** in table cells, escape literal `|` as `\|` — code excerpts with pipe operators (`a | b`, `string | null`) split rows silently otherwise. Bullet output is pipe-safe.
 
-For multi-agent consolidation (deep review, parallel specialists), apply the merge algorithm in [deep-review.md](./references/deep-review.md) — it handles same-line dedupe, conflicting severity, `NEEDS DECISION` flagging, and cross-lens confidence boosting.
+For multi-agent consolidation (deep/parallel review), apply the merge algorithm in [deep-review.md](./references/deep-review.md) — same-line dedupe, conflicting severity, `NEEDS DECISION` flagging, cross-lens confidence boosting.
 
-**Clean review (no findings):** If the code is solid, say so explicitly. Summarize what was checked and why no issues were found. A clean review is a valid outcome, not an indication of insufficient effort.
+**Clean review (no findings):** if the code is solid, say so explicitly — summarize what was checked and why no issues were found. A clean review is a valid outcome, not a sign of insufficient effort.
 
 ## References
 
-| Document | When to load | What it covers |
-|----------|-------------|----------------|
-| [security-patterns.md](./references/security-patterns.md) | Security review step or deep review security agent | Grep-able detection patterns across 11 vulnerability classes |
-| [security-test-coverage.md](./references/security-test-coverage.md) | Full security audit deliverable (used by `ia-security-sentinel` agent) | Auth edge cases, authorization, input boundary, concurrency, session hygiene, output boundary checklist |
-| [language-profiles.md](./references/language-profiles.md) | Language-specific checks step | TypeScript/React, Python, PHP, Shell/CI, Config, Security, LLM Trust |
-| [deep-review.md](./references/deep-review.md) | When mode selection triggers deep review | Specialist agents, prompt template, merge algorithm, model selection |
-| [review-traps-catalog.md](./references/review-traps-catalog.md) | Starting any non-trivial review; writing findings with "should"/"could"/"what if" | Reachability-before-severity, docs-idiom smoke test, convention-from-3-files, speculative future-design, paired-enum drift, cross-repo contract staleness, language-version gotchas |
-| [check-categories.md](./references/check-categories.md) | Line-by-line step, structuring the read | Correctness, Maintainability, Performance, Adversarial, AI-generated-code lens |
-| [action-routing.md](./references/action-routing.md) | Classifying fix-application for each finding | 4-tier split (safe_auto / gated_auto / manual / advisory), conflict resolution |
-| [severity-and-confidence.md](./references/severity-and-confidence.md) | Classifying severity + confidence for each finding | Critical/Important/Medium/Minor tiers, 5-band confidence rubric, FP suppression categories |
-| [false-positive-suppression.md](./references/false-positive-suppression.md) | Detailed FP categories with framework-idiom and test-specific examples | Linked from severity-and-confidence; covers overridable patterns |
-| [external-review-subprocess.md](./references/external-review-subprocess.md) | Review delegated to a long-running external CLI (codex/`claude -p`, `/code-review ultra`, slow test reviewer) | Heartbeat tolerance (don't kill quiet-but-alive), run-until-clean-then-stop, frozen-diff binding |
+| Document | Load when — what it covers |
+|----------|----------------------------|
+| [security-patterns.md](./references/security-patterns.md) | Security step — grep-able detection patterns, 11 vulnerability classes |
+| [security-test-coverage.md](./references/security-test-coverage.md) | Security-audit deliverable (`ia-security-sentinel`) — auth/authz, input-boundary, concurrency, session, output checklist |
+| [language-profiles.md](./references/language-profiles.md) | Language-specific checks — TS/React, Python, PHP, Shell/CI, Config, LLM Trust |
+| [deep-review.md](./references/deep-review.md) | Mode triggers deep review — specialist agents, prompt template, merge algorithm, model selection |
+| [review-traps-catalog.md](./references/review-traps-catalog.md) | Any non-trivial review; "should"/"could"/"what if" findings — reachability-first, convention-from-3, speculative-design, enum drift, contract staleness, version gotchas |
+| [check-categories.md](./references/check-categories.md) | Line-by-line step — correctness, maintainability, performance, adversarial, AI-code lens |
+| [action-routing.md](./references/action-routing.md) | Per-finding fix tier — safe_auto / gated_auto / manual / advisory, conflict resolution |
+| [severity-and-confidence.md](./references/severity-and-confidence.md) | Severity + confidence — 4 tiers, 5-band rubric, FP suppression |
+| [false-positive-suppression.md](./references/false-positive-suppression.md) | FP categories — framework-idiom and test-specific overridable patterns |
+| [scope-resolution.md](./references/scope-resolution.md) | Branch review or prior PR comments — merge-base resolution, discussion-fetch commands |
+| [pr-sizing.md](./references/pr-sizing.md) | Large/oversized diff — module review, sizing thresholds, split strategies |
+| [external-review-subprocess.md](./references/external-review-subprocess.md) | External-CLI reviewer (codex/`claude -p`, `/code-review ultra`) — heartbeat tolerance, run-until-clean, frozen-diff binding |
 
 ## Integration
 
