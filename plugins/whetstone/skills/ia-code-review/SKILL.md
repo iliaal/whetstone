@@ -81,7 +81,7 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 
 Four severity tiers (Critical / Important / Medium / Minor) and a 5-band confidence rubric (0.0-1.0 → Report / Report-if-actionable / Suppress) govern what lands in the report. Full rules, false-positive suppression categories, and the LLM-specific prompt-injection exception in [severity-and-confidence.md](./references/severity-and-confidence.md).
 
-Tie every finding to concrete code evidence (file path, line number, specific pattern). Never fabricate references.
+Tie every finding to concrete code evidence (file path, line number, specific pattern), carried in the `CR-XXX` entry itself — not only in the surrounding prose. An entry that names a function or describes a bug without its `[file:line]` and `` `quoted code` `` can't be verified by the reader. Never fabricate references.
 
 ## What to Check
 
