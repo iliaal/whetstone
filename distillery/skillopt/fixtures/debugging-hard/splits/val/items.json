@@ -53,5 +53,60 @@
       "pytest",
       "-q"
     ]
+  },
+  {
+    "id": "hard-mutdefault",
+    "question": "collect(item, bucket=None) appends item to bucket and returns it. A call with no explicit bucket must start from an EMPTY list, but an explicit bucket passed in must accumulate across calls. Right now independent calls leak state into each other.",
+    "context": "Workspace files:\n  accumulate.py   (the module under test, contains a bug)\n  test_accumulate.py   (pytest; currently failing)\n\nBug class: mutable default argument shared across calls\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-mutdefault",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-pagination",
+    "question": "page_count(total, per_page) returns how many pages are needed to show `total` items at `per_page` each. It currently drops the final partial page (101 items at 10/page must be 11 pages, not 10), while exact multiples and zero items must still be right.",
+    "context": "Workspace files:\n  pages.py   (the module under test, contains a bug)\n  test_pages.py   (pytest; currently failing)\n\nBug class: integer floor division drops the partial last page\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-pagination",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-floatcents",
+    "question": "total_cents(prices) sums a list of dollar amounts (floats) and returns whole cents. It loses a cent on amounts that aren't exactly representable in binary float ([0.29] must be 29 cents, not 28), while exact amounts stay correct.",
+    "context": "Workspace files:\n  money.py   (the module under test, contains a bug)\n  test_money.py   (pytest; currently failing)\n\nBug class: float truncation vs rounding\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-floatcents",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-stripchars",
+    "question": "remove_prefix(s, prefix) must remove `prefix` from the start of s exactly once, and leave s unchanged when it does not start with prefix. It currently strips too much: remove_prefix('foofoobar', 'fo') must be 'ofoobar', and remove_prefix('ooze', 'fo') must be 'ooze' (the 'o' is in the prefix charset but 'ooze' has no 'fo' prefix).",
+    "context": "Workspace files:\n  prefix.py   (the module under test, contains a bug)\n  test_prefix.py   (pytest; currently failing)\n\nBug class: str.lstrip strips a character SET, not a prefix\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-stripchars",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "hard-inplace",
+    "question": "top_n(items, n) returns the n largest items in descending order and must NOT mutate its input list. It currently sorts the caller's list in place, so the caller's data is reordered as a side effect.",
+    "context": "Workspace files:\n  ranking.py   (the module under test, contains a bug)\n  test_ranking.py   (pytest; currently failing)\n\nBug class: in-place mutation of a caller's argument\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-inplace",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
   }
 ]

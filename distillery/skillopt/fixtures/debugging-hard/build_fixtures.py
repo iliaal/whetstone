@@ -307,15 +307,198 @@ def test_empty_is_zero():
     assert format_total([]) == "$0.00"
 ''',
     },
+    {
+        "id": "hard-mutdefault",
+        "module": "accumulate.py",
+        "bug_class": "mutable default argument shared across calls",
+        "fix_note": "default [] is created once and shared; use a None sentinel. A naive 'bucket=[] inside' breaks the explicit-bucket accumulate case.",
+        "report": (
+            "collect(item, bucket=None) appends item to bucket and returns it. A call with no "
+            "explicit bucket must start from an EMPTY list, but an explicit bucket passed in "
+            "must accumulate across calls. Right now independent calls leak state into each "
+            "other."
+        ),
+        "code": '''def collect(item, bucket=[]):
+    """Append item to bucket and return it; no-bucket calls start empty."""
+    bucket.append(item)
+    return bucket
+''',
+        "fix_code": '''def collect(item, bucket=None):
+    """Append item to bucket and return it; no-bucket calls start empty."""
+    if bucket is None:
+        bucket = []
+    bucket.append(item)
+    return bucket
+''',
+        "test": '''from accumulate import collect
+
+
+def test_independent_calls_start_empty():
+    assert collect(1) == [1]
+    assert collect(2) == [2]
+
+
+def test_explicit_bucket_accumulates():
+    b = []
+    collect(1, b)
+    collect(2, b)
+    assert b == [1, 2]
+''',
+    },
+    {
+        "id": "hard-pagination",
+        "module": "pages.py",
+        "bug_class": "integer floor division drops the partial last page",
+        "fix_note": "floor division loses the remainder page; ceil division is (total + per - 1) // per. A naive 'total // per + 1' over-counts exact multiples and empty input.",
+        "report": (
+            "page_count(total, per_page) returns how many pages are needed to show `total` "
+            "items at `per_page` each. It currently drops the final partial page (101 items at "
+            "10/page must be 11 pages, not 10), while exact multiples and zero items must still "
+            "be right."
+        ),
+        "code": '''def page_count(total, per_page):
+    """Pages needed to show `total` items at `per_page` each."""
+    return total // per_page
+''',
+        "fix_code": '''def page_count(total, per_page):
+    """Pages needed to show `total` items at `per_page` each."""
+    return (total + per_page - 1) // per_page
+''',
+        "test": '''from pages import page_count
+
+
+def test_exact_multiple():
+    assert page_count(100, 10) == 10
+
+
+def test_partial_last_page():
+    assert page_count(101, 10) == 11
+
+
+def test_fewer_than_one_page():
+    assert page_count(5, 10) == 1
+
+
+def test_zero_items():
+    assert page_count(0, 10) == 0
+''',
+    },
+    {
+        "id": "hard-floatcents",
+        "module": "money.py",
+        "bug_class": "float truncation vs rounding",
+        "fix_note": "int() truncates the binary-float error (0.29 -> 28.9999... -> int 28); round() gives 29. A naive per-element int(p*100) also truncates and fails the same case.",
+        "report": (
+            "total_cents(prices) sums a list of dollar amounts (floats) and returns whole "
+            "cents. It loses a cent on amounts that aren't exactly representable in binary "
+            "float ([0.29] must be 29 cents, not 28), while exact amounts stay correct."
+        ),
+        "code": '''def total_cents(prices):
+    """Sum dollar floats and return whole cents."""
+    return int(sum(prices) * 100)
+''',
+        "fix_code": '''def total_cents(prices):
+    """Sum dollar floats and return whole cents."""
+    return round(sum(prices) * 100)
+''',
+        "test": '''from money import total_cents
+
+
+def test_truncation_drops_a_cent():
+    assert total_cents([0.29]) == 29
+
+
+def test_accumulated_truncation():
+    assert total_cents([0.29, 0.29]) == 58
+
+
+def test_exact():
+    assert total_cents([1.0, 2.0]) == 300
+''',
+    },
+    {
+        "id": "hard-stripchars",
+        "module": "prefix.py",
+        "bug_class": "str.lstrip strips a character SET, not a prefix",
+        "fix_note": "lstrip(prefix) removes any leading chars in the set, not the literal prefix; use startswith + slice (or removeprefix). A naive replace(prefix, '', 1) removes the first OCCURRENCE anywhere, not only a leading one.",
+        "report": (
+            "remove_prefix(s, prefix) must remove `prefix` from the start of s exactly once, "
+            "and leave s unchanged when it does not start with prefix. It currently strips too "
+            "much: remove_prefix('foofoobar', 'fo') must be 'ofoobar', and remove_prefix('ooze', "
+            "'fo') must be 'ooze' (the 'o' is in the prefix charset but 'ooze' has no 'fo' "
+            "prefix)."
+        ),
+        "code": '''def remove_prefix(s, prefix):
+    """Remove a leading `prefix` once; unchanged if absent."""
+    return s.lstrip(prefix)
+''',
+        "fix_code": '''def remove_prefix(s, prefix):
+    """Remove a leading `prefix` once; unchanged if absent."""
+    return s[len(prefix):] if s.startswith(prefix) else s
+''',
+        "test": '''from prefix import remove_prefix
+
+
+def test_removes_prefix():
+    assert remove_prefix("foobar", "foo") == "bar"
+
+
+def test_absent_prefix_unchanged():
+    assert remove_prefix("bazbar", "foo") == "bazbar"
+
+
+def test_strips_one_prefix_not_charset():
+    assert remove_prefix("foofoobar", "fo") == "ofoobar"
+
+
+def test_charset_member_not_prefix_unchanged():
+    assert remove_prefix("ooze", "fo") == "ooze"
+''',
+    },
+    {
+        "id": "hard-inplace",
+        "module": "ranking.py",
+        "bug_class": "in-place mutation of a caller's argument",
+        "fix_note": "list.sort() mutates the caller's list; sorted() returns a new list. A naive 'c = items; c.sort()' still aliases and mutates; need sorted() or items.copy().",
+        "report": (
+            "top_n(items, n) returns the n largest items in descending order and must NOT "
+            "mutate its input list. It currently sorts the caller's list in place, so the "
+            "caller's data is reordered as a side effect."
+        ),
+        "code": '''def top_n(items, n):
+    """The n largest items, descending; must not mutate the input."""
+    items.sort(reverse=True)
+    return items[:n]
+''',
+        "fix_code": '''def top_n(items, n):
+    """The n largest items, descending; must not mutate the input."""
+    return sorted(items, reverse=True)[:n]
+''',
+        "test": '''from ranking import top_n
+
+
+def test_returns_top_n():
+    assert top_n([3, 1, 4, 1, 5], 2) == [5, 4]
+
+
+def test_does_not_mutate_input():
+    data = [3, 1, 4, 1, 5]
+    top_n(data, 2)
+    assert data == [3, 1, 4, 1, 5]
+''',
+    },
 ]
 
 # train drives reflection; val drives the gate. Overlap is intentional here:
 # this set is a mechanics demo (can the gate accept an edit?), not a clean
-# generalization eval. All five appear in both so the gate sees every bug class.
+# generalization eval. All ten bug classes appear in both so the gate sees each.
+# n_val = 10 -> the soft-blend ceiling tightens to lambda < 1/10 = 0.1.
+_ALL = ["hard-snapshot", "hard-billsplit", "hard-lru", "hard-merge", "hard-parse",
+        "hard-mutdefault", "hard-pagination", "hard-floatcents", "hard-stripchars", "hard-inplace"]
 SPLIT_ASSIGN = {
-    "train": ["hard-snapshot", "hard-billsplit", "hard-lru", "hard-merge", "hard-parse"],
-    "val":   ["hard-snapshot", "hard-billsplit", "hard-lru", "hard-merge", "hard-parse"],
-    "test":  ["hard-parse"],
+    "train": list(_ALL),
+    "val":   list(_ALL),
+    "test":  ["hard-parse", "hard-stripchars"],
 }
 
 

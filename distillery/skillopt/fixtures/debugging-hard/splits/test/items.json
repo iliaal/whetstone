@@ -9,5 +9,16 @@
       "pytest",
       "-q"
     ]
+  },
+  {
+    "id": "hard-stripchars",
+    "question": "remove_prefix(s, prefix) must remove `prefix` from the start of s exactly once, and leave s unchanged when it does not start with prefix. It currently strips too much: remove_prefix('foofoobar', 'fo') must be 'ofoobar', and remove_prefix('ooze', 'fo') must be 'ooze' (the 'o' is in the prefix charset but 'ooze' has no 'fo' prefix).",
+    "context": "Workspace files:\n  prefix.py   (the module under test, contains a bug)\n  test_prefix.py   (pytest; currently failing)\n\nBug class: str.lstrip strips a character SET, not a prefix\nRun `python -m pytest -q` to see the failure.",
+    "fixture": "hard-stripchars",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
   }
 ]
