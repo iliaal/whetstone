@@ -1,0 +1,57 @@
+[
+  {
+    "id": "ver-boundary",
+    "question": "in_range(x, lo, hi) was implemented and reported COMPLETE: it must return True when x is within [lo, hi] INCLUSIVE. The happy-path cases work. Before signing off, verify it is actually complete -- confirm the boundary behavior the spec requires and fix anything the full test run surfaces.",
+    "context": "Workspace files:\n  range_check.py   (reported implemented + complete; happy path works)\n  test_range_check.py   (pytest; the full suite is the verification command)\n\nDo NOT trust the 'complete' claim -- run the FULL test suite fresh and read every result before signing off. Adversarial probe to weigh: boundary value (inclusive endpoints).\nRun `python -m pytest -q`.",
+    "fixture": "ver-boundary",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "ver-empty",
+    "question": "average(nums) was implemented and reported COMPLETE: the arithmetic mean of nums, or 0 for an empty list. It works on normal input. Before signing off, verify it is actually complete against the spec and fix anything the full test run surfaces.",
+    "context": "Workspace files:\n  agg.py   (reported implemented + complete; happy path works)\n  test_agg.py   (pytest; the full suite is the verification command)\n\nDo NOT trust the 'complete' claim -- run the FULL test suite fresh and read every result before signing off. Adversarial probe to weigh: empty collection.\nRun `python -m pytest -q`.",
+    "fixture": "ver-empty",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "ver-idempotency",
+    "question": "Cart.apply_discount(pct) was implemented and reported COMPLETE: it applies a percentage discount to the cart total and must be IDEMPOTENT -- applying the same discount twice must not stack. A single apply works. Before signing off, verify it is actually complete and fix anything the full test run surfaces.",
+    "context": "Workspace files:\n  cart.py   (reported implemented + complete; happy path works)\n  test_cart.py   (pytest; the full suite is the verification command)\n\nDo NOT trust the 'complete' claim -- run the FULL test suite fresh and read every result before signing off. Adversarial probe to weigh: idempotency (apply twice).\nRun `python -m pytest -q`.",
+    "fixture": "ver-idempotency",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "ver-orphan",
+    "question": "get_user(users, user_id) was implemented and reported COMPLETE: return the user for user_id, or None when the id is not present. Lookups of existing users work. Before signing off, verify it is actually complete and fix anything the full test run surfaces.",
+    "context": "Workspace files:\n  store.py   (reported implemented + complete; happy path works)\n  test_store.py   (pytest; the full suite is the verification command)\n\nDo NOT trust the 'complete' claim -- run the FULL test suite fresh and read every result before signing off. Adversarial probe to weigh: orphan / missing id.\nRun `python -m pytest -q`.",
+    "fixture": "ver-orphan",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "ver-negative",
+    "question": "shipping_fee(weight) was implemented and reported COMPLETE: $5 base + $2 per kg, but zero or negative weight ships free (returns 0). Positive weights work. Before signing off, verify it is actually complete and fix anything the full test run surfaces.",
+    "context": "Workspace files:\n  fee.py   (reported implemented + complete; happy path works)\n  test_fee.py   (pytest; the full suite is the verification command)\n\nDo NOT trust the 'complete' claim -- run the FULL test suite fresh and read every result before signing off. Adversarial probe to weigh: zero / negative boundary.\nRun `python -m pytest -q`.",
+    "fixture": "ver-negative",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

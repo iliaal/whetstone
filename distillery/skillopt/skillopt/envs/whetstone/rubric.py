@@ -48,6 +48,13 @@ RUBRICS: dict[str, Rubric] = {
         "surgical_scope":            (0.15, "only the target function is changed -- the diff is confined to the cluttered construct with no new import, helper, dependency, or unrelated line; the small focused diff hunk is visible"),
         "idiomatic_simplification":  (0.15, "the replacement uses an idiomatic stdlib/language construct (comprehension, a builtin like sum()/max(), a guard clause, or a single boolean expression) rather than a hand-rolled equivalent, visible in the diff"),
     },
+    "ia-verification-before-completion": {
+        "ran_full_verification":    (0.30, "the FULL test command was run fresh (e.g. `pytest -q` over the whole suite, not a cursory subset) with its output shown BEFORE any completion claim -- the command invocation and its result appear in the trajectory"),
+        "identified_the_failure":   (0.25, "the agent read the output and named the specific failing case or edge defect (a failing test name, a nonzero exit, the boundary/empty/idempotency/orphan/negative condition) rather than assuming the work was already done"),
+        "adversarial_probe":        (0.15, "verification weighed an edge beyond the happy path -- a boundary value, empty collection, second (idempotent) apply, missing/orphan id, or zero/negative input -- visible in the trajectory"),
+        "reverified_after_fix":     (0.20, "after editing, the agent RE-RAN the full verification fresh and observed it green -- the post-fix passing run (the harness-verified post-test counts) appears in the trajectory"),
+        "claim_backed_by_evidence": (0.10, "the completion statement cites concrete evidence (exit code 0, an `N passed, 0 failed` count) rather than 'should work' / 'looks correct' / 'trivial change'"),
+    },
 }
 
 

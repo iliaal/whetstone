@@ -1,0 +1,63 @@
+# Whetstone process-skill optimizer — ia-verification-before-completion.
+#
+# Target = Claude Code run agentically in a prepared workspace (claude_code_exec):
+# it is told the module was "implemented and complete," runs verification, and we
+# grade hard = the full fixture suite going red->green (the agent caught + fixed
+# the planted edge the happy-path check misses). Optimizer/judge = Claude via
+# claude_chat; the soft rubric scores the verification process (full run, named
+# the failure, adversarial probe, re-verified, evidence-backed claim).
+#
+# Recipe: optimize for the WEAK model that runs the skill (a capable model
+# verifies thoroughly already, saturating hard); blend soft via
+# SKILLOPT_SOFT_WEIGHT with lambda < 1/n_val (n_val = 5 -> lambda < 0.2). Seed =
+# the real production SKILL.md.
+_base_: ../_base_/default.yaml
+
+model:
+  backend: claude_code_exec
+  optimizer_backend: claude_chat
+  target_backend: claude_code_exec
+  optimizer: claude-sonnet-4-6
+  target: claude-haiku-4-5             # WEAK target — the model the skill must carry
+  reasoning_effort: ""
+  claude_code_exec_path: claude
+  claude_code_exec_use_sdk: cli
+  claude_code_exec_effort: medium
+  claude_code_exec_max_thinking_tokens: 0
+
+train:
+  num_epochs: 2
+  batch_size: 5
+  accumulation: 1
+  seed: 42
+
+gradient:
+  minibatch_size: 5
+  merge_batch_size: 5
+  analyst_workers: 4
+  failure_only: false
+
+optimizer:
+  learning_rate: 3
+  min_learning_rate: 1
+  lr_scheduler: cosine
+  skill_update_mode: patch
+  use_slow_update: false
+  use_meta_skill: false
+
+evaluation:
+  use_gate: true
+  sel_env_num: 0
+  test_env_num: 0
+  eval_test: false
+
+env:
+  name: whetstone
+  skill_init: ../../plugins/whetstone/skills/ia-verification-before-completion/SKILL.md
+  split_mode: split_dir
+  split_dir: fixtures/verification-hard/splits
+  tasks_root: fixtures/verification-hard/tasks
+  skill_name: ia-verification-before-completion
+  exec_timeout: 300
+  test_timeout: 120
+  workers: 4

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ver-orphan",
+    "question": "get_user(users, user_id) was implemented and reported COMPLETE: return the user for user_id, or None when the id is not present. Lookups of existing users work. Before signing off, verify it is actually complete and fix anything the full test run surfaces.",
+    "context": "Workspace files:\n  store.py   (reported implemented + complete; happy path works)\n  test_store.py   (pytest; the full suite is the verification command)\n\nDo NOT trust the 'complete' claim -- run the FULL test suite fresh and read every result before signing off. Adversarial probe to weigh: orphan / missing id.\nRun `python -m pytest -q`.",
+    "fixture": "ver-orphan",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]
