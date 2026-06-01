@@ -9,7 +9,7 @@ import json
 import pytest
 
 from skillopt.envs.whetstone.dataloader import _resolve_fixture_dir
-from skillopt.envs.whetstone.evaluator import run_hard
+from skillopt.envs.whetstone.evaluator import evaluate, run_hard
 from skillopt.envs.whetstone.rubric import (
     RUBRICS,
     _grounded,
@@ -105,6 +105,31 @@ def test_run_hard_failing_test_is_not_infra(tmp_path):
     hard, _output, infra = run_hard(str(tmp_path), ["-m", "pytest", "-q"], timeout=60)
     assert hard == 0
     assert infra is False  # genuine failure, NOT infra
+
+
+# --- trajectory bounding: an oversized transcript must not crash the judge -----
+
+def test_oversized_agent_report_is_bounded_before_judge(tmp_path):
+    # Regression: the target transcript reaches the judge via agent_report. A
+    # ~280K-char report fed whole overflowed the judge backend and the call
+    # raised, silently zeroing soft (grounded=None) for every large rollout while
+    # a 121K one scored fine. evaluate() must trim it to a judge-safe size.
+    (tmp_path / "test_ok.py").write_text("def test_ok():\n    assert 1 == 1\n")
+    seen = {}
+
+    def capture_complete(system, user):
+        seen["user"] = user
+        return json.dumps({"criteria": {}})
+
+    item = {"question": "q", "test_cmd": ["-m", "pytest", "-q"]}
+    evaluate(
+        str(tmp_path), item, "X" * 280000,
+        RUBRICS["ia-debugging"], capture_complete,
+        pre_test_output="", agent_diff="",
+    )
+    # the trajectory handed to the judge must sit well under the ~130K overflow point
+    assert len(seen["user"]) < 100000
+    assert "trajectory trimmed" in seen["user"]
 
 
 # --- CR-004 / CR-010: fixture path resolution is contained -------------------

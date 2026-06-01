@@ -116,10 +116,21 @@ def evaluate(
     trajectory alongside the harness-verified artifacts before judging.
     """
     hard, test_output, infra = run_hard(work_dir, item.get("test_cmd"), timeout=test_timeout)
+    # The target transcript can be 100K-300K chars (the --output-format text
+    # capture is the full stream, not just the final message). Fed whole to the
+    # judge it overflows the judge backend and the call raises -> the except path
+    # in score_criteria silently zeroes soft (observed: every rollout whose report
+    # exceeded ~130K chars judged soft=0/grounded=None, while a 121K one scored a
+    # clean 0.85). Keep the head (early Read/repro actions, which the temporal
+    # criteria ground against) and the tail (final diff/report), drop the middle.
+    report = agent_report or "(no final report)"
+    _HEAD, _TAIL = 30000, 30000
+    if len(report) > _HEAD + _TAIL:
+        report = report[:_HEAD] + "\n\n[... trajectory trimmed for judge budget ...]\n\n" + report[-_TAIL:]
     trajectory_text = (
         _verified_block(pre_test_output, test_output, agent_diff, hard)
         + "\n\n[AGENT FINAL REPORT]\n"
-        + (agent_report or "(no final report)")
+        + report
     )
     task = item.get("question", "")
     criteria = score_criteria(rubric, task, trajectory_text, complete)
