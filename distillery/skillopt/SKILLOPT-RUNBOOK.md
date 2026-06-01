@@ -157,3 +157,23 @@ genuine, not reward-hacking, and was promoted into the shipped skill. The run
 also surfaced and fixed a shared-env bug: the judge silently zeroed `soft`
 (`grounded=None`) on transcripts >~130K chars (see wiki
 `llm-judge-evidence-grounding` Failure 3).
+
+**Cross-target finding (2026-06-01, all four onboarded skills run).** For a
+capable-enough weak model (haiku), `hard` tends to **saturate** — it reaches the
+right outcome (fixes the bug, detects the defect, catches the edge) — while
+`soft` (process quality) varies widely and is the real optimization lever:
+
+| skill | hard | soft | gate | promoted edit |
+|---|---|---|---|---|
+| simplifying-code (traps) | 0.80 (engineered) | — | accept | edge-case parity |
+| code-review (detection) | 1.0 | 0.89 | accept | finding-level evidence carry-through |
+| debugging-hard | 1.0 | **0.40** | accept | run the provided test first (reproduce-first) |
+| verification | 1.0 | 0.835 | reject (noise) | — |
+
+debugging-hard is the clearest: right answers, 0.40 process — the optimizer
+rediscovered the pilot's reproduce-first lesson independently. **verification is
+the exception that proves a rule:** its hard-grading *forces* the verification the
+skill teaches (the failing test is visible, so the weak model runs it), leaving
+neither axis room — route skills like that to Tier-2 `evolve`. Engineer `hard`
+headroom (traps) only when the skill's *outcome* is genuinely hard for the weak
+model; otherwise expect a soft-led optimization with `hard` as the floor.
