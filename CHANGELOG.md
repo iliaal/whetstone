@@ -5,6 +5,35 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-06-01
+
+Minor: ships the SkillOpt agentic process-skill optimizer (the distillery's Tier-3 rung) and migrates the bundled MCP server from docfork to Context7. SkillOpt runs the target model agentically against curated fixtures with a hybrid reward -- a deterministic `hard` signal plus a per-skill process `soft` rubric with code-enforced verbatim-evidence grounding. This release onboards four process skills across two evaluator modes (pytest red->green for skills that edit code, and a new detection-match grader for `ia-code-review`, which reports rather than edits), and promotes three optimizer-learned edits into the shipped skills after gating. `ia-code-review` was also trimmed 17.4K->14.7K via reference offload, and a full audit landed a round of trigger-differentiation sharpening.
+
+### Added
+
+- SkillOpt agentic process-skill optimizer under `distillery/skillopt/`: the Tier-3 rung above `eval-skills`/`evolve`, with a hybrid reward (deterministic `hard` plus a per-skill `soft` process rubric), two evaluator modes (`run_hard` pytest red->green; `run_detection` for skills that report findings rather than edit code), four onboarded skills (`ia-debugging`, `ia-simplifying-code`, `ia-verification-before-completion`, `ia-code-review`) each with a config and a calibrated fixture set, and `SKILLOPT-RUNBOOK.md`. Offline only: not mirrored, not in the release pipeline, and promotion of any learned edit stays manual and gated.
+- `/skillopt` local command. The default prints the exact bare-terminal command to run the optimizer; `--run` executes it in-session, hardened and behind a clean git checkpoint.
+- Three `ia-code-review` references: `external-review-subprocess.md` (driving a long-running external reviewer subprocess), `scope-resolution.md` (base-branch/merge-base resolution plus prior-discussion fetch), and `pr-sizing.md` (large-diff handling and the four split strategies).
+
+### Changed
+
+- Replaced the bundled **docfork** MCP server with **Context7** (`https://mcp.context7.com/mcp`). Updated the doc-lookup tool references across `ia-deepen-plan`, `ia-best-practices-researcher`, `ia-nodejs-backend`, `ia-react-frontend`, `ia-tailwind-css`, and `ia-pinescript` to the `resolve-library-id` then `query-docs` flow.
+- `ia-code-review`: trimmed the body from 17.4K to 14.7K chars by moving base-branch resolution, the prior-discussion commands, and PR-sizing strategy into `references/`. Added a finding-level evidence rule (each `CR-XXX` entry must carry its `[file:line]` and quoted code, not just the surrounding prose) and the external-reviewer-subprocess discipline.
+- `ia-simplifying-code`: before collapsing a manual loop to a stdlib one-liner, verify edge-case parity first (empty input, None guard, no-match default, zero-value path); a structurally cleaner version that changes behavior on an edge case is not a simplification. Added a boolean-collapse Smell-to-Fix row. Promoted from a SkillOpt run.
+- `ia-debugging`: when a test or repro command is already provided, run it before reading source or forming hypotheses, and record the RED output before any source edit. Promoted from a SkillOpt run.
+- `/ia-review`: scope resolution and the two-stage review gate now defer to the `ia-code-review` skill as canonical, keeping the load-bearing Stage-1-before-Stage-2 directive inline.
+- Trigger-differentiation sharpening from a full `/audit-plugin` pass: `ia-cloud-architect` ("planning cloud architecture" rather than the overly broad "planning infrastructure"), `ia-repo-research-analyst` (points documented-solution lookups at `ia-learnings-researcher`), and `ia-bug-reproduction-validator` (carves the boundary against `/ia-reproduce-bug`).
+
+### Fixed
+
+- SkillOpt soft reward silently scored 0 (`grounded=None`) on large rollouts because the full target transcript (100K-300K chars) overflowed the judge call. The transcript is now bound head and tail before judging.
+- SkillOpt evidence grounding compared the judge's quote against a JSON-escaped stream-json transcript, which zeroed real evidence. Grounding now un-escapes the transcript and matches the longest contiguous run.
+- SkillOpt rollout workspace is now isolated outside the repo and nested target agents are confined, after a `bypassPermissions` target agent reached the host repository through Claude Code's git-root Bash behavior.
+
+### Removed
+
+- docfork MCP server, replaced by Context7.
+
 ## [4.0.4] - 2026-05-26
 
 Patch: 10-day delta sync plus reactive audit. `ia-planning` now runs a goal-quality gate before the skip-or-plan decision so weak goals get repaired upstream rather than producing weak plans, and the skip path requires a concrete 4-condition contract with worked stress-test examples (add caching, migrate package A to B, add rate limiting) that look atomic but hide design decisions. `ia-md-docs` gains a recursive monorepo discovery workflow that finds every package root via `git ls-files` against manifest globs and prefers workspace manifests when present, plus a CONTRIBUTING merge advisory. `ia-lfg` CI watch distinguishes actionable failures from non-actionable gates (draft PR, review-required, approval-required) by check conclusion rather than vendor name. The distillery's trigger-phrase validator stops penalizing slash-only and path-triggered skills, which use a different invocation mechanism. `scripts/post-thread.py` picks up image-attach support for tweet threads.
