@@ -73,8 +73,19 @@ def _ensure_unsandboxed() -> None:
     files and gives up. We already isolate each rollout in a disposable work_dir,
     so tell Claude Code it's already sandboxed and should run the agent directly
     in the workspace. Respects an explicit user override.
+
+    Also drop the coordinator/project-root hints: when skillopt is launched
+    nested inside another Claude Code session, the target agents would otherwise
+    inherit the PARENT session's project root and resolve their Bash tool there
+    (the nearest .git ancestor = the host repo), escaping the out-of-repo
+    work_dir and reaching repo files. Unsetting these makes each nested agent's
+    Bash root its own disposable workspace. (Absolute-path access is still
+    possible; untrusted targets still need OS-level sandboxing.)
     """
     os.environ.setdefault("CLAUDE_CODE_SANDBOXED", "1")
+    for _var in ("CLAUDE_CODE_COORDINATOR_MODE", "CLAUDE_PROJECT_DIR",
+                 "CLAUDE_CODE_PROJECT_DIR", "CLAUDE_CODE_ENTRYPOINT"):
+        os.environ.pop(_var, None)
 
 
 def optimizer_complete(system: str, user: str) -> str:
