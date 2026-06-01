@@ -36,7 +36,7 @@ Capture environment state with `bash collect-diagnostics.sh` ([script](./scripts
 
 **1. Reproduce** -- build a feedback loop, *then* make the bug consistent. The loop is the deliverable of this step, not the analysis. Without a fast, deterministic signal that says "broken / fixed," every later step is guesswork.
 
-**A loop already provided? Run it first -- before anything else.** If the workspace already has a test file, or the report says "run X to see the failure," that command *is* your feedback loop: run it as your very first action -- before reading source, before forming hypotheses -- and record the RED output. Do not edit source until you have observed a failing run this session; without RED first, you cannot prove your fix changed anything.
+**A loop already provided? Run it before touching source.** If the workspace already has a test file, or the report says "run X to see the failure," that command *is* your feedback loop: run it before reading source files or forming hypotheses (after reading the error in Step 0), and record the RED output. Do not edit source until you have observed a failing run this session; without RED first, you cannot prove your fix changed anything.
 
 Pick the cheapest loop that triggers the bug:
 

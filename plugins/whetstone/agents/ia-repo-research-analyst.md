@@ -3,7 +3,7 @@ name: ia-repo-research-analyst
 model: sonnet
 autoApprove: read
 tools: Read, Grep, Glob, Bash
-description: "Researches this codebase's structure, conventions, and project-specific patterns. Use when onboarding or understanding internal conventions."
+description: "Researches this codebase's source structure, conventions, and project-specific patterns. Use when understanding code organization or conventions before implementing; for documented past solutions use ia-learnings-researcher."
 ---
 
 <examples>
