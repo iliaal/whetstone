@@ -99,24 +99,31 @@ def optimizer_complete(system: str, user: str) -> str:
 
 def _build_task_text(item: dict) -> str:
     return (
-        "# Bug report\n\n"
+        f"{item.get('task_header', '# Bug report')}\n\n"
         f"{item.get('question', '')}\n\n"
         "## Context (repo state at task start)\n\n"
         f"{item.get('context', '')}\n"
     )
 
 
+# Default framing is debugging (the original target). Non-debugging fixtures
+# (simplify, verify, review) override via the item's `prompt` so the agent is
+# told to do the right kind of work -- a code-review fixture must NOT be told to
+# "fix the bug and emit a Debug Report".
+_DEFAULT_PROMPT = (
+    "There is a bug in this workspace. Reproduce it, identify the root cause, "
+    "then fix it so the test suite passes.\n"
+    "Follow the debugging methodology in the skill exactly: build a reproduction "
+    "first, confirm the test is RED before changing code, find the root cause with "
+    "a file:line reference, change one thing at a time, then confirm the test is "
+    "GREEN after your fix.\n"
+    "When finished, emit the Debug Report (SYMPTOM / ROOT CAUSE / FIX / EVIDENCE / "
+    "REGRESSION / STATUS) as your final message."
+)
+
+
 def _build_prompt(item: dict) -> str:
-    return (
-        "There is a bug in this workspace. Reproduce it, identify the root cause, "
-        "then fix it so the test suite passes.\n"
-        "Follow the debugging methodology in the skill exactly: build a reproduction "
-        "first, confirm the test is RED before changing code, find the root cause with "
-        "a file:line reference, change one thing at a time, then confirm the test is "
-        "GREEN after your fix.\n"
-        "When finished, emit the Debug Report (SYMPTOM / ROOT CAUSE / FIX / EVIDENCE / "
-        "REGRESSION / STATUS) as your final message."
-    )
+    return item.get("prompt") or _DEFAULT_PROMPT
 
 
 def _eval_detail(ev: dict) -> str:
@@ -183,8 +190,8 @@ def process_one(
     try:
         skill_md = render_skill_md(
             skill_content,
-            description="Whetstone debugging skill under optimization.",
-            preamble="Apply this debugging methodology to fix the bug in this workspace.",
+            description=item.get("skill_description", "Whetstone debugging skill under optimization."),
+            preamble=item.get("preamble", "Apply this debugging methodology to fix the bug in this workspace."),
         )
         task_text = _build_task_text(item)
         prepare_workspace(work_dir=work_dir, skill_md=skill_md, task_text=task_text)

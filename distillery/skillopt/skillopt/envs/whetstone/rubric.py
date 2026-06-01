@@ -55,6 +55,13 @@ RUBRICS: dict[str, Rubric] = {
         "reverified_after_fix":     (0.20, "after editing, the agent RE-RAN the full verification fresh and observed it green -- the post-fix passing run (the harness-verified post-test counts) appears in the trajectory"),
         "claim_backed_by_evidence": (0.10, "the completion statement cites concrete evidence (exit code 0, an `N passed, 0 failed` count) rather than 'should work' / 'looks correct' / 'trivial change'"),
     },
+    "ia-code-review": {
+        "found_the_real_defect": (0.30, "the review names a genuine defect with the function/file it lives in AND its specific mechanism (e.g. 'find_user concatenates input into SQL -> injection', 'mutable default argument shared across calls', 'TOCTOU between exists() and open()') -- not a vague 'might have issues'"),
+        "evidence_grounded":     (0.25, "each finding cites concrete evidence -- a file:line reference and/or the quoted offending code/pattern -- rather than an abstract concern; the file:line citations appear in the report"),
+        "severity_assigned":     (0.15, "findings carry a severity (Critical / Important / Medium / Minor) calibrated to impact, not a flat 'everything is critical' or an unlabelled list"),
+        "actionable_fix":        (0.15, "at least the top finding includes a concrete remediation (a parameterized query, a context manager, a None sentinel, a corrected bound) rather than only naming the problem"),
+        "review_structure":      (0.15, "the output follows a review structure -- findings grouped or numbered with a verdict/summary (ready / ready-with-fixes / not-ready) and a statement of what was checked -- rather than an unstructured prose blob"),
+    },
 }
 
 

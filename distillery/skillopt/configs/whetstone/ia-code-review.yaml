@@ -1,0 +1,64 @@
+# Whetstone process-skill optimizer — ia-code-review (detection-graded).
+#
+# ia-code-review REPORTS defects; it does not edit code, so this target uses the
+# detection evaluator (evaluator.run_detection), NOT pytest red->green. The agent
+# reviews a module with one subtle planted defect and emits findings as its final
+# message; hard = the report localized to the buggy function AND identified the
+# defect mechanism (the ground-truth spec lives in splits/items.json, never in the
+# agent's workspace). Optimizer/judge = Claude via claude_chat; the soft rubric
+# scores review quality (real defect found, evidence-grounded, severity, fix,
+# structure).
+#
+# Recipe: optimize for the WEAK model that runs the skill; blend soft via
+# SKILLOPT_SOFT_WEIGHT with lambda < 1/n_val (n_val = 5 -> lambda < 0.2). Seed =
+# the real production SKILL.md (the body; references/ are not optimized here).
+_base_: ../_base_/default.yaml
+
+model:
+  backend: claude_code_exec
+  optimizer_backend: claude_chat
+  target_backend: claude_code_exec
+  optimizer: claude-sonnet-4-6
+  target: claude-haiku-4-5             # WEAK target — the model the skill must carry
+  reasoning_effort: ""
+  claude_code_exec_path: claude
+  claude_code_exec_use_sdk: cli
+  claude_code_exec_effort: medium
+  claude_code_exec_max_thinking_tokens: 0
+
+train:
+  num_epochs: 2
+  batch_size: 5
+  accumulation: 1
+  seed: 42
+
+gradient:
+  minibatch_size: 5
+  merge_batch_size: 5
+  analyst_workers: 4
+  failure_only: false
+
+optimizer:
+  learning_rate: 3
+  min_learning_rate: 1
+  lr_scheduler: cosine
+  skill_update_mode: patch
+  use_slow_update: false
+  use_meta_skill: false
+
+evaluation:
+  use_gate: true
+  sel_env_num: 0
+  test_env_num: 0
+  eval_test: false
+
+env:
+  name: whetstone
+  skill_init: ../../plugins/whetstone/skills/ia-code-review/SKILL.md
+  split_mode: split_dir
+  split_dir: fixtures/code-review-hard/splits
+  tasks_root: fixtures/code-review-hard/tasks
+  skill_name: ia-code-review
+  exec_timeout: 300
+  test_timeout: 120
+  workers: 4

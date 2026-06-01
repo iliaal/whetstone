@@ -67,6 +67,31 @@ def run_hard(work_dir: str, test_cmd, timeout: int = 120) -> tuple[int, str, boo
     return (1 if rc == 0 else 0), output[-4000:], infra
 
 
+def run_detection(agent_report: str, spec: dict) -> tuple[int, str, bool]:
+    """Hard signal for review-style fixtures: did the agent's report NAME the
+    planted defect?
+
+    Used for skills that REPORT rather than edit (ia-code-review), where pytest
+    red->green does not apply. `spec` lives in ``splits/items.json`` -- which is
+    NEVER copied into the agent's workspace -- so the agent cannot read it as an
+    answer key. Fields:
+      ``must_localize``    -- report must reference at least one (the buggy
+                              function/file/symbol)
+      ``must_include_any`` -- report must contain at least one (a keyword
+                              identifying the defect's mechanism)
+    Match is normalized substring (lowercased, stream-json escapes flattened).
+    Returns ``(hard, detail, infra=False)`` to mirror ``run_hard``."""
+    t = " ".join((agent_report or "").replace("\\n", " ").replace("\\t", " ").split()).lower()
+    loc = [s for s in spec.get("must_localize", []) if s.lower() in t]
+    kw = [s for s in spec.get("must_include_any", []) if s.lower() in t]
+    localized = bool(loc) if spec.get("must_localize") else True
+    identified = bool(kw) if spec.get("must_include_any") else True
+    hard = 1 if (localized and identified) else 0
+    detail = (f"[detection] localized={localized} (hits={loc[:3]}) "
+              f"identified={identified} (hits={kw[:3]})")
+    return hard, detail, False
+
+
 def _verified_block(pre_output: str, post_output: str, agent_diff: str, hard: int) -> str:
     """Harness-produced evidence prepended to the judge's trajectory. None of it
     comes from the agent, so a rubric criterion grounded against it cannot be
@@ -115,7 +140,12 @@ def evaluate(
     `agent_report` is the agent's final message; it is folded into a richer
     trajectory alongside the harness-verified artifacts before judging.
     """
-    hard, test_output, infra = run_hard(work_dir, item.get("test_cmd"), timeout=test_timeout)
+    detection = item.get("detection")
+    if detection:
+        # Review-style fixture: grade the report against the hidden spec, not pytest.
+        hard, test_output, infra = run_detection(agent_report, detection)
+    else:
+        hard, test_output, infra = run_hard(work_dir, item.get("test_cmd"), timeout=test_timeout)
     # The target transcript can be 100K-300K chars (the --output-format text
     # capture is the full stream, not just the final message). Fed whole to the
     # judge it overflows the judge backend and the call raises -> the except path

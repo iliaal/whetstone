@@ -1,0 +1,26 @@
+[
+  {
+    "id": "cr-mutdefault",
+    "question": "Review `collector.py` for defects and report your findings.",
+    "context": "Workspace files:\n  collector.py   (under review)\n\nReport every real defect you find, naming the function and the specific issue. Do not edit the code -- review and report only.",
+    "fixture": "cr-mutdefault",
+    "prompt": "Review the code file in this workspace for defects -- correctness, security, concurrency, and reliability. Apply the review methodology in the skill. Do NOT modify the code.\nProduce your review as your FINAL MESSAGE: a list of findings, each naming the function and citing the file and the specific issue (the mechanism, not a vague concern), with a severity and a concrete fix. If the code is clean, say so explicitly with what you checked.",
+    "preamble": "Apply this code-review methodology to the code in this workspace and report the findings.",
+    "task_header": "# Code review request",
+    "skill_description": "Whetstone code-review skill under optimization.",
+    "detection": {
+      "must_localize": [
+        "add_tag"
+      ],
+      "must_include_any": [
+        "mutable default",
+        "default argument",
+        "default list",
+        "default mutable",
+        "shared",
+        "sentinel",
+        "created once"
+      ]
+    }
+  }
+]

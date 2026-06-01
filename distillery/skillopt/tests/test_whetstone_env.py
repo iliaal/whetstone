@@ -9,7 +9,7 @@ import json
 import pytest
 
 from skillopt.envs.whetstone.dataloader import _resolve_fixture_dir
-from skillopt.envs.whetstone.evaluator import evaluate, run_hard
+from skillopt.envs.whetstone.evaluator import evaluate, run_detection, run_hard
 from skillopt.envs.whetstone.rubric import (
     RUBRICS,
     _grounded,
@@ -130,6 +130,28 @@ def test_oversized_agent_report_is_bounded_before_judge(tmp_path):
     # the trajectory handed to the judge must sit well under the ~130K overflow point
     assert len(seen["user"]) < 100000
     assert "trajectory trimmed" in seen["user"]
+
+
+# --- detection grading for review-style fixtures (ia-code-review) ------------
+
+def test_run_detection_needs_localize_and_identify():
+    spec = {"must_localize": ["find_user"], "must_include_any": ["inject", "concat"]}
+    hit, _detail, infra = run_detection("find_user concatenates name into the SQL string -- injection", spec)
+    assert hit == 1 and infra is False
+    # localized but no mechanism keyword -> miss (a clean bill of health)
+    assert run_detection("find_user looks clean, no issues found", spec)[0] == 0
+    # mechanism keyword but not localized to the function -> miss
+    assert run_detection("there might be a SQL injection somewhere in the app", spec)[0] == 0
+
+
+def test_evaluate_routes_detection_without_pytest(tmp_path):
+    # A detection item must be graded by run_detection, not pytest -- no test files needed.
+    item = {"detection": {"must_localize": ["foo"], "must_include_any": ["leak"]}}
+    ev = evaluate(str(tmp_path), item, "foo never closes the file -- a resource leak",
+                  RUBRICS["ia-code-review"], lambda s, u: json.dumps({"criteria": {}}),
+                  pre_test_output="", agent_diff="")
+    assert ev["hard"] == 1
+    assert ev["infra_error"] is False
 
 
 # --- CR-004 / CR-010: fixture path resolution is contained -------------------
