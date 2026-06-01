@@ -178,6 +178,7 @@ For multi-agent consolidation (deep review, parallel specialists), apply the mer
 | [action-routing.md](./references/action-routing.md) | Classifying fix-application for each finding | 4-tier split (safe_auto / gated_auto / manual / advisory), conflict resolution |
 | [severity-and-confidence.md](./references/severity-and-confidence.md) | Classifying severity + confidence for each finding | Critical/Important/Medium/Minor tiers, 5-band confidence rubric, FP suppression categories |
 | [false-positive-suppression.md](./references/false-positive-suppression.md) | Detailed FP categories with framework-idiom and test-specific examples | Linked from severity-and-confidence; covers overridable patterns |
+| [external-review-subprocess.md](./references/external-review-subprocess.md) | Review delegated to a long-running external CLI (codex/`claude -p`, `/code-review ultra`, slow test reviewer) | Heartbeat tolerance (don't kill quiet-but-alive), run-until-clean-then-stop, frozen-diff binding |
 
 ## Integration
 
