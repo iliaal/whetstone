@@ -10,7 +10,7 @@ paths: "**/*.pine"
 
 # Pine Script Development
 
-**Verify before implementing**: For Pine Script version-specific syntax or new built-in functions, search current docs via `search_docs` before writing code. TradingView updates Pine Script frequently and training data may be stale.
+**Verify before implementing**: For Pine Script version-specific syntax or new built-in functions, look up current docs via Context7 (`query-docs`) before writing code. TradingView updates Pine Script frequently and training data may be stale.
 
 ## Critical Syntax Rules
 

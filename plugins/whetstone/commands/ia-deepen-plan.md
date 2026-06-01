@@ -105,12 +105,12 @@ Find:
 Return concrete, actionable recommendations."
 ```
 
-**Also use Docfork MCP for framework documentation:**
+**Also use Context7 MCP for framework documentation:**
 
-For any technologies/frameworks mentioned in the plan, query Docfork:
+For any technologies/frameworks mentioned in the plan, query Context7:
 ```
-mcp__plugin_whetstone_docfork__search_docs: Search documentation for [framework]
-mcp__plugin_whetstone_docfork__fetch_doc: Fetch full content from a search result URL
+mcp__plugin_whetstone_context7__resolve-library-id: Resolve [framework] to a Context7 library ID
+mcp__plugin_whetstone_context7__query-docs: Fetch current docs for that library ID, scoped to a query
 ```
 
 **Use WebSearch for current best practices:**
@@ -140,7 +140,7 @@ Wait for ALL parallel agents to complete - skills, research agents, review agent
 2. **Learnings/Solutions sub-agents** - Relevant documented learnings from /ia-compound
 3. **Research agents** - Best practices, documentation, real-world examples
 4. **Review agents** - All feedback from every reviewer (architecture, security, performance, simplicity, etc.)
-5. **Docfork queries** - Framework documentation and patterns
+5. **Context7 queries** - Framework documentation and patterns
 6. **Web searches** - Current best practices and articles
 
 **For each agent's findings, extract:**

@@ -19,9 +19,9 @@
     "knowledge-management"
   ],
   "mcpServers": {
-    "docfork": {
+    "context7": {
       "type": "http",
-      "url": "https://mcp.docfork.com/mcp"
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }

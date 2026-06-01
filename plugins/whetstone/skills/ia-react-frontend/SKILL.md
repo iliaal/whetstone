@@ -11,7 +11,7 @@ paths: "**/*.tsx,**/*.jsx"
 
 # React Frontend
 
-**Verify before implementing**: For App Router patterns, React 19 APIs, or version-specific behavior, search current docs via `search_docs` before writing code. Training data may lag current releases.
+**Verify before implementing**: For App Router patterns, React 19 APIs, or version-specific behavior, look up current docs via Context7 (`query-docs`) before writing code. Training data may lag current releases.
 
 ## Component TypeScript
 

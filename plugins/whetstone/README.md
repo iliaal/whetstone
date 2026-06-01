@@ -178,15 +178,15 @@ Up to 5 matching skills are injected per subagent call, prioritized by tier. Sub
 
 | Server | Description |
 |--------|-------------|
-| `docfork` | Framework and library documentation lookup via Docfork |
+| `context7` | Up-to-date framework and library documentation lookup via Context7 |
 
-### Docfork
+### Context7
 
 **Tools provided:**
-- `search_docs` - Search documentation for a framework/library
-- `fetch_doc` - Fetch full markdown content from a documentation URL
+- `resolve-library-id` - Resolve a library/framework name to a Context7 library ID
+- `query-docs` - Fetch current documentation for a library ID, scoped to a query/topic
 
-9,000+ libraries with daily updates. Free tier: 1,000 requests/month.
+Up-to-date, versioned docs for thousands of libraries. No API key required for the hosted endpoint.
 
 MCP servers start automatically when the plugin is enabled.
 
@@ -200,16 +200,16 @@ claude /plugin install whetstone
 
 ### MCP Server Setup
 
-**Issue:** The bundled Docfork MCP server may not load automatically when the plugin is installed.
+**Issue:** The bundled Context7 MCP server may not load automatically when the plugin is installed.
 
 **Setup:** Add to your project's `.claude/settings.json` (or `~/.claude/settings.json` for all projects):
 
 ```json
 {
   "mcpServers": {
-    "docfork": {
+    "context7": {
       "type": "http",
-      "url": "https://mcp.docfork.com/mcp"
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }

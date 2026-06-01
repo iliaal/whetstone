@@ -6,14 +6,14 @@ Load the relevant profile(s) based on file extensions present in the diff.
 
 Before filing a finding that claims a framework or library behaves a certain way (e.g. "this Eloquent relation runs N+1", "this Next.js cache invalidation is wrong", "this React effect leaks"), verify against current docs at the project's pinned version. Memory-based recall of framework behavior is unreliable across versions; patterns that were traps in one major are often fixed in the next.
 
-If the docfork MCP is available in the harness, use it:
+If the Context7 MCP is available in the harness, use it:
 
-- `search_docs` — find the relevant section. Pass the natural-language question and the library name (e.g. `react`, `vercel/next.js`, `laravel/framework`).
-- `fetch_doc` — retrieve the full section content from a search result URL before quoting behavior.
+- `resolve-library-id` — resolve the library/framework name (e.g. `react`, `next.js`, `laravel`) to a Context7 library ID.
+- `query-docs` — fetch the relevant documentation for that library ID, scoped to a natural-language query, before quoting behavior.
 
 Pin the lookup to the project's actual version. Read `package.json`, `composer.json`, `requirements.txt`, `go.mod`, or `Cargo.toml` to identify the major version, then constrain queries (e.g. "Laravel 11 HasOneOrMany limit eager-load behavior").
 
-If docfork is unavailable, fall back to the vendor's official docs URL directly via the harness's web fetch tool. **Do not skip verification** — a finding that asserts framework behavior without a citation is worse than no finding, because authors trust review output.
+If Context7 is unavailable, fall back to the vendor's official docs URL directly via the harness's web fetch tool. **Do not skip verification** — a finding that asserts framework behavior without a citation is worse than no finding, because authors trust review output.
 
 When the verified behavior contradicts the finding's premise, drop the finding and (if reviewing a real diff) add the version-correct behavior to the relevant entry in `review-traps-catalog.md` so the next review starts smarter.
 

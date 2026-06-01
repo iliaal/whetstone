@@ -16,7 +16,7 @@ Concrete review-reasoning failure modes harvested from real Codex cycle disagree
 
 **Reality:** official documentation shows the idiom users copy. Public APIs carry an implicit contract with the docs, not just with the test suite. "Every test passed" does not prove "every documented usage still works."
 
-**Fix:** for any change to a widely-used public method, find the canonical example in the official docs and run it against the patched build before declaring done. If the harness has the docfork MCP, prefer `search_docs` for the library at the project's pinned version over a raw web grep — it returns versioned official sections, not SEO blog pollution. Otherwise grep the official docs directly (`php.net/manual/en/<class>.<method>.php`, library README, Sphinx docs). Add the docs idiom to the test suite as a standing smoke test.
+**Fix:** for any change to a widely-used public method, find the canonical example in the official docs and run it against the patched build before declaring done. If the harness has the Context7 MCP, prefer `query-docs` (after `resolve-library-id`) for the library at the project's pinned version over a raw web grep — it returns versioned official sections, not SEO blog pollution. Otherwise grep the official docs directly (`php.net/manual/en/<class>.<method>.php`, library README, Sphinx docs). Add the docs idiom to the test suite as a standing smoke test.
 
 ## Key-vs-label: open three files before flagging
 
@@ -141,7 +141,7 @@ Only pattern 2 is a finding.
 
 **Laravel 11+ `HasOneOrMany::limit()` in an eager-load is per-parent, not global.** `->with(['relation' => fn ($q) => $q->limit(N)])` uses `groupLimit` when `$this->parent->exists` is false (eager-load path), which the older "this limits rows total, not per parent" finding no longer applies to.
 
-When flagging a language/framework idiom as broken, first check the vendor source for the current version's behavior. Patterns that were traps in v10 often aren't in v11. If the harness has the docfork MCP, run `search_docs` against the library at the project's pinned version (`composer.json` / `package.json` / `requirements.txt` / `go.mod`) before filing — see `language-profiles.md` "Verifying framework idioms before flagging" for the exact protocol.
+When flagging a language/framework idiom as broken, first check the vendor source for the current version's behavior. Patterns that were traps in v10 often aren't in v11. If the harness has the Context7 MCP, run `query-docs` (after `resolve-library-id`) against the library at the project's pinned version (`composer.json` / `package.json` / `requirements.txt` / `go.mod`) before filing — see `language-profiles.md` "Verifying framework idioms before flagging" for the exact protocol.
 
 ## Same-name symbols across Enum / Model / DTO / Request
 
