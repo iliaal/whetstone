@@ -1,0 +1,13 @@
+[
+  {
+    "id": "sc2-flag",
+    "question": "gate.py works and its behavior tests pass, but meets() is a nest of if/else branches returning True/False. Collapse it to a single boolean expression WITHOUT changing behavior. A structural check (test_no_if) currently fails; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  gate.py   (works; behavior tests pass; cluttered)\n  test_gate.py   (pytest; a structural simplicity check currently fails)\n\nClutter: redundant boolean branching guarding a None input\nKeep behavior identical -- the behavior tests guard it; the obvious one-liner may not. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc2-flag",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]

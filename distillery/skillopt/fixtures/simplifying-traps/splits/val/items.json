@@ -1,0 +1,57 @@
+[
+  {
+    "id": "sc2-avg",
+    "question": "average.py works and its behavior tests pass, but mean_or_zero() accumulates with a manual loop. Replace the loop with a builtin WITHOUT changing behavior. A structural check (test_no_manual_loop) currently fails; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  average.py   (works; behavior tests pass; cluttered)\n  test_average.py   (pytest; a structural simplicity check currently fails)\n\nClutter: manual accumulation loop guarding an empty input\nKeep behavior identical -- the behavior tests guard it; the obvious one-liner may not. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc2-avg",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc2-firstmatch",
+    "question": "find.py works and its behavior tests pass, but first_even() scans with a manual loop. Replace it with a builtin WITHOUT changing behavior. A structural check (test_no_manual_loop) currently fails; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  find.py   (works; behavior tests pass; cluttered)\n  test_find.py   (pytest; a structural simplicity check currently fails)\n\nClutter: manual first-match loop with a no-match fallback\nKeep behavior identical -- the behavior tests guard it; the obvious one-liner may not. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc2-firstmatch",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc2-flag",
+    "question": "gate.py works and its behavior tests pass, but meets() is a nest of if/else branches returning True/False. Collapse it to a single boolean expression WITHOUT changing behavior. A structural check (test_no_if) currently fails; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  gate.py   (works; behavior tests pass; cluttered)\n  test_gate.py   (pytest; a structural simplicity check currently fails)\n\nClutter: redundant boolean branching guarding a None input\nKeep behavior identical -- the behavior tests guard it; the obvious one-liner may not. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc2-flag",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc2-dedup",
+    "question": "dedup.py works and its behavior tests pass, but unique() de-duplicates with a manual seen-set loop. Replace the loop with a builtin WITHOUT changing behavior. A structural check (test_no_manual_loop) currently fails; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  dedup.py   (works; behavior tests pass; cluttered)\n  test_dedup.py   (pytest; a structural simplicity check currently fails)\n\nClutter: manual order-preserving de-duplication loop\nKeep behavior identical -- the behavior tests guard it; the obvious one-liner may not. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc2-dedup",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  },
+  {
+    "id": "sc2-nest",
+    "question": "ship.py works and its behavior tests pass, but cost() is nested if/else. Flatten it with guard clauses WITHOUT changing behavior. A structural check (test_nesting_is_flat) currently fails; make it pass while keeping every behavior test green.",
+    "context": "Workspace files:\n  ship.py   (works; behavior tests pass; cluttered)\n  test_ship.py   (pytest; a structural simplicity check currently fails)\n\nClutter: nested if/else with an easily-dropped zero-weight guard\nKeep behavior identical -- the behavior tests guard it; the obvious one-liner may not. Run `python -m pytest -q` to see which check fails.",
+    "fixture": "sc2-nest",
+    "test_cmd": [
+      "-m",
+      "pytest",
+      "-q"
+    ]
+  }
+]
