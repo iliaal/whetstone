@@ -25,6 +25,7 @@ paths: "**/*.py"
 - `uv add --upgrade <pkg>` to upgrade a single package without touching others
 - `uv tree --outdated` to preview what would be upgraded before committing
 - `uv.lock` goes in version control
+- uv treats an exactly-pinned (`==`) yanked transitive version as unsolvable; plain `pip` only warns and installs it. If a dependency hard-pins a yanked release (and bumping the leaf won't help because the pin is exact), `uv pip install` fails resolution where a pip-based script stays green. Drop the package from the requirements you feed uv when it's off your code path; fall back to `pip` only when the path genuinely needs it
 - Use `[dependency-groups]` (PEP 735) for dev/test/docs, not `[project.optional-dependencies]`
 - PEP 723 inline metadata for standalone scripts with deps
 - `ruff check --fix . && ruff format .` for lint+format in one pass
