@@ -35,6 +35,7 @@ paths: "**/*.sql"
 - Use `BIGINT` PKs -- cheaper JOINs than UUID, better index locality
 - Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with `DEFAULT` (instant add). Never `ALTER TYPE` on large tables in-place.
 - `NULLS NOT DISTINCT` on unique indexes (PG15+) -- treats NULLs as equal for uniqueness
+- Under `NULLS NOT DISTINCT`, a pre-flight duplicate check written with SQL `=` misses NULL/NULL collisions -- the index rejects the second row, but `NULL = NULL` evaluates to NULL (not true), so a self-join or `WHERE a.col = b.col` probe silently skips exactly the pairs the index will reject. Write the probe with `IS NOT DISTINCT FROM` so NULL/NULL compares as equal.
 - Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
 
 ## Migration Safety
@@ -198,6 +199,9 @@ Partition key must be in every unique/PK constraint. Create indexes on partition
 - Non-blocking alternative: `pg_try_advisory_lock(key)` -- returns false instead of waiting
 - Check blocked queries: `SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock'`
 - Monitor deadlocks: `SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()`
+- **`SELECT ... FOR UPDATE` only locks rows that already exist** -- it does not prevent a phantom insert of a missing row. Two transactions can both query a key, both see no row, both proceed to insert; the second fails the unique constraint (or both succeed if none existed). For a get-or-create / insert-if-missing race, `FOR UPDATE` is the wrong tool -- use a partial unique index + `INSERT ... ON CONFLICT DO NOTHING/UPDATE`, or serialize the key with `pg_advisory_xact_lock(hashtext(:key))` before the existence check.
+- **A unique-violation (SQLSTATE 23505) caught inside an open transaction can't continue in that same transaction** -- once any statement raises, the transaction enters the aborted state and every later statement fails with `current transaction is aborted, commands ignored until end of transaction block`. Wrap the risky statement in a `SAVEPOINT` and `ROLLBACK TO SAVEPOINT` on error, or push the insert-or-update into a single `ON CONFLICT` statement that never raises. A bare try/catch around the failing statement is not enough on PostgreSQL.
+- **A nested `BEGIN` (or framework `transaction()` wrapper) becomes a `SAVEPOINT`, not an independent transaction** -- only the outermost `BEGIN` is a real transaction. A per-iteration "transaction" inside an outer one does not commit independently and does not release row locks between iterations (held until the outer `COMMIT`); an unhandled inner error aborts the whole outer transaction. For a long backfill that needs per-row commit and lock release, run each unit as its own top-level transaction -- don't nest it under an outer one.
 
 ## Full-Text Search
 
