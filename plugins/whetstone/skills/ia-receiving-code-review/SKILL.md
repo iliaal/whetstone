@@ -109,6 +109,7 @@ Accept feedback when:
 | Pushing back without evidence | Include the specific code path or test that proves your point |
 | Batch-implementing then testing | Test after each individual fix |
 | Can't verify the suggestion | Say so: "Can't verify this without [X]. Should I [investigate/ask/proceed]?" -- don't guess or implement blind |
+| Treating your own fix as already-correct | A fix is new code -- re-review it adversarially, not just "does it address the finding?". Three shapes recur and the suite usually misses all three: a shared-helper default that violates an invariant you set elsewhere in the batch; a loosened guard now admitting bad input; a tightened matcher now dropping good values. Name one concrete bad/missed case for each shape the fix touches before claiming done |
 
 ## Approved Response Templates
 
