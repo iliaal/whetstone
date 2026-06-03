@@ -199,6 +199,30 @@ Tests written by LLMs (including self-written) tend to produce a specific class 
 
 Never rely on tests "cleaning up after themselves." If a previous run errored mid-test, the cleanup didn't run, and the next run inherits the partial state.
 
+### Vacuous forall over an empty collection
+
+**Symptom:** A test asserts a `forall`-style predicate over a model's child collection (`every`, `all`, `.iter().all()`, a manual loop returning `true`) and it passes — but the factory that built the parent never attached children. Every such operator returns `true` over an empty collection, so the assertion is vacuously satisfied and never exercises the production shape where children exist.
+
+**Fix:** When an assertion's truth depends on a child collection being non-empty, attach a realistic child set explicitly (`->has(...)`, hand-attach via the relationship) — don't rely on the factory's minimal default. Confirm the predicate actually flips for at least one populated case, so the test could fail.
+
+### Constructing the object-under-test below the layer that transforms it
+
+**Symptom:** The fix guards or transforms a field in an upstream layer (a parser, normalizer, `from_api_response` constructor, serializer), but the test builds the object directly via the leaf constructor — `Model(field=x)`, `new T(...)`, the raw initializer — injecting the already-correct value. The upstream strip/transform never runs, the guard never fires, and the test is green while production is still broken.
+
+**Fix:** Enter through the same entry point production uses — drive the test from the input the upstream layer actually receives (the raw API payload, the unparsed dict) so the transform under test executes. If a test must construct the leaf form directly, it is not covering the transform; add a separate test that feeds the pre-transform input.
+
+### Synchronous adapters hide timing-dependent races
+
+**Symptom:** A test fires two or more parallel requests through a mock/adapter that resolves synchronously (a promise that settles in the same microtask, an in-memory fake with zero latency) and asserts a coalescing/dedup/single-flight guard held. It passes — but only because every call observed the shared in-flight state before any reset ran. Under real wire latency the staggered arrivals miss the window, and the guard spawns N operations instead of one.
+
+**Fix:** Don't treat same-tick microtask concurrency as a proxy for production burst behavior. For dedup/coalescing logic, inject controllable latency (fake timers, deferred resolution staggered across ticks) so a later arrival lands after the reset. Assert the guard holds for arrival-staggered bursts, not just same-tick ones.
+
+### Asserting only presence, never absence
+
+**Symptom:** Tests for a payload builder, serializer, or DTO assert positively on the fields that should be there (`assert payload["id"] == x`) and never assert that unexpected fields are absent. When a shared builder is reused across verbs/contexts (CREATE vs UPDATE, the same serializer on multiple endpoints), a new field leaking into the wrong payload passes every existing test.
+
+**Fix:** For any payload/serializer whose field set is a contract, pin absence as well as presence: `assert "proof_document_id" not in payload`. The negative assertion is the contract guard — the positive one passes whether or not extra fields leak in.
+
 ## When Stuck
 
 | Stuck on... | Do this |
