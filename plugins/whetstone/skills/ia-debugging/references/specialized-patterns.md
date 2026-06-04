@@ -40,6 +40,20 @@ After resolving non-trivial bugs, document a lightweight postmortem:
 4. **Fix**: what changed and why this fix addresses the root cause
 5. **Prevention**: what test, monitor, or process change prevents recurrence
 
+## Common Bug Patterns
+
+- **Async ordering** -- missing `await`, unhandled promise rejection, callback firing before setup completes. The temporal gap between setup and callback is where bugs hide.
+- **Stale state** -- cached values, stale closures, outdated config, old build artifacts. When behavior contradicts the code you're reading, verify you're running what you think you're running.
+- **Stale build artifacts** -- a test failure whose source path is provably correct and untouched by your diff is the tell: the source on disk is right, but an incremental build relinked a stale object. A clean working tree (`git status`) does not mean a clean build tree -- build outputs are typically gitignored. Baseline the *build*, not the commit: rebuild from clean (`make clean`, fresh `target/`) before debugging the code. Checking out an old commit inherits the same stale objects and proves nothing.
+- **Recurring fix site** -- if `git log` shows 3+ prior fixes in the same file, the file needs redesign, not another patch. Escalate as architectural smell.
+
+## Bug Triage
+
+When multiple bugs exist, prioritize by:
+- **Severity** (data loss > crash > wrong output > cosmetic) separately from **Priority** (blocking release > customer-facing > internal)
+- Reproducibility: always > sometimes > once. "Sometimes" bugs need instrumentation before fixing.
+- Quick wins: if a fix is < 5 minutes and unblocks others, do it first
+
 ## Signals You're Off Track
 
 Watch for these signs from the user -- they indicate you've left the systematic process:

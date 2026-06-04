@@ -78,6 +78,8 @@ Run once to gather evidence showing WHERE it breaks, then investigate that speci
 
 **6. Fix and verify** -- create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).
 
+**Reproduce-passes is not fixed.** Stopping the exact reproduction case is easy; the bad state is often still reachable from a nearby variant when the fix landed at the crash site, not the root cause. Before declaring done, run the **bypass self-check**: name one input variation that reaches the same bad state without tripping your change. If you can, the fix is at the wrong layer -- return to root cause. For security-relevant bugs, escalate to an **adversarial re-attack**: a fresh-context agent, blind to your fix reasoning, attacks the patched code to find a variant that still triggers it.
+
 **On a failed fix:** return to Step 5 and *explicitly invalidate the current hypothesis* before forming a new one. State what evidence ruled out the prior hypothesis, then form a new hypothesis with its own grounding observation. Do not retry variants of the same theory ("maybe it was the other branch", "let me also catch this case") -- that is rationalization, not iteration. The Three-Fix Threshold below counts cycles, not retries within a single broken theory.
 
 ## Debug Report
@@ -121,19 +123,9 @@ For race conditions, deadlocks, resource exhaustion, and timing-dependent bugs, 
 
 After fixing, validate at every layer -- not just where the bug appeared. See [defense-in-depth.md](./references/defense-in-depth.md) for the four-layer pattern (entry, business logic, environment, instrumentation) with examples.
 
-## Bug Triage
+## Common Patterns and Bug Triage
 
-When multiple bugs exist, prioritize by:
-- **Severity** (data loss > crash > wrong output > cosmetic) separately from **Priority** (blocking release > customer-facing > internal)
-- Reproducibility: always > sometimes > once. "Sometimes" bugs need instrumentation before fixing.
-- Quick wins: if a fix is < 5 minutes and unblocks others, do it first
-
-## Common Patterns
-
-- **Async ordering** -- missing `await`, unhandled promise rejection, callback firing before setup completes. The temporal gap between setup and callback is where bugs hide.
-- **Stale state** -- cached values, stale closures, outdated config, old build artifacts. When behavior contradicts the code you're reading, verify you're running what you think you're running.
-- **Stale build artifacts** -- a test failure whose source path is provably correct and untouched by your diff is the tell: the source on disk is right, but an incremental build relinked a stale object. A clean working tree (`git status`) does not mean a clean build tree -- build outputs are typically gitignored. Baseline the *build*, not the commit: rebuild from clean (`make clean`, fresh `target/`) before debugging the code. Checking out an old commit inherits the same stale objects and proves nothing.
-- **Recurring fix site** -- if `git log` shows 3+ prior fixes in the same file, the file needs redesign, not another patch. Escalate as architectural smell.
+For the recurring-pattern catalog (async ordering, stale state, stale build artifacts, recurring fix site) and the severity-vs-priority triage heuristic when multiple bugs compete, see [specialized-patterns.md](./references/specialized-patterns.md).
 
 ## Root Cause Tracing
 
@@ -162,6 +154,7 @@ See [specialized-patterns.md](./references/specialized-patterns.md) for anti-pat
 
 - Root cause identified with `file:line` evidence (not just "it failed here")
 - Regression test exists and fails without the fix, passes with it
+- Bypass self-check run: no variant input reaches the same bad state without tripping the fix (for security-relevant fixes, adversarial re-attack found no bypass)
 - Debug Report emitted with all seven fields (SYMPTOM, ROOT CAUSE, FIX, EVIDENCE, REGRESSION, RELATED, STATUS)
 - No diagnostic instrumentation left in code (`git diff` shows no leftover logging)
 
