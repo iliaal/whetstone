@@ -1,11 +1,11 @@
 {
-  "plugin_version": "4.1.0",
+  "plugin_version": "4.1.1",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-06-01T16:00:00.626229+00:00",
+  "generated_at": "2026-06-05T02:44:01.460858+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -20,8 +20,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-code-review": {
-      "content_hash": "29d5a1097cfd443a13d477e8d0af2e34b53864f0e1128535e484c74b8837be3a",
-      "content_changed": "4.1.0",
+      "content_hash": "6301b7600a4b4f7bbf422738328b6ff3845d1657c052b659b566d3494c0ea1b0",
+      "content_changed": "4.1.1",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
       "pattern_changed": "2.56.1"
     },
@@ -32,8 +32,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-debugging": {
-      "content_hash": "0f526e132f4ad2cbfca275646d69ef440056f47da237e1756870af23f18b91ea",
-      "content_changed": "4.1.0",
+      "content_hash": "86dd9c586efd2a428d92c85754657fd172fea3d3bc8abdc8c29683d68b16deff",
+      "content_changed": "4.1.1",
       "pattern_hash": "a627fd9892d245298ed0361d888166f79b1a196f1fc4137944fdced4aada360d",
       "pattern_changed": "2.56.1"
     },
@@ -86,14 +86,14 @@
       "pattern_changed": "2.56.1"
     },
     "ia-orchestrating-swarms": {
-      "content_hash": "6a65184753e2caff1f42d38044d22692eee7947e16bf6444768fe15fa58220f3",
-      "content_changed": "3.0.5",
+      "content_hash": "bc12066eca5f1b8ff36f56faa464ddd63b4a8b4ad20d921e6ba0e7eea6e7f72b",
+      "content_changed": "4.1.1",
       "pattern_hash": "5ff4d38d87cd363f2256033ea3b0371a9668b7da2e86674da929d6788d4bbfb6",
       "pattern_changed": "2.56.1"
     },
     "ia-php-laravel": {
-      "content_hash": "1c921eedd88380b8e03ba5aabefe5bfca7547fcaf0083d0c8765423a3e43ddc7",
-      "content_changed": "4.0.3",
+      "content_hash": "74745b6ebe4811e9ce784cf8b2bd5db90f695278183014209ff4872df20f29e9",
+      "content_changed": "4.1.1",
       "pattern_hash": "6f8a9059e67336c648e92e9d52b8ab3ff3eca6ebf8cf65b802a42df4bdee4987",
       "pattern_changed": "2.56.1"
     },
@@ -104,20 +104,20 @@
       "pattern_changed": "3.0.4"
     },
     "ia-planning": {
-      "content_hash": "269ab3b89122e87cf3f37a87addc416a7b53584d9763b0cf4dfd613d55846c00",
-      "content_changed": "4.0.4",
+      "content_hash": "8e8afacc5d186f9795770e81343bea4a02937aa6bb3094f2a4bc8a254d86e828",
+      "content_changed": "4.1.1",
       "pattern_hash": "23f9ea13ac9da79fd06313529b228beb2667f76c70901128794d1e335c590647",
       "pattern_changed": "2.56.1"
     },
     "ia-postgresql": {
-      "content_hash": "18aea76056ecd066cfadf243461f560274f20e70d8db39f8ec764ac41e16342d",
-      "content_changed": "4.0.3",
+      "content_hash": "617f359e39c4ae4c424e0e7f164b21c9e60f48e22889e3aca4d1e447a3dae32a",
+      "content_changed": "4.1.1",
       "pattern_hash": "21d75a0bcedeb38c3e164f1495b5b1cd04216091c66e0edb1bf553306c4cedb4",
       "pattern_changed": "2.56.1"
     },
     "ia-python-services": {
-      "content_hash": "602c8c50ba09e0b54caa860d5b4a42d6c24454df3e2dc62b688951845baff460",
-      "content_changed": "4.0.3",
+      "content_hash": "98211ad86953c7fcff05f339289bdd36da81a6ad0d78be49983c562f72a73231",
+      "content_changed": "4.1.1",
       "pattern_hash": "cdf67475aa0f5aa56c8ec9625cd995ba28dbeeaf1c95948016c73e6662eab6c1",
       "pattern_changed": "2.56.1"
     },
@@ -128,8 +128,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-receiving-code-review": {
-      "content_hash": "2e34c226c584308b48fe016fb36ba8b7621f28dfcede75b501be93b52e623549",
-      "content_changed": "3.0.4",
+      "content_hash": "65b1fbd43891d0a5496e0f6240993615e9060919f49954a24af6a71dea66fd71",
+      "content_changed": "4.1.1",
       "pattern_hash": "8b4c672767ad6dfccdce7b2ae6aa8bb5c7d7cc369bfe666a46dd690a03f06ab4",
       "pattern_changed": "3.0.4"
     },
@@ -182,8 +182,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-writing-tests": {
-      "content_hash": "4b8123769ee0bd7fb8cdbc3dea07ee5061d0ac8a91740f61cf3f1a083c240a19",
-      "content_changed": "4.0.3",
+      "content_hash": "376cfc26407af172a3e51f0e732ca9f08a9e5a2280d080f318d89bc7f3b312a6",
+      "content_changed": "4.1.1",
       "pattern_hash": "d3b32b5edcafd10d5ee44960ea1dbce87f55c3ab80d204cfd5509954fe45928a",
       "pattern_changed": "2.56.1"
     }
