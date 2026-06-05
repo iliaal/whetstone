@@ -80,6 +80,10 @@ Run once to gather evidence showing WHERE it breaks, then investigate that speci
 
 **Reproduce-passes is not fixed.** Stopping the exact reproduction case is easy; the bad state is often still reachable from a nearby variant when the fix landed at the crash site, not the root cause. Before declaring done, run the **bypass self-check**: name one input variation that reaches the same bad state without tripping your change. If you can, the fix is at the wrong layer -- return to root cause. For security-relevant bugs, escalate to an **adversarial re-attack**: a fresh-context agent, blind to your fix reasoning, attacks the patched code to find a variant that still triggers it.
 
+**Suppression is not a fix.** The bypass self-check assumes the fix attacks the bug -- confirm it actually does. A fix that swallows the error (`try/except: pass`, a blanket catch), disables the failing assertion, or special-cases the reproduction input makes the signal disappear while the defect lives on. A global swallow even *passes* the bypass check, because nothing reaches the bad state anymore. The fix must change behavior at the root cause, not hide the symptom.
+
+**Trim to the minimal diff.** After the fix verifies, run a fresh-context pass asked only to "simplify to the smallest change that fixes the root cause." The fixing session is anchored to its own reasoning and over-reaches; a blind pass reliably finds the trim points without reintroducing the bug.
+
 **On a failed fix:** return to Step 5 and *explicitly invalidate the current hypothesis* before forming a new one. State what evidence ruled out the prior hypothesis, then form a new hypothesis with its own grounding observation. Do not retry variants of the same theory ("maybe it was the other branch", "let me also catch this case") -- that is rationalization, not iteration. The Three-Fix Threshold below counts cycles, not retries within a single broken theory.
 
 ## Debug Report

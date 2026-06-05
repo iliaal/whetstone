@@ -111,7 +111,7 @@ For each finding, attempt one of:
 - REACHABILITY: trace upstream callers. Does any dispatch guard, null check, or branch condition prevent the buggy path from firing under attacker-reachable input? If yes, name the guard with file:line.
 - FRAMEWORK BEHAVIOR: does the framework/library actually behave as the finding assumes at the project's pinned version? Cite the docs or the framework source if the finding is wrong.
 - TEST EVIDENCE: does the existing test suite already exercise the alleged bug? If a passing test covers the exact path the finding worries about, the finding is likely speculative.
-- DUPLICATE: does the finding describe the same defect as a higher-severity finding already in the list? Mark for merge.
+- DUPLICATE: does the finding describe the same defect as a higher-severity finding already in the list? The test is root-cause, not signature -- two findings are duplicates if fixing one fixes the other, even when their file:line or wording differs. Mark for merge.
 
 Per finding, return one of:
 - DISPROVED — concrete counter-evidence (file:line of the upstream guard, doc URL, passing test name). Drop or demote to advisory.
