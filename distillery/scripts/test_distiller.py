@@ -1881,3 +1881,32 @@ class TestSyntheticSessionFilter:
             "You are a Skeptic agent in a multi-agent code review. Find one reason each finding is wrong.",
         ]:
             assert not distiller._is_synthetic_session("-home-ilia-ai-whetstone", task), f"should be organic: {task!r}"
+
+
+class TestMaintenanceTaskFilter:
+    """Exclude plugin-maintenance misfires (sync/audit/distillery tasks) from eval data.
+
+    Mirrors the injection hook's detector (inject-skills.sh:50)."""
+
+    def test_maintenance_tasks_detected(self):
+        for task in [
+            "/sync-from-repos scan reference repos for new skill patterns",
+            "Run /audit-plugin on the modified skills",
+            "Edit plugins/whetstone/skills/ia-debugging/SKILL.md to add a rule",
+            "Patch distiller.py to fix the harvest filter",
+            "update the trigger regex in skill-patterns.sh",
+            "/diagnose-negatives ia-planning",
+            "/eval-skills and rank candidates",
+        ]:
+            assert distiller._is_maintenance_task(task), f"should be maintenance: {task!r}"
+
+    def test_real_work_not_flagged_as_maintenance(self):
+        for task in [
+            "Review this PR for SQL injection in app/Http/Controllers/UserController.php",
+            "Debug why the checkout endpoint returns 500 under load",
+            "Break down the payments feature into phases",
+            "Our Eloquent query is N+1ing on comments",
+            "",
+            None,
+        ]:
+            assert not distiller._is_maintenance_task(task), f"should be real work: {task!r}"

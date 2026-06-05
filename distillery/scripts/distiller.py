@@ -120,6 +120,32 @@ def _is_synthetic_session(project, task_input=""):
         return True
     return False
 
+
+# Plugin-maintenance context. A skill injected into a sync/audit/distillery task
+# is a misfire, not usage: the task is meta-work on the plugin, not the skill's
+# domain. Such sessions dominate the whetstone repo's harvested data (Ilia's main
+# use of this repo IS maintaining the plugin) and poison process-skill eval data
+# with misfires + truncated multi-turn output. MIRRORS the injection hook's
+# detector at plugins/whetstone/hooks/inject-skills.sh:50 -- keep the two in sync.
+_MAINTENANCE_TASK_PATTERN = _re.compile(
+    r"plugins/whetstone/(?:skills|agents|commands)/"
+    r"|distiller\.py"
+    r"|skill-patterns\.sh"
+    r"|/sync-from-repos\b"
+    r"|/audit-plugin\b"
+    r"|/analyze-misfires\b"
+    r"|/diagnose-negatives\b"
+    r"|/evolve-skill\b"
+    r"|/eval-skills\b"
+)
+
+
+def _is_maintenance_task(task_input):
+    """True if the task is plugin-maintenance (sync/audit/distillery), where any
+    skill injection is a misfire rather than organic usage. See
+    inject-skills.sh:50 for the canonical definition this mirrors."""
+    return bool(task_input and _MAINTENANCE_TASK_PATTERN.search(task_input))
+
 # Secret patterns — compiled once, used to scrub content before writing eval data.
 # Matches common secret formats: API keys, tokens, PEM blocks, passwords, connection strings.
 _SECRET_PATTERNS = _re.compile(
@@ -2534,6 +2560,7 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
     manifest = _load_skill_manifest()
     stale_count = 0
     synthetic_count = 0
+    maintenance_count = 0
 
     # Discover all JSONL files
     session_files = []
@@ -2603,6 +2630,12 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
                 if _is_synthetic_session(example.get("project"), example.get("task_input", "")):
                     synthetic_count += 1
                     continue
+                # Plugin-maintenance misfire: the skill was injected into a
+                # sync/audit/distillery task, not used for its actual job. Never
+                # a clean eval example -- exclude unconditionally.
+                if _is_maintenance_task(example.get("task_input", "")):
+                    maintenance_count += 1
+                    continue
                 if not include_stale and (staleness["content_stale"] or staleness["model_stale"]):
                     stale_count += 1
                     continue
@@ -2643,6 +2676,8 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
         print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
     if synthetic_count:
         print(f"  Excluded {synthetic_count} synthetic self-play examples (SkillOpt rollouts / judge calls)", file=sys.stderr)
+    if maintenance_count:
+        print(f"  Excluded {maintenance_count} plugin-maintenance misfire examples (sync/audit/distillery tasks)", file=sys.stderr)
 
     return {
         "stats": stats,
@@ -2650,6 +2685,7 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
         "total_examples": sum(v["count"] for v in written.values()),
         "stale_filtered": stale_count,
         "synthetic_excluded": synthetic_count,
+        "maintenance_excluded": maintenance_count,
     }
 
 
@@ -2949,15 +2985,17 @@ def build_golden(skill_name, top_n=20, auto=False):
             if line:
                 examples.append(json.loads(line))
 
-    # Drop synthetic self-play (guard for sessions.jsonl harvested before the
-    # synthetic filter existed; re-harvesting removes them at the source).
-    pre_synth = len(examples)
+    # Drop synthetic self-play and plugin-maintenance misfires (guard for
+    # sessions.jsonl harvested before these filters existed; re-harvesting
+    # removes them at the source).
+    pre_drop = len(examples)
     examples = [
         ex for ex in examples
         if not _is_synthetic_session(ex.get("project"), ex.get("task_input", ""))
+        and not _is_maintenance_task(ex.get("task_input", ""))
     ]
-    if len(examples) < pre_synth:
-        print(f"  Dropped {pre_synth - len(examples)} synthetic self-play examples", file=sys.stderr)
+    if len(examples) < pre_drop:
+        print(f"  Dropped {pre_drop - len(examples)} synthetic / maintenance-misfire examples", file=sys.stderr)
 
     # Filter for relevance
     relevant = []
