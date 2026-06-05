@@ -149,6 +149,8 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 **Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts: do not use AskUserQuestion, auto-choose the conservative/safe default, skip upgrade checks and telemetry. Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
 
+**Decision presentation -- never silently drop options.** When the orchestrator surfaces a user-facing choice (team composition, an escalation path, a spec-wrong fork) via AskUserQuestion and the choice carries more than four viable options -- the tool's per-question cap -- split it into sequential rounds (`D1.1`, `D1.2`, ...) rather than truncating to the first four. Truncation hides viable choices the user never sees and silently narrows their decision space. Surface any cross-option dependency inline in the round that introduces it. (In spawned sessions, the rule above takes precedence: don't ask at all -- auto-pick the safe default.)
+
 ---
 
 ## Context Carry-Forward
