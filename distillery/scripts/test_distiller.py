@@ -1840,3 +1840,44 @@ class TestNegativeSignalPatterns:
             "wrong-headed approach is a phrase from the article",
         ]:
             assert not distiller._NEGATIVE_SIGNAL_PATTERNS.search(msg), f"should NOT match: {msg!r}"
+
+
+class TestSyntheticSessionFilter:
+    """Exclude SkillOpt self-play and harness/judge calls from harvested eval data."""
+
+    def test_skillopt_project_paths_are_synthetic(self):
+        for proj in [
+            "-tmp-skillopt-hard-merge-8imjbs4d",
+            "-tmp-skillopt-clau",
+            "-tmp-skillopt-ver-empty-sgr1dn3h",
+            "-home-ilia-skillopt-scratch",
+        ]:
+            assert distiller._is_synthetic_session(proj), f"should be synthetic: {proj!r}"
+
+    def test_real_projects_are_organic(self):
+        for proj in [
+            "-home-ilia-ai-whetstone",
+            "-home-ilia-ai-codesage_ref-rtk",
+            "-home-ilia-ai-last30days",
+            "",
+            None,
+        ]:
+            assert not distiller._is_synthetic_session(proj), f"should be organic: {proj!r}"
+
+    def test_harness_judge_prompts_are_synthetic_in_real_projects(self):
+        # Judge/grader calls that leak into a real project path are still synthetic.
+        for task in [
+            "Score this agent trajectory against the five criteria below. Return ONLY minified JSON.",
+            "Return ONLY minified JSON with the keys grounded and rationale.",
+            "You are a grader. Assess whether the fix is correct.",
+        ]:
+            assert distiller._is_synthetic_session("-home-ilia-ai-whetstone", task), f"should be synthetic: {task!r}"
+
+    def test_organic_task_prompts_not_filtered(self):
+        # Real work prompts must survive, including a legitimate Skeptic dispatch.
+        for task in [
+            "Our Eloquent query is N+1ing on the comments relationship and it's really slow",
+            "Break down this feature into implementation phases before we start coding",
+            "You are a Skeptic agent in a multi-agent code review. Find one reason each finding is wrong.",
+        ]:
+            assert not distiller._is_synthetic_session("-home-ilia-ai-whetstone", task), f"should be organic: {task!r}"

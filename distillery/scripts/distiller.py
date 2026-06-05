@@ -89,6 +89,37 @@ _PRE_RENAME_PROJECT_PATHS = {
 
 import re as _re
 
+# Synthetic / self-play eval sources to exclude from harvested data.
+# SkillOpt rollouts drive the model agentically against planted-bug fixtures in
+# /tmp/skillopt-* workspaces; those trajectories AND the optimizer's soft-rubric
+# judge calls get the target skill "injected", but none of it is organic usage.
+# Counting them poisons golden datasets with degenerate self-play (a verification
+# golden built from this drew 16/20 candidates from SkillOpt fixtures plus a judge
+# prompt). The project-path substring catches every SkillOpt workspace; the
+# harness-prompt pattern catches judge/grader calls that leak into real projects.
+_SYNTHETIC_PROJECT_SUBSTRINGS = ("skillopt",)
+_HARNESS_PROMPT_PATTERNS = _re.compile(
+    r"(?:Score this agent trajectory"
+    r"|Return ONLY minified JSON\b"
+    r"|You are (?:a |an )?(?:grader|judge)\b)",
+    _re.IGNORECASE,
+)
+
+
+def _is_synthetic_session(project, task_input=""):
+    """True if a harvested session is self-play / harness output, not organic usage.
+
+    Primary signal is the project path (SkillOpt workspaces all contain
+    "skillopt"); a narrow harness-prompt match catches judge/grader calls that
+    run under a real project path. Kept deliberately narrow so legitimate
+    throwaway sessions are not dropped.
+    """
+    if any(s in (project or "") for s in _SYNTHETIC_PROJECT_SUBSTRINGS):
+        return True
+    if task_input and _HARNESS_PROMPT_PATTERNS.search(task_input):
+        return True
+    return False
+
 # Secret patterns — compiled once, used to scrub content before writing eval data.
 # Matches common secret formats: API keys, tokens, PEM blocks, passwords, connection strings.
 _SECRET_PATTERNS = _re.compile(
@@ -2502,6 +2533,7 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
 
     manifest = _load_skill_manifest()
     stale_count = 0
+    synthetic_count = 0
 
     # Discover all JSONL files
     session_files = []
@@ -2566,6 +2598,11 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
                 example["content_stale"] = staleness["content_stale"]
                 example["pattern_stale"] = staleness["pattern_stale"]
                 example["model_stale"] = staleness["model_stale"]
+                # Synthetic self-play (SkillOpt rollouts, judge calls) is never
+                # organic usage -- exclude unconditionally, even with --include-stale.
+                if _is_synthetic_session(example.get("project"), example.get("task_input", "")):
+                    synthetic_count += 1
+                    continue
                 if not include_stale and (staleness["content_stale"] or staleness["model_stale"]):
                     stale_count += 1
                     continue
@@ -2604,12 +2641,15 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
 
     if stale_count:
         print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
+    if synthetic_count:
+        print(f"  Excluded {synthetic_count} synthetic self-play examples (SkillOpt rollouts / judge calls)", file=sys.stderr)
 
     return {
         "stats": stats,
         "skills": written,
         "total_examples": sum(v["count"] for v in written.values()),
         "stale_filtered": stale_count,
+        "synthetic_excluded": synthetic_count,
     }
 
 
@@ -2908,6 +2948,16 @@ def build_golden(skill_name, top_n=20, auto=False):
             line = line.strip()
             if line:
                 examples.append(json.loads(line))
+
+    # Drop synthetic self-play (guard for sessions.jsonl harvested before the
+    # synthetic filter existed; re-harvesting removes them at the source).
+    pre_synth = len(examples)
+    examples = [
+        ex for ex in examples
+        if not _is_synthetic_session(ex.get("project"), ex.get("task_input", ""))
+    ]
+    if len(examples) < pre_synth:
+        print(f"  Dropped {pre_synth - len(examples)} synthetic self-play examples", file=sys.stderr)
 
     # Filter for relevance
     relevant = []
