@@ -478,6 +478,32 @@ class TestUpdateManifest:
 # validate
 # ---------------------------------------------------------------------------
 
+class TestFindAttribution:
+    """AI-attribution leak detection for the published plugin surface."""
+
+    @pytest.mark.parametrize("text", [
+        "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>",
+        "co-authored-by: cursor",
+        "This was 🤖 Generated with Claude Code",
+        "Generated with [Claude Code](https://claude.com)",
+        "contact noreply@anthropic.com for details",
+        "cursoragent@cursor.com made this commit",
+    ])
+    def test_catches_leaks(self, text):
+        assert distiller._find_attribution(text)
+
+    @pytest.mark.parametrize("text", [
+        "Never add Co-Authored-By: Claude to any commit.",
+        "Do not include noreply@anthropic.com in PR bodies.",
+        "Strip any 🤖 Generated with Claude line before committing.",
+        "the `Co-Authored-By: Claude` trailer is forbidden",
+        "Example:\n```\nCo-Authored-By: Claude\n```\n",
+        "ordinary prose with no attribution at all",
+    ])
+    def test_suppresses_non_leaks(self, text):
+        assert not distiller._find_attribution(text)
+
+
 class TestValidate:
     def test_valid_skill(self, sample_skill):
         result = distiller.validate("test-skill")

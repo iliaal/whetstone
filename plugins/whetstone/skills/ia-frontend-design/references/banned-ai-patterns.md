@@ -74,3 +74,11 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Perfectly aligned testimonial cards with star ratings | Template pattern | Varied formats, pull quotes, inline mentions |
 | Oversized H1s without proportional hierarchy below | Single-level typography signals "just make it big" | Scale the full type ramp: H1 through H4 with intentional ratio |
 | Scroll-prompt filler UI ("Scroll to explore", "Swipe down", bouncing chevrons, scroll-arrow icons) | Signature AI landing-page tell; padding to avoid writing actual below-the-fold content | If content below is worth scrolling to, its first heading is the cue. Delete the prompt. |
+
+## Falsifiable Tests
+
+The pattern tables above catch known tells one at a time. These three tests catch the whole class -- run them against finished output before shipping.
+
+- **Template test** -- swap in completely different content (a different product, different copy, different data). If the layout still makes sense without any structural change, a template was built, not a design. Redo it. A real design carries the fingerprint of its specific content; a template tolerates any payload.
+- **AI Slop test** -- would a stranger glancing at only the first viewport immediately say "an AI made this"? If yes, the committed direction was not committed enough. Push the signature visual choice further until the answer is no.
+- **Content authenticity tell** -- organic numbers beat round ones. Prefer `99.94%` over `99.99%`, `$99.00` over `$100.00`, `3.8x` over `10x`, `1,247` over `1,000`. Real metrics carry irregular digits; clean ones read as fabricated. No `John Doe` / `Jane Smith` users, no `Acme Corp` / `Nexus` brands -- placeholder content is the fastest authenticity failure to spot.

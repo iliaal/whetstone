@@ -283,7 +283,8 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 
 | Script | Purpose | When to run |
 |--------|---------|-------------|
-| `scripts/update-metadata.sh` | Count components, update `plugin.json` + `marketplace.json` descriptions | After any component change |
+| `scripts/update-metadata.sh` | Count components, update `plugin.json` + `marketplace.json` descriptions; `--check` fails on metadata/version drift (a `/release` gate) | After any component change |
+| `scripts/check-trigger-overlap.py` | Advisory Jaccard report on trigger-regex vocabulary; surfaces skill pairs competing for the same phrases (`[same-tier]` = expected stack family) | During `/audit-plugin`, or after adding/editing skill triggers |
 | `scripts/generate-spec.py` | Generate starter `SPEC.md` per skill from SKILL.md + fixture; skips skills that already have one | When adding a new skill, or after `class:` taxonomy refresh |
 | `scripts/generate-manifest.py` | Update `distillery/.skill-versions.json` with current skill/pattern hashes | Automatically during release |
 | `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | After editing or adding skills |

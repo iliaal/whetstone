@@ -1177,6 +1177,24 @@ _MACHINE_PATH_PATTERNS = (
     _re.compile(r"/private/var/folders/[^\s`\"'<>)]+"),
 )
 
+# AI authorship attribution that must not appear in published plugin files. The
+# user is the author of everything shipped; co-authorship trailers and tool emails
+# are an attribution leak (see global rule + anti-patterns "Attribution leak").
+_ATTRIBUTION_PATTERNS = (
+    _re.compile(r"co-?authored-?by:\s*(?:claude|cursor|codex|gpt|copilot|openai|ai\b)", _re.IGNORECASE),
+    _re.compile(r"noreply@anthropic\.com"),
+    _re.compile(r"cursoragent@cursor\.com"),
+    _re.compile(r"generated\s+with\s+\[?claude", _re.IGNORECASE),
+    _re.compile(r"🤖\s+generated\s+with", _re.IGNORECASE),
+)
+# A match inside a sentence that forbids the string ("never add Co-Authored-By")
+# is documentation of the ban, not a leak.
+_ATTRIBUTION_FORBIDDING_CONTEXT = _re.compile(
+    r"\b(?:no|never|avoid|forbid|don'?t|without|strip|remove|ban(?:ned)?|"
+    r"do\s+not|must\s+not|exclude|reject|no\s+ai\s+attribution)\b",
+    _re.IGNORECASE,
+)
+
 REFERENCE_LINE_WARN = 150
 REFERENCE_LINE_ERROR = 800
 
@@ -1328,6 +1346,56 @@ def _find_machine_paths(text):
             if len(seen) >= 5:
                 return seen
     return seen
+
+def _find_attribution(text):
+    """Return distinct AI-attribution leak matches (Co-Authored-By: Claude, etc.).
+
+    Both fenced and inline code are stripped first: an attribution string inside
+    an example block is almost always illustrative, and the real leak surface for
+    the published plugin is prose. A match preceded by a forbidding context
+    ("never add ...") is documentation of the ban, not a leak.
+    """
+    scrubbed = _re.sub(r"```[\s\S]*?```", " ", text)
+    scrubbed = _re.sub(r"`[^`\n]+`", " ", scrubbed)
+    seen = []
+    for pattern in _ATTRIBUTION_PATTERNS:
+        for match in pattern.finditer(scrubbed):
+            window = scrubbed[max(0, match.start() - 200):match.start()]
+            if _ATTRIBUTION_FORBIDDING_CONTEXT.search(window):
+                continue
+            hit = match.group(0)
+            if hit not in seen:
+                seen.append(hit)
+            if len(seen) >= 5:
+                return seen
+    return seen
+
+# Relative markdown link target, minus external (http/mailto) and pure-anchor
+# links. A trailing #anchor is dropped before resolution.
+_REL_LINK_RE = _re.compile(r"\]\((?!https?:|mailto:|#)([^)\s]+?)(?:#[^)]*)?\)")
+
+def _find_broken_relative_links(text, base_dir):
+    """Return relative markdown link targets in `text` that don't resolve on disk.
+
+    Resolves each target against base_dir (the linking file's own directory).
+    Catches a reference that points at a sibling reference, script, or asset
+    that was renamed or never created -- the SKILL.md->references resolution in
+    validate-cross-refs.sh only covers links from the SKILL.md itself, not links
+    between reference files. Capped at 5 hits per source.
+    """
+    broken = []
+    for match in _REL_LINK_RE.finditer(text):
+        target = match.group(1).strip()
+        # Only check things that look like file links (extension or path sep);
+        # skip bare-word anchors and section references.
+        if "." not in Path(target).name and "/" not in target:
+            continue
+        if not (base_dir / target).resolve().exists():
+            if target not in broken:
+                broken.append(target)
+            if len(broken) >= 5:
+                break
+    return broken
 
 def _claude_cli_request(prompt, model=None):
     """Call claude -p and return the response. Returns dict with response/tokens/status."""
@@ -1617,6 +1685,11 @@ def validate_plugin(component_filter=None):
             add_finding(skill_name, "MACHINE_PATH_LEAK",
                         f"Machine-specific path(s) in SKILL.md: {', '.join(skill_path_hits[:3])}",
                         "HIGH")
+        skill_attr_hits = _find_attribution(content)
+        if skill_attr_hits:
+            add_finding(skill_name, "AI_ATTRIBUTION_LEAK",
+                        f"AI attribution in SKILL.md: {', '.join(skill_attr_hits[:3])}",
+                        "HIGH")
 
         # --- Placeholder text ---
         # Strip markdown links first to avoid false positives on [example-file.md](...)
@@ -1706,6 +1779,15 @@ def validate_plugin(component_filter=None):
                     add_finding(skill_name, "MACHINE_PATH_LEAK",
                                 f"Machine-specific path(s) in {ref_label}: {', '.join(ref_path_hits[:3])}",
                                 "HIGH")
+                ref_attr_hits = _find_attribution(ref_text)
+                if ref_attr_hits:
+                    add_finding(skill_name, "AI_ATTRIBUTION_LEAK",
+                                f"AI attribution in {ref_label}: {', '.join(ref_attr_hits[:3])}",
+                                "HIGH")
+                for bad in _find_broken_relative_links(ref_text, ref_path.parent):
+                    add_finding(skill_name, "BROKEN_REFERENCE_LINK",
+                                f"{ref_label} links to missing file: {bad}",
+                                "MEDIUM")
 
         if scripts_dir_path.is_dir():
             linked_scripts = set(re.findall(r'\]\(\./scripts/([^)]+)\)', content))
@@ -1829,6 +1911,11 @@ def validate_plugin(component_filter=None):
             add_finding(agent_name, "MACHINE_PATH_LEAK",
                         f"Machine-specific path(s) in agent: {', '.join(agent_path_hits[:3])}",
                         "HIGH")
+        agent_attr_hits = _find_attribution(content)
+        if agent_attr_hits:
+            add_finding(agent_name, "AI_ATTRIBUTION_LEAK",
+                        f"AI attribution in agent: {', '.join(agent_attr_hits[:3])}",
+                        "HIGH")
 
         # Cross-reference check
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
@@ -1872,6 +1959,11 @@ def validate_plugin(component_filter=None):
         if cmd_path_hits:
             add_finding(cmd_name, "MACHINE_PATH_LEAK",
                         f"Machine-specific path(s) in command: {', '.join(cmd_path_hits[:3])}",
+                        "HIGH")
+        cmd_attr_hits = _find_attribution(content)
+        if cmd_attr_hits:
+            add_finding(cmd_name, "AI_ATTRIBUTION_LEAK",
+                        f"AI attribution in command: {', '.join(cmd_attr_hits[:3])}",
                         "HIGH")
 
         # Cross-reference check

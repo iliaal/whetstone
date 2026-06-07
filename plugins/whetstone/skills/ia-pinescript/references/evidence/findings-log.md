@@ -1,6 +1,6 @@
 # ia-pinescript findings log
 
-Persistent iteration evidence for ia-pinescript. See [`/diagnose-negatives`](../../../../../.claude/commands/diagnose-negatives.md) Step 3 for the schema.
+Persistent iteration evidence for ia-pinescript. See the `/diagnose-negatives` workflow Step 3 for the schema.
 
 ## EX-001: Misfire on TradingView MCP server (JS) audit
 

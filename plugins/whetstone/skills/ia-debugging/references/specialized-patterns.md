@@ -47,6 +47,18 @@ After resolving non-trivial bugs, document a lightweight postmortem:
 - **Stale build artifacts** -- a test failure whose source path is provably correct and untouched by your diff is the tell: the source on disk is right, but an incremental build relinked a stale object. A clean working tree (`git status`) does not mean a clean build tree -- build outputs are typically gitignored. Baseline the *build*, not the commit: rebuild from clean (`make clean`, fresh `target/`) before debugging the code. Checking out an old commit inherits the same stale objects and proves nothing.
 - **Recurring fix site** -- if `git log` shows 3+ prior fixes in the same file, the file needs redesign, not another patch. Escalate as architectural smell.
 
+## First Move by Bug Class
+
+The first debugging move depends on the bug class. "Add logging" is the default reflex, but for some classes it is the wrong first move -- it captures nothing and burns a cycle.
+
+- **Visual / rendering / layout** -- read statically first. Instrumentation cannot capture what the compositor, layout engine, or cascade actually did. Read the render path and inspect computed styles (resolved values, not the source rule) instead of logging. A log fires before paint and says nothing about the rendered result.
+- **Behavioral / lifecycle / async / state** -- instrument first, before writing any fix. Add the probe (a log or assertion) as part of forming the hypothesis, not after a fix has already failed. These bugs live in values and ordering that are invisible from a static read; the probe is how the hypothesis becomes observable.
+- **Pure logic** (off-by-one, wrong branch, bad comparison) -- a careful static read is sufficient. No instrumentation needed; the defect is on the page once the path is read end to end.
+
+**Write the question before the log.** Before adding any probe, state the yes/no question it answers and pre-commit the decision rule: "if this prints X before Y, hypothesis A survives; if not, A is dead." A log with no question attached is noise -- it produces output, not evidence.
+
+**A log that changes the behavior is itself evidence.** If adding or removing a probe makes the bug appear, disappear, or move, that signals a timing, lifecycle, or concurrency defect -- the observation is perturbing the very ordering that is broken. Do not chase the now-hidden symptom; treat the sensitivity as the lead and investigate the race.
+
 ## Bug Triage
 
 When multiple bugs exist, prioritize by:

@@ -63,6 +63,8 @@ For each hypothesis, cite **at least one concrete observation** that supports it
 
 **4. Investigate** -- trace backward through the call chain from the symptom. Compare working vs broken state using a differential table (environment, version, data, timing -- what changed?).
 
+**Route the first move by bug class before instrumenting.** Visual/rendering bugs want a static read of the render path and computed styles, not logs; behavioral/async/state/lifecycle bugs want a probe added *now* as part of the hypothesis; pure-logic bugs need only a careful read. See [specialized-patterns.md](./references/specialized-patterns.md) for the routing and the "write the question before the log" rule.
+
 **Multi-component systems** (CI -> build -> deploy, API -> service -> DB): before proposing fixes, instrument each component boundary:
 - Log what data **enters** the component
 - Log what data **exits** the component

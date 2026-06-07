@@ -155,3 +155,11 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Fix:** before declaring a column-level rename complete, grep the full migration history for past renames of the same semantic. Past rename migrations are the best index of where the value lives — both columns *and* JSON payloads.
 
+## Error-string match against uncaptured subprocess output
+
+**Trap:** a finding (or a test) that asserts on a captured error string from a spawned subprocess -- `expect(err.message).toContain("ENOENT")`, `assert "syntax error" in str(exc)`, matching `$result->getMessage()` against a tool's diagnostic. The reviewer accepts it as a real check on the program's output.
+
+**Reality:** when a child process is spawned with `stdio: 'inherit'` (Node), `subprocess.run(...)` without `capture_output=True` (Python), `passthru`/`proc_open` with inherited descriptors (PHP), or any pipe the parent never reads, the child's diagnostics stream straight to the terminal -- they never land in the exception. `error.message` then holds only the **command line** ("Command failed: tsc --noEmit"), not the program's actual output. The matcher matches (or misses) the command string, so the assertion passes or fails for a reason unrelated to what the subprocess printed. A test that "checks the compiler reported an error" actually checks that the word appears in the invocation.
+
+**Fix:** when a finding or test matches on an error string from a subprocess result, trace how the child's stdout/stderr is captured before trusting the match. Confirm the spawn captures output (`stdio: 'pipe'` / collecting `child.stderr`; `capture_output=True` or `stderr=PIPE`; `2>&1` into a read buffer; `proc_open` with pipe descriptors the parent reads) and that the matched string is asserted against *that* captured stream, not against `error.message`/the command line. If the output is inherited or uncaptured, flag the assertion as matching the command string rather than the program output -- it passes for the wrong reason. Suggest asserting on the captured stream, or on exit code when only success/failure matters.
+

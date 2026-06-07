@@ -5,6 +5,46 @@ branch review, and fetching prior discussion before raising findings. The core
 file-selection fallback chain stays in the main skill; this covers the two
 detailed cases.
 
+## Working-tree safety: never reorganize the user's checkout to review
+
+A review is read-only on the working tree. Setting up a review must not mutate
+what the user has in progress. Before any other setup step, run:
+
+```
+git status --short --branch -uall
+```
+
+Treat every modified, staged, and untracked file in that output as the user's
+work-in-progress, not as clutter to clear. Do **not**, as review setup, run any
+of: `git switch` / `git checkout <branch>`, `git reset --hard`, `git clean`,
+`git stash` / `git stash -u`, or `gh pr checkout`. Each silently relocates or
+destroys uncommitted work.
+
+Moving untracked work "out of the way" is the same interference, not a
+safeguard: do **not** copy or move the user's WIP to `/tmp`, a backup dir, or any
+location outside the checkout to "protect" it. Relocating someone's uncommitted
+work is the same class of harm as stashing it -- it leaves the tree in a state
+the user did not create and cannot predict.
+
+If the target diff genuinely requires a different branch or a clean tree, stop
+and ask before switching, stashing, resetting, or cleaning. Reviewing a branch
+does not require checking it out -- resolve the comparison range and read the
+diff range directly (see "Base-branch resolution for branch reviews" below); a
+remote branch reads via `git diff <base>...<branch>` without touching the
+working tree.
+
+**HEAD-drift guard (when the review ends in a stage/commit/push):** record the
+commit before staging and re-check before the write:
+
+```
+before=$(git rev-parse HEAD)
+# ... review, then stage ...
+[ "$(git rev-parse HEAD)" = "$before" ] || echo "HEAD moved since review start -- stop and report"
+```
+
+If `HEAD` moved, or commits appeared that the review did not create, stop and
+report rather than committing or pushing on top of an unknown state.
+
 ## Base-branch resolution for branch reviews
 
 This governs the *comparison range* for a branch review — distinct from the

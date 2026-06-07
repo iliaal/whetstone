@@ -117,6 +117,26 @@ Listing what something is *not* before revealing what it *is*. A rhetorical stri
 - "Not a X... Not a Y... A Z." -- state Z directly
 - "It wasn't X. It wasn't Y. It was Z." -- the reader doesn't need the runway
 
+## Fractal Summary
+
+Restating the same point three times -- preview, state, recap -- as if the reader needs to be told what they're about to be told. Say it once.
+
+- "what I'll tell you / what I'm telling you / what I told you" -- the essay structure that announces itself at every level; cut the preview and the recap
+- "First, X. [section on X.] So that's X." -- the closing restatement adds nothing; delete it
+- Opening a section by summarizing it, then closing by summarizing it again -- pick the body, drop the bookends
+
+Trust the reader to hold one statement without scaffolding around it.
+
+## Analogy Test
+
+Don't ban analogies; test them. Keep one only if it passes all three:
+
+1. **Load-bearing** -- the point lands harder with the analogy than without. If the literal sentence is already clear, the analogy is decoration; cut it.
+2. **Holds one layer deeper** -- the comparison survives a second step ("X is like Y" still works when you push on how Y behaves). If it breaks on contact, it misleads.
+3. **Gets through without explanation** -- the reader understands it cold. If it needs "what I mean by this is...", the analogy failed; state the point directly.
+
+Fail any one -- cut the analogy and say the thing literally.
+
 ## Dramatic Fragmentation
 
 Sentence fragments for manufactured profundity. Complete sentences. Trust content over presentation.

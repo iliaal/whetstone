@@ -24,6 +24,8 @@ description: >-
 
 ## AI Patterns -- Kill on Sight
 
+Models reproduce sentence *structures* more reliably than they reproduce vocabulary. A word-swap list catches the surface; the named structural tells below catch the shape underneath, where most AI tone actually lives. Weight detection toward structure.
+
 **Vocabulary**: delve, crucial, pivotal, foster, leverage, tapestry, testament, underscore, vibrant, landscape (abstract), shape (abstract, as in "previous shape" / "the shape of the problem"), interplay, multifaceted, enhance, enduring, garner, showcase, Additionally, seamless, robust, cutting-edge, groundbreaking, nestled, renowned
 
 **Structural tells**:
@@ -95,6 +97,10 @@ Before delivering prose, run two checks:
 - Em-dash anywhere? Replace with comma or period.
 - Vague declarative ("The implications are significant")? Name the specific implication.
 - Meta-joiner ("The rest of this section...")? Delete. Let the text move.
+
+**Restraint -- over-editing is a failure mode, equal in weight to under-editing.** A flagged item is a candidate, not a verdict.
+- If a sentence already reads naturally, leave it. Touching prose that was fine introduces new tells and strips voice.
+- Match the smell, not the string. A word on the vocabulary list that reads naturally in its actual context stays -- flag the tone, not the token. Banning a word everywhere it appears is mechanical editing, the same defect the skill exists to remove.
 
 **Five-dimension scoring** (rate 1-10 each):
 

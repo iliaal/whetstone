@@ -17,7 +17,7 @@ No completion claims without fresh verification evidence. If the verification co
 
 ## Pre-Verification Check
 
-Before running verification, check the working tree state: `git status --porcelain`. If there are uncommitted changes unrelated to the current task, handle them first (commit, stash, or acknowledge). Adding verification commits on top of a dirty tree creates tangled history.
+Before running verification, check the working tree state: `git status --porcelain`. If there are uncommitted changes unrelated to the current task, handle them first (commit, stash, or acknowledge). Adding verification commits on top of a dirty tree creates tangled history. When the change is high-stakes (touches shared modules) or the tree carries unrelated dirty/untracked files that cannot be cleared first, a passing local run is not proof -- unrelated WIP can supply a missing symbol or mask a break. Reproduce the pass against a known-good commit with only the owned diff applied before claiming done; see [isolated-verification.md](./references/isolated-verification.md).
 
 When verifying work delegated to a subagent, do not trust the implementer's own report. Read the actual code or test output independently. Spec compliance and quality are separate concerns -- verify both.
 

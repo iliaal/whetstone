@@ -24,6 +24,13 @@ jq . .claude-plugin/marketplace.json > /dev/null || { echo "ERROR: marketplace.j
 jq . plugins/whetstone/.claude-plugin/plugin.json > /dev/null || { echo "ERROR: plugin.json is invalid JSON"; exit 1; }
 
 # --- Pre-commit gates ---
+echo "[Pre-commit] Checking metadata is in sync with component counts..."
+bash "$SCRIPT_DIR/update-metadata.sh" --check || {
+  echo "ERROR: plugin.json / marketplace.json metadata is stale. Run 'bash scripts/update-metadata.sh' and commit the result."
+  exit 1
+}
+echo "  Metadata in sync"
+
 echo "[Pre-commit] Running trigger regression tests..."
 python3 distillery/scripts/distiller.py test-triggers > /dev/null || {
   echo "ERROR: Trigger regression tests failed. Fix patterns or fixtures before release."
