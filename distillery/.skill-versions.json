@@ -1,11 +1,11 @@
 {
-  "plugin_version": "4.1.1",
+  "plugin_version": "4.1.2",
   "model_baseline_prefixes": [
     "claude-opus-4-7",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-06-05T02:44:01.460858+00:00",
+  "generated_at": "2026-06-07T15:29:52.645151+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -62,8 +62,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-linux-bash-scripting": {
-      "content_hash": "672c8c18ebd61fcbf2c2e500fd21a19da9d63d5ccc511fa30b7167ba590aea36",
-      "content_changed": "3.0.4",
+      "content_hash": "536081b5df21f864d3cbe51a6f42d6e0eb509bbfb036fbac70a876eb874a38f2",
+      "content_changed": "4.1.2",
       "pattern_hash": "ece33477de88f1b689b905a70b184b27a9c2e64873a5dd4c6193757a2a46fe00",
       "pattern_changed": "2.56.1"
     },
@@ -146,8 +146,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-rust-systems": {
-      "content_hash": "090e904a89a238bc31aa73543c11e390a7ce4d00b1b831435136a19ec7c97bb9",
-      "content_changed": "4.0.3",
+      "content_hash": "222447f7fca71a76ee36aaff4013a50883ee24981c0833f44524f26a9d1a96ff",
+      "content_changed": "4.1.2",
       "pattern_hash": "3d5fcdb8252f2edc517caf23eaf50dd2cd3e0bbd95e890075e5961e3538f41ad",
       "pattern_changed": "2.56.1"
     },
@@ -170,8 +170,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-verification-before-completion": {
-      "content_hash": "0150dae6dbdfb0eb0d0490a92ffa0b7cfb10523a4ee42d3328e8c1e36ea70ff4",
-      "content_changed": "3.0.4",
+      "content_hash": "599f25711f0543d062bc8672400e5b65fa7a648afc43107e018dee6912af11fd",
+      "content_changed": "4.1.2",
       "pattern_hash": "bcdc1ed2a44de823a34a95dcf52ef22a48d41f053a9241201782a9320365399e",
       "pattern_changed": "3.0.4"
     },

@@ -157,6 +157,10 @@ If the output does not confirm the claim:
 3. **Return to implementation.** Fix the issue, then re-run verification from Step 1 of the Gate Function.
 4. **If the failure is unrelated to your changes** (pre-existing flaky test, environment issue), state this explicitly with evidence -- show that the failure also occurs on the base branch or is a known issue.
 
+## Pre-Commit Hook Failures
+
+A failing pre-commit hook is a verification checkpoint, not an obstacle to route around. `git commit --no-verify` is permitted only when the hook fails on pre-existing or unrelated changes -- a stricter lint landed upstream, a sibling file already violated a rule -- and even then, surface the failure to the user first under the same evidence bar as "When Verification Fails" above (show the failure exists on the base branch). Never pass `--no-verify` for a failure caused by the current session's own changes: fix the root cause and let the hook pass. A `--no-verify` the user never saw is a defeated check -- the same failure mode as claiming completion without evidence.
+
 ## Rationalization Prevention
 
 If you're reasoning about the outcome instead of running the command, the Gate is not satisfied. "Should work", "trivial change", "just a refactor", "new tests pass" (not "all tests pass"), "CI will catch it" -- these are all the same failure mode: substituting confidence for evidence. Any satisfaction expression ("looks good", "seems correct") triggers the Gate, spirit over letter.

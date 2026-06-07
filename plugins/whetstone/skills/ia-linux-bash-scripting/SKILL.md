@@ -137,6 +137,7 @@ die()   { error "$@"; exit 1; }
 |-----|-----|
 | `for f in $(ls)` | `for f in *; do` or `find -print0 \| while read` |
 | `local x=$(cmd)` | `local x; x=$(cmd)` -- preserves exit code |
+| `x=$(cmd)` then an `[[ -z $x ]]` fallback check | `x=$(cmd) \|\| true` -- under `set -e` a failed `$()` in a bare assignment aborts the script there, so the fallback never runs (opposite of the `local` case: `local` masks the failure, a bare assignment propagates it) |
 | `echo "$data"` | `printf '%s\n' "$data"` |
 | `cat file \| grep` | `grep pat file` |
 | `kill -9 $pid` first | `kill "$pid"` first, `-9` as last resort |

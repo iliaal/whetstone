@@ -78,6 +78,7 @@ Split by crate role:
 - `bail!("...")` / `ensure!(cond, "...")` in application code for early exits.
 - Prefer `Result<T, E>` over panics for any recoverable error. Panics are for programmer bugs (broken invariants), not runtime failures.
 - **`#[must_use]` on fallible APIs**: annotate functions returning `Result` or newtype-wrapped results that callers frequently ignore. Catches `let _ = validate(x);` at compile time instead of shipping a silently-dropped error.
+- **Make illegal call-sequences unrepresentable** rather than returning a runtime error — the type-state pattern. When an API has a mandatory call order (configure → connect → use), encode each stage as a distinct type (`Client<Uninitialized>` → `Client<Initialized>` → `Client<Connected>`) carrying `PhantomData<State>`; a method only exists on the state that permits it. Calling `send_request` before `connect` then fails to compile instead of panicking at runtime — there is no error variant to handle because the bad sequence cannot be written.
 
 ## Ownership Discipline
 
@@ -106,6 +107,7 @@ Split by crate role:
 - Backpressure via bounded `mpsc` channels — unbounded channels hide memory growth until OOM.
 - **`Semaphore` for hard concurrency limits** on spawn paths that don't fit a channel model (e.g. "at most 50 concurrent outbound HTTP calls"). `let _permit = sem.acquire().await?;` inside the task; dropping the permit releases the slot. Pair with `Arc<Semaphore>` shared across spawners.
 - Don't mix async runtimes. Pick `tokio` and stick with it; `async-std` and `smol` don't interop cleanly.
+- **Vectored writes** (`write_vectored` + `std::io::IoSlice`) coalesce many buffers — interleaved headers and payloads — into a single syscall when flushing a batch of messages to a socket; the kernel does the gather. An optimization for measured syscall-bound flush paths — profile first; a single `write_all` is fine elsewhere.
 
 ## CLI Tools (clap)
 

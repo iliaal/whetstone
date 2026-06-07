@@ -5,6 +5,21 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.2] - 2026-06-07
+
+Patch: a PR-comment script fix and three skill hardenings harvested from the EveryInc CE and agent-skills upstreams plus a dropped-in Rust reference, alongside two distillery eval-data fixes already landed since 4.1.1. The recurring theme this round is `set -e` discipline -- the same bare-assignment footgun surfaced in a shipped script and is now documented as a rule.
+
+### Changed
+
+- `ia-verification-before-completion`: new Pre-Commit Hook Failures rule -- `git commit --no-verify` is permitted only for failures on pre-existing or unrelated changes (surfaced to the user first, under the same base-branch evidence bar as a failing verification command), never for the session's own changes, and never silently; a bypass the user never saw is a defeated check, the same failure mode as claiming completion without evidence.
+- `ia-rust-systems`: added the type-state pattern (encode a mandatory call order as distinct `Client<State>` types carrying `PhantomData` so an out-of-order call fails to compile instead of panicking at runtime) and vectored writes (`write_vectored` + `IoSlice` to coalesce a message batch into a single syscall, carrying the file's profile-first caveat).
+- `ia-linux-bash-scripting`: new footgun -- under `set -e` a failed `$()` in a bare assignment aborts the script at that line, so a following `[[ -z $x ]]` fallback check never runs; guard with `x=$(cmd) || true`. This is the inverse of the `local x=$(cmd)` case, which masks the failure rather than propagating it.
+
+### Fixed
+
+- `get-pr-comments`: under `set -e`, the repo auto-detection `OWNER=$(gh repo view ...)` assignment aborted the script when run outside a git repository, leaving the friendly "could not detect repository" error unreachable; added `|| true` so a detection failure falls through to it.
+- distillery harvest: exclude SkillOpt self-play and plugin-maintenance misfires from harvested eval data so eval datasets reflect organic usage.
+
 ## [4.1.1] - 2026-06-04
 
 Patch: defensive-rule hardening across nine skills, harvested from Anthropic's defending-code reference harness, the cross-repo wiki, and syncs against the EveryInc CE and gstack upstreams. The debugging and code-review skills gain most of the depth: fix-verification discipline (a fix that masks the symptom is not a fix; prove a symbol's absence directly before resting a finding on it; baseline a regression against the pre-change file before blaming the diff), the mirror-bug and sibling-projection-leak review lenses, and root-cause-based deduplication. Three language skills pick up footguns observed in the field.

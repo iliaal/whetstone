@@ -15,8 +15,11 @@ if [ -n "$2" ]; then
     OWNER=$(echo "$2" | cut -d/ -f1)
     REPO=$(echo "$2" | cut -d/ -f2)
 else
-    OWNER=$(gh repo view --json owner -q .owner.login 2>/dev/null)
-    REPO=$(gh repo view --json name -q .name 2>/dev/null)
+    # || true is load-bearing: under `set -e` a failed command substitution in
+    # an assignment aborts the script, making the friendly error below unreachable
+    # when run outside a git repo (gh repo view exits 1, stderr swallowed).
+    OWNER=$(gh repo view --json owner -q .owner.login 2>/dev/null) || true
+    REPO=$(gh repo view --json name -q .name 2>/dev/null) || true
 fi
 
 if [ -z "$OWNER" ] || [ -z "$REPO" ]; then
