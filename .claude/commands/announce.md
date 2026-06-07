@@ -54,7 +54,7 @@ The account is X Premium (25,000 character limit per post), so most releases fit
 
 3. **Full-changelog link with theme teaser** (rich releases only):
    - One line pointing at the CHANGELOG with a parenthetical teaser of 3-5 themes NOT covered in the top-N bullets.
-   - Format: `Full changelog (theme-A, theme-B, theme-C, and the rest): github.com/iliaal/whetstone/blob/main/CHANGELOG.md`
+   - Format: `Full changelog (theme-A, theme-B, theme-C, and the rest): github.com/iliaal/whetstone/blob/master/CHANGELOG.md`
    - The teaser lets readers judge whether clicking through will find what they need.
 
 4. **Install commands:**

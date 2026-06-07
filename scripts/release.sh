@@ -87,8 +87,8 @@ git add -A -- \
 # Also stage project-level skill changes if any
 git add -A -- .claude/skills/ 2>/dev/null || true
 git commit -m "$commit_msg"
-git push origin main
-echo "  Pushed to origin/main"
+git push origin master
+echo "  Pushed to origin/master"
 
 # --- 2. Sync GitHub repo description ---
 echo "[2/7] Sync repo description..."
