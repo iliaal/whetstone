@@ -38,6 +38,29 @@ python3 distillery/scripts/distiller.py test-triggers > /dev/null || {
 }
 echo "  Trigger tests passed"
 
+echo "[Pre-commit] Scanning corpus for prompt-injection / supply-chain content..."
+python3 distillery/scripts/distiller.py scan-injection > /dev/null || {
+  echo "ERROR: Prompt-injection scan found HIGH-severity content in the plugin corpus."
+  echo "       Run 'python3 distillery/scripts/distiller.py scan-injection' to see findings."
+  exit 1
+}
+echo "  Injection scan passed (no HIGH findings)"
+
+echo "[Pre-commit] Verifying Tier-2 prompt-injection attestation for changed files..."
+prev_tag="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+if [[ -n "$prev_tag" ]]; then
+  python3 distillery/scripts/distiller.py scan-injection --verify-attestation --changed-since "$prev_tag" || {
+    echo "ERROR: No valid Tier-2 prompt-injection attestation for the current changed-file set."
+    echo "       Tier-2 judging runs as a sub-agent pass inside the /release command (Phase 3.5),"
+    echo "       which writes the content-bound attestation this gate verifies."
+    echo "       Run the release via /release, not 'bash release.sh' directly."
+    exit 1
+  }
+  echo "  Tier-2 attestation valid"
+else
+  echo "  WARNING: no previous release tag found; skipping Tier-2 attestation check."
+fi
+
 echo "[Pre-commit] Running semantic injection tests..."
 if python3 distillery/scripts/distiller.py test-semantic --max-tests 5 > /dev/null 2>&1; then
   echo "  Semantic tests passed"

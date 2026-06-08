@@ -35,12 +35,26 @@ Ask the user to confirm the bump type before writing anything, and offer a short
 4. Verify README.md agent/command/skill counts and tables still match reality — update if drift.
 5. Validate JSON: `jq . .claude-plugin/marketplace.json && jq . plugins/whetstone/.claude-plugin/plugin.json`.
 
+## Phase 3.5: Tier-2 prompt-injection judge (sub-agents)
+
+Semantic injection screening of every `.md` file changed since the last release, run as **parallel sub-agents** (not `claude -p`). This writes the content-bound attestation that Phase 4's `release.sh` verifies — `release.sh` will refuse to ship without it.
+
+1. Prior release ref: `prev_tag=$(git describe --tags --abbrev=0 --match 'v*')`.
+2. Get judge tasks: `python3 distillery/scripts/distiller.py scan-injection --emit-tasks --changed-since "$prev_tag"`. Returns `{count, tasks:[{file, prompt}]}`. If `count` is 0, skip to Phase 4 — nothing changed to judge.
+3. For each task, spawn a sub-agent (Agent tool, `general-purpose`) whose **entire instruction is the task's `prompt`** (the file content is already embedded in it — the agent reads nothing). Fan out in parallel, batched ~8 per message. Each sub-agent returns ONLY a JSON verdict: `{verdict, confidence, categories, evidence, rationale}`.
+4. From each sub-agent's reply, extract the JSON verdict object (an agent may wrap it in prose — take the `{...}` containing `"verdict"`). Assemble a JSON array of `{file, verdict, confidence, categories, evidence, rationale}` (one per task, carrying the task's `file`) and write it to `/tmp/injection-verdicts.json`. If an agent returned no parseable verdict, re-dispatch that one task before continuing.
+5. If ANY verdict is `malicious`: **STOP the release.** Report the file, evidence, and rationale. Do not write the attestation, do not run Phase 4.
+6. Otherwise write the attestation: `python3 distillery/scripts/distiller.py scan-injection --write-attestation --changed-since "$prev_tag" --verdicts @/tmp/injection-verdicts.json`. Surface any `suspicious` verdicts to the user as a heads-up; they do not block.
+7. Proceed to Phase 4.
+
+The attestation is bound to the changed files' content hash. If any of those files are edited after this phase, `release.sh` rejects the now-stale attestation and you must re-run Phase 3.5.
+
 ## Phase 4: Ship
 
 Run `bash scripts/release.sh "$ARGUMENTS"` — this handles:
 
 - Version consistency check (plugin.json vs marketplace.json)
-- Pre-commit gates: trigger regression tests, semantic injection tests, skill manifest regeneration
+- Pre-commit gates: trigger regression tests, prompt-injection corpus scan (Tier-1 deterministic, fails on HIGH), Tier-2 attestation check (verifies the Phase 3.5 sub-agent judge pass ran clean on the changed files; fails if no valid content-bound attestation exists), semantic injection tests, skill manifest regeneration
 - Commit all plugin changes + CHANGELOG + marketplace.json
 - Push to `origin/main`
 - Mirror skills to `~/ai/ai-skills` and push

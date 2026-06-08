@@ -162,6 +162,15 @@ Check every agent-skill, agent-command, and skill-command pair for:
 | Project-context anomalies | Run `python3 distillery/scripts/distiller.py analyze-outcomes`. Skills whose negative rate in a specific project exceeds the global average by >10pp are underperforming in that context. Include anomalies as MEDIUM severity with skill name, project, negative rate, global rate, and delta. Cross-reference with project-type constraints in `skill-patterns.sh` -- if a skill lacks a constraint that would prevent the misfire, recommend adding one. |
 | Negative signal diagnosis | For skills with a high ratio of negative-signal sessions (>30% of examples), run `python3 distillery/scripts/distiller.py diagnose-negatives <skill>`. Include the diagnosed failure patterns and suggested skill text improvements as MEDIUM/HIGH findings. This catches skills that are injected correctly but produce poor output. |
 
+### Prompt-injection / supply-chain (advisory)
+
+The plugin corpus ships into downstream agents' context as trusted instructions, so audit is the place to run the semantic injection judge that `/release` only runs on changed files.
+
+| Check | Signal |
+|-------|--------|
+| Tier-1 deterministic | Run `python3 distillery/scripts/distiller.py scan-injection`. Any HIGH finding (bidi unicode, fetch-then-execute, unicode-tag smuggling) is a release blocker — surface as HIGH. MEDIUM (zero-width chars, exfil-shaped lines, encoded payloads, HTML-comment directives) are advisory; read the flagged line. This is free and deterministic. |
+| Tier-2 LLM judge | Run `python3 distillery/scripts/distiller.py scan-injection --judge --changed-since $(git describe --tags --abbrev=0 --match 'v*')` for a cheap pass over what changed since the last release (~$1). For a deep audit, drop `--changed-since` to judge the whole corpus (~$0.08/file via `claude -p`; budget accordingly). Include any `malicious` verdict as HIGH and `suspicious` as MEDIUM, with the file, evidence quote, and rationale. The judge is purpose-aware — it will *not* flag a security skill that quotes an attack defensively. |
+
 ### Structural (AI-only checks)
 
 Orphan references, dead cross-refs, README counts, and hook pattern counts are already covered by `validate-plugin`. Focus AI analysis on semantic structural issues:

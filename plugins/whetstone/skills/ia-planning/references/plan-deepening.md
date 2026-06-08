@@ -32,9 +32,9 @@ When a section is deepened by research agents, append the findings using this st
 - [Optimization opportunity or benchmark to target]
 
 **Implementation Details:**
-​```[language]
+```[language]
 // Concrete code example from research
-​```
+```
 
 **Edge Cases:**
 - [Edge case and handling strategy]

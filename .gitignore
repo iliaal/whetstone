@@ -15,3 +15,6 @@ skills-lock.json
 
 # Local audit logs (operational history, not shared)
 docs/audit/
+
+# Tier-2 prompt-injection attestation (per-release build artifact, not committed)
+distillery/.injection-attestation.json
