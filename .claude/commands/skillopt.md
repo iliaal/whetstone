@@ -90,6 +90,6 @@ Therefore:
    read `outputs/<run>/history.json` (per-step `selection_hard` + `action`), diff
    `best_skill.md` against the seed skill, and report what changed and whether the
    gate accepted. Remind: **promotion is manual + gated** — inspect for
-   reward-hacking, re-eval on held-out/golden data (`distiller.py dspy-eval`),
+   reward-hacking, re-eval on held-out/golden data (`distiller.py dspy-eval --emit-tasks` → judge sub-agents → `--score-from-verdicts`, no billed `claude -p`),
    `distiller.py test-triggers`, Codex Flow A cycle, then commit; `/release` ships
    it. Never auto-promote `best_skill.md`.

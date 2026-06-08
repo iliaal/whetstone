@@ -12,3 +12,6 @@
 {"prompt": "add pagination to the list endpoint", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "create a migration to add the email column", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "review this pull request for code quality", "expect": false, "added_in": "2.51.0", "source": "initial"}
+{"prompt": "this function keeps crashing intermittently in production", "expect": true, "added_in": "4.1.2", "source": "crash-verb-gap 2026-06-08"}
+{"prompt": "the server crashed after the last deploy", "expect": true, "added_in": "4.1.2", "source": "crash-verb-gap 2026-06-08"}
+{"prompt": "give me a crash course on react hooks", "expect": false, "added_in": "4.1.2", "source": "crash-verb-gap 2026-06-08"}

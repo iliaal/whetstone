@@ -1,11 +1,11 @@
-{"prompt": "This function keeps crashing intermittently in production, can you look into it?", "should_trigger": ["debugging"], "should_not_trigger": ["php-laravel", "react-frontend", "planning"]}
-{"prompt": "I need to build a new user dashboard with charts and filters for our admin panel", "should_trigger": ["frontend-design"], "should_not_trigger": ["debugging", "postgresql"]}
-{"prompt": "Our Eloquent query is N+1ing on the comments relationship and it's really slow", "should_trigger": ["php-laravel"], "should_not_trigger": ["react-frontend", "python-services"]}
-{"prompt": "Break down this feature into implementation phases before we start coding", "should_trigger": ["planning"], "should_not_trigger": ["debugging"]}
-{"prompt": "Review this pull request for security issues and code quality problems", "should_trigger": ["code-review"], "should_not_trigger": ["php-laravel"]}
-{"prompt": "Write comprehensive tests for the payment processor module", "should_trigger": ["writing-tests"], "should_not_trigger": ["frontend-design"]}
-{"prompt": "The React component re-renders every time state changes in the parent", "should_trigger": ["react-frontend"], "should_not_trigger": ["php-laravel", "postgresql"]}
-{"prompt": "Set up Terraform modules for our AWS VPC and subnets", "should_trigger": ["terraform"], "should_not_trigger": ["react-frontend", "php-laravel"]}
+{"prompt": "This function keeps crashing intermittently in production, can you look into it?", "should_trigger": ["ia-debugging"], "should_not_trigger": ["ia-php-laravel", "ia-react-frontend", "ia-planning"]}
+{"prompt": "I need to build a new user dashboard with charts and filters for our admin panel", "should_trigger": ["ia-frontend-design"], "should_not_trigger": ["ia-debugging", "ia-postgresql"]}
+{"prompt": "Our Eloquent query is N+1ing on the comments relationship and it's really slow", "should_trigger": ["ia-php-laravel"], "should_not_trigger": ["ia-react-frontend", "ia-python-services"]}
+{"prompt": "Break down this feature into implementation phases before we start coding", "should_trigger": ["ia-planning"], "should_not_trigger": ["ia-debugging"]}
+{"prompt": "Review this pull request for security issues and code quality problems", "should_trigger": ["ia-code-review"], "should_not_trigger": ["ia-php-laravel"]}
+{"prompt": "Write comprehensive tests for the payment processor module", "should_trigger": ["ia-writing-tests"], "should_not_trigger": ["ia-frontend-design"]}
+{"prompt": "The React component re-renders every time state changes in the parent", "should_trigger": ["ia-react-frontend"], "should_not_trigger": ["ia-php-laravel", "ia-postgresql"]}
+{"prompt": "Set up Terraform modules for our AWS VPC and subnets", "should_trigger": ["ia-terraform"], "should_not_trigger": ["ia-react-frontend", "ia-php-laravel"]}
 {"prompt": "Review plugins/whetstone/skills/ia-brainstorming/SKILL.md for consistency issues with the writing skill", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
 {"prompt": "Run python3 distillery/scripts/distiller.py analyze-misfires and diagnose why brainstorming, writing-tests, and planning keep misfiring", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
 {"prompt": "Compare skills/ia-planning/SKILL.md against the version in ~/ai/repos/other-plugin/ and note differences", "should_trigger": [], "should_not_trigger": ["ia-planning"]}

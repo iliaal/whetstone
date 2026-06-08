@@ -24,8 +24,13 @@ If no skill name provided, run `analyze-misfires` first to show which skills hav
 
 ```bash
 python3 distillery/scripts/distiller.py harvest-sessions
-python3 distillery/scripts/distiller.py diagnose-negatives <skill> --max-examples 10
 ```
+
+Run the diagnosis judge as an **in-session sub-agent** (no billed `claude -p`):
+
+1. `python3 distillery/scripts/distiller.py diagnose-negatives <skill> --max-examples 10 --emit-prompt` → `{count, prompt, meta}`. If `count` is 0, stop — no negatives to diagnose.
+2. Spawn ONE sub-agent (Agent tool, `general-purpose`) whose entire instruction is the `prompt`; it returns the JSON diagnosis. Write that response to a temp file.
+3. `python3 distillery/scripts/distiller.py diagnose-negatives <skill> --max-examples 10 --format-result --response @<file>` → validates against the rubric and prints the report.
 
 The judge classifies each finding under exactly one of seven smallest-failing-decision categories:
 
@@ -83,11 +88,11 @@ For each approved finding:
 
 ### Step 4: Verify
 
-After applying changes:
+After applying changes, re-eval via the **in-session sub-agent** path (no billed `claude -p`):
 
-```bash
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --max-examples 10
-```
+1. `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --max-examples 10 --emit-tasks` → `{count, tasks:[{index, prompt, ...}]}`.
+2. Dispatch one sub-agent per task (Agent tool, parallel, batched ~8); each returns its judge JSON. Collect `[{index, signal, session_id, skill_version, response}]` into a temp file.
+3. `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --score-from-verdicts @<file>` → aggregates the scores and records the run in `eval-history.jsonl`.
 
 Compare the eval score to the last recorded score in `eval-history.jsonl`. If the score improved or held steady, the changes are validated. If it dropped significantly, review what was changed.
 

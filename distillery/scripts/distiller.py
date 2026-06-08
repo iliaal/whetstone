@@ -2208,23 +2208,34 @@ def test_triggers(skill_filter=None, fixtures_dir=None):
 
 
 SEMANTIC_FIXTURES_PATH = DISTILLERY_DIR / "tests" / "fixtures" / "semantic-triggers.jsonl"
+INJECT_HOOK_PATH = PLUGIN_DIR / "hooks" / "inject-skills.sh"
 
 
 def test_semantic(max_tests=None, fixtures_path=None):
-    """Run semantic injection tests via claude CLI.
+    """Deterministic skill-injection hook test -- no LLM, no API cost.
 
-    For each test case, runs claude with the prompt, captures which skills
-    were injected via TEST_INJECTION_LOG, and compares against expectations.
+    Drives the real PreToolUse hook (inject-skills.sh) with a synthesized Task
+    tool input for each fixture prompt and reads TEST_INJECTION_LOG to see which
+    skills the hook injected. Exercises the actual hook bash -- tier bucketing,
+    project-type and maintenance suppression, the 5-skill cap, log writing --
+    which the Python regex test (test-triggers) does not. The hook runs from a
+    neutral temp cwd so the repo's own marker files (package.json) don't populate
+    PROJECT_TYPES and skew project-type filtering.
 
     Args:
-        max_tests: limit number of tests (controls token cost)
+        max_tests: limit number of fixtures (each runs in <15ms; cost-free)
         fixtures_path: override path to semantic-triggers.jsonl
 
     Returns dict with per-test results and overall pass/fail.
     """
+    import tempfile
+
     fpath = Path(fixtures_path) if fixtures_path else SEMANTIC_FIXTURES_PATH
     if not fpath.exists():
         print(f"Error: fixtures file not found: {fpath}", file=sys.stderr)
+        sys.exit(1)
+    if not INJECT_HOOK_PATH.exists():
+        print(f"Error: inject-skills hook not found: {INJECT_HOOK_PATH}", file=sys.stderr)
         sys.exit(1)
 
     fixtures = []
@@ -2237,73 +2248,65 @@ def test_semantic(max_tests=None, fixtures_path=None):
     if max_tests and len(fixtures) > max_tests:
         fixtures = fixtures[:max_tests]
 
-    print(f"Running {len(fixtures)} semantic injection tests (costs API tokens)...", file=sys.stderr)
+    print(f"Running {len(fixtures)} skill-injection hook tests (deterministic, no API cost)...", file=sys.stderr)
 
     results = []
     all_pass = True
 
-    for i, fixture in enumerate(fixtures):
-        prompt = fixture["prompt"]
-        should_trigger = set(fixture.get("should_trigger", []))
-        should_not_trigger = set(fixture.get("should_not_trigger", []))
+    with tempfile.TemporaryDirectory(prefix="inject-hook-cwd-") as neutral_cwd:
+        for i, fixture in enumerate(fixtures):
+            prompt = fixture["prompt"]
+            should_trigger = set(fixture.get("should_trigger", []))
+            should_not_trigger = set(fixture.get("should_not_trigger", []))
 
-        # Create temp file for injection log
-        import tempfile
-        log_fd, log_path = tempfile.mkstemp(prefix="injection-test-", suffix=".log")
-        os.close(log_fd)
+            log_fd, log_path = tempfile.mkstemp(prefix="injection-test-", suffix=".log")
+            os.close(log_fd)
+            try:
+                hook_input = json.dumps({
+                    "tool_input": {"prompt": prompt, "subagent_type": "general-purpose"},
+                })
+                env = os.environ.copy()
+                env["TEST_INJECTION_LOG"] = log_path
+                subprocess.run(
+                    ["bash", str(INJECT_HOOK_PATH)],
+                    input=hook_input, capture_output=True, text=True,
+                    timeout=15, env=env, cwd=neutral_cwd,
+                )
 
-        try:
-            env = os.environ.copy()
-            env["TEST_INJECTION_LOG"] = log_path
-
-            proc = subprocess.run(
-                ["claude", "-p", prompt, "--model", DEFAULT_CLI_MODEL, "--max-turns", "2", "--output-format", "json"],
-                capture_output=True, text=True, timeout=120, env=env,
-            )
-
-            # Read injected skills from log
-            injected = set()
-            if os.path.exists(log_path):
+                injected = set()
                 with open(log_path) as lf:
                     for line in lf:
                         line = line.strip()
                         if line:
                             injected.add(line)
 
-            # Check expectations
-            missing = should_trigger - injected
-            unwanted = should_not_trigger & injected
-            inconclusive = not injected  # Claude didn't spawn any subagents
+                missing = should_trigger - injected
+                unwanted = should_not_trigger & injected
+                passed = not missing and not unwanted
+                if not passed:
+                    all_pass = False
+                status = "pass" if passed else "fail"
 
-            passed = not missing and not unwanted and not inconclusive
-            if not passed and not inconclusive:
+                results.append({
+                    "prompt": prompt[:100],
+                    "status": status,
+                    "injected": sorted(injected),
+                    "missing": sorted(missing),
+                    "unwanted": sorted(unwanted),
+                })
+                print(f"  [{i+1}/{len(fixtures)}] {status.upper()}: \"{prompt[:60]}...\" -> {sorted(injected) or '(no injection)'}", file=sys.stderr)
+
+            except subprocess.TimeoutExpired:
                 all_pass = False
-
-            status = "pass" if passed else ("inconclusive" if inconclusive else "fail")
-
-            results.append({
-                "prompt": prompt[:100],
-                "status": status,
-                "injected": sorted(injected),
-                "missing": sorted(missing),
-                "unwanted": sorted(unwanted),
-            })
-
-            print(f"  [{i+1}/{len(fixtures)}] {status.upper()}: \"{prompt[:60]}...\" -> {sorted(injected) or '(no injection)'}", file=sys.stderr)
-
-        except subprocess.TimeoutExpired:
-            results.append({"prompt": prompt[:100], "status": "timeout", "injected": [], "missing": [], "unwanted": []})
-            print(f"  [{i+1}/{len(fixtures)}] TIMEOUT: \"{prompt[:60]}...\"", file=sys.stderr)
-        except FileNotFoundError:
-            print("Error: 'claude' CLI not found. Install Claude Code to run semantic tests.", file=sys.stderr)
-            sys.exit(1)
-        finally:
-            if os.path.exists(log_path):
-                os.unlink(log_path)
+                results.append({"prompt": prompt[:100], "status": "timeout",
+                                "injected": [], "missing": sorted(should_trigger), "unwanted": []})
+                print(f"  [{i+1}/{len(fixtures)}] TIMEOUT: \"{prompt[:60]}...\"", file=sys.stderr)
+            finally:
+                if os.path.exists(log_path):
+                    os.unlink(log_path)
 
     pass_count = sum(1 for r in results if r["status"] == "pass")
-    fail_count = sum(1 for r in results if r["status"] == "fail")
-    inconclusive_count = sum(1 for r in results if r["status"] == "inconclusive")
+    fail_count = sum(1 for r in results if r["status"] != "pass")
 
     return {
         "results": results,
@@ -2312,7 +2315,7 @@ def test_semantic(max_tests=None, fixtures_path=None):
             "total": len(results),
             "passed": pass_count,
             "failed": fail_count,
-            "inconclusive": inconclusive_count,
+            "inconclusive": 0,
         },
     }
 
@@ -3725,24 +3728,10 @@ def check_budget_cli(skill_name=None, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
     return 1 if any_regression else 0
 
 
-def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
-    """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
-
-    Reads harvested sessions where the user expressed dissatisfaction (negative signal),
-    extracts the task, the agent output, and the user's negative feedback, then uses
-    Claude to classify failures by the smallest-failing-decision rubric (seven fixed
-    categories) and propose concrete edits with explicit deferral reasons when no edit
-    will be made.
-
-    Args:
-        skill_name: skill to diagnose
-        max_examples: max negative examples to analyze (default 10)
-        include_stale: include examples from before the skill was last changed (default False)
-
-    Returns dict with summary, findings list (each with category, smallest_failing_decision,
-    proposed_edit, and validation issues if the LLM output didn't conform).
-    """
-    # Load skill text
+def _diagnose_load(skill_name, max_examples, include_stale):
+    """Load skill text + sampled negative sessions. Shared by the direct and
+    sub-agent paths. Hard-exits on missing skill/sessions; returns a dict with
+    skill_text, negatives, relevant_negatives, sample (sample empty if no negatives)."""
     skill_path = _find_skill_path(skill_name)
     if not skill_path:
         print(f"Error: skill '{skill_name}' not found", file=sys.stderr)
@@ -3750,8 +3739,6 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     skill_text = skill_path.read_text()
 
     manifest = _load_skill_manifest()
-
-    # Load sessions and filter to negatives
     sessions_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
     if not sessions_path.exists():
         print(f"Error: no session data for '{skill_name}'. Run harvest-sessions first.", file=sys.stderr)
@@ -3777,25 +3764,28 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     if stale_count:
         print(f"  Filtered {stale_count} stale negative examples (use --include-stale to include)", file=sys.stderr)
 
-    if not negatives:
-        print(f"No negative-signal sessions for '{skill_name}'.", file=sys.stderr)
-        return {"skill": skill_name, "negative_count": 0, "patterns": [], "suggestions": []}
-
-    # Apply relevance filter -- only analyze negatives where the skill was actually relevant
-    skill_keywords = _extract_skill_keywords(skill_text)
     relevant_negatives = []
-    for ex in negatives:
-        is_rel, _ = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
-        if is_rel:
-            relevant_negatives.append(ex)
+    if negatives:
+        skill_keywords = _extract_skill_keywords(skill_text)
+        for ex in negatives:
+            is_rel, _ = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
+            if is_rel:
+                relevant_negatives.append(ex)
+        pool = relevant_negatives if len(relevant_negatives) >= 3 else negatives
+        sample = pool[:max_examples]
+    else:
+        sample = []
 
-    # Use relevant negatives if enough, otherwise fall back to all negatives
-    pool = relevant_negatives if len(relevant_negatives) >= 3 else negatives
-    sample = pool[:max_examples]
+    return {
+        "skill_text": skill_text,
+        "negatives": negatives,
+        "relevant_negatives": relevant_negatives,
+        "sample": sample,
+    }
 
-    print(f"Analyzing {len(sample)} negative sessions for '{skill_name}' ({len(relevant_negatives)} relevant of {len(negatives)} total)", file=sys.stderr)
 
-    # Build a digest of negative sessions for analysis
+def _diagnose_build_prompt(skill_name, skill_text, sample):
+    """Build the diagnosis judge prompt for a sampled set of negative sessions."""
     cases = []
     for i, ex in enumerate(sample):
         cases.append(
@@ -3803,12 +3793,9 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
             f"TASK: {ex.get('task_input', '')[:1000]}\n\n"
             f"AGENT OUTPUT (truncated): {ex.get('agent_output', '')[:2000]}\n"
         )
-
     cases_text = "\n\n".join(cases)
-
-    # Ask Claude to analyze failures using the smallest-failing-decision rubric.
     rubric_text = _format_diagnosis_rubric()
-    prompt = (
+    return (
         f"You are diagnosing why a skill file produces negative outcomes. "
         f"The skill is injected into AI agent sessions to guide behavior.\n\n"
         f"SKILL FILE ({skill_name}):\n{skill_text[:6000]}\n\n"
@@ -3835,14 +3822,9 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
         f'...]}}'
     )
 
-    result = _claude_cli_request(prompt, model=DEFAULT_CLI_MODEL)
 
-    if result["status"] != "ok":
-        return {"skill": skill_name, "error": result.get("error", "unknown")}
-
-    # Parse response
-    response_text = result["response"]
-    # Strip markdown fences
+def _diagnose_parse(skill_name, response_text, negatives, relevant_negatives, sample, cost_usd=0):
+    """Parse + validate a diagnosis judge response into the report dict."""
     if response_text.startswith("```"):
         response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
         if response_text.endswith("```"):
@@ -3854,7 +3836,6 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
     try:
         analysis = json.loads(response_text)
     except json.JSONDecodeError:
-        # Try to find JSON in the response
         for m in _re.finditer(r'\{[\s\S]*"findings"[\s\S]*\}', response_text):
             try:
                 analysis = json.loads(m.group())
@@ -3868,8 +3849,6 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
                 "error": f"Could not parse analysis: {response_text[:200]}",
             }
 
-    # Validate every finding against the rubric. Surface schema violations rather than
-    # silently shipping malformed data downstream.
     findings = analysis.get("findings", []) or []
     invalid: list[dict] = []
     for i, f in enumerate(findings):
@@ -3877,7 +3856,6 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
         if issues:
             invalid.append({"index": i, "issues": issues})
 
-    # Group findings by category for stable, action-oriented output ordering.
     category_order = [name for name, _, _ in _NEGATIVE_DIAGNOSIS_RUBRIC]
     findings_by_category = sorted(
         findings,
@@ -3894,8 +3872,215 @@ def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
         "summary": analysis.get("summary", ""),
         "findings": findings_by_category,
         "schema_violations": invalid,
-        "cost_usd": result.get("cost_usd", 0),
+        "cost_usd": cost_usd,
     }
+
+
+def diagnose_negatives(skill_name, max_examples=10, include_stale=False):
+    """Analyze negative-signal sessions for a skill to identify concrete failure patterns.
+
+    Direct (billed claude -p) path, kept for standalone/headless use. The /release
+    and /audit-plugin commands use the sub-agent path (diagnose_emit_prompt +
+    diagnose_format_result) instead, which runs in-session at no API cost.
+
+    Returns dict with summary, findings list (each with category,
+    smallest_failing_decision, proposed_edit, and validation issues if the LLM
+    output didn't conform).
+    """
+    loaded = _diagnose_load(skill_name, max_examples, include_stale)
+    if not loaded["negatives"]:
+        print(f"No negative-signal sessions for '{skill_name}'.", file=sys.stderr)
+        return {"skill": skill_name, "negative_count": 0, "patterns": [], "suggestions": []}
+
+    sample = loaded["sample"]
+    print(f"Analyzing {len(sample)} negative sessions for '{skill_name}' "
+          f"({len(loaded['relevant_negatives'])} relevant of {len(loaded['negatives'])} total)", file=sys.stderr)
+
+    prompt = _diagnose_build_prompt(skill_name, loaded["skill_text"], sample)
+    result = _claude_cli_request(prompt, model=DEFAULT_CLI_MODEL)
+    if result["status"] != "ok":
+        return {"skill": skill_name, "error": result.get("error", "unknown")}
+
+    return _diagnose_parse(skill_name, result["response"], loaded["negatives"],
+                           loaded["relevant_negatives"], sample, result.get("cost_usd", 0))
+
+
+def diagnose_emit_prompt(skill_name, max_examples=10, include_stale=False):
+    """Sub-agent path step 1: emit the diagnosis prompt for one sub-agent dispatch.
+    No LLM call. Returns {skill, count, prompt, meta}."""
+    loaded = _diagnose_load(skill_name, max_examples, include_stale)
+    if not loaded["negatives"]:
+        return {"skill": skill_name, "count": 0, "prompt": None,
+                "meta": {"negative_count": 0, "relevant_negatives": 0, "analyzed": 0}}
+    sample = loaded["sample"]
+    prompt = _diagnose_build_prompt(skill_name, loaded["skill_text"], sample)
+    return {
+        "skill": skill_name,
+        "count": len(sample),
+        "prompt": prompt,
+        "meta": {
+            "negative_count": len(loaded["negatives"]),
+            "relevant_negatives": len(loaded["relevant_negatives"]),
+            "analyzed": len(sample),
+        },
+    }
+
+
+def diagnose_format_result(skill_name, response_text, max_examples=10, include_stale=False):
+    """Sub-agent path step 2: turn a sub-agent's JSON response into the report.
+    Reloads sessions to recompute counts deterministically (same filtering)."""
+    loaded = _diagnose_load(skill_name, max_examples, include_stale)
+    if not loaded["negatives"]:
+        return {"skill": skill_name, "negative_count": 0, "patterns": [], "suggestions": []}
+    return _diagnose_parse(skill_name, response_text, loaded["negatives"],
+                           loaded["relevant_negatives"], loaded["sample"])
+
+
+def _dspy_dataset_path(skill_name, dataset):
+    if dataset == "sessions":
+        return EVAL_DATA_DIR / skill_name / "sessions.jsonl"
+    if dataset == "golden":
+        return EVAL_DATA_DIR / skill_name / "golden.jsonl"
+    return Path(dataset)
+
+
+def _dspy_load_and_sample(skill_name, dataset, max_examples):
+    """Load skill text + relevance-filtered, signal-balanced sample. Shared by the
+    direct and sub-agent paths so both score the identical example set. Hard-exits
+    on missing skill/dataset/examples. Returns (skill_text, sampled, dataset_path)."""
+    skill_path = _find_skill_path(skill_name)
+    if not skill_path:
+        print(f"Error: skill '{skill_name}' not found in plugin or generated-skills", file=sys.stderr)
+        sys.exit(1)
+    skill_text = skill_path.read_text()
+    print(f"Loaded skill: {skill_path}", file=sys.stderr)
+
+    dataset_path = _dspy_dataset_path(skill_name, dataset)
+    if not dataset_path.exists():
+        print(f"Error: dataset not found at {dataset_path}", file=sys.stderr)
+        print("Run 'harvest-sessions' first to generate eval data.", file=sys.stderr)
+        sys.exit(1)
+
+    examples = []
+    with open(dataset_path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                examples.append(json.loads(line))
+    if not examples:
+        print(f"Error: no examples in {dataset_path}", file=sys.stderr)
+        sys.exit(1)
+
+    skill_keywords = _extract_skill_keywords(skill_text)
+    relevant = []
+    irrelevant = 0
+    for ex in examples:
+        is_rel, overlap = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
+        if is_rel:
+            relevant.append(ex)
+        else:
+            irrelevant += 1
+    if irrelevant:
+        print(f"Filtered {irrelevant}/{len(examples)} irrelevant examples (keywords: {sorted(skill_keywords)[:10]}...)", file=sys.stderr)
+    if not relevant:
+        print(f"Error: no relevant examples after filtering. Keywords: {sorted(skill_keywords)}", file=sys.stderr)
+        sys.exit(1)
+
+    positive = [e for e in relevant if e.get("signal") == "positive"]
+    negative = [e for e in relevant if e.get("signal") == "negative"]
+    ambiguous = [e for e in relevant if e.get("signal") == "ambiguous"]
+    half = max_examples // 2
+    sampled = positive[:half] + negative[:half] + ambiguous[:max(0, max_examples - 2 * half)]
+    sampled = sampled[:max_examples]
+    print(f"Evaluating {len(sampled)} examples ({len(positive)} pos, {len(negative)} neg, {len(ambiguous)} amb available)", file=sys.stderr)
+    return skill_text, sampled, dataset_path
+
+
+def _dspy_aggregate(skill_name, scored, backend, eval_model, dataset_path_str, total_tokens, total_cost):
+    """Aggregate scored examples into the eval report. Shared by direct and
+    sub-agent paths -- the composite/mean math lives here only, so both produce
+    byte-identical summaries from the same scores."""
+    valid_scores = [s for s in scored if "composite" in s]
+    if not valid_scores:
+        return {"skill": skill_name, "error": "no valid scores", "scored": scored}
+
+    avg = lambda key: round(sum(s[key] for s in valid_scores) / len(valid_scores), 3)
+    pos_scores = [s for s in valid_scores if s["signal"] == "positive"]
+    neg_scores = [s for s in valid_scores if s["signal"] == "negative"]
+
+    summary = {
+        "mean_composite": avg("composite"),
+        "mean_correctness": avg("correctness"),
+        "mean_procedure_following": avg("procedure_following"),
+        "mean_conciseness": avg("conciseness"),
+        "count": len(valid_scores),
+        "errors": len(scored) - len(valid_scores),
+    }
+    if pos_scores:
+        pos_avg = lambda key: round(sum(s[key] for s in pos_scores) / len(pos_scores), 3)
+        summary["positive"] = {"count": len(pos_scores), "mean_composite": pos_avg("composite")}
+    if neg_scores:
+        neg_avg = lambda key: round(sum(s[key] for s in neg_scores) / len(neg_scores), 3)
+        summary["negative"] = {"count": len(neg_scores), "mean_composite": neg_avg("composite")}
+
+    result = {
+        "skill": skill_name,
+        "backend": backend,
+        "model": eval_model,
+        "dataset": dataset_path_str,
+        "total_tokens": total_tokens,
+        "summary": summary,
+        "scores": scored,
+    }
+    if total_cost > 0:
+        result["total_cost_usd"] = round(total_cost, 4)
+    return result
+
+
+def dspy_emit_tasks(skill_name, dataset="sessions", max_examples=20):
+    """Sub-agent path step 1: emit per-example judge prompts as JSON (no LLM call).
+    Each task carries the example's index/signal/session_id/skill_version so the
+    verdicts can be reassembled by dspy_score_from_verdicts."""
+    skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples)
+    tasks = []
+    for i, ex in enumerate(sampled):
+        task_input = ex.get("task_input", "")
+        agent_output = ex.get("agent_output", "")
+        if not task_input or not agent_output:
+            continue
+        judge_user = _JUDGE_USER_TEMPLATE.format(
+            skill_text=skill_text[:8000],
+            task_input=task_input[:5000],
+            agent_output=agent_output[:12000],
+        )
+        tasks.append({
+            "index": i,
+            "signal": ex.get("signal", ""),
+            "session_id": ex.get("session_id", ""),
+            "skill_version": ex.get("skill_version"),
+            "prompt": _JUDGE_SYSTEM_PROMPT + "\n\n" + judge_user,
+        })
+    return {"skill": skill_name, "dataset": str(dataset_path), "count": len(tasks), "tasks": tasks}
+
+
+def dspy_score_from_verdicts(skill_name, verdicts, dataset="sessions"):
+    """Sub-agent path step 2: parse per-example judge responses and aggregate.
+    `verdicts` is a list of {index, signal, session_id, skill_version, response}."""
+    dataset_path = _dspy_dataset_path(skill_name, dataset)
+    scored = []
+    for v in verdicts:
+        base = {
+            "index": v.get("index"),
+            "signal": v.get("signal", ""),
+            "session_id": v.get("session_id", ""),
+            "skill_version": v.get("skill_version"),
+        }
+        scores = _parse_judge_response(v.get("response", ""))
+        if scores is None:
+            scored.append({**base, "error": f"parse_error: {str(v.get('response', ''))[:200]}"})
+        else:
+            scored.append({**base, **scores})
+    return _dspy_aggregate(skill_name, scored, "subagent", "session-subagent", str(dataset_path), 0, 0.0)
 
 
 def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backend="claude-cli"):
@@ -3922,68 +4107,7 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
             print("Error: OPENROUTER_API_KEY not set in .env", file=sys.stderr)
             sys.exit(1)
 
-    # Load skill
-    skill_path = _find_skill_path(skill_name)
-    if not skill_path:
-        print(f"Error: skill '{skill_name}' not found in plugin or generated-skills", file=sys.stderr)
-        sys.exit(1)
-    skill_text = skill_path.read_text()
-    print(f"Loaded skill: {skill_path}", file=sys.stderr)
-
-    # Load eval dataset
-    if dataset == "sessions":
-        dataset_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
-    elif dataset == "golden":
-        dataset_path = EVAL_DATA_DIR / skill_name / "golden.jsonl"
-    else:
-        dataset_path = Path(dataset)
-
-    if not dataset_path.exists():
-        print(f"Error: dataset not found at {dataset_path}", file=sys.stderr)
-        print("Run 'harvest-sessions' first to generate eval data.", file=sys.stderr)
-        sys.exit(1)
-
-    examples = []
-    with open(dataset_path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                examples.append(json.loads(line))
-
-    if not examples:
-        print(f"Error: no examples in {dataset_path}", file=sys.stderr)
-        sys.exit(1)
-
-    # Filter for relevance: only keep examples where the task is actually
-    # about this skill's domain, not just where the skill was injected alongside others.
-    skill_keywords = _extract_skill_keywords(skill_text)
-    relevant = []
-    irrelevant = 0
-    for ex in examples:
-        is_rel, overlap = _check_skill_relevance(ex.get("task_input", ""), skill_keywords)
-        if is_rel:
-            relevant.append(ex)
-        else:
-            irrelevant += 1
-
-    if irrelevant:
-        print(f"Filtered {irrelevant}/{len(examples)} irrelevant examples (keywords: {sorted(skill_keywords)[:10]}...)", file=sys.stderr)
-    if not relevant:
-        print(f"Error: no relevant examples after filtering. Keywords: {sorted(skill_keywords)}", file=sys.stderr)
-        sys.exit(1)
-
-    # Prioritize: positive examples first (skill worked), then negative (skill failed),
-    # so we get a balanced sample if capped
-    positive = [e for e in relevant if e.get("signal") == "positive"]
-    negative = [e for e in relevant if e.get("signal") == "negative"]
-    ambiguous = [e for e in relevant if e.get("signal") == "ambiguous"]
-
-    # Take balanced sample: half positive, half negative (when available)
-    half = max_examples // 2
-    sampled = positive[:half] + negative[:half] + ambiguous[:max(0, max_examples - 2 * half)]
-    sampled = sampled[:max_examples]
-
-    print(f"Evaluating {len(sampled)} examples ({len(positive)} pos, {len(negative)} neg, {len(ambiguous)} amb available)", file=sys.stderr)
+    skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples)
 
     # Configure model and backend
     if use_cli:
@@ -4070,51 +4194,7 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
             file=sys.stderr,
         )
 
-    # Aggregate
-    valid_scores = [s for s in scored if "composite" in s]
-    if not valid_scores:
-        return {"skill": skill_name, "error": "no valid scores", "scored": scored}
-
-    avg = lambda key: round(sum(s[key] for s in valid_scores) / len(valid_scores), 3)
-
-    # Split by signal
-    pos_scores = [s for s in valid_scores if s["signal"] == "positive"]
-    neg_scores = [s for s in valid_scores if s["signal"] == "negative"]
-
-    summary = {
-        "mean_composite": avg("composite"),
-        "mean_correctness": avg("correctness"),
-        "mean_procedure_following": avg("procedure_following"),
-        "mean_conciseness": avg("conciseness"),
-        "count": len(valid_scores),
-        "errors": len(scored) - len(valid_scores),
-    }
-
-    if pos_scores:
-        pos_avg = lambda key: round(sum(s[key] for s in pos_scores) / len(pos_scores), 3)
-        summary["positive"] = {
-            "count": len(pos_scores),
-            "mean_composite": pos_avg("composite"),
-        }
-    if neg_scores:
-        neg_avg = lambda key: round(sum(s[key] for s in neg_scores) / len(neg_scores), 3)
-        summary["negative"] = {
-            "count": len(neg_scores),
-            "mean_composite": neg_avg("composite"),
-        }
-
-    result = {
-        "skill": skill_name,
-        "backend": backend,
-        "model": eval_model,
-        "dataset": str(dataset_path),
-        "total_tokens": total_tokens,
-        "summary": summary,
-        "scores": scored,
-    }
-    if total_cost > 0:
-        result["total_cost_usd"] = round(total_cost, 4)
-    return result
+    return _dspy_aggregate(skill_name, scored, backend, eval_model, str(dataset_path), total_tokens, total_cost)
 
 
 def _save_eval_history(report):
@@ -4822,7 +4902,7 @@ def main():
     p_tt.add_argument("--fixtures-dir", default=None, help="Override fixtures directory")
 
     # test-semantic
-    p_ts = sub.add_parser("test-semantic", help="Run semantic injection tests via claude CLI (costs tokens)")
+    p_ts = sub.add_parser("test-semantic", help="Run skill-injection hook tests (deterministic, drives inject-skills.sh; no API cost)")
     p_ts.add_argument("--max-tests", type=int, default=None, help="Limit number of tests")
     p_ts.add_argument("--fixtures", default=None, help="Path to semantic-triggers.jsonl")
 
@@ -4865,6 +4945,8 @@ def main():
     p_eval.add_argument("--model", default=None, help=f"Override eval model (default depends on backend)")
     p_eval.add_argument("--backend", default="claude-cli", choices=["openrouter", "claude-cli"],
                          help="LLM backend: 'claude-cli' (Opus 4.7 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
+    p_eval.add_argument("--emit-tasks", action="store_true", help="Sub-agent path: emit per-example judge prompts as JSON (no LLM/API call)")
+    p_eval.add_argument("--score-from-verdicts", default=None, help="Sub-agent path: aggregate per-example judge responses (inline JSON, or @path) into the eval report")
 
     # build-golden
     p_golden = sub.add_parser("build-golden", help="Build golden eval dataset from harvested sessions")
@@ -4891,6 +4973,9 @@ def main():
     p_diag.add_argument("name", help="Skill name")
     p_diag.add_argument("--max-examples", type=int, default=10, help="Max negative examples to analyze (default: 10)")
     p_diag.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
+    p_diag.add_argument("--emit-prompt", action="store_true", help="Sub-agent path: print the diagnosis prompt as JSON (no LLM/API call)")
+    p_diag.add_argument("--format-result", action="store_true", help="Sub-agent path: turn a sub-agent's JSON response (--response) into the report")
+    p_diag.add_argument("--response", default=None, help="Sub-agent response for --format-result (inline, or @path to a file)")
 
     # budget — record/check per-skill resource budget (turn count + tool variety)
     p_budget_check = sub.add_parser("budget", help="Record or check per-skill resource budget (catches silent skill bloat)")
@@ -5089,6 +5174,19 @@ def main():
         report = discover_signals(args.top)
         print(json.dumps(report, indent=2))
 
+    elif args.command == "dspy-eval" and args.emit_tasks:
+        print(json.dumps(dspy_emit_tasks(args.name, args.dataset, args.max_examples), indent=2))
+
+    elif args.command == "dspy-eval" and args.score_from_verdicts is not None:
+        raw = args.score_from_verdicts
+        if raw.startswith("@"):
+            raw = Path(raw[1:]).read_text()
+        report = dspy_score_from_verdicts(args.name, json.loads(raw), args.dataset)
+        previous = _save_eval_history(report)
+        for line in _format_eval_comparison(report, previous):
+            print(line, file=sys.stderr)
+        print(json.dumps(report, indent=2))
+
     elif args.command == "dspy-eval":
         report = dspy_eval(args.name, args.dataset, args.max_examples, args.model, args.backend)
         previous = _save_eval_history(report)
@@ -5132,6 +5230,21 @@ def main():
         else:
             print("\n  No anomalies found (no pairs with negative rate >10pp above global)", file=sys.stderr)
         print(json.dumps(report, indent=2))
+
+    elif args.command == "diagnose-negatives" and args.emit_prompt:
+        print(json.dumps(diagnose_emit_prompt(args.name, args.max_examples, args.include_stale), indent=2))
+
+    elif args.command == "diagnose-negatives" and args.format_result:
+        if not args.response:
+            print("Error: --format-result requires --response", file=sys.stderr)
+            sys.exit(2)
+        raw = args.response
+        if raw.startswith("@"):
+            raw = Path(raw[1:]).read_text()
+        report = diagnose_format_result(args.name, raw, args.max_examples, args.include_stale)
+        print(json.dumps(report, indent=2))
+        if report.get("schema_violations"):
+            sys.exit(2)
 
     elif args.command == "diagnose-negatives":
         report = diagnose_negatives(args.name, args.max_examples, args.include_stale)

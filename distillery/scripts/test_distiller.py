@@ -2058,3 +2058,38 @@ class TestInjectionAttestation:
         assert res["suspicious"]
         ok, _ = distiller.verify_injection_attestation("v1")
         assert ok
+
+
+class TestSemanticHookTest:
+    """test_semantic must drive the real inject-skills.sh hook deterministically
+    and offline -- no claude/API call. Guards against reintroducing `claude -p`."""
+
+    def _fixture(self, tmp_path, rows):
+        fp = tmp_path / "semantic-triggers.jsonl"
+        fp.write_text("".join(json.dumps(r) + "\n" for r in rows))
+        return fp
+
+    def test_runs_offline_and_injects_expected_skill(self, tmp_path, monkeypatch):
+        # No network: if anything tried claude -p, this would hang/fail. We also
+        # assert the real hook injected the expected skill for a clear prompt.
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        fp = self._fixture(tmp_path, [
+            {"prompt": "debug this error in the payment flow, the stack trace points at the worker",
+             "should_trigger": ["ia-debugging"], "should_not_trigger": ["ia-terraform"]},
+        ])
+        report = distiller.test_semantic(fixtures_path=str(fp))
+        assert report["summary"]["total"] == 1
+        assert report["summary"]["inconclusive"] == 0
+        r = report["results"][0]
+        assert "ia-debugging" in r["injected"]
+        assert r["status"] == "pass"
+
+    def test_unwanted_injection_fails(self, tmp_path):
+        # A should_not_trigger skill that the hook DOES inject must fail the case.
+        fp = self._fixture(tmp_path, [
+            {"prompt": "debug this error in the payment flow",
+             "should_trigger": [], "should_not_trigger": ["ia-debugging"]},
+        ])
+        report = distiller.test_semantic(fixtures_path=str(fp))
+        assert report["all_passed"] is False
+        assert "ia-debugging" in report["results"][0]["unwanted"]

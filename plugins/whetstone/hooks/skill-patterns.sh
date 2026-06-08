@@ -14,7 +14,7 @@ declare -A SKILL_TIERS
 SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
 SKILL_TIERS[ia-planning]=1
 
-SKILL_PATTERNS[ia-debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
+SKILL_PATTERNS[ia-debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|crash(es|ed|ing)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
 SKILL_TIERS[ia-debugging]=1
 
 SKILL_PATTERNS[ia-code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'

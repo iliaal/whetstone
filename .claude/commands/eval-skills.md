@@ -39,16 +39,21 @@ Present a table:
 | ...                            |          |          |          |
 ```
 
-### Step 3: Eval each eligible skill (parallel)
+### Step 3: Eval each eligible skill (in-session sub-agents)
 
-For each eligible skill, run eval in parallel using background subagents (one per skill):
+The judging runs as **in-session sub-agents** (no billed `claude -p`). For each eligible skill:
 
 ```bash
 python3 distillery/scripts/distiller.py build-golden <skill> --top 20 --auto
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --max-examples 10
+python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --max-examples 10 --emit-tasks
 ```
 
-Use the default backend (claude-cli / Sonnet 4.6). Cap at 10 examples per skill to control cost and time.
+The `--emit-tasks` call returns `{count, tasks:[{index, prompt, ...}]}` with no LLM call. Then:
+
+1. Dispatch one sub-agent (Agent tool, `general-purpose`) per task — each task's `prompt` is the full judge prompt; the sub-agent returns ONLY its judge JSON. Batch ~8 per message.
+2. Collect `[{index, signal, session_id, skill_version, response}]` and aggregate: `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --score-from-verdicts @<file>`.
+
+Cap at 10 examples per skill. **Mind session rate limits:** across all eligible skills this is many sub-agents — pace the batches rather than firing every skill's tasks at once.
 
 ### Step 4: Rank and present
 

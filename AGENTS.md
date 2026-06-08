@@ -231,8 +231,9 @@ python3 distillery/scripts/distiller.py harvest-sessions [--project <name>] [--s
 # Discover new negative signal patterns not yet in _NEGATIVE_SIGNAL_PATTERNS
 python3 distillery/scripts/distiller.py discover-signals [--top 30]
 
-# Score a skill via LLM-as-judge (default: Sonnet 4.6 via claude -p)
-python3 distillery/scripts/distiller.py dspy-eval <skill> [--max-examples 20] [--backend claude-cli|openrouter]
+# Score a skill via LLM-as-judge. Direct backend (default: claude -p, billed) OR
+# in-session sub-agents (no API cost): --emit-tasks -> dispatch judge sub-agents -> --score-from-verdicts @<file>
+python3 distillery/scripts/distiller.py dspy-eval <skill> [--max-examples 20] [--backend claude-cli|openrouter] [--emit-tasks | --score-from-verdicts @<file>]
 
 # Build golden eval dataset from harvested sessions
 python3 distillery/scripts/distiller.py build-golden <skill> [--top 20] [--auto]
@@ -248,8 +249,9 @@ python3 distillery/scripts/distiller.py analyze-misfires [--min-examples 30] [--
 # Analyze skill injection outcomes by project context (surface anomalies)
 python3 distillery/scripts/distiller.py analyze-outcomes [--min-examples 5] [--include-stale]
 
-# Analyze negative-signal sessions to find failure patterns and suggest skill fixes
-python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10] [--include-stale]
+# Analyze negative-signal sessions to find failure patterns and suggest skill fixes.
+# Direct (claude -p, billed) OR sub-agent: --emit-prompt -> dispatch 1 sub-agent -> --format-result --response @<file>
+python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10] [--include-stale] [--emit-prompt | --format-result --response @<file>]
 
 # Record or check per-skill resource budget (turn count + tool variety; catches silent skill bloat)
 python3 distillery/scripts/distiller.py budget <skill> --record       # baseline current aggregates
@@ -259,7 +261,7 @@ python3 distillery/scripts/distiller.py budget --check-all            # scan eve
 # Run regex trigger regression tests (release gate)
 python3 distillery/scripts/distiller.py test-triggers [--skill <name>]
 
-# Run semantic injection tests via claude CLI (costs tokens)
+# Run skill-injection hook tests (deterministic; drives inject-skills.sh directly, no API cost)
 python3 distillery/scripts/distiller.py test-semantic [--max-tests 5]
 
 # Generate/update skill change manifest (tracks when skills and patterns last changed)

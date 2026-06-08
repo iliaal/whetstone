@@ -63,8 +63,16 @@ Run these two concurrently -- both read from the golden dataset, neither writes 
 
 **Step 4: Eval baseline**
 
+Run the eval judge as **in-session sub-agents** (no billed `claude -p`):
+
 ```bash
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden
+python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --emit-tasks
+```
+
+This returns `{count, tasks:[{index, prompt, ...}]}`. Dispatch one sub-agent per task (Agent tool, batched ~8); each returns its judge JSON. Collect `[{index, signal, session_id, skill_version, response}]`, then aggregate + record history:
+
+```bash
+python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --score-from-verdicts @<file>
 ```
 
 Record the baseline composite score and per-dimension scores. This is the "before" measurement.
@@ -88,13 +96,7 @@ Depends on Group C completing.
 
 **Step 6: Eval evolved (if changed)**
 
-If Step 5 produced an evolved skill and it was saved:
-
-```bash
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden
-```
-
-This scores the evolved version. Present a comparison table:
+If Step 5 produced an evolved skill and it was saved, score it via the same **sub-agent eval path as Step 4** (`dspy-eval <skill> --dataset golden --emit-tasks` → judge sub-agents → `--score-from-verdicts @<file>`). Present a comparison table:
 
 ```
 | Metric         | Baseline | Evolved | Delta    |

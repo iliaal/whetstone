@@ -61,11 +61,11 @@ else
   echo "  WARNING: no previous release tag found; skipping Tier-2 attestation check."
 fi
 
-echo "[Pre-commit] Running semantic injection tests..."
-if python3 distillery/scripts/distiller.py test-semantic --max-tests 5 > /dev/null 2>&1; then
-  echo "  Semantic tests passed"
+echo "[Pre-commit] Running skill-injection hook tests (deterministic, no API cost)..."
+if python3 distillery/scripts/distiller.py test-semantic > /dev/null; then
+  echo "  Hook tests passed"
 else
-  echo "  WARNING: Semantic tests had failures. Review output before proceeding."
+  echo "  WARNING: skill-injection hook test(s) failed (see above). Non-blocking; review trigger coverage."
 fi
 
 echo "[Pre-commit] Generating skill change manifest..."
