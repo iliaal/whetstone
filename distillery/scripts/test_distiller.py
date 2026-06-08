@@ -1991,6 +1991,13 @@ class TestScanInjectionDeterministic:
         findings = distiller._scan_file_deterministic(Path("x.md"), text)
         assert not any(x["severity"] in ("HIGH", "MEDIUM") for x in findings)
 
+    def test_emit_tasks_full_corpus_without_ref(self):
+        # The /audit-plugin full-corpus deep-audit path: --emit-tasks with no ref.
+        res = distiller.injection_judge_tasks()
+        assert res["ref"] is None
+        assert res["count"] > 0
+        assert all("prompt" in t and "file" in t for t in res["tasks"])
+
 
 class TestInjectionAttestation:
     @pytest.fixture
@@ -2058,6 +2065,31 @@ class TestInjectionAttestation:
         assert res["suspicious"]
         ok, _ = distiller.verify_injection_attestation("v1")
         assert ok
+
+    @pytest.mark.parametrize("bad_verdict", ["error", "unparseable", "", "unknown"])
+    def test_nonconforming_verdict_refused_at_write(self, att_env, bad_verdict):
+        # A non-malicious but non-conforming verdict means the file wasn't judged;
+        # write must refuse rather than pass it as "not malicious".
+        root, f1, f2 = att_env
+        res = distiller.write_injection_attestation(
+            "v1", [{"file": str(f1), "verdict": bad_verdict}, {"file": str(f2), "verdict": "clean"}])
+        assert res["status"] != "ok"
+        assert not distiller._ATTESTATION_PATH.exists()
+
+    def test_nonconforming_verdict_rejected_at_verify(self, att_env):
+        # Defense in depth: even if a bad attestation reaches disk, verify rejects it.
+        # Write a clean attestation, then tamper one recorded verdict to "error"
+        # (the content hash covers file bytes, not verdicts, so it still matches).
+        root, f1, f2 = att_env
+        distiller.write_injection_attestation(
+            "v1", [{"file": str(f1), "verdict": "clean"}, {"file": str(f2), "verdict": "clean"}])
+        att = json.loads(distiller._ATTESTATION_PATH.read_text())
+        first = sorted(att["verdicts"].keys())[0]
+        att["verdicts"][first]["verdict"] = "error"
+        distiller._ATTESTATION_PATH.write_text(json.dumps(att))
+        ok, reason = distiller.verify_injection_attestation("v1")
+        assert not ok
+        assert "non-conforming" in reason
 
 
 class TestSemanticHookTest:

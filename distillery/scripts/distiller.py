@@ -4717,6 +4717,9 @@ def scan_injection(paths=None, judge=False, model="sonnet", max_files=None,
 # any file edited after judging, is rejected -- the gate stays at the boundary.
 
 _ATTESTATION_PATH = DISTILLERY_DIR / ".injection-attestation.json"
+# Verdicts a file may carry and still be attested. 'malicious' blocks; anything
+# else (error, unparseable, empty, unknown) means the file was not judged.
+_ATTESTATION_OK_VERDICTS = frozenset({"clean", "suspicious"})
 
 
 def _repo_root():
@@ -4748,9 +4751,11 @@ def _attestation_content_hash(files):
     return hashlib.sha256(blob).hexdigest(), parts
 
 
-def injection_judge_tasks(ref):
-    """Per-file judge prompts for the orchestrator to dispatch to sub-agents."""
-    files = _changed_corpus_md(ref)
+def injection_judge_tasks(ref=None):
+    """Per-file judge prompts for the orchestrator to dispatch to sub-agents.
+    With a ref, scopes to files changed since it; without, the full corpus
+    (the /audit-plugin full-corpus deep-audit path)."""
+    files = _changed_corpus_md(ref) if ref else _iter_corpus_files()
     tasks = []
     for f in files:
         text = f.read_text(errors="replace")
@@ -4787,10 +4792,18 @@ def write_injection_attestation(ref, verdicts):
     missing = [str(f) for f in files if str(f.resolve()) not in vmap]
     if missing:
         return {"status": "error", "reason": "missing verdicts for changed files", "missing": missing}
-    malicious = [str(f) for f in files
-                 if str(vmap[str(f.resolve())].get("verdict", "")).lower() == "malicious"]
+    verdict_of = lambda f: str(vmap[str(f.resolve())].get("verdict", "")).lower()
+    malicious = [str(f) for f in files if verdict_of(f) == "malicious"]
     if malicious:
         return {"status": "blocked", "reason": "malicious verdict(s) -- attestation refused", "files": malicious}
+    # Every file must carry a conforming clean/suspicious verdict. An error,
+    # unparseable, empty, or unknown verdict means the file was not actually
+    # judged -- refuse to attest rather than let it pass as "not malicious".
+    nonconforming = [str(f) for f in files if verdict_of(f) not in _ATTESTATION_OK_VERDICTS]
+    if nonconforming:
+        return {"status": "error",
+                "reason": "non-conforming verdict(s) (expected clean/suspicious) -- re-judge before attesting",
+                "files": nonconforming}
     content_hash, parts = _attestation_content_hash(files)
     root = _repo_root()
     suspicious = []
@@ -4836,6 +4849,10 @@ def verify_injection_attestation(ref):
     mal = [f for f, v in verdicts.items() if str(v.get("verdict", "")).lower() == "malicious"]
     if mal:
         return False, f"attestation records malicious verdict(s): {mal}"
+    nonconforming = [f for f, v in verdicts.items()
+                     if str(v.get("verdict", "")).lower() not in _ATTESTATION_OK_VERDICTS]
+    if nonconforming:
+        return False, f"attestation has non-conforming verdict(s) (expected clean/suspicious): {nonconforming}"
     root = _repo_root()
     covered = set(verdicts.keys())
     uncovered = [str(f.resolve().relative_to(root)) for f in files
@@ -4918,7 +4935,7 @@ def main():
     p_si.add_argument("--max-files", type=int, default=None, help="Cap number of files scanned/judged")
     p_si.add_argument("--changed-since", default=None, help="Restrict scan to .md files changed since this git ref (e.g. last release tag)")
     p_si.add_argument("--strict", action="store_true", help="Also fail on MEDIUM findings and 'suspicious' verdicts (use at ingestion)")
-    p_si.add_argument("--emit-tasks", action="store_true", help="Emit per-file judge prompts as JSON for sub-agent dispatch (no LLM call); requires --changed-since")
+    p_si.add_argument("--emit-tasks", action="store_true", help="Emit per-file judge prompts as JSON for sub-agent dispatch (no LLM call); with --changed-since scopes to changed files, without it the full corpus")
     p_si.add_argument("--write-attestation", action="store_true", help="Write content-bound attestation from collected sub-agent verdicts; requires --changed-since and --verdicts")
     p_si.add_argument("--verify-attestation", action="store_true", help="Verify a valid attestation exists for the changed-file set; requires --changed-since; exit 1 if invalid")
     p_si.add_argument("--verdicts", default=None, help="Verdicts JSON for --write-attestation (inline, or @path to a file)")
@@ -5097,9 +5114,7 @@ def main():
             sys.exit(1)
 
     elif args.command == "scan-injection" and args.emit_tasks:
-        if not args.changed_since:
-            print("Error: --emit-tasks requires --changed-since", file=sys.stderr)
-            sys.exit(2)
+        # No --changed-since => full-corpus tasks (the deep-audit path).
         print(json.dumps(injection_judge_tasks(args.changed_since), indent=2))
 
     elif args.command == "scan-injection" and args.write_attestation:
