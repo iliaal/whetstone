@@ -2093,3 +2093,108 @@ class TestSemanticHookTest:
         report = distiller.test_semantic(fixtures_path=str(fp))
         assert report["all_passed"] is False
         assert "ia-debugging" in report["results"][0]["unwanted"]
+
+
+class TestDspyAggregation:
+    """The sub-agent scoring path (dspy_score_from_verdicts -> _parse_judge_response
+    -> _dspy_aggregate) drives optimization rankings. Lock the math offline so a
+    refactor can't silently skew composite scores. No dataset files needed."""
+
+    def _verdict(self, idx, signal, c, p, co):
+        return {"index": idx, "signal": signal, "session_id": f"s{idx}", "skill_version": "1",
+                "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co})}
+
+    def test_composite_math(self):
+        # composite = 0.5*C/10 + 0.3*P/10 + 0.2*Co/10; C=8,P=7,Co=9 -> 0.79
+        r = distiller.dspy_score_from_verdicts("x", [self._verdict(0, "positive", 8, 7, 9)])
+        assert r["summary"]["mean_composite"] == 0.79
+        assert r["summary"]["count"] == 1
+        assert r["backend"] == "subagent"
+
+    def test_positive_negative_split(self):
+        verdicts = [self._verdict(0, "positive", 10, 10, 10), self._verdict(1, "negative", 0, 0, 0)]
+        r = distiller.dspy_score_from_verdicts("x", verdicts)
+        assert r["summary"]["positive"]["count"] == 1
+        assert r["summary"]["positive"]["mean_composite"] == 1.0
+        assert r["summary"]["negative"]["count"] == 1
+        assert r["summary"]["negative"]["mean_composite"] == 0.0
+
+    def test_unparseable_response_counts_as_error(self):
+        verdicts = [self._verdict(0, "positive", 8, 7, 9),
+                    {"index": 1, "signal": "negative", "response": "not json at all"}]
+        r = distiller.dspy_score_from_verdicts("x", verdicts)
+        assert r["summary"]["count"] == 1
+        assert r["summary"]["errors"] == 1
+
+    def test_all_unparseable_returns_error(self):
+        r = distiller.dspy_score_from_verdicts("x", [{"index": 0, "signal": "positive", "response": "garbage"}])
+        assert r.get("error") == "no valid scores"
+
+
+class TestInjectionVerdictParser:
+    """_parse_injection_verdict must survive prose-wrapped JSON -- real sub-agents
+    returned a prose preamble before the JSON object during validation."""
+
+    def test_clean_json(self):
+        v = distiller._parse_injection_verdict(
+            '{"verdict":"clean","confidence":9,"categories":[],"evidence":"","rationale":"ok"}')
+        assert v["verdict"] == "clean" and v["confidence"] == 9
+
+    def test_fenced_json(self):
+        v = distiller._parse_injection_verdict(
+            '```json\n{"verdict":"malicious","confidence":10,"categories":["exfil"],"evidence":"x","rationale":"y"}\n```')
+        assert v["verdict"] == "malicious" and "exfil" in v["categories"]
+
+    def test_prose_wrapped_json(self):
+        text = ('I reviewed the file and it serves its declared purpose.\n'
+                '{"verdict":"clean","confidence":8,"categories":[],"evidence":"","rationale":"fine"}')
+        v = distiller._parse_injection_verdict(text)
+        assert v is not None and v["verdict"] == "clean"
+
+    def test_confidence_clamped(self):
+        v = distiller._parse_injection_verdict('{"verdict":"suspicious","confidence":99}')
+        assert v["confidence"] == 10
+
+    def test_garbage_returns_none(self):
+        assert distiller._parse_injection_verdict("not json at all") is None
+
+    def test_invalid_verdict_value_rejected(self):
+        assert distiller._parse_injection_verdict('{"verdict":"banana","confidence":5}') is None
+
+    def test_empty_returns_none(self):
+        assert distiller._parse_injection_verdict("") is None
+
+
+class TestDiagnoseParsing:
+    """_diagnose_parse validates judge findings against the rubric and surfaces
+    schema violations rather than shipping malformed data downstream."""
+
+    def _resp(self, findings, summary="diag"):
+        return json.dumps({"summary": summary, "findings": findings})
+
+    def test_valid_finding_no_violations(self):
+        findings = [{"category": "weak_output", "smallest_failing_decision": "output had no template",
+                     "frequency": "2 of 3", "example_cases": [1, 2],
+                     "proposed_edit": {"file": "SKILL.md", "change": "add template"}, "deferred_reason": ""}]
+        r = distiller._diagnose_parse("x", self._resp(findings), [1, 2, 3], [1, 2], [1, 2, 3])
+        assert r["schema_violations"] == []
+        assert len(r["findings"]) == 1
+        assert r["negative_count"] == 3 and r["relevant_negatives"] == 2 and r["analyzed"] == 3
+
+    def test_invalid_finding_flagged(self):
+        # Empty finding: bad category, empty decision, deferred-without-reason.
+        r = distiller._diagnose_parse("x", self._resp([{}]), [1], [1], [1])
+        assert len(r["schema_violations"]) == 1
+        assert r["schema_violations"][0]["index"] == 0
+
+    def test_fenced_response_parsed(self):
+        findings = [{"category": "other", "smallest_failing_decision": "cause unclear",
+                     "frequency": "1 of 1", "example_cases": [1],
+                     "proposed_edit": {"file": "deferred", "change": ""}, "deferred_reason": "need more data"}]
+        wrapped = "```json\n" + self._resp(findings) + "\n```"
+        r = distiller._diagnose_parse("x", wrapped, [1], [1], [1])
+        assert r["schema_violations"] == [] and len(r["findings"]) == 1
+
+    def test_unparseable_returns_error(self):
+        r = distiller._diagnose_parse("x", "totally not json", [1, 2], [1], [1])
+        assert "error" in r
