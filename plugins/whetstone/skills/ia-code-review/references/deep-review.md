@@ -138,15 +138,36 @@ CONSOLIDATED FINDINGS (only those with confidence ≥0.70):
 
 Red-team looks for what specialists *missed* (additive). Skeptic challenges what specialists *found* (subtractive). Both phases run in deep review when triggered: red-team after parallel specialists, Skeptic after merge. They produce opposite-direction edits to the finding list.
 
+## Triage Grouping (optional lens)
+
+After the merge and Skeptic passes settle the finding list, optionally add a triage-group lens *above* the severity tables. Groups cluster findings that share a root cause so the author can see which ones are coupled and what order to fix them in.
+
+**When to build groups:** only when the surviving findings span distinct concerns and at least one group would hold 2+ coupled findings (e.g. a pagination contract and the memory blow-up that depends on it). Suppress entirely for small reviews or when every finding is independent — a one-finding-per-group table is noise.
+
+Groups are a **lens, not a rewrite**: findings keep their `CR-XXX` IDs and still appear in full in the severity tables below. Triage groups never merge, renumber, or re-rank findings; they only point at the coupling and the cheapest fix order.
+
+```
+### Triage Groups
+
+| Group | Findings | Shared cause | Fix order |
+|-------|----------|--------------|-----------|
+| Export result-set scaling | CR-002, CR-005 | Both load the full order set in one pass | Define the pagination contract (CR-005) first, then stream behind it (CR-002) — one cursor decision resolves the memory bound and the API shape together |
+```
+
+In `mode:agent` JSON output, emit groups as `"triage_groups": [{title, findings: [...CR-IDs], shared_cause, fix_order}]`.
+
 ## Output Format
 
-Same as the standard review output format, with an additional header:
+Same as the standard review output format, with an additional header (and the Triage Groups block above the severity tables when built):
 
 ```
 ## Review: [brief title] (deep)
 Agents: correctness, security, testing, maintainability, performance, reliability [+ conditional: api-contract, data-migration, cloud-infra] [+ red-team if triggered]
 Cross-lens agreements: N findings tagged MULTI-SPECIALIST CONFIRMED (K at 3+, M at 2)
 Skeptic: examined K findings, dropped D, weakened W, held H (when Skeptic pass ran)
+
+### Triage Groups
+[when built — see Triage Grouping above]
 
 ### Critical
 ...

@@ -5,6 +5,30 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.3] - 2026-06-13
+
+Patch: the release and audit pipelines gain a two-tier prompt-injection scanner, and the eval pipeline drops its billed `claude -p` dependency in favor of in-session sub-agents. The plugin corpus picks up observability guidance for the Node and Python backend skills plus four smaller borrows from this week's CE, google-agent-skills, and Anthropic upstream syncs. No components added or removed.
+
+### Added
+
+- Two-tier prompt-injection scanner: a deterministic Tier-1 corpus scan (bidi unicode, fetch-then-execute, encoded payloads) plus a Tier-2 LLM judge run as in-session sub-agents, with a content-bound attestation the release gate verifies before shipping. Wired into `/release` Phase 3.5 and `/audit-plugin`.
+- `ia-nodejs-backend` and `ia-python-services`: observability guidance -- define the on-call questions before instrumenting, pick the signal by the question it answers (logs/metrics/traces), and alert on user-visible symptoms rather than causes. Node gains a full section (it had none); Python gains the methodology on top of its existing tool list.
+- `ia-code-review`: an optional thematic triage-grouping lens in deep review that clusters coupled findings by shared root cause and preferred fix order, layered above the severity tables without renumbering or merging findings.
+- `ia-frontend-design`: a pre-code validation gate -- run the swap test on the drafted token system (could this palette, type, and layout be lifted onto an unrelated brief unnoticed?) and repick any axis that reads generic, scoped to greenfield pages.
+- `check-trigger-overlap.py`: advisory Jaccard report over trigger-regex vocabulary, surfacing skill pairs competing for the same phrases.
+
+### Changed
+
+- Release and eval pipelines: eliminated the billed `claude -p` backend; sub-agent scoring, the injection judge, and negative-signal diagnosis now run in-session at no API cost.
+- `ia-performance-oracle`: a metric-honesty rule -- static source analysis cannot measure real LCP/INP/CLS, so tag code-derived findings as potential impact and name the band they risk, never a fabricated number.
+- Borrowed validators and skill techniques from the Waza upstream across several skills and the distillery validator.
+- Distillery model baseline bumped to Claude Opus 4.8 so staleness filtering tracks the current runtime.
+- Repo self-references point at `master` ahead of the default-branch rename.
+
+### Fixed
+
+- Attestation gate: allowlist clean and suspicious verdicts instead of only blocking malicious, so a clean Tier-2 pass actually satisfies the release gate.
+
 ## [4.1.2] - 2026-06-07
 
 Patch: a PR-comment script fix and three skill hardenings harvested from the EveryInc CE and agent-skills upstreams plus a dropped-in Rust reference, alongside two distillery eval-data fixes already landed since 4.1.1. The recurring theme this round is `set -e` discipline -- the same bare-assignment footgun surfaced in a shipped script and is now documented as a rule.

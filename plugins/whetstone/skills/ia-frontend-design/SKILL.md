@@ -43,6 +43,8 @@ With the philosophy written, commit to the specifics:
 
 Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work -- the key is intentionality, not intensity.
 
+**Validation gate (greenfield pages and apps, before writing code):** run the swap test on the drafted token system. Could this exact palette, type pairing, and layout be lifted onto an unrelated brief without anyone noticing? If yes, the choice is a default, not a decision -- repick the axis that reads generic (recolor the signature, swap the typeface, restructure the grid) and re-test before implementing. Distinctiveness comes from the subject's own world -- its materials, instruments, artifacts, and vernacular -- so ground a generic axis in something only this subject would use. Skip this gate for small components matched to an existing system (per Context Detection) -- there, reading consistent with that system is the goal, not distinctiveness.
+
 Before importing any third-party library (framer-motion, lucide-react, zustand, etc.), check `package.json`. If the package is missing, output the install command before the code. Never assume a library exists.
 
 Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:

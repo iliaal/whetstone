@@ -130,11 +130,14 @@ def call_api(url: str) -> dict: ...
 
 ## Observability
 
+- **Define "working" before instrumenting**: write the questions an on-call engineer will ask when this breaks ("which dependency is slow?", "is it all callers or one?"), then add only the telemetry that answers them. Instrumentation with no question behind it is cost and noise.
+- **Pick the signal by the question it answers**: logs = "what happened in this one case?" (high-detail, sampled under load); metrics = "how often / how fast / how saturated?" (cheap aggregates, bounded cardinality); traces = "where did the time or error go across services?".
 - **structlog** for JSON structured logging. Configure once at startup with `JSONRenderer`, `TimeStamper`, `merge_contextvars`
 - **Correlation IDs** -- generate at ingress (`X-Correlation-ID` header), bind to `contextvars`, propagate to downstream calls
 - **Log levels**: DEBUG=diagnostics, INFO=operations, WARNING=anomalies handled, ERROR=failures needing attention. Never log expected behavior at ERROR
 - **Prometheus metrics** -- track latency (Histogram), traffic (Counter), errors (Counter), saturation (Gauge). Keep label cardinality bounded (no user IDs)
 - **OpenTelemetry** for distributed tracing across services
+- **Alert on symptoms, not causes**: page on user-visible symptoms (error-rate spike, latency SLO burn, readiness flapping), not on causes (CPU high, queue depth growing). A cause with no symptom is a dashboard, not a page.
 - **Never mutate `LogRecord` attributes from a `Formatter`.** A custom `logging.Formatter.format()` that rewrites `record.name` (or any record attribute) in place leaks to every other handler attached to the same logger and to pytest `caplog`. `Logger.callHandlers` passes the same `LogRecord` object to each handler — whichever formats first wins the mutation, and downstream handlers and test filters see the modified state. Tests filtering by full logger name (`if r.name == "src.services.foo"`) then silently miss; routing handlers doing `LOGGER_TO_MODEL.get(record.name)` fall through to defaults. Use a `logging.Filter` that adds a non-mutating attribute (`record.short_name`) and reference it in the format string as `%(short_name)s`, or override `formatMessage` instead of `format`. `try`/`finally` restore works for synchronous handler chains but is fragile under async handlers that interleave.
 
 ## Discipline

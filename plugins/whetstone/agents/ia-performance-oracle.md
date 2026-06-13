@@ -92,6 +92,8 @@ Classify frontend-performance findings against Google's canonical bands rather t
 
 Flag Poor-band violations as Critical, Needs-improvement as Important. Tie each CWV finding to the likely cause (render-blocking resource, unoptimized hero image, late-loading font, layout-shifting ads, oversized main-thread task) rather than just the metric value.
 
+**Metric honesty:** static source analysis cannot measure real-world LCP, INP, or CLS — those need a live profile (Lighthouse, CrUX, field RUM). Tag every finding derived from reading code as *potential impact* and name the band it risks, never a fabricated number ("this synchronous hero-image decode risks a Poor LCP" — not "LCP is 3.2s"). Emit concrete metric values only when they come from a measurement artifact the user supplied.
+
 ## Performance Benchmarks
 
 Default thresholds (calibrate per project):

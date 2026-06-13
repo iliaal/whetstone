@@ -29,7 +29,7 @@ MANIFEST_PATH = REPO_ROOT / "distillery" / ".skill-versions.json"
 # don't start with any of these are filtered. Must include each model that legitimately
 # runs skills today: opus for main sessions, haiku for built-in subagents (Plan, Explore).
 # Env override: SKILL_MODEL_BASELINE (comma-separated prefixes).
-MODEL_BASELINE_PREFIXES = ["claude-opus-4-7", "claude-haiku-4-5", "claude-sonnet-4-6"]
+MODEL_BASELINE_PREFIXES = ["claude-opus-4-8", "claude-haiku-4-5", "claude-sonnet-4-6"]
 
 
 def _sha256_file(path: Path) -> str:

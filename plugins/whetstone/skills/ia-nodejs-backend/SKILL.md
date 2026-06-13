@@ -102,6 +102,14 @@ Never use readFileSync or other sync methods in production -- use `fs.promises` 
 - **Response schemas**: In Fastify, always define response schemas -- enables `fast-json-stringify` for 2-3x faster serialization.
 - **Circuit breaker**: use `opossum` for outbound service calls. States: CLOSED (normal) -> OPEN (failing, return fallback) -> HALF_OPEN (probe). Prevents cascade failures when downstream services are down.
 
+## Observability
+
+- **Define "working" before instrumenting**: write the questions an on-call engineer will ask when this is broken at 3am ("which dependency is timing out?", "is it all users or one tenant?"), then add only the telemetry that answers them. Instrumentation with no question behind it is cost and noise.
+- **Pick the signal by the question it answers**: logs = "what happened in this one case?" (high-detail, structured, sampled under load); metrics = "how often / how fast / how saturated?" (cheap aggregates — keep label cardinality bounded, never user IDs or request IDs as labels); traces = "where did the time or the error go across services?".
+- **Structured logging**: `pino` with a stable set of event names and a correlation/request ID propagated through async context (`AsyncLocalStorage`). Never `console.log` in production paths.
+- **Metrics**: `prom-client` for RED per route — Rate (request count), Errors (error count), Duration (latency histogram). OpenTelemetry Node SDK for distributed traces across services.
+- **Alert on symptoms, not causes**: page on user-visible symptoms (error-rate spike, latency SLO burn, `/ready` flapping), not on causes (CPU high, heap growing). A cause with no symptom is a dashboard, not a page.
+
 ## Discipline
 
 - Simplicity first -- every change as simple as possible, impact minimal code
