@@ -277,7 +277,7 @@ These commands are integrated into the release pipeline (`/sync-from-repos` > `/
 
 All commands can also be run standalone for targeted analysis.
 
-Staleness filtering: `harvest-sessions`, `analyze-misfires`, `analyze-outcomes`, and `diagnose-negatives` exclude examples that predate the skill/pattern or ran on a retired runtime model. The manifest at `distillery/.skill-versions.json` tracks content/pattern hashes per skill plus a top-level `model_baseline_prefixes` list (current: opus-4.7 main + haiku-4.5 subagents + sonnet-4.6). Update `MODEL_BASELINE_PREFIXES` in `scripts/generate-manifest.py` when the runtime model family changes, or override per-run with `SKILL_MODEL_BASELINE=prefix1,prefix2`. Use `--include-stale` to override when you need historical analysis.
+Staleness filtering: `harvest-sessions`, `analyze-misfires`, `analyze-outcomes`, and `diagnose-negatives` exclude examples that predate the skill/pattern or ran on a retired runtime model. The manifest at `distillery/.skill-versions.json` tracks content/pattern hashes per skill plus a top-level `model_baseline_prefixes` list (current: opus-4.8 main + haiku-4.5 subagents + sonnet-4.6). Update `MODEL_BASELINE_PREFIXES` in `scripts/generate-manifest.py` when the runtime model family changes, or override per-run with `SKILL_MODEL_BASELINE=prefix1,prefix2`. Use `--include-stale` to override when you need historical analysis.
 
 Every trigger pattern fix should add a regression test case to `distillery/tests/fixtures/triggers/<skill>.jsonl` to prevent regressions.
 
