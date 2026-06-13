@@ -128,7 +128,7 @@ else
   gh release create "v${version}" \
     --title "v${version}" \
     --notes "$release_notes" \
-    --target main
+    --target master
   echo "  Created release v${version}"
 fi
 
@@ -205,7 +205,7 @@ echo "[7/8] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
 # --- 8. Sync tags ---
-# `gh release create --target main` above creates the tag on the remote. Pull
+# `gh release create --target master` above creates the tag on the remote. Pull
 # it back locally so `git tag` / `git log v<ver>..HEAD` stay consistent. Without
 # this, local tags drift further behind origin with every release.
 echo "[8/9] Sync tags from origin..."
