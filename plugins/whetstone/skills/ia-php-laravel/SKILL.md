@@ -3,9 +3,9 @@ name: ia-php-laravel
 class: language
 description: >-
   Modern PHP 8.4 and Laravel patterns: architecture, Eloquent, queues, testing.
-  Use when working with Laravel, Eloquent, Blade, artisan, PHPUnit, PHPStan,
-  or building/testing PHP applications with frameworks. Not for PHP internals (php-src)
-  or general PHP language discussion.
+  Use when working with Laravel, Eloquent, Blade, artisan, or building/testing a
+  framework-based PHP app. Not for php-src internals, standalone PHP libraries, or
+  general PHP language discussion.
 paths: "**/*.php"
 ---
 
