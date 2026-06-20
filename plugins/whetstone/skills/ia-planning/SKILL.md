@@ -102,6 +102,9 @@ Skip for greenfield projects where no tests exist yet.
 - **In**: [what's included]
 - **Out**: [what's explicitly excluded]
 
+## Global Constraints
+[Spec-wide requirements that bind every phase -- version floors, naming/format rules, platform limits, security or compatibility invariants. Copy exact values verbatim from the spec; do not paraphrase. Omit the section only when the work has no project-wide constraint. Each task implicitly inherits these.]
+
 ## File Structure
 [Map ALL files that will be created or modified, with one-line responsibility for each. Lock in decomposition decisions before defining tasks. Write for a zero-context engineer.]
 

@@ -5,6 +5,23 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.4] - 2026-06-20
+
+Patch: a week of borrows from the CE, agent-skills, google, mattpocock, superpowers, and defending-code upstreams, plus a trigger fix that stops the Laravel skill from firing on plain-PHP projects. No components added or removed.
+
+### Changed
+
+- `ia-agent-native-architecture`: hardened the prompt-injection guidance -- a static content marker is forgeable, so an attacker who writes the literal closing marker inside retrieved content escapes the frame. Generate a per-injection nonce on both delimiters and strip lookalikes before wrapping; honor a closing marker only when it carries the matching nonce.
+- `ia-code-review`: a plan does not grade its own work. When a plan or brief mandates something the rubric calls a defect (a test that asserts nothing, verbatim duplication), report it as a "plan-mandated" finding for the human to adjudicate rather than approving it as spec-required -- distinct from honoring a rationale-backed code override.
+- `ia-planning`: a Global Constraints section in the plan template that carries spec-wide version floors, naming rules, and platform limits verbatim, so every phase inherits them.
+- `ia-nodejs-backend` and `ia-python-services`: initialize tracing before the instrumented imports (or auto-instrumentation silently no-ops), and confirm telemetry actually fires under forced errors and test traffic before relying on it.
+- `ia-simplifying-code`: named speculative configurability and flexibility the request did not ask for as an explicit YAGNI smell.
+- `write-skill`: two authoring methods -- hunt no-ops sentence by sentence (delete the whole sentence rather than trim words), and anchor a behavior in a single strong token instead of restating it three ways.
+
+### Fixed
+
+- `ia-php-laravel` trigger: dropped the generic `phpunit`, `phpstan`, and `composer` tokens that fired the Laravel skill on every modern PHP project, including plain libraries and extensions. The skill now keys on Laravel-distinctive signals, and the fixture set gains regression cases for the plain-PHP path.
+
 ## [4.1.3] - 2026-06-13
 
 Patch: the release and audit pipelines gain a two-tier prompt-injection scanner, and the eval pipeline drops its billed `claude -p` dependency in favor of in-session sub-agents. The plugin corpus picks up observability guidance for the Node and Python backend skills plus four smaller borrows from this week's CE, google-agent-skills, and Anthropic upstream syncs. No components added or removed.

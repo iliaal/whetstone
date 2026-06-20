@@ -38,7 +38,7 @@ SKILL_TIERS[ia-writing-tests]=1
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
-SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|phpunit|phpstan|composer\.(json|lock)|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.*\.php|unit.?test.*\.php|test.*(controller|model|service|action|job|command|endpoint).*\.php'
+SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.*\.php|unit.?test.*\.php|test.*(controller|model|service|action|job|command|endpoint).*\.php'
 SKILL_TIERS[ia-php-laravel]=2
 
 SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'

@@ -108,6 +108,7 @@ Never use readFileSync or other sync methods in production -- use `fs.promises` 
 - **Pick the signal by the question it answers**: logs = "what happened in this one case?" (high-detail, structured, sampled under load); metrics = "how often / how fast / how saturated?" (cheap aggregates — keep label cardinality bounded, never user IDs or request IDs as labels); traces = "where did the time or the error go across services?".
 - **Structured logging**: `pino` with a stable set of event names and a correlation/request ID propagated through async context (`AsyncLocalStorage`). Never `console.log` in production paths.
 - **Metrics**: `prom-client` for RED per route — Rate (request count), Errors (error count), Duration (latency histogram). OpenTelemetry Node SDK for distributed traces across services.
+- **Initialize tracing before app imports, then verify it fires**: the OTel SDK must start before the modules it instruments are required, or auto-instrumentation silently no-ops. Before relying on any signal, force an error and send test traffic in staging and confirm the log/metric/trace actually lands — untested instrumentation fails silent.
 - **Alert on symptoms, not causes**: page on user-visible symptoms (error-rate spike, latency SLO burn, `/ready` flapping), not on causes (CPU high, heap growing). A cause with no symptom is a dashboard, not a page.
 
 ## Discipline

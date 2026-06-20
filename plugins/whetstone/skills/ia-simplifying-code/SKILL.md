@@ -67,7 +67,7 @@ Stop and ask before proceeding when:
 
 ## Constraints
 
-- Only simplify what was requested -- do not add features, expand scope, or introduce new dependencies
+- Only simplify what was requested -- do not add features, expand scope, introduce new dependencies, or add speculative configurability or flexibility the request did not ask for
 - Leave unchanged code untouched -- do not add comments, docstrings, or type annotations to lines that were not simplified
 - Do not bundle unrelated cleanups into one patch -- each simplification should be a coherent, reviewable unit
 - Do not introduce framework-wide patterns while simplifying a small local change
