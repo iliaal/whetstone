@@ -655,11 +655,46 @@ def update_manifest(name, tok_count, sources_json):
     print(f"Updated {manifest_path}", file=sys.stderr)
 
 
+_TOKEN_ENCODER = None
+_TOKEN_ENCODER_TRIED = False
+
+
+def _token_encoder():
+    """Lazily load the cl100k tokenizer; return None if tiktoken is unavailable."""
+    global _TOKEN_ENCODER, _TOKEN_ENCODER_TRIED
+    if not _TOKEN_ENCODER_TRIED:
+        _TOKEN_ENCODER_TRIED = True
+        try:
+            import tiktoken
+            _TOKEN_ENCODER = tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            _TOKEN_ENCODER = None
+    return _TOKEN_ENCODER
+
+
+def count_tokens(text):
+    """Token count for budget checks.
+
+    Prefers the cl100k tokenizer (tracks the runtime tokenizer closely); falls
+    back to len/4.0 when tiktoken is absent. Both are far closer to real
+    tokenization than the old bytes/3.5 heuristic, which overcounts markdown
+    skill bodies by ~20-35% and produced false-positive body_size advisories.
+    """
+    if not text:
+        return 0
+    enc = _token_encoder()
+    if enc is not None:
+        return len(enc.encode(text))
+    return round(len(text) / 4.0)
+
+
 def token_count(filepath):
-    """Estimate token count using byte-based heuristic (better for markdown/code)."""
-    size = os.path.getsize(filepath)
-    # bytes / 3.5 is more accurate for markdown-heavy content than words * 4/3
-    return round(size / 3.5)
+    """Estimate the token count of a file's contents (tiktoken, len/4.0 fallback)."""
+    try:
+        text = Path(filepath).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return round(os.path.getsize(filepath) / 4.0)
+    return count_tokens(text)
 
 
 def token_budget_report(skill_dir):
@@ -673,13 +708,14 @@ def token_budget_report(skill_dir):
     if not skill_path.exists():
         return {"error": f"SKILL.md not found in {skill_dir}"}
 
-    body_chars = skill_path.stat().st_size
-    body_tokens = round(body_chars / 3.5)
+    body_text = skill_path.read_text(encoding="utf-8")
+    body_chars = len(body_text)
+    body_tokens = count_tokens(body_text)
 
     ref_tokens = {}
     if refs_dir.exists():
         for ref in refs_dir.glob("*.md"):
-            ref_tokens[ref.name] = round(ref.stat().st_size / 3.5)
+            ref_tokens[ref.name] = token_count(ref)
 
     total = body_tokens + sum(ref_tokens.values())
 
@@ -952,7 +988,7 @@ def validate(name):
         gate3_issues.append("Missing description")
     else:
         desc = frontmatter["description"]
-        desc_tokens = round(len(desc.encode()) / 3.5)
+        desc_tokens = count_tokens(desc)
         if desc_tokens > 80:
             gate3_issues.append(f"Exceeds 80 tokens (~{desc_tokens})")
 
@@ -960,7 +996,7 @@ def validate(name):
     issues.extend(gate3_issues)
 
     # --- Gate 4: Body token budget ---
-    body_tokens = round(len(body.encode()) / 3.5)
+    body_tokens = count_tokens(body)
     gate4_issues = []
     if body_tokens > 2000:
         gate4_issues.append(f"Exceeds 2K hard cap (~{body_tokens} tokens)")
@@ -1066,7 +1102,7 @@ def validate(name):
     if refs_dir.exists():
         for ref_file in refs_dir.iterdir():
             if ref_file.suffix == ".md":
-                ref_tokens = round(ref_file.stat().st_size / 3.5)
+                ref_tokens = token_count(ref_file)
                 if ref_tokens > 2000:
                     issues.append(f"Reference {ref_file.name} exceeds 2K tokens (~{ref_tokens})")
 
@@ -1075,7 +1111,7 @@ def validate(name):
     if refs_dir.exists():
         for ref_file in refs_dir.iterdir():
             if ref_file.suffix == ".md":
-                total_tokens += round(ref_file.stat().st_size / 3.5)
+                total_tokens += token_count(ref_file)
 
     score = sum(1 for g in gates.values() if g["pass"])
     max_score = len(gates)
@@ -1631,9 +1667,9 @@ def validate_plugin(component_filter=None):
 
         content = skill_path.read_text()
         fm, body = parse_frontmatter(content)
-        body_tokens = round(len(body.encode()) / 3.5)
+        body_tokens = count_tokens(body)
         desc = fm.get("description", "")
-        desc_tokens = round(len(desc.encode()) / 3.5) if desc else 0
+        desc_tokens = count_tokens(desc) if desc else 0
 
         inventory.append({
             "name": skill_name,
@@ -1893,7 +1929,7 @@ def validate_plugin(component_filter=None):
 
         content = agent_path.read_text()
         fm, body = parse_frontmatter(content)
-        body_tokens = round(len(body.encode()) / 3.5)
+        body_tokens = count_tokens(body)
         desc = fm.get("description", "")
 
         inventory.append({
@@ -1903,7 +1939,7 @@ def validate_plugin(component_filter=None):
             "body_tokens": body_tokens,
         })
 
-        desc_tokens = round(len(desc.encode()) / 3.5) if desc else 0
+        desc_tokens = count_tokens(desc) if desc else 0
 
         if not desc or len(desc) < 20:
             add_finding(agent_name, "EMPTY_DESCRIPTION", f"Agent description too short ({len(desc)} chars)", "HIGH")
@@ -1947,7 +1983,7 @@ def validate_plugin(component_filter=None):
 
         content = cmd_path.read_text()
         fm, body = parse_frontmatter(content)
-        body_tokens = round(len(body.encode()) / 3.5)
+        body_tokens = count_tokens(body)
         desc = fm.get("description", "")
 
         inventory.append({

@@ -113,22 +113,34 @@ class TestComputeSha1:
 # ---------------------------------------------------------------------------
 
 class TestTokenCount:
-    def test_basic(self, tmp_path):
+    def test_matches_count_tokens(self, tmp_path):
+        # token_count(file) is count_tokens of the file's text contents
         f = tmp_path / "test.md"
-        f.write_text("x" * 350)  # 350 bytes → 350/3.5 = 100
-        assert distiller.token_count(str(f)) == 100
+        text = "the quick brown fox " * 30
+        f.write_text(text)
+        assert distiller.token_count(str(f)) == distiller.count_tokens(text)
 
     def test_empty(self, tmp_path):
         f = tmp_path / "empty.md"
         f.write_text("")
         assert distiller.token_count(str(f)) == 0
+        assert distiller.count_tokens("") == 0
+
+    def test_estimator_contract(self):
+        # tiktoken when available, else the len/4.0 fallback (both far closer to
+        # real tokenization than the retired bytes/3.5 heuristic)
+        text = "hello world, this is a budget check. " * 40
+        enc = distiller._token_encoder()
+        if enc is None:
+            assert distiller.count_tokens(text) == round(len(text) / 4.0)
+        else:
+            assert distiller.count_tokens(text) == len(enc.encode(text))
 
     def test_utf8(self, tmp_path):
         f = tmp_path / "utf8.md"
         content = "emoji: 🎉" * 10  # multi-byte chars
         f.write_text(content)
-        expected = round(len(content.encode("utf-8")) / 3.5)
-        assert distiller.token_count(str(f)) == expected
+        assert distiller.token_count(str(f)) == distiller.count_tokens(content)
 
 
 # ---------------------------------------------------------------------------
