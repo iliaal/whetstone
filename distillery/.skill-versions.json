@@ -9,7 +9,7 @@
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
-      "content_changed": "3.0.4",
+      "content_changed": "4.1.4",
       "pattern_hash": "0009aad45d59c2a3721afcbfbc9d4053b04d56f06a4738f3db0596671fbc3317",
       "pattern_changed": "3.0.4"
     },
@@ -21,7 +21,7 @@
     },
     "ia-code-review": {
       "content_hash": "1e11ef07683e3de1451b8340c48be20bc32ab5bc2ec1764ce5c6a84f6fc38f78",
-      "content_changed": "4.1.3",
+      "content_changed": "4.1.4",
       "pattern_hash": "3f586f1e2eafc54b160089ff5e752510a52b5eb8de316158aa7bc5abd1314504",
       "pattern_changed": "2.56.1"
     },
@@ -81,7 +81,7 @@
     },
     "ia-nodejs-backend": {
       "content_hash": "608e9b3201cbc967746c73a41745ea3c5218239f670b96c7249f44fc2b026b1f",
-      "content_changed": "4.1.3",
+      "content_changed": "4.1.4",
       "pattern_hash": "ccac10aeeddc3bc433233f87b7a88e808648ec08581e031508d0ca865b2e6871",
       "pattern_changed": "2.56.1"
     },
@@ -105,7 +105,7 @@
     },
     "ia-planning": {
       "content_hash": "c0901f33184c959c1d81615e11465bd17500007970b5333ee0a791aa4c803820",
-      "content_changed": "4.1.3",
+      "content_changed": "4.1.4",
       "pattern_hash": "23f9ea13ac9da79fd06313529b228beb2667f76c70901128794d1e335c590647",
       "pattern_changed": "2.56.1"
     },
@@ -117,7 +117,7 @@
     },
     "ia-python-services": {
       "content_hash": "1519257e593632ab61fc3dabb2bdea7e08282634541f264ce9de5e76f7cd9670",
-      "content_changed": "4.1.3",
+      "content_changed": "4.1.4",
       "pattern_hash": "cdf67475aa0f5aa56c8ec9625cd995ba28dbeeaf1c95948016c73e6662eab6c1",
       "pattern_changed": "2.56.1"
     },
@@ -153,7 +153,7 @@
     },
     "ia-simplifying-code": {
       "content_hash": "0aa787e25d840a592df024da804812ffdd0dd1712f0fce0cecbd6d37af6de03d",
-      "content_changed": "4.1.3",
+      "content_changed": "4.1.4",
       "pattern_hash": "0d4c8a0e629d3ea5a5109f7965ffee18a7de3e277895d4cec73d0c3e4b8da5f5",
       "pattern_changed": "2.56.1"
     },

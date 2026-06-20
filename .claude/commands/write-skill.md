@@ -61,6 +61,8 @@ Body rules:
 - No machine-specific paths (`/home/...`, `/Users/...`, `~/ai/...`, `C:\Users\...`). Use `<repo-root>` or `<skill-dir>` placeholders.
 - No placeholder text (`TODO`, `FIXME`, `XXX`, `[YOUR ...]`).
 - No MUST/ALWAYS/NEVER spam (>15 directives is flagged as OVER_CONSTRAINED).
+- Hunt no-ops sentence by sentence, not just line by line: run the no-op test on each sentence in isolation, and when one fails (it restates the obvious, or the agent would behave identically without it), delete the whole sentence rather than trim words from it. Most prose that fails should go, not be reworded.
+- Anchor a behavior in a single strong token where one exists (`tight`, `red`, `surgical`) instead of spelling the same instruction out three ways -- a well-chosen leading word carries the intent at lower token cost than a paragraph.
 - If creating `references/`, link every file with `[name](./references/name.md)` syntax — orphans are flagged. Each reference under 150 lines (warning) and 800 lines (error).
 - **Skill Independence**: do not instruct the agent to invoke another skill by name. Forms to avoid: `run the ia-X skill`, `use the \`ia-X\` skill`, `hand off to ia-X`, `<vendor>:Y` runtime references. Other skills may be missing, renamed, or user-overridden — name-invocation silently breaks in all three cases. Instead, state the intent directly (`If on \`main\`, create a feature branch first.`) and trust skill discovery to surface the right skill, or load a local file via `[name](./references/name.md)`. Naming an agent (Agent tool dispatch) or referencing a skill in non-runtime prose (provenance, audit allowlist) is fine.
 
