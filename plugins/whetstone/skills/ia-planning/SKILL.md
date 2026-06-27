@@ -65,8 +65,11 @@ When skipping the plan doc, work proceeds directly to `/ia-work` or to implement
 Scaffold the `.plan/` directory with pre-populated templates using [init-plan.sh](./scripts/init-plan.sh):
 
 ```bash
-bash init-plan.sh "Feature Name"
+SKILL_DIR="<absolute path of the directory containing this SKILL.md>"
+bash "$SKILL_DIR/scripts/init-plan.sh" "Feature Name"
 ```
+
+Anchor the call to `SKILL_DIR` (filled in by the agent) rather than a bare `init-plan.sh` — a relative path resolves against the caller's working directory, not the skill, and breaks when the skill runs from a subdirectory or under a non-Claude harness.
 
 This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` -- each pre-populated with the correct structure. Also adds `.plan/` to `.gitignore`.
 

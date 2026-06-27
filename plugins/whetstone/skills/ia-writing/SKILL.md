@@ -133,6 +133,7 @@ Tag vocabulary (extend the earlier prose rules with these named IDs):
 | `[AI-LEX]` | Vocabulary tells (delve, crucial, pivotal, leverage, tapestry, robust...) |
 | `[VAGUE-ATTR]` / `[WEASEL]` | "Experts argue", "studies show" without specific source |
 | `[META-COMMENTARY]` | Structural self-reference ("In this section, we'll...", "Let me walk you through...") |
+| `[METADISCOURSE]` | Interpretive labeling — stepping outside the scene or argument to name its meaning ("that's the lesson", "that part mattered", "this is the point") when the concrete details already carry it. Distinct from `[META-COMMENTARY]` (announces structure) and `[VAGUE-DECLARATIVE]` (announces importance). Keep a direct thesis that adds new information. |
 | `[EM-DASH]` | Any em or en dash -- restructure, don't preserve |
 | `[INLINE-BOLD]` / `[INLINE-LIST]` / `[TITLE-CASE]` | Mechanical formatting tells |
 | `[VAGUE-DECLARATIVE]` | "The implications are significant" without naming the implication |
@@ -157,6 +158,7 @@ Tag vocabulary (extend the earlier prose rules with these named IDs):
 | `[EM-DASH]` | Remove entirely. Restructure the sentence: split, comma, colon, or rewrite. Never preserve the dash. |
 | `[FALSE-AGENCY]` | Name the human actor; put them at the front of the sentence. |
 | `[META-COMMENTARY]` | Delete. Let the text move without announcing itself. |
+| `[METADISCOURSE]` | Delete the frame; let the scene, quote, or factual claim it pointed at stand on its own. If no concrete claim remains, cut the sentence. |
 | `[INLINE-BOLD]` `[INLINE-LIST]` `[TITLE-CASE]` | Strip excess formatting; sentence case for headings. |
 
 For documents with references or citations, also tag: `[OAICITE]` (malformed AI citation artifacts), `[LINK-ROT]` (dead or placeholder URLs), `[ISBN-DOI-FAIL]` (invalid identifiers), `[REF-BUG]` (misformatted references, wrong numbering, dangling footnotes). See [references/audit-workflow.md](./references/audit-workflow.md) for the full procedure.

@@ -17,6 +17,8 @@ Load this reference during the line-by-line review step. Use the category lists 
 - Comment quality — comments explain WHY (constraints, workarounds, non-obvious decisions), not WHAT. Flag comments that restate code or will rot as the code changes
 - God classes / SRP violations — class with unrelated responsibilities. Split into focused classes
 - Leaky abstractions — implementation details exposed in interfaces or public APIs
+- Structural remedy — when flagging a structural problem, name the move that fixes it (extract a helper, collapse duplicate branches, separate orchestration from logic, replace a conditional chain with a typed dispatcher), not just the smell. Then test the proposed refactor: does it *reduce* the concepts a reader must hold, or just *relocate* complexity elsewhere? Prefer deleting an abstraction over polishing one
+- File size — total file size is an inspection signal separate from diff size; ~1000 total lines in one file is a soft boundary (not a hard cap). A small diff can still push an already-large file past it — ask whether to decompose first, then add
 
 ## Performance
 

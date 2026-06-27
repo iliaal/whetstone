@@ -139,6 +139,7 @@ When adding or modifying skills, verify:
 
 - [ ] Imperative/infinitive form (verb-first instructions)
 - [ ] No second person ("you should") — use objective language ("To accomplish X, do Y")
+- [ ] When a skill must block on a user question, name the harness tool — `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex — and fall back to numbered options in chat only when no blocking tool exists. The plugin ships cross-harness (Codex/.agents/.kilocode), so a bare "ask the user" silently degrades to chat off-Claude
 
 ### Quality Dimensions (SkillsBench arXiv:2602.12670)
 
