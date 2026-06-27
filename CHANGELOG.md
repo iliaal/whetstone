@@ -5,6 +5,23 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.5] - 2026-06-27
+
+Patch: a 7-day delta sync borrowing three upstream patterns into the writing, code-review, and planning skills, plus internal tooling fixes. No components added or removed.
+
+### Changed
+
+- `ia-writing`: added a `[METADISCOURSE]` audit tag for interpretive labeling -- stepping outside the scene or argument to name its meaning ("that's the lesson", "this is the point") when the concrete details already carry it. Distinct from `[META-COMMENTARY]` (announces structure) and `[VAGUE-DECLARATIVE]` (announces importance).
+- `ia-code-review`: when flagging a structural problem, name the move that fixes it rather than just the smell, and test whether the proposed refactor reduces the concepts a reader holds or merely relocates complexity. Added total file size as an inspection signal separate from diff size.
+- `ia-planning`: anchor the `init-plan.sh` invocation to the skill directory so it resolves from a subdirectory and under non-Claude harnesses, instead of a bare relative path that resolves against the caller's working directory.
+- `ia-php-laravel`: scoped the description to framework applications so the skill stops competing for plain-PHP triggers.
+- Skill-authoring guidance: name the harness blocking-question tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex) so a skill that must ask the user does not silently degrade to chat when run off-Claude.
+
+### Fixed
+
+- `distillery`: body_size and budget checks now use the real tokenizer instead of a character-count estimate, so size advisories match what the model actually sees.
+- `release`: re-stamped the v4.1.4 manifest so ClawHub picks up the skills whose content changed in that release.
+
 ## [4.1.4] - 2026-06-20
 
 Patch: a week of borrows from the CE, agent-skills, google, mattpocock, superpowers, and defending-code upstreams, plus a trigger fix that stops the Laravel skill from firing on plain-PHP projects. No components added or removed.

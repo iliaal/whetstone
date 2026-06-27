@@ -1,11 +1,11 @@
 {
-  "plugin_version": "4.1.4",
+  "plugin_version": "4.1.5",
   "model_baseline_prefixes": [
     "claude-opus-4-8",
     "claude-haiku-4-5",
     "claude-sonnet-4-6"
   ],
-  "generated_at": "2026-06-20T12:25:59.925496+00:00",
+  "generated_at": "2026-06-27T20:43:15.398632+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "6fba9c49206413114e3b98bd60d87f545d9cb2dfc1e18993724c4627e265d399",
@@ -92,8 +92,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-php-laravel": {
-      "content_hash": "74745b6ebe4811e9ce784cf8b2bd5db90f695278183014209ff4872df20f29e9",
-      "content_changed": "4.1.1",
+      "content_hash": "4e9879b1d371381312aaf3376ba0eab19f1eae840fc2a05e32c38a7b197010aa",
+      "content_changed": "4.1.5",
       "pattern_hash": "4b40e97df3aad48bf5f57fabba06a191c81cc464579b470fbca673378255392b",
       "pattern_changed": "4.1.3"
     },
@@ -104,8 +104,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-planning": {
-      "content_hash": "c0901f33184c959c1d81615e11465bd17500007970b5333ee0a791aa4c803820",
-      "content_changed": "4.1.4",
+      "content_hash": "b44cdec4dcd23fb18fa9f6d0ea1a5a5e0fadbb11f291dcdd7233dad15b6c72be",
+      "content_changed": "4.1.5",
       "pattern_hash": "23f9ea13ac9da79fd06313529b228beb2667f76c70901128794d1e335c590647",
       "pattern_changed": "2.56.1"
     },
@@ -176,8 +176,8 @@
       "pattern_changed": "3.0.4"
     },
     "ia-writing": {
-      "content_hash": "9d2f440127cf8ed7a5114bc4899a7df8f8c0fec26eceb24b4a30e1fa79b7c9a1",
-      "content_changed": "4.1.2",
+      "content_hash": "5fa6ba5377c5f4130e7a5dd1ea35ad401f3600bfc9ab73398240314acc4b452a",
+      "content_changed": "4.1.5",
       "pattern_hash": "816be739f046898e86cd2c26e7a4d113dbaaf8c060973a18b337db8eb52f7af1",
       "pattern_changed": "2.56.1"
     },
