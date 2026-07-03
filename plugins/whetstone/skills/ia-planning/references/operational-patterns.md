@@ -42,3 +42,13 @@ If you can answer these, your planning is solid:
 | What's the goal? | Approach section |
 | What have I learned? | .plan/findings.md |
 | What have I done? | .plan/progress.md |
+
+## Session Continuity & Traceability
+
+**Numbered outputs for long sessions.** For multi-phase implementations, write numbered intermediate files to `.plan/` (e.g., `01-setup.md`, `02-phase1-complete.md`) so state survives context compaction. Read from files, not conversation memory, when resuming work after compaction or across sessions.
+
+**Session continuity.** At session start or after compaction: read `.plan/progress.md` → check which tasks are complete → review the current phase. At session end: update progress with what was done, note blockers, commit in-progress work. Mark interrupted tasks with a stopping-point note so the next session resumes without re-discovery.
+
+**SHA recording.** When a task completes and is committed, note the commit SHA inline: `- [x] Task 1.1 \`abc1234\``. Creates traceability from plan to code.
+
+**Deviation documentation.** When the implementation deviates from the plan, document why inline: `**Deviation**: [what changed and why]` under the affected task. Silent deviation breaks trust -- the orchestrator assumes the plan was followed.
