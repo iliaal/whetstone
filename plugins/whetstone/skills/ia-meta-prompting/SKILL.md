@@ -46,6 +46,9 @@ Custom keys: `/json {keys: summary, risks, recommendation}`
 
 **`/premortem`** | `/postmortem` -- Assume the decision/project has already failed. Work backwards: what caused the failure? List 3-5 failure modes by likelihood. Focus on systemic risks, not edge cases.
 
+**`/blindspot`** | `/unknowns` -- For unfamiliar territory (new codebase area, new domain, unfamiliar craft). Surface the *user's* unknown unknowns: what they'd need to know to prompt well but don't know to ask. Search the codebase/docs first, then report (1) the questions they should be asking, (2) prior art, conventions, and landmines in this area, (3) what "good" looks like here. Goal is to *teach enough to prompt better*, not to solve the task. Distinct from `/adversarial` (attacks a proposed answer) and `/premortem` (assumes the plan failed) -- this runs *before* an answer exists, aimed at the user's knowledge gaps, not the solution's.
+*Auto-triggers on: "I know nothing about X", "blindspot pass", "unknown unknowns", entering an unfamiliar area.*
+
 **`/tensions`** | `/perspectives` -- Answer from two named opposing perspectives (e.g., security engineer vs. shipping PM). Focus output on where they *disagree* -- that's where the real insight lives. Override roles: `/tensions [devops, security]`.
 
 ## Combos

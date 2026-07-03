@@ -93,6 +93,10 @@ For projects with existing code (not greenfield), discover the test landscape be
 
 Skip for greenfield projects where no tests exist yet.
 
+## Reference Implementations
+
+When the target behavior is hard to describe in prose but an existing implementation already embodies it, cite that implementation as the spec instead of paraphrasing it. Source code is a higher-fidelity reference than a doc, diagram, or screenshot -- it pins exact semantics, edge-case handling, and structure that prose drops. Name the file or module, state what to match, and plan to reimplement the *semantics* (not copy the code verbatim) in the target stack, even when the reference is in a different language. Record the pointer in the plan so the implementer reads the source, not a summary of it: `ref: legacy/pricing.py -> reimplement semantics in src/pricing.ts`.
+
 ## Plan Template
 
 ```markdown
@@ -107,6 +111,9 @@ Skip for greenfield projects where no tests exist yet.
 
 ## Global Constraints
 [Spec-wide requirements that bind every phase -- version floors, naming/format rules, platform limits, security or compatibility invariants. Copy exact values verbatim from the spec; do not paraphrase. Omit the section only when the work has no project-wide constraint. Each task implicitly inherits these.]
+
+## Key Decisions (review first)
+[The decisions most likely to change on review -- data model shapes, new type/interface contracts, and user-facing or UX flows. List each as: the choice made, the discarded alternative, and one line on why. Surface these before the file map and phases so a reviewer can redirect the design before mechanical work is planned around it. Mechanical refactoring is trusted to the implementer and belongs in the phases below, not here. Omit only when no non-obvious choice was made.]
 
 ## File Structure
 [Map ALL files that will be created or modified, with one-line responsibility for each. Lock in decomposition decisions before defining tasks. Write for a zero-context engineer.]
@@ -156,6 +163,8 @@ Skip for greenfield projects where no tests exist yet.
 **Deviation documentation.** When the implementation deviates from the plan, document why inline: `**Deviation**: [what changed and why]` under the affected task. Silent deviation breaks trust -- the orchestrator assumes the plan was followed.
 
 **No gold-plating.** Build exactly what the spec requires. If a feature, enhancement, or "nice-to-have" isn't in the requirements, don't add it. Quote the exact spec requirements in the plan and flag any additions explicitly as scope expansion needing approval. Basic first implementations are acceptable -- most need 2-3 revision cycles anyway.
+
+**Front-load high-variance decisions.** Order the plan document by how likely each part is to change on review, not by execution order. Decisions that reshape the implementation if the reviewer redirects them -- data model changes, new type/interface contracts, user-facing behavior -- go at the top (the *Key Decisions* block). Mechanical refactoring and boilerplate go last. Reviewer attention is scarce; spend it on the choices that ripple, not the steps that get rubber-stamped. Execution order still governs the phases themselves (dependencies), but the review-facing decisions surface first.
 
 ## Phase Sizing Rules
 
