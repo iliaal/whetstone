@@ -3,7 +3,8 @@
   "model_baseline_prefixes": [
     "claude-opus-4-8",
     "claude-haiku-4-5",
-    "claude-sonnet-4-6"
+    "claude-fable-5",
+    "claude-sonnet-5"
   ],
   "generated_at": "2026-06-27T20:43:15.398632+00:00",
   "skills": {

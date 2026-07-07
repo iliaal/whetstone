@@ -37,6 +37,52 @@ def _reassemble_skill(frontmatter, body):
     return body
 
 
+def _extract_evolved_body(optimized, body):
+    """Extract the evolved skill body from an optimized DSPy module.
+
+    Optimizers mutate predictor state two ways: GEPA/MIPROv2 rewrite the
+    signature instructions (the prompt text), BootstrapFewShot appends demos.
+    A single predictor can carry BOTH -- the demos must be woven onto the
+    evolved instructions, not the original body, or the rewritten instructions
+    are silently dropped. Returns the evolved body (falls back to `body`).
+    """
+    evolved_body = body  # default: unchanged
+    try:
+        # Navigate to the inner Predict module
+        for name, pred in optimized.named_predictors():
+            state = pred.dump_state()
+            sig = state.get("signature", {})
+
+            # Check if instructions were rewritten (GEPA/MIPROv2)
+            # The original instructions are the skill body text we set as __doc__
+            new_instructions = sig.get("instructions", "")
+            instructions_evolved = bool(
+                new_instructions and new_instructions.strip() != body.strip()
+            )
+            if instructions_evolved:
+                evolved_body = new_instructions
+                print(f"  Extracted evolved instructions from {name}", file=sys.stderr)
+
+            # Check for demos (BootstrapFewShot)
+            demos = state.get("demos", [])
+            if demos:
+                demo_text = "\n\n## Examples from successful traces\n\n"
+                for demo in demos[:2]:  # cap at 2 to control growth
+                    task = demo.get("task_input", demo.get("inp", ""))
+                    output = demo.get("output", demo.get("out", ""))
+                    if task and output:
+                        demo_text += f"**Task:** {task[:300]}\n**Output:** {output[:500]}\n\n"
+                if len(demo_text) > 50:
+                    # Weave demos onto the evolved instructions (if any) so a
+                    # predictor carrying both keeps the rewritten instructions.
+                    base_body = new_instructions if instructions_evolved else body
+                    evolved_body = base_body + demo_text
+                    print(f"  Appended {len(demos)} demos from {name}", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: could not extract evolved text: {e}", file=sys.stderr)
+    return evolved_body
+
+
 def _make_diff(original, evolved, skill_name):
     """Generate a unified diff between original and evolved skill text."""
     import difflib
@@ -353,34 +399,7 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
     # - GEPA/MIPROv2: rewrite signature.instructions (the prompt text)
     # - BootstrapFewShot: add demos (few-shot examples from successful traces)
     # The actual predictor is at optimized.predictor.predict (ChainOfThought wraps Predict)
-    evolved_body = body  # default: unchanged
-    try:
-        # Navigate to the inner Predict module
-        for name, pred in optimized.named_predictors():
-            state = pred.dump_state()
-            sig = state.get("signature", {})
-
-            # Check if instructions were rewritten (GEPA/MIPROv2)
-            # The original instructions are the skill body text we set as __doc__
-            new_instructions = sig.get("instructions", "")
-            if new_instructions and new_instructions.strip() != body.strip():
-                evolved_body = new_instructions
-                print(f"  Extracted evolved instructions from {name}", file=sys.stderr)
-
-            # Check for demos (BootstrapFewShot)
-            demos = state.get("demos", [])
-            if demos:
-                demo_text = "\n\n## Examples from successful traces\n\n"
-                for demo in demos[:2]:  # cap at 2 to control growth
-                    task = demo.get("task_input", demo.get("inp", ""))
-                    output = demo.get("output", demo.get("out", ""))
-                    if task and output:
-                        demo_text += f"**Task:** {task[:300]}\n**Output:** {output[:500]}\n\n"
-                if len(demo_text) > 50:
-                    evolved_body = body + demo_text
-                    print(f"  Appended {len(demos)} demos from {name}", file=sys.stderr)
-    except Exception as e:
-        print(f"Warning: could not extract evolved text: {e}", file=sys.stderr)
+    evolved_body = _extract_evolved_body(optimized, body)
 
     # --- Constraint checks ---
 

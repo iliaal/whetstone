@@ -98,10 +98,19 @@ import re as _re
 # prompt). The project-path substring catches every SkillOpt workspace; the
 # harness-prompt pattern catches judge/grader calls that leak into real projects.
 _SYNTHETIC_PROJECT_SUBSTRINGS = ("skillopt",)
+# The last two alternatives are the distiller's OWN emit-tasks templates
+# (_JUDGE_SYSTEM_PROMPT and _diagnose_build_prompt). Dispatching judge/diagnose
+# sub-agents via `dspy-eval --emit-tasks` / `diagnose-negatives --emit-prompt`
+# lands those prompts as a sub-agent session's task_input; without these markers
+# a later harvest would re-poison eval data with the distiller's self-play
+# (same class as the fixed SkillOpt contamination). Keep in sync with those
+# template strings.
 _HARNESS_PROMPT_PATTERNS = _re.compile(
     r"(?:Score this agent trajectory"
     r"|Return ONLY minified JSON\b"
-    r"|You are (?:a |an )?(?:grader|judge)\b)",
+    r"|You are (?:a |an )?(?:grader|judge)\b"
+    r"|You are an expert evaluator scoring an AI agent"
+    r"|You are diagnosing why a skill file produces negative outcomes)",
     _re.IGNORECASE,
 )
 
@@ -190,8 +199,10 @@ _NEGATIVE_SIGNAL_PATTERNS = _re.compile(
     r"|\bwas\s+wrong\b"
     # Process correction — "doing X wrong", "doing it wrong"
     r"|\bdoing\s+\S+\s+wrong\b"
-    # Stop / don't
-    r"|\bstop(?:\s+doing\s+that)?\b"
+    # Stop / don't — require correction context (terminal "stop", "stop doing
+    # that", or "stop,"). Bare "stop" mid-sentence ("stop the daemon", "Stop
+    # hook", "won't stop retrying") is not dissatisfaction.
+    r"|\bstop\b(?=\s*[!.]*$|\s+doing\s+that\b|\s*,)"
     r"|\bdon'?t\s+(?:do\s+that|mock|use|jump|commit)\b"
     # Persistence complaints — agent failed to fix on prior attempt (8 hits)
     r"|\bstill\s+(?:wrong|broken|failing|present|there|doesn'?t)\b"
@@ -240,8 +251,10 @@ _NEGATIVE_SIGNAL_PATTERNS = _re.compile(
     # from "i already asked"). Narrow to second-person targets to avoid matching benign narration
     # like "I asked the API to return JSON" or "I asked Claude to explain".
     r"|^\s*i\s+asked\s+(?:you|claude|the\s+agent|already)\b"
-    # User rejecting agent's addition / over-engineering (18 hits combined)
-    r"|\b(?:no|not)\s+need(?:ed)?\b"
+    # User rejecting agent's addition / over-engineering (18 hits combined).
+    # Exclude "need to <verb>" — instructional ("we do not need to run X"), not
+    # dissatisfaction.
+    r"|\b(?:no|not)\s+need(?:ed)?\b(?!\s+to\b)"
     r")",
     _re.IGNORECASE,
 )
@@ -399,8 +412,24 @@ def _resolve_moved_skill(old_id):
     return None
 
 
+def _validate_skill_id(skill_id):
+    """Return skill_id if it is a safe single path segment; else raise ValueError.
+
+    The identifier comes from the untrusted skills.sh API response and is joined
+    into filesystem paths (rmtree/move), so a crafted value (`../`, leading
+    dash/dot, path separators) could escape the staging directory. Allowed:
+    lowercase alphanumerics, hyphens, underscores, and dots not at the start.
+    Rejected: empty, path separators, a leading dash or dot, and anything else.
+    """
+    import re as _re
+    if not isinstance(skill_id, str) or not _re.fullmatch(r"[a-z0-9_][a-z0-9._-]*", skill_id):
+        raise ValueError(f"Unsafe skill id (rejected before path use): {skill_id!r}")
+    return skill_id
+
+
 def _stage_skill(skill_id):
     """Move a fetched skill to staging and remove symlinks."""
+    _validate_skill_id(skill_id)
     agent_path = SKILLS_AGENT_DIR / skill_id
     staging_path = STAGING_DIR / skill_id
     symlink_path = SKILLS_SYMLINK_DIR / skill_id
@@ -1627,6 +1656,21 @@ def validate_plugin(component_filter=None):
             continue
         known_commands[f.stem] = f
 
+    # A --component filter that matches nothing must fail loudly, not pass
+    # vacuously ("0 findings") on a typo'd or unprefixed name.
+    if component_filter and component_filter not in (
+        set(known_skills) | set(known_agents) | set(known_commands)
+    ):
+        available = ", ".join(sorted(
+            set(known_skills) | set(known_agents) | set(known_commands)
+        ))
+        print(
+            f"Error: no plugin component named '{component_filter}'. "
+            f"Available: {available}",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
     findings = []
     inventory = []
 
@@ -2191,6 +2235,15 @@ def test_triggers(skill_filter=None, fixtures_dir=None):
         print(f"Error: no fixture files in {fdir}", file=sys.stderr)
         sys.exit(1)
 
+    if skill_filter and not any(f.stem == skill_filter for f in fixture_files):
+        available = ", ".join(f.stem for f in fixture_files)
+        print(
+            f"Error: no fixture file for skill '{skill_filter}' in {fdir}. "
+            f"Available: {available}",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
     results = []
     all_pass = True
 
@@ -2281,6 +2334,19 @@ def test_semantic(max_tests=None, fixtures_path=None):
             if line:
                 fixtures.append(json.loads(line))
 
+    # Fixture coverage: how many skills have at least one semantic fixture vs the
+    # total skill count. Computed over the full fixture file (before any max_tests
+    # slice) so the coverage gap stays visible regardless of --max-tests.
+    covered_skills = set()
+    for fx in fixtures:
+        covered_skills.update(fx.get("should_trigger", []))
+        covered_skills.update(fx.get("should_not_trigger", []))
+    skills_root = PLUGIN_DIR / "skills"
+    total_skills = sum(
+        1 for d in skills_root.iterdir()
+        if d.is_dir() and (d / "SKILL.md").exists()
+    ) if skills_root.exists() else 0
+
     if max_tests and len(fixtures) > max_tests:
         fixtures = fixtures[:max_tests]
 
@@ -2303,11 +2369,28 @@ def test_semantic(max_tests=None, fixtures_path=None):
                 })
                 env = os.environ.copy()
                 env["TEST_INJECTION_LOG"] = log_path
-                subprocess.run(
+                proc = subprocess.run(
                     ["bash", str(INJECT_HOOK_PATH)],
                     input=hook_input, capture_output=True, text=True,
                     timeout=15, env=env, cwd=neutral_cwd,
                 )
+
+                # A non-zero hook exit is an error, NOT "declined to inject".
+                # Conflating the two makes a crashing hook pass every negative
+                # fixture (empty log looks like a clean decline).
+                if proc.returncode != 0:
+                    all_pass = False
+                    results.append({
+                        "prompt": prompt[:100],
+                        "status": "error",
+                        "injected": [],
+                        "missing": sorted(should_trigger),
+                        "unwanted": [],
+                        "returncode": proc.returncode,
+                        "stderr": proc.stderr[-500:],
+                    })
+                    print(f"  [{i+1}/{len(fixtures)}] ERROR (hook exit {proc.returncode}): \"{prompt[:60]}...\"", file=sys.stderr)
+                    continue
 
                 injected = set()
                 with open(log_path) as lf:
@@ -2342,7 +2425,8 @@ def test_semantic(max_tests=None, fixtures_path=None):
                     os.unlink(log_path)
 
     pass_count = sum(1 for r in results if r["status"] == "pass")
-    fail_count = sum(1 for r in results if r["status"] != "pass")
+    error_count = sum(1 for r in results if r["status"] == "error")
+    fail_count = sum(1 for r in results if r["status"] not in ("pass", "error"))
 
     return {
         "results": results,
@@ -2351,7 +2435,10 @@ def test_semantic(max_tests=None, fixtures_path=None):
             "total": len(results),
             "passed": pass_count,
             "failed": fail_count,
+            "errors": error_count,
             "inconclusive": 0,
+            "skills_with_fixtures": len(covered_skills),
+            "total_skills": total_skills,
         },
     }
 
@@ -2464,13 +2551,41 @@ def _strip_injection_header(prompt_text):
     return prompt_text[m.end():].lstrip("\n")
 
 
+# Harness-tag prefixes that reach a user-role turn as plain "text" but are
+# system plumbing, not user speech. A typed message whose stripped content
+# starts with one of these is not sentiment-scanned (a tag mid-message is fine).
+_HARNESS_TYPED_PREFIXES = (
+    "<task-notification",
+    "<system-",
+    "<command-message>",
+    "<command-name>",
+    "<local-command-",
+)
+
+
+def _is_harness_typed_text(text):
+    """True if a typed user message is a harness tag, not real user speech."""
+    return text.lstrip().startswith(_HARNESS_TYPED_PREFIXES)
+
+
 def _classify_signal(user_messages, typed_messages=None):
     """Classify conversation outcome based on user messages.
 
     Returns: "positive", "negative", or "ambiguous".
-    Heuristic: if any typed user message matches negative patterns, it's
-    negative. If there are fewer than 2 user messages, ambiguous (too little
-    signal). Otherwise positive.
+    Heuristic: scan the typed user messages *after the first* for negative
+    patterns; any match → negative. The ambiguity gate counts typed messages,
+    not all user-role turns: fewer than 2 typed messages → ambiguous (too
+    little outcome signal). Otherwise positive.
+
+    Gating on typed count matters because tool results arrive as user-role
+    turns; a subagent trace whose only typed content is the task prompt has one
+    typed message and no outcome evidence — "ambiguous" is the honest label, not
+    a default "positive".
+
+    The first typed message is the task statement, not outcome feedback. A
+    bug-report task ("the tests are failing, the output is wrong") must not flag
+    the session negative before the agent acts, so scanning starts at the second
+    typed message.
 
     typed_messages: text the user (or parent agent) actually typed — content
     that arrived as a plain string or "text" block, never tool_result output.
@@ -2480,10 +2595,10 @@ def _classify_signal(user_messages, typed_messages=None):
     them poisons the signal for every skill whose body contains an imperative.
     Falls back to user_messages when not provided (legacy callers).
     """
-    if len(user_messages) < 2:
-        return "ambiguous"
     scan = typed_messages if typed_messages is not None else user_messages
-    for msg in scan:
+    if len(scan) < 2:
+        return "ambiguous"
+    for msg in scan[1:]:
         # Only scan short conversational messages (< 500 chars) to avoid
         # false positives from instructional content, code, or skill text
         # that the user pasted or the agent quoted back.
@@ -2531,6 +2646,11 @@ def _parse_session(jsonl_path):
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError:
+                continue
+
+            # Skip harness plumbing (task notifications, system events); these
+            # carry isMeta at the top level and are not user speech or work.
+            if obj.get("isMeta"):
                 continue
 
             msg_type = obj.get("type", "")
@@ -2599,6 +2719,10 @@ def _parse_session(jsonl_path):
                 continue
             if role == "user" and content_text.startswith("<command-name>"):
                 continue
+            # Slash-command records can lead with <command-message> (name+args
+            # follow) instead of <command-name>; those aren't user speech either.
+            if role == "user" and content_text.startswith("<command-message>"):
+                continue
 
             timestamp = obj.get("timestamp")
             turns.append({
@@ -2634,7 +2758,11 @@ def _parse_session(jsonl_path):
     # Classify success signal from user messages. Scan only typed text —
     # tool results masquerade as user messages and carry skill/quoted text.
     user_messages = [t["content_text"] for t in turns if t["role"] == "user"]
-    typed_messages = [t["typed_text"] for t in turns if t["role"] == "user" and t["typed_text"].strip()]
+    typed_messages = [
+        t["typed_text"] for t in turns
+        if t["role"] == "user" and t["typed_text"].strip()
+        and not _is_harness_typed_text(t["typed_text"])
+    ]
     signal = _classify_signal(user_messages, typed_messages)
 
     model_id = Counter(models).most_common(1)[0][0] if models else None
@@ -2722,6 +2850,7 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
 
     manifest = _load_skill_manifest()
     stale_count = 0
+    model_stale_count = 0
     synthetic_count = 0
     maintenance_count = 0
 
@@ -2801,6 +2930,12 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
                     continue
                 if not include_stale and (staleness["content_stale"] or staleness["model_stale"]):
                     stale_count += 1
+                    # Track model-stale drops separately: assistant turns whose
+                    # model prefix is off the current baseline. A model-family
+                    # rollover silently drops most recent data until the baseline
+                    # in .skill-versions.json is updated.
+                    if staleness["model_stale"]:
+                        model_stale_count += 1
                     continue
                 if not include_stale and example.get("project") in _PRE_RENAME_PROJECT_PATHS:
                     stale_count += 1
@@ -2837,6 +2972,8 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
 
     if stale_count:
         print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
+    if model_stale_count:
+        print(f"  ({model_stale_count} of those were model-stale: assistant turns off the current model baseline)", file=sys.stderr)
     if synthetic_count:
         print(f"  Excluded {synthetic_count} synthetic self-play examples (SkillOpt rollouts / judge calls)", file=sys.stderr)
     if maintenance_count:
@@ -2847,6 +2984,7 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
         "skills": written,
         "total_examples": sum(v["count"] for v in written.values()),
         "stale_filtered": stale_count,
+        "model_stale_filtered": model_stale_count,
         "synthetic_excluded": synthetic_count,
         "maintenance_excluded": maintenance_count,
     }
@@ -3264,12 +3402,25 @@ def approve_golden(skill_name):
         print(f"Error: {candidates_path} not found. Run build-golden first.", file=sys.stderr)
         sys.exit(1)
 
+    _VALID_LABELS = ("positive", "negative", "skip", "review")
     candidates = []
     with open(candidates_path) as f:
-        for line in f:
+        for lineno, line in enumerate(f, 1):
             line = line.strip()
-            if line:
-                candidates.append(json.loads(line))
+            if not line:
+                continue
+            c = json.loads(line)
+            label = c.get("label")
+            # A typo'd label (e.g. "postive") must not be silently dropped -- it
+            # would look like an intentional skip and lose the reviewer's decision.
+            if label not in _VALID_LABELS:
+                print(
+                    f"Error: unknown label {label!r} at {candidates_path}:{lineno} "
+                    f"(expected one of {', '.join(_VALID_LABELS)})",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            candidates.append(c)
 
     approved = [c for c in candidates if c.get("label") in ("positive", "negative")]
     skipped = [c for c in candidates if c.get("label") == "skip"]
@@ -3285,6 +3436,10 @@ def approve_golden(skill_name):
     golden_path = EVAL_DATA_DIR / skill_name / "golden.jsonl"
     with open(golden_path, "w") as f:
         for c in approved:
+            # Overwrite signal with the human-approved label. Downstream consumers
+            # (evolve.py, dspy-eval stratification) read `signal`, not `label`, so a
+            # reviewer flipping positive->negative must land in `signal` to matter.
+            c["signal"] = c["label"]
             f.write(json.dumps(c) + "\n")
 
     pos = sum(1 for c in approved if c["label"] == "positive")
@@ -3318,8 +3473,9 @@ def analyze_misfires(min_examples=30, include_stale=False):
 
     manifest = _load_skill_manifest()
 
-    # Collect all examples across all skills
-    all_examples = []
+    # Collect all examples across all skills, tagged with the directory (owner)
+    # skill they were harvested under.
+    all_examples = []  # list of (owner_skill, example)
     stale_count = 0
     for skill_dir in sorted(EVAL_DATA_DIR.iterdir()):
         if not skill_dir.is_dir() or skill_dir.name == "_unattributed":
@@ -3338,7 +3494,7 @@ def analyze_misfires(min_examples=30, include_stale=False):
                     if staleness["pattern_stale"]:
                         stale_count += 1
                         continue
-                all_examples.append(ex)
+                all_examples.append((skill_dir.name, ex))
 
     if stale_count:
         print(f"  Filtered {stale_count} stale examples (use --include-stale to include)", file=sys.stderr)
@@ -3358,36 +3514,42 @@ def analyze_misfires(min_examples=30, include_stale=False):
         if skill_file.exists():
             skill_keywords_cache[skill_dir.name] = _extract_skill_keywords(skill_file.read_text())
 
-    for ex in all_examples:
+    for owner_skill, ex in all_examples:
         injected = ex.get("injected_skills", [])
         task_input = ex.get("task_input", "")
         signal = ex.get("signal", "ambiguous")
 
-        for skill_info in injected:
-            skill_name = skill_info["skill"]
-            stats = skill_stats[skill_name]
-            stats["injected"] += 1
+        # Attribute each harvested record only to its directory (owner) skill.
+        # Harvest writes one copy per injected skill into that skill's
+        # sessions.jsonl, and every copy carries the FULL injected_skills list;
+        # iterating that list to attribute would re-count each session once per
+        # listed skill in every per-skill file (measured ~9.6x inflation).
+        # analyze_outcomes attributes to the directory skill for the same reason,
+        # and keying to the owner keeps this consistent with the staleness check
+        # above (also keyed to skill_dir.name).
+        stats = skill_stats[owner_skill]
+        stats["injected"] += 1
 
-            if signal == "positive":
-                stats["positive"] += 1
-            elif signal == "negative":
-                stats["negative"] += 1
+        if signal == "positive":
+            stats["positive"] += 1
+        elif signal == "negative":
+            stats["negative"] += 1
 
-            # Check relevance
-            keywords = skill_keywords_cache.get(skill_name, set())
-            if keywords:
-                is_rel, overlap = _check_skill_relevance(task_input, keywords)
-                if is_rel:
-                    stats["relevant"] += 1
-                else:
-                    stats["irrelevant"] += 1
-                    if len(stats["irrelevant_task_samples"]) < 3:
-                        stats["irrelevant_task_samples"].append(task_input[:150])
+        # Check relevance against the owner skill's keywords
+        keywords = skill_keywords_cache.get(owner_skill, set())
+        if keywords:
+            is_rel, overlap = _check_skill_relevance(task_input, keywords)
+            if is_rel:
+                stats["relevant"] += 1
+            else:
+                stats["irrelevant"] += 1
+                if len(stats["irrelevant_task_samples"]) < 3:
+                    stats["irrelevant_task_samples"].append(task_input[:150])
 
-            # Track co-injection
-            for other in injected:
-                if other["skill"] != skill_name:
-                    stats["co_injected_with"][other["skill"]] += 1
+        # Track co-injection: other skills present in the same session
+        for other in injected:
+            if other["skill"] != owner_skill:
+                stats["co_injected_with"][other["skill"]] += 1
 
     # Rank by misfire rate (irrelevant / injected)
     results = []
@@ -4387,6 +4549,10 @@ _INJ_SUSPICIOUS_CHARS = {
     0x2069: ("pop directional isolate (bidi)", "HIGH"),
 }
 
+# Upper bound on a whitespace-normalized base64 candidate run. Guards against a
+# pathological all-word paragraph joining into an unbounded decode attempt.
+_B64_MAX_JOINED = 100000
+
 # Keywords that, when found inside a decoded base64 blob or an HTML comment,
 # escalate it from "noise" to "worth a human's eyes".
 _INJ_PAYLOAD_KEYWORDS = (
@@ -4510,8 +4676,14 @@ def _scan_file_deterministic(path, text):
                 m.group(0).strip())
 
     # 6. Encoded payloads: base64 blobs that decode to printable text with keywords (MEDIUM).
-    for m in _re.finditer(r"[A-Za-z0-9+/]{40,}={0,2}", text):
-        blob = m.group(0)
+    # A base64 run split by interior whitespace/newlines defeats a contiguous
+    # match, so candidate runs may span whitespace; normalize before decoding.
+    # The joined length is bounded so an all-word paragraph can't trigger an
+    # unbounded decode.
+    for m in _re.finditer(r"[A-Za-z0-9+/]+(?:\s+[A-Za-z0-9+/]+)*={0,2}", text):
+        blob = _re.sub(r"\s+", "", m.group(0))
+        if len(blob) < 40 or len(blob) > _B64_MAX_JOINED:
+            continue
         try:
             decoded = _b64.b64decode(blob, validate=True)
         except Exception:
@@ -4604,6 +4776,50 @@ def _parse_injection_verdict(text):
     }
 
 
+_JUDGE_CHUNK_SIZE = 12000
+_JUDGE_CHUNK_OVERLAP = 500
+
+
+def _judge_body_chunks(body, chunk_size=_JUDGE_CHUNK_SIZE, overlap=_JUDGE_CHUNK_OVERLAP):
+    """Split a body into overlapping chunks that fully cover every byte.
+
+    Small bodies (<= chunk_size) yield a single chunk. Large bodies are split so
+    each chunk is judged in full -- no mid-file prose escapes the judge window.
+    The head+tail truncation this replaces left the middle unjudged while the
+    attestation still hashed the whole file, so mid-file injection could ship
+    judged-clean with a valid attestation. Consecutive chunks overlap by
+    `overlap` chars so an injection straddling a boundary stays intact in at
+    least one chunk. Returns a non-empty list of strings covering [0, len(body)).
+    """
+    if len(body) <= chunk_size:
+        return [body]
+    if overlap >= chunk_size:
+        overlap = chunk_size // 2
+    step = chunk_size - overlap
+    chunks = []
+    start = 0
+    n = len(body)
+    while start < n:
+        chunks.append(body[start:start + chunk_size])
+        if start + chunk_size >= n:
+            break
+        start += step
+    return chunks
+
+
+# Aggregation order for combining per-chunk (or duplicate per-file) verdicts:
+# malicious blocks; a non-conforming verdict (error/unparseable/unknown) means a
+# chunk was not actually judged, so it outranks the benign verdicts -- a file is
+# only clean/suspicious when EVERY chunk came back clean/suspicious.
+def _verdict_rank(verdict):
+    v = str(verdict or "").lower()
+    if v == "malicious":
+        return 4
+    if v not in ("clean", "suspicious"):
+        return 3
+    return 2 if v == "suspicious" else 1
+
+
 def _injection_purpose(path, fm):
     """Best-effort declared purpose for the judge: own description, else parent skill's."""
     desc = fm.get("description")
@@ -4646,9 +4862,18 @@ def _expand_paths(paths):
     return files
 
 
+class GitChangedError(RuntimeError):
+    """A git command backing the changed-file scan failed (bad ref, not a repo,
+    git missing). Distinct from a genuinely empty diff so the attestation gate
+    can fail loud instead of passing vacuously on an empty file set."""
+
+
 def _git_changed_md(ref):
     """Resolved set of .md paths changed since `ref`: committed/staged/unstaged diff plus
-    untracked files. Used to scope a per-release scan to only what this release ships."""
+    untracked files. Used to scope a per-release scan to only what this release ships.
+
+    Raises GitChangedError if any backing git command fails -- a failure must not
+    be silently aliased with 'no files changed'."""
     root = DISTILLERY_DIR.parent  # whetstone repo root
     changed = set()
     for cmd in (
@@ -4657,14 +4882,16 @@ def _git_changed_md(ref):
     ):
         try:
             out = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if out.returncode != 0:
-                continue
-            for line in out.stdout.splitlines():
-                line = line.strip()
-                if line:
-                    changed.add((root / line).resolve())
-        except (subprocess.SubprocessError, OSError):
-            continue
+        except (subprocess.SubprocessError, OSError) as e:
+            raise GitChangedError(f"git command failed ({' '.join(cmd)}): {e}") from e
+        if out.returncode != 0:
+            raise GitChangedError(
+                f"git command failed ({' '.join(cmd)}): exit {out.returncode}: {out.stderr.strip()}"
+            )
+        for line in out.stdout.splitlines():
+            line = line.strip()
+            if line:
+                changed.add((root / line).resolve())
     return changed
 
 
@@ -4705,20 +4932,23 @@ def scan_injection(paths=None, judge=False, model="sonnet", max_files=None,
         def _judge_one(f, text):
             fm, body = _parse_md_frontmatter(text)
             purpose = _injection_purpose(f, fm)
-            if len(body) > 16000:
-                body = body[:12000] + "\n...[TRUNCATED]...\n" + body[-3000:]
-            prompt = _INJECTION_JUDGE_PROMPT.format(purpose=purpose, path=str(f), body=body)
-            res = _claude_cli_request(prompt, model=model)
-            if res.get("status") != "ok":
-                return {"file": str(f), "verdict": "error",
-                        "error": res.get("error", "unknown"), "cost_usd": 0.0}
-            verdict = _parse_injection_verdict(res.get("response", ""))
-            if not verdict:
-                return {"file": str(f), "verdict": "unparseable",
-                        "cost_usd": res.get("cost_usd", 0.0)}
-            verdict["file"] = str(f)
-            verdict["cost_usd"] = res.get("cost_usd", 0.0)
-            return verdict
+            chunks = _judge_body_chunks(body)
+            chunk_verdicts = []
+            total_cost = 0.0
+            for chunk in chunks:
+                prompt = _INJECTION_JUDGE_PROMPT.format(purpose=purpose, path=str(f), body=chunk)
+                res = _claude_cli_request(prompt, model=model)
+                total_cost += res.get("cost_usd", 0.0) or 0.0
+                if res.get("status") != "ok":
+                    chunk_verdicts.append({"verdict": "error", "error": res.get("error", "unknown")})
+                    continue
+                parsed = _parse_injection_verdict(res.get("response", ""))
+                chunk_verdicts.append(parsed if parsed else {"verdict": "unparseable"})
+            # Per-file verdict is the worst across chunks: any non-clean chunk wins.
+            worst = dict(max(chunk_verdicts, key=lambda v: _verdict_rank(v.get("verdict"))))
+            worst["file"] = str(f)
+            worst["cost_usd"] = total_cost
+            return worst
 
         with ThreadPoolExecutor(max_workers=judge_workers) as ex:
             futs = {ex.submit(_judge_one, f, file_texts[f]): f for f in files if f in file_texts}
@@ -4742,7 +4972,10 @@ def scan_injection(paths=None, judge=False, model="sonnet", max_files=None,
 
     passed = summary["high"] == 0 and summary["malicious"] == 0
     if strict:
-        passed = passed and summary["medium"] == 0 and summary["suspicious"] == 0
+        # A judge error/unparseable means the file was NOT actually judged; under
+        # strict, that is a failure, not a silent non-finding.
+        passed = (passed and summary["medium"] == 0 and summary["suspicious"] == 0
+                  and summary["judge_errors"] == 0)
 
     return {
         "scope": scope,
@@ -4812,10 +5045,16 @@ def injection_judge_tasks(ref=None):
         text = f.read_text(errors="replace")
         fm, body = _parse_md_frontmatter(text)
         purpose = _injection_purpose(f, fm)
-        if len(body) > 16000:
-            body = body[:12000] + "\n...[TRUNCATED]...\n" + body[-3000:]
-        prompt = _INJECTION_JUDGE_PROMPT.format(purpose=purpose, path=str(f), body=body)
-        tasks.append({"file": str(f), "prompt": prompt})
+        # One task per full-coverage chunk. Multi-chunk files carry chunk metadata;
+        # verdicts collapse back to one worst-per-file verdict in _normalize_verdicts.
+        chunks = _judge_body_chunks(body)
+        for idx, chunk in enumerate(chunks):
+            prompt = _INJECTION_JUDGE_PROMPT.format(purpose=purpose, path=str(f), body=chunk)
+            task = {"file": str(f), "prompt": prompt}
+            if len(chunks) > 1:
+                task["chunk"] = idx
+                task["chunks_total"] = len(chunks)
+            tasks.append(task)
     return {"ref": ref, "count": len(tasks), "tasks": tasks}
 
 
@@ -4829,14 +5068,22 @@ def _normalize_verdicts(verdicts):
         items = verdicts
     for v in items:
         if isinstance(v, dict) and v.get("file"):
-            vmap[str(Path(v["file"]).resolve())] = v
+            key = str(Path(v["file"]).resolve())
+            existing = vmap.get(key)
+            # A file may arrive as several chunk verdicts; keep the worst so a
+            # single non-clean chunk can't be masked by a clean sibling chunk.
+            if existing is None or _verdict_rank(v.get("verdict")) > _verdict_rank(existing.get("verdict")):
+                vmap[key] = v
     return vmap
 
 
 def write_injection_attestation(ref, verdicts):
     """Validate sub-agent verdicts cover all changed files with no 'malicious',
     then write a content-bound attestation. Returns a status dict."""
-    files = _changed_corpus_md(ref)
+    try:
+        files = _changed_corpus_md(ref)
+    except GitChangedError as e:
+        return {"status": "error", "reason": f"cannot determine changed files: {e}"}
     if not files:
         return {"status": "ok", "files": 0, "content_hash": None, "note": "no changed corpus files"}
     vmap = _normalize_verdicts(verdicts)
@@ -4882,7 +5129,10 @@ def write_injection_attestation(ref, verdicts):
 def verify_injection_attestation(ref):
     """Check a content-bound attestation exists, matches the current changed-file
     set, covers every file, and records no 'malicious'. Returns (ok, reason)."""
-    files = _changed_corpus_md(ref)
+    try:
+        files = _changed_corpus_md(ref)
+    except GitChangedError as e:
+        return False, f"cannot determine changed files: {e}"
     if not files:
         return True, "no changed corpus files to attest"
     if not _ATTESTATION_PATH.exists():
@@ -4913,7 +5163,7 @@ def verify_injection_attestation(ref):
     return True, f"valid attestation for {len(files)} changed file(s)"
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description="Skill distiller helper")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -5011,10 +5261,14 @@ def main():
     p_eval.add_argument("--dataset", default="sessions", help="Dataset: 'sessions', 'golden', or path to JSONL (default: sessions)")
     p_eval.add_argument("--max-examples", type=int, default=20, help="Max examples to score (default: 20)")
     p_eval.add_argument("--model", default=None, help=f"Override eval model (default depends on backend)")
-    p_eval.add_argument("--backend", default="claude-cli", choices=["openrouter", "claude-cli"],
+    # Mutually exclusive run modes: direct-LLM (--backend), emit sub-agent tasks
+    # (--emit-tasks), or aggregate sub-agent verdicts (--score-from-verdicts).
+    # Combining them silently ran a wrong mode and ignored the others.
+    eval_mode = p_eval.add_mutually_exclusive_group()
+    eval_mode.add_argument("--backend", default="claude-cli", choices=["openrouter", "claude-cli"],
                          help="LLM backend: 'claude-cli' (Opus 4.7 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
-    p_eval.add_argument("--emit-tasks", action="store_true", help="Sub-agent path: emit per-example judge prompts as JSON (no LLM/API call)")
-    p_eval.add_argument("--score-from-verdicts", default=None, help="Sub-agent path: aggregate per-example judge responses (inline JSON, or @path) into the eval report")
+    eval_mode.add_argument("--emit-tasks", action="store_true", help="Sub-agent path: emit per-example judge prompts as JSON (no LLM/API call)")
+    eval_mode.add_argument("--score-from-verdicts", default=None, help="Sub-agent path: aggregate per-example judge responses (inline JSON, or @path) into the eval report")
 
     # build-golden
     p_golden = sub.add_parser("build-golden", help="Build golden eval dataset from harvested sessions")
@@ -5041,8 +5295,10 @@ def main():
     p_diag.add_argument("name", help="Skill name")
     p_diag.add_argument("--max-examples", type=int, default=10, help="Max negative examples to analyze (default: 10)")
     p_diag.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
-    p_diag.add_argument("--emit-prompt", action="store_true", help="Sub-agent path: print the diagnosis prompt as JSON (no LLM/API call)")
-    p_diag.add_argument("--format-result", action="store_true", help="Sub-agent path: turn a sub-agent's JSON response (--response) into the report")
+    # Mutually exclusive sub-agent modes: emit the prompt, or format a response.
+    diag_mode = p_diag.add_mutually_exclusive_group()
+    diag_mode.add_argument("--emit-prompt", action="store_true", help="Sub-agent path: print the diagnosis prompt as JSON (no LLM/API call)")
+    diag_mode.add_argument("--format-result", action="store_true", help="Sub-agent path: turn a sub-agent's JSON response (--response) into the report")
     p_diag.add_argument("--response", default=None, help="Sub-agent response for --format-result (inline, or @path to a file)")
 
     # budget — record/check per-skill resource budget (turn count + tool variety)
@@ -5072,6 +5328,11 @@ def main():
                            help="Fitness function: 'keyword' (fast/cheap) or 'llm-judge' (Sonnet 4.6, ~$0.10/call)")
     p_evolve.add_argument("--save", action="store_true", help="Save evolved skill to .eval-data/<skill>/evolved-SKILL.md")
 
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
 
     if args.command == "search":
@@ -5142,7 +5403,8 @@ def main():
     elif args.command == "test-semantic":
         report = test_semantic(args.max_tests, args.fixtures)
         s = report["summary"]
-        print(f"\n  Semantic tests: {s['passed']} passed, {s['failed']} failed, {s['inconclusive']} inconclusive out of {s['total']}", file=sys.stderr)
+        print(f"\n  Semantic tests: {s['passed']} passed, {s['failed']} failed, {s.get('errors', 0)} errored, {s['inconclusive']} inconclusive out of {s['total']}", file=sys.stderr)
+        print(f"  Fixture coverage: {s.get('skills_with_fixtures', 0)}/{s.get('total_skills', 0)} skills have semantic fixtures", file=sys.stderr)
         print(json.dumps(report, indent=2))
         if not report["all_passed"]:
             sys.exit(1)
@@ -5166,7 +5428,11 @@ def main():
 
     elif args.command == "scan-injection" and args.emit_tasks:
         # No --changed-since => full-corpus tasks (the deep-audit path).
-        print(json.dumps(injection_judge_tasks(args.changed_since), indent=2))
+        try:
+            print(json.dumps(injection_judge_tasks(args.changed_since), indent=2))
+        except GitChangedError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(2)
 
     elif args.command == "scan-injection" and args.write_attestation:
         if not args.changed_since or not args.verdicts:
@@ -5194,10 +5460,14 @@ def main():
             sys.exit(1)
 
     elif args.command == "scan-injection":
-        report = scan_injection(
-            paths=args.paths or None, judge=args.judge, model=args.model,
-            max_files=args.max_files, strict=args.strict, changed_since=args.changed_since,
-        )
+        try:
+            report = scan_injection(
+                paths=args.paths or None, judge=args.judge, model=args.model,
+                max_files=args.max_files, strict=args.strict, changed_since=args.changed_since,
+            )
+        except GitChangedError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(2)
         s = report["summary"]
         print(f"\n  Scan: {report['files_scanned']} files ({report['scope']} scope"
               f"{', judged' if report['judge'] else ''}{', strict' if report['strict'] else ''})", file=sys.stderr)
