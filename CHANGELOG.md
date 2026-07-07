@@ -5,6 +5,35 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-07-07
+
+Minor: a deep, usage-ranked review of the highest-traffic skills, a full audit of every command, and a rebuild of the eval pipeline that grades them. No components added or removed, but the scope earns a minor. Every fix was verified end-to-end and adversarially injection-screened before shipping.
+
+### Changed
+
+- The 11 most-used skills gained the mode they were missing when a subagent, not a person, runs them. `ia-debugging` now has a diagnosis-only mode: when the task forbids edits or builds, it runs the investigation steps and returns a proposed fix plus the command that would verify it, instead of hitting a fix-loop it cannot complete. `ia-code-review` skips its own scope and output rules when the caller already supplies them (a scoped subagent review), and its confidence bands and action tiers now live inline instead of behind a file it might never read. `ia-php-laravel` gained a five-step gate for diagnosing a failing test (run it in isolation first, suspect shared state, never weaken the assertion) plus an escalation gate, adapter hygiene, and event-observer discipline.
+- `ia-md-docs` no longer carries a bare `mv CLAUDE.md AGENTS.md` migration that could fire as a side effect of an unrelated task. The migration now runs only inside the init or update workflow and only after you confirm it.
+- `ia-writing` carried two copies of its audit workflow that had drifted apart; the reference file is now the single source, with the newer tag vocabulary.
+- Six skill bodies over the size threshold that measurably hurts the model were trimmed back under it, moving cold detail to reference files while keeping every decision gate and checklist inline.
+- Skill descriptions gained the trigger words their bodies already cover: `ia-nodejs-backend` (observability, logging, metrics), `ia-md-docs` (DOCS.md), `ia-php-laravel` (migrations), `ia-agent-native-architecture` (system prompt design, hooks policy), `ia-frontend-design` (Next.js server components), and `ia-verification-before-completion` (the pre-edit scope check).
+- `ia-planning`, `ia-meta-prompting`, and `ia-brainstorming` gained patterns for surfacing unknowns before committing to an approach.
+- Commands got a consistency pass: `ia-work` now has a pipeline-mode carve-out so an automated `/ia-lfg` run doesn't deadlock on its approval gate, `ia-agent-native-audit` scores one principle set instead of three conflicting ones, `ia-review` routes a `.md` target to the document-review skill, and severity vocabularies across `ia-review`, `ia-triage`, and `ia-resolve-pr` now map to one canonical scale.
+- Blocking-question sites across the skills and commands now name the harness tool (`AskUserQuestion` in Claude Code, `request_user_input` in Codex) so a skill that must ask doesn't silently degrade to chat off-Claude.
+
+### Fixed
+
+- Eight skills were misfiring: their trigger patterns matched a word anywhere in the prompt rather than the intent. `ia-git-worktree` fired on any prompt that merely named a worktree path, `ia-md-docs` on any prompt that cited CLAUDE.md, `ia-code-review` on codebases whose domain noun is "audit", and `ia-debugging` on security reviews that mention a crash. All eight now require the verb near the noun, with regression fixtures drawn from the real misfiring prompts.
+- `ia-react-frontend` linked to two sibling skills by their pre-4.0 names, so both links pointed at files that no longer exist.
+- `/ia-plan` linked to two reference files by the wrong names, `/ia-lfg` classified CI checks by a `gh` JSON field that doesn't exist, and `/ia-reproduce-bug` scripted a Playwright MCP server the plugin never bundled; it now drives the agent-browser CLI it documents everywhere else.
+- `ia-terraform` gave three different format commands for the same check, one of which rewrote files where the verify step expected none. Version-pinned claims that rot (Docker base-image tags, a CVSS spec revision, a WCAG draft number, a model name) were reframed as patterns.
+
+### For contributors
+
+- The eval pipeline that scores skills was measuring itself. Its signal classifier scanned tool-result text as if it were the user talking, so a skill's own body ("stop here", "is wrong") flagged every session it was injected into as a failure. Signal now comes only from what the user typed. A parallel bug counted each session once per injected skill, inflating misfire rates about tenfold; attribution is now per owning skill.
+- The model baseline that filters stale eval data still listed the previous model generation, silently dropping most recent sessions. It now includes the current models.
+- Eighteen more pipeline findings were fixed: human golden-set labels now reach the consumers that read them, `dspy-eval` can score an evolved skill file, the injection judge covers large files in full instead of head-and-tail, and CLI commands that matched no skill now exit with an error instead of a vacuous pass.
+- The release pipeline's sync to the `ai-skills` mirror had silently stopped adding changelog entries after the bullet format changed months ago, and a mid-work manifest regeneration could freeze a changed skill at the old version and make ClawHub skip it. Both are fixed, with a loud warning if the changelog filter ever matches nothing again.
+
 ## [4.1.5] - 2026-06-27
 
 Patch: a 7-day delta sync borrowing three upstream patterns into the writing, code-review, and planning skills, plus internal tooling fixes. No components added or removed.
