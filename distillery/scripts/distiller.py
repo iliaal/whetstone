@@ -2464,26 +2464,33 @@ def _strip_injection_header(prompt_text):
     return prompt_text[m.end():].lstrip("\n")
 
 
-def _classify_signal(user_messages):
+def _classify_signal(user_messages, typed_messages=None):
     """Classify conversation outcome based on user messages.
 
     Returns: "positive", "negative", or "ambiguous".
-    Heuristic: if any user message matches negative patterns, it's negative.
-    If there are fewer than 2 user messages, ambiguous (too little signal).
-    Otherwise positive.
+    Heuristic: if any typed user message matches negative patterns, it's
+    negative. If there are fewer than 2 user messages, ambiguous (too little
+    signal). Otherwise positive.
+
+    typed_messages: text the user (or parent agent) actually typed — content
+    that arrived as a plain string or "text" block, never tool_result output.
+    Tool results reach the transcript as user-role messages and carry skill
+    body text ("stop here", "is wrong") and quoted material ("garbage in,
+    garbage out") that read as dissatisfaction but express none; scanning
+    them poisons the signal for every skill whose body contains an imperative.
+    Falls back to user_messages when not provided (legacy callers).
     """
     if len(user_messages) < 2:
         return "ambiguous"
-    for msg in user_messages:
+    scan = typed_messages if typed_messages is not None else user_messages
+    for msg in scan:
         # Only scan short conversational messages (< 500 chars) to avoid
         # false positives from instructional content, code, or skill text
         # that the user pasted or the agent quoted back.
         if len(msg) > 500:
             continue
-        # Skip tool_result content that looks like file contents (YAML frontmatter,
-        # code, markdown headings). In subagent traces, tool results arrive as
-        # "user" role messages and contain skill/code text with words like "stop",
-        # "don't mock" that trigger false positives.
+        # Skip pasted content that looks like file contents (YAML frontmatter,
+        # code, markdown headings).
         stripped = msg.lstrip()
         if stripped.startswith("---\n") or stripped.startswith("```") or stripped.startswith("#"):
             continue
@@ -2553,15 +2560,19 @@ def _parse_session(jsonl_path):
             tool_calls = []
             tool_results = []
 
+            typed_text = ""
             if isinstance(content, str):
                 content_text = content
+                typed_text = content
             elif isinstance(content, list):
                 text_parts = []
+                typed_parts = []
                 for block in content:
                     if not isinstance(block, dict):
                         continue
                     if block.get("type") == "text":
                         text_parts.append(block.get("text", ""))
+                        typed_parts.append(block.get("text", ""))
                     elif block.get("type") == "tool_use":
                         tool_calls.append({
                             "tool": block.get("name", ""),
@@ -2581,6 +2592,7 @@ def _parse_session(jsonl_path):
                             tool_results.append(result_str)
                         text_parts.append(result_str[:500])
                 content_text = "\n".join(text_parts)
+                typed_text = "\n".join(typed_parts)
 
             # Skip meta/system messages with XML tags that aren't real user input
             if role == "user" and content_text.startswith("<local-command-"):
@@ -2592,6 +2604,7 @@ def _parse_session(jsonl_path):
             turns.append({
                 "role": role,
                 "content_text": content_text,
+                "typed_text": typed_text,
                 "tool_calls": tool_calls,
                 "tool_results": tool_results,
                 "timestamp": timestamp,
@@ -2618,9 +2631,11 @@ def _parse_session(jsonl_path):
         injected_skills = _extract_injected_skills(first_user["content_text"])
         task_prompt = _strip_injection_header(first_user["content_text"])
 
-    # Classify success signal from user messages
+    # Classify success signal from user messages. Scan only typed text —
+    # tool results masquerade as user messages and carry skill/quoted text.
     user_messages = [t["content_text"] for t in turns if t["role"] == "user"]
-    signal = _classify_signal(user_messages)
+    typed_messages = [t["typed_text"] for t in turns if t["role"] == "user" and t["typed_text"].strip()]
+    signal = _classify_signal(user_messages, typed_messages)
 
     model_id = Counter(models).most_common(1)[0][0] if models else None
 

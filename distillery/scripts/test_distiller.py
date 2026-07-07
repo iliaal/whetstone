@@ -2242,3 +2242,79 @@ class TestDiagnoseParsing:
     def test_unparseable_returns_error(self):
         r = distiller._diagnose_parse("x", "totally not json", [1, 2], [1], [1])
         assert "error" in r
+
+
+class TestClassifySignal:
+    """Signal classification must ignore tool_result text (skill bodies,
+    quoted material) and scan only what the user actually typed."""
+
+    def _session_file(self, tmp_path, lines):
+        f = tmp_path / "subagents"
+        f.mkdir()
+        p = f / "agent-test.jsonl"
+        with open(p, "w") as fh:
+            for line in lines:
+                fh.write(json.dumps(line) + "\n")
+        return p
+
+    def _user_text(self, text):
+        return {"type": "user", "sessionId": "s1",
+                "message": {"role": "user", "content": [{"type": "text", "text": text}]}}
+
+    def _user_tool_result(self, text):
+        return {"type": "user", "sessionId": "s1",
+                "message": {"role": "user", "content": [
+                    {"type": "tool_result", "content": [{"type": "text", "text": text}]}]}}
+
+    def _assistant(self, text):
+        return {"type": "assistant", "sessionId": "s1",
+                "message": {"role": "assistant", "model": "claude-opus-4-8",
+                            "content": [{"type": "text", "text": text}]}}
+
+    def test_skill_body_in_tool_result_not_negative(self, tmp_path):
+        # Skill imperatives ("stop", "is wrong") arriving via Read output
+        # must not flag the session negative.
+        p = self._session_file(tmp_path, [
+            self._user_text("Review the diff for bugs."),
+            self._assistant("Reading the skill file."),
+            self._user_tool_result("**Zero files -> stop.** If the implementation is wrong, stop here."),
+            self._assistant("Review complete, no findings."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["signal"] == "positive"
+
+    def test_quoted_garbage_in_tool_result_not_negative(self, tmp_path):
+        p = self._session_file(tmp_path, [
+            self._user_text("Rewrite the parser docs."),
+            self._assistant("Fetching README."),
+            self._user_tool_result("md4c is quite fast: garbage in, garbage out."),
+            self._assistant("Done."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["signal"] == "positive"
+
+    def test_typed_correction_still_negative(self, tmp_path):
+        p = self._session_file(tmp_path, [
+            self._user_text("Fix the failing test."),
+            self._assistant("Patched the assertion."),
+            self._user_text("No, that's wrong - the test caught a real bug."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["signal"] == "negative"
+
+    def test_interruption_still_negative(self, tmp_path):
+        p = self._session_file(tmp_path, [
+            self._user_text("Refactor the module."),
+            self._assistant("Starting broad rewrite."),
+            self._user_text("[Request interrupted by user]"),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["signal"] == "negative"
+
+    def test_single_message_ambiguous(self, tmp_path):
+        p = self._session_file(tmp_path, [
+            self._user_text("Do the task."),
+            self._assistant("Done."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["signal"] == "ambiguous"
