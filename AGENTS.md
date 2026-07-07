@@ -62,7 +62,13 @@ When `/release` runs, it:
 2. Appends a CHANGELOG.md entry summarizing the commits since the last release
 3. Updates README.md component counts and tables
 4. Runs `bash scripts/update-metadata.sh` to sync descriptions and counts
-5. Validates JSON and runs pre-commit gates (trigger tests, semantic tests)
+5. Validates JSON, then runs the pre-commit gates in order with these blocking statuses:
+   - `update-metadata.sh --check` — **BLOCKING** (metadata/count drift)
+   - trigger regression tests (`test-triggers`) — **BLOCKING**
+   - Tier-1 prompt-injection corpus scan — **BLOCKING on HIGH** findings
+   - Tier-2 prompt-injection attestation verify — **BLOCKING**; **skipped with a WARNING** when no previous `v*` tag exists
+   - skill-injection hook tests (`test-semantic`) — **NON-BLOCKING** (WARNING only; these are hook-firing tests, not the prompt-injection scan)
+   - skill manifest regeneration (baseline reset to the last-released manifest first)
 6. Commits, pushes, mirrors to ai-skills, publishes to ClawHub, syncs to other tools
 
 Semver rules applied by `/release`:

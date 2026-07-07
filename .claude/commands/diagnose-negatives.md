@@ -104,8 +104,8 @@ bash scripts/update-metadata.sh
 
 ## Notes
 
-- The diagnosis uses Sonnet 4.6 via `claude -p` to analyze failure patterns. Cost is ~$0.10-0.15 per run.
+- The diagnosis runs as an **in-session sub-agent** via `--emit-prompt` / `--format-result` (Step 1) — no billed `claude -p`, and the judge runs on whatever model the session/sub-agent uses. The direct `diagnose-negatives` path (no `--emit-prompt`) falls back to `claude -p` with `DEFAULT_CLI_MODEL = "opus"`; prefer the sub-agent path.
 - Suggestions are based on real user dissatisfaction, not synthetic benchmarks. This makes them high-signal but potentially biased toward the specific projects and tasks in the session history.
 - Most common categories observed: `wrong_trigger` (skill too eager / missing exclusions in description), `missing_source` (agent answers without reading the right reference), `weak_output` (no output template, agent improvises shape), `missing_validation` (claims done without checking).
-- If the skill has very few relevant negatives (< 3), the diagnosis may be unreliable. Consider running on sessions data instead of golden.
+- Post-2026-07-07, a "negative" is a genuine typed user correction only, so they are rare-but-real: a count of 0-3 relevant negatives is now the NORM, and Step 1's "< 3 relevant" caveat is the common case rather than an edge case. When `--emit-prompt` reports `count: 0` it prints a stderr guard and returns `prompt: null` — do NOT dispatch a sub-agent on a null prompt. To inspect historical negatives (from before the skill/pattern last changed or from a retired model), re-run with `--include-stale`; treat those as lower-confidence since they may predate the current skill text.
 - The exit code is non-zero (2) if any finding violates the rubric schema. Re-run or open the JSON output to inspect `schema_violations` before treating the report as actionable.

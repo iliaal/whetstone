@@ -51,9 +51,24 @@ Depends on Group A completing.
 
 **Step 3: Build golden eval dataset**
 
+RECOMMENDED (human-label) path — post-2026-07-07 harvest data is mostly `ambiguous` (no typed user outcome), and a golden set dominated by `ambiguous` drives GEPA to degenerate results:
+
+```bash
+python3 distillery/scripts/distiller.py build-golden <skill> --top 20
+# → writes candidates.jsonl. Open it, set each "label" to positive / negative / skip
+#   (drop the ambiguous ones as "skip" unless you can grade them), then:
+python3 distillery/scripts/distiller.py approve-golden <skill>
+```
+
+`approve-golden` writes `label` into `signal` for every kept row and HARD-ERRORS on any unknown label (including a left-over `ambiguous`), so the golden set is fully graded before GEPA runs.
+
+Fast path (only when the harvested signal is already well-graded — mostly positive/negative, few ambiguous):
+
 ```bash
 python3 distillery/scripts/distiller.py build-golden <skill> --top 20 --auto
 ```
+
+`--auto` labels straight from harvested signal and prints a stderr WARNING when >50% of the rows are `ambiguous`; if you see that warning, stop and switch to the human-label path above.
 
 Report: examples selected, positive/negative split, mean quality score.
 
@@ -96,7 +111,18 @@ Depends on Group C completing.
 
 **Step 6: Eval evolved (if changed)**
 
-If Step 5 produced an evolved skill and it was saved, score it via the same **sub-agent eval path as Step 4** (`dspy-eval <skill> --dataset golden --emit-tasks` → judge sub-agents → `--score-from-verdicts @<file>`). Present a comparison table:
+If Step 5 produced an evolved skill and it was saved, score the **evolved text**, not the live skill. The `--emit-tasks` call MUST carry `--skill-file` pointing at the saved candidate, or the judge re-measures the baseline and the "Evolved" column is a copy of "Baseline":
+
+```bash
+python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --emit-tasks \
+  --skill-file distillery/.eval-data/<skill>/evolved-SKILL.md
+```
+
+Then dispatch the judge sub-agents and aggregate exactly as in Step 4 (`--score-from-verdicts @<file>` — this step takes no `--skill-file`; the override only changes the prompt built at emit-tasks time). The example set is identical to Step 4 because relevance still keys off the live skill's keywords, so the two composites are directly comparable.
+
+Note: any past comparison run WITHOUT `--skill-file` measured the baseline twice; its "delta" is noise. Re-run those before trusting them.
+
+Present a comparison table:
 
 ```
 | Metric         | Baseline | Evolved | Delta    |
@@ -126,6 +152,6 @@ If rejected, leave everything as-is. The evolved version remains in `.eval-data/
 ## Notes
 
 - The harvest (Step 1) runs across ALL projects, not just the target skill. This ensures eval data is fresh for everything.
-- The evolve step uses OpenRouter (DeepSeek V3.2) for the DSPy optimizer since it needs many fast LLM calls. The eval steps use the default backend (claude-cli / Sonnet 4.6).
+- The evolve step uses OpenRouter (DeepSeek V3.2) for the DSPy optimizer since it needs many fast LLM calls. The eval steps (4 and 6) run **in-session sub-agents** via `--emit-tasks` → judge sub-agents → `--score-from-verdicts` (no billed `claude -p`); the judge runs on whatever model the session/sub-agent uses. The direct `dspy-eval` backend defaults to `claude-cli` (`DEFAULT_CLI_MODEL = "opus"`) if you bypass the sub-agent path.
 - If DSPy is not installed, Step 5 will fail. Install with: `pip install dspy`
 - The growth constraint (20%) prevents runaway skill bloat. If the optimizer consistently hits this limit, the skill may need manual editing to make room for improvements.

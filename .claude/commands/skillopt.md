@@ -44,12 +44,15 @@ Therefore:
    `skillopt/envs/whetstone/rubric.py`, this config, and a seed (`env.skill_init`).
    Tell the user to onboard it (see the runbook §5) and STOP. **Do not fall back to
    `default.yaml`** — that silently optimizes ia-debugging's skill against the wrong
-   fixtures. Read `FIXDIR` from the config's `env.tasks_root`; confirm `FIXDIR`, the
-   sibling `splits/{train,val,test}/items.json`, and the set's `build_fixtures.py`
-   exist.
+   fixtures. Read `FIXDIR` from the config's `env.tasks_root` (a `tasks/` dir) and set
+   `SETDIR` to its parent — the fixture-set root, where `build_fixtures.py` and
+   `splits/` live (not inside `tasks/`). Confirm `FIXDIR`, the sibling
+   `splits/{train,val,test}/items.json`, and `$SETDIR/build_fixtures.py` exist.
 
 2. **Validate fixtures** (deterministic, no tokens):
-   `cd distillery/skillopt && python3 <FIXDIR>/build_fixtures.py --verify`. Every
+   `cd distillery/skillopt && python3 <SETDIR>/build_fixtures.py --verify` — the script
+   lives at the fixture-set root (`<SETDIR>`, the parent of `<FIXDIR>`), not inside
+   `tasks/`. Every
    line must be `[OK] …` (red-on-seed / green-on-fix — the exact wording varies per
    set, e.g. `buggy=RED fixed=GREEN` or `cluttered=RED simplified=GREEN`). If any is
    `BROKEN`, STOP and report — a malformed fixture corrupts the run.

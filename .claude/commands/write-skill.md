@@ -177,9 +177,10 @@ Build the regex from the trigger vocabulary in question 3. Test it locally first
 ```bash
 python3 distillery/scripts/distiller.py eval-triggers <name> \
   --pattern '<regex>' \
-  --queries '<JSON array of all positives>' \
-  --negatives '<JSON array of all negatives>'
+  --queries '{"should_trigger":["..."],"should_not_trigger":["..."]}'
 ```
+
+`--queries` takes a single JSON object with `should_trigger` and `should_not_trigger` arrays (there is no `--negatives` flag).
 
 Iterate until F1 = 1.0 across the fixture set, then commit the pattern to `skill-patterns.sh`.
 
@@ -198,12 +199,9 @@ python3 distillery/scripts/distiller.py test-triggers --skill <name>
 # 3. Re-run validate-plugin without --component to confirm no DUPLICATE_TRIGGER
 #    or count-mismatch findings appear at the fleet level
 python3 distillery/scripts/distiller.py validate-plugin
-
-# 4. Update the manifest so staleness filtering knows about the new skill
-python3 scripts/generate-manifest.py
 ```
 
-Do not run `update-metadata.sh`, `mirror-to-ai-skills.sh`, or any release scripts — those are owned by `/release`.
+Do not run `generate-manifest.py`, `update-metadata.sh`, `mirror-to-ai-skills.sh`, or any release scripts — those are owned by `/release`. Running `generate-manifest.py` mid-work stamps the skill's hashes at the current (pre-bump) version, which makes ClawHub skip it at publish time; `/release` regenerates the manifest at the right moment.
 
 ## Phase 6: Report
 
@@ -212,7 +210,7 @@ Output four sections in this order:
 1. **Summary** — one line on what was created (skill name, class, trigger pattern).
 2. **Changes Made** — bulleted list of files created/modified with line counts.
 3. **Validation Results** — verbatim output of each gate above (PASS/FAIL with metrics).
-4. **Open Gaps** — anything the skill needs that this command did not cover (e.g., `references/` content, integration tests, semantic injection fixture in `tests/fixtures/semantic-triggers.jsonl`).
+4. **Open Gaps** — anything the skill needs that this command did not cover (e.g., `references/` content, integration tests, semantic injection fixture in `distillery/tests/fixtures/semantic-triggers.jsonl`).
 
 If validation surfaces fixable issues mid-flight (e.g., an overly-broad regex catching a negative case), fix and re-run rather than reporting failure. Reject completion if any HIGH-severity finding remains in `validate-plugin --component <name>` or if `test-triggers --skill <name>` fails.
 
@@ -224,5 +222,4 @@ Run `ia-verification-before-completion` before reporting done.
 - Trigger fixture has at least 5 positives and 5 negatives, F1 = 1.0.
 - Hook pattern registered and matches the fixture set.
 - `validate-plugin --component <name>` returns no HIGH findings.
-- Manifest updated.
-- No version bumps, README edits, or CHANGELOG entries (those belong to `/release`).
+- No version bumps, README edits, CHANGELOG entries, or manifest regeneration (those belong to `/release`).

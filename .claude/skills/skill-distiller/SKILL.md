@@ -197,9 +197,9 @@ Split rules:
 python3 distillery/scripts/distiller.py eval-triggers <name> --queries '{"should_trigger": [...], "should_not_trigger": [...]}'
 ```
 
-Review precision/recall/F1 metrics. If false negatives are high, the pattern needs more trigger terms. If false positives are high, the pattern is too broad. Iterate on the pattern in `skill-patterns.sh` until F1 >= 0.8.
+Review precision/recall/F1 metrics. If false negatives are high, the pattern needs more trigger terms. If false positives are high, the pattern is too broad. Iterate on the pattern in `skill-patterns.sh` until F1 = 1.0 — the `test-triggers` release gate rejects anything below F1 = 1.0, so 0.8 is not enough; keep tightening until every positive matches and every negative is rejected.
 
-Add the test queries to the regression fixture file at `distillery/tests/fixtures/triggers/<name>.jsonl` to lock in the improvement:
+Before appending to the regression fixture file at `distillery/tests/fixtures/triggers/<name>.jsonl`, confirm at least 5 `should_trigger` and 5 `should_not_trigger` queries all passing at F1 = 1.0 (the gate enforces both the 5+5 floors and F1 = 1.0):
 ```jsonl
 {"prompt": "...", "expect": true, "added_in": "<version>", "source": "distiller-eval"}
 ```

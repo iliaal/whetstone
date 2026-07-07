@@ -14,7 +14,7 @@ Review, label, and act on all open PRs for a repository using parallel review ag
 
 Detect repo context:
 - Current repo: !`gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "no repo detected"`
-- Current branch: !`git branch --show-current 2>/dev/null`
+- Default branch: !`gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || echo "unknown"`
 
 If `$ARGUMENTS` contains a GitHub URL or `owner/repo`, use that instead. Confirm the repo with the user if ambiguous.
 
@@ -37,9 +37,17 @@ Run these in parallel:
    gh label list --repo OWNER/REPO --limit 50
    ```
 
-4. **Check recent merges** (to detect duplicate/superseded PRs):
+4. **Check recent merges** (to detect duplicate/superseded PRs). Resolve the default branch first — do not assume `main`:
    ```bash
-   git log --oneline -20 main
+   DEFAULT_BRANCH=$(gh repo view --repo OWNER/REPO --json defaultBranchRef -q .defaultBranchRef.name)
+   ```
+   Only when the current working directory is a local clone of OWNER/REPO, read from local git:
+   ```bash
+   git log --oneline -20 "$DEFAULT_BRANCH"
+   ```
+   Otherwise (cwd is not that clone), pull recent commits from the API instead:
+   ```bash
+   gh api "repos/OWNER/REPO/commits?per_page=20" --jq '.[].commit.message | split("\n")[0]'
    ```
 
 ## Step 2: Batch PRs by Theme
@@ -49,7 +57,7 @@ Group PRs into review batches of 4-6 based on apparent type:
 - **Bug fixes** - titles with `fix`, `bug`, error descriptions
 - **Features** - titles with `feat`, `add`, new functionality
 - **Documentation** - titles with `docs`, `readme`, terminology
-- **Configuration/Setup** - titles with `config`, `ia-setup`, `install`
+- **Configuration/Setup** - titles with `config`, `setup`, `install`
 - **Stale/Old** - PRs older than 30 days
 
 ## Step 3: Parallel Review (Team of Agents)
@@ -178,7 +186,7 @@ After all PRs are reviewed:
 
 Use **AskUserQuestion**:
 
-1. **Run `/release-docs`** - Update documentation site if components changed
+1. **Run `/ia-document-release`** - Sync docs to what shipped if components changed
 2. **Run `/ia-changelog`** - Generate changelog for merged PRs
 3. **Commit any local changes** - If version bumps needed
 4. **Done** - Wrap up

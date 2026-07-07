@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Compare external skill/agent repos against the whetstone plugin.
 
-Catalogs components from any Claude Code plugin repo structure, finds overlaps
-with our plugin, and generates a structured markdown comparison report.
+Catalogs skills and agents from three supported repo layouts — (1) `skills/`
+and `agents/` at the repo root, (2) `plugins/<name>/skills|agents/`, and
+(3) `categories/<name>/<agent>.md` — finds overlaps with our plugin, and
+generates a structured markdown comparison report. Commands and other layouts
+are not scanned.
 
 Usage:
     # Compare all repos in a directory
@@ -212,8 +215,19 @@ def scan_repo(repo_path: Path) -> list[Component]:
 # Similarity matching
 # ---------------------------------------------------------------------------
 
+def strip_ia_prefix(name: str) -> str:
+    """Drop a leading `ia-` prefix so ours (`ia-debugging`) matches theirs (`debugging`).
+
+    The plugin namespaces every component `ia-*` (v4.0.0 rename); external repos
+    don't. Without this, exact-name matching never fires across the boundary.
+    """
+    return name[3:] if name.startswith("ia-") else name
+
+
 def name_similarity(a: str, b: str) -> float:
     """Simple word-overlap similarity between component names."""
+    a = strip_ia_prefix(a)
+    b = strip_ia_prefix(b)
     words_a = set(a.replace("-", " ").replace("_", " ").lower().split())
     words_b = set(b.replace("-", " ").replace("_", " ").lower().split())
     if not words_a or not words_b:
@@ -238,8 +252,8 @@ def combined_similarity(ours: Component, theirs: Component) -> float:
     """Weighted combination of name and keyword similarity."""
     ns = name_similarity(ours.name, theirs.name)
     ks = keyword_similarity(ours.keywords, theirs.keywords)
-    # Exact name match gets a bonus
-    if ours.name == theirs.name:
+    # Exact name match gets a bonus (compare with the ia- prefix stripped)
+    if strip_ia_prefix(ours.name) == strip_ia_prefix(theirs.name):
         ns = 1.0
     # Weight: name match is more reliable than keyword overlap
     return 0.6 * ns + 0.4 * ks
@@ -286,7 +300,7 @@ def find_unmatched(
     threshold: float = 0.15,
 ) -> list[Component]:
     """Find external components with no match in our plugin."""
-    our_names = {c.name for c in our_components}
+    our_names = {strip_ia_prefix(c.name) for c in our_components}
     unmatched = []
     for ext in external_components:
         best_sim = 0.0
@@ -295,7 +309,7 @@ def find_unmatched(
                 continue
             sim = combined_similarity(ours, ext)
             best_sim = max(best_sim, sim)
-        if best_sim < threshold and ext.name not in our_names:
+        if best_sim < threshold and strip_ia_prefix(ext.name) not in our_names:
             unmatched.append(ext)
     return unmatched
 
@@ -344,7 +358,10 @@ def generate_report(
         filtered = [c for c in components if not filter_kind or c.kind == filter_kind]
         skills = [c for c in filtered if c.kind == "skill"]
         agents = [c for c in filtered if c.kind == "agent"]
-        lines.append(f"- **{repo_name}**: {len(skills)} skills, {len(agents)} agents")
+        if not filtered:
+            lines.append(f"- **{repo_name}**: 0 components (layout not recognized)")
+        else:
+            lines.append(f"- **{repo_name}**: {len(skills)} skills, {len(agents)} agents")
     lines.append("")
 
     # Overlaps
@@ -517,6 +534,8 @@ def main() -> None:
     print(f"  Found {len(our_components)} components", file=sys.stderr)
     save_catalog(our_components, CACHE_DIR / "ours.json")
 
+    scanned_repo_names: list[str] | None = None
+
     if args.report_only:
         # Load from cache
         external_components = load_catalog(CACHE_DIR / "external.json")
@@ -568,6 +587,10 @@ def main() -> None:
             print(f"  Found {len(components)} components", file=sys.stderr)
             external_components.extend(components)
 
+        # Record every repo we scanned so 0-component repos still appear in the
+        # report (as "layout not recognized") instead of vanishing silently.
+        scanned_repo_names = [p.name for p in repo_paths]
+
         save_catalog(external_components, CACHE_DIR / "external.json")
 
     if args.catalog:
@@ -581,6 +604,9 @@ def main() -> None:
 
     # Group external by repo
     external_by_repo: dict[str, list[Component]] = {}
+    if scanned_repo_names:
+        for repo_name in scanned_repo_names:
+            external_by_repo.setdefault(repo_name, [])
     for c in external_components:
         repo_key = c.repo.split("/")[0] if "/" in c.repo else c.repo
         external_by_repo.setdefault(repo_key, []).append(c)

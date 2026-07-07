@@ -59,15 +59,15 @@ Ask: "Archive these entries? (all / pick by date / skip)"
 
 For approved entries:
 
-1. **Create archive file** if `$ARCHIVE` doesn't exist. Header template:
+1. **Create archive file** if `$ARCHIVE` doesn't exist. Header template (must match the on-disk `$ARCHIVE` exactly):
 
    ```markdown
-   # Compound Engineering Sync Log — Archive
+   # Whetstone Sync Log — Archive
 
-   Pruned entries from `whetstone-sync-log.md`. Each entry retains its original heading and body, with a prune footer noting the date and reason.
+   Pruned entries from `docs/audit/audit-log.md`. Each entry retains its original heading and body, with a prune footer noting the date and reason.
    ```
 
-2. **Move each approved entry** to `$ARCHIVE`. Append under the `# Compound Engineering Sync Log — Archive` heading (archive is not ordered, just a dumping ground for history).
+2. **Move each approved entry** to `$ARCHIVE`. Append under the `# Whetstone Sync Log — Archive` heading (archive is not ordered, just a dumping ground for history).
 
 3. **Append a prune footer** to each archived entry:
 
@@ -91,7 +91,7 @@ Report: "Pruned N entries. Live log now has M entries. Archive has K total."
 ## Constraints
 
 - Never delete entries without archiving — history is the point.
-- Never prune an entry younger than 30 days unless it has a stale reference.
+- Never prune an entry younger than 30 days unless it is stale-ref or superseded (both override the age floor, per the Phase 2 table).
 - Never prune without user approval.
 - If the live log is empty after pruning, leave the file structure (header + template + empty Log section) intact.
 - Do not rewrite or reformat entries during the move — preserve original wording so the archive remains a faithful record.

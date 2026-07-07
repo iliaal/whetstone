@@ -25,14 +25,13 @@ Read `$SYNC_LOG` in full before any analysis. Build an in-memory set of already-
 - **Previously deferred, exact match** — surface with a `PREVIOUSLY DEFERRED` tag and the original defer reason so the user can judge whether conditions have changed.
 - **No match** — present normally.
 
-While reading, also detect prune triggers. Emit a one-line reminder at the end of Phase 4 if any fire:
+While reading, also detect prune triggers. These three buckets match `/prune-sync-log`'s taxonomy exactly (a missing external repo is a stale-ref, not its own bucket). Emit a one-line reminder at the end of Phase 4 if any fire:
 
-- Any entry older than 30 days.
-- Any entry referencing a component that no longer exists under `$PLUGIN_DIR` (skill, agent, or command path missing).
-- Any entry referencing an external repo no longer present in `$REPOS_DIR`.
-- Any entry whose rejection reason duplicates a rule now in `MEMORY.md` (superseded).
+- **age** — any entry older than 30 days.
+- **stale-ref** — any entry referencing a component that no longer exists under `$PLUGIN_DIR` (skill, agent, or command path missing), OR an external repo no longer present in `$REPOS_DIR`.
+- **superseded** — any entry whose rejection reason duplicates a rule now in `MEMORY.md`.
 
-Reminder format: "Sync log has N prune candidates (age: X, stale-ref: Y, abandoned-source: Z, superseded: W) — run `/prune-sync-log`."
+Reminder format: "Sync log has N prune candidates (age: X, stale-ref: Y, superseded: Z) — run `/prune-sync-log`."
 
 If `$SYNC_LOG` doesn't exist, note it and continue — the post-apply step in Phase 5b creates it.
 
@@ -46,11 +45,19 @@ If `pull-all.sh` doesn't exist, `git pull` each repo directory individually.
 
 Launch `harvest-sessions` as a background subagent in parallel with Phase 2. This refreshes eval data so `discover-signals` (Phase 6) and `/audit-plugin` both operate on current session data.
 
+Use the absolute script path — the `cd ~/ai/repos` above leaves the shell outside the plugin repo, so a repo-relative `distillery/...` path would not resolve:
+
 ```bash
-python3 distillery/scripts/distiller.py harvest-sessions
+python3 /home/ilia/ai/whetstone/distillery/scripts/distiller.py harvest-sessions
 ```
 
 ## Phase 2: Inventory
+
+**Optional pre-pass — similarity report.** Before fanning out the per-repo subagents, `scripts/compare-repos.py` can generate a name/keyword similarity report (skills and agents only) to prioritize which repos and components the subagents examine first — high-similarity pairs are the likely-overlap candidates worth reading closely; repos flagged "layout not recognized" scanned to zero components and can be deprioritized. Invocation (writes the report to a temp path; the run also drops a scratch `.compare-cache/` at the repo root — do not commit it, remove it after):
+
+```bash
+python3 scripts/compare-repos.py --output /tmp/whetstone-cmp.md ~/ai/repos/*/
+```
 
 Build two inventories in parallel:
 
@@ -74,6 +81,8 @@ Every repo must be analyzed. Do not skip repos based on surface-level impression
 If `$ARGUMENTS` specifies a skill or repo, narrow scope to that.
 
 ## Phase 2b: Skills.sh marketplace scan
+
+**Skip gate.** Judge the delta since the last full marketplace scan from the decision log (the most recent entry whose Run context ran Phase 2b, not one that skipped it). Skip this phase on short-delta runs — under 14 days since that last full scan — because marketplace churn over a week or two is almost entirely SHA bumps and yields no net-new patterns. But run it at least every 4 weeks regardless of delta, so a long streak of short-delta syncs can't starve the scan indefinitely. When skipping, record it in the Phase 5b decision-log entry ("Phase 2b skipped — N-day delta, last full scan YYYY-MM-DD").
 
 For each existing skill in the plugin inventory, search for marketplace counterparts:
 
@@ -107,6 +116,8 @@ For each external skill, agent, command, or pattern found, classify:
 
 ### Additions (not covered by any existing component)
 
+**Default to extending an existing component.** Prefer folding the pattern into an existing skill/agent/command; classify ADD only when no existing component can reasonably absorb the content. A new component is the exception, not the reflex.
+
 New capability worth creating? Evaluate:
 - Does it fill a gap in the plugin's coverage?
 - Is the pattern general enough to be useful across projects?
@@ -114,6 +125,8 @@ New capability worth creating? Evaluate:
 - What component type fits best? Skill (ambient behavior), command (explicit invocation), or agent (specialized persona for subagent dispatch)?
 
 ### Improvements (strengthens an existing skill, agent, or command)
+
+**Read the target's full body before classifying anything IMPROVE or ADD.** A finding may not claim "not covered" from frontmatter, `MEMORY.md`, or the Phase 2 inventory summary — those describe the component, they don't prove a pattern is absent. Open the actual SKILL.md / agent / command and confirm the pattern is missing before recommending it.
 
 Specific patterns, rules, or techniques from external sources that would improve an existing component. Evaluate:
 - Is the content genuinely new (not already covered, even if worded differently)?
@@ -186,6 +199,8 @@ After user reviews findings:
 
 **Do not proceed without explicit approval.** Ask: "Which items should I apply? (all / pick by number / skip)"
 
+**Presentation vs application cadence.** The Phase 4 summary table is presented in one shot — that batch view is the map, and it does not violate the standing "present changes one at a time" rule. Application is where that rule applies: once the user picks items, walk the apply-decisions one finding at a time, showing each edit for review before the next, unless the user explicitly says "apply all".
+
 For approved items:
 1. Read the target skill/agent/command fully before editing
 2. Make surgical edits — add content, don't restructure
@@ -218,12 +233,16 @@ If a rejection reason generalizes to "we never do X because Y", also propose pro
 
 ## Phase 6: Discover new signals and outcome anomalies
 
+**Confirm the Phase 1 background harvest finished successfully before running either analysis** — both read the eval data it produces. Check the background subagent's exit status; if the harvest failed or is still running, either wait for it or state plainly in the output that discover-signals/analyze-outcomes ran on stale (pre-sync) eval data and the results may be incomplete.
+
 Run signal discovery and outcome analysis on the freshly harvested data:
 
 ```bash
 python3 distillery/scripts/distiller.py discover-signals --top 20
 python3 distillery/scripts/distiller.py analyze-outcomes
 ```
+
+**Thin-yield caveat (post-2026-07-07 harvests).** Positive signal now requires 2+ typed user messages, so most recent sessions harvest as `ambiguous` rather than positive/negative. Expect both analyses to surface less than they did on older data. Treat sparse output as expected, not as "nothing wrong", and quote raw counts (N sessions, M flagged) in any anomaly finding so a small absolute number isn't dressed up as a rate.
 
 **discover-signals**: Surfaces new patterns of user dissatisfaction not yet captured by `_NEGATIVE_SIGNAL_PATTERNS`. If candidates are found, present them for review. For confirmed patterns, promote to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py` so future harvests classify them correctly.
 

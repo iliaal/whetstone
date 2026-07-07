@@ -165,9 +165,8 @@ def compose_thread(tweets: list[dict], profile: str):
     pw, browser, context, page = connect(profile)
 
     if not check_login(page):
-        print("Not logged in. Opening login page.")
-        page.goto("https://x.com/login", wait_until="domcontentloaded")
-        print("Log in to X, then re-run the script.")
+        print("Not logged in. Log in to X in the Edge window, then re-run the script.")
+        page.close()  # script-owned probe tab (connect(new_page=True)); safe to close
         pw.stop()
         sys.exit(1)
 
@@ -175,30 +174,50 @@ def compose_thread(tweets: list[dict], profile: str):
     page.goto(COMPOSE_URL, wait_until="domcontentloaded")
     time.sleep(3)
 
-    for idx, item in enumerate(tweets):
-        textarea_id = f"tweetTextarea_{idx}"
-        editor = page.locator(f'[data-testid="{textarea_id}"]').first
-        editor.wait_for(timeout=10000)
-        editor.click()
-        time.sleep(0.5)
-
-        lines = item["text"].split("\n")
-        for i, line in enumerate(lines):
-            page.keyboard.type(line, delay=12)
-            if i < len(lines) - 1:
-                page.keyboard.press("Enter")
-
-        print(f"  [{idx + 1}/{len(tweets)}] Typed ({len(item['text'])} chars)")
-
-        if item["images"]:
-            attach_images(page, idx, item["images"])
-
-        if idx < len(tweets) - 1:
+    current = 0
+    try:
+        for idx, item in enumerate(tweets):
+            current = idx + 1
+            textarea_id = f"tweetTextarea_{idx}"
+            editor = page.locator(f'[data-testid="{textarea_id}"]').first
+            editor.wait_for(timeout=10000)
+            editor.click()
             time.sleep(0.5)
-            add_btn = page.locator('[data-testid="addButton"]').first
-            add_btn.wait_for(timeout=5000)
-            add_btn.click()
-            time.sleep(1)
+
+            # Clear any draft X auto-restored into this box; a leftover thread
+            # draft would otherwise merge with what we type and mangle the post.
+            page.keyboard.press("Control+a")
+            page.keyboard.press("Delete")
+
+            lines = item["text"].split("\n")
+            for i, line in enumerate(lines):
+                page.keyboard.type(line, delay=12)
+                if i < len(lines) - 1:
+                    page.keyboard.press("Enter")
+
+            print(f"  [{idx + 1}/{len(tweets)}] Typed ({len(item['text'])} chars)")
+
+            if item["images"]:
+                attach_images(page, idx, item["images"])
+
+            if idx < len(tweets) - 1:
+                time.sleep(0.5)
+                add_btn = page.locator('[data-testid="addButton"]').first
+                add_btn.wait_for(timeout=5000)
+                add_btn.click()
+                time.sleep(1)
+    except PwTimeout:
+        print(
+            f"\nError: compose failed at tweet {current} of {len(tweets)} "
+            "(timed out mid-compose).",
+            file=sys.stderr,
+        )
+        print(
+            "Discard the draft in the Edge window before re-running.",
+            file=sys.stderr,
+        )
+        pw.stop()
+        sys.exit(1)
 
     print(f"\nAll {len(tweets)} tweets composed. Review in browser and click Post when ready.")
     pw.stop()

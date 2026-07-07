@@ -15,7 +15,7 @@ PLUGIN_DIR=plugins/whetstone
 SYNC_LOG=docs/audit/audit-log.md
 ```
 
-If `$ARGUMENTS` specifies a name or category, narrow to that. Otherwise audit everything.
+If `$ARGUMENTS` specifies a name or category, narrow to that. Otherwise audit everything. Normalize component names to the `ia-` prefix before using them as `--skill`/`--component` filters (e.g. `debugging` → `ia-debugging`). Exit code 2 from those commands means the filter matched nothing — almost always a missing prefix — not a validation failure; re-run with the prefixed name.
 
 **Reactive mode:** If invoked after a skill/agent failed during use, detect the failing component from conversation context and focus the audit on that component first.
 
@@ -45,6 +45,7 @@ Run the full deterministic validation pass first. This replaces manual inventory
 ```bash
 python3 distillery/scripts/distiller.py validate-plugin
 python3 distillery/scripts/distiller.py test-triggers
+python3 distillery/scripts/distiller.py budget --check-all   # advisory
 ```
 
 `validate-plugin` checks every skill, agent, and command for:
@@ -58,6 +59,8 @@ python3 distillery/scripts/distiller.py test-triggers
 The output is a structured JSON report with inventory counts and per-component findings sorted by severity. Include all findings in the Phase 3 presentation alongside AI-generated findings.
 
 `test-triggers` runs the regex regression suite. Include any failing skills as HIGH severity.
+
+`budget --check-all` compares each skill's recorded turn-count/tool-variety baseline against current aggregates and surfaces silent skill bloat. Advisory only — do not block on it, but include any flagged skills as MEDIUM findings in the Phase 3 table (it currently surfaces real findings).
 
 ## Phase 1b: PluginEval scoring
 
@@ -132,7 +135,7 @@ Check every agent-skill, agent-command, and skill-command pair for:
 | Persona without perspective | Agent body is generic instructions that any skill could provide. An agent must add a unique perspective (specialized role, constrained scope, output format, tool restrictions) beyond what the referenced skill already covers. |
 | Overly broad tools | Purely analytical agents (reviewers, analyzers, researchers) that could work with read-only tools but inherit full write permissions. Flag agents whose job is analysis but who could accidentally write files. |
 | Missing `description:` trigger phrases | Agent description doesn't clearly state when it should be invoked. Compare against similar agents for trigger differentiation. |
-| Category misplacement | Agent filed under wrong category directory (e.g., a review agent in `workflow/` or a research agent in `review/`). |
+| Naming convention | Agents are flat (no category subdirectories) since v4.0.0. Flag any agent file that lacks the `ia-` prefix, or whose `name:` frontmatter does not match its filename stem. |
 
 ### Command-specific checks
 
@@ -157,10 +160,10 @@ Check every agent-skill, agent-command, and skill-command pair for:
 |-------|--------|
 | Description keyword gaps | Skill or command description missing obvious synonyms or alternate phrasings a user might say. Compare the description's trigger phrases against the component's actual domain. E.g., a "writing-tests" skill whose description says "tests" but not "specs", "assertions", "coverage", or "test suite". |
 | Trigger pattern accuracy | For skills with patterns in `hooks/skill-patterns.sh`, run `python3 distillery/scripts/distiller.py eval-triggers <name>` with 3-5 should-trigger and 3-5 should-not-trigger queries. Flag patterns with F1 < 0.8. |
-| Injection misfires | Run `python3 distillery/scripts/distiller.py analyze-misfires` (uses eval data from Phase 0 harvest). Skills with misfire rate > 20% have overly broad patterns. Include misfire findings as HIGH severity with the skill name, misfire rate, irrelevant task samples, and suggested regex tightening. |
+| Injection misfires | Run `python3 distillery/scripts/distiller.py analyze-misfires`. It reads eval data from `distillery/.eval-data`, populated by `/sync-from-repos` Phase 1 (not this command — this command's Phase 0 is the decision-log read). If `/sync-from-repos` hasn't run since the last release, the data is stale: check `stat -c '%y' distillery/.eval-data` and, if old, run `python3 distillery/scripts/distiller.py harvest-sessions` first. Skills with misfire rate > 20% have overly broad patterns. Include misfire findings as HIGH severity with the skill name, misfire rate, irrelevant task samples, and suggested regex tightening. |
 | Trigger overlap (static) | Run `python3 scripts/check-trigger-overlap.py`. Static Jaccard over trigger-regex vocabulary — surfaces skill pairs competing for the same phrases *before* any session data exists, complementing the post-hoc misfire check above. `[same-tier]` pairs (the `ia-` language family sharing stack keywords) are expected; treat unflagged `[CROSS-TIER]` pairs as candidates for tighter, more distinctive triggers. Advisory, MEDIUM at most. |
-| Project-context anomalies | Run `python3 distillery/scripts/distiller.py analyze-outcomes`. Skills whose negative rate in a specific project exceeds the global average by >10pp are underperforming in that context. Include anomalies as MEDIUM severity with skill name, project, negative rate, global rate, and delta. Cross-reference with project-type constraints in `skill-patterns.sh` -- if a skill lacks a constraint that would prevent the misfire, recommend adding one. |
-| Negative signal diagnosis (sub-agent, no API cost) | For skills with a high ratio of negative-signal sessions (>30% of examples), run the diagnosis judge in-session: `distiller.py diagnose-negatives <skill> --emit-prompt` → dispatch ONE sub-agent with the returned `prompt` → `distiller.py diagnose-negatives <skill> --format-result --response @<file>`. Include the diagnosed failure patterns and suggested skill text improvements as MEDIUM/HIGH findings. Catches skills injected correctly but producing poor output. |
+| Project-context anomalies | Run `python3 distillery/scripts/distiller.py analyze-outcomes`. Skills whose negative rate in a specific project exceeds the global average by >10pp are underperforming in that context. Include anomalies as MEDIUM severity with skill name, project, negative rate, global rate, and delta — **carry the raw counts, not just the rates**. Under the 2026-07-07 signal semantics negatives are rare, so a single negative in a small sample (1 in N=5) trips the >10pp gate while meaning little; the raw `Neg` / `N` counts are what tell a real problem from small-sample noise. Cross-reference with project-type constraints in `skill-patterns.sh` -- if a skill lacks a constraint that would prevent the misfire, recommend adding one. |
+| Negative signal diagnosis (sub-agent, no API cost) | Gate on **absolute negative count, not ratio**. Under the 2026-07-07 signal semantics (subagent sessions are ambiguous unless they carry 2+ typed messages; negatives come only from genuine typed corrections) the live max negative ratio is ~2.8%, so the old ">30% of examples" gate never fires. Instead, run this for any skill whose `analyze-outcomes` `Neg` column shows **>= 2 negatives**. Negatives are now rare-but-genuine — 2 real ones is worth a look. Run the diagnosis judge in-session: `distiller.py diagnose-negatives <skill> --emit-prompt` → **check the emitted JSON**: if `prompt` is `null` (i.e. `count` 0), skip the sub-agent dispatch — there is nothing to diagnose. Otherwise dispatch ONE sub-agent with the returned `prompt` → `distiller.py diagnose-negatives <skill> --format-result --response @<file>`. Include the diagnosed failure patterns and suggested skill text improvements as MEDIUM/HIGH findings. Catches skills injected correctly but producing poor output. |
 
 ### Prompt-injection / supply-chain (advisory)
 
@@ -206,6 +209,8 @@ Present consolidation proposals separately from quality findings: "These N compo
 
 ## Phase 3: Present findings
 
+**Run Phase 4 (stress-test findings) before rendering the table below.** Despite the numbering, the stress-test pass filters the finding set that this phase presents — apply it first, then present only the survivors here.
+
 Sort by impact. Single table:
 
 ```
@@ -239,7 +244,7 @@ Ask: "Which items should I fix? (all / by number / high-only / skip)"
 For approved items:
 - Read the full target file before editing
 - Make surgical edits — fix the specific issue, don't restructure
-- After all edits, run `python3 distillery/scripts/distiller.py validate <name>` on modified distilled skills
+- After all edits, re-validate each modified component. For **plugin** components (skills/agents/commands under `plugins/whetstone/`, which carry the `ia-` prefix) run `python3 distillery/scripts/distiller.py validate-plugin --component <ia-name>` — exit 2 means the name didn't match (wrong/missing prefix), not a validation failure; fix the name and re-run. Reserve `python3 distillery/scripts/distiller.py validate <name>` for skills that actually live under `distillery/generated-skills/` (unprefixed dirs) — running it on a plugin component returns a false-FAIL 0/7.
 - Run `bash scripts/update-metadata.sh` if components were added/removed
 
 ## Phase 5b: Append to decision log
@@ -269,10 +274,10 @@ If a rejection reason generalizes to a reusable rule, propose promoting it to a 
 
 After applying fixes, run the verification chain (stop on first failure):
 
-1. **Validate modified skills** — `python3 distillery/scripts/distiller.py validate <name>` for each changed distilled skill. All must pass 7/7 gates.
+1. **Validate modified components** — for each changed **plugin** component run `python3 distillery/scripts/distiller.py validate-plugin --component <ia-name>` (exit 2 = wrong/missing-prefix name, not a failure; treat 0 findings as pass). Use `python3 distillery/scripts/distiller.py validate <name>` (7/7 gates) only for skills under `distillery/generated-skills/` — it false-FAILs 0/7 on plugin components.
 2. **Trigger regression tests** — `python3 distillery/scripts/distiller.py test-triggers`. All skills must pass. If a pattern was modified, update fixtures in `distillery/tests/fixtures/triggers/<skill>.jsonl`.
 3. **JSON integrity** — `jq . .claude-plugin/marketplace.json && jq . plugins/whetstone/.claude-plugin/plugin.json`
-4. **Cross-reference check** — grep all modified files for references to other skills/agents/commands. Verify each target exists.
+4. **Cross-reference check** — run `bash scripts/validate-cross-refs.sh`. It checks that every agent/command/skill reference across plugin files points at a component that exists. Fix any broken reference it reports.
 5. **Token budget check** — `python3 distillery/scripts/distiller.py token-count <file>` for each modified skill. Flag any above 4K tokens.
 6. **Diff review** — `git diff` on all modified files. Confirm changes match approved items only, no unintended edits.
 

@@ -3369,6 +3369,18 @@ def build_golden(skill_name, top_n=20, auto=False):
                 f.write(json.dumps(c) + "\n")
         out_path = golden_path
         print(f"Wrote {len(candidates)} auto-labeled examples → {golden_path}", file=sys.stderr)
+        amb = sum(1 for c in candidates if c["label"] == "ambiguous")
+        if candidates and amb / len(candidates) > 0.5:
+            print(
+                f"WARNING: {amb}/{len(candidates)} auto-labeled examples are 'ambiguous' "
+                f"({amb / len(candidates) * 100:.0f}%). Ambiguous means no typed user outcome "
+                "(the normal case for subagent sessions), NOT a graded result. approve-golden "
+                "hard-errors on 'ambiguous', and an ambiguous-dominated golden set drives GEPA "
+                "to degenerate results. Prefer the human-label path: run build-golden WITHOUT "
+                "--auto, edit candidates.jsonl labels to positive/negative/skip, then run "
+                "approve-golden.",
+                file=sys.stderr,
+            )
     else:
         out_path = candidates_path
         print(f"Wrote {len(candidates)} candidates for review → {candidates_path}", file=sys.stderr)
@@ -4157,14 +4169,24 @@ def _dspy_dataset_path(skill_name, dataset):
     return Path(dataset)
 
 
-def _dspy_load_and_sample(skill_name, dataset, max_examples):
+def _dspy_load_and_sample(skill_name, dataset, max_examples, skill_file=None):
     """Load skill text + relevance-filtered, signal-balanced sample. Shared by the
     direct and sub-agent paths so both score the identical example set. Hard-exits
-    on missing skill/dataset/examples. Returns (skill_text, sampled, dataset_path)."""
-    skill_path = _find_skill_path(skill_name)
-    if not skill_path:
-        print(f"Error: skill '{skill_name}' not found in plugin or generated-skills", file=sys.stderr)
-        sys.exit(1)
+    on missing skill/dataset/examples. Returns (skill_text, sampled, dataset_path).
+
+    skill_file: optional path overriding the skill-body source (e.g. an
+    evolved-SKILL.md candidate). Relevance filtering still keys off skill_name's
+    live keywords so both baseline and evolved score the identical example set."""
+    if skill_file is not None:
+        skill_path = Path(skill_file)
+        if not skill_path.exists():
+            print(f"Error: --skill-file not found at {skill_path}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        skill_path = _find_skill_path(skill_name)
+        if not skill_path:
+            print(f"Error: skill '{skill_name}' not found in plugin or generated-skills", file=sys.stderr)
+            sys.exit(1)
     skill_text = skill_path.read_text()
     print(f"Loaded skill: {skill_path}", file=sys.stderr)
 
@@ -4184,7 +4206,16 @@ def _dspy_load_and_sample(skill_name, dataset, max_examples):
         print(f"Error: no examples in {dataset_path}", file=sys.stderr)
         sys.exit(1)
 
-    skill_keywords = _extract_skill_keywords(skill_text)
+    # Relevance keys off the LIVE skill's keywords even when --skill-file
+    # overrides the body, so baseline and evolved runs sample the identical
+    # example set (an honest before/after comparison). Fall back to the
+    # overriding text only if the live skill is not on disk.
+    keyword_source = skill_text
+    if skill_file is not None:
+        live_path = _find_skill_path(skill_name)
+        if live_path:
+            keyword_source = live_path.read_text()
+    skill_keywords = _extract_skill_keywords(keyword_source)
     relevant = []
     irrelevant = 0
     for ex in examples:
@@ -4250,11 +4281,13 @@ def _dspy_aggregate(skill_name, scored, backend, eval_model, dataset_path_str, t
     return result
 
 
-def dspy_emit_tasks(skill_name, dataset="sessions", max_examples=20):
+def dspy_emit_tasks(skill_name, dataset="sessions", max_examples=20, skill_file=None):
     """Sub-agent path step 1: emit per-example judge prompts as JSON (no LLM call).
     Each task carries the example's index/signal/session_id/skill_version so the
-    verdicts can be reassembled by dspy_score_from_verdicts."""
-    skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples)
+    verdicts can be reassembled by dspy_score_from_verdicts.
+
+    skill_file overrides the skill body scored (e.g. an evolved candidate)."""
+    skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples, skill_file)
     tasks = []
     for i, ex in enumerate(sampled):
         task_input = ex.get("task_input", "")
@@ -4296,7 +4329,7 @@ def dspy_score_from_verdicts(skill_name, verdicts, dataset="sessions"):
     return _dspy_aggregate(skill_name, scored, "subagent", "session-subagent", str(dataset_path), 0, 0.0)
 
 
-def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backend="claude-cli"):
+def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backend="claude-cli", skill_file=None):
     """Score a skill's effectiveness using LLM-as-judge on harvested eval data.
 
     Loads the skill's SKILL.md and eval dataset, sends each example to the judge
@@ -4307,7 +4340,9 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
         dataset: "sessions" for harvested data, or path to a custom JSONL file
         max_examples: max examples to score (default 20, controls cost)
         model: override eval model (default depends on backend)
-        backend: "openrouter" (DeepSeek V3.2) or "claude-cli" (Opus 4.7 via claude -p)
+        backend: "openrouter" (DeepSeek V3.2) or "claude-cli" (via claude -p)
+        skill_file: optional path overriding the skill body scored (e.g. an
+            evolved-SKILL.md candidate); relevance still keys off the live skill
 
     Returns dict with per-example scores and aggregated metrics.
     """
@@ -4320,7 +4355,7 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
             print("Error: OPENROUTER_API_KEY not set in .env", file=sys.stderr)
             sys.exit(1)
 
-    skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples)
+    skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples, skill_file)
 
     # Configure model and backend
     if use_cli:
@@ -5261,6 +5296,8 @@ def build_parser():
     p_eval.add_argument("--dataset", default="sessions", help="Dataset: 'sessions', 'golden', or path to JSONL (default: sessions)")
     p_eval.add_argument("--max-examples", type=int, default=20, help="Max examples to score (default: 20)")
     p_eval.add_argument("--model", default=None, help=f"Override eval model (default depends on backend)")
+    p_eval.add_argument("--skill-file", default=None,
+                        help="Score this SKILL.md instead of the live skill (e.g. .eval-data/<skill>/evolved-SKILL.md for a baseline-vs-evolved comparison); errors if the path is missing")
     # Mutually exclusive run modes: direct-LLM (--backend), emit sub-agent tasks
     # (--emit-tasks), or aggregate sub-agent verdicts (--score-from-verdicts).
     # Combining them silently ran a wrong mode and ignored the others.
@@ -5511,7 +5548,7 @@ def main():
         print(json.dumps(report, indent=2))
 
     elif args.command == "dspy-eval" and args.emit_tasks:
-        print(json.dumps(dspy_emit_tasks(args.name, args.dataset, args.max_examples), indent=2))
+        print(json.dumps(dspy_emit_tasks(args.name, args.dataset, args.max_examples, args.skill_file), indent=2))
 
     elif args.command == "dspy-eval" and args.score_from_verdicts is not None:
         raw = args.score_from_verdicts
@@ -5524,7 +5561,7 @@ def main():
         print(json.dumps(report, indent=2))
 
     elif args.command == "dspy-eval":
-        report = dspy_eval(args.name, args.dataset, args.max_examples, args.model, args.backend)
+        report = dspy_eval(args.name, args.dataset, args.max_examples, args.model, args.backend, args.skill_file)
         previous = _save_eval_history(report)
         for line in _format_eval_comparison(report, previous):
             print(line, file=sys.stderr)
@@ -5568,7 +5605,15 @@ def main():
         print(json.dumps(report, indent=2))
 
     elif args.command == "diagnose-negatives" and args.emit_prompt:
-        print(json.dumps(diagnose_emit_prompt(args.name, args.max_examples, args.include_stale), indent=2))
+        emitted = diagnose_emit_prompt(args.name, args.max_examples, args.include_stale)
+        if emitted.get("count", 0) == 0 or emitted.get("prompt") is None:
+            print(
+                f"0 negative examples for '{args.name}'; nothing to diagnose — do not dispatch "
+                "a sub-agent (the prompt is null). Post-2026-07-07 negatives are typed-correction "
+                "only, so 0 is common; retry with --include-stale to inspect historical negatives.",
+                file=sys.stderr,
+            )
+        print(json.dumps(emitted, indent=2))
 
     elif args.command == "diagnose-negatives" and args.format_result:
         if not args.response:

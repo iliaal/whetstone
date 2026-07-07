@@ -653,8 +653,12 @@ class TestValidate:
     def test_body_over_1k_is_warning(self, tmp_project):
         skill_dir = tmp_project / "generated-skills" / "medium"
         skill_dir.mkdir()
+        # "word " counts ~1 token under cl100k but ~1.25 under the char-based
+        # fallback; 1200 repeats exceeds the 1K warning threshold under BOTH
+        # (and stays under the 4K hard cap) so the result doesn't depend on
+        # whether tiktoken's encoding loads in the test environment.
         (skill_dir / "SKILL.md").write_text(
-            "---\nname: medium\ndescription: Short.\n---\n\n# Content\n\n" + "word " * 840
+            "---\nname: medium\ndescription: Short.\n---\n\n# Content\n\n" + "word " * 1200
         )
         (skill_dir / "manifest.json").write_text('{"search_queries":["a"],"sources":[{"id":"a/b/c","sha1":"x"}]}')
         result = distiller.validate("medium")
@@ -2926,6 +2930,160 @@ class TestBuildAndApproveGolden:
         rows = [json.loads(l) for l in golden.read_text().splitlines() if l.strip()]
         assert rows
         assert all(r["signal"] == "negative" for r in rows)
+
+
+class TestDspyEvalSkillFileOverride:
+    """--skill-file overrides the scored body (evolve-skill Step 6 baseline-vs-
+    evolved). Without it the comparison re-measured the live skill twice."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path, monkeypatch):
+        self.tmp = tmp_path
+        self.eval_dir = tmp_path / ".eval-data"
+        self.eval_dir.mkdir()
+        self.generated = tmp_path / "generated-skills"
+        self.generated.mkdir()
+        plugin = tmp_path / "plugin"
+        (plugin / "skills").mkdir(parents=True)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", self.eval_dir)
+        monkeypatch.setattr(distiller, "GENERATED_DIR", self.generated)
+        monkeypatch.setattr(distiller, "PLUGIN_DIR", plugin)
+        skill_dir = self.generated / "widget-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: widget-skill\n"
+            "description: Widget calibration harness tuning and diagnostics.\n"
+            "---\n\n# Widget Skill\n\nBASELINE BODY: calibrate the widget harness.\n"
+        )
+        examples = [{
+            "task_input": "widget calibration harness needs tuning",
+            "agent_output": "adjusted the widget harness calibration " * 20,
+            "signal": "positive", "tools_used": ["Edit"], "turn_count": 6,
+            "project": "proj", "session_id": "s1", "skill_version": "2.0.0",
+            "model_id": "claude-opus-4-8",
+        }]
+        _write_session_examples(self.eval_dir, "widget-skill", examples)
+
+    def test_emit_tasks_uses_override_body(self):
+        evolved = self.tmp / "evolved-SKILL.md"
+        evolved.write_text(
+            "---\nname: widget-skill\n"
+            "description: Widget calibration harness tuning and diagnostics.\n"
+            "---\n\n# Widget Skill\n\nEVOLVED BODY: recalibrate the widget harness precisely.\n"
+        )
+        out = distiller.dspy_emit_tasks("widget-skill", dataset="sessions",
+                                        max_examples=4, skill_file=str(evolved))
+        assert out["count"] == 1
+        assert "EVOLVED BODY" in out["tasks"][0]["prompt"]
+        assert "BASELINE BODY" not in out["tasks"][0]["prompt"]
+
+    def test_emit_tasks_without_override_uses_live_body(self):
+        out = distiller.dspy_emit_tasks("widget-skill", dataset="sessions", max_examples=4)
+        assert "BASELINE BODY" in out["tasks"][0]["prompt"]
+
+    def test_missing_skill_file_hard_errors(self):
+        with pytest.raises(SystemExit):
+            distiller.dspy_emit_tasks("widget-skill", dataset="sessions",
+                                      max_examples=4, skill_file=str(self.tmp / "nope.md"))
+
+    def test_skill_file_arg_parsed(self):
+        parser = distiller.build_parser()
+        args = parser.parse_args(["dspy-eval", "widget-skill", "--emit-tasks",
+                                  "--skill-file", "x/evolved-SKILL.md"])
+        assert args.skill_file == "x/evolved-SKILL.md"
+
+
+class TestBuildGoldenAmbiguousWarning:
+    """build-golden --auto on ambiguous-dominated data warns (approve-golden
+    hard-errors on 'ambiguous'; ambiguous golden -> degenerate GEPA)."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path, monkeypatch):
+        self.eval_dir = tmp_path / ".eval-data"
+        self.eval_dir.mkdir()
+        self.generated = tmp_path / "generated-skills"
+        self.generated.mkdir()
+        plugin = tmp_path / "plugin"
+        (plugin / "skills").mkdir(parents=True)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", self.eval_dir)
+        monkeypatch.setattr(distiller, "GENERATED_DIR", self.generated)
+        monkeypatch.setattr(distiller, "PLUGIN_DIR", plugin)
+        skill_dir = self.generated / "widget-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: widget-skill\n"
+            "description: Widget calibration harness tuning and diagnostics.\n"
+            "---\n\n# Widget Skill\n\nCalibrate the widget harness.\n"
+        )
+
+    def _sessions(self, signals):
+        examples = []
+        for i, sig in enumerate(signals):
+            examples.append({
+                "task_input": "widget calibration harness needs tuning",
+                "agent_output": "adjusted the widget harness calibration " * 20,
+                "signal": sig, "tools_used": ["Edit"], "turn_count": 6,
+                "project": "proj", "session_id": f"s{i}", "skill_version": "2.0.0",
+                "model_id": "claude-opus-4-8",
+            })
+        _write_session_examples(self.eval_dir, "widget-skill", examples)
+
+    def test_warns_when_majority_ambiguous(self, capsys):
+        self._sessions(["ambiguous", "ambiguous", "ambiguous", "positive"])
+        distiller.build_golden("widget-skill", top_n=4, auto=True)
+        err = capsys.readouterr().err
+        assert "WARNING" in err and "ambiguous" in err
+
+    def test_no_warning_when_labels_graded(self, capsys):
+        self._sessions(["positive", "positive", "negative", "negative"])
+        distiller.build_golden("widget-skill", top_n=4, auto=True)
+        err = capsys.readouterr().err
+        assert "WARNING" not in err
+
+
+class TestDiagnoseEmitPromptNoNegatives:
+    """diagnose-negatives --emit-prompt with 0 negatives must print a stderr
+    guard so a literal executor does not dispatch a sub-agent with a null prompt."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path, monkeypatch):
+        self.eval_dir = tmp_path / ".eval-data"
+        self.eval_dir.mkdir()
+        self.generated = tmp_path / "generated-skills"
+        self.generated.mkdir()
+        plugin = tmp_path / "plugin"
+        (plugin / "skills").mkdir(parents=True)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", self.eval_dir)
+        monkeypatch.setattr(distiller, "GENERATED_DIR", self.generated)
+        monkeypatch.setattr(distiller, "PLUGIN_DIR", plugin)
+        monkeypatch.setattr(distiller, "MANIFEST_PATH", tmp_path / ".skill-versions.json")
+        skill_dir = self.generated / "widget-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: widget-skill\n"
+            "description: Widget calibration harness tuning and diagnostics.\n"
+            "---\n\n# Widget Skill\n\nCalibrate the widget harness.\n"
+        )
+        # Sessions with NO negative signal.
+        _write_session_examples(self.eval_dir, "widget-skill", [{
+            "task_input": "widget calibration harness needs tuning",
+            "agent_output": "adjusted the widget harness", "signal": "positive",
+            "tools_used": [], "turn_count": 5, "project": "proj",
+            "session_id": "s1", "skill_version": "2.0.0", "model_id": "claude-opus-4-8",
+        }])
+
+    def test_emit_prompt_zero_negatives_returns_null(self):
+        out = distiller.diagnose_emit_prompt("widget-skill", max_examples=10)
+        assert out["count"] == 0
+        assert out["prompt"] is None
+
+    def test_dispatch_prints_stderr_guard(self, capsys, monkeypatch):
+        monkeypatch.setattr(sys, "argv",
+                            ["distiller.py", "diagnose-negatives", "widget-skill", "--emit-prompt"])
+        distiller.main()
+        err = capsys.readouterr().err
+        assert "0 negative examples" in err
+        assert "do not dispatch" in err
 
 
 class TestSyntheticJudgeTemplates:

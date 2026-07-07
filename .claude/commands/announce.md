@@ -26,9 +26,9 @@ Also check `~/ai/promotion/announcement-matrix.md` for the whetstone row. If `La
 ## Step 1: Gather context
 
 1. Read the current version from `plugins/whetstone/.claude-plugin/plugin.json`
-2. Read CHANGELOG.md -- extract entries for the version being announced (default: current version). If multiple versions were released in the same session, combine them into one announcement.
-3. Get the ai-skills repo version: `cd ~/ai/ai-skills && git log --oneline -1 && cd -`
-4. Count components: `bash scripts/update-metadata.sh`
+2. Read CHANGELOG.md -- combine ALL entries newer than the matrix's `Last announced` version for X (from `~/ai/promotion/announcement-matrix.md`, read in Step 0) into one announcement. The announcement covers the full gap, not just the newest version: the matrix can lag several versions behind current, and every unannounced version's user-visible changes belong in this post. If `Last announced` already equals the current version, there is nothing new to announce (see Step 0).
+3. Get the ai-skills repo version from its sync commit: `cd ~/ai/ai-skills && git log --oneline --grep '^sync: v' -1 && cd -`
+4. Count components (read-only, no writes): `bash scripts/update-metadata.sh --dry-run`
 
 ## Step 2: Draft the post
 
@@ -118,7 +118,9 @@ After user approves the thread, draft it into X for manual review and posting. C
    ```bash
    python3 scripts/post-thread.py ~/ai/whetstone/.announce/thread-vX.Y.Z.json
    ```
-   The script auto-launches the profile if needed and detects login state. If not logged in, it opens the login page and exits -- log in, then re-run.
+   The script auto-launches the profile if needed and detects login state. If not logged in, it closes its probe tab and exits -- log in to X in the Edge window, then re-run.
+
+   If the script reports `compose failed at tweet N`, it timed out mid-compose. Discard the partial draft in the Edge window (close the compose dialog and choose Discard) before re-running -- otherwise X restores the half-typed draft and the next run can produce a mangled thread.
 4. Tell the user the draft is ready and to review + click Post in the Edge window.
 
 Different profiles on different CDP ports run in parallel. The `pinescript` profile on 9229 can stay open while `compound-engineering` runs on 9225.

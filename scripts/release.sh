@@ -69,6 +69,16 @@ else
 fi
 
 echo "[Pre-commit] Generating skill change manifest..."
+# Reset the manifest baseline to the last released state before regenerating.
+# generate-manifest.py preserves content_changed when the working-tree manifest
+# already records the new content hash; a mid-work regen thus freezes changed
+# skills at the OLD version and publish-clawhub.sh false-skips them (shipped
+# broken in v4.1.4). Baselining off the last release tag guarantees any skill
+# changed since that tag stamps the current version.
+last_release_tag="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+if [[ -n "$last_release_tag" ]]; then
+  git show "$last_release_tag:distillery/.skill-versions.json" > distillery/.skill-versions.json 2>/dev/null || true
+fi
 python3 "$SCRIPT_DIR/generate-manifest.py"
 echo "  Manifest updated"
 
@@ -140,8 +150,10 @@ bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
 echo "  Syncing changelog..."
 # Build allowlist from actual skill directories (longest names first to avoid prefix conflicts)
 skill_names=$(ls -1 "$ROOT_DIR/plugins/whetstone/skills" | awk '{print length, $0}' | sort -rn | awk '{print $2}' | tr '\n' '|' | sed 's/|$//')
-# Keep ### headers and lines referencing known skills
-skill_notes=$(printf '%s\n' "$release_notes" | grep -E "^### |^- \*\*(${skill_names})(\*\*|/)" || true)
+# Keep ### headers and lines referencing known skills. Bullets use the backtick
+# form (- `ia-foo`: ...); also match the legacy bold form (- **ia-foo**) so old
+# entries still sync. A format change that stops matching trips the WARNING below.
+skill_notes=$(printf '%s\n' "$release_notes" | grep -E "^### |^- \`(${skill_names})(\`|/)|^- \*\*(${skill_names})(\*\*|/)" || true)
 # Strip orphan ### headers (headers with no entries after them)
 skill_notes=$(printf '%s\n' "$skill_notes" | awk '/^### /{header=$0; next} /^- /{if(header){print header; header=""} print}')
 if [[ -n "$skill_notes" ]]; then
@@ -163,7 +175,14 @@ ${skill_notes}"
     echo "  WARNING: Could not find version entry in ai-skills CHANGELOG, skipping"
   fi
 else
-  echo "  No skill changes to add to changelog"
+  if [[ -n "$release_notes" ]]; then
+    echo "  WARNING: release notes are non-empty but no skill-related entries matched the filter."
+    echo "           The ai-skills CHANGELOG sync produced nothing — the plugin CHANGELOG bullet format"
+    echo "           may have changed and broken the grep filter (skill_notes pattern above). Skill"
+    echo "           changes will NOT reach the ai-skills CHANGELOG until the pattern is fixed."
+  else
+    echo "  No skill changes to add to changelog"
+  fi
 fi
 
 cd "$AI_SKILLS_DIR"
@@ -189,10 +208,20 @@ fi
 cd "$ROOT_DIR"
 
 # --- 5. Publish to ClawHub ---
+# Non-fatal: a publish failure must not abort the remaining local steps
+# (sync-to-tools, update-plugin, tag fetch-back). Status is surfaced loudly in
+# the final summary with an exact resume command.
 echo "[5/8] Publish skills to ClawHub..."
+clawhub_status="published"
 if npx clawhub@latest whoami >/dev/null 2>&1; then
-  bash "$SCRIPT_DIR/publish-clawhub.sh"
+  if bash "$SCRIPT_DIR/publish-clawhub.sh"; then
+    echo "  Published to ClawHub"
+  else
+    clawhub_status="failed"
+    echo "  WARNING: ClawHub publish failed — continuing with remaining local steps."
+  fi
 else
+  clawhub_status="skipped-unauth"
   echo "  WARNING: Not authenticated to ClawHub, skipping. Run: npx clawhub@latest login"
 fi
 
@@ -216,3 +245,19 @@ echo "  Tags synced"
 echo ""
 echo "[9/9] Done. v${version} released."
 echo "  Restart Claude Code to pick up the new version."
+
+if [[ "$clawhub_status" != "published" ]]; then
+  echo ""
+  echo "============================================================"
+  echo "  ACTION REQUIRED: ClawHub publish did not complete"
+  if [[ "$clawhub_status" == "skipped-unauth" ]]; then
+    echo "    Reason: not authenticated to ClawHub (publish skipped)."
+    echo "    Resume: npx clawhub@latest login && bash scripts/publish-clawhub.sh"
+  else
+    echo "    Reason: publish-clawhub.sh exited non-zero."
+    echo "    Resume: bash scripts/publish-clawhub.sh"
+  fi
+  echo "    Commit, push, mirror, and local sync all completed;"
+  echo "    only the ClawHub registry is missing v${version}."
+  echo "============================================================"
+fi
