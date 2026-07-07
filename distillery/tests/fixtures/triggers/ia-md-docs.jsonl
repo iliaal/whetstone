@@ -8,3 +8,8 @@
 {"prompt": "rewrite this skill's SKILL.md body", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write a blog post explaining the architecture", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "draft the RFC document for the new protocol", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "The daemon architecture is described in CLAUDE.md - verify the behavior against it", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "verify your findings against /home/ilia/ai/mdparser/CLAUDE.md before answering", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "note that CLAUDE.md is a symlink to AGENTS.md in this repo", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "security-review the php_clickhouse extension; project conventions are in CLAUDE.md", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "refresh CLAUDE.md to match the current build steps", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}

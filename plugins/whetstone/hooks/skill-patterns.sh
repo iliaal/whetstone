@@ -17,7 +17,10 @@ SKILL_TIERS[ia-planning]=1
 SKILL_PATTERNS[ia-debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|crash(es|ed|ing)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
 SKILL_TIERS[ia-debugging]=1
 
-SKILL_PATTERNS[ia-code-review]='review.*(code|\bprs?\b|diff|merge)|code.?review|audit.*code|critiqu'
+# Bounded gaps + word anchors (2026-07-07): unbounded `review.*code` / `audit.*code`
+# spanned multi-KB prompts and fired on codebases whose domain noun is "audit"
+# (AuditControllerTest, audit.enabled) — 16/27 harvested negatives were this misfire.
+SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu'
 SKILL_TIERS[ia-code-review]=1
 
 SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
@@ -38,7 +41,10 @@ SKILL_TIERS[ia-writing-tests]=1
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
-SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.*\.php|unit.?test.*\.php|test.*(controller|model|service|action|job|command|endpoint).*\.php'
+# Bounded gaps + \.php\b (2026-07-07): unbounded `test.*(...).*\.php` spanned
+# multi-KB prompts and `\.php` matched inside `.phpt`, injecting into php-src /
+# extension C tasks the description explicitly excludes (~10/50 harvested negatives).
+SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.{0,60}\.php\b|unit.?test.{0,60}\.php\b|test.{0,40}(controller|model|service|action|job|command|endpoint).{0,60}\.php\b'
 SKILL_TIERS[ia-php-laravel]=2
 
 SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
@@ -79,7 +85,10 @@ SKILL_TIERS[ia-agent-native-architecture]=2
 SKILL_PATTERNS[ia-writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
 SKILL_TIERS[ia-writing]=3
 
-SKILL_PATTERNS[ia-md-docs]='update.*readme|update.*agents|init.*agents|create.*agents\.md|update.*contributing|update.*context.?files|claude\.md'
+# Intent-anchored (2026-07-07): bare `claude\.md` fired on any prompt citing
+# CLAUDE.md as reference material (6/6 harvested negatives); unbounded `update.*`
+# alternates spanned multi-KB prompts. Verbs required near the doc noun.
+SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md'
 SKILL_TIERS[ia-md-docs]=3
 
 SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt'
@@ -103,7 +112,10 @@ SKILL_TIERS[ia-file-todos]=3
 SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|task)|divide.?and.?conquer'
 SKILL_TIERS[ia-orchestrating-swarms]=3
 
-SKILL_PATTERNS[ia-git-worktree]='worktree|parallel.?development'
+# Management-intent only (2026-07-07): bare `worktree` matched location mentions
+# ("the worktree at /home/ilia/php-src") — 22/22 harvested negatives AND all 44
+# "positives" were such mentions. A management verb near the noun is required.
+SKILL_PATTERNS[ia-git-worktree]='\b(create|add|new|set.?up|make|remove|clean|prune|switch|list)\b.{0,30}worktrees?|worktrees?.{0,25}(add|create|remove|prune|cleanup|list|switch)\b|parallel.?development'
 SKILL_TIERS[ia-git-worktree]=3
 
 

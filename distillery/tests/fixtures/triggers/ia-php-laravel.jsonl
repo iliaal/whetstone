@@ -14,3 +14,6 @@
 {"prompt": "set up a new Django project", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write a phpunit test for the chart rendering library", "expect": false, "added_in": "4.1.3", "source": "sync-from-repos"}
 {"prompt": "run phpstan on the composer package", "expect": false, "added_in": "4.1.3", "source": "sync-from-repos"}
+{"prompt": "Update .phpt test expectations for the new command behavior in php-src ext/standard/tests/file/touch.phpt", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "merge the upstream libmagic changes into ext/fileinfo, the test command output for cdf.c regressed", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "test the OrderController endpoint in tests/Feature/OrderControllerTest.php", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}

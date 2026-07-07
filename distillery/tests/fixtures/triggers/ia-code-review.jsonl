@@ -9,3 +9,7 @@
 {"prompt": "deploy the staging build", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "add logging to the request handler", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "this PR is too large, how should we split it", "expect": false, "added_in": "2.53.0", "source": "sync-from-repos", "note": "PR management, not primarily review — too broad for regex"}
+{"prompt": "Fix the failing AuditControllerTest - tests run with auditing OFF via config audit.enabled in setUp. The code lives in app/Http/Controllers.", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "Fix pre-existing PHPUnit failures on the chore/paratest branch; the audit log config and seeder code are in database/seeders", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "auditing the changes on this branch before merge", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "audit the codebase for dead code", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}

@@ -8,3 +8,8 @@
 {"prompt": "merge the PR into main", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "rebase my branch onto main", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "squash the last three commits", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "You are auditing php-src (master worktree at /home/ilia/php-src) for a memory-safety bug class", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "updating .phpt test expectations in the worktree /home/ilia/php-src-gh20018", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "READ-ONLY analysis - the worktree is shared with other work, do not modify files", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "run git worktree add for a review branch", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "list the worktrees and prune the stale ones", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
