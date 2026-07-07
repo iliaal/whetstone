@@ -31,15 +31,7 @@ This command creates professional video walkthroughs of features for PR document
 
 ## Setup
 
-**Check installation:**
-```bash
-command -v agent-browser >/dev/null 2>&1 && echo "Installed" || echo "NOT INSTALLED"
-```
-
-**Install if needed:**
-```bash
-npm install -g agent-browser && agent-browser install
-```
+For agent-browser install/verify steps and the full command reference, see [references/agent-browser-cli.md](references/agent-browser-cli.md).
 
 ## Main Tasks
 
@@ -74,14 +66,7 @@ gh pr view [number] --json title,body,files,headRefName -q '.'
 gh pr view [number] --json files -q '.files[].path'
 ```
 
-**Map files to testable routes** (same as playwright-test):
-
-| File Pattern | Route(s) |
-|-------------|----------|
-| `app/views/users/*` | `/users`, `/users/:id`, `/users/new` |
-| `src/controllers/SettingsController.ts` | `/settings` |
-| `src/controllers/*.ts` | Pages using that controller |
-| `src/components/*.tsx` | Pages rendering that component |
+**Map files to testable routes** (same mapping used by `/ia-test-browser` — see [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full file-to-route table).
 
 </gather_context>
 

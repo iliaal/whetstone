@@ -30,22 +30,13 @@ This command tests affected pages in a real browser, catching issues that unit t
 
 <requirements>
 - Local development server running (e.g., `npm run dev`, `php artisan serve`)
-- agent-browser CLI installed (see Setup below)
+- agent-browser CLI installed (see [references/agent-browser-cli.md](references/agent-browser-cli.md))
 - Git repository with changes to test
 </requirements>
 
 ## Setup
 
-**Check installation:**
-```bash
-command -v agent-browser >/dev/null 2>&1 && echo "Installed" || echo "NOT INSTALLED"
-```
-
-**Install if needed:**
-```bash
-npm install -g agent-browser
-agent-browser install  # Downloads Chromium (~160MB)
-```
+For agent-browser install/verify steps and the full command reference, see [references/agent-browser-cli.md](references/agent-browser-cli.md). Step 0 below performs the runtime install check.
 
 ## Main Tasks
 
@@ -102,19 +93,7 @@ git diff --name-only main...[branch]
 
 <file_to_route_mapping>
 
-Map changed files to testable routes:
-
-| File Pattern | Route(s) |
-|-------------|----------|
-| `app/views/users/*` | `/users`, `/users/:id`, `/users/new` |
-| `src/controllers/SettingsController.ts` | `/settings` |
-| `src/controllers/*.ts` | Pages using that controller |
-| `src/components/*.tsx` | Pages rendering that component |
-| `src/layouts/*` | All pages (test homepage at minimum) |
-| `src/styles/*` | Visual regression on key pages |
-| `src/helpers/*.ts` | Pages using that helper |
-| `src/app/*` (Next.js) | Corresponding routes |
-| `src/components/*` | Pages using those components |
+Map changed files to testable routes using the file-to-route table in [references/agent-browser-cli.md](references/agent-browser-cli.md).
 
 Build a list of URLs to test based on the mapping.
 

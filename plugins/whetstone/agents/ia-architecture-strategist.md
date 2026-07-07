@@ -76,3 +76,4 @@ Evaluate each dimension with a brief assessment. Note what works well alongside 
 - For code simplification and YAGNI analysis, use the `ia-code-simplicity-reviewer` agent
 - For security-specific review, use the `ia-security-sentinel` agent
 - For performance analysis, use the `ia-performance-oracle` agent
+- For pre-implementation codebase orientation without a compliance judgment, use `ia-repo-research-analyst`

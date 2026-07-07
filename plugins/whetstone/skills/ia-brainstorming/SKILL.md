@@ -177,7 +177,7 @@ Above the ceiling means the synthesis is mis-shapen — re-cut at a higher level
 
 **Re-present after revision; write only on confirm.** If the user revises any bullet (even trivially), integrate the change, re-present, and wait for explicit confirmation. A revision is not a confirmation.
 
-**Headless mode** (`/ia-lfg` or any `disable-model-invocation` context): compose the synthesis but skip the confirmation step. Route internal-draft Inferred items to a `## Assumptions` section in the Phase 3 doc — explicitly labeled as un-validated bets — instead of into Key Decisions. Stated routes to Requirements; Out-of-scope routes to Non-Goals.
+**Headless mode** (`/ia-lfg` or any `disable-model-invocation` context): compose the synthesis but skip the confirmation step. Route internal-draft Inferred items to a `## Assumptions` section in the Phase 3 doc — explicitly labeled as un-validated bets — instead of into Key Decisions. Stated routes to Requirements; Out-of-scope routes to Non-Goals. (Umbrella term: non-interactive context. Also called "Spawned-session behavior" in ia-orchestrating-swarms and "Headless Mode" in ia-receiving-code-review; same rule: suppress blocking prompts when no user is present.)
 
 Skip Phase 2.5 entirely when Phase 0.2 detected requirements were already clear and the flow proceeded straight to summary without a Phase 1 dialogue. Path A handles every other Lightweight case.
 

@@ -19,7 +19,7 @@ disable-model-invocation: true
 
 - **issue_id**: Sequential number (001, 002, 003...) -- never reused
 - **status**: `pending` (needs triage), `ready` (approved), `complete` (done)
-- **priority**: `p1` (critical), `p2` (important), `p3` (nice-to-have)
+- **priority**: `p1` (critical), `p2` (important), `p3` (nice-to-have). Mapping from the `ia-code-review` severity scale: Critical→p1, Important→p2, Medium→p3, Minor→p3.
 - **description**: kebab-case, brief description
 
 Examples: `001-pending-p1-mailer-test.md`, `002-ready-p1-fix-n-plus-1.md`, `005-complete-p2-refactor-csv.md`
@@ -49,6 +49,14 @@ dependencies: ["001"]      # Issue IDs this is blocked by
 **Application Todo model:** Database model for user-facing task management. Different from this file-based system.
 
 **TodoWrite tool:** In-memory task tracking during agent sessions. Temporary, not persisted to disk.
+
+## Verify
+
+Before considering a todo file correctly written, confirm:
+
+- `issue_id` is unique and sequentially the next number in `todos/` (never reused).
+- All required frontmatter fields are present: `status`, `priority`, `issue_id`.
+- `status` and `priority` values match the filename and their enums (`pending|ready|complete`, `p1|p2|p3`).
 
 ## References
 

@@ -115,7 +115,7 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 ## Voice
 
 - **Have opinions** -- react to facts, don't just report them
-- **Vary rhythm** -- short sentences, then longer ones. Mix it up.
+- **Vary rhythm** -- short sentences, then longer ones. Quick audit rule: three consecutive sentences match length? Break one.
 - **Acknowledge complexity** -- "impressive but also unsettling" beats "impressive"
 - **Use first person when appropriate** -- "I keep coming back to..." signals a real person
 - **Be specific about feelings** -- not "this is concerning" but name what unsettles you

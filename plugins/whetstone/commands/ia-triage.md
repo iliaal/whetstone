@@ -55,6 +55,8 @@ Do you want to add this to the todo list?
 3. custom - modify before creating
 ```
 
+Severity bridges to the `ia-code-review` skill's four tiers: **P1 = Critical**, **P2 = Important**, **P3 = Medium + Minor** (P3/`p3` covers both lower tiers).
+
 ### Step 2: Handle User Decision
 
 **When user says "yes":**

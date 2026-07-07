@@ -45,11 +45,7 @@ When receiving a comment or review feedback:
    - Following any project-specific guidelines from CLAUDE.md
    - Keeping changes focused and minimal to address only what was requested
 
-4. **Verify the Resolution**: After making changes:
-
-   - Double-check that the change addresses the original comment
-   - Ensure no unintended modifications were made
-   - Verify the code still follows project conventions
+4. **Verify the Resolution**: After making changes, apply `ia-verification-before-completion`'s evidence bar: run the relevant test/build and show output; do not mark Resolved on reasoning alone.
 
 5. **Report the Resolution**: Provide a clear, concise summary that includes:
    - What was changed (file names and brief description)

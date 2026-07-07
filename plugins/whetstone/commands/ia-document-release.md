@@ -142,10 +142,9 @@ Apply approved changes immediately after each answer.
 
 **CRITICAL -- never clobber CHANGELOG entries.** Polish wording only. Never delete, reorder, or replace entries. The entry content is the source of truth -- you are polishing prose, not rewriting history. Use `Edit` with exact `old_string` matches; never `Write`.
 
-Review the modified entries for voice. Apply the writing skill principles:
-- Lead with what the user can now **do**, not implementation details
-- "Added X" over "Refactored the X system to support..."
-- Cut hedging, vague declaratives, and throat-clearing
+Review the modified entries for voice. Apply the `ia-writing` skill's voice guidance.
+
+CHANGELOG-specific constraints (keep alongside the skill's guidance):
 - Internal/contributor-only changes belong in a separate `### For contributors` subsection
 - Auto-fix minor wording. Ask if a rewrite would alter meaning.
 

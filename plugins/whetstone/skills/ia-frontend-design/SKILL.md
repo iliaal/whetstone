@@ -3,8 +3,9 @@ name: ia-frontend-design
 class: meta
 description: >-
   Visual design and aesthetic direction for frontend interfaces. Use when
-  building web pages, landing pages, dashboards, or applications where visual
-  identity matters. For React patterns and testing, use react-frontend.
+  building web pages, landing pages, dashboards, Next.js server components, or
+  applications where visual identity matters. For React patterns and testing,
+  use react-frontend.
 ---
 
 # Frontend Design

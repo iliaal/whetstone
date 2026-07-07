@@ -14,7 +14,7 @@ Create, list, or update ADRs in `docs/decisions/`.
 
 - **Empty** (no argument): scan `docs/decisions/` and present existing ADRs as a numbered list with status, title, and date. Then ask: "Create a new ADR? Provide a title."
 - **`list`**: same as empty — scan and list existing ADRs. Do not create anything.
-- **A short title** (≤8 words): create a new ADR with that title. Ask the user to pick a format (Y-statement, Lightweight, Full MADR, RFC, Deprecation) before generating.
+- **A short title** (≤8 words): create a new ADR with that title. Ask the user to pick a format (Y-statement, Lightweight, Full MADR, RFC, Deprecation) using the **AskUserQuestion tool** before generating.
 - **A longer topic or question** (>8 words): treat as context for a Full MADR or RFC. Extract the decision subject from the input, confirm the extracted title with the user, then proceed.
 - **`deprecate <NNNN>`**: create a Deprecation ADR superseding the referenced ADR number. Read the superseded ADR first to capture its context.
 
@@ -28,7 +28,7 @@ Create, list, or update ADRs in `docs/decisions/`.
 
 ### 2. Choose format
 
-Ask which format fits the decision:
+Ask which format fits the decision, using the **AskUserQuestion tool**:
 
 | Format | When to use | Size |
 |--------|------------|------|
@@ -40,7 +40,7 @@ Ask which format fits the decision:
 
 ### 3. Gather context
 
-Ask about:
+Ask about, using the **AskUserQuestion tool**:
 - What decision was made (or needs to be made)
 - What alternatives were considered
 - What constraints drove the choice

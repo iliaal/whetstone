@@ -5,7 +5,7 @@ Load this reference when reviewing a Dockerfile, docker-compose setup, or contai
 ## Dockerfile Best Practices
 
 - **Multi-stage builds**: separate builder from runtime — only copy artifacts into final stage
-- **Minimal base images**: `node:20-alpine`, `python:3.12-slim`, `php:8.3-fpm-alpine` — not full images
+- **Minimal base images**: the current LTS/stable slim or alpine variant of the runtime (e.g. `node:<current-LTS>-alpine`, `python:<current>-slim`, `php:<current>-fpm-alpine`) — not full images
 - **Layer ordering**: least-changing layers first (OS packages → dependency install → copy source → build)
 - **Dependency caching**: copy lockfile first, install deps, then copy source (cache deps layer separately)
 - **Non-root user**: `RUN adduser -D app && USER app` — never run as root in production

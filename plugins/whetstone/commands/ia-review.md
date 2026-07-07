@@ -42,6 +42,10 @@ First, determine the review target type and set up the code for analysis.
 
 Ensure that the code is ready for analysis (either in worktree or on current branch). ONLY then proceed to the next step.
 
+#### Document Target Routing (early branch)
+
+If the review target is a file path ending in `.md` (or another prose document), this is a **document review, not a code review**. Skip worktree creation, PR metadata fetching, scope resolution, and every agent-dispatch step below — they all assume a PR/branch. Apply the `ia-document-review` skill to the file and report findings inline in the conversation. Do not create a worktree, `.review/` artifacts, or `todos/` files. Stop here.
+
 #### Scope Resolution
 
 When no specific files are given (a bare branch name, or the PR has no file list yet), resolve scope via the `ia-code-review` skill's fallback chain (**canonical** -- that skill also covers base-branch/merge-base resolution for branch reviews): explicit files → session-modified (`git diff --name-only`) → all uncommitted (`git diff --name-only HEAD`) → untracked → **zero files = stop and ask**. Exclude lockfiles, minified/bundled output, and vendored/generated code.
@@ -141,7 +145,7 @@ Consolidate all agent reports into a categorized list of findings. Remove duplic
 - [ ] Surface learnings-researcher results: if past solutions are relevant, flag them as "Known Pattern" with links to docs/solutions/ files
 - [ ] Discard any findings that recommend deleting or gitignoring files in `docs/plans/` or `docs/solutions/` (see Protected Artifacts above)
 - [ ] Categorize by type: security, performance, architecture, quality, etc.
-- [ ] Assign severity levels using the `ia-code-review` skill's four-level scale: **Critical** (blocks merge), **Important** (should fix before merge), **Medium** (should fix, non-blocking), **Minor** (optional). Treat legacy `P1`/`P2`/`P3` aliases as Critical/Important/Medium respectively.
+- [ ] Assign severity levels using the `ia-code-review` skill's four-level scale: **Critical** (blocks merge), **Important** (should fix before merge), **Medium** (should fix, non-blocking), **Minor** (optional). Treat legacy `P1`/`P2`/`P3` aliases as Critical/Important/Medium respectively. When filing todos (`ia-file-todos` has a closed `p1|p2|p3` enum), map severity to priority: Critical→p1, Important→p2, Medium→p3, Minor→p3.
 - [ ] Assign sequential `CR-001`, `CR-002`... IDs across all severities so findings can be referenced by ID in PR threads and follow-up todos
 - [ ] Deduplicate using the merge algorithm from `ia-code-review` skill (Merge Algorithm section): same file:line + same issue = merge with higher severity; same file:line + different issue = keep both tagged "co-located"; conflicting severity = take the higher; conflicting recommendations = mark `NEEDS DECISION` and present both; convergence (3+ agents agree) = boost confidence by 0.1
 - [ ] Surface red-team findings separately in the summary under a "Cross-cutting / adversarial" heading so reviewers see what the parallel specialists missed

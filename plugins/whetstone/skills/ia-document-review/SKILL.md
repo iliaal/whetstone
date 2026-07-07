@@ -30,7 +30,7 @@ Read through the document and ask:
 - Is this technically feasible with the current architecture?
 - Are there security implications in what's proposed?
 
-These questions surface issues. Don't fix yet--just note what you find.
+These questions surface issues. Note findings without fixing yet.
 
 ## Step 3: Activate Review Lenses
 
@@ -66,11 +66,11 @@ Among everything found in Steps 2-4, does one issue stand out? If something woul
 
 ## Step 6: Make Changes
 
-Present your findings, then:
+Present findings, then:
 
 1. **Auto-fix** minor issues (vague language, formatting) without asking
 2. **Ask approval** before substantive changes (restructuring, removing sections, changing meaning)
-3. **Update** the document inline--no separate files, no metadata sections
+3. **Update** the document inline
 
 ### Simplification Guidance
 
@@ -125,7 +125,7 @@ Return control to the caller (workflow or user) after selection.
 ## Constraints
 
 - Fix targeted sections, don't rewrite the whole document. If the structure is fundamentally broken, surface the structural problem and ask for permission to restructure.
-- Flag missing sections in your review, but don't add them. The user decides what to include.
+- Flag missing sections in the review, but don't add them. The user decides what to include.
 - Keep changes minimal. If a paragraph needs tightening, tighten it. Don't expand scope.
 - Review inline. No separate review files or metadata sections.
 

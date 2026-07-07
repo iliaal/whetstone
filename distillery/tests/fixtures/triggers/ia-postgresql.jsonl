@@ -14,3 +14,7 @@
 {"prompt": "You are an immigration attorney reviewing an EB-1A recommendation letter for legal sufficiency", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
 {"prompt": "add a Python function to extract metadata from this PDF", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
 {"prompt": "the PHP extension needs updating for compatibility", "expect": false, "added_in": "2.54.0", "source": "misfire-regression"}
+{"prompt": "the query against postgres is slow, add an index", "expect": true, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "the laravel 12 / postgresql repo at cred/mobile-backend, review the authorization slice of the mr", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "you are one of 10 parallel fix agents in codesage rust workspace touching trust_boundary_rules.rs", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "the api returns a jsonb blob to the client", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}

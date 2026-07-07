@@ -8,3 +8,8 @@
 {"prompt": "design the visual identity for this landing page", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "write the React component for the sidebar", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "add a unit test for the form validator", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "design a landing page hero section with a bold headline", "expect": true, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "you are the standards specialist in a multi-agent deep code review using built-in read/grep/glob tools", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "review codesage feature feat_x (php method clickhouse::insert) in project php_clickhouse", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "you are auditing a personal knowledge-base wiki for consolidation opportunities", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "review the changes to builddashboardproviders.ts and the dashboard grid", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}

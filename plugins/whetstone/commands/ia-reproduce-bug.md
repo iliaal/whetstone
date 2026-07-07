@@ -1,11 +1,11 @@
 ---
 name: ia-reproduce-bug
-description: Reproduce a GitHub issue bug with visual evidence (Playwright screenshots, log analysis). Takes a GitHub issue number. For non-issue bug validation, use the bug-reproduction-validator agent.
+description: Reproduce a GitHub issue bug with visual evidence (browser screenshots, log analysis). Takes a GitHub issue number. For non-issue bug validation, use the bug-reproduction-validator agent.
 argument-hint: "[GitHub issue number]"
 disable-model-invocation: true
 ---
 
-**Requires:** Playwright MCP server configured. If unavailable, fall back to manual browser testing with screenshots.
+**Requires:** agent-browser CLI installed (`npm install -g agent-browser && agent-browser install`). If unavailable, fall back to log analysis from Phase 1 only.
 
 # Reproduce Bug Command
 
@@ -21,17 +21,17 @@ Follow the `ia-debugging` skill methodology -- read the error, trace backward, g
 
 Think about the places it could go wrong. Look for logging output that helps narrow the cause. Keep investigating until you have a clear hypothesis.
 
-## Phase 2: Visual Reproduction with Playwright
+## Phase 2: Visual Reproduction with agent-browser
 
-**Requires Playwright MCP server.** If not available, skip to Phase 3 with findings from Phase 1 only.
+**Requires the agent-browser CLI.** If not available, skip to Phase 3 with findings from Phase 1 only. See [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full command reference. **ALWAYS use agent-browser Bash commands. NEVER use `mcp__*` browser tools.**
 
-If the bug is UI-related or involves user flows, use Playwright to visually reproduce it:
+If the bug is UI-related or involves user flows, use agent-browser to visually reproduce it:
 
 ### Step 1: Verify Server is Running
 
-```
-mcp__plugin_whetstone_pw__browser_navigate({ url: "http://localhost:3000" })
-mcp__plugin_whetstone_pw__browser_snapshot({})
+```bash
+agent-browser open http://localhost:3000
+agent-browser snapshot -i
 ```
 
 If server not running, inform user to start their dev server.
@@ -40,17 +40,17 @@ If server not running, inform user to start their dev server.
 
 Based on the issue description, navigate to the relevant page:
 
-```
-mcp__plugin_whetstone_pw__browser_navigate({ url: "http://localhost:3000/[affected_route]" })
-mcp__plugin_whetstone_pw__browser_snapshot({})
+```bash
+agent-browser open "http://localhost:3000/[affected_route]"
+agent-browser snapshot -i
 ```
 
 ### Step 3: Capture Screenshots
 
 Take screenshots at each step of reproducing the bug:
 
-```
-mcp__plugin_whetstone_pw__browser_take_screenshot({ filename: "bug-[issue]-step-1.png" })
+```bash
+agent-browser screenshot bug-[issue]-step-1.png
 ```
 
 ### Step 4: Follow User Flow
@@ -58,15 +58,15 @@ mcp__plugin_whetstone_pw__browser_take_screenshot({ filename: "bug-[issue]-step-
 Reproduce the exact steps from the issue:
 
 1. **Read the issue's reproduction steps**
-2. **Execute each step using Playwright:**
-   - `browser_click` for clicking elements
-   - `browser_type` for filling forms
-   - `browser_snapshot` to see the current state
-   - `browser_take_screenshot` to capture evidence
+2. **Execute each step using agent-browser** (get element refs like `@e1` from `snapshot -i`):
+   - `agent-browser click @e1` for clicking elements
+   - `agent-browser fill @e1 "text"` for filling forms
+   - `agent-browser snapshot -i` to see the current state
+   - `agent-browser screenshot step.png` to capture evidence
 
 3. **Check for console errors:**
-   ```
-   mcp__plugin_whetstone_pw__browser_console_messages({ level: "error" })
+   ```bash
+   agent-browser console          # log, error, warn, info messages
    ```
 
 ### Step 5: Capture Bug State
@@ -77,8 +77,9 @@ When you reproduce the bug:
 2. Capture console errors
 3. Document the exact steps that triggered it
 
-```
-mcp__plugin_whetstone_pw__browser_take_screenshot({ filename: "bug-[issue]-reproduced.png" })
+```bash
+agent-browser screenshot bug-[issue]-reproduced.png
+agent-browser console
 ```
 
 ## Phase 3: Document Findings

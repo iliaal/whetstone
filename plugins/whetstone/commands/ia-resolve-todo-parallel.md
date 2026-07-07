@@ -42,3 +42,15 @@ Always run all in parallel.
 - Commit changes
 - Remove the TODO from the file, and mark it as resolved.
 - Push to remote
+
+Then print a summary:
+
+```markdown
+## Todo Resolution Complete
+
+- **Resolved:** [count]
+- **Blocked:** [count] (reason per item)
+- **Skipped (wont_fix):** [count]
+
+**Files touched:** [list, or "none"]
+```

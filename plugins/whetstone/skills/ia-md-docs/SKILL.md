@@ -2,7 +2,7 @@
 name: ia-md-docs
 class: workflow
 description: >-
-  Manages project documentation: CLAUDE.md, AGENTS.md, README.md, CONTRIBUTING.md.
+  Manages project documentation: CLAUDE.md, AGENTS.md, README.md, CONTRIBUTING.md, DOCS.md.
   Use when asked to update, create, or init these context files. Not for general
   markdown editing.
 paths: "**/*.md"

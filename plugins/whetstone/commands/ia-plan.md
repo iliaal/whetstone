@@ -125,11 +125,11 @@ Select how comprehensive the plan should be. Simpler is mostly better.
 | **MORE** | Most features, complex bugs | + technical considerations, success metrics, dependencies |
 | **A LOT** | Major features, architectural changes | + phased implementation, alternatives, risk analysis, resource requirements |
 
-See [plan-templates.md](./references/plan-templates.md) for the full template of each level.
+See [workflow-plan-templates.md](./references/workflow-plan-templates.md) for the full template of each level.
 
 ### 5. Issue Creation & Formatting
 
-Format the issue content following [issue-formatting.md](./references/issue-formatting.md) (content structure, cross-referencing, code examples, AI-era considerations).
+Format the issue content following [workflow-issue-formatting.md](./references/workflow-issue-formatting.md) (content structure, cross-referencing, code examples, AI-era considerations).
 
 ### 6. Final Review & Submission
 
@@ -215,6 +215,6 @@ Loop back to options after Simplify or Other changes until user selects `/ia-wor
 
 ## Issue Creation
 
-Follow the issue creation procedure in [issue-formatting.md](./references/issue-formatting.md#issue-creation) (tracker detection, GitHub/Linear commands).
+Follow the issue creation procedure in [workflow-issue-formatting.md](./references/workflow-issue-formatting.md#issue-creation) (tracker detection, GitHub/Linear commands).
 
 NEVER CODE! Just research and write the plan.

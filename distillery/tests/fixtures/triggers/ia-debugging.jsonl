@@ -15,3 +15,8 @@
 {"prompt": "this function keeps crashing intermittently in production", "expect": true, "added_in": "4.1.2", "source": "crash-verb-gap 2026-06-08"}
 {"prompt": "the server crashed after the last deploy", "expect": true, "added_in": "4.1.2", "source": "crash-verb-gap 2026-06-08"}
 {"prompt": "give me a crash course on react hooks", "expect": false, "added_in": "4.1.2", "source": "crash-verb-gap 2026-06-08"}
+{"prompt": "why does the parser return null on empty input", "expect": true, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "why it's wrong (concrete failure, attack path) - quote the line", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "review: missing regression test coverage for the recent fix", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "every font byte is attacker-controlled; the parser crashes on malformed input", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "read the full body of each file: debugging/php-sapi-variant-crash-triage.md and debugging/foo.md", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}

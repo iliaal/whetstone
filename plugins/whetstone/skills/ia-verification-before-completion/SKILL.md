@@ -3,8 +3,8 @@ name: ia-verification-before-completion
 class: discipline
 description: >-
   Enforces fresh verification evidence before any completion claim. Use when
-  about to claim "tests pass", "bug fixed", "done", "ready to merge", or
-  handing off work.
+  about to claim "tests pass", "bug fixed", "done", "ready to merge", handing
+  off work, or before editing when a request has ambiguous scope.
 ---
 
 # Verification Before Completion

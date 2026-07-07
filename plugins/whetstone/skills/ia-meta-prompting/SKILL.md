@@ -68,4 +68,4 @@ Custom keys: `/json {keys: summary, risks, recommendation}`
 ## Verify
 
 - Pattern marker present in output (e.g., `VERIFIED ANSWER:` for /verify)
-- Core answer remains prominent -- meta-reasoning enhances, doesn't bury it
+- Core answer appears before any pattern-output separator (`---`)

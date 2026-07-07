@@ -116,7 +116,7 @@ If asked to research competitors:
 3. Extract specific techniques they use
 4. Apply those insights in subsequent iterations
 
-Popular design references:
+Popular design references (illustrative snapshots, not current brand facts -- verify against the live site before citing):
 
 - Stripe: Clean gradients, depth, premium feel
 - Linear: Dark themes, minimal, focused

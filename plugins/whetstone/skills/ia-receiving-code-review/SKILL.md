@@ -104,7 +104,7 @@ Accept feedback when:
 |---------|-----|
 | Agreeing before verifying | Verify first, then state what you found |
 | Implementing without understanding impact | Trace the change through callers before editing |
-| Apologizing instead of fixing | State the correction factually, then implement |
+| Apologizing instead of fixing | See "When Your Pushback Was Wrong" below |
 | Thanking the reviewer instead of responding technically | Delete "Thanks" -- state the fix instead |
 | Pushing back without evidence | Include the specific code path or test that proves your point |
 | Batch-implementing then testing | Test after each individual fix |
@@ -142,6 +142,8 @@ State the correction factually: "Checked this, you're correct because [reason]. 
 ## Headless Mode
 
 When invoked programmatically (by another skill or command with `mode:headless`), skip interactive prompts and return structured triage results. See [headless-mode.md](./references/headless-mode.md) for the classification table (AUTO-FIX / AUTO-DECLINE / ESCALATE), output format, and constraints.
+
+Umbrella term: non-interactive context. Also called "Spawned-session behavior" in ia-orchestrating-swarms and "Headless mode" in ia-brainstorming; same rule: suppress blocking prompts when no user is present.
 
 ## Scope vs `ia-pr-comment-resolver` Agent
 

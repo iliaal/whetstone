@@ -43,6 +43,7 @@ Map changed files to testable routes:
 | `src/components/*.tsx` | Pages rendering that component |
 | `src/layouts/*` | All pages (test homepage at minimum) |
 | `src/styles/*` | Visual regression on key pages |
+| `src/helpers/*.ts` | Pages using that helper |
 | `src/app/*` (Next.js) | Corresponding routes |
 
 ## Setup

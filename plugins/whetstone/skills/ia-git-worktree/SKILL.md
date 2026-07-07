@@ -82,8 +82,6 @@ When work in a worktree is done, verify tests pass, then present exactly 4 optio
 3. **Keep as-is** -- leave branch and worktree for later
 4. **Discard** -- requires typing "discard" to confirm. Deletes branch and worktree. No silent discards.
 
-Clean up the worktree directory only for options 1 and 4. For option 2, the worktree stays until the PR merges.
-
 ## Change Summary
 
 When completing work in a worktree (before merge or PR), output a structured summary:

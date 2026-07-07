@@ -25,6 +25,8 @@ Captures problem solutions while context is fresh, creating structured documenta
 
 ## Execution Strategy: Two-Phase Orchestration
 
+Follow the `ia-orchestrating-swarms` skill for the parallel-dispatch contract (single-message fan-out, write-ownership, wait-for-all). The subagent roles and the no-Write constraint below are compound-specific — the generic dispatch mechanics live in that skill.
+
 <critical_requirement>
 **Only ONE file gets written - the final documentation.**
 
@@ -35,7 +37,7 @@ Phase 1 subagents return TEXT DATA to the orchestrator. They must NOT use Write,
 
 <parallel_tasks>
 
-Launch these subagents IN PARALLEL. Each returns text data to the orchestrator.
+Dispatch these subagents per the contract above. Each returns text data to the orchestrator — no file writes.
 
 #### 1. **Context Analyzer**
    - Extracts conversation history
@@ -181,14 +183,9 @@ File created:
 
 This documentation will be searchable for future reference when similar
 issues occur in the Email Processing or Brief System modules.
-
-What's next?
-1. Continue workflow (recommended)
-2. Link related documentation
-3. Update other references
-4. View documentation
-5. Other
 ```
+
+The `ia-compound-docs` skill presents the canonical Decision Menu after writing the file — defer to it. Do not reimplement or duplicate the menu here.
 
 ## The Compounding Philosophy
 

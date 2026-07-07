@@ -18,6 +18,8 @@ This command takes a work document (plan, specification, or todo file) and execu
 
 ## Execution Workflow
 
+**Pipeline mode:** If invoked from an automated workflow (LFG or any `disable-model-invocation` context), skip all AskUserQuestion calls. Make decisions automatically: auto-proceed past the Phase 1 approval, resolve the branch-setup prompt by creating a new feature branch when on the default branch, and default the Phase 4 branch-finish choice to **Push + PR**. Never commit directly to the default branch, even in pipeline mode.
+
 ### Phase 1: Quick Start
 
 1. **Read Plan and Clarify**
@@ -27,6 +29,7 @@ This command takes a work document (plan, specification, or todo file) and execu
    - If anything is unclear or ambiguous, ask clarifying questions now
    - Get user approval to proceed
    - **Do not skip this** - better to ask questions now than build the wrong thing
+   - **Pipeline mode:** auto-proceed without waiting for approval (see Pipeline mode note above)
 
 2. **Setup Environment**
 
@@ -151,7 +154,7 @@ This command takes a work document (plan, specification, or todo file) and execu
    For UI work with Figma designs:
 
    - Implement components following design specs
-   - Use figma-design-sync agent iteratively to compare
+   - Use `ia-figma-design-sync` agent iteratively to compare
    - Fix visual differences identified
    - Repeat until implementation matches design
 
@@ -259,7 +262,7 @@ Do not proceed to Phase 3 if verification fails.
 
 3. **Finish the Branch**
 
-   Present options: **Merge locally** (solo work) / **Push + PR** (team work) / **Keep as-is** (WIP) / **Discard** (requires typed "discard" confirmation).
+   Present options: **Merge locally** (solo work) / **Push + PR** (team work) / **Keep as-is** (WIP) / **Discard** (requires typed "discard" confirmation). In pipeline mode, skip the prompt and default to **Push + PR**.
 
    For PRs, use this template:
    ```

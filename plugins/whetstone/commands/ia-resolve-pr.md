@@ -8,7 +8,7 @@ argument-hint: "[PR number or URL]"
 
 **PR:** #$ARGUMENTS
 
-Resolve all unresolved PR review comments. If no PR number given, detect from current branch.
+Resolve all unresolved PR review comments. If no PR number given, detect from the current branch with `gh pr view --json number -q .number`.
 
 Use the `ia-receiving-code-review` skill for how to handle each comment (verify before implementing, push back on incorrect suggestions).
 
@@ -62,6 +62,8 @@ Create a TodoWrite list grouped by severity:
 - **Important**: Code quality, missing tests, architecture concerns
 - **Minor**: Style, naming, convention fixes
 - **Questions**: Clarifications to answer (not code changes)
+
+**Medium** findings from the `ia-code-review` scale group under **Important** or **Minor** per judgment (blocking-ish → Important, cosmetic-ish → Minor).
 
 Spawn a `ia-pr-comment-resolver` agent for each item in parallel. For systemic clusters, spawn one agent for the cluster with all related comments in its prompt.
 

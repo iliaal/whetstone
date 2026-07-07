@@ -3,7 +3,7 @@ name: ia-nodejs-backend
 class: language
 description: >-
   Node.js backend patterns: layered architecture, TypeScript, validation, error
-  handling, security, deployment. Use when building REST APIs, REST endpoints, middleware,
+  handling, security, observability, logging, metrics, deployment. Use when building REST APIs, REST endpoints, middleware,
   Express/Fastify/Hono/NestJS/Koa servers, tRPC procedures, Bun servers, or server-side TypeScript.
 paths: "**/*.ts,**/*.js,**/*.mjs,**/*.cjs"
 ---
@@ -118,7 +118,6 @@ Never use readFileSync or other sync methods in production -- use `fs.promises` 
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
 - Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - If a fix requires bypassing TypeScript (`as any`, non-null assertions on untrusted data, `// @ts-ignore`), treat it as a design smell and find the typed solution
-- Verify: `tsc --noEmit && npm test` pass with zero warnings before declaring done
 
 ## Verify
 

@@ -95,7 +95,7 @@ You will systematically execute these security scans:
 
 ## Audit Deliverable Format
 
-Every audit must produce an explicit test coverage checklist as an artifact, not just a narrative report. Load [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) for the full checklist covering authentication edge cases, authorization, input boundary, concurrency, session hygiene, and output boundary. Emit findings as `SS-001`, `SS-002`... with CVSS 3.1 base score, exploit proof (curl/test/PoC), and copy-paste-ready remediation code. Uncovered checklist items are findings too — mark them `UNCOVERED: no test exists for <item>`.
+Every audit must produce an explicit test coverage checklist as an artifact, not just a narrative report. Load [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) for the full checklist covering authentication edge cases, authorization, input boundary, concurrency, session hygiene, and output boundary. Emit findings as `SS-001`, `SS-002`... with CVSS base score, exploit proof (curl/test/PoC), and copy-paste-ready remediation code. Uncovered checklist items are findings too — mark them `UNCOVERED: no test exists for <item>`.
 
 ### Required fields per finding
 

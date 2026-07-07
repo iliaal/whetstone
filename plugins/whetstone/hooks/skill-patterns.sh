@@ -15,7 +15,14 @@ declare -A SKILL_TIERS
 SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
 SKILL_TIERS[ia-planning]=1
 
-SKILL_PATTERNS[ia-debugging]='debug(?:ging)?.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+(?:the\s+|this\s+)?bug|why.*(fail|broken|crash|error)|crash(es|ed|ing)|troubleshoot|stack.?trace|broken.?test|test.*broken|flaky.?test|regression.?(test|bug|fix)|unexpected.?behav'
+# Intent-anchored symptoms (2026-07-07 audit-misfire): bare `crash(es)`, unbounded
+# `why.*fail`, and `regression.?(test|fix)` fired on security-audit prose ("parser
+# crashes"), review rubrics ("why it's wrong (concrete failure)"), and test-coverage
+# reviews ("missing regression test") — 35/93 harvested negatives. Fixes: `debug\s`
+# (kills `debugging/foo-crash.md` wiki path lists); `why\s+<aux>` question form (rubric
+# "why it's/why-real" lacks the aux); crash needs a subject/temporal anchor; regression
+# needs a break-symptom not "test/fix". Also replaced PCRE `(?:...)` with plain groups.
+SKILL_PATTERNS[ia-debugging]='debug(ging)?\s.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+((the|this)\s+)?bug|why\s+(is|are|was|were|does|did|do|isn.t|doesn.t|won.t|can.t|would|might).{0,30}(fail|crash|broke|error|hang|wrong|null|undefined|throw|freeze|not.?work)|(server|service|app|process|function|test|page|binary|worker|browser|daemon|program|script|query|request|keeps?|still|randomly|intermittent|production|prod|deploy).{0,15}crash(ed|ing|es)?|crash(ed|ing|es).{0,25}(after|when|on.?start|in.?prod|randomly|intermittent|during|deploy|repeatedly|every)|troubleshoot|(analyz|read|paste|inspect|got|this|following).{0,15}stack.?trace|broken.?test|test.{0,10}broken|flaky.?test|regression.{0,15}(bug|broke|broken|fail|introduced|caused)|unexpected.?behav'
 SKILL_TIERS[ia-debugging]=1
 
 # Bounded gaps + word anchors (2026-07-07): unbounded `review.*code` / `audit.*code`
@@ -48,7 +55,12 @@ SKILL_TIERS[ia-writing-tests]=1
 SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.{0,60}\.php\b|unit.?test.{0,60}\.php\b|test.{0,40}(controller|model|service|action|job|command|endpoint).{0,60}\.php\b'
 SKILL_TIERS[ia-php-laravel]=2
 
-SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router)|next\.?js|react.*test|\bjsx\b|\btsx\b|\bhook[s]?\b.*component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
+# React-intent required near .tsx/.jsx (2026-07-07 audit-misfire): bare `\bjsx\b|\btsx\b`
+# fired on any .tsx path mention — 53/95 harvested negatives were codesage/MR reviews of
+# files like `Avatar.tsx` (paths also contain "components", so a noun anchor doesn't help).
+# Replaced with `\b[jt]sx\b` + a runtime SYMPTOM (rendering/broken/error/crash), which path
+# noise lacks; bounded the unbounded `react.*test` / `hook.*component` spans.
+SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
 SKILL_TIERS[ia-react-frontend]=2
 
 SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
@@ -60,7 +72,11 @@ SKILL_TIERS[ia-python-services]=2
 SKILL_PATTERNS[ia-rust-systems]='\brust\b.{0,30}(cli|service|binary|crate|workspace|backend|api|server|handler|async|tokio|axum|code|project|module)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\.rs\b.*(test|module|crate)'
 SKILL_TIERS[ia-rust-systems]=2
 
-SKILL_PATTERNS[ia-postgresql]='postgres(ql)?|\bpgbouncer\b|jsonb|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b|tsvector|pg_stat_|pg_class'
+# DB-op required near the token (2026-07-07 audit-misfire): bare `postgres`, `jsonb`, and
+# `upsert` fired on any prompt naming the stack — 18/44 harvested negatives were Rust
+# fix-agent tasks, wiki audits, and reviews mentioning "PostgreSQL repo" as context.
+# Each now requires a DB-work word (query/column/migrate/index/...) within a bounded gap.
+SKILL_PATTERNS[ia-postgresql]='postgres(ql)?.{0,30}(quer|index|schema|table|column|migrat|partition|tune|optimi|connect|pool|vacuum|explain|perf|slow|lock|tenant|rls|jsonb|constraint|dump|replica)|(quer|schema|migrat|optimi|index|tune|slow|partition|vacuum|explain|connect|pool|deadlock).{0,30}postgres(ql)?|\bpgbouncer\b|jsonb.{0,25}(column|field|index|quer|operator|path|gin|migrat|store|nest|set|->|@>)|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b.{0,25}(row|record|table|quer|conflict|batch|column|postgres|sql)|tsvector|pg_stat_|pg_class'
 SKILL_TIERS[ia-postgresql]=2
 
 SKILL_PATTERNS[ia-terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'
@@ -72,7 +88,13 @@ SKILL_TIERS[ia-linux-bash-scripting]=2
 SKILL_PATTERNS[ia-pinescript]='pine.?script|pinescript|tradingview.{0,30}(pine|indicator|strategy|chart|script)|\bindicator\b.{0,20}(pine|trading.?view)|\bstrategy\b.{0,20}(pine|trading.?view)|\.pine\b'
 SKILL_TIERS[ia-pinescript]=2
 
-SKILL_PATTERNS[ia-frontend-design]='frontend.*(design|interface)|ui.*(design|build|create)|(build|design).{0,30}(web.?component|web.?page|landing.?page|dashboard)|design.{0,20}too.?generic|ai.?generated.*(design|look)|color.?palette|visual.?identity'
+# Word-bounded UI + spaced build verb (2026-07-07 audit-misfire): `ui.*(build|create)`
+# matched "b-UI-lt-in", "fast-UU-ID", "b-UI-lder" and any later build/create — 22/36
+# harvested negatives were backend code-review prompts (co-injected with php-laravel 21x).
+# Fixes: `\bui\b` word-bounds the token; `(design|build)\s` requires a space so CamelCase
+# file names like `BuildDashboardProviders.ts` no longer fire; bounded the `frontend.*`
+# and `ai.?generated.*` spans.
+SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build)\s.{0,20}(web.?component|web.?page|landing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|color.?palette|visual.?identity'
 SKILL_TIERS[ia-frontend-design]=2
 
 SKILL_PATTERNS[ia-tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|style.{0,30}utility.?class|dark.?mode.*css'

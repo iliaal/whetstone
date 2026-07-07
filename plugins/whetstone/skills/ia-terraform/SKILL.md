@@ -96,7 +96,7 @@ Default to `for_each` -- removing a middle item from a `count` list recreates al
 | Modules (dev) | Allow patch | `version = "~> 5.1"` |
 
 Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
-Stacks (HCP, preview): orchestrates multiple configs as a single deployment unit -- evaluate for multi-environment patterns.
+Stacks (HCP -- check current release status): orchestrates multiple configs as a single deployment unit -- evaluate for multi-environment patterns.
 
 ## State & Security
 
@@ -106,7 +106,7 @@ Stacks (HCP, preview): orchestrates multiple configs as a single deployment unit
 - Encryption at rest on all storage. Private networking by default -- public access is opt-in.
 - Least-privilege security groups. No `0.0.0.0/0` ingress without explicit justification.
 - Never hardcode credentials -- use assume_role, OIDC, or secrets managers.
-- Pre-commit: `terraform fmt -recursive && terraform validate && trivy config .`
+- Pre-commit: auto-format first (`terraform fmt -recursive` -- rewrites files), then verify (`terraform validate && tflint && trivy config .`)
 - `moved { from = old; to = new }` for refactoring resource names/modules without destroy-recreate. Remove block after apply.
 
 ## Troubleshooting

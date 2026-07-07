@@ -24,7 +24,7 @@ Follow the `ia-agent-native-architecture` skill for principle definitions. Produ
 
 1. Explore the codebase: UI actions, agent tools, system prompt construction, context injection
 2. Build a capability map: `| UI Action | Location | Agent Tool | Prompt Ref | Status |`
-3. Check all 5 core principles: Action Parity, Context Parity, Shared Workspace, Primitives over Workflows, Dynamic Context Injection
+3. Check all 5 core principles: Parity, Granularity, Composability, Emergent Capability, Improvement Over Time
 4. Report findings by severity (Critical/Warning/Observation) with file:line references
 5. Score: `X/Y capabilities are agent-accessible -- Verdict: PASS/NEEDS WORK`
 
@@ -32,16 +32,16 @@ Follow the `ia-agent-native-architecture` skill for principle definitions. Produ
 
 ### Principles Audited
 
-Full principle definitions and test criteria live in the `ia-agent-native-architecture` skill and its `references/core-principles.md`. This command audits eight principles in parallel:
+Full principle definitions and test criteria live in the `ia-agent-native-architecture` skill and its `references/core-principles.md`. The eight audit dimensions below are a finer, operational decomposition of the five canonical principles (parent principle shown in parentheses) — every dimension rolls up to one of the five:
 
-1. **Action Parity** — whatever the user can do, the agent can do
-2. **Tools as Primitives** — tools provide capability, not business logic
-3. **Context Injection** — system prompt includes dynamic app state
-4. **Shared Workspace** — agent and user operate on the same data
-5. **CRUD Completeness** — every entity has full Create/Read/Update/Delete
-6. **UI Integration** — agent actions immediately reflected in UI
-7. **Capability Discovery** — users can find what the agent can do
-8. **Prompt-Native Features** — features defined as prompts, not hardcoded logic
+1. **Action Parity** (Parity) — whatever the user can do, the agent can do
+2. **Tools as Primitives** (Granularity) — tools provide capability, not business logic
+3. **Context Injection** (Parity) — system prompt includes dynamic app state, so the agent has parity of awareness
+4. **Shared Workspace** (Improvement Over Time) — agent and user operate on the same data; accumulated context (e.g. `context.md`) compounds
+5. **CRUD Completeness** (Parity) — every entity has full Create/Read/Update/Delete
+6. **UI Integration** (Parity) — agent actions immediately reflected in UI
+7. **Capability Discovery** (Emergent Capability) — users can find what the agent can do
+8. **Prompt-Native Features** (Composability) — features defined as prompts, not hardcoded logic
 
 ## Workflow
 

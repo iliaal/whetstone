@@ -3,8 +3,9 @@ name: ia-agent-native-architecture
 class: meta
 description: >-
   Design agent-native applications where agents replace UI users as the primary
-  actor. Use when designing MCP tools, agent-loop architectures, shared-workspace
-  file patterns, or self-modifying agent systems.
+  actor. Use when designing MCP tools, agent-loop architectures, system prompt
+  design, hooks policy, shared-workspace file patterns, or self-modifying agent
+  systems.
 ---
 
 # Agent-Native Architecture
@@ -16,9 +17,9 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | Principle | One-line test |
 |-----------|--------------|
 | **Parity** | Can the agent achieve every outcome the UI allows? |
-| **Granularity** | To change behavior, do you edit prose or refactor code? |
-| **Composability** | Can you add a feature by writing a new prompt, without new code? |
-| **Emergent Capability** | Can the agent handle open-ended requests you didn't design for? |
+| **Granularity** | Changing behavior means editing prose, not refactoring code |
+| **Composability** | Can a feature be added by writing a new prompt, without new code? |
+| **Emergent Capability** | Can the agent handle open-ended requests it wasn't designed for? |
 | **Improvement Over Time** | Does the app work better after a month, even without code changes? |
 
 ## Focus Area Selection
@@ -77,7 +78,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Parity:** Every UI action has a corresponding agent capability
 - [ ] **Granularity:** Tools are primitives; features are prompt-defined outcomes
 - [ ] **Composability:** New features can be added via prompts alone
-- [ ] **Emergent Capability:** Agent can handle open-ended requests in your domain
+- [ ] **Emergent Capability:** Agent can handle open-ended requests in its domain
 
 ### Tool Design
 - [ ] **Dynamic vs Static:** For external APIs where agent should have full access, use Dynamic Capability Discovery
@@ -126,4 +127,4 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **iCloud Storage:** iCloud-first with local fallback for multi-device sync
 - [ ] **Cost Awareness:** Model tier selection (Haiku/Sonnet/Opus)
 
-**When designing architecture, explicitly address each checkbox in your plan.**
+**When designing architecture, explicitly address each checkbox in the plan.**
