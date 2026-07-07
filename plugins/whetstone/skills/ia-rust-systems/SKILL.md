@@ -19,7 +19,7 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 | `cargo` | Build, dep management, script runner |
 | `clippy` | Lint (`cargo clippy --workspace --all-targets -- -D warnings`) |
 | `rustfmt` | Formatter (`cargo fmt --all`) |
-| `cargo-nextest` | Test runner, noticeably faster than `cargo test`, better isolation |
+| `cargo-nextest` | Test runner |
 | `cargo-deny` | License + advisory + duplicate-dep checks |
 | `cargo-machete` | Find unused dependencies |
 
@@ -43,24 +43,17 @@ crates/
 - Centralize versions in `[workspace.dependencies]`, reference as `foo = { workspace = true }` in members.
 - Keep the leaf-most crate (`protocol` / types) dependency-free so every other crate can depend on it without cycles.
 - Feature flags belong on the crate that introduces the dependency, not re-exported through the workspace root.
-- **Library crates expose one stable facade**: a thin `lib.rs` with a `//!` module doc comment stating purpose, followed by `pub use` re-exports of the public surface. Consumers learn one import path per concept; internal module layout can be reorganized without breaking callers.
-- **Feature gates must error, never silently degrade.** If runtime config requests a capability the binary wasn't compiled with (e.g. `device = "gpu"` on a non-CUDA build), fail at startup with a clear error. Silent fallback produces different behavior from what the operator configured, often without anyone noticing.
-- **Centralize lints at the workspace root** with `[workspace.lints.*]`. Every member crate inherits the same ruleset — no drift between crates, no per-crate `#![deny(...)]` stacks. Example:
+- **Library crates expose one stable facade**: a thin `lib.rs` with a `//!` purpose doc and `pub use` re-exports — one import path per concept, internals free to reorganize without breaking callers.
+- **Feature gates must error, never silently degrade.** If runtime config requests a capability the binary wasn't compiled with (e.g. `device = "gpu"` on a non-CUDA build), fail at startup — silent fallback diverges from operator config unnoticed.
+- **Centralize lints at the workspace root** with `[workspace.lints.*]` — every member crate inherits the same ruleset, no per-crate `#![deny(...)]` drift:
 
   ```toml
-  [workspace.lints.rust]
-  unsafe_code = "warn"
-  missing_docs = "warn"
-
   [workspace.lints.clippy]
   all = { level = "warn", priority = -1 }
   pedantic = { level = "warn", priority = -1 }
-  nursery = { level = "warn", priority = -1 }
-  module_name_repetitions = "allow"
-  must_use_candidate = "allow"
   ```
 
-  Each member crate opts in with `[lints] workspace = true` in its own `Cargo.toml`. Changing a lint in one place updates every crate.
+  Each member crate opts in with `[lints] workspace = true`.
 
 ## Build Profiles
 
@@ -78,7 +71,7 @@ Split by crate role:
 - `bail!("...")` / `ensure!(cond, "...")` in application code for early exits.
 - Prefer `Result<T, E>` over panics for any recoverable error. Panics are for programmer bugs (broken invariants), not runtime failures.
 - **`#[must_use]` on fallible APIs**: annotate functions returning `Result` or newtype-wrapped results that callers frequently ignore. Catches `let _ = validate(x);` at compile time instead of shipping a silently-dropped error.
-- **Make illegal call-sequences unrepresentable** rather than returning a runtime error — the type-state pattern. When an API has a mandatory call order (configure → connect → use), encode each stage as a distinct type (`Client<Uninitialized>` → `Client<Initialized>` → `Client<Connected>`) carrying `PhantomData<State>`; a method only exists on the state that permits it. Calling `send_request` before `connect` then fails to compile instead of panicking at runtime — there is no error variant to handle because the bad sequence cannot be written.
+- **Make illegal call-sequences unrepresentable** — the type-state pattern: encode a mandatory call order as distinct types (`Client<Uninitialized>` → `Client<Connected>`) so an out-of-order call fails to compile instead of erroring at runtime.
 
 ## Ownership Discipline
 
@@ -86,19 +79,13 @@ Split by crate role:
 - Return owned (`String`, `Vec<T>`) from constructors and public APIs. Borrow in hot paths where lifetimes are obvious.
 - Reach for `Arc<T>` only when sharing across threads. Single-threaded sharing uses `Rc<T>` or references.
 - `Cow<'_, str>` when a function sometimes allocates and sometimes borrows (e.g. normalization).
-- Lifetime elision handles 90% of cases. If you're writing `'a` in more than one signature, reconsider whether that type should own its data instead.
-- **`bytes::Bytes` for zero-copy slicing** of shared immutable buffers — network parsers, frame decoders, protocol handlers. `BytesMut` for building buffers that `split_to` / `split_off` into `Bytes` without reallocation. Prefer `Bytes` over `Arc<Vec<u8>>` when slicing is the dominant access pattern.
-- **Reduce hot-path heap allocations** with stack-or-inline collections when the typical size is small and known:
-  - `smallvec::SmallVec<[T; N]>` — inline for ≤N items, spills to heap beyond. Good for "usually 1-8 items" cases like parsed tag lists, lookup keys, small event batches.
-  - `arrayvec::ArrayVec<T, CAP>` — fixed capacity, never heap-allocates. Returns an error when full. Good for bounded message buffers or per-request scratch space.
-  - String interning for repeatedly-seen strings (enum-like values parsed from config, tenant IDs, route keys): `dashmap::DashMap<String, &'static str>` with `Box::leak` on miss gives `&'static str` comparisons without per-call allocations.
-  
-  These are optimizations — profile first. `Vec`/`String` on a cold path isn't the bottleneck.
+- Rely on lifetime elision. More than one signature needing an explicit `'a` is a signal the type should own its data — convert the borrow to owned before adding lifetimes.
+- Reducing hot-path allocations (SmallVec, ArrayVec, string interning, `Bytes`, vectored writes): profile first, then load [performance.md](./references/performance.md).
 
 ## Async with Tokio
 
 - Default runtime: `#[tokio::main]` with `features = ["full"]` for apps; `features = ["rt", "macros", "sync"]` for libraries that need to stay slim.
-- `tokio::spawn` for independent tasks. `JoinSet` for a dynamic group you'll await together with cancellation.
+- `tokio::spawn` for independent tasks. `JoinSet` for a dynamic group awaited together with cancellation.
 - `tokio::select!` for racing futures (timeouts, cancellation, first-wins).
 - Never block the runtime: `tokio::task::spawn_blocking` for sync CPU work or blocking I/O libs.
 - `tokio::sync::Mutex` only when the guard must be held across `.await`. Otherwise `std::sync::Mutex` is faster.
@@ -107,7 +94,6 @@ Split by crate role:
 - Backpressure via bounded `mpsc` channels — unbounded channels hide memory growth until OOM.
 - **`Semaphore` for hard concurrency limits** on spawn paths that don't fit a channel model (e.g. "at most 50 concurrent outbound HTTP calls"). `let _permit = sem.acquire().await?;` inside the task; dropping the permit releases the slot. Pair with `Arc<Semaphore>` shared across spawners.
 - Don't mix async runtimes. Pick `tokio` and stick with it; `async-std` and `smol` don't interop cleanly.
-- **Vectored writes** (`write_vectored` + `std::io::IoSlice`) coalesce many buffers — interleaved headers and payloads — into a single syscall when flushing a batch of messages to a socket; the kernel does the gather. An optimization for measured syscall-bound flush paths — profile first; a single `write_all` is fine elsewhere.
 
 ## CLI Tools (clap)
 
@@ -126,7 +112,7 @@ See [cli-tools.md](./references/cli-tools.md) for config layering, logging setup
 - Validate input at the boundary: `axum::extract::Json<T>` where `T: Deserialize + Validate` (use `validator` crate). Internal services trust input was validated.
 - Share state via `State<Arc<AppState>>` — not globals, not `lazy_static`.
 - Middleware via `tower::ServiceBuilder`: tracing → timeout → auth → CORS → handler. Order matters.
-- **Resilience layer stack** (outbound HTTP clients and shared services): `ServiceBuilder::new().layer(TimeoutLayer).layer(RateLimitLayer).layer(ConcurrencyLimitLayer).layer(LoadShedLayer).layer(RetryLayer).service(client)`. Name each layer explicitly — `LoadShedLayer` sheds excess load, `ConcurrencyLimitLayer` caps in-flight requests, `RateLimitLayer` bounds request rate, `RetryLayer` retries classified transient errors. Combining `LoadShedLayer` + `ConcurrencyLimitLayer` produces proper backpressure instead of unbounded queueing.
+- **Resilience layers** (outbound clients, shared services): combine `LoadShed` + `ConcurrencyLimit` for backpressure, not unbounded queueing; full tower stack in [production-resilience.md](./references/production-resilience.md).
 
 See [axum-service.md](./references/axum-service.md) for project layout, extractors, error types, graceful shutdown, and OpenAPI generation.
 
@@ -151,9 +137,9 @@ See [axum-service.md](./references/axum-service.md) for project layout, extracto
 - `rstest` for parametrized tests and fixtures. `proptest` / `quickcheck` for property-based tests on pure logic.
 - `insta` for snapshot testing CLI output, serialization, large structs. Review diffs with `cargo insta review`.
 - `assert_cmd` + `predicates` for CLI integration tests (invokes the binary, asserts on stdout/stderr/exit code).
-- **Assert on error variants with `matches!`**: `assert!(matches!(result.unwrap_err(), MyError::Validation(_)))`. Cleaner than `match` arms when the test only cares whether the error is the right kind, and doesn't force updates when unrelated variants are added.
+- **Assert on error variants with `matches!`**: `assert!(matches!(result.unwrap_err(), MyError::Validation(_)))` — no `match` arms to update when unrelated variants are added.
 - Coverage: `cargo llvm-cov --workspace --html`. Target 70%+ on application code, higher on library crates.
-- **Fuzzing for parsers**: `cargo fuzz` + `libfuzzer-sys` on any code that parses untrusted input (file formats, protocols, query languages). A short nightly fuzz run surfaces the panics and UB that unit tests miss.
+- **Fuzzing for parsers**: `cargo fuzz` + `libfuzzer-sys` on any code parsing untrusted input; nightly runs surface panics and UB unit tests miss.
 
 For generic test discipline (anti-patterns, mock rules, rationalization resistance), see the `ia-writing-tests` skill.
 
@@ -164,7 +150,7 @@ For generic test discipline (anti-patterns, mock rules, rationalization resistan
 - Keep `unsafe` blocks minimal — wrap in a safe abstraction at module boundary, mark the module `pub(crate)`.
 - Use `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic — catches UB that optimizers mask.
 - Prefer `bytemuck`, `zerocopy`, `bytes` over hand-rolled transmutes for zero-copy patterns.
-- **`std::env::set_var` and `remove_var` are `unsafe` under edition 2024.** Concurrent `getenv` from another thread is UB at the libc level; the unsafety can't be wrapped away by `OnceLock::call_once` or `std::sync::Once` — they ensure the closure runs once, not that it runs while no other thread is reading the environment. Pin every env-var write to single-threaded startup, before `tokio::main` or any `std::thread::spawn`. Common offender: native-library discovery paths (`LD_LIBRARY_PATH`, `ORT_DYLIB_PATH`, `LIBTORCH`, plugin loader paths) set lazily on first use — compute and set them in `main` (or a `static` initializer that runs before the runtime) so they're written before any concurrent reader exists.
+- **Env-var writes are `unsafe` in edition 2024. Write them only in `main`, before the runtime starts or any thread spawns.** Concurrent `getenv` is UB; `OnceLock` does not make it safe. Watch for lazy `LD_LIBRARY_PATH`-style writes on first use — hoist them to startup.
 
 ## Production Resilience
 
@@ -184,7 +170,6 @@ General CI design lives with the `ia-infrastructure-engineer` agent. For Rust-sp
 - Only touch what's necessary — avoid unrelated changes in a PR.
 - No `#[allow(clippy::...)]` as a shortcut — fix the underlying issue. Document exceptions with a rationale.
 - Before adding a trait or generic, verify it's used in 3+ places. Otherwise a concrete type is clearer.
-- Verify: see Verify section — pass all checks with zero warnings before declaring done.
 
 ## Verify
 
@@ -193,12 +178,3 @@ General CI design lives with the `ia-infrastructure-engineer` agent. For Rust-sp
 - `cargo nextest run --workspace` (or `cargo test --workspace`) passes with zero failures
 - `cargo deny check` passes (licenses, advisories, duplicates) for any crate going to production
 - No new `unsafe` without `// SAFETY:` comment
-
-## References
-
-- [cli-tools.md](./references/cli-tools.md) — clap patterns, config layering, tracing setup, progress, shell completions
-- [axum-service.md](./references/axum-service.md) — project layout, extractors, error types, graceful shutdown, testing
-- [build-profiles.md](./references/build-profiles.md) — release/release-dbg/release-min profiles, mold linker, dev compile speedups
-- [ci-pipeline.md](./references/ci-pipeline.md) — Rust-specific CI steps (cargo audit, llvm-cov, rust-cache, matrix strategy, doc tests)
-- [production-resilience.md](./references/production-resilience.md) — fail-fast config, health/ready endpoints, graceful shutdown, retries, timeouts, connection pools
-- [observability.md](./references/observability.md) — tracing init recipe, span instrumentation, correlation IDs, metrics, distributed tracing

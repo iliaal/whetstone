@@ -20,9 +20,18 @@ Filesystem     = Disk (persistent, unlimited)
 
 Planning tokens are cheaper than implementation tokens. Front-load thinking; scale effort to complexity.
 
+## Procedure
+
+1. Run the *Goal Quality Gate* on the stated goal.
+2. Pick the path per *When to Plan*: full plan, flat list, or skip.
+3. For a full plan, scaffold `.plan/` via [init-plan.sh](./scripts/init-plan.sh).
+4. Write the plan per the *Plan Template*, applying the quality, sizing, and task rules.
+5. Run the *Verify* checklist against the finished plan.
+6. Offer the *Execution Handoff* choice.
+
 ## Goal Quality Gate
 
-Run this gate before *When to Plan* below — a weak goal wastes tokens on any path (full plan, flat list, or skip) and produces an unverifiable result. Answer these five questions first:
+Run this gate before *When to Plan* below — a weak goal wastes tokens on any path and produces an unverifiable result. Answer these five questions first:
 
 1. **What concrete thing will be true when this is done?** (named artifact, system state, or user-visible behavior — not "improve X" or "investigate Y")
 2. **What evidence will prove it?** (specific test, command, screenshot, metric — not "looks right")
@@ -30,7 +39,7 @@ Run this gate before *When to Plan* below — a weak goal wastes tokens on any p
 4. **What scope boundaries matter?** (which files/modules/environments are in scope; which are explicitly not)
 5. **What should cause the agent to stop and ask?** (which decisions belong to the user, not Claude)
 
-Repair weak goals before continuing. Reject pure-activity goals ("make progress", "keep investigating", "improve things") -- rewrite them into a verifiable outcome or ask one concise clarification before planning. Skip this gate only when the request already names a specific artifact AND a clear success signal in the user's own words -- e.g., "fix typo in README line 47", "rename `oldFn` to `newFn` across the repo", "bump lodash to 4.17.21". Anything vaguer than that runs the gate.
+Reject pure-activity goals ("make progress", "keep investigating", "improve things") -- repair them into a verifiable outcome or ask one concise clarification before planning. Skip this gate only when the request already names a specific artifact AND a clear success signal in the user's own words -- the same choice-free cases listed under *When to Plan* below. Anything vaguer than that runs the gate.
 
 ## When to Plan
 
@@ -39,9 +48,9 @@ Repair weak goals before continuing. Reject pure-activity goals ("make progress"
 - **Full plan** (.plan/ directory): multi-file changes, new features, refactors, >5 tool calls
 - **Flat list** (inline checklist): 3-5 file changes, clear scope, no research -- a numbered task list in the conversation or a single progress.md, no .plan/ scaffolding
 
-**Skip planning only when ALL of these hold:** the work is **atomic** (one commit, no unit boundaries worth breaking out); there are **no KTDs** (no design choice between approaches worth recording -- if the implementer must pick between two, that's a KTD and a plan is warranted); the **scope is self-evident** from the request, with no boundaries worth pinning in writing; and **no upstream artifact** (brainstorm, incident report, deferred follow-up) needs traceability through this plan.
+**Skip planning only when ALL of these hold:** the work is **atomic** (one commit, no unit boundaries worth breaking out); there are **no KTDs** (Key Technical Decisions: choices between approaches; each KTD becomes a *Key Decisions* entry in the plan -- if one exists, plan); the **scope is self-evident** from the request, with no boundaries worth pinning in writing; and **no upstream artifact** (brainstorm, incident report, deferred follow-up) needs traceability through this plan.
 
-**Stress test the "looks atomic" case.** Many requests look atomic but hide design decisions. *"Add caching to this endpoint"* sounds atomic, but TTL, invalidation, cache-key shape, and backend selection are all KTDs -- write the plan. The same trap hides in "migrate package A to B" (semantic differences) and "add rate limiting" (algorithm, scope, configurability). Genuine skips are choice-free: *"fix typo in README line 47"*, *"rename `oldFn` to `newFn` across the repo"*, *"bump dependency X to v2.3.1"* (unless breaking changes warrant a unit-by-unit migration).
+**Stress test the "looks atomic" case.** Many requests look atomic but hide design decisions. *"Add caching to this endpoint"* sounds atomic, but TTL, invalidation, cache-key shape, and backend selection are all KTDs -- write the plan. The same trap hides in "migrate package A to B" and "add rate limiting". Genuine skips are choice-free: *"fix typo in README line 47"*, *"rename `oldFn` to `newFn` across the repo"*, *"bump lodash to 4.17.21"* (unless breaking changes warrant a unit-by-unit migration).
 
 When skipping the plan doc, work proceeds directly to `/ia-work` or to implementation, and any decisions made along the way land in the commit message or `docs/solutions/` if worth carrying forward.
 
@@ -54,11 +63,11 @@ SKILL_DIR="<absolute path of the directory containing this SKILL.md>"
 bash "$SKILL_DIR/scripts/init-plan.sh" "Feature Name"
 ```
 
-Anchor the call to `SKILL_DIR` (filled in by the agent) rather than a bare `init-plan.sh` — a relative path resolves against the caller's working directory, not the skill, and breaks when the skill runs from a subdirectory or under a non-Claude harness.
+Substitute the real absolute path before running; never execute the command with the angle-bracket placeholder. Anchor the call to `SKILL_DIR` rather than a bare `init-plan.sh` — a relative path resolves against the caller's working directory, not the skill, and breaks from a subdirectory or under a non-Claude harness.
 
-This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` (pre-populated) and adds `.plan/` to `.gitignore`.
+This creates `.plan/` with the three pre-populated files below and adds `.plan/` to `.gitignore`.
 
-`.plan/` files are ephemeral working state -- do not commit them; old files are overwritten when starting a new feature. Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; the two coexist -- `.plan/` supports the work session, `docs/plans/` stores the committed plan.
+`.plan/` files are ephemeral working state -- do not commit them; old files are overwritten when starting a new feature. Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; `.plan/` supports the work session.
 
 | File | Purpose | Update When |
 |------|---------|-------------|
@@ -68,7 +77,7 @@ This creates `.plan/` with `task_plan.md`, `findings.md`, and `progress.md` (pre
 
 ## Test Discovery (Existing Projects)
 
-For existing (non-greenfield) code, discover the test landscape before planning: find related test/spec files (`Glob("**/*test*")`, `Grep`), read the canonical test command from config (`package.json` scripts, `pytest.ini`, `phpunit.xml`, CI), and note coverage gaps -- the plan should extend existing test patterns, not introduce new frameworks. Skip for greenfield projects with no tests yet.
+For existing code, discover the test landscape before planning: find related test/spec files (`Glob("**/*test*")`, `Grep`), read the canonical test command from config (`package.json` scripts, `pytest.ini`, `phpunit.xml`, CI), and note coverage gaps -- the plan should extend existing test patterns, not introduce new frameworks. Skip for greenfield projects with no tests yet.
 
 ## Reference Implementations
 
@@ -87,13 +96,13 @@ When target behavior is hard to describe but an existing implementation embodies
 - **Out**: [what's explicitly excluded]
 
 ## Global Constraints
-[Spec-wide requirements that bind every phase -- version floors, naming/format rules, platform limits, security or compatibility invariants. Copy exact values verbatim from the spec; do not paraphrase. Omit the section only when the work has no project-wide constraint. Each task implicitly inherits these.]
+[Binds every phase: version floors; naming/format rules; platform limits; security/compatibility invariants. Exact spec values verbatim, never paraphrased. Every task inherits these. Omit if none.]
 
 ## Key Decisions (review first)
-[The decisions most likely to change on review -- data model shapes, new type/interface contracts, and user-facing or UX flows. List each as: the choice made, the discarded alternative, and one line on why. Surface these before the file map and phases so a reviewer can redirect the design before mechanical work is planned around it. Mechanical refactoring is trusted to the implementer and belongs in the phases below, not here. Omit only when no non-obvious choice was made.]
+[Decisions likeliest to change on review: data model shapes; new type/interface contracts; user-facing or UX flows. Per decision: choice, discarded alternative, one-line why. Listed first so review redirects design before mechanical work is planned around it; mechanical refactoring stays in the phases. Omit if no non-obvious choice was made.]
 
 ## File Structure
-[Map ALL files that will be created or modified, with one-line responsibility for each. Lock in decomposition decisions before defining tasks. Write for a zero-context engineer.]
+[ALL files created or modified, one-line responsibility each; locks decomposition before tasks are defined. Write for a zero-context engineer.]
 
 | File | Action | Responsibility |
 |------|--------|---------------|
@@ -112,12 +121,6 @@ When target behavior is hard to describe but an existing implementation embodies
 ## Phase 2: [Name]
 ...
 
-## Execution Posture
-- [Optional per-phase signals that shape implementation sequencing]
-  - `test-first`: write failing test before implementation
-  - `characterization-first`: capture existing behavior before changing it
-  - `external-delegate`: mark units suitable for parallel/external execution
-
 ## Deferred to Implementation
 - [Things intentionally left unspecified -- details that depend on what you find in the code]
 
@@ -127,13 +130,13 @@ When target behavior is hard to describe but an existing implementation embodies
 
 ### Plan Quality Rules
 
-**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths -- not vague directives. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Each task must be self-contained -- repeat the spec, code pattern, or file path in every task that needs it. The implementer may read tasks out of order, and vague tasks produce vague implementations. If a step cannot be specified concretely, it needs further breakdown before it belongs in a plan.
+**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Tasks may be read out of order -- repeat the spec, code pattern, or file path in every task that needs it. A step that cannot be specified concretely needs further breakdown before it belongs in a plan.
 
 **Type-consistency check.** After writing all tasks, scan for naming drift. If Task 3 says `clearLayers()` but Task 7 says `clearFullLayers()`, that's a bug in the plan. Function names, variable names, and file paths must be consistent across all tasks.
 
-**No gold-plating.** Build exactly what the spec requires. If a feature, enhancement, or "nice-to-have" isn't in the requirements, don't add it. Quote the exact spec requirements in the plan and flag any additions explicitly as scope expansion needing approval. Basic first implementations are acceptable -- most need 2-3 revision cycles anyway.
+**No gold-plating.** Build exactly what the spec requires -- no features or "nice-to-haves" beyond it. Quote the exact spec requirements in the plan and flag any additions explicitly as scope expansion needing approval. Basic first implementations are acceptable -- most need 2-3 revision cycles anyway.
 
-**Front-load high-variance decisions.** Order the plan document by how likely each part is to change on review, not by execution order. Decisions that reshape the implementation if the reviewer redirects them -- data model changes, new type/interface contracts, user-facing behavior -- go at the top (the *Key Decisions* block). Mechanical refactoring and boilerplate go last. Reviewer attention is scarce; spend it on the choices that ripple, not the steps that get rubber-stamped. Execution order still governs the phases themselves (dependencies), but the review-facing decisions surface first.
+**Front-load high-variance decisions.** Order the plan document by how likely each part is to change on review, not by execution order -- the template's *Key Decisions* bracket defines what goes there; execution order still governs the phases themselves.
 
 ## Phase Sizing Rules
 
@@ -161,6 +164,8 @@ Not every decision needs user input:
 
 ## Clarifying Questions
 
+Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat.
+
 Scale to complexity:
 - Small task: 0-1 questions, assume reasonable defaults
 - Medium feature: 1-2 questions on critical unknowns
@@ -174,7 +179,7 @@ Write every task as if the implementer has zero context and questionable taste -
 
 - **Atomic**: one action, 2-5 minutes to complete. "Write the failing test" is a step. "Implement the feature" is not.
 - **Verb-first**: "Add...", "Create...", "Refactor...", "Verify..."
-- **Concrete**: name specific files, endpoints, components. Include exact commands with expected output, code snippets (not "add validation"), and file paths with line ranges for modifications.
+- **Concrete**: name specific files, endpoints, components. Include exact commands with expected output, code snippets, and file paths with line ranges for modifications.
 - **Ordered**: respect dependencies, sequential when needed
 - **Verifiable**: include at least one validation task per phase
 - **Complete**: do not defer test coverage, skip edge cases, or omit error handling to save time. The marginal cost of completeness during initial implementation is near-zero compared to retrofitting later.
@@ -185,7 +190,7 @@ Context management rules, error protocol (3-attempt escalation), iterative plan 
 
 ## Execution Posture Signals
 
-Phases can carry optional metadata that shapes how `/ia-work` sequences implementation. Default is tests-after; opt into `test-first`, `characterization-first`, or `external-delegate` per phase via the header (`## Phase 2: Auth middleware [test-first]`). Definitions and when to use each are in [execution-and-methodology.md](./references/execution-and-methodology.md).
+Phases can carry optional metadata that shapes how `/ia-work` sequences implementation. Default is tests-after; opt in per phase via the header (`## Phase 2: Auth middleware [test-first]`): `test-first` (write failing test before implementation), `characterization-first` (capture existing behavior before changing it), `external-delegate` (mark units suitable for parallel/external execution). When to use each is in [execution-and-methodology.md](./references/execution-and-methodology.md).
 
 ## Plan Deepening
 
@@ -193,7 +198,7 @@ When asked to "deepen" or "strengthen" an existing plan, load [plan-deepening.md
 
 ## Execution Handoff
 
-When a plan is complete, offer the user an explicit choice -- subagent-driven (dispatch each phase to a focused agent) or inline execution -- rather than drifting into implementation. State a one-sentence recommendation, then wait for the user to pick; do not auto-start either path. Dispatch discipline and portable task-prompt anchoring are in [execution-and-methodology.md](./references/execution-and-methodology.md).
+When a plan is complete, offer the user an explicit choice -- subagent-driven (dispatch each phase to a focused agent) or inline execution -- rather than drifting into implementation. State a one-sentence recommendation, then present the choice via the same ask mechanism as *Clarifying Questions* and wait for the user to pick; do not auto-start either path. Dispatch discipline and portable task-prompt anchoring are in [execution-and-methodology.md](./references/execution-and-methodology.md).
 
 ## Verify
 
@@ -211,4 +216,4 @@ When a plan is complete, offer the user an explicit choice -- subagent-driven (d
 - **Architecture decisions:** `/ia-adr` to record significant trade-offs (chosen approach, what was given up); ADRs outlive the plan.
 - **Threat modeling:** dispatch `ia-security-sentinel` in threat-model mode before implementation when the plan adds auth flows, payment handling, external API surfaces, or new trust boundaries -- architectural gaps are cheaper to fix in the plan than the code.
 - **Prose quality:** `ia-writing` to humanize plan language and strip AI slop.
-- **Execution handoff:** after approval, proceed to `/ia-work` or execute inline.
+- **Execution handoff:** after approval, per *Execution Handoff* above.

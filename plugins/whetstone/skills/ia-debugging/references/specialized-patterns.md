@@ -30,6 +30,11 @@ When a CI check fails on a PR or branch:
 
 Don't retry a CI run without changing something. If the same run failed twice, it's not flaky -- it's broken.
 
+## Post-Fix Passes
+
+- **Adversarial re-attack** (security-relevant fixes): after the bypass self-check, spawn a fresh-context agent, blind to the fix reasoning, and have it attack the patched code to find a variant input that still triggers the bad state. The fixing session cannot attack its own patch objectively -- it knows too much about the intended fix path.
+- **Fresh-context trim pass**: after the fix verifies, run a fresh-context pass asked only to "simplify to the smallest change that fixes the root cause." The fixing session is anchored to its own reasoning and over-reaches; a blind pass reliably finds the trim points without reintroducing the bug.
+
 ## Postmortem
 
 After resolving non-trivial bugs, document a lightweight postmortem:

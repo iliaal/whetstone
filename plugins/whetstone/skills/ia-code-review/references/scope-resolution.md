@@ -67,6 +67,15 @@ via this fallback chain:
 all committed work on the branch and reviews only the uncommitted delta. Stop and
 ask which base to use instead.
 
+### Stacked branches
+
+When a branch is stacked on another unmerged branch, `git merge-base HEAD
+<default-branch>` over-covers -- it sweeps in the sibling branch's commits,
+fabricating findings on files this change doesn't touch. Prefer the hosting
+platform's authoritative base SHA (PR/MR `base_sha`, or `gh pr diff`) over a
+locally computed merge-base. After the run, intersect every finding's path with
+the change's `--name-only` set and discard off-scope ones.
+
 ## Fetching existing PR discussions
 
 Before raising findings, reconcile prior review comments so you don't re-raise

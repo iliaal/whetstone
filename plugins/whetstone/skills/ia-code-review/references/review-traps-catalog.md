@@ -155,6 +155,54 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Fix:** before declaring a column-level rename complete, grep the full migration history for past renames of the same semantic. Past rename migrations are the best index of where the value lives — both columns *and* JSON payloads.
 
+## Findings resting on an unverified absence
+
+**Trap:** filing a finding whose load-bearing claim is a negative — "this symbol/handler/path doesn't exist" — based on a subagent's confident report, or on a hit from a broad/alternation grep pattern that actually matched other lines.
+
+**Reality:** proving absence needs whole-search-space coverage, which under-searching fakes. A subagent's confident negative is its least reliable output; a broad pattern that returned lines proves only that the pattern matched something, not that the exact symbol is missing. Positive findings ("here it is at file:line") are trustworthy; negatives are not symmetric and must be re-derived.
+
+**Fix:** before any finding depends on an absence, check it directly: read the region, or grep the *exact* symbol expecting zero lines. Re-derive every negative that arrived second-hand.
+
+## Regression claims without a baseline read
+
+**Trap:** calling a behavioral change a regression from the diff hunk alone — the removed lines look like a dropped feature, so the finding says "this removes X".
+
+**Reality:** a re-spec may have intentionally redefined the contract (its description, not the OLD code, is the oracle); a dropped branch may have been a latent bug; a sibling may have always omitted the field. Conversely, pre-existing code outside the diff *is* this change's responsibility when the new feature makes a previously-invisible defect user-visible — frame that as introduced here, not a follow-up.
+
+**Fix:** read the pre-change file at the base (`git show <base>:<file>`), not just the diff hunk, before filing a regression. When a regression is *confirmed* against the baseline, cite the introducing commit (SHA, author — via `git blame` or `git bisect`) as part of the finding's evidence, not just the symptom.
+
+## Mirror bug on widened/narrowed keys and guards
+
+**Trap:** accepting a fix that widens, narrows, or loosens a match key, dedup key, or guard because it demonstrably closes the reported failure.
+
+**Reality:** the change re-opens failure along the axis it now ignores: closing duplicate-on-no-match by widening a key opens false-merge-on-shared-key; loosening a guard to admit a good value admits bad ones too; tightening a matcher to drop a bad value drops legitimate ones.
+
+**Fix:** name one concrete opposite-defect case (real inputs, real key values) along the ignored axis before accepting the change. If no such case can be constructed, state that explicitly in the review.
+
+## Hide/filter/redact checked on one projection only
+
+**Trap:** verifying that a hide/filter/redact change removes the entity from the primary list and stopping there.
+
+**Reality:** responses surface the same entity through sibling fields — the structured list AND the raw documents/files, the array AND its `*_count`/`*_ids`/`total`, the summary projection AND the detail projection. A filter applied to one projection leaks the entity via a sibling field on the same response.
+
+**Fix:** enumerate every field in the response that surfaces the same entity, and require a test asserting the hidden entity is absent from *each* surfacing field, not just the primary list.
+
+## Self-dismissal wording that gets findings dropped
+
+**Trap:** wording a real finding with softeners — "INFO only", "no action required", "optional cleanup", "operational tradeoff".
+
+**Reality:** a downstream validator or second reviewer reads those phrases as a self-dismissal and drops the finding regardless of real severity. Severity tags (`[Minor]`, `[FYI]`) are fine; dismissive prose is not. Hypothetical impact ("potentially hours") is easy to wave off.
+
+**Fix:** anchor severity in concrete constants and numbers from the code ("20-minute floor", "every inactive bar") — a named constant is harder to wave off than a hypothetical. State the severity tag and stop; no minimizing commentary.
+
+## Plan-mandated defects vs. documented overrides
+
+**Trap:** treating everything the plan, task brief, or convention doc blesses as beyond review — or the opposite, re-raising a concern the project has explicitly overridden.
+
+**Reality:** two distinct cases hinge on the rationale. A rationale-backed override in `CLAUDE.md`, `AGENTS.md`, or an inline comment ("we allow X because Y") is owner-blessed: honor it, don't re-raise the concern or work around it "just to be safe"; if the override lacks a rationale, suggest documenting one — don't argue the rule. But a plan or task brief that *mandates something the rubric calls a defect* (a test that asserts nothing, verbatim duplication of a logic block) is not self-justifying — the plan does not grade its own work.
+
+**Fix:** honor rationale-backed overrides. Report plan-mandated defects as findings labeled "plan-mandated" for the human to adjudicate — don't silently approve them as spec-required and don't silently "fix" them.
+
 ## Error-string match against uncaptured subprocess output
 
 **Trap:** a finding (or a test) that asserts on a captured error string from a spawned subprocess -- `expect(err.message).toContain("ENOENT")`, `assert "syntax error" in str(exc)`, matching `$result->getMessage()` against a tool's diagnostic. The reviewer accepts it as a real check on the program's output.

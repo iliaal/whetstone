@@ -11,7 +11,7 @@ paths: "**/*.tsx,**/*.jsx"
 
 # React Frontend
 
-**Verify before implementing**: For App Router patterns, React 19 APIs, or version-specific behavior, look up current docs via Context7 (`query-docs`) before writing code. Training data may lag current releases.
+**Verify before implementing**: For App Router patterns, React 19 APIs, or version-specific behavior, look up current docs (Context7 `query-docs` if available, else the framework's official docs via web search) before writing code. Training data may lag current releases.
 
 ## Component TypeScript
 
@@ -49,15 +49,15 @@ Effects are escape hatches -- most logic should NOT use effects.
 
 ## Concurrency & Race Classes
 
-Frontend bugs that survive type-checking and unit tests usually land in one of five race classes. Hunt each one explicitly during review:
+Five race classes survive type-checking and unit tests -- hunt each one during review (cleanup/cancellation mechanics: Effect rules above):
 
-1. **Lifecycle cleanup gaps** -- in-production signal: "Can't perform state update on an unmounted component" warnings, slow-burn memory leaks under rapid navigation, duplicate event handlers firing. Root cause: `useEffect` registered a listener/timer/observer without returning cleanup (see Effect rules above for the rule).
-2. **Remount-timing mistakes** -- async callbacks mutate DOM or state after swap / disconnect / route change. Classic cases: a `fetch().then(setData)` resolves after navigation to a different route; a `requestAnimationFrame` fires after the parent unmounts. See "Data fetching" in Effect rules above for the cancellation hierarchy.
-3. **Boolean-as-state for UI that isn't binary** -- `isLoading: boolean` can't represent `idle | loading | success | error | retry` without creating inconsistent combinations (`isLoading: true, error: Error` is contradictory). Prefer an explicit state constant (`'idle' | 'loading' | 'success' | 'error'`) with a transition function so invalid states are unreachable.
-4. **Stale promises and timers with no cancel path** -- a promise chain or `setTimeout` holds a reference to `setState` after the component's moved on. Bind every async operation to a cancel mechanism per the cancellation hierarchy above, and verify the cleanup path is exercised by a test.
-5. **Per-element handlers where delegation would be safer** -- attaching `onClick` to every row in a list creates N closures and N subscriptions; delegated listeners (single handler on the parent reading `event.target.closest(...)`) are safer under rapid re-renders, avoid stale-closure bugs, and scale to large lists. Use delegation when the list exceeds ~50 items or updates frequently.
-
-These classes produce bugs that are intermittent, environment-dependent, and invisible to type-checking -- exactly the ones that reach production. Review for them deliberately, not just as "subscriptions need cleanup."
+| Class | Production signal | Fix |
+|-------|-------------------|-----|
+| Lifecycle cleanup gap | "state update on unmounted component" warnings, leaks under rapid navigation | Return cleanup from every effect that registers a listener/timer/observer |
+| Remount-timing mistake | Async callback mutates state/DOM after route change/unmount (`fetch().then(setData)` resolves post-navigation) | Cancel per the cancellation hierarchy |
+| Boolean-as-state for non-binary UI | Contradictory combos (`isLoading: true, error: Error`) | State constant (`'idle' \| 'loading' \| 'success' \| 'error'`) + transition function; invalid states unreachable |
+| Stale promise/timer, no cancel path | Promise chain or `setTimeout` holds `setState` after the component moved on | Bind every async op to a cancel mechanism; test the cleanup path |
+| Per-element handlers on large lists | N closures/subscriptions per row, stale-closure bugs on rapid re-renders | Delegate: one parent handler + `event.target.closest(...)` when >~50 items or frequent updates |
 
 ## State Management
 
@@ -73,8 +73,8 @@ Form state           → React Hook Form
 **Key patterns:**
 - Zustand: `create<State>()(devtools(persist((set) => ({...}))))` -- use slices for scale, selective subscriptions to prevent re-renders
 - React Query: query keys factory (`['users', 'detail', id] as const`), `staleTime`/`gcTime`, optimistic updates with `onMutate`/`onError` rollback
-- Separate client state (Zustand) from server state (React Query) -- never duplicate server data in client store
-- Colocate state close to where it's used; don't over-globalize
+- Never duplicate server data (React Query) in a client store (Zustand)
+- Colocate state close to where it's used
 
 ## Performance
 
@@ -97,12 +97,12 @@ Form state           → React Hook Form
 - Lazy state init: `useState(() => expensiveComputation())`
 - `useTransition` for non-urgent updates (search filtering)
 - `useDeferredValue` for expensive derived UI
-- Don't subscribe to searchParams/state if only read in callbacks -- read on demand instead
+- Don't subscribe to searchParams/state read only in callbacks -- read on demand
 - Use ternary (`condition ? <A /> : <B />`), not `&&` for conditionals
 - `React.memo` only for expensive subtrees with stable props
 - Hoist static JSX outside components
 
-**React Compiler** (React 19): auto-memoizes -- write idiomatic React, remove manual `useMemo`/`useCallback`/`memo`. Enable via framework config (Next.js: `reactCompiler: true` in next.config). Non-framework: install `babel-plugin-react-compiler`. Keep components pure.
+**React Compiler** (React 19): auto-memoizes -- write idiomatic React, remove manual `useMemo`/`useCallback`/`memo`. Enable via `reactCompiler: true` in next.config (non-framework: `babel-plugin-react-compiler`). Keep components pure.
 
 ## React 19
 
@@ -134,7 +134,15 @@ Form state           → React Hook Form
 - `fetch(url, { cache: 'no-store' })` -- dynamic
 - Tag-based: `fetch(url, { next: { tags: ['products'] } })` then `revalidateTag('products')`
 
-**Data fetching:** Fetch in Server Components where data is used. Use Suspense boundaries for slow queries. `React.cache()` for per-request dedup. `generateStaticParams` for static generation. `generateMetadata` for dynamic SEO. Static metadata with `title: { default: 'App', template: '%s | App' }` for cascading page titles. `after()` for non-blocking side effects (logging, analytics) -- runs after response is sent. Hoist static I/O (fonts, config) to module level -- runs once, not per request.
+**Data fetching:**
+- Fetch in Server Components where data is used
+- Use Suspense boundaries for slow queries
+- `React.cache()` for per-request dedup
+- `generateStaticParams` for static generation
+- `generateMetadata` for dynamic SEO
+- Static metadata with `title: { default: 'App', template: '%s | App' }` for cascading page titles
+- `after()` for non-blocking side effects (logging, analytics) -- runs after response is sent
+- Hoist static I/O (fonts, config) to module level -- runs once, not per request
 
 ## Testing (Vitest + React Testing Library)
 
@@ -148,15 +156,15 @@ Form state           → React Hook Form
 - Use `userEvent` over `fireEvent` for realistic interactions
 - `findBy*` for async elements, `waitFor` after state-triggering actions
 - `vi.clearAllMocks()` in `beforeEach`. Recreate state per test.
-General testing discipline (anti-patterns, rationalization resistance): see [ia-writing-tests](../writing-tests/SKILL.md) skill.
+General testing discipline (anti-patterns, rationalization resistance): see [ia-writing-tests](../ia-writing-tests/SKILL.md) skill.
 See [testing patterns and examples](./references/testing.md) for component, hook, and mocking examples.
 See [e2e testing](./references/e2e-testing.md) for Playwright patterns.
 
 ## Tailwind Integration
 
-For Tailwind v4 configuration, utility patterns, dark mode, and component variants, see [ia-tailwind-css](../tailwind-css/SKILL.md) skill.
+For Tailwind v4 configuration, utility patterns, dark mode, and component variants, see [ia-tailwind-css](../ia-tailwind-css/SKILL.md) skill.
 
-**Class sorting in JSX**: when using `clsx`, `cva`, `cn`, `tv`, or `tw` utility functions, keep Tailwind classes in canonical order. Configure `eslint-plugin-better-tailwindcss` with `useSortedClasses` and `functions: ["clsx", "cva", "cn", "tv", "tw"]` to enforce this automatically across JSX attributes and helper calls.
+**Class sorting in JSX**: keep Tailwind classes in canonical order (enforce via `eslint-plugin-better-tailwindcss`).
 
 ## Discipline
 
