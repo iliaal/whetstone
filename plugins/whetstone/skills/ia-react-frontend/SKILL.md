@@ -123,6 +123,8 @@ Form state           → React Hook Form
 
 **Decision:** Server Component unless it needs hooks, event handlers, or browser APIs. Split: server parent + client child. Isolate interactive components as `'use client'` leaf components -- keep server components static with no global state or event handlers.
 
+**RSC → client boundary:** pass only the fields a client component actually uses, not whole ORM rows or fetch objects. Every prop crossing the `'use client'` boundary is serialized into the RSC/HTML payload, so a 50-field `user` object read for one field still ships all 50.
+
 **Routing patterns:**
 - Route groups `(name)` -- organize without affecting URL
 - Parallel routes `@slot` -- independent loading states in same layout
@@ -143,6 +145,7 @@ Form state           → React Hook Form
 - Static metadata with `title: { default: 'App', template: '%s | App' }` for cascading page titles
 - `after()` for non-blocking side effects (logging, analytics) -- runs after response is sent
 - Hoist static I/O (fonts, config) to module level -- runs once, not per request
+- Never hold request-scoped or user data in module-level mutable state -- server renders run concurrently in one process, so shared module state leaks across requests (one user's data surfacing in another's response). Hoist only immutable static I/O; keep request data local to the render tree (pass as props)
 
 ## Testing (Vitest + React Testing Library)
 
