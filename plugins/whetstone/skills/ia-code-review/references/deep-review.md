@@ -74,6 +74,8 @@ After the parallel specialists return, dispatch a single red-team agent that rec
 
 Dispatch the red-team pass when: diff >200 lines, OR any specialist found a Critical finding. Skip for small/simple diffs where the parallel pass is sufficient.
 
+Also dispatch red-team **regardless of diff size** when the change *is a verification mechanism* — CI/CD gating logic, merge-blocking checks, build/deploy steps, coverage/lint gates, or test infra and mocks that could mask a real failure. Here the risk is fidelity, not blast radius: the mechanism can go green while the thing it guards is red, so a 5-line change escapes the size and Critical triggers above. Apply the "can this silently false-pass?" lens even to a tiny diff. Scope guard: this fires on the guard/gate mechanism itself, not on ordinary per-feature test assertions.
+
 Red-team findings merge into the main report with a `[red-team]` tag. Use default model.
 
 ## Merge Algorithm
@@ -129,7 +131,7 @@ CONSOLIDATED FINDINGS (only those with confidence ≥0.70):
 
 ### Applying Skeptic Output
 
-- **DISPROVED with concrete citation** → drop the finding. Note in output header: `Skeptic dropped N finding(s)`.
+- **DISPROVED with concrete citation** → drop the finding. Note in output header: `Skeptic dropped N finding(s)`. Before dropping a **Critical or Important** finding, independently re-read the cited guard/test at its `file:line`. If the specific defensive code the Skeptic cited is not actually there, the citation is phantom — flip the finding back to HELD and tag it `[skeptic-citation-unverified]` for manual review. Silently dropping a real Critical is the worst outcome of a review; one extra Read is cheap insurance against a confident-but-wrong disproof.
 - **DISPROVED without citation, or vague handwave** → ignore the disproof. The Skeptic must produce evidence, not opinion.
 - **WEAKENED** → demote one severity tier. Tag the finding `[skeptic-weakened: <reason>]` so the author sees the partial counter.
 - **HELD** → keep. Tag `[skeptic-held]` only on findings the Skeptic explicitly examined; this is positive signal that the finding survived adversarial review.

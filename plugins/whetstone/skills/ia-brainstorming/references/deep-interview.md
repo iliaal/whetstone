@@ -29,6 +29,14 @@ When a user answer leaves a gap on evidence, specificity, counterfactual, or att
 
 Interleave with narrowing moves; do not stack multiple probes in one turn.
 
+## Blindspot Pass for Unfamiliar Territory
+
+When the user signals they *cannot evaluate* a domain — explicit ("I know nothing about auth", "no idea, you pick") or implicit (deferring the same judgment-domain question to the agent 2+ times) — stop extracting guesses and map the decision surface for them instead.
+
+Distinguish **can't-evaluate** (no basis to choose) from **hasn't-decided** (has a basis, just hasn't picked). Only the first triggers this pass; a user who can weigh the options but is undecided gets the normal probes above. This guard keeps the pass from firing on every open question.
+
+Scope the pass to the unfamiliar territory only, not the whole interview. List 3-7 decisions and hazards the user can't see, each with 2-3 concrete options and a recommended default, and present them with `AskUserQuestion` (load its schema via `ToolSearch select:AskUserQuestion` first if unavailable) so the user chooses against real alternatives instead of the agent deciding silently. In a non-interactive context, treat the pass as declined and record the recommended defaults as explicit assumptions the user can override later.
+
 ## Integration Check Before Phase 1 Exit
 
 Before exiting Phase 1, mentally combine what the user has stated so far. If stated-A + stated-B + agent-default-C produces a downstream effect the user is unlikely to have tracked (e.g., "if mute lives on the rule AND we don't warn on delete, rule-delete silently loses pause state"), fire one open probe per genuine combination. Phase 2.5's call-outs are a safety net for residuals — *not* a punt list for consequences you should have surfaced here.

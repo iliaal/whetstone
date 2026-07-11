@@ -168,6 +168,7 @@ False intimacy or manufactured sincerity:
 
 - "creeps in"
 - "I promise" / "They exist, I promise"
+- "And that's okay." -- permission-granting closer; the reader doesn't need permission, cut it
 
 ## Telling Instead of Showing
 

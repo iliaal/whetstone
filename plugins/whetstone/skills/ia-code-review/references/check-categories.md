@@ -8,6 +8,7 @@ Load this reference during the line-by-line review step. Use the category lists 
 - Error paths (are failures handled or swallowed?)
 - Type safety (implicit conversions, `any` types, unchecked casts)
 - New enum/status/type values — trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff. Missing handler = wrong default at runtime.
+- Sentinel overload — a diff that reuses an existing sentinel (`null`, `undefined`, empty array/object, fallback enum) for a *new* state. If one value now means two things (consumers can't tell "no data" from "data exists but unsummarizable"), require a richer shape or explicit discriminator. "Type-checks and doesn't crash" is not the bar.
 
 ## Maintainability & Readability
 
