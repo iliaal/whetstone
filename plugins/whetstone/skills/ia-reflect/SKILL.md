@@ -48,7 +48,7 @@ If the session included PR or MR review activity in either direction, run this s
 
 ### 3. Operational Learnings
 
-Before listing improvements, scan the session for operational insights worth preserving. Apply the 5-minute filter: would knowing this save 5+ minutes in a future session? If yes, include it. Examples: a project-specific quirk, a command that failed unexpectedly, an approach that worked better than expected.
+Before listing improvements, scan the session for operational insights worth preserving. Apply the 5-minute filter: would knowing this save 5+ minutes in a future session? If yes, include it. Examples: a project-specific quirk, a project command that failed for a project-specific reason, an approach that worked better than expected.
 
 Exclude harness-level noise — "File has not been read yet", token-limit truncations, bash-quoting slips, and other tooling artifacts. Those aren't project learnings; capture the *project's* behavior, not the agent's mechanics.
 
@@ -78,7 +78,7 @@ Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
 
 ### 6. Capture Markers
 
-**The `remember:` prefix** is the highest-confidence capture signal. When the user writes a message beginning with `remember:`, treat everything after the colon as a memory candidate — no interpretation required. Save directly to the appropriate memory file with a one-line summary and the user's exact phrasing. Example: `remember: we never use Pest, always PHPUnit` → save to `feedback_phpunit_over_pest.md`.
+**The `remember:` prefix** is the highest-confidence capture signal. When the user writes a message beginning with `remember:`, treat everything after the colon as a memory candidate — no interpretation required. Save directly to the appropriate memory file with a one-line summary and the user's exact phrasing. "Directly" waives interpretation, not the step-4 pre-write check: still grep existing memory for duplicates and contradictions before writing (a `remember:` that contradicts a recorded entry gets the same merge/replace/keep-both handling). Example: `remember: we never use Pest, always PHPUnit` → save to `feedback_phpunit_over_pest.md`.
 
 **Correction patterns to watch for** (lower-confidence, batch these for review at `/ia-reflect` time):
 - "no, use X" / "actually, X" / "don't use Y, use X"

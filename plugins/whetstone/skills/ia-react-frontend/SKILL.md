@@ -123,7 +123,7 @@ Form state           → React Hook Form
 
 **Decision:** Server Component unless it needs hooks, event handlers, or browser APIs. Split: server parent + client child. Isolate interactive components as `'use client'` leaf components -- keep server components static with no global state or event handlers.
 
-**RSC → client boundary:** pass only the fields a client component actually uses, not whole ORM rows or fetch objects. Every prop crossing the `'use client'` boundary is serialized into the RSC/HTML payload, so a 50-field `user` object read for one field still ships all 50.
+**Server → client boundary:** pass only the fields a client component actually uses, not whole ORM rows or fetch objects. Every prop crossing the `'use client'` boundary is serialized into the payload, so a 50-field `user` object read for one field still ships all 50.
 
 **Routing patterns:**
 - Route groups `(name)` -- organize without affecting URL

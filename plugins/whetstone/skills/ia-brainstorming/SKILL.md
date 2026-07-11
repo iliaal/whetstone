@@ -85,7 +85,7 @@ Answer whichever you know; leave blanks for the rest.
 | Existing Patterns | Are there similar features in the codebase to follow? |
 | Non-goals | What is explicitly NOT in scope? |
 
-See [deep-interview.md](./references/deep-interview.md) for deep interview techniques, including **rigor probes** (evidence/specificity/counterfactual/attachment as open-ended forced production, not menus) and the **integration check** that fires before Phase 1 exit when combining stated answers + agent defaults produces an unsurfaced downstream effect.
+See [deep-interview.md](./references/deep-interview.md) for deep interview techniques, including **rigor probes** (evidence/specificity/counterfactual/attachment as open-ended forced production, not menus), the **blindspot pass** for domains the user can't evaluate, and the **integration check** that fires before Phase 1 exit when combining stated answers + agent defaults produces an unsurfaced downstream effect.
 
 **Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets and confirm with the user.
 

@@ -20,7 +20,7 @@ Apply the deep interview protocol on top of the baseline questions above. Assump
 
 ## Rigor Probes for Ambiguous Gaps
 
-When a user answer leaves a gap on evidence, specificity, counterfactual, or attachment, fire ONE open-ended probe per gap — *not* a multiple-choice menu. Menus signal which axes the agent thinks matter, biasing the user toward those axes; open-ended forces actual observation:
+When a user answer leaves a gap on evidence, specificity, counterfactual, or attachment, fire ONE open-ended probe per gap — *not* a multiple-choice menu (exception: territory the user can't evaluate, where menus are the right tool — see Blindspot Pass below). Menus signal which axes the agent thinks matter, biasing the user toward those axes; open-ended forces actual observation:
 
 - **Evidence:** "What's the most concrete thing someone's already done about this — paid for it, built a workaround, quit a tool over it?"
 - **Specificity:** "Can you name a team you've actually watched hit this, or are you reasoning?"
@@ -35,7 +35,7 @@ When the user signals they *cannot evaluate* a domain — explicit ("I know noth
 
 Distinguish **can't-evaluate** (no basis to choose) from **hasn't-decided** (has a basis, just hasn't picked). Only the first triggers this pass; a user who can weigh the options but is undecided gets the normal probes above. This guard keeps the pass from firing on every open question.
 
-Scope the pass to the unfamiliar territory only, not the whole interview. List 3-7 decisions and hazards the user can't see, each with 2-3 concrete options and a recommended default, and present them with `AskUserQuestion` (load its schema via `ToolSearch select:AskUserQuestion` first if unavailable) so the user chooses against real alternatives instead of the agent deciding silently. In a non-interactive context, treat the pass as declined and record the recommended defaults as explicit assumptions the user can override later.
+Scope the pass to the unfamiliar territory only, not the whole interview. List 3-7 decisions and hazards the user can't see, each with 2-3 concrete options and a recommended default, and present them with `AskUserQuestion` (load its schema via `ToolSearch select:AskUserQuestion` first if unavailable; in Codex use `request_user_input`; where no blocking tool exists, fall back to numbered options in chat) so the user chooses against real alternatives instead of the agent deciding silently. In a non-interactive context, treat the pass as declined and record the recommended defaults as explicit assumptions the user can override later.
 
 ## Integration Check Before Phase 1 Exit
 

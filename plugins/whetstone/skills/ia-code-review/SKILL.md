@@ -42,6 +42,8 @@ When the review target is a branch (not a working-tree diff), the comparison ran
 
 **Exceptions first** — these change types stay single-pass regardless of signal count: pure documentation/markdown changes; mechanical refactors (renames, moves) with no logic changes; single-file changes under 50 lines.
 
+**Verification-mechanism carve-out:** even when a change stays single-pass by the exceptions above, if it *is* a verification mechanism (CI/CD gate, merge-block check, coverage/lint gate, build/deploy step, or test infra/mock that could mask a real failure), apply the "can this silently false-pass?" lens during the single-pass review — the mechanism can go green while the thing it guards is red. In deep review this same lens runs as a size-independent red-team trigger (see [deep-review.md](./references/deep-review.md)).
+
 | Signal | Threshold |
 |--------|-----------|
 | Lines changed (excluding test files) | >300 |
