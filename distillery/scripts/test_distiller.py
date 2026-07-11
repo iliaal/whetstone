@@ -369,6 +369,38 @@ class TestStageSkill:
         assert (staging / "my-skill" / "SKILL.md").read_text() == "new"
         assert not (staging / "my-skill" / "OLD.md").exists()
 
+    def test_stages_claude_real_dir_when_no_agents_copy(self, tmp_project):
+        # Newer `npx skills add --agent claude-code` layout: the skill is copied
+        # straight into .claude/skills/<id> as a REAL directory with no .agents
+        # copy. It must be staged, not discarded as a stray symlink.
+        staging = tmp_project / ".skill-distiller" / "sources"
+        staging.mkdir(parents=True)
+        claude_dir = tmp_project / ".claude" / "skills" / "my-skill"
+        claude_dir.mkdir(parents=True)
+        (claude_dir / "SKILL.md").write_text("content")
+
+        distiller._stage_skill("my-skill")
+
+        assert not claude_dir.exists()
+        assert (staging / "my-skill" / "SKILL.md").read_text() == "content"
+
+    def test_agents_copy_wins_and_claude_dup_removed(self, tmp_project):
+        # Both layouts present: stage the .agents copy, drop the .claude duplicate.
+        staging = tmp_project / ".skill-distiller" / "sources"
+        staging.mkdir(parents=True)
+        agent_dir = tmp_project / ".agents" / "skills" / "my-skill"
+        agent_dir.mkdir(parents=True)
+        (agent_dir / "SKILL.md").write_text("agents")
+        claude_dir = tmp_project / ".claude" / "skills" / "my-skill"
+        claude_dir.mkdir(parents=True)
+        (claude_dir / "SKILL.md").write_text("claude-dup")
+
+        distiller._stage_skill("my-skill")
+
+        assert not agent_dir.exists()
+        assert not claude_dir.exists()
+        assert (staging / "my-skill" / "SKILL.md").read_text() == "agents"
+
 
 # ---------------------------------------------------------------------------
 # _validate_skill_id  (CR-018a: untrusted API id -> path traversal guard)

@@ -428,22 +428,41 @@ def _validate_skill_id(skill_id):
 
 
 def _stage_skill(skill_id):
-    """Move a fetched skill to staging and remove symlinks."""
+    """Move a fetched skill to staging and remove symlinks.
+
+    `npx skills add` places the fetched skill under one of two layouts depending
+    on version/agent: the older `.agents/skills/<id>` real dir (symlinked into
+    `.claude/skills/`), or — with `--agent claude-code` — directly under
+    `.claude/skills/<id>` as a real directory with no `.agents` copy. Stage
+    whichever real directory exists; only unlink a genuine symlink. Previously
+    this staged only the `.agents` copy and rmtree'd the `.claude` entry, which
+    silently discarded the sole real copy for repos using the newer layout.
+    """
     _validate_skill_id(skill_id)
     agent_path = SKILLS_AGENT_DIR / skill_id
     staging_path = STAGING_DIR / skill_id
     symlink_path = SKILLS_SYMLINK_DIR / skill_id
 
+    moved = False
     if agent_path.exists():
         if staging_path.exists():
             shutil.rmtree(staging_path)
         shutil.move(str(agent_path), str(staging_path))
+        moved = True
 
-    if symlink_path.is_symlink() or symlink_path.exists():
-        if symlink_path.is_dir() and not symlink_path.is_symlink():
-            shutil.rmtree(symlink_path)
+    # Check is_symlink() before is_dir(): a symlink-to-dir answers True to both.
+    if symlink_path.is_symlink():
+        symlink_path.unlink()
+    elif symlink_path.is_dir():
+        if moved:
+            shutil.rmtree(symlink_path)  # duplicate of the .agents copy we staged
         else:
-            symlink_path.unlink()
+            if staging_path.exists():
+                shutil.rmtree(staging_path)
+            shutil.move(str(symlink_path), str(staging_path))
+            moved = True
+    elif symlink_path.exists():
+        symlink_path.unlink()
 
 
 def fetch_skills(skills_list):
