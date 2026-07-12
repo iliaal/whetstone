@@ -36,5 +36,11 @@ if [[ "$installed_version" != "$expected_version" ]]; then
 	exit 1
 fi
 
-bash "$SCRIPT_DIR/sync-to-tools.sh"
-printf 'Whetstone Codex plugin installed and duplicate sources retired. Start a new Codex thread to load it.\n'
+# release.sh runs sync-to-tools itself after push, so it suppresses this one to
+# avoid a redundant second pass; standalone and refresh callers still need it.
+if [[ "${WHETSTONE_SKIP_POST_INSTALL_SYNC:-}" == "1" ]]; then
+	printf 'Whetstone Codex plugin installed and enabled; caller will retire duplicate sources.\n'
+else
+	bash "$SCRIPT_DIR/sync-to-tools.sh"
+	printf 'Whetstone Codex plugin installed and duplicate sources retired. Start a new Codex thread to load it.\n'
+fi

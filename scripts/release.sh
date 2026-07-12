@@ -135,7 +135,7 @@ echo "=== Release v${version} ==="
 echo ""
 
 # --- 1. Commit & Push ---
-echo "[1/6] Commit & push..."
+echo "[1/9] Commit, refresh Codex & push..."
 git add -A -- \
 	.agents/plugins/marketplace.json \
 	.claude-plugin/marketplace.json \
@@ -152,7 +152,8 @@ git commit -m "$commit_msg"
 
 if command -v codex >/dev/null 2>&1; then
 	echo "  Refreshing native Codex plugin before publication..."
-	bash "$SCRIPT_DIR/install-codex-plugin.sh" || {
+	# Skip install's own sync-to-tools; step 6 runs it once after push.
+	WHETSTONE_SKIP_POST_INSTALL_SYNC=1 bash "$SCRIPT_DIR/install-codex-plugin.sh" || {
 		echo "ERROR: Failed to install and activate the local Whetstone Codex plugin. Release commit was not pushed."
 		exit 1
 	}
@@ -165,12 +166,12 @@ git push origin master
 echo "  Pushed to origin/master"
 
 # --- 2. Sync GitHub repo description ---
-echo "[2/7] Sync repo description..."
+echo "[2/9] Sync repo description..."
 repo_desc=$(jq -r '.description' plugins/whetstone/.claude-plugin/plugin.json)
 gh repo edit --description "$repo_desc" 2>/dev/null && echo "  Updated repo description" || echo "  Failed to update repo description (non-fatal)"
 
 # --- 3. Create GitHub release on plugin repo ---
-echo "[3/7] Create GitHub release..."
+echo "[3/9] Create GitHub release..."
 # Extract changelog entry for this version
 release_notes=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;p;}" CHANGELOG.md)
 if gh release view "v${version}" &>/dev/null; then
@@ -184,7 +185,7 @@ else
 fi
 
 # --- 4. Mirror to ai-skills ---
-echo "[4/7] Mirror to ai-skills..."
+echo "[4/9] Mirror to ai-skills..."
 bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
 
 # Sync changelog: extract skill-related entries from plugin changelog
@@ -252,7 +253,7 @@ cd "$ROOT_DIR"
 # Non-fatal: a publish failure must not abort the remaining local steps
 # (sync-to-tools, update-plugin, tag fetch-back). Status is surfaced loudly in
 # the final summary with an exact resume command.
-echo "[5/8] Publish skills to ClawHub..."
+echo "[5/9] Publish skills to ClawHub..."
 clawhub_status="published"
 if npx clawhub@latest whoami >/dev/null 2>&1; then
 	if bash "$SCRIPT_DIR/publish-clawhub.sh"; then
@@ -267,11 +268,11 @@ else
 fi
 
 # --- 6. Sync to shared skill directories (Agents, Kilocode) ---
-echo "[6/8] Sync skills to other tools..."
+echo "[6/9] Sync skills to other tools..."
 bash "$SCRIPT_DIR/sync-to-tools.sh"
 
 # --- 7. Update local plugin ---
-echo "[7/8] Update local plugin..."
+echo "[7/9] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
 # --- 8. Sync tags ---
