@@ -11,11 +11,25 @@ description: >-
 
 ## Primitives
 
-Agents, teams, teammates, leaders, tasks, inboxes, messages, backends — see [primitives.md](./references/primitives.md) for definitions and the file-system layout.
+For Claude Code teams, see [primitives.md](./references/primitives.md). In Codex, use the active collaboration-tool schemas and [codex-quick-reference.md](./references/codex-quick-reference.md); do not assume Claude's team files or task store exist.
 
 ---
 
 ## Two Ways to Spawn Agents
+
+Resolve the host primitives before dispatching:
+
+- **Claude Code:** `Task(...)` for short-lived subagents; `Teammate(...)` plus named `Task(...)` for persistent teams.
+- **Codex:** `spawn_agent(...)` for short-lived subagents; `send_message(...)`, `followup_task(...)`, and `wait_agent(...)` for coordination. Use persistent teammates only when the active Codex environment exposes that capability.
+- **Other harnesses:** use their native subagent surface. If none exists, execute the units sequentially in the main thread.
+
+The comparison and examples immediately below describe Claude's two dispatch modes. Codex uses `spawn_agent` for both one-shot and follow-up work:
+
+```javascript
+spawn_agent({ task_name: "find_auth", fork_turns: "all", message: "Find the auth entry points and return paths only." })
+```
+
+Never emit a tool name or argument the active harness does not expose.
 
 | Aspect | Task (subagent) | Task + team_name + name (teammate) |
 |--------|-----------------|-----------------------------------|
@@ -42,7 +56,7 @@ For detailed agent type descriptions, see [agent-types.md](./references/agent-ty
 
 ### Parallel Fan-Out (for independent work)
 
-When dispatching multiple read-only or worktree-isolated agents whose work is independent, issue all Task calls in a SINGLE assistant message. Sequential dispatch across separate messages serializes what should run concurrently. Models do not reliably parallelize tool calls across separate messages -- state the single-message requirement explicitly.
+When dispatching independent read-only or worktree-isolated agents, issue the harness's native spawn calls without waiting between them. In Claude Code, place all `Task` calls in one assistant message. In Codex, issue the `spawn_agent` calls concurrently up to the active-agent limit. Waiting for one result before spawning the next serializes the fan-out.
 
 ```javascript
 // Correct: one message, multiple Task tool uses
@@ -59,7 +73,7 @@ Sequential dispatch (each Task in its own message, waiting on the previous to re
 
 ## Quick Reference
 
-For copy-paste spawn/message/task/shutdown snippets, load [quick-reference.md](./references/quick-reference.md).
+Load the reference for the active harness: [quick-reference.md](./references/quick-reference.md) for Claude Code or [codex-quick-reference.md](./references/codex-quick-reference.md) for Codex.
 
 ---
 
@@ -84,7 +98,7 @@ Cardinal rule: one owner per file. When files must be shared, designate a single
 
 **No parallel implementation agents (without worktrees):**
 
-Implementation agents share state via git by default, so parallel dispatch causes overwrites. Use `isolation: "worktree"` to give each agent its own copy. Without worktrees, dispatch implementation agents sequentially. Review, research, and analysis agents are always safe to parallelize (read-only).
+Implementation agents share state via git by default, so parallel dispatch causes overwrites. In Claude Code, use `isolation: "worktree"`. In Codex, create worktrees explicitly with the `ia-git-worktree` skill, then give each agent its assigned absolute worktree path; `spawn_agent` has no `isolation` argument. Without worktrees, dispatch implementation agents sequentially. Review, research, and analysis agents are safe to parallelize when they remain read-only.
 
 **Pre-dispatch file-intersection check** -- operationalize the one-owner-per-file rule with a runnable safety gate before every parallel dispatch:
 
@@ -94,14 +108,14 @@ Implementation agents share state via git by default, so parallel dispatch cause
    grep -h "^Owned Files:" -A 20 tasks/*.md | grep -v "^Owned Files:" | grep -v "^--$" | sort | uniq -d
    ```
    Any output is an overlapping file path that needs resolution.
-3. On overlap: either downgrade to serial (log the overlap and the reason), or assign worktree isolation (`isolation: "worktree"` per agent), or rewrite unit boundaries so files become exclusive.
+3. On overlap: either downgrade to serial, isolate each unit in a harness-supported worktree, or rewrite unit boundaries so files become exclusive.
 4. Even with no declared overlap, include this constraint verbatim in every parallel-dispatch prompt: *"Do not run `git add`, `git commit`, or the project's test suite while other parallel agents are active -- you'd race on the git index or thrash the test cache. Stage changes for the orchestrator to commit after integration."*
 
 The intersection check catches silent conflicts the controller misses at plan time; the dispatch-prompt constraint catches them when a unit's file list was incomplete.
 
-**Preset team compositions:** Start from a named preset before designing a custom team. See [team-compositions.md](./references/team-compositions.md) for the full table (Review / Debug / Feature / Fullstack / Migration / Security / Research), the cardinal `subagent_type` rule (read-only agents cannot implement), and custom-team guidelines. Use the smallest preset that covers all required dimensions — overlap between reviewers is a sizing signal to redefine focus areas, not add more agents.
+**Preset team compositions:** Start from a named preset before designing a custom team. See [team-compositions.md](./references/team-compositions.md) for the conceptual Review / Debug / Feature / Fullstack / Migration / Security / Research compositions. Its `subagent_type` fields are Claude-specific; in Codex, express the same read-only or implementation boundary in the task prompt and available permissions. Use the smallest preset that covers all required dimensions — overlap between reviewers is a sizing signal to redefine focus areas, not add more agents.
 
-**Model selection by task complexity:**
+**Model selection by task complexity:** Apply explicit model arguments only when the active harness exposes them. Claude Code supports the examples below; Codex's collaboration tools currently do not accept a per-agent model argument.
 
 | Task shape | Model |
 |-----------|-------|
@@ -127,7 +141,7 @@ Include the four statuses defined in `ia-verification-before-completion` (DONE, 
 | Root cause | Signal | Response |
 |-----------|--------|----------|
 | Missing context | Agent asked for a file, spec, or decision it needed | Provide the missing context, re-dispatch same agent |
-| Reasoning ceiling | Agent attempted, got stuck on a subtlety it cannot resolve | Escalate model (haiku → sonnet → opus) and re-dispatch |
+| Reasoning ceiling | Agent attempted, got stuck on a subtlety it cannot resolve | If supported, escalate the model; otherwise narrow the task or provide stronger evidence and re-dispatch |
 | Task too large | Agent made partial progress but hit token/complexity limits | Split into smaller tasks with explicit interface contracts |
 | Spec wrong | Agent surfaces a contradiction in the plan or a missing requirement | Escalate to the user -- do not re-dispatch |
 
@@ -147,15 +161,15 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 **Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
 
-**Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts: do not use AskUserQuestion, auto-choose the conservative/safe default, skip upgrade checks and telemetry. (Umbrella term: non-interactive context. Also called "Headless mode" in ia-brainstorming and ia-receiving-code-review; same rule: suppress blocking prompts when no user is present.) Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
+**Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry. (Umbrella term: non-interactive context. Also called "Headless mode" in ia-brainstorming and ia-receiving-code-review.) Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
 
-**Decision presentation -- never silently drop options.** When the orchestrator surfaces a user-facing choice (team composition, an escalation path, a spec-wrong fork) via AskUserQuestion and the choice carries more than four viable options -- the tool's per-question cap -- split it into sequential rounds (`D1.1`, `D1.2`, ...) rather than truncating to the first four. Truncation hides viable choices the user never sees and silently narrows their decision space. Surface any cross-option dependency inline in the round that introduces it. (In spawned sessions, the rule above takes precedence: don't ask at all -- auto-pick the safe default.)
+**Decision presentation -- never silently drop options.** Use the active harness's structured question tool when available, otherwise ask in chat. If its option cap cannot represent every viable choice, split the choice into sequential rounds (`D1.1`, `D1.2`, ...) instead of truncating it. Surface cross-option dependencies in the round that introduces them. In spawned sessions, the rule above takes precedence: do not ask; choose the safe default and report it.
 
 ---
 
 ## Context Carry-Forward
 
-After each turn, five strategies exist for moving context forward: Continue, Rewind, `/compact`, Subagent, `/clear`+brief. Choose deliberately — the default "Continue" is rarely best, and Rewind is strictly better than "correcting in place" after a failed attempt. See [context-carry-forward.md](./references/context-carry-forward.md) for the full decision table and rationale.
+Choose context carry-forward through capabilities the active harness exposes. Claude Code can use Continue, Rewind, `/compact`, Subagent, or `/clear`+brief; see [context-carry-forward.md](./references/context-carry-forward.md). In Codex, use a follow-up task for the same agent, a fresh agent with a focused handoff, automatic compaction, or a new thread with a brief. Do not emit Claude slash commands in Codex.
 
 ## Coordination Models
 
@@ -194,14 +208,15 @@ When designing multi-agent workflows that must survive partial failure, load [re
 | Document | When to load | What it covers |
 |----------|-------------|----------------|
 | [team-compositions.md](./references/team-compositions.md) | Sizing a team or choosing a preset | 7 preset compositions, subagent_type cardinal rule, custom-team guidelines |
-| [agent-types.md](./references/agent-types.md) | Choosing which agent to spawn | Built-in and plugin agent types with examples |
-| [teammate-operations.md](./references/teammate-operations.md) | Using TeammateTool for persistent agents | All 13 operations (spawnTeam, write, broadcast, requestShutdown, etc.) |
-| [task-system.md](./references/task-system.md) | Managing work items and dependencies | TaskCreate, TaskList, TaskGet, TaskUpdate, file structure |
+| [agent-types.md](./references/agent-types.md) | Claude Code agent types | Built-in and plugin `subagent_type` examples |
+| [teammate-operations.md](./references/teammate-operations.md) | Claude Code persistent teammates | All 13 operations (spawnTeam, write, broadcast, requestShutdown, etc.) |
+| [task-system.md](./references/task-system.md) | Claude Code work items and dependencies | TaskCreate, TaskList, TaskGet, TaskUpdate, file structure |
+| [codex-quick-reference.md](./references/codex-quick-reference.md) | Codex collaboration calls | Spawn, message, follow up, wait, and worktree guidance |
 | [message-formats.md](./references/message-formats.md) | Sending structured messages between agents | All JSON message examples (regular, shutdown, idle, plan approval) |
 | [orchestration-patterns.md](./references/orchestration-patterns.md) | Designing a multi-agent workflow | 6 patterns + 3 complete workflow examples |
 | [spawn-backends.md](./references/spawn-backends.md) | Troubleshooting agent spawn issues | Backend comparison, auto-detection, in-process/tmux/iterm2 |
 | [environment-config.md](./references/environment-config.md) | Configuring team environment | Environment variables and team config structure |
 | [handoff-templates.md](./references/handoff-templates.md) | Passing work between agents | QA FAIL and Escalation Report formats |
-| [context-carry-forward.md](./references/context-carry-forward.md) | Long sessions with orchestrated subagents | Continue / Rewind / compact / Subagent / clear+brief decision table |
+| [context-carry-forward.md](./references/context-carry-forward.md) | Claude Code context controls | Continue / Rewind / compact / Subagent / clear+brief decision table |
 | [anti-sycophancy.md](./references/anti-sycophancy.md) | Judge panels, parallel reviewers, subjective evals | Cold-start isolation, fresh instances per round, label randomization, convergence detection |
 | [resilience-patterns.md](./references/resilience-patterns.md) | Designing workflows that survive partial failure | Cascade prevention, failure classification, mid-pipeline compensation, post-failure synthesis |

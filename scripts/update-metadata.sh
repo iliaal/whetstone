@@ -22,6 +22,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PLUGIN_DIR="$REPO_ROOT/plugins/whetstone"
 SKILLS_DIR="$PLUGIN_DIR/skills"
 PLUGIN_JSON="$PLUGIN_DIR/.claude-plugin/plugin.json"
+CODEX_PLUGIN_JSON="$PLUGIN_DIR/.codex-plugin/plugin.json"
+CODEX_MCP_JSON="$PLUGIN_DIR/.mcp.json"
 MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 
 MODE="write"
@@ -73,11 +75,23 @@ if [[ "$MODE" == check ]]; then
         drift=1
     fi
 
-    # Version fields must agree across the two distribution files.
+    # Version fields must agree across all distribution files.
     plugin_ver=$(jq -r '.version' "$PLUGIN_JSON")
+    codex_ver=$(jq -r '.version' "$CODEX_PLUGIN_JSON")
     mkt_ver=$(jq -r '.plugins[0].version // .metadata.version // empty' "$MARKETPLACE_JSON")
     if [[ -n "$mkt_ver" && "$plugin_ver" != "$mkt_ver" ]]; then
         echo "DRIFT: version mismatch plugin.json ($plugin_ver) != marketplace.json ($mkt_ver)." >&2
+        drift=1
+    fi
+    if [[ "$plugin_ver" != "$codex_ver" ]]; then
+        echo "DRIFT: version mismatch Claude plugin.json ($plugin_ver) != Codex plugin.json ($codex_ver)." >&2
+        drift=1
+    fi
+
+    claude_mcp=$(jq -S '.mcpServers' "$PLUGIN_JSON")
+    codex_mcp=$(jq -S '.mcpServers' "$CODEX_MCP_JSON")
+    if [[ "$claude_mcp" != "$codex_mcp" ]]; then
+        echo "DRIFT: Context7 MCP configuration differs between Claude and Codex manifests." >&2
         drift=1
     fi
 
@@ -103,6 +117,8 @@ if [[ "$MODE" == write ]]; then
 
     # Validate JSON
     jq . "$PLUGIN_JSON" > /dev/null
+    jq . "$CODEX_PLUGIN_JSON" > /dev/null
+    jq . "$CODEX_MCP_JSON" > /dev/null
     jq . "$MARKETPLACE_JSON" > /dev/null
 fi
 

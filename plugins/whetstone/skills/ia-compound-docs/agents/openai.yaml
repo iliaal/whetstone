@@ -1,0 +1,5 @@
+interface:
+  display_name: Compound docs
+  short_description: Capture solved problems for team reuse.
+policy:
+  allow_implicit_invocation: false

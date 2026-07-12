@@ -1,0 +1,20 @@
+{
+  "name": "whetstone",
+  "interface": {
+    "displayName": "Whetstone"
+  },
+  "plugins": [
+    {
+      "name": "whetstone",
+      "source": {
+        "source": "local",
+        "path": "./plugins/whetstone"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

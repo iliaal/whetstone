@@ -52,25 +52,25 @@ npx skills add iliaal/ai-skills -a cursor
 
 ### Codex
 
-Codex's native plugin spec does not yet register custom agents, so we ship a Bun/TypeScript converter that generates Codex-native output from the Claude plugin source. Prerequisites: a local clone and `bun` installed.
+Install Whetstone's portable skills and Context7 integration through the repository's native Codex marketplace:
 
 ```bash
 git clone https://github.com/iliaal/whetstone
 cd whetstone
-bun install
-bun run src/index.ts install ./plugins/whetstone --to codex
+bash scripts/install-codex-plugin.sh
 ```
 
-By default the converter writes Codex skills and agents under `~/.codex/`. Override with `--codex-home ~/path/to/.codex` to target a non-default Codex install. Once native Codex plugin support for agents lands, this conversion step goes away.
+Start a new Codex thread after installation or update. The native package includes Whetstone's cross-harness skills and Context7 MCP server. Claude-specific agents, slash commands, and hooks remain available only through the Claude Code plugin.
 
-Before re-installing (or switching away from this plugin), back up stale artifacts:
+Two shared skills retain Claude's explicit-only `disable-model-invocation` metadata. Codex enforces the equivalent restriction through each skill's `agents/openai.yaml`. The current Codex runtime installs and loads this dual-harness package, although the standalone plugin-creator validator rejects those two Claude fields. Whetstone's regression suite treats the mapped fields as an intentional compatibility exception; it does not claim validator-clean source metadata.
+
+Normal Whetstone releases refresh the local Codex plugin before publication when `codex` is on `PATH`. For source edits between releases, use the wrapper that applies a temporary cachebuster, reinstalls, and restores the tracked release version:
 
 ```bash
-bun run src/index.ts cleanup --target codex              # moves ~/.codex/skills and ~/.codex/prompts to a timestamped backup
-bun run src/index.ts cleanup --target codex --dry-run    # preview only
+bash scripts/refresh-codex-plugin.sh
 ```
 
-Backups land under `~/.cache/whetstone/legacy-backup/`.
+The legacy converter remains available for OpenCode and other non-plugin targets.
 
 ### OpenCode
 
@@ -79,8 +79,6 @@ Same converter, different target. OpenCode reads skills from its per-project con
 ```bash
 bun run src/index.ts install ./plugins/whetstone --to opencode
 ```
-
-Pass `--also codex` to generate both Codex and OpenCode outputs in one invocation.
 
 Cleanup for OpenCode (and other targets) uses the same command:
 
@@ -92,17 +90,17 @@ bun run src/index.ts cleanup --target agents
 
 ### Additional targets (symlink-based)
 
-For tools that read skills directly from `~/.agents/skills`, `~/.codex/skills`, or `~/.kilocode/skills`, `scripts/sync-to-tools.sh` symlinks the plugin's skill directory into each path so edits land immediately without re-conversion. Intended for active development, not production installs.
+For tools that read skills directly from `~/.agents/skills` or `~/.kilocode/skills`, `scripts/sync-to-tools.sh` symlinks the plugin's skill directory into each path so edits land immediately without re-conversion. It removes legacy Whetstone-owned links from `~/.codex/skills` and adds managed Codex exclusions for the same skills discovered through `~/.agents/skills`; the native plugin remains Codex's single source.
 
 ```bash
-bash scripts/sync-to-tools.sh              # symlink into all three tool dirs
+bash scripts/sync-to-tools.sh              # symlink into shared non-Codex tool dirs
 bash scripts/sync-to-tools.sh --dry-run    # preview changes
 ```
 
 ## 🔗 Works well with
 
 - **[codesage](https://github.com/iliaal/codesage)** adds structural code intelligence (find symbols, references, dependencies, blast-radius analysis) as an MCP server. The plugin enforces discipline; codesage gives the agent the map of the codebase to apply that discipline against.
-- **[ai-skills](https://github.com/iliaal/ai-skills)** is the read-only mirror of this plugin's skills, packaged for non-Claude-Code agents. Use the plugin if you're on Claude Code; use the mirror if you're on Cursor, Codex, Gemini CLI, or similar.
+- **[ai-skills](https://github.com/iliaal/ai-skills)** is the read-only mirror of this plugin's skills for agents without native Whetstone plugin support.
 
 ## 🛠️ The workflow
 

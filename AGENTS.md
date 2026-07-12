@@ -19,11 +19,16 @@ whetstone/
 │   ├── update-metadata.sh        # Update component counts in plugin.json + marketplace.json
 │   ├── generate-skill-hooks.sh   # Generate hook patterns from SKILL.md frontmatter
 │   ├── mirror-to-ai-skills.sh    # Mirror plugin skills to ai-skills public repo
-│   ├── sync-to-tools.sh          # Symlink skills to .agents, .codex, .kilocode
+│   ├── configure-codex-skill-sources.py # Disable duplicate direct sources in Codex
+│   ├── install-codex-plugin.sh  # Install/enable plugin, then retire duplicate sources
+│   ├── refresh-codex-plugin.sh  # Cachebust/reinstall Codex without dirtying release version
+│   ├── sync-to-tools.sh          # Symlink skills to .agents/.kilocode; retire legacy Codex links
 │   └── update-plugin.sh          # Update locally installed plugin to latest version
 ├── CHANGELOG.md                 # Version history
 └── plugins/
     └── whetstone/     # The plugin
+        ├── .codex-plugin/
+        │   └── plugin.json      # Codex skills-plugin metadata
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
         ├── agents/              # Agents (all `ia-<name>.md`, flat layout)
@@ -58,18 +63,19 @@ Why this rule exists: per-change ceremony fragmented CHANGELOG.md into dozens of
 
 When `/release` runs, it:
 
-1. Bumps the version in `plugins/whetstone/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+1. Bumps the version in `plugins/whetstone/.claude-plugin/plugin.json`, `plugins/whetstone/.codex-plugin/plugin.json`, and `.claude-plugin/marketplace.json`
 2. Appends a CHANGELOG.md entry summarizing the commits since the last release
 3. Updates README.md component counts and tables
 4. Runs `bash scripts/update-metadata.sh` to sync descriptions and counts
 5. Validates JSON, then runs the pre-commit gates in order with these blocking statuses:
    - `update-metadata.sh --check` — **BLOCKING** (metadata/count drift)
+   - native Codex plugin regression (`test-codex-plugin.sh`) — **BLOCKING**
    - trigger regression tests (`test-triggers`) — **BLOCKING**
    - Tier-1 prompt-injection corpus scan — **BLOCKING on HIGH** findings
    - Tier-2 prompt-injection attestation verify — **BLOCKING**; **skipped with a WARNING** when no previous `v*` tag exists
    - skill-injection hook tests (`test-semantic`) — **NON-BLOCKING** (WARNING only; these are hook-firing tests, not the prompt-injection scan)
    - skill manifest regeneration (baseline reset to the last-released manifest first)
-6. Commits, pushes, mirrors to ai-skills, publishes to ClawHub, syncs to other tools
+6. Commits, refreshes the native Codex plugin before push, mirrors to ai-skills, publishes to ClawHub, and syncs shared skill directories
 
 Semver rules applied by `/release`:
 - **MAJOR** (1.0.0 → 2.0.0): breaking changes, major reorganization
@@ -77,7 +83,7 @@ Semver rules applied by `/release`:
 - **PATCH** (1.0.0 → 1.0.1): bug fixes, doc updates, improvements to existing components
 
 Enforcement:
-- Do not touch `plugin.json`, `marketplace.json`, `CHANGELOG.md`, or README component counts on regular edits. Commit the actual change and stop.
+- Do not touch release versions, `CHANGELOG.md`, or README component counts on regular edits. Commit the actual change and stop.
 - If a session-end summary says "bumped to vX.Y.Z" without the user invoking `/release`, that is a regression — back out the bump before handing off.
 - Exception: if the user explicitly asks for a version bump outside `/release`, do it. Otherwise `/release` is the sole authority for version state.
 
@@ -299,7 +305,9 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 | `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | After editing or adding skills |
 | `scripts/generate-skill-hooks.sh` | Generate draft `hooks/skill-patterns.sh` from SKILL.md frontmatter | After adding/removing skills (hand-tune regex after) |
 | `scripts/publish-clawhub.sh` | Publish skills to clawhub.ai registry (handles rate limits, skips existing versions) | During release (automatic) or manually |
-| `scripts/sync-to-tools.sh` | Symlink plugin skills to `~/.agents/skills`, `~/.codex/skills`, `~/.kilocode/skills` | After editing or adding skills |
+| `scripts/sync-to-tools.sh` | Symlink skills to shared directories; remove legacy Codex links and configure duplicate-source exclusions | After editing or adding skills |
+| `scripts/install-codex-plugin.sh` | Install and verify the native Codex plugin before retiring duplicate direct sources | Initial install and release refresh |
+| `scripts/refresh-codex-plugin.sh` | Reinstall local Codex source edits with a temporary, trap-restored cachebuster | During between-release Codex plugin development |
 | `scripts/update-plugin.sh` | Update locally installed plugin to latest pushed version | After pushing a new version to GitHub |
 | `scripts/post-thread.py` | Post tweet threads to X via Playwright CDP to Edge | After `/announce` drafts are approved |
 

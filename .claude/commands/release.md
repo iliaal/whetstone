@@ -29,11 +29,11 @@ Ask the user to confirm the bump type before writing anything, and offer a short
 
 ## Phase 3: Apply the bump
 
-1. Update `version` field in both `plugins/whetstone/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`. Both must match.
+1. Update `version` in `plugins/whetstone/.claude-plugin/plugin.json`, `plugins/whetstone/.codex-plugin/plugin.json`, and `.claude-plugin/marketplace.json`. All three must match.
 2. Prepend a new CHANGELOG.md entry with today's date, the new version, a one-line summary, and buckets of commits grouped under `### Added` / `### Changed` / `### Fixed` / `### Removed`. Use the writing skill to polish the tone before committing.
 3. Run `bash scripts/update-metadata.sh` to sync component counts into plugin.json and marketplace.json descriptions.
 4. Verify README.md agent/command/skill counts and tables still match reality — update if drift.
-5. Validate JSON: `jq . .claude-plugin/marketplace.json && jq . plugins/whetstone/.claude-plugin/plugin.json`.
+5. Validate JSON: `jq . .claude-plugin/marketplace.json .agents/plugins/marketplace.json plugins/whetstone/.claude-plugin/plugin.json plugins/whetstone/.codex-plugin/plugin.json plugins/whetstone/.mcp.json`.
 
 ## Phase 3.5: Tier-2 prompt-injection judge (sub-agents)
 
@@ -53,20 +53,23 @@ The attestation is bound to the changed files' content hash. If any of those fil
 
 Run `bash scripts/release.sh "$ARGUMENTS"` — this handles:
 
-- Version consistency check (plugin.json vs marketplace.json)
+- Version consistency check across the Claude plugin, Claude marketplace, and Codex plugin
 - **Pre-commit gates** (each with its blocking status):
   - `update-metadata.sh --check` — **BLOCKING**. Aborts if component counts / descriptions drifted from plugin.json + marketplace.json.
+  - Native Codex plugin regression (`test-codex-plugin.sh`) — **BLOCKING**. Proves manifest/MCP parity, source deduplication, refresh ordering, and failure behavior.
   - Trigger regression tests (`test-triggers`) — **BLOCKING**. Aborts on any failing trigger fixture.
   - Tier-1 prompt-injection corpus scan (`scan-injection`, deterministic) — **BLOCKING on HIGH**. Aborts if any HIGH-severity finding.
   - Tier-2 attestation verify (`scan-injection --verify-attestation`) — **BLOCKING**; verifies the Phase 3.5 sub-agent judge pass produced a valid content-bound attestation for the changed-file set. **Skipped with a WARNING** (non-blocking) when no previous `v*` tag exists.
   - Skill-injection hook tests (`test-semantic`) — **NON-BLOCKING**. Prints a WARNING on failure and continues. (These are deterministic hook-firing tests, distinct from the Tier-1/Tier-2 prompt-injection scan above.)
   - Skill manifest regeneration (`generate-manifest.py`) — the baseline is first reset to the last-released manifest (from the `v*` tag) so mid-work regens can't freeze changed skills at the old version and make ClawHub false-skip them.
-- Commit all plugin changes + CHANGELOG + marketplace.json, push to `origin/master`
+- Commit all plugin changes + CHANGELOG + both marketplaces
+- Refresh `whetstone@whetstone` in the local Codex installation after commit but before push; a configured Codex failure blocks publication
+- Push to `origin/master`
 - Sync the GitHub repo description from `plugin.json`
 - **Create the GitHub release on whetstone** — this mints the `v<version>` tag. Phase 1's `git log v<current>..HEAD` on the *next* release depends on this tag existing, so a skipped/failed GitHub release silently breaks the next changelog survey.
 - Mirror skills to `~/ai/ai-skills`, **sync the ai-skills CHANGELOG** (extract skill-related entries from this release's notes), push, and **create the ai-skills GitHub release**
 - Publish skills to the ClawHub registry via `publish-clawhub.sh` — **non-fatal** (see below)
-- Sync skills to other tools (Codex, Kilocode) via `sync-to-tools.sh`
+- Sync skills to shared Agents and Kilocode directories via `sync-to-tools.sh`; remove only legacy Whetstone-owned direct Codex links
 - Update the locally installed plugin via `update-plugin.sh`
 - `git fetch --tags` back-sync so local tags match the remote release tag just minted
 

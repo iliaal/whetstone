@@ -1,0 +1,38 @@
+{
+  "name": "whetstone",
+  "version": "4.2.1",
+  "description": "Engineering-discipline skills for planning, debugging, review, verification, and implementation in Codex.",
+  "author": {
+    "name": "Ilia Alshanetsky",
+    "url": "https://github.com/iliaal"
+  },
+  "homepage": "https://github.com/iliaal/whetstone",
+  "repository": "https://github.com/iliaal/whetstone",
+  "license": "MIT",
+  "keywords": [
+    "whetstone",
+    "engineering-workflows",
+    "code-review",
+    "debugging",
+    "planning"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Whetstone",
+    "shortDescription": "Apply disciplined engineering workflows in Codex.",
+    "longDescription": "Adds Whetstone's portable engineering skills for planning, debugging, implementation, review, verification, documentation, and stack-specific work, plus Context7 documentation retrieval.",
+    "developerName": "Ilia Alshanetsky",
+    "category": "Productivity",
+    "capabilities": [
+      "Engineering workflows",
+      "Code review",
+      "Documentation retrieval"
+    ],
+    "defaultPrompt": [
+      "Plan and implement this change with Whetstone.",
+      "Review this code with Whetstone.",
+      "Debug this failure systematically."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}
