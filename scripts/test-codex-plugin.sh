@@ -122,7 +122,7 @@ test_codex_source_exclusions_are_idempotent() {
 }
 
 test_development_refresh_restores_manifest() {
-	local tmp work fake_bin helper manifest before_hash after_hash calls sync_calls
+	local tmp work fake_bin helper manifest before_hash after_hash calls sync_calls fake_version
 	tmp=$(mktemp -d)
 	work="$tmp/work"
 	fake_bin="$tmp/bin"
@@ -135,6 +135,9 @@ test_development_refresh_restores_manifest() {
 	cp "$REPO_ROOT/scripts/install-codex-plugin.sh" "$work/scripts/install-codex-plugin.sh"
 	printf '%s\n' '#!/usr/bin/env bash' "printf \"sync\\n\" >>\"\$SYNC_CALLS_FILE\"" >"$work/scripts/sync-to-tools.sh"
 	cp "$REPO_ROOT/plugins/whetstone/.codex-plugin/plugin.json" "$manifest"
+	# Match what the cachebuster helper produces (<base>+codex.fixture) so the fake
+	# codex reports the same version the refreshed manifest carries, at any release.
+	fake_version="$(jq -r '.version' "$manifest" | cut -d'+' -f1)+codex.fixture"
 	cat >"$helper" <<'PY'
 import json
 import pathlib
@@ -158,7 +161,7 @@ EOF
 	chmod +x "$fake_bin/codex"
 
 	before_hash=$(sha256sum "$manifest" | awk '{print $1}')
-	CODEX_CALLS_FILE="$calls" SYNC_CALLS_FILE="$sync_calls" WHETSTONE_FAKE_VERSION='4.2.1+codex.fixture' CODEX_HOME="$tmp/home/.codex" PATH="$fake_bin:$PATH" \
+	CODEX_CALLS_FILE="$calls" SYNC_CALLS_FILE="$sync_calls" WHETSTONE_FAKE_VERSION="$fake_version" CODEX_HOME="$tmp/home/.codex" PATH="$fake_bin:$PATH" \
 		bash "$work/scripts/refresh-codex-plugin.sh" >/dev/null
 	after_hash=$(sha256sum "$manifest" | awk '{print $1}')
 

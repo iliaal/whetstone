@@ -5,6 +5,22 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-07-12
+
+Minor: native Codex plugin distribution. Codex users can now install Whetstone with `codex plugin marketplace add` instead of the old one-way TypeScript conversion into `~/.codex`. The plugin ships its skills and the Context7 MCP server through a versioned Codex manifest, and every release refreshes the local Codex install and deduplicates skill sources so each skill loads once. No skills, agents, or commands were added or removed (30 skills, 19 agents, 22 commands unchanged); the orchestrating-swarms skill was rewritten to work on both Claude Code and Codex.
+
+### Added
+
+- Native Codex plugin package. `plugins/whetstone/.codex-plugin/plugin.json` ships the skills and the Context7 MCP server, `plugins/whetstone/.mcp.json` holds the shared MCP config, and a repo-root `.agents/plugins/marketplace.json` lets `codex plugin marketplace add` install Whetstone directly. Run `bash scripts/install-codex-plugin.sh` to set it up, or `bash scripts/refresh-codex-plugin.sh` to reinstall local edits between releases.
+- Codex collaboration guidance for `ia-orchestrating-swarms`: a `codex-quick-reference.md` covering spawn, message, follow-up, wait, and worktree calls, plus `agents/openai.yaml` metadata that maps the explicit-only skills (`ia-compound-docs`, `ia-file-todos`) to Codex's `allow_implicit_invocation: false`.
+- `scripts/test-codex-plugin.sh`, a blocking release gate that checks manifest and MCP parity between the Claude and Codex packages, skill-source deduplication, refresh ordering, and failure handling.
+
+### Changed
+
+- `ia-orchestrating-swarms` now resolves its primitives against the active harness instead of assuming Claude's `Task`, `Teammate`, and `TaskCreate` tools. It documents the matching Codex calls (`spawn_agent`, `send_message`, `followup_task`, `wait_agent`), and its worktree-isolation, model-selection, and context-carry-forward guidance each branch by harness.
+- The release pipeline bumps and version-checks all three manifests, refreshes the local Codex plugin after the commit but before the push (a Codex install failure now blocks publication), and runs the Codex regression suite as a pre-commit gate. `sync-to-tools.sh` retires only the legacy Whetstone-owned Codex symlinks and manages a marked dedup block in `~/.codex/config.toml`; `update-metadata.sh` gained version and MCP parity checks for the Codex manifest.
+- README, AGENTS.md, and the `/release` command doc now describe the native Codex install path in place of the TypeScript converter.
+
 ## [4.2.1] - 2026-07-11
 
 Patch: a 14-day delta sync borrowing patterns from six external repos into the brainstorming, code-review, compound-docs, reflect, writing, and React skills, followed by a reactive audit that caught and fixed nine integration issues in those same edits. Plus a distillery fetch fix that had been silently blinding the marketplace scan. No components added or removed.
