@@ -31,6 +31,7 @@ Load this reference during the line-by-line review step. Use the category lists 
 
 - Silent failures — `.catch(() => [])` or log-and-forget patterns that swallow errors and return success
 - Trust assumption exploits — frontend-validated data not re-validated on the backend; internal service inputs treated as trusted
+- Agentic confused-deputy — a tool or function exposed to an LLM can invoke an action the requesting user isn't authorized for; the model runs with broader scope than the caller. Check tool authorization against the caller's identity, not the agent's
 - Edge cases under pressure — max input size, zero items, first-run-ever, double-click within 100ms, concurrent identical requests
 - Partial completion — operations that can crash mid-way leaving state inconsistent (no rollback, no cleanup)
 

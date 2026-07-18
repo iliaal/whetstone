@@ -41,6 +41,8 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - End options with `--`: `rm -rf -- "$path"`, `grep -- "$pattern" "$file"`
 - Require env vars: `: "${VAR:?must be set}"`
 - Never `eval` user input; build commands as arrays: `cmd=("grep" "--" "$pat" "$f"); "${cmd[@]}"`
+- Keep untrusted/derived bytes off the command line: never build a heredoc body or an `sh -c` string from external data. An unquoted `<<EOF` command-substitutes `$(...)`/backticks in the content, and even a quoted `<<'EOF'` breaks if a content line equals the delimiter (the heredoc ends early and the rest runs as shell). Write the data to a file with a non-shell writer and have the consumer read the file
+- Allowlisting a command? Match the whole command against an anchored pattern (`^…$`), never inspect individual arguments — shell operators (`;`, `&&`, `|`, `#`, newline) smuggle a second command past a per-argument check (`rm -rf node_modules; rm -rf /`). Unrecognized syntax must fail closed to deny/ask
 - Separate `local` from assignment to preserve exit codes: `local val; val=$(cmd)`
 - Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` -- shows file:line per command
 - Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` -- no magic numbers in `exit`

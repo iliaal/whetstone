@@ -6,13 +6,13 @@ argument-hint: "[title or 'list' to view existing ADRs]"
 
 # Architecture Decision Records
 
-Create, list, or update ADRs in `docs/decisions/`.
+Create, list, or update ADRs in the repository's ADR directory (auto-detected; default `docs/decisions/`).
 
 **Input:** #$ARGUMENTS
 
 ## Argument handling
 
-- **Empty** (no argument): scan `docs/decisions/` and present existing ADRs as a numbered list with status, title, and date. Then ask: "Create a new ADR? Provide a title."
+- **Empty** (no argument): scan the detected ADR directory and present existing ADRs as a numbered list with status, title, and date. Then ask: "Create a new ADR? Provide a title."
 - **`list`**: same as empty — scan and list existing ADRs. Do not create anything.
 - **A short title** (≤8 words): create a new ADR with that title. Ask the user to pick a format (Y-statement, Lightweight, Full MADR, RFC, Deprecation) using the **AskUserQuestion tool** before generating.
 - **A longer topic or question** (>8 words): treat as context for a Full MADR or RFC. Extract the decision subject from the input, confirm the extracted title with the user, then proceed.
@@ -20,9 +20,11 @@ Create, list, or update ADRs in `docs/decisions/`.
 
 ## Process
 
+**Detect the repository's ADR convention before listing or creating anything.** Inspect for an established scheme — existing ADR files (common locations: `docs/decisions/`, `docs/adr/`, `doc/adr/`, `adr/`), an `.adr-dir` marker or `adr-tools` config, and project instructions (`CLAUDE.md`/`AGENTS.md`/`CONTRIBUTING.md`). Match the detected location, filename/numbering scheme, and section headings. Keep detection repository-local — do not reach into `.github/` or open PRs. If two schemes conflict, surface the conflict and ask which to follow rather than silently adding a third. Absent any convention, default to `docs/decisions/` with the formats below.
+
 ### 1. Determine action
 
-- If input is `list` or empty: scan `docs/decisions/` and present existing ADRs with status
+- If input is `list` or empty: scan the detected ADR directory and present existing ADRs with status
 - If input is a title or topic: create a new ADR
 - If input starts with `deprecate`: create a Deprecation ADR (see Argument handling above)
 
@@ -50,9 +52,9 @@ For deprecation ADRs: which ADR is being superseded and why.
 
 ### 4. Generate the ADR
 
-**Directory**: `docs/decisions/` (create with `mkdir -p` if needed)
+**Directory**: the detected convention (default `docs/decisions/`; create with `mkdir -p` if needed)
 
-**Naming**: `NNNN-kebab-case-title.md` where NNNN is the next sequential number. Check existing files to determine the next number.
+**Naming**: match the detected numbering/naming scheme; absent one, `NNNN-kebab-case-title.md` where NNNN is the next sequential number. Check existing files to determine the next number.
 
 **Lifecycle states**: proposed, accepted, deprecated, superseded
 

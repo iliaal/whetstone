@@ -49,6 +49,16 @@ TaskUpdate({ taskId: "2", status: "completed" })
 TaskUpdate({ taskId: "3", addBlockedBy: ["1", "2"] })
 ```
 
+## Recording Skipped Work
+
+When a gate resolves such that a listed task will not run, record the skip rather than dropping it silently or completing it as-if-done. This task system's only terminal state is `completed`, so encode the skip in the **subject** before completing — never leave a task's original subject on a completed record, which falsely claims the work happened:
+
+```javascript
+TaskUpdate({ taskId: "3", subject: "Skipped: no migration in final diff", status: "completed" })
+```
+
+A reader scanning the task list must be able to tell "done" from "deliberately not done."
+
 ## Task Dependencies
 
 When a blocking task is completed, blocked tasks are automatically unblocked:

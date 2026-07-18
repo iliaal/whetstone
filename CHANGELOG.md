@@ -5,6 +5,22 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.1] - 2026-07-18
+
+Patch: a 7-day delta sync that borrowed security-audit, ADR, supply-chain, and workflow patterns from external repos, followed by a reactive audit that caught and fixed eight integration issues (two of them functional bugs) in those same edits. No components added or removed (30 skills, 19 agents, 22 commands unchanged).
+
+### Changed
+
+- `ia-security-sentinel` and the code-review security references now audit agentic and LLM sinks. They look for confused-deputy tool scope, where a tool the model can call performs an action the requesting user isn't authorized for, and for cost exhaustion reachable from unauthenticated input, such as an uncapped agent loop or a paid-model call an anonymous request can trigger. Billing exhaustion from such a path is now a fileable finding rather than noise suppressed as generic denial of service.
+- `security-patterns.md` gained grep rows for four classes it named but never detected: insecure deserialization (`pickle.loads`, `yaml.load`, PHP `unserialize`), XXE, weak randomness used for tokens, and disabled TLS verification (`verify=False`, `rejectUnauthorized: false`).
+- `security-fp-suppression.md` gained false-positive precedents that keep a security audit high-precision: SSRF needs control of the host or scheme rather than just the path, environment variables and CLI flags are trusted inputs, v4 UUIDs are unguessable, and a race is a finding only with a concrete interleaving.
+- `ia-adr` detects an existing repository ADR convention before it writes anything. In a repo that already keeps ADRs in `docs/adr/` or under an `.adr-dir`/adr-tools layout, the command matches that location instead of silently starting a competing `docs/decisions/` scheme.
+- `ia-nodejs-backend` gained dependency supply-chain guidance beyond a single `npm audit` line: frozen installs, gating package lifecycle scripts before they run, and the reminder that a clean audit says nothing about a freshly malicious or typosquatted package.
+- `ia-brainstorming` carries settled decisions forward instead of re-litigating them. A choice the user made with its trade-off in view stays settled and isn't re-asked at planning or during work, while a cold directive gets one challenge and is then recorded. A new value-sourcing self-review catches any produced value whose source the spec never names.
+- `ia-linux-bash-scripting` gained two injection-safety rules: keep untrusted data out of heredocs and `sh -c` strings, since a quoted heredoc still breaks when a content line matches the delimiter, and allowlist a command by matching the whole command anchored rather than inspecting its arguments, so a shell operator can't smuggle a second command past the check.
+- `ia-simplifying-code` gained two reuse checks: flag code that hand-maintains a guarantee the framework or a downstream layer already enforces, and eliminate duplication by deriving it from a source of truth before consolidating it into a helper.
+- `ia-orchestrating-swarms` records a skipped task in its subject rather than marking it plainly complete, so a task list distinguishes work that finished from work a gate deliberately skipped.
+
 ## [4.3.0] - 2026-07-12
 
 Minor: native Codex plugin distribution. Codex users can now install Whetstone with `codex plugin marketplace add` instead of the old one-way TypeScript conversion into `~/.codex`. The plugin ships its skills and the Context7 MCP server through a versioned Codex manifest, and every release refreshes the local Codex install and deduplicates skill sources so each skill loads once. No skills, agents, or commands were added or removed (30 skills, 19 agents, 22 commands unchanged); the orchestrating-swarms skill was rewritten to work on both Claude Code and Codex.

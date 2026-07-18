@@ -1,6 +1,6 @@
 # Security Detection Patterns
 
-Grep-able patterns for the 11 security areas. Each entry: what to search for, why it's vulnerable, how to fix. Use during code review (step 4) and security audits.
+Grep-able patterns for the common vulnerability classes. Each entry: what to search for, why it's vulnerable, how to fix. Use during code review (step 4) and security audits.
 
 ## Deployment Entrypoints
 
@@ -100,3 +100,18 @@ Grep-able patterns for the 11 security areas. Each entry: what to search for, wh
 | `CORS()` or `CORSMiddleware()` without explicit config | Default permissive CORS | Explicitly configure origins, methods, headers |
 | Reflecting `Origin` header as `Access-Control-Allow-Origin` | Dynamic CORS that trusts any origin | Validate Origin against allowlist before reflecting |
 | `Access-Control-Allow-Methods: *` | All HTTP methods exposed | Whitelist only needed methods |
+
+## Insecure Deserialization / XXE
+
+| Search for | Vulnerable pattern | Fix |
+|-----------|-------------------|-----|
+| `pickle.loads(`, `marshal.loads(`, `yaml.load(` without `Loader=SafeLoader` | Arbitrary object/code execution on untrusted input | `json.loads`, `yaml.safe_load`, or a signed/allowlisted schema |
+| `unserialize($` on user input (PHP) | Object injection / POP-chain gadget execution | `json_decode`, or `unserialize($x, ['allowed_classes' => false])` |
+| `etree.parse(`/`lxml` without `resolve_entities=False`; `DocumentBuilderFactory` without `disallow-doctype-decl` | XXE — external entity expansion reads files or triggers SSRF | Disable DTD/external entities on the parser |
+
+## Weak Randomness / TLS Verification
+
+| Search for | Vulnerable pattern | Fix |
+|-----------|-------------------|-----|
+| `Math.random(`, `random.random(`, `mt_rand(` for tokens/secrets/IDs | Predictable value used as a security control | `crypto.randomBytes`, `secrets.token_urlsafe`, `random_bytes` |
+| `verify=False` (requests), `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true` | TLS certificate validation disabled — MITM | Remove the flag; trust/pin the proper CA in the client |

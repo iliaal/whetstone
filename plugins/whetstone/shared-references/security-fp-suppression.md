@@ -4,7 +4,7 @@ Load this reference when running a security audit — before filing any finding,
 
 ## Hard exclusions (skip regardless of detection)
 
-- **Denial of service / rate limiting / resource leaks** — unless the diff introduces explicit user-triggerable allocation of unbounded state. Generic "this could be a DoS vector" findings are noise.
+- **Denial of service / rate limiting / resource leaks** — unless the diff introduces explicit user-triggerable allocation of unbounded state, *or* an unauthenticated-reachable path to a paid-model API call / uncapped agent loop (billing/cost exhaustion is a distinct, fileable harm from availability DoS). Generic "this could be a DoS vector" findings are noise.
 - **Memory safety in managed languages** — no memory-safety findings on `.ts/.tsx/.js/.py/.php/.rb/.go` files. Only report on `.c/.cc/.cpp/.h/.rs` (and only in `unsafe` blocks for Rust).
 - **SSRF in client-rendered HTML** — `.html/.jsx/.tsx/.vue` client code does not make server-side requests. Skip.
 - **Regex injection / ReDoS** — only report when the regex is user-controlled AND runs server-side in a request-handling hot path. Static regexes compiled from developer input are not findings.
@@ -17,6 +17,11 @@ Load this reference when running a security audit — before filing any finding,
 - Logging non-PII request metadata (method, path, status) is not a vulnerability.
 - Command-injection risk in project-internal shell scripts is a finding only when the script accepts untrusted external input. Internal-ops scripts run by developers are not in scope.
 - "Consider adding validation" without a concrete failure mode is not a finding. Name the specific input, the specific sink, and the specific exploit.
+- **SSRF requires control of the host or scheme, not just the path.** Appending to a fixed base URL's path is not SSRF; flag it only when the attacker controls the destination host or protocol.
+- **Environment variables and CLI flags are trusted inputs.** An "attack" that presumes the attacker already sets an env var or command-line flag is invalid in a secure deployment. Exception: env vars derived from untrusted sources (CGI `HTTP_*` headers, the httpoxy `Proxy` header, an uploaded `.env`) are attacker-controlled and in scope.
+- **v4 UUIDs may be assumed unguessable.** A v4 UUID used as an identifier does not require an added unguessability control; "the UUID could be brute-forced" is not a finding. (v1 embeds a timestamp/MAC and v3/v5 are deterministic hashes — those are not unguessable.)
+- **Theoretical races are not findings.** Report a race only with a concrete interleaving and an observable corruption or impact — not "this could race under load." (Counterweight to race *hunting*: hunt for TOCTOU, but file only a demonstrated one.)
+- **Log spoofing / forging** (unsanitized user input written to logs) is not, by itself, a vulnerability.
 
 ## Confidence floor
 
