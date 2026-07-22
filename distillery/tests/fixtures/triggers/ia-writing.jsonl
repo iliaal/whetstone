@@ -8,3 +8,8 @@
 {"prompt": "humanize this email draft", "expect": true, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write the migration SQL", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "debug the failing build", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "is this AI slop?", "expect": true, "added_in": "4.3.1", "source": "detect-mode"}
+{"prompt": "does this paragraph read as AI?", "expect": true, "added_in": "4.3.1", "source": "detect-mode"}
+{"prompt": "scan my blog draft for AI tells, don't rewrite it", "expect": true, "added_in": "4.3.1", "source": "detect-mode"}
+{"prompt": "make this sound less like AI", "expect": true, "added_in": "4.3.1", "source": "detect-mode"}
+{"prompt": "review the AI-generated code for bugs", "expect": false, "added_in": "4.3.1", "source": "detect-mode", "note": "AI-generated <code> is not a writing-detect request; guards against a bare ai-generated clause"}

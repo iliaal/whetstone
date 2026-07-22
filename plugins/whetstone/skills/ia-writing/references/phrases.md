@@ -47,9 +47,9 @@ These add no meaning. Delete them.
 
 ## Adverbs
 
-Kill all adverbs. No -ly words. No softeners, intensifiers, or hedges.
+Cut adverbs that add nothing -- empty softeners, intensifiers, and hedges. Keep one when it carries genuine emphasis, uncertainty, contrast, or the writer's natural spoken rhythm. Match the smell, not the string (SKILL.md Restraint): a listed word that reads naturally in its actual context stays.
 
-Specific offenders: really, just, literally, genuinely, honestly, simply, actually, deeply, truly, fundamentally, inherently, inevitably, interestingly, importantly, crucially
+Common offenders: really, just, literally, genuinely, honestly, simply, actually, deeply, truly, fundamentally, inherently, inevitably, interestingly, importantly, crucially
 
 Filler phrases:
 - "At its core"

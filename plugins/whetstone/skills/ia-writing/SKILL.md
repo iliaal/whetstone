@@ -2,12 +2,19 @@
 name: ia-writing
 class: discipline
 description: >-
-  Prose editing, rewriting, and humanizing text for natural tone. Use when asked
-  to write, rewrite, edit, humanize, proofread, fix tone, or remove AI language.
-  For copy, docs, blog posts, emails, or PRs.
+  Prose editing, rewriting, and humanizing text for natural tone, or auditing a
+  draft for AI tells without rewriting. Use when asked to write, rewrite, edit,
+  humanize, proofread, fix tone, remove AI language, or check whether writing
+  reads as AI. For copy, docs, blog posts, emails, or PRs.
 ---
 
 # Human Writing
+
+## Modes
+
+**Edit (default)** -- rewrite the draft to strip AI tells while preserving the writer's voice; produce corrected text plus a changelog.
+
+**Detect** -- when asked whether text reads as AI, or to audit, scan, or flag a draft without rewriting: name each pattern that appears, quote the offending line, and give the fix in a few words. Do not rewrite, do not score, do not claim whether AI wrote it -- named patterns are evidence the reader can check; an authorship verdict is a guess. Run detection per Phase 1 of [audit-workflow.md](./references/audit-workflow.md), stop there, and offer to edit afterward.
 
 ## Core Principles
 
@@ -37,7 +44,9 @@ Weight detection toward structure: models reproduce sentence *structures* more r
 - False ranges: "from X to Y" where X and Y aren't on a meaningful scale
 - Formulaic challenges: "Despite X, Y continues to thrive"
 - Dramatic fragmentation: "[Noun]. That's it. That's the [thing]." -- performative simplicity
+- Fake-profound kicker: a final "deep" line that turns the point into a metaphor, aphorism, or mic-drop. Delete it -- don't rewrite into a better line; end on the clearest concrete sentence already present.
 - Rhetorical setups: "What if I told you..." / "Think about it:" / "Here's what I mean:"
+- Colon reveals: noun phrase, colon, lowercase dramatic reveal ("The best part: it learns"). Rewrite as a plain sentence. Reserve colons for lists, labels, and quotes; sentence case after a colon unless grammar, a proper noun, a title, or code requires it.
 - Wh- sentence openers: sentences starting with What/When/Where/Which/Who/Why/How as filler. Restructure to lead with the subject or verb.
 - Narrator-from-a-distance: "This happens because...", "People tend to...", "Nobody designed this." Put the reader in the room instead.
 - Lazy extremes: every, always, never, everyone, nobody -- false authority. Use specifics instead of sweeping claims.
@@ -135,7 +144,7 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 2. Grep the text against the entries in [phrases.md](./references/phrases.md); zero matches required.
 3. Check for false agency: any inanimate thing performing a human verb? Name the person.
 4. Check for em dashes, mechanical bold, and synonym cycling.
-5. Cut quotables: if a sentence sounds like a pull-quote or aphorism, rewrite it.
+5. Cut quotables: if a sentence sounds like a pull-quote, aphorism, or mic-drop kicker, delete it -- don't rewrite it into a better line. End on the clearest concrete sentence already in the draft; add a plain takeaway or next action only if the ending needs closure.
 
 ## Changelog Voice
 

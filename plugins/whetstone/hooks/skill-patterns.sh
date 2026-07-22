@@ -105,7 +105,7 @@ SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
 
-SKILL_PATTERNS[ia-writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
+SKILL_PATTERNS[ia-writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?slop|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
 SKILL_TIERS[ia-writing]=3
 
 # Intent-anchored (2026-07-07): bare `claude\.md` fired on any prompt citing

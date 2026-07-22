@@ -12,6 +12,8 @@ Read the full text start to finish without changing anything. Quote the shortest
 |-----|-----------------|
 | `[FALSE-AGENCY]` | Inanimate subject with a human verb ("the data tells us") |
 | `[BINARY-CONTRAST]` | "Not X, it's Y" / "Not X. But Y." / "The answer isn't X. It's Y." |
+| `[COLON-REVEAL]` | Noun phrase + colon + lowercase dramatic reveal ("The best part: it learns") |
+| `[KICKER]` | Fake-profound final line: metaphor, aphorism, or mic-drop that restates the point |
 | `[STACCATO]` | Punchy fragment sequences simulating manufactured rhythm ("This matters. A lot. Here's why.") |
 | `[ELEGANT-VAR]` | Synonym cycling: four names for the same entity across four sentences |
 | `[NOT-ONLY-BUT]` | False-pivot contrasts: "Not only X, but also Y" and variants |
@@ -62,6 +64,8 @@ Correct tagged items in a single pass using the fix table below. Preserve everyt
 | `[SUPERFICIAL-ING]` | Remove the -ing phrase or convert to a separate sentence with substance. |
 | `[AI-LEX]` `[JARGON]` | Replace with a plainer synonym or restructure to eliminate the word. |
 | `[NOT-ONLY-BUT]` `[RULE-OF-3]` `[BINARY-CONTRAST]` | Break the pattern. State Y directly. |
+| `[COLON-REVEAL]` | Rewrite as a plain declarative sentence; reserve colons for lists, labels, quotes. |
+| `[KICKER]` | Delete the line -- don't rewrite it. End on the clearest concrete sentence already present. |
 | `[STACCATO]` | Reconstruct into a single flowing sentence that matches the source material's natural rhythm. |
 | `[ELEGANT-VAR]` | Pick one term and use it consistently (or use pronouns). |
 | `[VAGUE-ATTR]` `[WEASEL]` | Name the source, add a quantifier, or delete the claim. |
