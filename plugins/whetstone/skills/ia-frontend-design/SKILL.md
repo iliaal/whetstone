@@ -120,6 +120,8 @@ For polish-level UI patterns (`<kbd>` keystrokes, faux-OS chrome, hero image fad
 
 ## Verify
 
+Most items below are observable only in a rendered viewport, not in the diff. Where rendering tooling is available, do not claim visual verification from source inspection: capture a screenshot or DOM snapshot at one narrow and one wide viewport, and exercise every changed interaction and state. Where the environment cannot render (CI, headless subagent, plain terminal), say so explicitly and report what *was* checked instead. The completion-claim discipline itself lives in `ia-verification-before-completion`.
+
 - Design philosophy written before code (for full pages)
 - No forbidden AI patterns present in output
 - Dependency check done before any new library import

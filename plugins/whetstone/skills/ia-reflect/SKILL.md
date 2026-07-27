@@ -74,6 +74,14 @@ For each skill invoked during the session:
 
 **C. Other** -- Missing edge cases, vague directives (rewrite as measurable criteria or remove), naked negations (add "do Y instead" or remove).
 
+**D. Guidance mismatch** -- fires when a skill was invoked and its advice turned out wrong, stale, or inapplicable *here*. A, B, and C all judge a skill standing alone; this one anchors the finding to the line that actually misfired. Record four fields, all required:
+- the **verbatim excerpt** from SKILL.md or its reference that produced the wrong behavior
+- the **project context** that made it not apply (language, runner, framework version, house convention)
+- **what happened** when it was followed
+- **what was done instead**
+
+A skill invoked with no mismatch gets an explicit "no mismatch" line, same discipline as "no harvestable items is a valid outcome". "Line X is wrong in context Y, here's the workaround" is an actionable edit; "this skill has vague directives" is a research task.
+
 Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
 
 ### 6. Capture Markers
@@ -92,7 +100,7 @@ Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
 
 If 2+ similar tasks appear that no existing skill covers, suggest a new skill (1-2 sentence description). Create only after confirmation.
 
-**Proactive trigger:** When the user corrects you, clarifies the same thing twice, or shows frustration, append: "Tip: Type `/ia-reflect` when you're ready -- I'll review what we can improve."
+**Proactive trigger:** When the user corrects you, clarifies the same thing twice, or shows frustration, offer a retrospective when they're ready -- "I'll review what we can improve." Name the invocation the active harness actually supports (`/ia-reflect` in Claude Code, this skill by name elsewhere); never print a slash command on a harness that has none.
 
 ## Self-Check
 

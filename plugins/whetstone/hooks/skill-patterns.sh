@@ -69,7 +69,7 @@ SKILL_TIERS[ia-nodejs-backend]=2
 SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
 SKILL_TIERS[ia-python-services]=2
 
-SKILL_PATTERNS[ia-rust-systems]='\brust\b.{0,30}(cli|service|binary|crate|workspace|backend|api|server|handler|async|tokio|axum|code|project|module)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\.rs\b.*(test|module|crate)'
+SKILL_PATTERNS[ia-rust-systems]='(write|review|refactor|debug|fix|implement|design|structure|optimi[sz]e|port|migrate|test)\b[^.]{0,40}\brust\b|\brust\b.{0,30}(cli|service|binary|workspace|backend|api|server|handler|async|tokio|axum)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\bcrates?\.io\b|\bcrate\b.{0,25}\bworkspace\b|\bworkspace\b.{0,25}\bcrates?\b'
 SKILL_TIERS[ia-rust-systems]=2
 
 # DB-op required near the token (2026-07-07 audit-misfire): bare `postgres`, `jsonb`, and

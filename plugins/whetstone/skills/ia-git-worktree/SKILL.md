@@ -61,13 +61,13 @@ Adapt the workflow to the detected context rather than failing with a generic er
 
 ## Integration with Workflows
 
-### `/ia-review`
+### Code review (`/ia-review` in Claude Code)
 
 1. Check current branch
 2. If ALREADY on target branch -> stay there, no worktree needed
 3. If DIFFERENT branch -> Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. Options: 1) review in a new worktree 2) switch branch in place
 
-### `/ia-work`
+### Plan execution (`/ia-work` in Claude Code)
 
 Always offer choice:
 1. New branch on current worktree (live work)

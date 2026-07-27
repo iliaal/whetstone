@@ -81,7 +81,8 @@ create_worktree() {
   if [[ -d "$worktree_path" ]]; then
     echo -e "${YELLOW}Worktree already exists at: $worktree_path${NC}"
     echo -e "Switch to it instead? (y/n)"
-    read -r response
+    # No stdin (agent/CI): read fails, set -e would abort. Empty answer = decline.
+    read -r response || response=""
     if [[ "$response" == "y" ]]; then
       switch_worktree "$branch_name"
     fi
@@ -95,7 +96,9 @@ create_worktree() {
   # Update main branch
   echo -e "${BLUE}Updating $from_branch...${NC}"
   git checkout "$from_branch"
-  git pull origin "$from_branch" || true
+  # GIT_TERMINAL_PROMPT=0: `|| true` catches a non-zero exit, not a credential
+  # prompt blocking on an inherited tty. Fail fast instead of hanging.
+  GIT_TERMINAL_PROMPT=0 git pull origin "$from_branch" || true
 
   # Create worktree
   mkdir -p "$WORKTREE_DIR"
@@ -160,7 +163,7 @@ switch_worktree() {
   if [[ -z "$worktree_name" ]]; then
     list_worktrees
     echo -e "${BLUE}Switch to which worktree? (enter name)${NC}"
-    read -r worktree_name
+    read -r worktree_name || worktree_name=""
   fi
 
   local worktree_path="$WORKTREE_DIR/$worktree_name"
@@ -245,7 +248,7 @@ cleanup_worktrees() {
 
   echo ""
   echo -e "Remove $found worktree(s)? (y/n)"
-  read -r response
+  read -r response || response=""
 
   if [[ "$response" != "y" ]]; then
     echo -e "${YELLOW}Cleanup cancelled${NC}"

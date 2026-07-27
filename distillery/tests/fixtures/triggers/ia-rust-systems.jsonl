@@ -16,3 +16,13 @@
 {"prompt": "write a bash deployment script", "expect": false, "added_in": "2.56.0", "source": "initial"}
 {"prompt": "help me debug this stack trace", "expect": false, "added_in": "2.56.0", "source": "initial"}
 {"prompt": "review the diff in this PR", "expect": false, "added_in": "2.56.0", "source": "initial"}
+{"prompt": "In this Rust codebase, find the file that computes the per-user daemon socket path", "expect": false, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "In the Rust project at ~/ai/codesage, locate the files that define per-language trust-boundary rules", "expect": false, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "find where the rationale comment extraction is implemented in this Rust codebase", "expect": false, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "which file in the Rust project handles config loading", "expect": false, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "list the .rs files under crates/ that mention tracing", "expect": false, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "find the crate that owns the socket path logic", "expect": false, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "review this Rust code for correctness", "expect": true, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "help me structure my Rust project", "expect": true, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "split this crate into a workspace", "expect": true, "added_in": "4.3.2", "source": "misfire-2026-07-27"}
+{"prompt": "publish this crate to crates.io", "expect": true, "added_in": "4.3.2", "source": "misfire-2026-07-27"}

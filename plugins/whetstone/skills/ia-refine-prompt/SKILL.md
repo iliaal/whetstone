@@ -29,6 +29,9 @@ description: >-
 ## Rules
 
 - **Length**: 0.75x–1.5x the original. Conciseness is a feature -- add only what's missing, cut what's vague.
+- **A line must change behavior.** "Cut what's vague" and "cut what the model already does" are different filters, and the second removes far more -- every line reads as non-vague once it is imperative. If the model would act that way by default, delete the whole sentence rather than trimming words from it. The recurring offender is encouragement it already follows: "be careful", "be thorough", "think it through", "make sure to".
+- **Name the concept, don't explain it.** Use terms the model knows (idempotent, invariant, race condition, TOCTOU, YAGNI) instead of spelling them out. Spell out only terms the project invented, once, in one place.
+- **State a rule once.** If the same rule appears in two sections, cut one and point to the other.
 - **Never invent** -- only use information present in the original prompt or conversation context. If critical info is missing, ask instead of assuming.
 - **Instruction hierarchy** -- order sections by priority: task → constraints → examples → input data → output format. Place the most important instruction first.
 - **Progressive complexity** -- start with the simplest prompt that could work. Add few-shot examples, chain-of-thought, or role framing only when the task demands it, not by default.

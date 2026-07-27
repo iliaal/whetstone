@@ -5,6 +5,43 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.2] - 2026-07-27
+
+Patch: a 9-day delta sync that borrowed testing, verification, and cross-harness patterns from 39 external repos and the skills.sh marketplace, followed by a reactive audit that caught sixteen defects the sync itself introduced. Three of those were factual errors that survived review and only fell over when we ran the real toolchains against them. No components added or removed (30 skills, 19 agents, 22 commands unchanged).
+
+### Added
+
+- Completion reports now hand over a `Next` line: the one command to paste, URL to open, or click-path that exercises what just shipped. Verification evidence proves the work happened, which is a different thing from telling you how to try it. When work is blocked, `Next` names the decision you owe instead.
+- `ia-verification-before-completion` gained a sweep ledger for "change it everywhere" tasks. The completion gate proves a command passed; it says nothing about whether that command ran over the whole set. Every item now carries an explicit disposition, and you can't claim coverage the ledger doesn't show.
+- `ia-writing-tests` establishes the runner before writing the first test. The failure it prevents is the one where a bare global binary passes locally and CI invokes the project-pinned wrapper against a different dependency set.
+- `ia-document-review` renders findings so you can decide without reopening the document. Each finding leads with what goes wrong if nothing changes, and identifiers you'd have to look up get a plain-language handle at first mention.
+- `ia-rust-systems` gained a rustdoc reference covering doc-comment forms, the sections clippy checks for, and `#![deny(missing_docs)]`. The CI pipeline already ran `cargo test --doc`; nothing told you to write any doc tests for it to run.
+- `ia-orchestrating-swarms` assigns aggregate checks to a single owner per dispatch. The skill already forbade agents running the suite during parallel work without saying what to run instead, so a four-agent wave could run the same suite four times and call it assurance.
+
+### Changed
+
+- `ia-code-review` treats grep as the weakest tier of evidence, not the strongest, whenever a finding rests on "nothing else calls this". Symbol-aware and structural search catch the callers that re-exports and dependency injection hide, and a grep-only sweep now records that limit rather than asserting absence.
+- `ia-php-laravel` warns that `env()` outside `config/` returns null once `config:cache` has run. The deploy sequence requires that command, so the skill was prescribing the optimization and omitting the rule that makes it safe.
+- `ia-nodejs-backend` covers 64-bit integer columns reaching JavaScript. Casting an ID to a string in the serializer restores nothing, because precision is already gone at parse time.
+- `ia-terraform` prefers `use_lockfile` for S3 state locking and marks the DynamoDB table as deprecated. The skill was sending people to stand up infrastructure they no longer need.
+- `ia-rust-systems` prescribes `#[expect]` over `#[allow]` for warranted suppressions, so a suppression that outlives its cause reports itself instead of rotting silently.
+- Skills stopped printing Claude Code slash commands at readers who can't run them. Only the skills directory ships to Codex, `.agents`, and Kilocode, so `/ia-work` resolved to nothing on three of four distribution targets.
+- `ia-writing` checks its own restraint. The skill called over-editing a failure mode equal to under-editing while shipping seven detectors for one and none for the other, so it now captures the draft's voice signals first and tests the result against them.
+- `ia-refine-prompt` cuts lines the model would follow anyway. "Cut what's vague" and "cut what the model already does" are different filters, and only the second one removes "be thorough".
+- `ia-reflect` records which line of a skill misfired and what made it not apply here. "Line 47 is wrong in this context" is an edit someone can make; "this skill has vague directives" is a research project.
+- `ia-frontend-design` asks for rendered evidence. Eight of its nine verification items were tickable from the diff, in a skill whose whole argument is that visual quality is the deliverable.
+- `ia-performance-oracle` measures the noise floor before crediting a speedup. A supplied benchmark reading 3.2s to 2.9s can sit entirely inside the spread of changing nothing at all.
+
+### Fixed
+
+- `ia-terraform` no longer tells you to run `terraform test -no-cleanup`. The flag doesn't exist and the binary rejects it. The upstream skill we borrowed from asserts it three times and is simply wrong.
+- `ia-rust-systems` described a `pub(crate)` re-export that can't compile, since `pub use` on a crate-private item is `E0364`. The reachability guidance now matches what rustc accepts.
+- `ia-php-laravel` credited PHPStan level 8 with the missing-iterable-value-type check. It lands at level 6, so anyone running 6 or 7 read that they were exempt when they weren't.
+- `ia-rust-systems` carried two rules that contradicted each other, one banning every clippy suppression and one sanctioning `#[expect]`. Unsafe findings get fixed rather than annotated, and the escape hatch is scoped to everything else.
+- `ia-planning` writes the phase state its own resume protocol reads. The protocol described reading a "current phase" that the plan template never created, so resuming after a compaction meant guessing.
+- `ia-rust-systems` stopped firing on read-only searches. Its trigger matched "Rust codebase" and "Rust project", so asking where a file lives loaded a skill about authoring idiom. The misfire rate was 22.4%, and it's now zero across 28 fixtures.
+- `worktree-manager.sh` survives an agent with no stdin. `set -e` plus a bare `read` aborted the script, turning "this worktree already exists" into a hard failure on the path the skill mandates. Its one network `git pull` also sets `GIT_TERMINAL_PROMPT=0`, so a missing credential fails fast instead of hanging on a prompt nobody can answer.
+
 ## [4.3.1] - 2026-07-18
 
 Patch: a 7-day delta sync that borrowed security-audit, ADR, supply-chain, and workflow patterns from external repos, followed by a reactive audit that caught and fixed eight integration issues (two of them functional bugs) in those same edits. No components added or removed (30 skills, 19 agents, 22 commands unchanged).

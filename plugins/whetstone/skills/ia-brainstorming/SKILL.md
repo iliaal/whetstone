@@ -5,7 +5,7 @@ description: >-
   Pre-implementation exploration: deep interview, approach comparison, design
   doc. Use when exploring a vague feature idea, clarifying ambiguous
   requirements, or comparing approaches before coding. For the full workflow,
-  use `/ia-brainstorm`.
+  use the ia-brainstorm command (Claude Code).
 ---
 
 # Brainstorming
@@ -228,8 +228,8 @@ Present the design doc to the user for approval. The user explicitly confirming 
 
 ## Integration
 
-Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `/ia-plan` detects it and skips idea refinement.
+Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `/ia-plan` (Claude Code) or the ia-planning skill detects it and skips idea refinement.
 
-- **Next step:** `/ia-plan` (always)
+- **Next step:** planning, always (`/ia-plan` in Claude Code; the `ia-planning` skill elsewhere)
 - **Threat modeling:** when the brainstorm involves auth, payments, external API surfaces, or multi-tenant data, suggest a `ia-security-sentinel` threat model before moving to planning. Catching trust boundary issues at the design stage prevents costly rework.
 - **Predecessor:** user request or ambiguous feature description

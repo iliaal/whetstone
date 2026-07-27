@@ -52,7 +52,7 @@ Reject pure-activity goals ("make progress", "keep investigating", "improve thin
 
 **Stress test the "looks atomic" case.** Many requests look atomic but hide design decisions. *"Add caching to this endpoint"* sounds atomic, but TTL, invalidation, cache-key shape, and backend selection are all KTDs -- write the plan. The same trap hides in "migrate package A to B" and "add rate limiting". Genuine skips are choice-free: *"fix typo in README line 47"*, *"rename `oldFn` to `newFn` across the repo"*, *"bump lodash to 4.17.21"* (unless breaking changes warrant a unit-by-unit migration).
 
-When skipping the plan doc, work proceeds directly to `/ia-work` or to implementation, and any decisions made along the way land in the commit message or `docs/solutions/` if worth carrying forward.
+When skipping the plan doc, work proceeds directly to execution (`/ia-work` in Claude Code) or to implementation, and any decisions made along the way land in the commit message or `docs/solutions/` if worth carrying forward.
 
 ## Planning Files
 
@@ -109,7 +109,11 @@ When target behavior is hard to describe but an existing implementation embodies
 | `path/to/file.ts` | Create | [what this file does] |
 | `path/to/existing.ts` | Modify | [what changes and why] |
 
+## Next Step
+[one line: the phase and task to resume on]
+
 ## Phase 1: [Name]
+**Status**: pending | in_progress | complete
 **Files**: [specific files, max 5-8 per phase]
 **Posture**: [test-first | characterization-first | external-delegate]
 **Tasks**:
@@ -129,6 +133,8 @@ When target behavior is hard to describe but an existing implementation embodies
 ```
 
 ### Plan Quality Rules
+
+**Keep phase state current.** Changing a phase's `Status` also refreshes `## Next Step`. That one line is what the resume protocol reads after a compaction or a new session, so a stale `Next Step` is worse than none -- it resumes work that already happened.
 
 **No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Tasks may be read out of order -- repeat the spec, code pattern, or file path in every task that needs it. A step that cannot be specified concretely needs further breakdown before it belongs in a plan.
 
@@ -213,7 +219,7 @@ When a plan is complete, offer the user an explicit choice -- subagent-driven (d
 ## Integration
 
 - **Predecessor:** `ia-brainstorming` when requirements are ambiguous -- use an existing brainstorm spec (`docs/brainstorms/`) as input and skip idea refinement.
-- **Architecture decisions:** `/ia-adr` to record significant trade-offs (chosen approach, what was given up); ADRs outlive the plan.
+- **Architecture decisions:** record significant trade-offs (chosen approach, what was given up) as an ADR (`/ia-adr` in Claude Code); ADRs outlive the plan.
 - **Threat modeling:** dispatch `ia-security-sentinel` in threat-model mode before implementation when the plan adds auth flows, payment handling, external API surfaces, or new trust boundaries -- architectural gaps are cheaper to fix in the plan than the code.
 - **Prose quality:** `ia-writing` to humanize plan language and strip AI slop.
 - **Execution handoff:** after approval, per *Execution Handoff* above.

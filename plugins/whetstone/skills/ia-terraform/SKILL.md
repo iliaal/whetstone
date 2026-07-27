@@ -85,6 +85,19 @@ Default to `for_each` -- removing a middle item from a `count` list recreates al
 - `parallel = true` on independent runs with separate state -- creates sync point at next sequential run
 - `state_key = "name"` required for `parallel = true` runs with independent state
 - File naming: `*_unit_test.tftest.hcl` (plan mode) vs `*_integration_test.tftest.hcl` (apply mode)
+- A `module {}` block inside a `run` accepts local paths and registry modules only -- not git or HTTP sources. Repos consuming git-sourced modules must vendor or localize them before they can be tested.
+- After a test file completes, resources are destroyed in **reverse run-block order**. Order dependent runs accordingly (create the bucket before the run that puts objects in it), or the destroy fails and leaves billable resources behind. There is no CLI flag to skip cleanup -- inspect a failure with `-verbose`.
+
+**Running them:**
+
+```bash
+terraform test                                     # all *.tftest.hcl under tests/
+terraform test -filter=vpc_unit_test.tftest.hcl    # one test FILE (not a run-block name)
+terraform test -verbose                            # show the plan/apply per run block
+terraform test -test-directory=path                # non-default test dir
+```
+
+Split by cost in CI: plan-mode unit tests on every PR, apply-mode integration tests on merge only.
 
 ## Version Pinning
 
@@ -100,7 +113,7 @@ Stacks (HCP -- check current release status): orchestrates multiple configs as a
 
 ## State & Security
 
-- Remote backend with locking: S3+DynamoDB, Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure.
+- Remote backend with locking: S3 with `use_lockfile = true` (1.10+), Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure. DynamoDB-based S3 locking (`dynamodb_table`) is deprecated and slated for removal -- prefer `use_lockfile`; both may be set at once while migrating an existing table off.
 - Encrypt state at rest. Never commit `.tfstate`, `.terraform/`, or `*.tfplan`. Always commit `.terraform.lock.hcl`.
 - `default_tags` on provider for consistent resource tagging.
 - Encryption at rest on all storage. Private networking by default -- public access is opt-in.
@@ -139,4 +152,4 @@ Run before declaring done:
 terraform fmt -check && terraform validate && tflint && trivy config .
 ```
 
-All commands must pass with zero errors.
+All commands must pass with zero errors. Where plan-mode tests exist, add `terraform test -filter=<unit-test-file>` -- restrict this to plan-mode suites, since apply-mode tests stand up real infrastructure and do not belong in a pre-completion check.

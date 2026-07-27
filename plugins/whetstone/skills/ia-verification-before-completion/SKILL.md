@@ -38,6 +38,18 @@ Present the result -- "This touches N files across M subsystems" -- with scope o
 
 **When this applies**: any request whose scope could plausibly span more than one directory AND where the user has not enumerated files. For a request with explicit file paths, skip this gate.
 
+## Sweep Completion
+
+For tasks whose scope is *every* item in a set -- a repo-wide rename, "migrate everywhere", audit every file, resolve all findings -- the Gate Function proves a command passed, not that it ran over the whole set. Track coverage explicitly.
+
+Enumerate the set into a ledger held outside version control -- a session-scratch path where the harness provides one, otherwise any git-ignored local directory, never a tracked file -- one row per item with an explicit disposition: `pending`, `done`, `excluded (reason)`, or `blocked (evidence)`. Completion requires zero `pending` and zero `blocked` -- "I covered a lot of them" is not a disposition.
+
+Two rules close the holes that make a ledger lie:
+- Re-enumerate after any path move or rename, so items created or relocated mid-sweep enter coverage instead of falling outside the original list.
+- Keep removed items in the ledger until explicitly accounted for -- an item that silently disappears reads identically to one that was finished.
+
+Never claim coverage the ledger does not show.
+
 ## Gate Function
 
 Before any success claim, run through these five steps:
@@ -145,6 +157,9 @@ After verification passes, produce a structured report rather than an open-ended
 - path/to/file.ts: [one-line description of what changed and why]
 - path/to/other.ts: [one-line description]
 
+**Next**
+- [the one command to paste, URL to open, or click-path that exercises this in one step -- or the decision now owed]
+
 **Things I didn't touch (intentionally)**
 - [thing noticed but out of scope, with one-line reason]
 - [adjacent issue deferred, with one-line reason]
@@ -158,6 +173,8 @@ After verification passes, produce a structured report rather than an open-ended
 ```
 
 DONE_WITH_CONCERNS makes the `Potential concerns` section mandatory; BLOCKED and NEEDS_CONTEXT must name the blocker or the missing information. The `Things I didn't touch` section is not optional -- if nothing was noticed, write "nothing noticed"; the goal is to prove scope was considered, not to pad the report.
+
+`Next` is one line, and it is not a summary of what changed -- it is the thing the reader does now. It is usually *not* the verification command: `pytest tests/test_auth.py` proves the work happened, `npm run dev` then open `/settings` exercises it. When the result is not directly exercisable (docs, config, refactor), say so and name what was read or checked instead. When work is blocked or awaiting a decision, `Next` names the decision, not the blocker.
 
 ## References
 

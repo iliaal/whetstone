@@ -37,7 +37,7 @@ If you can answer these, your planning is solid:
 
 | Question | Source |
 |----------|--------|
-| Where am I? | Current phase in .plan/task_plan.md |
+| Where am I? | `## Next Step` in .plan/task_plan.md, confirmed against per-phase `Status:` |
 | Where am I going? | Remaining phases |
 | What's the goal? | Approach section |
 | What have I learned? | .plan/findings.md |
@@ -47,7 +47,7 @@ If you can answer these, your planning is solid:
 
 **Numbered outputs for long sessions.** For multi-phase implementations, write numbered intermediate files to `.plan/` (e.g., `01-setup.md`, `02-phase1-complete.md`) so state survives context compaction. Read from files, not conversation memory, when resuming work after compaction or across sessions.
 
-**Session continuity.** At session start or after compaction: read `.plan/progress.md` → check which tasks are complete → review the current phase. At session end: update progress with what was done, note blockers, commit in-progress work. Mark interrupted tasks with a stopping-point note so the next session resumes without re-discovery.
+**Session continuity.** At session start or after compaction: read `## Next Step` at the head of `.plan/task_plan.md` → confirm it against the per-phase `Status:` fields and `.plan/progress.md` → resume there. `Next Step` is the one line the resume path reads first, so refresh it whenever a phase `Status` changes. At session end: update progress with what was done, note blockers, commit in-progress work. Mark interrupted tasks with a stopping-point note so the next session resumes without re-discovery.
 
 **SHA recording.** When a task completes and is committed, note the commit SHA inline: `- [x] Task 1.1 \`abc1234\``. Creates traceability from plan to code.
 

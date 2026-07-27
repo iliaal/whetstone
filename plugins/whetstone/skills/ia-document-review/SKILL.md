@@ -72,6 +72,25 @@ Present findings, then:
 2. **Ask approval** before substantive changes (restructuring, removing sections, changing meaning)
 3. **Update** the document inline
 
+### Rendering a finding for decision
+
+The reader deciding on a finding does not have the document open and has not memorized its identifiers. This binds the approval track only (step 2 above) -- findings routed to auto-fix in step 1 skip it. Any finding presented for approval is rendered in this order:
+
+1. **Consequence if unchanged** -- one sentence: what goes wrong, and for whom. No identifier the reader would have to look up.
+2. **Recommended action**, marked unmistakably.
+3. **Change intent** -- one sentence.
+4. **Mechanism** -- at most two sentences, carrying at most two opaque anchors (defined below).
+
+Anything deeper (file tracing, multi-hop call paths, competing call sites) is not printed; offer it in one closing line. Budget: two inline code spans per sentence, no diff blocks, raw code blocks only for genuinely additive content of five lines or less.
+
+Classify opaque anchors by what they do, not by vocabulary:
+
+- **Navigation anchors** (IDs the document itself defines) keep the ID and gain a short handle at first mention -- `R6 (suppress peer panels on low-stakes calls)`, never a bare `R6`.
+- **Provenance anchors** (ticket IDs, PR numbers) get a role gloss only when the referenced event changes the decision; otherwise move them to the trace.
+- **Mechanism anchors** (function, file, line names) translate to the role they play in the decision -- "the terminal-failure predicate" -- keeping the exact symbol only when precise scope is what the decision turns on.
+
+A finding whose only route to a decision is "go read the section" has failed, however correct it is.
+
 ### Simplification Guidance
 
 Simplification is purposeful removal of unnecessary complexity, not shortening for its own sake.
@@ -119,6 +138,8 @@ After changes are complete, ask:
 ### Iteration Guidance
 
 After 2 refinement passes, recommend completion--diminishing returns are likely. If the user wants to continue, allow up to 4 passes total. After 4, stop and report "review converged -- further changes require new direction." Do not continue past 4 even on user request without a fresh framing.
+
+**Withdraw what earlier answers already settled.** On pass 2 and later, judge each remaining finding against the decisions already made this session before presenting it. If an earlier answer resolves or contradicts it, do not re-raise it: say in one line what the finding was and which answer retired it, then move on, and record it as `withdrawn` in the summary with the retiring decision named. The distinction that matters -- a withdrawal caused by a **user decision** (a skip, a defer, an asserted fact) is durable and suppresses the finding on every later pass; a withdrawal caused by a **pending fix** is provisional, because the fix can fail or land in the wrong place, so a finding that regenerates on the next pass must resurface rather than stay suppressed. Evaluate lazily, at the moment the finding would have been presented; do not rescan after every answer. (Code review carries the same rule -- see `ia-code-review` on reconciling prior discussions.)
 
 Return control to the caller (workflow or user) after selection.
 

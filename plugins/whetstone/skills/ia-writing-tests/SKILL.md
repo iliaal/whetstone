@@ -14,6 +14,16 @@ description: >-
 
 Tests prove behavior works. A test that can't fail is worthless. A test that tests mocks instead of real code is theater.
 
+## Discover the Test Setup First
+
+Before writing the first test, establish what this repository actually runs. Reaching for a default command is how a suite goes green locally and red in CI.
+
+- **Runner and its config**: whichever manifest and test-config file the project's ecosystem uses. Framework-specific detail belongs to the language skills listed under Integration.
+- **The checked-in wrapper over any global binary.** A globally installed binary routinely resolves to a different version than the project pins, so prefer the project-local invocation (`uv run pytest` over bare `pytest`, `vendor/bin/phpunit` over `phpunit`).
+- **Focused vs. full invocation**: the edit loop needs to run one file or one test; completion needs the whole suite. Learn both forms.
+- **Where tests live and how neighbouring test files are named** -- match the existing convention rather than importing one.
+- **The command CI gates on** (`.github/workflows/*.yml`). When CI and the README disagree, CI is authoritative.
+
 ## Writing Good Tests
 
 ### One behavior per test
@@ -122,6 +132,12 @@ Write tests alongside the implementation, not after. By the time the feature is 
 ## Anti-Patterns
 
 Extended rationale, fix ladders, and mechanics for the longer items: [anti-patterns-extended.md](./references/anti-patterns-extended.md).
+
+### Reaching for a default test command
+
+**Symptom:** the bare global runner passes locally, while CI invokes the project-pinned wrapper and fails on a different dependency set or a different runner entirely.
+
+**Fix:** Establish the runner, the checked-in wrapper, and the CI command before writing tests (see "Discover the Test Setup First").
 
 ### Testing mock behavior instead of real behavior
 

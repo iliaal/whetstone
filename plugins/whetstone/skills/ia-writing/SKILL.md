@@ -106,6 +106,7 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 **Restraint -- over-editing is a failure mode, equal in weight to under-editing.**
 - If a sentence already reads naturally, leave it. Touching prose that was fine introduces new tells and strips voice.
 - Match the smell, not the string. A listed word that reads naturally in its actual context stays -- flag the tone, not the token. Blanket-banning a word is mechanical editing, the same defect the skill exists to remove.
+- Before the first edit, name the draft's core point and 3-5 concrete voice signals to preserve -- vocabulary, cadence, bluntness, humour, admitted uncertainty, digressions, how polished it is meant to sound. Keep the note internal; it is the reference the two checks below are measured against, not output.
 
 **Long-form output skeleton** (tag vocabulary, severity suffixes, and fix actions live in the audit workflow reference above):
 
@@ -145,6 +146,8 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 3. Check for false agency: any inanimate thing performing a human verb? Name the person.
 4. Check for em dashes, mechanical bold, and synonym cycling.
 5. Cut quotables: if a sentence sounds like a pull-quote, aphorism, or mic-drop kicker, delete it -- don't rewrite it into a better line. End on the clearest concrete sentence already in the draft; add a plain takeaway or next action only if the ending needs closure.
+6. Proportionality: is the amount cut proportional to the slop actually found? Compression that strips character is over-editing, not thoroughness.
+7. Recognizability: against the voice signals captured before editing, would the writer still recognize this as their own? If it now reads like a different, tidier author, restore what carried the voice.
 
 ## Changelog Voice
 

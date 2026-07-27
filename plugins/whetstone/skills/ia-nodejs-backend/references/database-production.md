@@ -10,6 +10,8 @@ Connection pooling: `new Pool({ max: 20, idleTimeoutMillis: 30000, connectionTim
 
 Transactions: `BEGIN` → ops → `COMMIT` / catch → `ROLLBACK` / finally → `client.release()`
 
+64-bit integer columns (`BIGINT` primary keys): configure the driver to return them as `string` or `BigInt` *before* any JS code touches the value, and keep them strings across the API boundary. Ordering is the whole point -- casting to string in the serializer, after the driver has already produced a JS `Number`, does not restore the lost digits; precision is gone at parse time. `node-postgres` returns `int8` as a string by default; `mysql2` returns a `Number` unless `supportBigNumbers` and `bigNumberStrings` are set. Nothing throws -- IDs past 2^53 just come back with wrong low digits, surfacing much later as "record not found".
+
 Index strategies:
 ```sql
 CREATE INDEX idx_col ON t(col);                            -- equality

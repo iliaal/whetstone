@@ -93,6 +93,9 @@ Every task prompt must include these fields to prevent integration failures:
 - **Interface Contracts**: what to import from other agents' work, what to export for downstream agents
 - **Acceptance Criteria**: how the agent knows the task is correct
 - **Out of Scope**: what NOT to touch, even if it looks related
+- **Validation Assignment**: which checks this agent runs, and which it must not
+
+**One owner per aggregate check.** Exclusive file ownership has a verification counterpart: assign the aggregate checks -- full test suite, whole-package typecheck, repo-wide lint -- to exactly one owner per dispatch. That is the integration agent where one exists, otherwise the orchestrator at post-wave reconciliation. Every other agent's Acceptance Criteria names the *narrowest* checks that prove its own edits (lint/format/typecheck scoped to its owned files, tests covering those files), and its prompt names the aggregate checks it must not run. Duplicate suite runs across a wave are wasted wall-clock, not extra assurance. This is what the parallel-dispatch constraint below leaves unsaid: it tells agents not to run the suite, and this tells them what to run instead.
 
 Cardinal rule: one owner per file. When files must be shared, designate a single owner; other agents send change requests, owner applies sequentially. If an upstream dependency isn't ready yet, write a stub/mock so downstream work can continue unblocked.
 
@@ -119,9 +122,11 @@ The intersection check catches silent conflicts the controller misses at plan ti
 
 | Task shape | Model |
 |-----------|-------|
-| 1-2 files, clear spec, mechanical | `model: "haiku"` |
+| Mechanical, clear spec, no hidden invariants | `model: "haiku"` |
 | Multi-file integration, standard complexity | Default model |
 | Architecture decisions, ambiguous scope, review | `model: "opus"` |
+
+Key the choice on reasoning difficulty, not size: file count, agent count, and wave width are not model triggers. A large mechanical rename stays cheap; a single-file change to a concurrency invariant does not. Escalate for nonlocal invariants, concurrency or state machines, migrations, parsing, auth and security, retry/error semantics, or public API and data-contract changes -- the asymmetry is that over-escalating a mechanical edit costs money while under-escalating a one-file concurrency fix costs a production defect.
 
 **Handoff protocol -- structured agent-to-agent transfers:**
 

@@ -36,8 +36,13 @@ cat > "$PLAN_DIR/task_plan.md" << EOF
 - **In**: [what's included]
 - **Out**: [what's explicitly excluded]
 
+## Next Step
+
+[one line: the phase and task to resume on]
+
 ## Phase 1: [Name]
 
+**Status**: pending
 **Files**: [specific files, max 5-8 per phase]
 
 **Tasks**:

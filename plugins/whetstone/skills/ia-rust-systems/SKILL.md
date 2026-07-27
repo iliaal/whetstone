@@ -44,6 +44,8 @@ crates/
 - Keep the leaf-most crate (`protocol` / types) dependency-free so every other crate can depend on it without cycles.
 - Feature flags belong on the crate that introduces the dependency, not re-exported through the workspace root.
 - **Library crates expose one stable facade**: a thin `lib.rs` with a `//!` purpose doc and `pub use` re-exports — one import path per concept, internals free to reorganize without breaking callers.
+- **`pub` alone does not prove an item is externally reachable.** Reachability runs through the re-export graph: a `pub` item inside a private module that is never re-exported is free to change, while the same item surfaced through a `pub use` at the crate root is not — even though its containing module stays private. (A `pub(crate)` item cannot be re-exported at all; `pub use` on one is `E0364`.) Trace the facade before calling a reorganization internal. On a library crate with a published baseline, `cargo semver-checks` settles it mechanically.
+- **Document public items at the point of exposure.** `///` on every public item (purpose, params, return, plus `# Examples` / `# Errors` / `# Panics` / `# Safety` where they apply); `//!` for modules and crates. Doc examples compile and run under `cargo test --doc`, so they are regression tests, not decoration. Enforce with `#![deny(missing_docs)]` on library crates; see [rustdoc.md](./references/rustdoc.md).
 - **Feature gates must error, never silently degrade.** If runtime config requests a capability the binary wasn't compiled with (e.g. `device = "gpu"` on a non-CUDA build), fail at startup — silent fallback diverges from operator config unnoticed.
 - **Centralize lints at the workspace root** with `[workspace.lints.*]` — every member crate inherits the same ruleset, no per-crate `#![deny(...)]` drift:
 
@@ -145,7 +147,7 @@ For generic test discipline (anti-patterns, mock rules, rationalization resistan
 
 ## Unsafe Discipline
 
-- Default: no `unsafe`. If clippy flags it, don't `#[allow]` it — refactor.
+- Default: no `unsafe`. If clippy flags it, don't `#[allow]` it — refactor. The `#[expect]` escape hatch below does not apply here; unsafe findings get fixed, not annotated.
 - Every `unsafe` block gets a `// SAFETY:` comment above it explaining why each invariant holds. No comment = reviewer rejects.
 - Keep `unsafe` blocks minimal — wrap in a safe abstraction at module boundary, mark the module `pub(crate)`.
 - Use `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic — catches UB that optimizers mask.
@@ -168,7 +170,7 @@ General CI design lives with the `ia-infrastructure-engineer` agent. For Rust-sp
 
 - Simplicity first — every change as simple as possible, impact minimal code.
 - Only touch what's necessary — avoid unrelated changes in a PR.
-- No `#[allow(clippy::...)]` as a shortcut — fix the underlying issue. Document exceptions with a rationale.
+- No `#[allow(clippy::...)]` as a shortcut — fix the underlying issue. When a suppression is genuinely warranted, write `#[expect(clippy::lint_name, reason = "...")]` instead: `expect` warns once the lint stops firing, so a suppression that has outlived its cause reports itself, where `allow` rots silently forever. (`expect` needs Rust 1.81+; edition 2024 clears that floor.)
 - Before adding a trait or generic, verify it's used in 3+ places. Otherwise a concrete type is clearer.
 
 ## Verify

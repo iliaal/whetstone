@@ -74,4 +74,4 @@ For detailed response handling, see [documentation-process.md](./references/docu
 
 ## Integration
 
-- `/ia-compound-refresh` command -- reviews `docs/solutions/` for stale learnings
+- Stale-learning review (`/ia-compound-refresh` in Claude Code) -- reviews `docs/solutions/` for entries that have aged out
