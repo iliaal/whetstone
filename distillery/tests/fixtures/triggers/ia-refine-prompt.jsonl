@@ -8,3 +8,7 @@
 {"prompt": "write the documentation for this API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "fix the bug in the prompt parser", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "review my pull request description", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "rewrite this tool description so the agent picks the right tool", "expect": true, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}
+{"prompt": "this error message keeps getting misparsed by the downstream agent", "expect": true, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}
+{"prompt": "the model misinterprets this instruction half the time", "expect": true, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}
+{"prompt": "parse the description field out of the tool response json", "expect": false, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}

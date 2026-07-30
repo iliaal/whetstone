@@ -21,6 +21,7 @@ description: >-
 | Context | Does the model have enough background to act? Check: audience, input format, success criteria, scope boundaries, technical constraints |
 | Examples | Would a demonstration clarify the expected output? |
 | Edge cases | Are failure modes and boundary conditions addressed? |
+| Reader | Will a model parse this with no human available to disambiguate? If yes, apply Machine-Parsed Text below. |
 
 2. **Rewrite** -- Transform into specification language: precise, imperative, no filler. Treat the prompt as a spec, not conversation.
 
@@ -38,6 +39,17 @@ description: >-
 - **Specific verbs** -- replace vague actions ("analyze", "process", "handle") with measurable ones ("list the top 3", "classify as A/B/C", "return JSON with keys X, Y").
 - **One output format** -- specify exactly one format (JSON schema, markdown template, numbered list). Ambiguous format expectations cause inconsistent results.
 - **No meta-commentary** -- output only the refined prompt as markdown. No preamble ("Here's an improved version..."), no explanation of changes unless explicitly requested.
+
+## Machine-Parsed Text
+
+Applies when a model reads the output with no back-channel: tool and function descriptions, system prompts, skill and agent instructions, error strings, inter-agent messages. A person resolves an ambiguous sentence by asking. A model resolves it by guessing.
+
+- **One directive per sentence.** A compound instruction gets partially executed -- the model does the first clause and the last, and drops the middle. Split "Open the file and read line 3, then check it matches" into three sentences.
+- **Simple tenses in directives.** "The job finished", not "the job has completed". A compound tense adds a second parse (finished when? still true now?) that carries no instruction.
+- **Cap noun stacks at three.** "the agent task queue priority handler" has four readings. Break it with a preposition: "the handler that sets task-queue priority".
+- **Modal words are load-bearing.** Reserve `must` and `never` for requirements, `should` and `may` for genuine latitude. "The agent should verify first" reads as optional; if it is not optional, write "verify first".
+- **Keep every referent explicit.** Name the subject instead of "this", "it", or "the above" whenever more than one antecedent is in scope.
+- **Do not compress into ambiguity.** Dropping a subject, verb, or article to save tokens yields a shorter sentence with more readings, not fewer -- "Files not backed up will be lost" hides which files. This bounds the Length rule above: cut whole sentences that change no behavior, never words that carry a referent.
 
 ## Persistence
 
@@ -69,3 +81,4 @@ After refining, offer to save the result to `.ai/PROMPT.md` -- do not write with
 - Rewrite addresses every gap identified in the assessment
 - Length ratio within 0.75x-1.5x of original (unless structural change justified)
 - No invented constraints or assumptions not in the original
+- Machine-parsed output: no sentence carries two directives, and no `should`/`may` sits on a requirement

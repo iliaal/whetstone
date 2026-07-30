@@ -16,6 +16,8 @@ description: >-
 
 **Detect** -- when asked whether text reads as AI, or to audit, scan, or flag a draft without rewriting: name each pattern that appears, quote the offending line, and give the fix in a few words. Do not rewrite, do not score, do not claim whether AI wrote it -- named patterns are evidence the reader can check; an authorship verdict is a guess. Run detection per Phase 1 of [audit-workflow.md](./references/audit-workflow.md), stop there, and offer to edit afterward.
 
+**Not this skill** -- text whose reader is a model rather than a person: tool descriptions, system prompts, skill and agent instructions, error strings, inter-agent messages. The human-voice rules below (contractions, varied rhythm, fragments, opinions, let-some-mess-in) make that text harder to parse, not easier. Route it to `ia-refine-prompt`.
+
 ## Core Principles
 
 - **Active voice**: "We shipped the fix" not "The fix was shipped"

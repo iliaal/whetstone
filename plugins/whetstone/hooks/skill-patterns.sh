@@ -114,7 +114,7 @@ SKILL_TIERS[ia-writing]=3
 SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md'
 SKILL_TIERS[ia-md-docs]=3
 
-SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt'
+SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt|tool.?description|mis-?(pars|interpret|read)'
 SKILL_TIERS[ia-refine-prompt]=3
 
 SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt'

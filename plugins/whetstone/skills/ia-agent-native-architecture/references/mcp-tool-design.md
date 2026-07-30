@@ -578,6 +578,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] No business logic in tool implementations
 - [ ] Error states clearly communicated via `isError`
 - [ ] Descriptions explain what the tool does, not when to use it
+- [ ] Descriptions pass the machine-parsed-text rules in `ia-refine-prompt`: one directive per sentence, simple tenses, noun stacks capped at three, no dropped referents
 - [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
 - [ ] Error messages include recovery suggestions, not just failure descriptions
 - [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`

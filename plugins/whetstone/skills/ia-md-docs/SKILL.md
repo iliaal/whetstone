@@ -107,6 +107,8 @@ Before overwriting: `cp FILE FILE.backup`; never auto-delete backups.
 
 - **Lead with the answer.** First sentence of each section states the conclusion; reasoning follows. No "In this section, we'll..." preamble.
 - **Imperative form** for instructions: "Build the project" not "The project is built" — verify no passive voice in any directive sentence.
+- **One directive per sentence.** A rule that bundles two actions gets half-applied: the reader acts on the first clause and the last, and drops the middle. Move any sequence of 3+ steps into a numbered list rather than burying it in prose.
+- **`must`/`never` for requirements, `should`/`may` for latitude.** A requirement phrased as "should" reads as optional and gets skipped.
 - **Expert-to-expert**: cut explanations of concepts the target reader already knows. For CLAUDE.md/AGENTS.md, assume familiarity with git, package managers, test runners, and the project's main language.
 - **Scannable**: headings every ~20 lines, bullet lists for ≥3 parallel items, fenced code blocks for every command.
 - **Verify every command and path against the codebase.** Run each command before committing; grep for each referenced path. Stale paths and untested commands are the most common doc defect.

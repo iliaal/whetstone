@@ -108,6 +108,8 @@ Full decision rules and conflict resolution in [action-routing.md](./references/
 
 Prefix inline comments so authors know what requires action: *(no prefix)* = required change (Critical/Important), blocks merge; **Nit:** = style preference, optional; **Consider:** = suggestion worth evaluating, not blocking; **FYI:** = informational, no action expected.
 
+**One finding per comment.** A comment carrying two issues gets half-resolved — the author fixes the first and drops the second, and `ia-pr-comment-resolver` implements exactly one change per comment by contract. Split it into two comments, each with its own label.
+
 ## Anti-Patterns in Reviews
 
 - Nitpicking style when linters exist -- defer to automated tools
