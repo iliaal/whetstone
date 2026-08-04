@@ -157,3 +157,5 @@ Read [security-patterns.md](../skills/ia-code-review/references/security-pattern
 If the security-patterns reference is unavailable, apply OWASP Top 10 checks inline: injection (SQL, NoSQL, command, LDAP), broken auth, sensitive data exposure, XXE, broken access control, security misconfiguration, XSS, insecure deserialization, known vulnerable components, insufficient logging.
 
 This agent provides deep security analysis. For general code reviews that include a security check as one step among many, the `ia-code-review` skill handles that broader workflow.
+
+Memory-safety findings are reportable only on `.c/.cc/.cpp/.h/.rs`. When a finding lands in C or C++ and the remediation needs the authoring-side rule rather than the exploit, the `ia-c-systems` and `ia-cpp-systems` skills carry the overflow-checked allocation, lifetime, and undefined-behavior patterns to cite in the fix.

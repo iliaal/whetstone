@@ -2,12 +2,12 @@
 name: ia-cpp-systems
 class: language
 description: >-
-  Modern C++ patterns: RAII and ownership, rule of zero/five, const correctness,
+  Modern C++ patterns: RAII and ownership, rule of zero/five, exceptions and
   error handling, API and ABI boundaries, templates, and CMake tooling. Use when
-  writing, reviewing, or refactoring C++, working with smart pointers, move
-  semantics, gtest, or clang-tidy, or designing a C++ library API. For plain C,
-  use ia-c-systems.
-paths: "**/*.cpp,**/*.hpp,**/*.cc,**/*.hh,**/*.cxx,**/*.h"
+  writing, reviewing, refactoring, or debugging C++, working with smart pointers,
+  move semantics, memory leaks, template errors, or gtest. For plain C, see
+  ia-c-systems.
+paths: "**/*.cpp,**/*.hpp,**/*.cc,**/*.hh,**/*.cxx"
 ---
 
 # C++ Systems & Libraries
@@ -74,9 +74,7 @@ Pick one model per module and hold it at the boundary.
 
 The decisions that break callers, learned the expensive way:
 
-- **Implicit constructors are part of the contract.** Adding `explicit` to a single-argument constructor is a source-breaking change: every call site passing a braced or bare value stops compiling. Decide at introduction, not later.
-- **An overload that silently ignores part of its argument is worse than no overload.** If a type carries state one overload cannot honor (a callback, an option the code path never reads), reject it at compile time with a deleted overload or a `static_assert`, or fail loudly at runtime. Silent ignoring produces bug reports about the feature not working.
-- **Removing an overload breaks callers even when a "better" one exists.** Keep the narrow overload and delegate.
+- **Three decisions break callers when they go wrong**: `explicit` on a single-argument constructor (decide at introduction, since adding it later is source-breaking), removing an overload (keep the narrow one and delegate), and an overload that silently ignores part of its argument (delete it or `static_assert` instead). Rationale and the full evolution rules are in the reference below.
 - Prefer free functions over members where they do not need private access; they extend without touching the class.
 - Return by value and let the compiler elide. Out-parameters exist for multiple returns and for reuse of a caller's buffer, not as an optimization.
 
@@ -121,7 +119,7 @@ Function decomposition, naming as a greppability contract, the name test that st
 - Preserve behavior and API compatibility unless a break was requested. A public header change is a decision, not a cleanup.
 - Do not introduce a template, an inheritance hierarchy, or a policy parameter for a single call site.
 - `#include` what the file uses; do not rely on transitive includes from another header.
-- No `using namespace` at namespace scope in a header, ever.
+- No `using namespace` at namespace scope in a header. Fully qualify instead, or scope the `using` to a function body.
 - When a constraint forces a deviation, comment at the deviation site and state the constraint.
 
 ## Verify

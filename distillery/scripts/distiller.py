@@ -1564,7 +1564,6 @@ def _trigger_fires(pattern, negative, text):
     Single source of truth for the firing rule, so should_trigger and
     should_not_trigger cannot drift apart. Mirrors the hook's two greps.
     """
-    import re as _re
     if not _re.search(pattern, text):
         return False
     if negative and _re.search(negative, text):

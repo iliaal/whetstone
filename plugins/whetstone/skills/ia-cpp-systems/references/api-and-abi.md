@@ -56,7 +56,7 @@ Once a shared library is released, all of the following break consumers even tho
 | Changing an enum's underlying type | Changes size and how it is passed |
 | Changing alignment, packing, or a bitfield layout | Same as reordering |
 
-**Symbol breaks** — whether the mangled name changes decides whether you find out at link time:
+**Symbol breaks** — whether the mangled name changes decides whether the break surfaces at link time:
 
 | Change | Why it breaks |
 |---|---|

@@ -162,7 +162,7 @@ A codebase that has only ever built on Linux hits the same sequence on its first
 - **POSIX functions MSVC does not have.** `timegm` is the common one; Microsoft's documented equivalent is `_mkgmtime` with identical semantics. Never substitute `mktime` as a fallback: it interprets the `tm` as **local** time and silently shifts every result by the runner's timezone offset, which produces wrong timestamps rather than a build error.
 - **Object-handler and callback function pointers.** MSVC warns on incompatible function-pointer assignment (C4133) where GCC is silent, so a signature mismatch that has always been latent surfaces only on the Windows lane.
 
-Run the widest warning set on the platform you do *not* develop on. Each compiler is silent about a different class, so a second toolchain in CI is a second static analyser for free.
+Run the widest warning set on the platform that is *not* used for daily development. Each compiler is silent about a different class, so a second toolchain in CI is a second static analyser for free.
 
 ## Build speed
 

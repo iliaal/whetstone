@@ -11,6 +11,8 @@ paths: "**/*.php"
 
 # PHP & Laravel Development
 
+Scoped to framework-level PHP. Work on php-src internals or a native PHP extension is C, not PHP: the `ia-c-systems` skill covers it, including the Zend API conventions (`gen_stub` arginfo, the request-scoped allocator, custom object handlers, `.phpt`).
+
 ## Code Style
 
 - `declare(strict_types=1)` in every file

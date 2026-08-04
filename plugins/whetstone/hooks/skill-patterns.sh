@@ -224,4 +224,4 @@ SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # 14 sessions, 21.4%
 # Added 2026-05-02 from diagnose-negatives ia-debugging (post-rename signal verified against pre-rename data):
 SKILL_MAINT_SUPPRESS[ia-debugging]=1                        # 4/4 negative cases were plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfiring as debugging; analyze-outcomes 36% neg on -home-ilia-ai-php
 
-# Total skills: 30
+# Total skills: 32

@@ -3,10 +3,10 @@ name: ia-c-systems
 class: language
 description: >-
   C patterns for systems code, libraries, and native extensions: module layout,
-  function decomposition, status-enum errors, memory safety, and build hygiene.
-  Use when writing, reviewing, refactoring, or debugging C, working with malloc
-  lifetimes, sanitizers, or Valgrind, or building native extensions. For C++, use
-  ia-cpp-systems.
+  function decomposition, status-enum errors, memory safety, and undefined
+  behavior. Use when writing, reviewing, refactoring, or debugging C, working
+  with malloc lifetimes, buffer overflows, sanitizers, or Valgrind, or building
+  native extensions. For C++, see ia-cpp-systems.
 paths: "**/*.c,**/*.h"
 ---
 
@@ -29,7 +29,7 @@ This gate is load-bearing. Established C codebases sanction idioms these rules w
 
 Never widen a scoped task into a repo-wide restyle because adjacent untouched C predates a rule here.
 
-**When the target is a PHP extension** (`php_*.h`, `PHP_FUNCTION`, `zend_`, `config.m4`), load [php-extension-c.md](./references/php-extension-c.md) before applying the layout, macro, or error-model rules. Those three sections have extension-specific overrides.
+**When the target is a PHP extension** (`php_*.h`, `PHP_FUNCTION`, `zend_`, `config.m4`), load [php-extension-c.md](./references/php-extension-c.md) before applying any rule below. Layout, macros, the error model, memory, and assertions all carry extension-specific overrides, and the memory one in particular inverts the base guidance: extensions use a request-scoped allocator, not `malloc`/`free`.
 
 ## Tooling
 
@@ -38,7 +38,7 @@ Never widen a scoped task into a repo-wide restyle because adjacent untouched C 
 | `gcc` / `clang` | `-Wall -Wextra -Werror -Wconversion -Wshadow` from the first commit on a new project; on an existing tree, the repo's profile plus zero *newly introduced* warnings |
 | ASan + UBSan | `-fsanitize=address,undefined -fno-omit-frame-pointer`: default for test builds |
 | `valgrind --leak-check=full` | Leak and uninitialized-read detection where ASan cannot be linked |
-| `clang-tidy` | Static analysis (`bugprone-*`, `cert-*`, `clang-analyzer-*`) |
+| `clang-tidy` | Lint (`bugprone-*`, `cert-*`, `clang-analyzer-*`) |
 | `cppcheck` | Second opinion; catches different classes than clang-tidy |
 | `gdb` / `lldb` | `bt full`, `p *ptr`, watchpoints on corrupted fields |
 | `clang-format` | Formatter, driven by the repo's `.clang-format`, never a personal preference |
@@ -66,7 +66,7 @@ Naming is the primary navigation channel for both greps and models, not decorati
 
 ## Functions
 
-Apply the name test **first**, before any decomposition rule below: if the most honest name for a candidate helper merely paraphrases its body, inline it and stop. A helper earns existence by naming a concept, owning an error value, or isolating a side effect. Skipping this test produces a hundred two-line functions and turns every read into a pointer chase.
+Apply the name test **first**, before any decomposition rule below: if the most honest name for a candidate helper merely paraphrases its body, inline it and stop. A helper earns existence by naming a concept, owning an error value, or isolating a side effect. Nothing else counts.
 
 Having passed it:
 
@@ -80,7 +80,7 @@ Having passed it:
 
 - Early return over else chains.
 - `goto` only where the repo sanctions it, or for one forward jump to one cleanup label when three or more interdependent resources are live. A `goto` whose label only returns is indirection buying nothing.
-- Every `switch` case ends in `break` or an explicit `/* fallthrough */`. Require `default` when switching on an open-ended integer or an externally supplied value. On a closed internal enum, prefer *omitting* `default` with `-Wswitch-enum` enabled, because that is what makes adding an enumerator produce a warning at every switch that needs updating; a `default` silences exactly the diagnostic worth having. If the control flow needs proving, add a real `assert(0)`, not an unreachable annotation. `__builtin_unreachable()` and `std::unreachable()` are promises to the optimizer, not diagnostics: reaching one is undefined behavior on a release build, and the compiler is entitled to fold the path into whichever neighbouring arm it likes. That is why a bug filed as "assertion failure on a debug build" is usually also a live user-visible bug on stock release builds, wearing a completely different symptom.
+- Every `switch` case ends in `break` or an explicit `/* fallthrough */`. Require `default` when switching on an open-ended integer or an externally supplied value. On a closed internal enum, prefer *omitting* `default` with `-Wswitch-enum` enabled, because that is what makes adding an enumerator produce a warning at every switch that needs updating; a `default` silences exactly the diagnostic worth having. If the control flow needs proving, add a real `assert(0)`, never an unreachable annotation (see the UB table in [memory-safety.md](./references/memory-safety.md) for why). The consequence worth carrying here: because reaching one is UB rather than a diagnostic, a bug filed as "assertion failure on a debug build" is usually also a live user-visible bug on stock release builds, wearing a completely different symptom.
 - A loop body over 10 lines becomes a named function.
 - Give an explicit named bound to every loop whose trip count comes from untrusted or externally-supplied data. Traversals bounded by a structure's own size invariant (`while (fgets(...))`, a list walk, a scan to a terminator) do not need one; name the invariant in a comment or an assert instead. A deliberate event pump carries a comment saying exactly that.
 - No recursion over externally-supplied input. Convert to a loop over an explicit bounded worklist: stack depth becomes visible and termination checkable. Unbounded recursion over attacker-controlled nesting is a live CVE class in parsers and serializers.
@@ -119,7 +119,7 @@ Hidden control flow inside a macro makes visible code lie about its own paths, s
 
 ## Memory and lifetime
 
-Ownership is stated at the interface, in the name (`_create` vs `_init`) and in the contract comment (who frees, when, and on which paths). Allocation failure is a status, never an abort, outside `main`.
+State ownership at the interface, in the name (`_create` vs `_init`) and in the contract comment. Treat allocation failure as a status, never an abort, outside `main`.
 
 For sanitizer invocation, the integer overflow and truncation rules, allocation and lifetime patterns, the recursion-to-worklist conversion, and untrusted-input parsing discipline, load [memory-safety.md](./references/memory-safety.md).
 
@@ -135,6 +135,12 @@ Four shapes compile clean, pass review, and fail in production. Check for them b
 | Passes an integer to a foreign API | A value that passes a sign check still narrows to something else |
 
 Load [correctness-traps.md](./references/correctness-traps.md) for detection greps, fix patterns, macro shadowing, and the portability checklist.
+
+## Testing
+
+C has no dominant framework, so follow the repo's: Unity, Check, CMocka, Criterion, or plain assert-and-exit driven by the build. Whichever it is, run the suite under `-fsanitize=address,undefined` in CI, and make each new test fail against the unfixed code before accepting it.
+
+For generic test discipline (anti-patterns, real assertions, rationalization resistance), see the `ia-writing-tests` skill.
 
 ## Refactoring existing C
 

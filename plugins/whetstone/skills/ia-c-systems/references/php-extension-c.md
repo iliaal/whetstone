@@ -2,15 +2,17 @@
 
 The dialect rules for C written against the Zend Engine. These **override** the corresponding SKILL.md sections. Load before applying the layout, macro, or error-model rules to any file containing `PHP_FUNCTION`, `zend_`, `php_*.h`, or a `config.m4`.
 
-## What the base rules get wrong here
+## How the base rules resolve here
 
-| Base rule | Extension reality |
+Most base rules already defer to project convention; this is what that convention turns out to be. Only formatting and the type choice override outright.
+
+| Base rule | How it resolves in an extension |
 |---|---|
 | Repo formatting (`.clang-format`) | **Tabs.** php-src `CODING_STANDARDS.md` mandates them; extensions follow, regardless of any local preference. |
-| No macro contains `return` | `RETURN_*`, `RETURN_THROWS()`, and `ZEND_PARSE_PARAMETERS_END()` return; they are mandatory idiom, not violations. `RETVAL_*` is the one that does **not** return: it assigns `return_value` and deliberately continues, which is the whole reason both spellings exist. |
-| No `goto` | `goto cleanup` is the sanctioned multi-resource release idiom throughout php-src. |
-| One status enum per module | `zend_result` (`SUCCESS`/`FAILURE`) already exists. Do not invent a parallel enum beside it. |
-| Fixed-width types everywhere | `zend_long`, `zend_ulong`, `size_t`, `zend_string *`. `zend_long` is 32 or 64 bit by build; never assume `int64_t`. |
+| No macro containing `return`, unless the project sanctions one | The project sanctions several. `RETURN_*`, `RETURN_THROWS()`, and `ZEND_PARSE_PARAMETERS_END()` return; they are mandatory idiom, not violations. `RETVAL_*` is the one that does **not** return: it assigns `return_value` and deliberately continues, which is the whole reason both spellings exist. |
+| `goto` only where the repo sanctions it | The repo sanctions it. `goto cleanup` is the standard multi-resource release idiom throughout php-src. |
+| Adopt the project's status type, else one enum per module | `zend_result` (`SUCCESS`/`FAILURE`) already exists. Do not invent a parallel enum beside it. |
+| Exact-width types only where the representation is externally fixed | Here the project types win outright: `zend_long`, `zend_ulong`, `size_t`, `zend_string *`. `zend_long` is 32 or 64 bit by build, so never assume `int64_t`. |
 
 ## Build and test loop
 
