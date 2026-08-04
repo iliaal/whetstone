@@ -5,6 +5,34 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-08-04
+
+Minor: C and C++ get first-class skills, closing the plugin's largest stack gap. Until now the plugin covered Rust, Pine Script, and Terraform but had nothing for C at all: no skill, no path trigger, not a single pattern in the hook. Both new skills open by deferring to the repository they find themselves in, so tabs, `goto cleanup`, and macros that return survive untouched in codebases that sanction them, and no rule here will ever justify changing a frozen signature.
+
+The legibility half adapts 7etsuo/write-legible-c (MIT). Its citations all check out, which moved the audit from "does this source exist" to "does each rule survive contact with real C" — and measuring first is what produced the repo-conventions-outrank gate, because four of the source's rules are simply wrong for PHP extension code. Two independent reviewers then read the result and found genuine defects in it, including a worked example whose depth check rejected a flat tree after one node. The reviewers disagreed with each other once, and testing the disputed claim settled it against the reviewer who had labelled it verified. 32 skills now, 19 agents, 22 commands.
+
+### Added
+
+- `ia-c-systems` covers C11 and later for systems code, libraries, and native extensions: module layout, naming as a greppability contract, orchestrator/leaf/adapter function altitudes, status enums with one producer per error value, and public-validates/internal-asserts boundaries. Four references carry the depth, including memory safety (sanitizer invocation, overflow-checked allocation, an undefined-behavior table, converting recursion to a bounded worklist) and a PHP extension dialect file for Zend API work.
+- `ia-cpp-systems` covers C++17 and later: RAII and ownership, rule of zero until a destructor appears and rule of five after, error models, and the three API decisions that break callers when they go wrong. References cover ABI boundaries and CMake tooling.
+- A `correctness-traps.md` reference for the bug classes that compile clean and pass review because the failing case is a locale, a short read, an extreme input, or a platform nobody ran. The `printf` float family follows a process-global `LC_NUMERIC`, so one `setlocale` anywhere in the process emits `12,5` into SVG, where the comma is the coordinate separator and the geometry silently re-segments with no parse error.
+- Skill triggers can now declare a suppression pattern. `SKILL_NEGATIVE` is checked after a positive match, so a language-neutral token like `segfault` or `valgrind` no longer pulls the C skill into a C# or Objective-C task.
+
+### Changed
+
+- `ia-php-laravel` now says where php-src and native extension work belongs instead of only excluding it.
+- `ia-security-sentinel` points C and C++ memory-safety findings at the authoring skills, so a fix can cite the rule rather than only the exploit.
+
+### Fixed
+
+- The `**/*.h` glob claimed by both new skills force-loaded 24 KB of skill bodies on every C header edit. C++ headers now route by their own extensions.
+- Two claims that could have caused the bug they warned about: an assert recommendation that invited `__builtin_unreachable`, which is a promise to the optimizer rather than a check, and a note that asserts are free under `NDEBUG`, which does not hold for a project macro that degrades to an assume and still evaluates its condition on GCC.
+
+### For contributors
+
+- Trigger patterns must now satisfy both engines that read them, `grep -E` in the hook and Python `re` in the test gate. POSIX classes parse in only one, and `\s` parses in both while disagreeing across newlines, which is the direction that turns the gate green on behaviour the runtime lacks. Separators are literal spaces, and the constraint is documented in `skill-patterns.sh`.
+- `generate-manifest.py` folds any suppression pattern into the skill hash, so changing what a skill suppresses invalidates staleness the same way changing what it matches does.
+
 ## [4.3.3] - 2026-08-03
 
 Patch: a 7-day delta sync that borrowed dispatch-safety, verification, and documentation patterns from 39 external repos, plus the reactive audit that followed it. That audit returned nineteen defects and every one of them was introduced by the sync itself, the highest that pass has produced. The pattern was consistent: the borrowed rules were sound, and what broke was the mechanical contract each one quietly assumed, an output template with no field for a newly required line, a grouping key with no dimension for the distinction a new rule depended on. This release also ships the machine-parsed-text rules adapted from ASD-STE100. No components added or removed (30 skills, 19 agents, 22 commands unchanged).

@@ -1,12 +1,12 @@
 {
-  "plugin_version": "4.3.3",
+  "plugin_version": "4.4.0",
   "model_baseline_prefixes": [
     "claude-opus-4-8",
     "claude-haiku-4-5",
     "claude-fable-5",
     "claude-sonnet-5"
   ],
-  "generated_at": "2026-08-04T01:15:42.457838+00:00",
+  "generated_at": "2026-08-04T19:25:55.273600+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "73b274b86ddbac0d248086f03c101622f2b1d3cb0b35f29b1b50f8b97c63b99f",
@@ -20,6 +20,12 @@
       "pattern_hash": "b16621b32a482a146a1992e515f4c1594afc6c3e23e90d17683858983944eb07",
       "pattern_changed": "3.0.4"
     },
+    "ia-c-systems": {
+      "content_hash": "c6b806d5abfba48de3fcadef2418aafaaa3fc919c0508f63370aef35c7f4be2f",
+      "content_changed": "4.4.0",
+      "pattern_hash": "5482c42b3bb0eb1a4b3274b7ed3d9f8d0ccd12202dcf72ba67c16641acee73e5",
+      "pattern_changed": "4.4.0"
+    },
     "ia-code-review": {
       "content_hash": "11a0415c8d79127c1dbd0a2b309bdc5dc18a3d57487ce092533fa80d40761b2a",
       "content_changed": "4.3.3",
@@ -31,6 +37,12 @@
       "content_changed": "4.3.2",
       "pattern_hash": "a5eb2a63c3bd1b763bbc61164b24ff900decad9f534d95c06c4c7e6a37c5de67",
       "pattern_changed": "3.0.4"
+    },
+    "ia-cpp-systems": {
+      "content_hash": "e31e7b2bcbf4d0419d39f90bc3b80a799025fbdce7db5a15e296423e8d65e5a0",
+      "content_changed": "4.4.0",
+      "pattern_hash": "fb44c184d37e245cb23c2f76bea5ad833fc36862b373577284b16910c83e04d4",
+      "pattern_changed": "4.4.0"
     },
     "ia-debugging": {
       "content_hash": "c1b8adc3332f091f697f2cef4fb621d85a31bc3c7c2755953dfad628f3f59f0a",
@@ -93,8 +105,8 @@
       "pattern_changed": "2.56.1"
     },
     "ia-php-laravel": {
-      "content_hash": "b3f89d60535626a42c55e0429d5ea69a1419b4f3ec34335fc94adbae99240b1f",
-      "content_changed": "4.3.2",
+      "content_hash": "42c77730fbcd6306fc973efe1f70dd241b3ddc89a21b7a2894e186bbbd34d744",
+      "content_changed": "4.4.0",
       "pattern_hash": "c1e52a41af9587ba2c954c488b71c1e5a11d899a5cedc37f854f5415da3ecfa8",
       "pattern_changed": "4.2.0"
     },

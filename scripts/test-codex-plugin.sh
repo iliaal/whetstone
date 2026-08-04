@@ -92,7 +92,11 @@ test_codex_source_exclusions_are_idempotent() {
 	second_hash=$(sha256sum "$config" | awk '{print $1}')
 
 	[[ "$first_hash" == "$second_hash" ]]
-	[[ "$(grep -c '^\[\[skills.config\]\]$' "$config")" -eq 30 ]]
+	# Derived, never hardcoded: this assertion is about one entry per shipped
+	# skill, so a literal here silently rots on the next skill added.
+	local expected_skill_sources
+	expected_skill_sources=$(find "$REPO_ROOT/plugins/whetstone/skills" -mindepth 1 -maxdepth 1 -type d | wc -l)
+	[[ "$(grep -c '^\[\[skills.config\]\]$' "$config")" -eq "$expected_skill_sources" ]]
 	[[ "$(grep -c '^model = "gpt-5"$' "$config")" -eq 1 ]]
 	python3 -c 'import pathlib, sys, tomllib; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$config"
 
