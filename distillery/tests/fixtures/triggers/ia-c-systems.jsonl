@@ -1,0 +1,33 @@
+{"prompt": "refactor this c function that leaks on the error path", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "review my c code for memory safety", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "why does this segfault under valgrind", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "fix the double free in parser.c", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "wrap this in a c11 atomic", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "add a php extension function with zend_parse_parameters", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "the malloc here is never checked", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "written in c and needs a bounds check", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "audit this c library for integer overflow", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "the snprintf return value is ignored", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "asan reports a heap use-after-free", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "check php_excel.h for the handler offset", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "build fails under -werror -wconversion", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "regenerate arginfo from the stub file", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "convert this recursive c function to an iterative loop", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "this size_t truncates on 32-bit builds", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "add a .phpt test for the new extension function", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "write a c# service with entity framework", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "parse this csv file in python", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "objective-c bridging header question", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "pick option c from the list", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "refactor this rust function that leaks", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "review my c++ move constructor", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "convert these raw pointers to unique_ptr", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "design a pimpl class for abi stability", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "add gtest cases for the client", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "the laravel eloquent query is n+1", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "python asyncio task never awaited", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "update the react component state", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "terraform state migration plan", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "write a c parser for the wire format", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "the allocator in this c driver double-frees", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "help me boost php performance", "expect": false, "added_in": "4.4.0", "source": "codex-review"}

@@ -139,6 +139,8 @@ Skills are instructions that activate based on what you're working on. They shap
 | [ia-python-services](plugins/whetstone/skills/ia-python-services/SKILL.md) | Mandates modern tooling (uv, ruff, ty) over legacy equivalents. Structured concurrency via `asyncio.TaskGroup`, idempotent background jobs, and structured JSON logging with correlation IDs via `contextvars`. For Python CLI tools, FastAPI services, async workers, or new project setup. |
 | [ia-php-laravel](plugins/whetstone/skills/ia-php-laravel/SKILL.md) | `declare(strict_types=1)` everywhere, PHPStan level 8+, fat models / thin controllers, Form Requests with `toDto()`, event-driven side effects. Prevents N+1 by disabling lazy loading in dev. Defaults to feature tests through the full HTTP stack. For Laravel codebases. |
 | [ia-rust-systems](plugins/whetstone/skills/ia-rust-systems/SKILL.md) | Edition 2024, workspace layout with inward-only deps, `thiserror` in libraries / `anyhow` in binaries, no `unwrap`/`expect` outside `main` and tests, every `unsafe` block needs a `// SAFETY:` comment. Tokio patterns (JoinSet, CancellationToken, bounded mpsc) and axum service layout. For Rust CLIs, axum services, or cargo workspaces. |
+| [ia-c-systems](plugins/whetstone/skills/ia-c-systems/SKILL.md) | Repo conventions outrank the skill, so it defers on tabs, `goto cleanup`, and macros that return rather than fighting established C. Function altitudes (orchestrator / leaf / adapter) gated behind a name test that stops over-decomposition, status enums with one producer per error value, public-validates / internal-asserts boundaries. Separate references for memory safety (sanitizers, overflow-checked allocation, recursion to bounded worklists) and PHP extension C. For C11 and later, native extensions, and systems code. |
+| [ia-cpp-systems](plugins/whetstone/skills/ia-cpp-systems/SKILL.md) | Rule of zero by default and rule of five once a destructor appears, since a user-declared destructor silently suppresses moves. `unique_ptr` first and `shared_ptr` third. API rules that break callers when ignored: decide `explicit` at introduction, keep the narrow overload, delete rather than silently ignore. Separate references for ABI boundaries (exceptions must not cross `extern "C"`, PIMPL, visibility) and CMake tooling. For C++17 and later libraries and services. |
 | [ia-pinescript](plugins/whetstone/skills/ia-pinescript/SKILL.md) | Prevents silent TradingView errors (ternary formatting, `plot()` scope restrictions), enforces `barstate.isconfirmed` to avoid repainting, requires walk-forward validation over pure backtesting. Flags indicator stacking and overfitted parameters. For Pine Script v6. |
 | [ia-tailwind-css](plugins/whetstone/skills/ia-tailwind-css/SKILL.md) | Enforces v4's CSS-first config model (`@theme`, `@utility`, `@custom-variant` directives). Provides a v3-to-v4 breaking changes table. Prohibits dynamic class construction, mandates `gap` over `space-x`, `size-*` over paired `w-*/h-*`. For Tailwind v4 or v3 migrations. |
 
@@ -297,7 +299,7 @@ whetstone/
 ├── plugins/whetstone/   # The plugin
 │   ├── agents/                     # 19 specialized subagents
 │   ├── commands/                   # 22 slash commands
-│   ├── skills/                     # 30 skills
+│   ├── skills/                     # 32 skills
 │   ├── hooks/                      # Skill injection into subagents
 │   └── README.md                   # Full component reference
 ├── distillery/                     # Skill generation, eval, and evolution

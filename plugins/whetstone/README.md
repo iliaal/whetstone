@@ -8,13 +8,13 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 |-----------|-------|
 | Agents | 19 |
 | Commands | 22 |
-| Skills | 30 |
+| Skills | 32 |
 | Hooks | 1 |
 | MCP Servers | 1 |
 
 ## Agents
 
-All agent files live flat under `agents/`. Categories below are editorial — grouped by purpose for easier discovery, not by filesystem layout.
+All agent files live flat under `agents/`. Categories below are editorial: grouped by purpose for easier discovery, not by filesystem layout.
 
 ### Review (9)
 
@@ -107,6 +107,8 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 
 | Skill | Description |
 |-------|-------------|
+| [`ia-c-systems`](skills/ia-c-systems/SKILL.md) | C11+ systems code, memory safety, sanitizers, native extensions |
+| [`ia-cpp-systems`](skills/ia-cpp-systems/SKILL.md) | C++17+ RAII and ownership, API/ABI boundaries, CMake tooling |
 | [`ia-nodejs-backend`](skills/ia-nodejs-backend/SKILL.md) | Node.js backend patterns: Express/Fastify, TypeScript, validation |
 | [`ia-php-laravel`](skills/ia-php-laravel/SKILL.md) | Modern PHP 8.4 and Laravel patterns, PHPUnit testing |
 | [`ia-python-services`](skills/ia-python-services/SKILL.md) | Python CLI tools, async parallelism, FastAPI services |

@@ -72,6 +72,32 @@ SKILL_TIERS[ia-python-services]=2
 SKILL_PATTERNS[ia-rust-systems]='(write|review|refactor|debug|fix|implement|design|structure|optimi[sz]e|port|migrate|test)\b[^.]{0,40}\brust\b|\brust\b.{0,30}(cli|service|binary|workspace|backend|api|server|handler|async|tokio|axum)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\bcrates?\.io\b|\bcrate\b.{0,25}\bworkspace\b|\bworkspace\b.{0,25}\bcrates?\b'
 SKILL_TIERS[ia-rust-systems]=2
 
+# C vs C++ disambiguation has no lookahead available (the hook matches with `grep -qE`
+# on a lowercased prompt), and `\bc\b` matches the `c` in `c++` because `+` is a
+# non-word char. So every bare-`c` alternative below carries BOTH guards: a leading
+# class excluding `-` (kills `objective-c code`) and a required following element that
+# `+`/`#` cannot satisfy (kills `c++ code` and `c# code`). Do not simplify either guard
+# to a plain `\bc\b` — all three negatives return immediately.
+#
+# Both patterns must parse under grep -E (the hook) AND Python re (test-triggers).
+# POSIX classes like [[:space:]] work only in the former and silently fail the
+# Python test. `\s` parses in both but does NOT agree in both: Python's `\s` spans
+# newlines while grep is line-oriented, so `c\nfunction` matches in the test and
+# not in the hook — the dangerous direction. Separators here are literal spaces.
+#
+# KNOWN LIMITATION: the leading-class guard only protects the bare-`c` branches.
+# Language-neutral alternatives (`\.h\b`, `segfault`, `gdb`, `valgrind`) still fire
+# ia-c-systems on `c# segfault` or `MyClass.h in Objective-C`. Suppressing those
+# needs pattern negation, which SKILL_PATTERNS cannot express and grep -E has no
+# lookahead for; a real fix means a negative-pattern map honored by both the hook
+# and distiller.py's load_skill_pattern/eval_triggers. Co-firing with ia-cpp-systems
+# on `c++ segfault` is intentional and correct.
+SKILL_PATTERNS[ia-c-systems]='(^|[^-a-zA-Z0-9_+#])c +(code|function|file|header|module|struct|api|library|extension|program|source|compiler|standard|string|pointer|macro|project|codebase|parser|daemon|driver|allocator|protocol|binary|server|client|buffer|callback|wrapper|routine)\b|(code|written|write|writing|program|library|implement|implemented) +in +c([^+#a-zA-Z0-9_]|$)|\bc(89|99|11|17|23)\b|\.c\b|\.h\b|\bmalloc\b|\bcalloc\b|\brealloc\b|\bmemcpy\b|\bmemmove\b|\bmemset\b|\bstrncpy\b|\bstrlcpy\b|\bsnprintf\b|\bsize_t\b|(u?int(8|16|32|64)_t)|valgrind|address ?sanitizer|\basan\b|\bubsan\b|\bsegfault\b|segmentation fault|\bgdb\b|double ?free|use.?after.?free|dangling pointer|null pointer deref|pointer arithmetic|\-wall\b|\-wextra\b|\-werror\b|\-fsanitize|zend_|\bphpize\b|arginfo|gen_stub|\.phpt\b|config\.m4|php[ _-]?extension'
+SKILL_TIERS[ia-c-systems]=2
+
+SKILL_PATTERNS[ia-cpp-systems]='c\+\+|\bcpp\b|\bcxx\b|\.cpp\b|\.hpp\b|\.cc\b|\.cxx\b|\.hh\b|std::|unique_ptr|shared_ptr|weak_ptr|make_unique|make_shared|\bconstexpr\b|\bnoexcept\b|\bnullptr\b|template *<|\braii\b|move semantics|move constructor|copy constructor|rvalue|rule of (zero|five|three)|virtual (destructor|function)|\bdestructor\b|\bvtable\b|explicit constructor|constructor[^.]{0,25}\bexplicit\b|extern +"?c"? |\bgtest\b|google ?test|\bcatch2\b|clang-tidy|clang-format|\bcmake\b|cmakelists|\bpimpl\b|\bstl\b|string_view|boost::|boost/|\bboost\.(asio|beast|filesystem|program_options|thread|system)\b'
+SKILL_TIERS[ia-cpp-systems]=2
+
 # DB-op required near the token (2026-07-07 audit-misfire): bare `postgres`, `jsonb`, and
 # `upsert` fired on any prompt naming the stack — 18/44 harvested negatives were Rust
 # fix-agent tasks, wiki audits, and reviews mentioning "PostgreSQL repo" as context.

@@ -1,0 +1,31 @@
+{"prompt": "review my c++ move constructor", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "convert these raw pointers to unique_ptr", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "design a pimpl class for abi stability", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "add gtest cases for the client", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "this cmake target links the wrong way", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "rule of five on a class that gained a destructor", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "refactor client.cpp to use string_view", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "should this constructor be explicit", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "extern c wrapper leaks exceptions", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "the destructor is not virtual", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "make this a constexpr lookup table", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "clang-tidy flags a performance warning here", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "std::optional or an out parameter here", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "port this c library to c++", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "template<typename T> fails to compile", "expect": true, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "refactor this c function that leaks on the error path", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "write a c# service with entity framework", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "parse this csv file in python", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "objective-c bridging header question", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "why does this segfault under valgrind", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "the malloc here is never checked", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "add a php extension function with zend_parse_parameters", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "the laravel eloquent query is n+1", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "python asyncio task never awaited", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "update the react component state", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "terraform state migration plan", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "pick option c from the list", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "refactor this rust function that leaks", "expect": false, "added_in": "4.4.0", "source": "initial"}
+{"prompt": "use boost::asio for the socket", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "help me boost php performance", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "write a c parser for the wire format", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
