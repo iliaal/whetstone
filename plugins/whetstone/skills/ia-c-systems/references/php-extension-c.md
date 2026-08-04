@@ -59,6 +59,30 @@ PHP_FUNCTION(ext_encode)
 - Internal helpers return `zend_result`. Reserve `bool` for genuine predicates.
 - A failed allocation does not return in the extension model: `emalloc` bails out with a fatal error. Do not write a NULL check that cannot fire. `pemalloc(size, 1)` does **not** restore a NULL return either, since it forwards to `__zend_malloc`, which calls `zend_out_of_memory()` on failure. When a recoverable, checkable allocation failure is genuinely required, drop to plain `malloc`/`free`. Use `safe_emalloc(nmemb, size, offset)` for the multiply-then-add case, which is about overflow-checked sizing, not recoverable failure.
 
+## Macros that declare locals
+
+A `RETURN_*`-style macro that declares its own `zend_string *s` shadows a `PHP_FUNCTION` parameter named `s`, so the macro's *argument* expression resolves against the macro's freshly-allocated buffer instead of the caller's input. The output is uninitialised heap, often a recycled previous result, so it is nondeterministic and a fixed `--EXPECT--` cannot pin it. Sanitizers stay silent because nothing is out of bounds.
+
+Prefix macro internals so they cannot collide (`_ext_s`), and evaluate arguments into locals at the top before declaring anything. A round-trip identity `.phpt` (`from_bin(to_bin($x)) === $x`) catches this class instantly where an output-matching test cannot.
+
+## C++ vendored libraries
+
+An exception must never unwind into the Zend engine. Wrap every call into a C++ vendor library so the handler is a C-compatible boundary:
+
+```c
+try {
+    vendor_call();
+} catch (const std::exception &e) {
+    zend_throw_exception(NULL, e.what(), 0);
+    RETURN_THROWS();
+} catch (...) {
+    zend_throw_exception(NULL, "unknown error", 0);
+    RETURN_THROWS();
+}
+```
+
+The bare `catch (...)` is required: `catch (const std::exception &)` alone still lets a thrown `int`, a string literal, or a foreign exception type escape. For the general rules on C++/C boundaries, ABI stability, and symbol visibility, see the `ia-cpp-systems` skill.
+
 ## Memory
 
 - `emalloc`/`efree`/`erealloc`: request-scoped, freed wholesale at request end. Default choice.

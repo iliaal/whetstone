@@ -40,6 +40,9 @@ Signed overflow is undefined; the optimizer is entitled to assume it never happe
 | Ordering (`<`, `>`) or subtracting pointers into different objects | Compare integer offsets instead. Equality (`==`, `!=`) between unrelated pointers is well-defined and needs no fix |
 | Dereferencing one-past-the-end | Forming that pointer is legal; reading it is not |
 | Passing `NULL` to `memcpy`/`memmove` with length 0 | Guard the call; UB even at zero length through C23 (C2y adopts N3322, which defines it) |
+| `isalpha(c)` and the rest of `<ctype.h>` on a plain `char` | Cast through `unsigned char`: `isalpha((unsigned char)c)`. Every `ctype` function is defined only for values representable as `unsigned char` or `EOF`; plain `char` has implementation-defined signedness and is signed on x86 and x86-64, so any byte above 0x7F arrives negative. Unsigned-`char` targets such as ARM hide it, which is why this ships |
+| Reaching `__builtin_unreachable()` / `std::unreachable()` | Not an assertion. It is a promise to the optimizer, so reaching it is UB on release and the compiler may fold the path into a neighbouring branch. Use `assert(0)` where a check is wanted |
+| A non-`volatile` local modified between `setjmp` and `longjmp` | Declare it `volatile`. `-Wclobbered` (which rides on `-Wextra`) flags this, and the diagnostic is **function-scoped**: it covers every non-volatile local in a function that calls `setjmp`, not just statements lexically between the two, so hoisting code out of the guarded block does not silence it |
 
 ## Allocation and lifetime
 

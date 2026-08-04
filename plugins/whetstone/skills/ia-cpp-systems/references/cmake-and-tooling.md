@@ -153,6 +153,17 @@ Run on a diff rather than the tree: `git diff -U0 origin/main | clang-tidy-diff.
 
 `.clang-format` is the repo's, not a personal preference. Enforce with `clang-format --dry-run --Werror` in CI, and format only the changed lines (`git-clang-format`) so a formatting sweep never hides a logic change in the same commit.
 
+## Cross-platform, before the first Windows CI run
+
+A codebase that has only ever built on Linux hits the same sequence on its first MSVC lane. None are deep; each costs a CI cycle.
+
+- **`NOMINMAX` before any Windows header.** `windows.h` defines `min` and `max` as macros, which breaks every `std::min`/`std::max` call and produces baffling errors inside templated headers (`error C2589: '(': illegal token on right side of '::'`). Set it project-wide as a compile definition, not per-file.
+- **`/bigobj` on heavily templated code.** A deep template hierarchy generates enough sections per translation unit to exceed MSVC's default object-section limit on debug builds. Cheaper to add up front than to diagnose later.
+- **POSIX functions MSVC does not have.** `timegm` is the common one; Microsoft's documented equivalent is `_mkgmtime` with identical semantics. Never substitute `mktime` as a fallback: it interprets the `tm` as **local** time and silently shifts every result by the runner's timezone offset, which produces wrong timestamps rather than a build error.
+- **Object-handler and callback function pointers.** MSVC warns on incompatible function-pointer assignment (C4133) where GCC is silent, so a signature mismatch that has always been latent surfaces only on the Windows lane.
+
+Run the widest warning set on the platform you do *not* develop on. Each compiler is silent about a different class, so a second toolchain in CI is a second static analyser for free.
+
 ## Build speed
 
 - `ccache` (or `sccache`), wired in with `set(CMAKE_CXX_COMPILER_LAUNCHER ccache)`.

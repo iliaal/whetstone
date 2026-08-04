@@ -80,7 +80,7 @@ Having passed it:
 
 - Early return over else chains.
 - `goto` only where the repo sanctions it, or for one forward jump to one cleanup label when three or more interdependent resources are live. A `goto` whose label only returns is indirection buying nothing.
-- Every `switch` case ends in `break` or an explicit `/* fallthrough */`. Require `default` when switching on an open-ended integer or an externally supplied value. On a closed internal enum, prefer *omitting* `default` with `-Wswitch-enum` enabled, because that is what makes adding an enumerator produce a warning at every switch that needs updating; a `default` silences exactly the diagnostic worth having. Add an unreachable assert after the switch if the control flow needs proving.
+- Every `switch` case ends in `break` or an explicit `/* fallthrough */`. Require `default` when switching on an open-ended integer or an externally supplied value. On a closed internal enum, prefer *omitting* `default` with `-Wswitch-enum` enabled, because that is what makes adding an enumerator produce a warning at every switch that needs updating; a `default` silences exactly the diagnostic worth having. If the control flow needs proving, add a real `assert(0)`, not an unreachable annotation. `__builtin_unreachable()` and `std::unreachable()` are promises to the optimizer, not diagnostics: reaching one is undefined behavior on a release build, and the compiler is entitled to fold the path into whichever neighbouring arm it likes. That is why a bug filed as "assertion failure on a debug build" is usually also a live user-visible bug on stock release builds, wearing a completely different symptom.
 - A loop body over 10 lines becomes a named function.
 - Give an explicit named bound to every loop whose trip count comes from untrusted or externally-supplied data. Traversals bounded by a structure's own size invariant (`while (fgets(...))`, a list walk, a scan to a terminator) do not need one; name the invariant in a comment or an assert instead. A deliberate event pump carries a comment saying exactly that.
 - No recursion over externally-supplied input. Convert to a loop over an explicit bounded worklist: stack depth becomes visible and termination checkable. Unbounded recursion over attacker-controlled nesting is a live CVE class in parsers and serializers.
@@ -107,7 +107,9 @@ Having passed it:
 
 Public entry points validate arguments and return the argument-error status. Internal statics do not re-validate; they `assert` their invariants instead. Every state-mutating leaf asserts at least one invariant.
 
-An assert is a machine-checked comment: it states what must stay true and sits exactly where an editor is about to change something. It costs nothing in builds that define `NDEBUG` before including `<assert.h>`, which is a project decision rather than an automatic property of a release build. Where assertions stay enabled in production, assert meaningful invariants and stop chasing density. Validation duplicated at every level is noise that hides logic.
+An assert is a machine-checked comment: it states what must stay true and sits exactly where an editor is about to change something. Standard `assert` costs nothing in builds that define `NDEBUG` before including `<assert.h>`, which is a project decision rather than an automatic property of a release build. Where assertions stay enabled in production, assert meaningful invariants and stop chasing density. Validation duplicated at every level is noise that hides logic.
+
+Check what a **project's own** assert macro degrades to before assuming it is free. A macro that becomes an *assume* rather than a no-op still evaluates its condition on some toolchains: clang's `__builtin_assume` and MSVC's `__assume` do not evaluate, but the GCC `__builtin_expect` plus `__builtin_unreachable` form does. So an assert whose condition calls a function in another translation unit emits a real call in a release build, silently paying back the check an optimization just removed, and it measures perfectly on clang while regressing on GCC. Wrap those in the project's debug-only conditional instead.
 
 ## Macros
 
@@ -120,6 +122,19 @@ Hidden control flow inside a macro makes visible code lie about its own paths, s
 Ownership is stated at the interface, in the name (`_create` vs `_init`) and in the contract comment (who frees, when, and on which paths). Allocation failure is a status, never an abort, outside `main`.
 
 For sanitizer invocation, the integer overflow and truncation rules, allocation and lifetime patterns, the recursion-to-worklist conversion, and untrusted-input parsing discipline, load [memory-safety.md](./references/memory-safety.md).
+
+## Correctness traps
+
+Four shapes compile clean, pass review, and fail in production. Check for them by name:
+
+| The code does this | The trap |
+|---|---|
+| Formats a number another program parses | The `printf` float family follows process-global `LC_NUMERIC`; one `setlocale` anywhere emits `12,5` into SVG or JSON |
+| Reads from a stream | Short reads are normal, and `&buf[n]` on a typed pointer advances `n * sizeof(*buf)` |
+| Derives a range from user input | `end = start + count - 1` overflows before the validation that would reject it |
+| Passes an integer to a foreign API | A value that passes a sign check still narrows to something else |
+
+Load [correctness-traps.md](./references/correctness-traps.md) for detection greps, fix patterns, macro shadowing, and the portability checklist.
 
 ## Refactoring existing C
 
