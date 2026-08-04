@@ -24,6 +24,10 @@ For each learning doc, check whether the code it references still exists:
 - **Patterns described** -- are they still the current approach?
 - **Dependencies/versions** -- still accurate?
 
+**Unverifiable is not false.** These are existence checks, and a repo rarely witnesses its own operations. A learning about a database tuning practice, a deploy runbook, an environment quirk, or an onboarding step has no greppable in-repo referent and never will. Act on *contradiction* -- the repo shows something different from what the doc claims -- not on absence of corroboration, and note the verification gap in the report instead of resolving it against the doc.
+
+**Missing files prove the implementation is gone, not the problem.** If the application still deals with what the doc addresses, that is Replace, not Archive. A doc that never referenced in-repo code cannot satisfy "implementation gone" and must never auto-archive on that basis.
+
 ### 3. Classify
 
 For each doc, assign one status:

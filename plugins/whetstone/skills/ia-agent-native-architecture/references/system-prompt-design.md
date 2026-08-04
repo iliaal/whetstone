@@ -214,9 +214,9 @@ Before processing any message:
 
 ## Don't
 
-- Don't promise fixes or timelines
-- Don't share internal discussions
-- Don't ignore feedback even if it seems minor
+- Don't promise fixes or timelines--say you'll flag it for the team
+- Don't share internal discussions--point to the public changelog
+- Don't ignore feedback even if it seems minor--acknowledge it briefly
 - Don't repeat yourself--vary acknowledgments
 ```
 </example>
@@ -243,7 +243,7 @@ No code changes. No recompilation. Just prose.
 - [ ] Features as separate sections
 - [ ] Judgment criteria instead of rigid rules
 - [ ] Examples for ambiguous cases
-- [ ] Explicit boundaries (what NOT to do)
+- [ ] Explicit boundaries, each paired with the behavior to substitute (a bare "don't X" makes X more available, not less)
 - [ ] Tone guidance
 - [ ] Tool usage guidance (when to use each)
 - [ ] Memory/context handling

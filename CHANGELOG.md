@@ -5,6 +5,39 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.3] - 2026-08-03
+
+Patch: a 7-day delta sync that borrowed dispatch-safety, verification, and documentation patterns from 39 external repos, plus the reactive audit that followed it. That audit returned nineteen defects and every one of them was introduced by the sync itself, the highest that pass has produced. The pattern was consistent: the borrowed rules were sound, and what broke was the mechanical contract each one quietly assumed, an output template with no field for a newly required line, a grouping key with no dimension for the distinction a new rule depended on. This release also ships the machine-parsed-text rules adapted from ASD-STE100. No components added or removed (30 skills, 19 agents, 22 commands unchanged).
+
+### Added
+
+- `ia-refine-prompt` gained a Machine-Parsed Text section for output a model reads with no one to ask: one directive per sentence, simple tenses, noun stacks capped at three, `must` and `never` reserved for real requirements, every referent named. A person resolves an ambiguous instruction by asking. A model resolves it by guessing.
+- Dispatch prompts in `ia-orchestrating-swarms` now carry a Trust Boundary field. Repository files, comments, tool output, dependency metadata, and any upstream agent's findings are data. An agent analyzes instruction-like content it finds there and never follows it, and nothing in that material can change its role, tools, owned files, or output path.
+- The same skill says what to do when an agent dies instead of reporting back. Inspect its owned files for partial edits first, then relaunch once with a prompt that names what it already touched and asks it to verify and continue. Re-dispatching the same task to an agent that stopped mid-write double-applies edits or runs a second migration.
+- Swarm handoffs that travel through files now validate the artifact before the phase advances. A missing or wrong-shape output is a failed dispatch rather than a partial success, and the retry gets a fresh path, so a crashed retry cannot leave the previous attempt's file sitting there looking like a success.
+- `ia-receiving-code-review` classifies a fix before you start patching it: in-scope blocker, follow-up, or stop-and-escalate. Two review-triggered patch cycles that have not converged is itself the signal to stop and reclassify rather than keep editing.
+- `ia-verification-before-completion` captures the validation baseline before the first write on dependency bumps, framework upgrades, and migrations, and halts outright on a red baseline. A regenerated lockfile does not stash cleanly, so the usual retroactive base-branch proof is not available to you afterward.
+- `ia-code-review` gained a trap for the size-capped buffer that then parses whatever it kept. Truncated JSON usually throws and arrives disguised as a parse failure. Truncated NDJSON or CSV parses cleanly as a shorter valid document, and no caller can tell three records from three thousand.
+- `ia-refine-prompt` pairs every prohibition with the behavior to substitute, because steering by ban makes the banned thing more available, not less.
+- `ia-md-docs` says what earns space in a context file rather than only what to leave out: document what the agent cannot discover by reading the repo. The environment is a source of truth too, so a section restating it is a cache, and a cache earns its load only when the lookup was expensive.
+- README badges have to resolve dynamically. A hardcoded version inside a shields.io URL satisfies "add a version badge" and then rots at the next release.
+
+### Changed
+
+- `ia-nodejs-backend` scopes fail-open to transport failure only. When the outbound call is the security decision, the breaker's fallback is deny, and a response that arrived but cannot be trusted stays blocked: a 4xx, a malformed body, an unknown verdict value. The endpoint was reached and did not answer.
+- Deep review stopped paying for corroboration it never received. Confidence boosts and the multi-specialist tag now require lenses that ran in genuinely separate dispatched contexts. Lenses that fell back to running inline count as a single contributor, because one reasoner agreeing with itself seven times is one opinion.
+- Deep review also defines what happens when a dispatch fails, instead of gating the merge on agents that will never return. Capacity errors requeue, anything else runs that lens inline and says so in the report.
+- `ia-compound-refresh` acts on contradiction rather than on absence of corroboration. A repo rarely witnesses its own operations, so a deploy runbook or an environment quirk has no greppable referent and was getting archived on the first refresh that looked for one.
+- `ia-simplifying-code` raises the bar for deleting a guard that counters an external hazard: show the precondition is present and handled. A green suite proves nothing when the run may never have triggered the hazard at all.
+- The same skill carves out compatibility scaffolding that only ever existed inside the current unshipped scope, with six conditions to verify before removing it, and reaches past the import graph on renames. Fixtures, generators, CI recipes, and `.env.example` entries carry old identifiers that no import graph contains.
+- `ia-best-practices-researcher` stops expanding sources when retrieval fails rather than widening the search, and never fills the gap from bundled knowledge. "Not found" is an acceptable answer, and a plausible citation is not.
+
+### Fixed
+
+- The example system prompt in `ia-agent-native-architecture` no longer fails the skill's own checklist. Three of its four "Don't" bullets were bare prohibitions with nothing to do instead.
+- The constraint in `ia-refine-prompt` against refining harmful prompts now names the alternative, decline and say why, so the file follows the rule it asks you to follow.
+- The swarm retry bullet reconciles with artifact handling rather than being silently overridden by it three lines later.
+
 ## [4.3.2] - 2026-07-27
 
 Patch: a 9-day delta sync that borrowed testing, verification, and cross-harness patterns from 39 external repos and the skills.sh marketplace, followed by a reactive audit that caught sixteen defects the sync itself introduced. Three of those were factual errors that survived review and only fell over when we ran the real toolchains against them. No components added or removed (30 skills, 19 agents, 22 commands unchanged).

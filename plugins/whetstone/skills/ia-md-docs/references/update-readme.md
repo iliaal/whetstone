@@ -67,7 +67,7 @@ Target length: `--minimal` 100-200 lines, default 200-400, `--thorough` 400-600.
 
 ## Section Guidelines
 
-**Title + Badges:** Project name from config or repo name. Add badges for CI (if `.github/workflows/` exists), license, version. Skip badges for private repos.
+**Title + Badges:** Project name from config or repo name. Add badges for CI (if `.github/workflows/` exists), license, version. Skip badges for private repos. Every badge must resolve dynamically -- `shields.io/npm/v/PKG`, `github/v/release/OWNER/REPO`, `github/license/OWNER/REPO`, `github/actions/workflow/status/...?branch=<default>` -- using the repo's actual workflow filename and default branch. Never hardcode a version into an `img.shields.io/badge/...` URL; a badge that can go stale is a bug. Static `badge/...` is acceptable only for facts that change with a commit (supported platforms, language version, minimum OS). Confirm each badge renders rather than returning the shields "invalid" card.
 
 **Description:** 1-3 sentences. Answer "what does this do?" Extract from config file description field when available.
 

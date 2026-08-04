@@ -211,3 +211,11 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Fix:** when a finding or test matches on an error string from a subprocess result, trace how the child's stdout/stderr is captured before trusting the match. Confirm the spawn captures output (`stdio: 'pipe'` / collecting `child.stderr`; `capture_output=True` or `stderr=PIPE`; `2>&1` into a read buffer; `proc_open` with pipe descriptors the parent reads) and that the matched string is asserted against *that* captured stream, not against `error.message`/the command line. If the output is inherited or uncaptured, flag the assertion as matching the command string rather than the program output -- it passes for the wrong reason. Suggest asserting on the captured stream, or on exit code when only success/failure matters.
 
+
+## Size-capped buffer that then parses what it kept
+
+**Trap:** a stream handler that caps growth in place -- `if (data.length < maxSize) data += chunk;`, `if len(buf) < LIMIT: buf += chunk` -- read as a correct bound on memory, then followed by a parse of `data`.
+
+**Reality:** the cap bounds memory and silently truncates. Once the limit is hit, later chunks are dropped and the handler parses the prefix it happened to keep. A truncated JSON prefix usually throws, so the bug arrives disguised as a parse failure; a truncated NDJSON, CSV, or log buffer parses cleanly as a *shorter valid document*, and no caller can tell a 3-record payload from a 3000-record one. Dropping chunks without draining the stream also hands the writer an `EPIPE`.
+
+**Fix:** on overflow, set a rejected flag, discard the buffer, return the empty or error value, and surface the overflow on stderr -- never parse a prefix. Keep consuming and discarding the stream so a finite writer can finish. When reviewing, trace what happens to the buffer *after* the cap fires; that the cap exists is not the question.

@@ -58,11 +58,17 @@ Only after checking skills AND verifying API availability:
 4. **Community Research**: Search for real-world usage examples, GitHub issues/discussions, and community solutions.
 5. **Style Guides and Standards**: Look for industry-standard conventions from respected organizations.
 
+**Stop rule.** If retrieval of the official docs fails, try the direct URL and one domain-restricted search, then stop expanding sources. Report the bounded uncertainty instead of widening the net.
+
+**Never substitute for a failed retrieval.** Do not fill the gap with third-party write-ups, an adjacent product's documentation, or bundled knowledge. Local evidence (`--help`, `--version`, config files, installed source) is admissible but must be labeled as local evidence, not as documentation. If a term is absent from the official docs, search adjacent official concepts and state plainly that the term itself is undocumented. The mandatory References section is satisfied by an honest "not found", never by a plausible citation.
+
+**When verified local behavior contradicts the docs**, report the discrepancy and prefer the observed behavior *for that installed environment*. This is scoped to what was actually run and observed; it is not grounds for dismissing correct documentation on the strength of a misconfigured install.
+
 ### Phase 4: Synthesize Findings
 
 1. **Prioritize sources**: Skill-based guidance (curated) > official documentation > community consensus
 2. **Organize by actionability**: "Must Have", "Recommended", "Optional"
-3. **Attribute sources**: "From skill: react-frontend" vs "From official docs" vs "Community consensus"
+3. **Attribute sources**: "From skill: react-frontend" vs "From official docs" vs "Community consensus" vs "Observed (local environment)" -- the last covers behavior verified by running the installed tool, and outranks official docs only for the environment it was observed in (see Phase 3)
 4. **Flag conflicts**: Present different viewpoints and explain trade-offs
 
 ## Output Format

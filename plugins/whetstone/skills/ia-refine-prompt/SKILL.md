@@ -33,6 +33,7 @@ description: >-
 - **A line must change behavior.** "Cut what's vague" and "cut what the model already does" are different filters, and the second removes far more -- every line reads as non-vague once it is imperative. If the model would act that way by default, delete the whole sentence rather than trimming words from it. The recurring offender is encouragement it already follows: "be careful", "be thorough", "think it through", "make sure to".
 - **Name the concept, don't explain it.** Use terms the model knows (idempotent, invariant, race condition, TOCTOU, YAGNI) instead of spelling them out. Spell out only terms the project invented, once, in one place.
 - **State a rule once.** If the same rule appears in two sections, cut one and point to the other.
+- **Pair every prohibition with the positive target.** Steering by ban drags the forbidden behavior into context and makes it more available, not less -- the negation is a weak modifier riding on a strongly activated concept. Prompt the target instead ("write one-line comments" rather than "don't write long comments") so the banned behavior is never named. A bare prohibition earns its place only as a hard guardrail whose whole content is the refusal, with no behavior to substitute. Everywhere else the check is mechanical: every `never` and `don't` line states its replacement behavior.
 - **Never invent** -- only use information present in the original prompt or conversation context. If critical info is missing, ask instead of assuming.
 - **Instruction hierarchy** -- order sections by priority: task → constraints → examples → input data → output format. Place the most important instruction first.
 - **Progressive complexity** -- start with the simplest prompt that could work. Add few-shot examples, chain-of-thought, or role framing only when the task demands it, not by default.
@@ -74,7 +75,7 @@ After refining, offer to save the result to `.ai/PROMPT.md` -- do not write with
 ## Constraints
 
 - Stop refining if the original intent is unclear -- clarify first
-- Do not refine prompts for harmful or illegal tasks
+- Do not refine prompts for harmful or illegal tasks -- decline and state why
 
 ## Verify
 

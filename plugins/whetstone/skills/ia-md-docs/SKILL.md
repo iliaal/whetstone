@@ -74,6 +74,8 @@ Keep AGENTS.md / CLAUDE.md to durable signal. Do NOT enumerate:
 
 The test: if a fact will be wrong in two months without anyone touching this file, it does not belong here.
 
+What earns the space is the inverse: document what the agent cannot discover by reading the repo -- the unwritten convention, the reason behind a choice, the gotcha no config file confesses. The environment is a source of truth too, so a section restating it is a cache, and a cache earns its load only when the lookup is expensive. Naming the one test command among forty `package.json` scripts is an expensive lookup and belongs here (see Commands below); a raw `ls -R` dump or a paraphrase of `--help` is a cheap one the agent can re-derive on demand. A curated structure note -- what a new top-level directory is *for* -- is not the same thing, and still belongs here.
+
 ## Context File Hierarchy
 
 Structure CLAUDE.md (and AGENTS.md) content by priority so the most critical information loads first when context is compacted:
@@ -123,6 +125,7 @@ Flag during `Update README` workflows:
 - Jargon before definition (using project-specific terms without introduction)
 - Theory before try (architecture explanation before a working example)
 - Claims without evidence ("blazingly fast" with no benchmarks)
+- Changelog-speak ("now supports", "new in 3.2", "coming soon") -- a README describes the tool's present tense; version-migration notes belong in CHANGELOG or `docs/`
 
 ## Report Format
 

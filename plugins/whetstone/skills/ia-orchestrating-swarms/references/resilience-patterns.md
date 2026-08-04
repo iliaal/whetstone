@@ -12,13 +12,15 @@ Apply circuit-breaker logic to agent types: after N consecutive failures from th
 
 When an agent fails, classify the failure before acting:
 
-- **Retry** — transient errors (network timeout, rate limit). Re-dispatch the same task.
+- **Retry** — transient errors (network timeout, rate limit). Re-dispatch the same task; if the task declares a file artifact, retry onto a fresh output path (see below).
 - **Reassign** — agent-specific issue (context pollution, wrong model for task complexity). Dispatch a fresh agent, optionally with a different model.
 - **Escalate** — systemic problem (bad spec, missing dependency, impossible constraint). Surface to the orchestrator or user with an [Escalation Report](./handoff-templates.md).
 
 For agent-reported `BLOCKED` status specifically (as opposed to crashes or timeouts), use the BLOCKED triage decision tree in the main skill under "Dispatch Discipline" — it maps the four BLOCKED root causes (missing context / reasoning ceiling / task too large / spec wrong) to concrete responses.
 
 Never retry blindly. Repeating the same prompt in the same conditions produces the same failure.
+
+When agents hand off through files rather than return values, the artifact is part of the failure classification. A missing, malformed, wrong-version, or wrong-shape artifact is a failed dispatch, not a partial success -- validate the declared output against its expected shape before advancing the phase, and never substitute a command that produces no artifact for an unavailable backend. On artifact-validation failure, give the retry a fresh output path and preserve the failed attempt for diagnosis. Retrying onto the same path means a crashed retry leaves the previous attempt's file sitting there looking like a success, and the orchestrator has no way to tell the two apart. This governs declared handoff artifacts only. An agent that crashed while making in-place edits to its owned source files takes the working-tree inspection and verify-and-continue relaunch in the main skill instead -- a fresh path is meaningless for an in-place edit, and redoing the work double-applies it.
 
 ## Mid-pipeline compensation
 

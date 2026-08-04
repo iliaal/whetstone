@@ -100,7 +100,7 @@ Never use readFileSync or other sync methods in production -- use `fs.promises` 
 - **Caching**: Redis cache-aside for DB/API responses; in-memory LRU with TTL for hot paths. Always invalidate on writes.
 - **Load shedding**: `@fastify/under-pressure` (or equivalent) -- monitor event loop delay, heap, RSS; return 503 when thresholds exceeded.
 - **Response schemas**: In Fastify, always define response schemas -- enables `fast-json-stringify` for 2-3x faster serialization.
-- **Circuit breaker**: use `opossum` for outbound service calls. States: CLOSED (normal) -> OPEN (failing, return fallback) -> HALF_OPEN (probe). Prevents cascade failures when downstream services are down.
+- **Circuit breaker**: use `opossum` for outbound service calls. States: CLOSED (normal) -> OPEN (failing, return fallback) -> HALF_OPEN (probe). Prevents cascade failures when downstream services are down. When the outbound call *is* the security decision (authz check, trust score, license or entitlement gate), the fallback must be **deny**, and any fail-open allowance scopes to transport failure only -- connection refused, DNS failure, timeout. A response that arrived but cannot be trusted (4xx/5xx, malformed JSON, schema-invalid body, unknown verdict value) stays blocked: the endpoint was reached and did not answer. Absence of evidence is not evidence of trust. Same for "no history yet" states -- reject by default, allow only through an explicit onboarding opt-in.
 
 ## Observability
 

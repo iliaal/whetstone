@@ -128,6 +128,14 @@ After triaging all feedback:
 
 Test after each individual fix, not after implementing everything.
 
+**Classify the fix before patching.** Accepting a finding as correct does not settle how far the fix reaches:
+
+- **In-scope blocker** -- same violated invariant, same owner boundary, fixable without changing the task's contract. Fix it now.
+- **Follow-up** -- real, but a different bug class, a different owner, or independent cleanup. File it; do not fix it in this round. This is the fix-side of `FP-OUT-OF-SCOPE` above -- reply with that tag and name where it will be tracked.
+- **Stop-and-escalate** -- needs a new protocol, config, storage, or public-API contract, or a design choice outside the original request. Report it; do not patch. Maps to `ESCALATE` in headless mode.
+
+Scope is defined by the invariant and its owner. File counts and line multipliers are measurements, not stop conditions. Two review-triggered patch cycles that have not converged is itself the signal: pause and reclassify every remaining finding before another edit, and stop when the honest fix is "define the canonical contract first" rather than another local inference layer.
+
 ## When Your Pushback Was Wrong
 
 State the correction factually: "Checked this, you're correct because [reason]. Implementing." No extended apology, no self-deprecation -- just acknowledge and move on.

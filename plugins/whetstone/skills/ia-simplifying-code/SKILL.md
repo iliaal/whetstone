@@ -14,11 +14,13 @@ description: >-
 
 | Principle | Rule |
 |-----------|------|
-| **Preserve behavior** | Output must do exactly what the input did -- no silent feature additions or removals. Specifically preserve: async/sync boundaries (do not convert sync to async or reverse), error propagation paths (do not alter strategy), logging/telemetry/guards/retries that encode operational intent, and domain-specific steps (do not collapse into generic helpers that hide intent) |
+| **Preserve behavior** | Output must do exactly what the input did -- no silent feature additions or removals. Specifically preserve: async/sync boundaries (do not convert sync to async or reverse), error propagation paths (do not alter strategy), logging/telemetry/guards/retries that encode operational intent, and domain-specific steps (do not collapse into generic helpers that hide intent). One carve-out: a shape that existed only in an earlier iteration of the current unshipped scope is not protected behavior. Verify it has no deployed, persisted, public, external, dependent-branch, or in-repo caller outside the resolved scope, and that every required caller update fits inside the edit boundary; otherwise keep the compatibility path. This narrow exemption is about shapes with provably zero consumers -- it never licenses removing a guard, which is governed by the evidence bar under AI Slop Removal |
 | **Explicit over clever** | Prefer explicit variables over nested expressions. Readable beats compact |
 | **Simplicity over cleanliness** | Prefer straightforward code over pattern-heavy "clean" code. Three similar lines beat a premature abstraction |
 | **Surgical changes** | Touch only what needs simplifying. Match existing style, naming conventions, and formatting of the surrounding code |
 | **Surface assumptions** | Before changing a block, identify what imports it, what it imports, and what tests cover it. Edit dependents in the same pass |
+
+Changing an interface, exported name, persisted format, or path reaches past the import graph. Enumerate the producers, consumers, schemas, fixtures, generators, manifests, scripts and CI recipes, config references, and documents that carry the old identifier, and migrate them in the same pass. Close out by searching for the old identifier: zero hits, or one line accounting for each intentional remainder. Renames rot in the fixture holding the old key and the `.env.example` entry, neither of which any import graph contains. When the identifier is a public or exported API, Stop Conditions applies first -- confirm with the user, then enumerate; the sweep runs unprompted only for internal identifiers.
 
 ## Process
 
@@ -49,7 +51,7 @@ description: >-
 When simplifying AI-generated code, specifically target:
 
 - **Redundant comments** that restate the code (`// increment counter` above `counter++`) -- delete them
-- **Unnecessary defensive checks** for conditions that cannot occur in context -- remove the guard
+- **Unnecessary defensive checks** for conditions that cannot occur in context -- remove the guard. Where the guard, retry, workaround, or flag counters an *external* hazard (a harness default, an upstream bug, a race, a platform quirk), "cannot occur" needs evidence: demonstrate the hazard's precondition is present and handled. A green suite is not that evidence when the run may never have triggered the hazard at all -- absence of failure and absence of the hazard look identical from the outside. If the precondition cannot be reproduced, keep the code and record the gap. Guards against conditions the type system already excludes need no such proof, provided the type is enforced at that boundary rather than merely declared -- deserialized payloads, unchecked API responses, and anything reached through a cast or assertion do not qualify
 - **Gratuitous type casts** (`as any`, `as unknown as T`) -- fix the actual type or use a proper generic
 - **Over-abstraction** (factory for 2 objects, wrapper around a single call, util file with 1 function) -- inline the code
 - **Inconsistent style** that drifts from the file's existing conventions -- match the file

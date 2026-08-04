@@ -21,6 +21,8 @@ Before running verification, check the working tree state: `git status --porcela
 
 **Dirty tree + shared-module change → local green is not evidence.** Reproduce on a clean base ([isolated-verification.md](./references/isolated-verification.md)).
 
+**Broad-blast-radius changes need the baseline captured before the first write.** For a dependency bump, framework upgrade, codegen change, or migration, run the repo's validation suite against the existing state first and record the exact command set. Rerun that same set verbatim afterward -- a post-change run of a *different* command set proves nothing. If the baseline is already red, stop and report before writing anything: starting a migration on a red base makes every later failure unattributable, and a recorded red baseline is one step from "it was already broken, not my problem". This is the one case where the retroactive base-branch proof under When Verification Fails is impractical -- a regenerated lockfile does not `git stash` cleanly. Ordinary source edits stay on that retroactive path.
+
 For delegated work: never trust the implementer subagent's own report -- spec compliance and quality are separate concerns, verify both. Confirm via the VCS diff that changes were actually made, then run the verification command directly; never relay the subagent's claim.
 
 ## Scope Confirmation (Pre-Edit Gate)
