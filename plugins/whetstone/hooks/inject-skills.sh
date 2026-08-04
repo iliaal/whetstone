@@ -43,6 +43,11 @@ if ! declare -p SKILL_MAINT_SUPPRESS &>/dev/null; then
   declare -A SKILL_MAINT_SUPPRESS
 fi
 
+# Guard: older pattern files may not declare SKILL_NEGATIVE
+if ! declare -p SKILL_NEGATIVE &>/dev/null; then
+  declare -A SKILL_NEGATIVE
+fi
+
 # Detect plugin-maintenance context. When the prompt mentions plugin internals,
 # skill files, or maintenance commands, skills whose names appear as references
 # shouldn't fire as if the user is invoking them.
@@ -75,6 +80,17 @@ for skill_name in "${!SKILL_PATTERNS[@]}"; do
   if printf '%s' "$PROMPT_LOWER" | grep -qE "$pattern" 2>/dev/null; then
     skill_path="$PLUGIN_ROOT/skills/$skill_name/SKILL.md"
     [[ -f "$skill_path" ]] || continue
+
+    # Suppress when the prompt carries an explicit marker for a NEIGHBOURING language
+    # or stack. SKILL_PATTERNS cannot express "X unless Y" (ERE has no lookahead), so
+    # a language-neutral alternative like `segfault` or `\.h\b` otherwise fires the C
+    # skill on a C# or Objective-C prompt. Keep entries to unambiguous markers; this is
+    # not a place to fix a positive pattern that is merely too loose.
+    if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]]; then
+      if printf '%s' "$PROMPT_LOWER" | grep -qE "${SKILL_NEGATIVE[$skill_name]}" 2>/dev/null; then
+        continue
+      fi
+    fi
 
     # Suppress skills whose name tends to appear as a reference in plugin-maintenance
     # prompts (skill name in file path, command discussion, distiller output, etc.).

@@ -44,11 +44,23 @@ def _sha256_string(text: str) -> str:
 
 
 def _extract_pattern_block(skill_name: str, patterns_content: str) -> str | None:
-    """Extract the regex pattern value for a skill from skill-patterns.sh content."""
+    """Extract a skill's trigger regexes from skill-patterns.sh content.
+
+    Concatenates SKILL_PATTERNS with any SKILL_NEGATIVE entry, because a
+    suppression change alters which prompts fire the skill just as a positive
+    change does, and staleness filtering keys off this hash.
+    """
     m = re.search(rf"SKILL_PATTERNS\[{re.escape(skill_name)}\]='([^']+)'", patterns_content)
     if not m:
         m = re.search(rf'SKILL_PATTERNS\[{re.escape(skill_name)}\]="([^"]+)"', patterns_content)
-    return m.group(1) if m else None
+    if not m:
+        return None
+    pattern = m.group(1)
+
+    n = re.search(rf"SKILL_NEGATIVE\[{re.escape(skill_name)}\]='([^']+)'", patterns_content)
+    if not n:
+        n = re.search(rf'SKILL_NEGATIVE\[{re.escape(skill_name)}\]="([^"]+)"', patterns_content)
+    return f"{pattern}\x00!{n.group(1)}" if n else pattern
 
 
 def _read_current_version() -> str:

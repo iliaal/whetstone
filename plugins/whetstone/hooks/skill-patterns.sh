@@ -10,6 +10,23 @@
 declare -A SKILL_PATTERNS
 declare -A SKILL_TIERS
 
+# SKILL_NEGATIVE — suppression, checked only after SKILL_PATTERNS matches. A skill
+# fires when the positive matches AND the negative does not. Optional; almost every
+# skill should have no entry.
+#
+# This exists for ONE shape: a positive alternative that is legitimately
+# language-neutral (`segfault`, `\.h\b`, `valgrind`) firing on a prompt that names a
+# NEIGHBOURING language. ERE has no lookahead and the hook runs one grep per skill,
+# so "X unless Y" is not expressible in the positive pattern.
+#
+# It is NOT the tool for a positive pattern that is merely too loose. Every misfire
+# fixed in this file so far — `AuditControllerTest`, `Avatar.tsx`, `b-UI-lt-in`,
+# "PostgreSQL repo", worktree location mentions — was cured by tightening the
+# positive (word anchors, bounded gaps, a required intent verb), and each of those
+# is a better fix than an exclusion list that has to enumerate the world. Reach for
+# a negative only when the excluded thing has an unambiguous name.
+declare -A SKILL_NEGATIVE
+
 # --- Tier 1: Methodology (process/approach skills) ---
 
 SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
@@ -85,15 +102,15 @@ SKILL_TIERS[ia-rust-systems]=2
 # newlines while grep is line-oriented, so `c\nfunction` matches in the test and
 # not in the hook — the dangerous direction. Separators here are literal spaces.
 #
-# KNOWN LIMITATION: the leading-class guard only protects the bare-`c` branches.
-# Language-neutral alternatives (`\.h\b`, `segfault`, `gdb`, `valgrind`) still fire
-# ia-c-systems on `c# segfault` or `MyClass.h in Objective-C`. Suppressing those
-# needs pattern negation, which SKILL_PATTERNS cannot express and grep -E has no
-# lookahead for; a real fix means a negative-pattern map honored by both the hook
-# and distiller.py's load_skill_pattern/eval_triggers. Co-firing with ia-cpp-systems
-# on `c++ segfault` is intentional and correct.
+# The leading-class guard only protects the bare-`c` branches. Language-neutral
+# alternatives (`\.h\b`, `segfault`, `gdb`, `valgrind`) would still fire on
+# `c# segfault` or `MyClass.h in Objective-C`, so SKILL_NEGATIVE below excludes
+# those two languages by name. C++ is deliberately absent from that list: a C++
+# prompt naming a segfault or a header genuinely wants the C memory rules too, so
+# co-firing with ia-cpp-systems is correct.
 SKILL_PATTERNS[ia-c-systems]='(^|[^-a-zA-Z0-9_+#])c +(code|function|file|header|module|struct|api|library|extension|program|source|compiler|standard|string|pointer|macro|project|codebase|parser|daemon|driver|allocator|protocol|binary|server|client|buffer|callback|wrapper|routine)\b|(code|written|write|writing|program|library|implement|implemented) +in +c([^+#a-zA-Z0-9_]|$)|\bc(89|99|11|17|23)\b|\.c\b|\.h\b|\bmalloc\b|\bcalloc\b|\brealloc\b|\bmemcpy\b|\bmemmove\b|\bmemset\b|\bstrncpy\b|\bstrlcpy\b|\bsnprintf\b|\bsize_t\b|(u?int(8|16|32|64)_t)|valgrind|address ?sanitizer|\basan\b|\bubsan\b|\bsegfault\b|segmentation fault|\bgdb\b|double ?free|use.?after.?free|dangling pointer|null pointer deref|pointer arithmetic|\-wall\b|\-wextra\b|\-werror\b|\-fsanitize|zend_|\bphpize\b|arginfo|gen_stub|\.phpt\b|config\.m4|php[ _-]?extension'
 SKILL_TIERS[ia-c-systems]=2
+SKILL_NEGATIVE[ia-c-systems]='\bc#|\bc sharp\b|\bcsharp\b|objective-?c\b|\bdotnet\b|\.cs\b'
 
 SKILL_PATTERNS[ia-cpp-systems]='c\+\+|\bcpp\b|\bcxx\b|\.cpp\b|\.hpp\b|\.cc\b|\.cxx\b|\.hh\b|std::|unique_ptr|shared_ptr|weak_ptr|make_unique|make_shared|\bconstexpr\b|\bnoexcept\b|\bnullptr\b|template *<|\braii\b|move semantics|move constructor|copy constructor|rvalue|rule of (zero|five|three)|virtual (destructor|function)|\bdestructor\b|\bvtable\b|explicit constructor|constructor[^.]{0,25}\bexplicit\b|extern +"?c"? |\bgtest\b|google ?test|\bcatch2\b|clang-tidy|clang-format|\bcmake\b|cmakelists|\bpimpl\b|\bstl\b|string_view|boost::|boost/|\bboost\.(asio|beast|filesystem|program_options|thread|system)\b'
 SKILL_TIERS[ia-cpp-systems]=2

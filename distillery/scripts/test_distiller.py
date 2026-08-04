@@ -1198,6 +1198,33 @@ class TestEvalTriggers:
         result = distiller.eval_triggers("test", queries, pattern=r"laravel")
         assert result["metrics"]["true_positives"] == 1
 
+    def test_negative_suppresses_a_positive_match(self):
+        """A negative pattern blocks a prompt the positive would otherwise fire on."""
+        queries = {
+            "should_trigger": ["why does this segfault"],
+            "should_not_trigger": ["debug this c# segfault"],
+        }
+        result = distiller.eval_triggers(
+            "test", queries, pattern=r"segfault", negative=r"\bc#"
+        )
+        assert result["metrics"]["f1"] == 1.0
+        assert result["metrics"]["false_positives"] == 0
+
+    def test_negative_absent_leaves_matching_unchanged(self):
+        """No negative means the positive pattern alone decides."""
+        queries = {
+            "should_trigger": ["why does this segfault"],
+            "should_not_trigger": ["debug this c# segfault"],
+        }
+        result = distiller.eval_triggers("test", queries, pattern=r"segfault")
+        assert result["metrics"]["false_positives"] == 1
+
+    def test_negative_cannot_rescue_a_non_matching_prompt(self):
+        """Suppression only subtracts; it never makes a skill fire."""
+        assert distiller._trigger_fires(r"laravel", r"python", "a rust cli") is False
+        assert distiller._trigger_fires(r"laravel", None, "laravel routing") is True
+        assert distiller._trigger_fires(r"laravel", r"python", "laravel in python") is False
+
     def test_loads_pattern_from_file(self, tmp_path):
         patterns_file = tmp_path / "skill-patterns.sh"
         patterns_file.write_text("SKILL_PATTERNS[my-skill]='my.?skill|test.?pattern'\n")

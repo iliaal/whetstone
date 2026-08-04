@@ -31,3 +31,7 @@
 {"prompt": "write a c parser for the wire format", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
 {"prompt": "the allocator in this c driver double-frees", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
 {"prompt": "help me boost php performance", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "debug this c# segfault", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "review MyClass.h in Objective-C", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "port the .cs file to native", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt": "debug this c++ segfault", "expect": true, "added_in": "4.4.0", "source": "codex-review"}

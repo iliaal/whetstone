@@ -1541,15 +1541,46 @@ def _load_skill_pattern(name, patterns_file=None):
     return m.group(1) if m else None
 
 
-def eval_triggers(name, queries, pattern=None, patterns_file=None):
-    """Test trigger regex patterns against should/shouldn't-trigger queries. Returns match results with precision/recall."""
-    import re as _re
+def _load_skill_negative(name, patterns_file=None):
+    """Extract the suppression regex for a skill from skill-patterns.sh, or None.
 
+    SKILL_NEGATIVE is optional and most skills have no entry. A skill fires when
+    SKILL_PATTERNS matches AND SKILL_NEGATIVE does not, mirroring inject-skills.sh.
+    """
+    import re as _re
+    path = Path(patterns_file) if patterns_file else SKILL_PATTERNS_DEFAULT
+    if not path.exists():
+        return None
+    content = path.read_text()
+    m = _re.search(rf"SKILL_NEGATIVE\[{_re.escape(name)}\]='([^']+)'", content)
+    if not m:
+        m = _re.search(rf'SKILL_NEGATIVE\[{_re.escape(name)}\]="([^"]+)"', content)
+    return m.group(1) if m else None
+
+
+def _trigger_fires(pattern, negative, text):
+    """Whether a skill fires: positive matches and suppression does not.
+
+    Single source of truth for the firing rule, so should_trigger and
+    should_not_trigger cannot drift apart. Mirrors the hook's two greps.
+    """
+    import re as _re
+    if not _re.search(pattern, text):
+        return False
+    if negative and _re.search(negative, text):
+        return False
+    return True
+
+
+def eval_triggers(name, queries, pattern=None, patterns_file=None, negative=None):
+    """Test trigger regex patterns against should/shouldn't-trigger queries. Returns match results with precision/recall."""
     if pattern is None:
         pattern = _load_skill_pattern(name, patterns_file)
     if pattern is None:
         print(f"Error: no pattern found for '{name}'. Provide --pattern or ensure skill-patterns.sh exists.", file=sys.stderr)
         sys.exit(1)
+    if negative is None:
+        negative = _load_skill_negative(name, patterns_file)
 
     should_trigger = queries.get("should_trigger", [])
     should_not_trigger = queries.get("should_not_trigger", [])
@@ -1558,7 +1589,7 @@ def eval_triggers(name, queries, pattern=None, patterns_file=None):
     tp, fp, tn, fn = 0, 0, 0, 0
 
     for query in should_trigger:
-        matched = bool(_re.search(pattern, query.lower()))
+        matched = _trigger_fires(pattern, negative, query.lower())
         matches.append({"query": query, "expected": True, "matched": matched, "correct": matched})
         if matched:
             tp += 1
@@ -1566,7 +1597,7 @@ def eval_triggers(name, queries, pattern=None, patterns_file=None):
             fn += 1
 
     for query in should_not_trigger:
-        matched = bool(_re.search(pattern, query.lower()))
+        matched = _trigger_fires(pattern, negative, query.lower())
         matches.append({"query": query, "expected": False, "matched": matched, "correct": not matched})
         if matched:
             fp += 1
