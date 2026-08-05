@@ -5,6 +5,8 @@ branch review, and fetching prior discussion before raising findings. The core
 file-selection fallback chain stays in the main skill; this covers the two
 detailed cases.
 
+Contents: [working-tree safety](#working-tree-safety-never-reorganize-the-users-checkout-to-review) · [branch base](#base-branch-resolution-for-branch-reviews) · [coverage ledger](#review-coverage-ledger) · [prior discussions](#fetching-existing-pr-discussions)
+
 ## Working-tree safety: never reorganize the user's checkout to review
 
 A review is read-only on the working tree. Setting up a review must not mutate
@@ -75,6 +77,57 @@ fabricating findings on files this change doesn't touch. Prefer the hosting
 platform's authoritative base SHA (PR/MR `base_sha`, or `gh pr diff`) over a
 locally computed merge-base. After the run, intersect every finding's path with
 the change's `--name-only` set and discard off-scope ones.
+
+## Review coverage ledger
+
+Track mechanical coverage separately from finding quality. Prove only that each selected file received a completed correctness review, not that it is defect-free.
+
+### Build the denominator before filtering
+
+After resolving the comparison range, freeze the original changed-file universe from its name-and-status output. Include added, modified, renamed, copied, and deleted paths. Include untracked files in workspace mode. Only then classify each path as `selected` or `excluded(reason)`.
+
+Tests excluded from deep-review size signals are still part of the universe and
+remain selectable. Keep deletion-only changes selectable so removal regressions
+can be reviewed against the old side. Exclude only paths outside explicit user
+scope or the main skill's declared lockfile, minified/bundled, vendored, and
+generated categories. Record the concrete reason; never silently drop an
+oversized or unreadable selected file -- mark it failed.
+
+Use one disposition per path:
+
+| Set | Meaning |
+|-----|---------|
+| `changed` | Original pre-filter universe with path, change status, and workspace diff fingerprint when mutable. |
+| `selected` | Files that require a correctness review. |
+| `covered` | Selected files actually inspected by their assigned correctness coverage unit. |
+| `failed` | Selected files not reviewable, with concrete evidence such as timeout, unreadable input, or context exhaustion. |
+| `pending` | Selected files with no terminal disposition yet. |
+| `excluded` | Changed files deliberately outside review, with a reason. |
+
+For standard reviews, hold the ledger in context. For persisted `/ia-review`
+runs, store the same top-level arrays in transient review scratch state; entries
+carry `path` plus `status`/`fingerprint`, `unit`, or `reason` as applicable.
+Assign every selected file to exactly one correctness unit, even when multiple
+specialist lenses inspect it.
+
+### Reconcile before the verdict
+
+For a frozen branch or commit review, reconcile against the original
+name-and-status set. For mutable workspace review, re-enumerate and compare
+per-file diff fingerprints immediately before the verdict; add new or changed
+paths as pending.
+
+Derive terminal coverage mechanically:
+
+- **complete** -- `selected = covered`, with no failed or pending paths.
+- **partial** -- at least one selected path is covered and at least one is failed or pending.
+- **failed** -- selected paths exist but none received usable coverage, or scope identity became untrustworthy.
+- **skipped** -- no files were selected; report that no review verdict was produced.
+
+Only complete coverage may produce `Ready to merge` or `Ready with fixes`.
+Partial or failed coverage forces `Not ready`, independently of finding count.
+Always list excluded paths under Residual Risks; explicit exclusion makes scope
+truthful, not necessarily safe.
 
 ## Fetching existing PR discussions
 

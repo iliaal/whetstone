@@ -5,6 +5,14 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- `ia-code-review` now tracks every changed file from the original scope through covered, failed, pending, or explicit exclusion. Partial reviews can no longer return a ready verdict, and tests and deletions stay in the coverage denominator.
+- Review prompts now treat diffs, repository files, comments, and tool output as untrusted data. Review-only work stays read-only until the caller separately authorizes source, version-control, or external writes.
+- Code reviews now select stack-specific skills through deterministic repository, manifest, path, extension, import, and header evidence. Each review unit gets at most one primary skill and one justified supplement; ambiguous units use the generic profile.
+
 ## [4.4.0] - 2026-08-04
 
 Minor: C and C++ get first-class skills, closing the plugin's largest stack gap. Until now the plugin covered Rust, Pine Script, and Terraform but had nothing for C at all: no skill, no path trigger, not a single pattern in the hook. Both new skills open by deferring to the repository they find themselves in, so tabs, `goto cleanup`, and macros that return survive untouched in codebases that sanction them, and no rule here will ever justify changing a frozen signature.

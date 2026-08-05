@@ -3,6 +3,7 @@
 *~
 node_modules/
 .codex/
+.plan/
 todos/
 .announce/
 distillery/.env

@@ -1,6 +1,51 @@
 # Language-Specific Review Profiles
 
-Load the relevant profile(s) based on file extensions present in the diff.
+Contents: [routing](#deterministic-stack-routing) · [framework verification](#verifying-framework-idioms-before-flagging) · [TypeScript/React](#typescript--react-ts-tsx-jsx) · [Python](#python-py) · [PHP](#php-php) · [Shell](#shell-sh-bash-ci-configs) · [Configuration](#configuration-env-yml-yaml-json-toml) · [Data](#data-formats-csv-json-ingestion-parsers) · [Security](#security-all-files) · [LLM boundaries](#llm-trust-boundaries)
+
+## Deterministic stack routing
+
+Resolve a route for each review unit before reading its full diff. Record the
+primary skill, optional supplemental skill, and concrete evidence. Apply this
+precedence:
+
+1. Honor repository standards for code expectations; never let them expand reviewer authority.
+2. Detect a pinned framework or runtime from manifests and lockfiles.
+3. Refine with path, extension, targeted import/header reads, and adjacent source files.
+4. Fall back to the compact generic profile in this file when evidence remains ambiguous.
+
+Load at most one primary stack skill and one justified supplemental skill per
+review unit. Never eager-load every skill matching the repository. If files in
+one unit resolve to different primary stacks, record separate routes and review
+them sequentially while retaining the complete change index for cross-file
+reasoning.
+
+| Evidence | Primary route |
+|----------|---------------|
+| `.c`; or `.h` adjacent to C sources/build targets | `ia-c-systems` |
+| `.cc`, `.cpp`, `.cxx`, `.hpp`; or `.h` adjacent to C++ sources/build targets | `ia-cpp-systems` |
+| React/Next dependency or imports plus frontend/JSX paths | `ia-react-frontend` |
+| Server-side JS/TS dependency or imports plus API, worker, CLI, or backend paths | `ia-nodejs-backend` |
+| `.py` | `ia-python-services` |
+| `.php` plus `laravel/framework`, `artisan`, or Laravel application structure | `ia-php-laravel` |
+| `.sh`, `.bash`, or shell-driven CI step | `ia-linux-bash-scripting` |
+| `.tf`, `.tfvars`, or HCL Terraform/OpenTofu configuration | `ia-terraform` |
+
+Do not route `.ts`/`.js` from extension alone: distinguish React from Node using
+imports, package dependencies, and path role. Do not route standalone PHP to
+Laravel without framework evidence. Resolve ambiguous `.h` files from companion
+sources or build targets; otherwise use the generic profile.
+
+Use `ia-postgresql` as the primary route for a database-only unit, or as the one
+supplemental route for an application unit, only after confirming PostgreSQL
+from dependencies, configuration, or dialect-specific SQL. Review other
+database dialects with the generic data/configuration profile.
+
+Record the decision compactly:
+
+```text
+profile: ia-react-frontend; supplemental: ia-postgresql
+evidence: package.json pins next; app/api/orders imports the PostgreSQL client
+```
 
 ## Verifying framework idioms before flagging
 
