@@ -31,9 +31,10 @@ paths: "**/*.sql"
 - `CHECK` constraints for domain rules at DB level
 - `EXCLUDE` constraints for range overlaps: `EXCLUDE USING gist (room WITH =, during WITH &&)`
 - Default `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-- Separate `updated_at` with trigger, never trust app layer alone
+- Separate `updated_at` with trigger, never trust app layer alone. Gate it with `WHEN (OLD.* IS DISTINCT FROM NEW.*)` so a no-op write neither fires the function nor bumps the timestamp -- on `BEFORE UPDATE` the row image is built before the trigger runs, so the comparison sees the caller's row, not the one the trigger is about to stamp.
 - Use `BIGINT` PKs -- cheaper JOINs than UUID, better index locality
-- Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with `DEFAULT` (instant add). Never `ALTER TYPE` on large tables in-place.
+- Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with a **non-volatile** `DEFAULT` (instant add). Never `ALTER TYPE` on large tables in-place.
+- A `DEFAULT` whose expression is `VOLATILE` rewrites the entire table under `ACCESS EXCLUSIVE`; only `IMMUTABLE`/`STABLE` defaults get the metadata-only fast path. Check before shipping the migration: `SELECT provolatile FROM pg_proc WHERE proname = 'gen_random_uuid';` -- `v` is volatile, `s`/`i` are not. So `DEFAULT 7` and `DEFAULT now()` are instant, `DEFAULT gen_random_uuid()` is a full rewrite; add the column nullable, backfill in batches, then set the default.
 - `NULLS NOT DISTINCT` on unique indexes (PG15+) -- treats NULLs as equal for uniqueness
 - Under `NULLS NOT DISTINCT`, a pre-flight duplicate check written with SQL `=` misses NULL/NULL collisions -- the index rejects the second row, but `NULL = NULL` evaluates to NULL (not true), so a self-join or `WHERE a.col = b.col` probe silently skips exactly the pairs the index will reject. Write the probe with `IS NOT DISTINCT FROM` so NULL/NULL compares as equal.
 - Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
@@ -93,6 +94,7 @@ Default chunked decode-encode loops are only safe during a maintenance window wi
 - Partial: `WHERE status = 'active'` -- smaller, faster
 - Covering: `INCLUDE (col)` -- avoids heap lookup
 - Expression: `ON (lower(email))` -- for function-based WHERE
+- A GIN index on an array column serves the containment operators, not `=`: `WHERE 'x' = ANY(col)` seq-scans even with `enable_seqscan = off`, because `ANY` over an array expands to equality and no GIN operator class implements it. Write the predicate as `WHERE col @> ARRAY['x']` to reach the index.
 - `fillfactor = 70-90` on write-heavy tables -- reserves space for HOT updates, reducing index bloat
 - Drop unused indexes (only after one full business cycle since last restart -- check `pg_stat_database.stats_reset` first, otherwise you may drop a primary key on a freshly restarted DB or read replica): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
 

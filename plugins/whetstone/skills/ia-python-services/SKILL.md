@@ -74,6 +74,7 @@ See [cli-tools.md](./references/cli-tools.md) for Click patterns, argparse, and 
 **asyncio patterns:**
 - `asyncio.gather(*tasks)` for concurrent I/O -- use `return_exceptions=True` for partial failure tolerance
 - `asyncio.TaskGroup` (3.11+) for structured concurrency -- automatic cancellation of sibling tasks on failure; prefer over `gather` when all tasks must succeed
+- A bare `asyncio.create_task(...)` whose result is discarded can vanish mid-flight: the event loop holds only a weak reference, so an unreferenced task may be garbage-collected before it finishes, and any exception it raised is swallowed with at most a "Task exception was never retrieved" warning. Keep a strong reference (`_bg = set()`; `t = asyncio.create_task(c)`; `_bg.add(t)`; `t.add_done_callback(_bg.discard)`) or use `TaskGroup`, which holds its children until they finish
 - `asyncio.Semaphore(n)` to limit concurrency (rate limiting external APIs)
 - `asyncio.wait_for(coro, timeout=N)` for timeouts
 - `asyncio.Queue` for producer-consumer

@@ -100,7 +100,7 @@ This command takes a work document (plan, specification, or todo file) and execu
      - Evaluate for incremental commit (see below)
    ```
 
-   **System-Wide Test Check** -- Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
+   **System-Wide Test Check** -- Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
 
    **IMPORTANT**: Always update the original plan document by checking off completed items. Use the Edit tool to change `- [ ]` to `- [x]` for each task you finish. This keeps the plan as a living document showing progress and ensures no checkboxes are left unchecked.
 

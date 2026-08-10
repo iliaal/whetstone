@@ -106,7 +106,7 @@ Use when applicable -- no explanatory comments for these in generated code:
 
 - Batching: `Bus::batch([...])->then()->catch()->finally()->dispatch()`; chaining: `Bus::chain([new Step1, new Step2])->dispatch()`
 - Rate limiting: `Redis::throttle('api')->allow(10)->every(60)->then(fn() => ...)`
-- `ShouldBeUnique` interface to prevent duplicate processing
+- `ShouldBeUnique` interface to prevent duplicate processing -- it is a de-duplication hint, not an at-least-once guarantee. When the lock is already held the dispatch is **silently discarded**: no job queued, no exception, no log line, and `dispatch()` returns normally. Where the skip is user-visible (a re-clicked "regenerate report" that produces nothing), check the lock before dispatching and surface the state. A `Illuminate\Queue\Events\UniqueJobSkipped` event exists on the `13.x` branch but had not landed in a tagged release as of 13.24 -- confirm it is in the installed version before listening for it
 - Always handle failures -- implement `failed()` on jobs
 
 ## Testing (PHPUnit)

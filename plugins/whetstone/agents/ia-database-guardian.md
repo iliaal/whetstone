@@ -164,8 +164,8 @@ WHERE new_column = '<expected_value>';
 ## Common Bugs to Catch
 
 1. **Swapped IDs** - `1 => TypeA, 2 => TypeB` in code but `1 => TypeB, 2 => TypeA` in production
-2. **Missing error handling** - `.fetch(id)` crashes on unexpected values instead of fallback
-3. **Orphaned eager loads** - `includes(:deleted_association)` causes runtime errors
+2. **Missing error handling** - an unmapped ID either raises (`dict[id]` → `KeyError`) or, more dangerously, resolves to a null that keeps flowing: PHP `$map[$id]` warns and yields `NULL`, TypeScript `map[id]` yields `undefined` (and `map[id]!` only silences the type error -- the assertion is erased at runtime). Use the guarded form with an explicit default; a try/catch alone leaves the silent-null path unfixed
+3. **Orphaned eager loads** - eager-loading a relation that soft-delete or a prior migration removed (`with('deletedRelation')`, `select_related` on a dropped FK) fails at runtime, not at boot
 4. **Incomplete dual-write** - New records only write new column, breaking rollback
 
 ## Review Triggers (grep-first)

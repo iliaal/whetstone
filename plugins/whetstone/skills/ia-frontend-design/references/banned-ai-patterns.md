@@ -19,9 +19,9 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 
 | Pattern | Problem | Alternative |
 |---------|---------|-------------|
-| Purple/violet gradients (`#6366f1`--`#8b5cf6` range) | The single most recognizable AI color signature | Pick a different palette entirely -- earth tones, monochrome, warm accents |
+| Purple/violet gradients (`#6366f1`--`#8b5cf6` range) | The single most recognizable AI color signature | Pick a different palette entirely, then check the result against Composite Looks below -- the usual escapes (earth tones, monochrome, warm accents) land straight in one of them |
 | Purple-to-blue gradient hero | The default AI aesthetic | Pick a different palette entirely |
-| Evenly distributed accent colors | No visual hierarchy | One dominant accent, neutrals everywhere else |
+| Evenly distributed accent colors | No visual hierarchy | One dominant accent, neutrals everywhere else -- but source the accent from the subject's own world, not the default acid-green or vermilion on near-black (Composite Looks below) |
 | Generic blue (#3B82F6) as primary | Default Tailwind blue | Choose a distinctive hue with personality |
 | Oversaturated accent colors (saturation >80%) | Visually loud, cheap feel | Desaturate accents; muted tones read as more considered |
 | Pure black (`#000000`) for text or backgrounds | Harsh, unnatural contrast | Use near-blacks (`#0a0a0a`, `#111`) or tinted darks |
@@ -29,6 +29,18 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Excessive `bg-clip-text bg-gradient-to-r` on headings | Gradient text overuse is an AI tell when applied to multiple headings | Reserve for one hero moment at most |
 | Neon/outer glow effects (`shadow-[0_0_20px_...]`) | Dated, screams template | Subtle, tinted shadows that match the surface hue |
 | Warm AND cool grays in the same interface | Inconsistent tinting | Pick one gray family and commit |
+
+## Composite Looks
+
+The rows above ban individual tokens. These three ban whole *combinations* that pass every per-token rule and still arrive unprompted regardless of subject -- each one is a legitimate structure (single accent on neutrals, restrained palette, editorial typography) collapsed onto the same realization every time.
+
+| Look | Composition | Alternative |
+|------|-------------|-------------|
+| Warm editorial | Cream ground near `#F4F1EA` + high-contrast serif display + terracotta accent | Keep the serif/neutral structure, move the ground and accent off the cream-terracotta pairing |
+| Acid dark | Near-black ground + exactly one bright acid-green or vermilion accent | Keep one accent on neutrals; derive its hue from the subject rather than the default two |
+| Broadsheet | Hairline rules + zero border-radius + dense newspaper columns | Keep the density; vary rule weight, radius, or column rhythm so all three do not co-occur |
+
+Observed as of 2026-08. Treat as a dated list of over-used combinations, not a permanent ban -- if the brief pins one of these looks, follow the brief.
 
 ## Typography Patterns
 

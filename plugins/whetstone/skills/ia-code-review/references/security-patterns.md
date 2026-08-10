@@ -43,6 +43,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `innerHTML =`, `insertAdjacentHTML`, `dangerouslySetInnerHTML`, `v-html=` | Untrusted HTML injected into DOM | `.textContent`, DOMPurify, or framework auto-escaping |
+| A helper containing both `textContent =` and `.innerHTML` (the round-trip escaper) | Text-node serialization escapes only `&`, `<`, `>` and U+00A0 -- quotes pass through, so the result still breaks out of `attr="${escaped}"` | Escape `"` and `'` explicitly, or set the attribute via `setAttribute`/`dataset` instead of building HTML |
 | `mark_safe(`, `Markup(`, `\|safe` in templates | Marking untrusted content as safe | Remove unsafe marking; auto-escape by default |
 | `render_template_string(`, `Template(.*render`, `from_string(` | Server-side template injection (SSTI) | Static templates only; never render user input as template |
 | `document.write(`, `eval(`, `new Function(`, `setTimeout(.*string` | String-to-code execution | Static imports, no dynamic code eval |

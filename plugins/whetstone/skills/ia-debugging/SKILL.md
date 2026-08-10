@@ -51,6 +51,8 @@ If the bug is intermittent, run the loop N times under stress or simulate poor c
 
 **Before external searches** (web, docs, forums): strip hostnames, IPs, file paths, SQL fragments, and customer data from the query. Raw stack traces leak privacy and return noise.
 
+**Redaction also applies to what gets shown back, not just what goes out.** This skill has the agent paste commands, probe output, and captured artifacts into the conversation, and those carry credentials -- `Authorization` headers in a captured request, connection strings in a repro command, tokens in an environment dump. Replace each with `<REDACTED>` before it appears. Better, remove the need: build the reproduction loop so every credential is read from the environment (`$API_TOKEN`, `$DATABASE_URL`) rather than typed into the command, which keeps the value out of the transcript entirely, and quote only the lines of a captured artifact that carry signal. If redacting leaves too little to diagnose from, say so and ask for what is missing rather than pasting it raw.
+
 **5. Hypothesize and test** -- one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to pinpoint the exact commit that introduced a regression. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set; do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
 
 **6. Fix and verify** -- create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).

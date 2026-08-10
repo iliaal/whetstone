@@ -41,6 +41,15 @@ Token parsing is centralized; the secret is read once at process start.
 - NOT adding role-based authorization -- tracked in #1301
 ```
 
+## Place the PR in its program (only when there is one)
+
+A PR that is one slice of a larger effort -- a stack, a series, a multi-unit plan -- needs one more sentence than a standalone one, because the reviewer's first question is "why only this much?" and Scope rationale answers what is excluded, not what came before. Lead with the program outcome in one sentence, then this PR's contribution, then the neighbors: what already landed (lead-in) and what remains (lead-out). Early PRs need only the lead-out, late ones only the lead-in.
+
+**Don't**: "Issue-close now revokes the active session on the server."
+**Do**: "Continues the session-revocation rewrite after the refresh-path change landed. This PR revokes the active session on issue-close. Multi-device revocation is follow-on."
+
+Two hard limits. Derive the program only from what is already in hand -- the request, a known plan file, the existing PR body, the commit messages -- and never run a repository-wide scan of open PRs to manufacture one. If a neighbor is unknown, omit it; an invented arc ("continues the auth rewrite") on a standalone PR is worse than no framing at all. A PR with no program gets none of this, and the sizing matrix still governs: a one-sentence PR stays one sentence.
+
 ## Describe net end state, not iteration journey
 
 The commit log is the journey. The description is the destination. If you wrote three approaches and kept the third, the description describes the third -- not all three.

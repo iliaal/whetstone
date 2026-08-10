@@ -35,6 +35,11 @@ Your mission is to perform comprehensive security audits with laser focus on fin
 
 Before scanning the diff, establish what security patterns this project already uses. Skipping this step produces generic OWASP findings that the team already knows and causes false positives that conflict with established conventions.
 
+Resolve two parameters first and open the Executive Summary (Reporting Protocol section 1) with both — neither has a silent default, because every severity score and reachability claim below is a function of them.
+
+- **Attacker position**: `REMOTE` (unauthenticated network reach), `LOCAL_UNPRIVILEGED` (already on the host or holding a low-privilege account), or `BOTH`. This fixes the `AV:` term of the CVSS vector that [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) requires alongside the base score; picking it per-finding instead of once lets the same class score differently in one report. If the request does not imply a position, ask rather than assume.
+- **Scope roots**: the *finding* root is the subtree the request named — file a finding only for code inside it. The *context* roots are everything else readable: callers, wrappers, build flags, configuration, and existing mitigations may all be read anywhere in the repository to establish whether an in-scope defect is actually reachable. Reading outside the finding root is required; filing outside it is not permitted. Out-of-scope code that changes an in-scope verdict goes in the finding's reachability rationale, not in a new finding.
+
 1. **Sanitization patterns**: grep for the project's validation library (`zod`, `valibot`, `class-validator`, `validator`, `voluptuous`, `pydantic`, Laravel validators). Which boundary uses it? Controllers? Middleware? Service layer?
 2. **Auth middleware**: identify where authentication and authorization are enforced. Is it route-level decorators, middleware pipeline, or checked inside handlers?
 3. **Secret storage**: environment variables? Secret manager? Parameter store? Note where secrets are read.
@@ -132,7 +137,7 @@ When asked for a threat model (not a code scan), load [security-threat-modeling.
 
 Security audit reports (not threat models) use this four-section envelope. The `SS-NNN` items from **Audit Deliverable Format** populate section 2 below; this section is the outer wrapper, not a competing format.
 
-1. **Executive Summary**: High-level risk assessment with severity ratings
+1. **Executive Summary**: opens with the two Phase 0 parameters — `Attacker position:` and `Scope roots:` (finding root, then context roots) — then the high-level risk assessment with severity ratings
 2. **Detailed Findings**: list of `SS-001`, `SS-002`... items per the Audit Deliverable Format above (CVSS, exploit scenario, remediation code, location)
 3. **Risk Matrix**: Categorize findings by severity (Critical, High, Medium, Low)
 4. **Remediation Roadmap**: Prioritized action items with implementation guidance

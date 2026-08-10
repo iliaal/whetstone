@@ -57,6 +57,18 @@ Names should describe the capability, not the use case:
 | `deploy_to_production` | `git_push` |
 
 The prompt tells the agent *when* to use primitives. The tool just provides *capability*.
+
+### Writing the description
+
+The name is the handle; the description is the contract the model routes on. Optimize it for precision, not brevity -- the common defect is under-description, not verbosity. Write it as a man page: what the tool does, what each parameter means and what values are legal, what it does *not* return, and any caveat that changes the caller's plan (pagination, rate limits, eventual consistency, partial failure). Three or four sentences is a floor for a non-trivial tool, not a ceiling.
+
+The "capability, not use case" rule above still holds, and the boundary is what kind of *when* is being stated. A description may draw the line against sibling tools -- what this tool covers, what it does not, which neighbour owns the adjacent case -- because that is disambiguation the model needs at routing time and cannot get anywhere else. It must not carry workflow context: which step of a process to call it in, what to do with the result, or which business condition makes it appropriate. That belongs to the prompt or skill orchestrating the tool.
+
+Three things belong somewhere else:
+
+- **Worked examples, sample dialogue, and numbered protocols.** They cost tokens on every request and narrow the model's exploration to the path shown. Put procedure in the skill or prompt that orchestrates the tool.
+- **Triggering boosters** (`CRITICAL:`, `You MUST call this first`). Emphasis is priced in aggregate: once several descriptions shout, none of them carries signal, and the observed failure shifts from under-triggering to over-triggering.
+- **Cross-tool scolding** (`ALWAYS use this instead of X`, `NEVER use Y for this`). A preference for one tool belongs in that tool's own description, stated positively. Scattered across its rivals it decays the moment either tool changes.
 </principle>
 
 <principle name="simple-inputs">
@@ -577,7 +589,8 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] CRUD operations are separate tools (not one mega-tool)
 - [ ] No business logic in tool implementations
 - [ ] Error states clearly communicated via `isError`
-- [ ] Descriptions explain what the tool does, not when to use it
+- [ ] Descriptions state capability and the boundary against sibling tools, never workflow context (see Writing the description)
+- [ ] Descriptions carry no worked examples, numbered protocols, `CRITICAL:`-style boosters, or cross-tool `ALWAYS`/`NEVER` scolding
 - [ ] Descriptions pass the machine-parsed-text rules in `ia-refine-prompt`: one directive per sentence, simple tenses, noun stacks capped at three, no dropped referents
 - [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
 - [ ] Error messages include recovery suggestions, not just failure descriptions
