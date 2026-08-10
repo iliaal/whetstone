@@ -18,7 +18,11 @@ SYNC_LOG=docs/audit/audit-log.md
 
 ## Phase 0: Pre-flight — read prior decision log
 
-Read `$SYNC_LOG` in full before any analysis. Build an in-memory set of already-evaluated findings keyed by `(component, pattern-signature)` across every run entry. Use it as a filter during Phase 3 and Phase 4:
+Read `$SYNC_LOG` in full before any analysis. Two things come out of it.
+
+First, the **Retired sources** table above the `## Log` marker: repos exhausted by a prior run, each pinned to the HEAD SHA it was retired at. Carry it into Phase 2, which defines the check and the un-retire rule.
+
+Second, build an in-memory set of already-evaluated findings keyed by `(component, pattern-signature)` across every run entry. Use it as a filter during Phase 3 and Phase 4:
 
 - **Previously applied, exact match** — drop silently.
 - **Previously rejected, exact match** — drop silently unless new evidence contradicts the prior reason; if so, surface with a `RE-EVALUATE` flag and quote the prior rejection reason.
@@ -75,6 +79,8 @@ Build two inventories in parallel:
 5. **Skip**: README, LICENSE, CONTRIBUTING, CHANGELOG, config files, and generic persona descriptions without actionable rules.
 
 Every repo must be analyzed. Do not skip repos based on surface-level impressions. Repos that look simple may contain high-quality patterns in non-obvious locations.
+
+**The one sanctioned exception is the Retired sources table in `$SYNC_LOG`** (above the `## Log` marker), read during Phase 0. A retired repo is exhausted, not uninteresting — it earned the entry by being fully mined once. Skipping it still costs one command: `git -C $REPOS_DIR/<repo> rev-parse HEAD`. If the SHA matches the pinned one, note the repo as retired-unchanged in the Phase 5b entry and spend no subagent on it. **If the SHA moved, the retirement is void** — scan the delta like any other repo, then either re-pin at the new SHA or strike the entry, and say which in the run entry. Never skip on the table alone without checking.
 
 **Loose notes at `$REPOS_DIR/` root** — also scan `*.md` files sitting directly in `$REPOS_DIR/` (not inside a repo subdirectory). These are reference docs Ilia dropped in for cross-repo harvesting. Read each in full, extract actionable patterns, and feed them into Phase 3 the same way as repo content. Source tag: `loose:<filename>`. Skip if the file is obviously not a reference doc (e.g., a stray export, a tarball listing).
 
