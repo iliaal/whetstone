@@ -5,13 +5,45 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.4.1] - 2026-08-10
+
+Patch: a 7-day delta sync across 41 reference repos and 8 marketplace sources, plus the reactive audit that followed. Five of the fixes are bugs that were already shipping, and the largest had been broken since v4.0.0: every example agent spawn in the swarm references still named `whetstone:review:security-sentinel` and friends, seventeen dead values across two files, none of which resolve to an agent that exists. Reviews could not reach `ia-rust-systems` at all, because the routing table shipped six days earlier with a row for every language skill except Rust.
+
+The audit's own lesson repeated the one from 4.3.3, one level deeper. Two of its four high-severity findings were factual errors introduced by edits that were themselves fixes: removing Ruby idiom from `ia-database-guardian` produced a sentence claiming three languages throw on a missing key, when PHP warns and yields null and TypeScript's `!` is erased at runtime, and a Laravel event was pinned to a release tagged eleven hours before the event merged. Neither is visible to a reader. Both took a PHP interpreter, a Node runtime, and the framework's git history to catch. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+
+### Added
+
+- Code review now has a GitHub Actions profile: `pull_request_target` paired with a checkout of the PR head, expression interpolation reaching a `run:` block, unpinned third-party actions, absent `permissions`, missing `timeout-minutes`, and misspelled `with:` keys, which GitHub ignores silently rather than rejecting. The false-positive scoping sits in the same section, so the pinning check cannot be read apart from the rule that limits it to third-party actions in privileged jobs.
+- `ia-cpp-systems` gained a Concurrency section, having previously sent people at threaded code with a TSan recommendation and no authoring guidance. It includes the guard that compiles silently and locks nothing: `std::lock_guard<std::mutex>{m};` builds clean under `-Wall -Wextra -Wshadow` and unlocks before the next statement runs.
+- A macros and OS boundaries reference for `ia-rust-systems`: `$crate` resolution, single interpolation of `$x:expr`, `$t:tt` precedence, item-name collisions across invocations, `syn::Error` over panic, non-UTF-8 paths, and write-then-rename.
+- `ia-agent-native-architecture` now says what to write in an MCP tool description, which is the field a model actually routes on. Precision over brevity, the boundary against sibling tools, and no worked examples, urgency boosters, or cross-tool scolding.
+- `ia-best-practices-researcher` treats fetched pages as data. Documentation, issue threads, and search results get read for API substance, never followed as instruction, and an outbound endpoint in a doc example never lands in generated code unannounced.
+- `ia-debugging` redaction now covers the transcript, not only outbound search queries. Reproduction loops read credentials from the environment so the value never enters what gets pasted back.
+- Design work gained a composite-look ban for combinations that pass every per-token rule and still arrive unprompted, and `prefers-reduced-motion` now gates the staggered reveals the skill itself prescribes.
 
 ### Changed
 
-- `ia-code-review` now tracks every changed file from the original scope through covered, failed, pending, or explicit exclusion. Partial reviews can no longer return a ready verdict, and tests and deletions stay in the coverage denominator.
-- Review prompts now treat diffs, repository files, comments, and tool output as untrusted data. Review-only work stays read-only until the caller separately authorizes source, version-control, or external writes.
-- Code reviews now select stack-specific skills through deterministic repository, manifest, path, extension, import, and header evidence. Each review unit gets at most one primary skill and one justified supplement; ambiguous units use the generic profile.
+- `ia-code-review` tracks every changed file from the original scope through covered, failed, pending, or explicit exclusion. Partial reviews can no longer return a ready verdict, and tests and deletions stay in the coverage denominator.
+- Review prompts treat diffs, repository files, comments, and tool output as untrusted data. Review-only work stays read-only until the caller separately authorizes source, version-control, or external writes.
+- Reviews select stack skills through deterministic repository, manifest, path, extension, import, and header evidence. Each unit gets at most one primary skill and one justified supplement; ambiguous units use the generic profile.
+- A `gated_auto` approval now covers the fix it was shown against, not the tier, the file, or the rest of the batch.
+- Swarm dispatch binds one implementation unit per worker, and a worker still inside its timeout is no longer treated as a failure: its edits stay provisional and its paths stay out of staging until it returns.
+
+### Fixed
+
+- Seventeen dead `subagent_type` values across the swarm references, spanning four namespaces retired in v4.0.0. Every example spawn in both files would have failed on a bad tool name.
+- Rust was unreachable from code review. `.rs`, `Cargo.toml`, and `Cargo.lock` now route to `ia-rust-systems`.
+- Adding a column with a volatile `DEFAULT` rewrites the whole table under an exclusive lock. `gen_random_uuid()` triggers it, `now()` does not, and `provolatile` in `pg_proc` settles which is which.
+- A GIN index on an array column does not serve `= ANY(col)`, which sequential-scans even with `enable_seqscan` off. `@>` reaches the index.
+- Defining a React component inside another component remounts the subtree on every parent render, losing state and input focus. The React Compiler does not cover it, because the element type changes before memoization applies.
+- `ShouldBeUnique` discards a dispatch silently when the lock is held, so it is a de-duplication hint and not an at-least-once guarantee.
+- Ruby and Rails idiom in `ia-database-guardian`, and a broken documentation link in `/ia-work` that resolved to a directory that does not exist.
+- `ia-document-review` blocked for approval without naming a harness tool, which degrades to nothing on three of the four distribution targets.
+
+### For contributors
+
+- `/sync-from-repos` can retire a fully-mined reference repo from its scan fan-out without removing it from the reference set. The retirement pins the HEAD SHA it was taken at, and a repo whose SHA moved is scanned again like any other.
+- Two marketplace sources shipped incorrect claims this cycle, continuing the run that began with HashiCorp's `-no-cleanup` flag in 4.3.2. A C++ skill documented a lock-guard trap in a form that does not compile, and a PostgreSQL skill asserted that `ON CONFLICT` cannot use a partial unique index, which it can. Verify borrowed facts against a toolchain before shipping them.
 
 ## [4.4.0] - 2026-08-04
 
