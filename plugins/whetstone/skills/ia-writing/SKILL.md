@@ -135,6 +135,7 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 
 ## Composition
 
+- First sentence earns the second. In long-form prose, open on a concrete fact, number, or specific the reader doesn't have yet -- not on context-setting, a definition, or what the piece will cover. Test: delete the opening sentence. If nothing is lost, it was throat-clearing.
 - One paragraph, one topic. Lead with the topic sentence.
 - Keep related words together. Place emphatic words at end of sentence.
 - Don't join independent clauses with a comma. Don't break sentences in two.
