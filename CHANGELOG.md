@@ -5,6 +5,49 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.2] - 2026-08-18
+
+Patch: an 8-day delta sync across 41 reference repos, then two audit rounds over the sync's own output. The sync applied 23 findings; the audits found 31 defects in them and fixed all 31. Every automated gate stayed green through all of it, which is the finding worth repeating — validate-plugin, the trigger suite, cross-reference validation, and the injection scan passed identically before and after a round that contained two live runtime breaks.
+
+The dead agent names are the release's own comedy. Seventeen `subagent_type` values broke in v4.0.0 and got fixed in 4.4.1, but the fix skipped the three in the skill body. This round changed those three to `ia-security-sentinel`, which is also dead: the harness addresses plugin agents as `whetstone:ia-security-sentinel`, and the plugin's own references had it right in twenty-two other places. The verification that certified the wrong fix matched values against agent filenames, which is a different contract from the tool name. `agent-types.md` now states the addressing rule, because a convention with twenty-two usages and zero statements gets re-derived wrong by whoever edits next. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+
+### Added
+
+- Code review gained CRLF and header-injection detection: a request-derived value reaching `setHeader` splits the header block on `\r` or `\n`, and a forged `Location` or `Set-Cookie` follows. Reject control bytes before trimming whitespace, not after.
+- Comparing a bearer token, API key, or webhook signature with `===` leaks it byte by byte through response timing. The Auth rows now name `crypto.timingSafeEqual`, `hash_equals`, `hmac.compare_digest`, and `subtle::ConstantTimeEq`, with the length check first.
+- A `stat`-then-`open` pair on an externally-influenced path is a link-following race. Open with `O_NOFOLLOW`, then compare `dev` and `ino` from `fstat` on the descriptor against a fresh `lstat`, and reject `nlink != 1`. A pre-open `lstat` alone is still exploitable.
+- Accepting an `Idempotency-Key` header is the easy half. `ia-nodejs-backend` now covers deriving the key from intent rather than the attempt, claiming it atomically through a unique constraint, returning 422 when the payload hash changes under a reused key, and picking a policy for a duplicate that is still in flight.
+- Memory safety, concurrency, linkage, compatibility changes, and accepted-then-ignored parameters are now exempt from confidence-based suppression in code review. Those are the classes where a reviewer's own confidence measures the wrong thing, so a low score suppressed the findings that cost the most to miss.
+- Delegating a review to an external CLI sends the diff to another vendor. Consent is per-packet now, not implied by the tool being configured, and a same-provider pass gets labeled as one instead of passing for an independent second opinion.
+- Bash arithmetic runs commands. A value of `a[$(cmd)]` reaching `$(( ))` executes `cmd`, and a leading zero makes `08` base-8 and kills the script under `set -e`. Validate the digits, then force base 10 with `10#`.
+- A `permissionDecision` that isn't nested under `hookSpecificOutput` is ignored without error, so a `deny` hook written that way permits everything it was installed to block.
+- Tailwind's scanner reads source text and never evaluates JavaScript, so `` `bg-${color}-500` `` generates nothing and the styles just don't appear. Map the value to complete class strings instead.
+- `/ia-plan` now asks whether the goal survives a change of implementation. "Move the retry logic into a job" passes all five existing gate questions while pinning the plan to a mechanism.
+- `/ia-test-browser`, `/ia-reproduce-bug`, `/ia-work`, and `/ia-feature-video` resolve the dev-server port from the project instead of assuming 3000.
+
+### Changed
+
+- `/ia-work` treats code review as a gate rather than a suggestion. It closes as reviewed or as a named skip with a reason, both recorded in the PR body, and a self-assessment closes neither.
+- `/ia-resolve-pr` reads the conversation tab. Top-level PR comments and review-submission bodies were never fetched, so a reviewer asking for a rename outside a diff line went unanswered. They get triaged separately from line-scoped threads, and a thread whose resolver couldn't find the referent stays open instead of being marked resolved.
+- `ia-database-guardian` classifies every column the migration touches as non-personal, personal, or sensitive, then checks the three things that actually fail: a field no query reads, a deletion path that misses the backups and the search index, and a table no foreign key reaches from the subject.
+- Rust and Python services now deny by default when the outbound call *is* the security decision. A shed request or an exhausted retry budget resolves to denied, and fail-open scopes to transport failure alone.
+- `ia-cpp-systems` explains that `clang-analyzer-*` runs whether or not the config lists it, and that `WarningsAsErrors` leaves its findings non-fatal, so a use-after-free warns while CI stays green.
+
+### Fixed
+
+- Three dead `subagent_type` values in the swarm fan-out example, broken since v4.0.0 and mis-fixed once on the way. Plugin agents need the `whetstone:` prefix.
+- `ia-python-services` prescribed check-before-write as an idempotency mechanism while code review files check-then-act as a race. Two Celery workers both read "absent" and both insert.
+- `maxBuffer` does nothing on `spawn`. A cap of 100 bytes read 6.6 MB, and `execFile` truncates the buffer before it reports the error.
+- `ia-database-guardian` routed consent capture, DPAs, and vendor sharing to two files that cover none of them, and claimed GDPR compliance its review doesn't deliver.
+- The eagerly-loaded confidence summary exempted Critical *security* findings while the reference it points at exempted all Critical findings, so a Critical race at 0.55 was reported by one and suppressed by the other.
+- False-positive suppression said both gates had to clear before a finding was suppressed. Either gate suppresses; clearing both is what gets a finding reported.
+- A hardcoded `/home/ilia/php-src` in a shipped hook comment.
+
+### For contributors
+
+- The release suite now refuses an Agent Plugins `$schema` in any manifest. Codex 0.147 and later prefer a root manifest carrying that field over `.codex-plugin/plugin.json`, then truncate every skill at 8000 bytes with no install-time error, and 22 of 32 skills are over that budget. The gate fails closed on malformed JSON and on a non-string `$schema` rather than reading either as clean.
+- `agent-types.md` states the plugin-agent addressing rule that twenty-two callsites had only demonstrated.
+
 ## [4.4.1] - 2026-08-10
 
 Patch: a 7-day delta sync across 41 reference repos and 8 marketplace sources, plus the reactive audit that followed. Five of the fixes are bugs that were already shipping, and the largest had been broken since v4.0.0: every example agent spawn in the swarm references still named `whetstone:review:security-sentinel` and friends, seventeen dead values across two files, none of which resolve to an agent that exists. Reviews could not reach `ia-rust-systems` at all, because the routing table shipped six days earlier with a row for every language skill except Rust.

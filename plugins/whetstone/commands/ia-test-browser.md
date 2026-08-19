@@ -103,10 +103,14 @@ Build a list of URLs to test based on the mapping.
 
 <check_server>
 
-Before testing, verify the local server is accessible:
+Resolve the dev-server port rather than assuming 3000 -- Vite and SvelteKit default to 5173, and a `PORT=` in `.env` or a `--port` flag in a package.json script overrides either. Each fenced block below runs as its own shell, so the two resolution lines are repeated in every block that uses `$BASE_URL`; a bare `$BASE_URL` carried across a block boundary expands to empty and silently navigates to a relative path.
+
+Verify the local server is accessible:
 
 ```bash
-agent-browser open http://localhost:3000
+PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+BASE_URL="http://localhost:$PORT"
+agent-browser open "$BASE_URL"
 agent-browser snapshot -i
 ```
 
@@ -131,13 +135,17 @@ For each affected route, use agent-browser CLI commands (NOT Chrome MCP):
 
 **Step 1: Navigate and capture snapshot**
 ```bash
-agent-browser open "http://localhost:3000/[route]"
+PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+BASE_URL="http://localhost:$PORT"
+agent-browser open "$BASE_URL/[route]"
 agent-browser snapshot -i
 ```
 
 **Step 2: For headed mode (visual debugging)**
 ```bash
-agent-browser --headed open "http://localhost:3000/[route]"
+PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+BASE_URL="http://localhost:$PORT"
+agent-browser --headed open "$BASE_URL/[route]"
 agent-browser --headed snapshot -i
 ```
 
@@ -240,7 +248,7 @@ After all tests complete, present summary:
 ## Browser Test Results
 
 **Test Scope:** PR #[number] / [branch name]
-**Server:** http://localhost:3000
+**Server:** [base-url]
 
 ### Pages Tested: [count]
 

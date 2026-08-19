@@ -125,7 +125,7 @@ Flag during `Update README` workflows:
 - Jargon before definition (using project-specific terms without introduction)
 - Theory before try (architecture explanation before a working example)
 - Claims without evidence ("blazingly fast" with no benchmarks)
-- Changelog-speak ("now supports", "new in 3.2", "coming soon") -- a README describes the tool's present tense; version-migration notes belong in CHANGELOG or `docs/`
+- Changelog-speak, in both directions -- forward-looking hype ("now supports", "new in 3.2", "coming soon") and backward-looking narration of a diff ("this replaced the previous approach", "X was refactored to use Y"). A README describes the tool's present tense; a reader without the commit history gets archaeology instead of a description. Version-migration notes belong in CHANGELOG or `docs/`, and CHANGELOG, release notes, migration guides, and decision records are exempt -- being version-scoped is their purpose
 
 ## Report Format
 

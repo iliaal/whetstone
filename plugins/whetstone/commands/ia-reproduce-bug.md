@@ -30,9 +30,13 @@ If the bug is UI-related or involves user flows, use agent-browser to visually r
 ### Step 1: Verify Server is Running
 
 ```bash
-agent-browser open http://localhost:3000
+PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+BASE_URL="http://localhost:$PORT"
+agent-browser open "$BASE_URL"
 agent-browser snapshot -i
 ```
+
+Port 3000 is a convention, not a guarantee -- resolve it rather than assuming, or the reproduction fails against a server that is running on 5173.
 
 If server not running, inform user to start their dev server.
 
@@ -41,7 +45,9 @@ If server not running, inform user to start their dev server.
 Based on the issue description, navigate to the relevant page:
 
 ```bash
-agent-browser open "http://localhost:3000/[affected_route]"
+PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+BASE_URL="http://localhost:$PORT"
+agent-browser open "$BASE_URL/[affected_route]"
 agent-browser snapshot -i
 ```
 

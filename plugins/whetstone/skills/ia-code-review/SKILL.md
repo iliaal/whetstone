@@ -95,9 +95,9 @@ Override: `deep` forces multi-agent, `quick` forces single-pass.
 
 Four severity tiers (Critical / Important / Medium / Minor) order the report; a confidence score (0.0-1.0) per finding decides what lands in it:
 
-**Confidence bands: ≥0.70 report · 0.60-0.69 report-if-actionable · <0.60 suppress (exception: Critical security findings report at ≥0.50).**
+**Confidence bands: ≥0.70 report · 0.60-0.69 report-if-actionable · <0.60 suppress — except any Critical (≥0.50) and the protected subjects (any score).**
 
-Full 5-band rubric, evidence-before-severity ordering, false-positive suppression categories, and the LLM prompt-injection exception in [severity-and-confidence.md](./references/severity-and-confidence.md).
+Full 5-band rubric, evidence-before-severity ordering, the confidence-exempt protected subjects, false-positive suppression categories, and the LLM prompt-injection exception in [severity-and-confidence.md](./references/severity-and-confidence.md).
 
 Evidence lives in the `CR-XXX` entry itself — `[file:line]` plus `` `quoted code` ``, not only in surrounding prose. Never fabricate references.
 
@@ -166,7 +166,7 @@ Multi-agent consolidation: apply the merge algorithm in [deep-review.md](./refer
 
 ## References
 
-References load at their point of use above. Additionally: [security-test-coverage.md](./references/security-test-coverage.md) — security-audit deliverable checklist; [false-positive-suppression.md](./references/false-positive-suppression.md) — framework-idiom and test-specific FP categories; [external-review-subprocess.md](./references/external-review-subprocess.md) — external-CLI reviewer protocol (heartbeat tolerance, run-until-clean, frozen-diff binding).
+References load at their point of use above. Additionally: [security-test-coverage.md](./references/security-test-coverage.md) — security-audit deliverable checklist; [false-positive-suppression.md](./references/false-positive-suppression.md) — framework-idiom and test-specific FP categories; [external-review-subprocess.md](./references/external-review-subprocess.md) — external-CLI reviewer protocol (heartbeat tolerance, run-until-clean, frozen-diff binding, egress consent, provider-independence labeling).
 
 ## Integration
 

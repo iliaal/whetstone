@@ -119,7 +119,7 @@ For generic test discipline (anti-patterns, real assertions, rationalization res
 
 ## Build and analysis
 
-For CMake target design, sanitizer and warning presets, `clang-tidy` configuration, and dependency handling, load [cmake-and-tooling.md](./references/cmake-and-tooling.md).
+For CMake target design, sanitizer and warning presets, `clang-tidy` configuration (including which checks are fatal versus warn-only), and dependency handling, load [cmake-and-tooling.md](./references/cmake-and-tooling.md).
 
 ## Legibility
 

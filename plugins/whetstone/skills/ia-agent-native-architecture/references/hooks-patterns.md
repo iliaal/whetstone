@@ -30,6 +30,17 @@ Return a `permissionDecision` to control whether a tool call proceeds:
 
 Use PreToolUse to enforce invariants: prevent writes to protected paths, require confirmation for destructive operations, or inject validation before specific tools run.
 
+**The decision must nest under `hookSpecificOutput`, with `hookEventName`.** A flat top-level `permissionDecision` is ignored without error, so a `deny` hook written that way allows every call it was installed to block:
+
+```json
+{ "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "path is under a protected prefix" } }
+```
+
+Parse the incoming event and build this response with a real JSON tool (`jq`), never `grep` plus `printf` interpolation. A grep-based field extractor truncates on an escaped quote, and an interpolated response silently malforms on a path containing a quote or newline -- in both cases the block evaporates. Treat an unparseable payload as deny, not as allow: a gate whose failure mode is "permit" is not a gate. Verify by asserting the hook denies a call it should deny, since a hook that returns nothing looks identical to a hook that approved.
+
 ### PermissionRequest: Override Permission UI
 
 Return `decision.behavior` to control how permission prompts resolve. Useful for auto-approving known-safe operations in CI/automation contexts while preserving interactive approval in development.

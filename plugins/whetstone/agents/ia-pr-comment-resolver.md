@@ -53,7 +53,10 @@ When receiving a comment or review feedback:
    - Any additional considerations or notes for the reviewer
    - A confirmation that the issue has been resolved
 
-Reply inline using `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f in_reply_to={comment_id}`, not a top-level PR comment, so the resolution threads under the original comment.
+Reply on the channel the item came from -- the dispatch prompt states which:
+
+- **Review thread** (file + line): `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f in_reply_to={comment_id}`, not a top-level PR comment, so the resolution threads under the original.
+- **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply -- these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
 
 Your response format should be:
 
@@ -69,8 +72,10 @@ Changes Made:
 Resolution Summary:
 [Clear explanation of how the changes address the comment]
 
-Status: Resolved
+Status: Resolved | Referent not found | Needs decision
 ```
+
+Use **Referent not found** when the item named no file or line and the described code could not be located -- report what was searched rather than guessing at a target, since an untargeted conversation item is the one case where the referent is genuinely ambiguous. Use **Needs decision** when the fix is clear but the choice belongs to the author.
 
 Key principles:
 

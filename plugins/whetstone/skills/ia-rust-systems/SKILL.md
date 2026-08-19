@@ -157,7 +157,7 @@ For generic test discipline (anti-patterns, mock rules, rationalization resistan
 
 ## Production Resilience
 
-When productionizing a service (config validation, `/health` + `/ready` endpoints, graceful shutdown, retries/timeouts/jitter, connection pools, diagnostic secret redaction), load [production-resilience.md](./references/production-resilience.md).
+When productionizing a service (config validation, `/health` + `/ready` endpoints, graceful shutdown, retries/timeouts/jitter, deny-by-default fallback when the call is the security decision, connection pools, diagnostic secret redaction), load [production-resilience.md](./references/production-resilience.md).
 
 ## Observability
 

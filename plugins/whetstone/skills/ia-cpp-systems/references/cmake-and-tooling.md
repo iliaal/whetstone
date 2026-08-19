@@ -149,6 +149,8 @@ HeaderFilterRegex: '^(include|src)/'
 
 `HeaderFilterRegex` is required, or clang-tidy either ignores headers entirely or floods the output with findings from system and third-party headers.
 
+`clang-analyzer-*` is absent from that `Checks:` list on purpose -- clang-tidy enables it by default and a config-file `Checks:` adds to the default set rather than replacing it, so the path-sensitive checks (use-after-free, uninitialized reads) run either way. Verify on the local toolchain with `clang-tidy --list-checks` if in doubt. What the list above *does* decide is `WarningsAsErrors`: `bugprone-*,cert-*` are fatal and analyzer findings are not, so a use-after-free warns and CI still goes green. Promoting `clang-analyzer-*` to fatal is defensible on a clean tree and hostile on a legacy one, since path-sensitive analysis has a real false-positive rate -- decide it deliberately and write the decision down, rather than inheriting the warn-only behavior by omission.
+
 Run on a diff rather than the tree: `git diff -U0 origin/main | clang-tidy-diff.py -p1 -path build/dev`. Enabling the full check set on a legacy tree produces thousands of findings and gets the tool switched off.
 
 `.clang-format` is the repo's, not a personal preference. Enforce with `clang-format --dry-run --Werror` in CI, and format only the changed lines (`git-clang-format`) so a formatting sweep never hides a logic change in the same commit.

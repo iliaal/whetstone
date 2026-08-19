@@ -39,7 +39,7 @@ Read the full text start to finish without changing anything. Quote the shortest
 
 | Tag | Trigger |
 |-----|---------|
-| `[OAICITE]` | Malformed AI citation artifacts -- `[oai_citation:...]`, `【...†source】`, or similar markup leaked from a language model's internal retrieval |
+| `[OAICITE]` | Malformed AI citation artifacts -- `[oai_citation:...]`, `【...†source】`, `citeturn0search0`, `contentReference[oaicite:0]{index=0}`, `[attached_file:1]`, `grok_card`, or similar markup leaked from a language model's internal retrieval or copied out of a chat UI |
 | `[LINK-ROT]` | Dead URLs, placeholder links (`example.com`, `#`), or links that return 404 |
 | `[ISBN-DOI-FAIL]` | Invalid ISBN/DOI identifiers -- wrong check digit, truncated, or fabricated |
 | `[REF-BUG]` | Reference formatting errors: mismatched footnote numbers, dangling `[1]` with no matching entry, duplicate reference IDs, inconsistent citation style within the same document |

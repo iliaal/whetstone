@@ -60,9 +60,9 @@ When dispatching independent read-only or worktree-isolated agents, issue the ha
 
 ```javascript
 // Correct: one message, multiple Task tool uses
-Task({ subagent_type: "security-sentinel", ... })
-Task({ subagent_type: "performance-oracle", ... })
-Task({ subagent_type: "architecture-strategist", ... })
+Task({ subagent_type: "whetstone:ia-security-sentinel", ... })
+Task({ subagent_type: "whetstone:ia-performance-oracle", ... })
+Task({ subagent_type: "whetstone:ia-architecture-strategist", ... })
 ```
 
 Sequential dispatch (each Task in its own message, waiting on the previous to return) is a serialization bug, not a coordination pattern. If agents truly depend on each other's output, that is a pipeline -- see Coordination Models below.

@@ -76,6 +76,8 @@ Core offenders:
 
 **Communication artifacts** (remove entirely): sycophantic openers and closers ("Great question!", "I hope this helps!"), knowledge-cutoff hedges ("As of my last update"), vague attributions ("Experts argue").
 
+**Chat-UI artifacts** (grep before publishing): text and links copied out of a chat interface carry machine fingerprints that no amount of tone editing removes. Strip the AI-referrer tracking parameter from URLs -- `utm_source=chatgpt.com`, `utm_source=claude.ai`, `utm_source=perplexity.ai`, `referrer=grok.com` -- leaving the rest of the query string intact. Leaked citation markup is the `[OAICITE]` class in [audit-workflow.md](./references/audit-workflow.md) -- extend that list rather than starting a second one; `citeturn0search0`, `contentReference[oaicite:0]{index=0}`, `[attached_file:1]`, and `grok_card` belong there alongside the `[oai_citation:...]` and `【...†source】` forms already listed. These are mechanical, so check them mechanically; unlike a vocabulary tell they are not a judgement call, and shipping one in a README or PR body is not a style problem but a provenance leak.
+
 ## False Agency
 
 AI avoids naming actors by giving inanimate things human verbs. Find the person; put them at the front of the sentence.

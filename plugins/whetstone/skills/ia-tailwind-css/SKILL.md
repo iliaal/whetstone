@@ -88,6 +88,24 @@ export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 <button className={cn("rounded-lg px-4 py-2", isActive ? "bg-blue-600" : "bg-gray-700")} />
 ```
 
+**Keep class names whole in the source.** The example above works because both branches are complete literals -- Tailwind's scanner does literal string matching over source text and never evaluates JavaScript, so a class assembled by interpolation is invisible to it and the utility is simply never generated. The failure is silent: no error, no warning, just missing styles.
+
+```typescript
+// Broken: `bg-red-500` never appears in the source, so it is never generated
+<div className={`bg-${color}-500`} />
+
+// Works: every candidate class is a complete literal the scanner can see
+const BG = { red: "bg-red-500", blue: "bg-blue-500" } as const;
+
+function Swatch({ color }: { color: keyof typeof BG }) {
+  return <div className={BG[color]} />;
+}
+```
+
+The same applies to classes built in a non-scanned location -- a string in a database, a CMS field, or a file outside the configured `@source` paths. Confirm the source actually gets scanned before assuming a literal is enough.
+
+Verify by building, not by reading: when class names or scanned sources changed, run the real Tailwind build and grep the output CSS for the expected utilities. Reviewing the `className` attribute proves the string is right, not that the rule exists.
+
 ## Component Variants
 
 Use `tailwind-variants` (`tv()`) for type-safe variant components. Alternative: `class-variance-authority` (`cva()`).

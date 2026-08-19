@@ -43,6 +43,7 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - Never `eval` user input; build commands as arrays: `cmd=("grep" "--" "$pat" "$f"); "${cmd[@]}"`
 - Keep untrusted/derived bytes off the command line: never build a heredoc body or an `sh -c` string from external data. An unquoted `<<EOF` command-substitutes `$(...)`/backticks in the content, and even a quoted `<<'EOF'` breaks if a content line equals the delimiter (the heredoc ends early and the rest runs as shell). Write the data to a file with a non-shell writer and have the consumer read the file
 - Allowlisting a command? Match the whole command against an anchored pattern (`^…$`), never inspect individual arguments — shell operators (`;`, `&&`, `|`, `#`, newline) smuggle a second command past a per-argument check (`rm -rf node_modules; rm -rf /`). Unrecognized syntax must fail closed to deny/ask
+- Validate a numeric before it reaches `(( ))` or `$(( ))` when it came from a file, env var, or command output rather than a literal. Two distinct failures: **(1) command execution** -- arithmetic evaluates an array subscript, so a value of `a[$(cmd)]` runs `cmd` (a bare `$(cmd)` is only a syntax error, so testing that form will wrongly suggest the trap isn't real); **(2) octal abort** -- a leading zero makes `08` base-8 and `$(( v + 1 ))` dies with `value too great for base`, taking the script down under `set -e`. Gate on `[[ "$v" =~ ^-?[0-9]+$ ]]` first, then force base 10 with `$(( 10#$v ))` for zero-padded input
 - Separate `local` from assignment to preserve exit codes: `local val; val=$(cmd)`
 - Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` -- shows file:line per command
 - Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` -- no magic numbers in `exit`
@@ -118,7 +119,7 @@ ensure_dir()  { [[ -d "$1" ]] || mkdir -p -- "$1"; }
 ensure_link() { [[ -L "$2" ]] || ln -s -- "$1" "$2"; }
 ```
 
-**Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` -- validate at script boundaries with `[[ =~ ]]`
+**Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` -- validate at script boundaries with `[[ =~ ]]`. The leading `[1-9]` also excludes zero-padded input, which arithmetic would read as octal; widening this to `^[0-9]+$` to admit `0` reintroduces that trap unless the value goes through `10#`
 
 - `umask 077` for scripts creating sensitive files
 - Signal cleanup: `trap 'cleanup; exit 130' INT TERM` -- preserves correct exit codes for callers

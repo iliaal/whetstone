@@ -179,7 +179,7 @@ SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|tas
 SKILL_TIERS[ia-orchestrating-swarms]=3
 
 # Management-intent only (2026-07-07): bare `worktree` matched location mentions
-# ("the worktree at /home/ilia/php-src") — 22/22 harvested negatives AND all 44
+# ("the worktree at /path/to/checkout") — 22/22 harvested negatives AND all 44
 # "positives" were such mentions. A management verb near the noun is required.
 SKILL_PATTERNS[ia-git-worktree]='\b(create|add|new|set.?up|make|remove|clean|prune|switch|list)\b.{0,30}worktrees?|worktrees?.{0,25}(add|create|remove|prune|cleanup|list|switch)\b|parallel.?development'
 SKILL_TIERS[ia-git-worktree]=3

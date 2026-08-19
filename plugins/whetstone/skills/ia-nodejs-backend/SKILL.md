@@ -129,5 +129,5 @@ Never use readFileSync or other sync methods in production -- use `fs.promises` 
 
 - [TypeScript config](./references/typescript-config.md) -- tsconfig, ESM, branded types, compiler performance
 - [Security](./references/security.md) -- JWT, password hashing, rate limiting, OWASP
-- [API design patterns](./references/api-design.md) -- pagination, filtering, sorting, deprecation
+- [API design patterns](./references/api-design.md) -- pagination, filtering, sorting, deprecation, idempotency-key claim and retention
 - [Database & production](./references/database-production.md) -- connection pooling, transactions, Docker, logging

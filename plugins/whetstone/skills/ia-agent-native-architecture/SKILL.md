@@ -65,7 +65,7 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | 13, "review", "refactor", "existing" | Read [refactoring-to-prompt-native.md](./references/refactoring-to-prompt-native.md) |
 | 14, "anti-pattern", "mistake", "wrong" | Read [anti-patterns.md](./references/anti-patterns.md) |
 | 15, "success", "criteria", "verify", "checklist" | Read [success-criteria.md](./references/success-criteria.md) |
-| 16, "hook", "hooks", "PreToolUse", "decision control", "async hook" | Read [hooks-patterns.md](./references/hooks-patterns.md) |
+| 16, "hook", "hooks", "PreToolUse", "decision control", "async hook", "permissionDecision" | Read [hooks-patterns.md](./references/hooks-patterns.md) |
 | 0, "quick start", "getting started", "overview", "introduction" | Read [quick-start.md](./references/quick-start.md) |
 
 **After reading the reference, apply those patterns to the user's specific context.**

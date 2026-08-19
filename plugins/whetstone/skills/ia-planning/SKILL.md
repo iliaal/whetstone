@@ -39,6 +39,8 @@ Run this gate before *When to Plan* below — a weak goal wastes tokens on any p
 4. **What scope boundaries matter?** (which files/modules/environments are in scope; which are explicitly not)
 5. **What should cause the agent to stop and ask?** (which decisions belong to the user, not Claude)
 
+Then apply the Means test to the answer to question 1: **if the implementation changed, would this still be the goal?** If not, what was named is a Means, not the Objective. A request that supplies only an approach ("move the retry logic out of the controller into a job") passes all five questions while anchoring the plan to a mechanism -- and when the mechanism turns out wrong there is nothing left to re-derive the plan from. Recover the Objective from why the approach was proposed, keep the approach as the current best route, and record it as a decision rather than as the goal.
+
 Reject pure-activity goals ("make progress", "keep investigating", "improve things") -- repair them into a verifiable outcome or ask one concise clarification before planning. Skip this gate only when the request already names a specific artifact AND a clear success signal in the user's own words -- the same choice-free cases listed under *When to Plan* below. Anything vaguer than that runs the gate.
 
 ## When to Plan

@@ -34,8 +34,24 @@ Assign a confidence score (0.0-1.0) to each finding:
 | 0.85-1.00 | Certain | Report |
 | 0.70-0.84 | High | Report |
 | 0.60-0.69 | Confident | Report if actionable |
-| 0.30-0.59 | Speculative | Suppress (except Critical security at 0.50+) |
+| 0.30-0.59 | Speculative | Suppress |
 | 0.00-0.29 | Not confident | Suppress |
+
+Two exceptions override both suppress rows: a **Critical** finding reports at 0.50 or above, and a **protected subject** (below) reports at any score.
+
+### Protected subjects
+
+Confidence-based suppression does not apply to these classes. Report them with the confidence stated, and let the author judge:
+
+- Memory safety -- allocation size, bounds, off-by-one, use-after-free, null dereference
+- Concurrency -- lock scope, atomicity, races, a synchronization primitive not honored on every path
+- Linkage and declaration consistency -- `static` vs non-`static`, declaration/definition mismatch, a missing `extern`
+- Behavioral or compatibility change -- an altered error path, a dropped field, status, or default
+- A parameter accepted and then ignored
+
+This exemption covers the confidence gate only. A protected-subject finding still passes through the false-positive categories in [false-positive-suppression.md](./false-positive-suppression.md), so one that is genuinely pre-existing, already handled a layer up, or covered by the project's linter is still dropped. That asymmetry is deliberate: the categories encode *whether the finding is true here*, which no amount of subject-matter gravity changes, while confidence encodes *how sure the reviewer is* -- and that is the axis these classes are unreliable on. Reaching for the exemption to force through a finding a category already answered is the failure mode to avoid.
+
+The two error directions do not cost the same. A wrong finding costs the author the seconds it takes to read and dismiss it. A correct finding removed on shaky confidence reaches nobody -- there is no record it was considered, and the reasoning that dropped it is unrecoverable. In the classes above the asymmetry is widest, for two different reasons. Memory safety and concurrency turn on interleavings and object lifetimes that are not visible in the diff, so self-assessed confidence is measuring the wrong thing. Linkage, behavioral-compatibility, and accepted-then-ignored parameters are the opposite -- cheap to settle by reading the declaration or the call sites, and cheap to miss entirely, so a low score is usually a signal that the check was not run rather than that the finding is weak. This does not license nitpicks: the finding still needs concrete code evidence per the rule above.
 
 ## False-positive suppression
 

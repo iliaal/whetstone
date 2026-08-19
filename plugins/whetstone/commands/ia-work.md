@@ -196,11 +196,16 @@ Do not proceed to Phase 3 if verification fails.
    # Run linting (use project's lint command per CLAUDE.md)
    ```
 
-2. **Consider Reviewer Agents** (Optional)
+2. **Code Review** (gate, not a judgement call)
 
-   Use for complex, risky, or large changes. Read agents from `whetstone.local.md` frontmatter (`review_agents`). If no settings file, run `/ia-setup` to create one.
+   Read agents from `whetstone.local.md` frontmatter (`review_agents`). If no settings file, run `/ia-setup` to create one. Run configured agents in parallel with Task tool, present findings, and address critical issues.
 
-   Run configured agents in parallel with Task tool. Present findings and address critical issues.
+   This step is not optional. It closes one of two ways, and both the PR template's Testing section and the Phase 4 Notify User summary have to say which:
+
+   - **Reviewed** -- agents ran, findings presented, criticals addressed or explicitly accepted with a reason.
+   - **Skipped**, with one of these stated verbatim plus a one-line reason: `Code review: skipped (mechanical diff)` for a rename, a formatting sweep, a lockfile bump, or a generated-file refresh where the diff carries no behavior change; `Code review: skipped (unavailable)` when no `review_agents` are configured and `/ia-setup` has not been run.
+
+   A self-assessment does not close this gate. "I already reviewed it as I wrote it" and "the findings were applied during implementation" are the implementer judging their own work, which is what the review exists to avoid. If the diff is large enough to want a worktree and multiple lenses, hand it to `/ia-review` and record that as the receipt.
 
 3. **Final Validation**
    - All tasks marked completed (TaskList)
@@ -233,10 +238,12 @@ Do not proceed to Phase 3 if verification fails.
 
    **Step 2: Capture screenshots with agent-browser CLI**
    ```bash
-   agent-browser open http://localhost:3000/[route]
+   PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+   agent-browser open "http://localhost:$PORT/[route]"
    agent-browser snapshot -i
    agent-browser screenshot output.png
    ```
+   Resolve the port rather than assuming 3000 -- Vite and SvelteKit default to 5173, and `PORT=` in `.env` overrides either.
    Run `agent-browser --help` for full CLI usage.
 
    **Step 3: Upload screenshots**
@@ -273,6 +280,7 @@ Do not proceed to Phase 3 if verification fails.
    ## Testing
    - [Tests added/modified]
    - [Manual testing performed]
+   - `Code review: reviewed` (agents ran, findings addressed) — or one of the Phase 3 skip phrases verbatim: `Code review: skipped (mechanical diff)` / `Code review: skipped (unavailable)`, each followed by a one-line reason
 
    ## Post-Deploy Monitoring & Validation
    - **What to monitor**: [logs, metrics, dashboards]
@@ -294,6 +302,7 @@ Do not proceed to Phase 3 if verification fails.
 
 4. **Notify User**
    - Summarize what was completed using experiential framing (what the user/end-user can now do, then technical details)
+   - State the Phase 3 code-review disposition verbatim (reviewed, or the skip phrase plus its reason)
    - Link to PR (if created)
    - Note any follow-up work needed
    - Suggest next steps if applicable
@@ -315,6 +324,7 @@ Before creating PR, verify:
 - [ ] Tests pass (run project's test command)
 - [ ] Linting passes (run project's lint command)
 - [ ] Code follows existing patterns
+- [ ] Code review closed -- reviewed, or skipped with the verbatim phrase and reason from Phase 3
 - [ ] Figma designs match implementation (if applicable)
 - [ ] Before/after screenshots captured and uploaded (for UI changes)
 - [ ] Commit messages follow conventional format

@@ -40,4 +40,8 @@ Test code follows different rules than production code. Don't flag: hardcoded te
 
 ## When to Override Suppression
 
-Suppress rules don't apply when the finding is **Critical severity** (security vulnerability, data loss, crash). Critical findings are always reported regardless of category, though they should still include evidence.
+Suppress rules don't apply when the finding is **Critical severity** (security vulnerability, data loss, crash, race condition). Critical findings are always reported regardless of category, though they should still include evidence.
+
+This override covers the eight categories above, and only those. The separate confidence-band suppression in [severity-and-confidence.md](./severity-and-confidence.md) is the other gate, and its Protected Subjects list names the classes exempt from that one.
+
+The two gates are independent and either one alone suppresses: a finding is reported only if it clears both. So a protected-subject finding still has to survive the categories here, and a Critical finding still has to clear the confidence floor unless an exemption applies.

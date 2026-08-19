@@ -27,7 +27,7 @@ assistant: "Let me have the database-guardian agent review this data transfer se
 </example>
 </examples>
 
-Protect data integrity, ensure migration safety, validate migration code against production reality, and maintain compliance with data privacy requirements (GDPR, CCPA).
+Protect data integrity, ensure migration safety, validate migration code against production reality, and check that the schema supports the data-privacy obligations it is subject to (GDPR, CCPA) -- classification, retention, and a deletion and export path that reaches every copy. Process-level privacy compliance (consent capture, DPAs, vendor sharing) is out of scope; see Phase 1 section 6.
 
 ---
 
@@ -84,12 +84,21 @@ Apply these checks to every migration under review:
 
 ### 6. Ensure Privacy Compliance
 
-- Identify personally identifiable information (PII)
-- Verify data encryption for sensitive fields
-- Check for proper data retention policies
-- Ensure audit trails for data access
-- Validate data anonymization procedures
-- Check for GDPR right-to-deletion compliance
+Classify every column the migration adds or changes into one of three tiers, and state the tier in the finding -- the handling rule follows from the tier, so an unclassified column is an incomplete review:
+
+| Tier | Contents | Required handling |
+|------|----------|-------------------|
+| Non-personal | Aggregates, opaque internal IDs, config | None beyond normal review |
+| Personal | Name, email, phone, address, IP, device ID, any identifier that resolves to a person | Retention TTL declared; reads go through one named accessor or the table has row-level audit logging enabled (say which); excluded from logs and error payloads |
+| Sensitive | Health, biometric, financial account, government ID, precise location, protected-characteristic data | Encrypted at rest as a column (not just disk-level); access restricted to a named role; encryption at rest is not a substitute for a retention TTL |
+
+Then check the three things that fail most often:
+
+- **A field with no named consumer is a finding.** Collected "in case we need it later" is data with liability and no owner. Ask which query or feature reads it; if the answer is none, the column should not land.
+- **Retention needs a TTL *and* a deletion path that actually reaches every copy.** A `deleted_at` flag or a `DELETE` on the primary table is not deletion while the row survives in logical backups, read replicas, a search index, a cache, an analytics warehouse, or an event log. Enumerate the copies for the tables in scope and name the ones the deletion path misses -- an unreachable copy is the finding, not the flag.
+- **Export and correction are schema requirements, not a later feature.** A subject-access request has to assemble one person's rows across every table that references them. If the foreign-key graph has no path from the subject to a table holding their data (a denormalized copy keyed only by a session ID, say), that table is unreachable by export and by deletion at the same time.
+
+This section governs what the schema itself makes possible, which is the part a migration can get wrong. Consent capture, processing-basis records, vendor DPAs, and third-party sharing are a different review, and **no component in this plugin covers them** -- say so when a diff raises one rather than implying it was checked. What is in scope here is whether the schema can *support* those obligations: a consent decision that has nowhere to be stored, or a sharing event with no table recording who received what and when, is a schema finding.
 
 ---
 

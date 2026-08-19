@@ -1,7 +1,7 @@
 ---
 name: ia-feature-video
 description: Record a video walkthrough of a feature and add it to the PR description
-argument-hint: "[PR number or 'current'] [optional: base URL, default localhost:3000]"
+argument-hint: "[PR number or 'current'] [optional: base URL, default: resolved from the project]"
 ---
 
 # Feature Video Walkthrough
@@ -43,7 +43,10 @@ For agent-browser install/verify steps and the full command reference, see [refe
 
 Parse the input:
 - First argument: PR number or "current" (defaults to current branch's PR)
-- Second argument: Base URL (defaults to `http://localhost:3000`)
+- Second argument: Base URL. When omitted, resolve the port from the project instead of assuming 3000, and use the result as `[base-url]` in the capture steps below:
+  ```bash
+  echo "http://localhost:$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)"
+  ```
 
 ```bash
 # Get PR number for current branch if needed

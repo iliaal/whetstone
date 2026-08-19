@@ -76,6 +76,17 @@ Before shipping any new endpoint, verify:
 - [ ] Auth/authz enforced (401 vs 403 distinction)
 - [ ] Rate limiting configured
 - [ ] Error envelope matches project standard
-- [ ] Idempotency for non-safe methods (POST with idempotency key where needed)
+- [ ] Idempotency for non-safe methods (POST with idempotency key where needed) -- see Idempotency Keys below
 - [ ] External API responses validated before use
 - [ ] OpenAPI/docs updated
+
+## Idempotency Keys
+
+Accepting an `Idempotency-Key` header is the easy half. Four things decide whether it works:
+
+- **Derive the key from intent, not from the attempt.** `charge:v1:${orderId}` is stable across retries; `randomUUID()` or a timestamp generated per attempt gives every retry a fresh key and dedupes nothing. If the caller supplies the key, the caller has the same obligation -- document it.
+- **Claim the key atomically.** `INSERT` the key and let a unique constraint reject the duplicate. A read-to-check-then-write is the exact race the header exists to close: two concurrent retries both read "unused" and both proceed.
+- **Reject key reuse with a different payload.** Store a hash of the request body beside the key and return 422 on mismatch. Without it, a client bug that reuses one key for two different charges gets the first charge's response for both, and the second charge silently never happens.
+- **Decide what an in-flight duplicate gets.** The first request holds the claim and has not finished. Pick one and state it: 409 and let the client retry, block on the claim and return the same response, or 202 with a status URL. Leaving it undefined means the second request usually falls through and double-executes.
+
+Treat every outbound call as three-way -- success, failure, and **unknown** (timeout, connection reset after the request was sent). Record the intent before calling out, so an unknown outcome can be reconciled rather than guessed at. Set key retention to outlive the longest path that can replay the request, including a dead-letter queue drained days later; sizing it by storage cost rather than by replay window is how a "already processed" guarantee expires early.

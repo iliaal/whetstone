@@ -41,6 +41,60 @@ test_manifest_parity() {
 	[[ "$explicit_only_actual" == "$explicit_only_expected" ]]
 }
 
+# Codex >= 0.147 picks a manifest by looking for a root plugin.json carrying the
+# Agent Plugins $schema, in preference to .codex-plugin/plugin.json. Skills loaded
+# through that path are truncated to a byte budget with no install-time error, so
+# the model proceeds on a half-read SKILL.md. Adding that field for "interoperability"
+# is a one-line change with a silent, majority-of-skills blast radius, so assert its
+# absence unconditionally rather than behind a predicate.
+test_no_agent_plugins_schema_in_root_manifest() {
+	local hits over_budget total
+	if [[ -f "$REPO_ROOT/plugin.json" ]]; then
+		printf 'FAIL: a root plugin.json exists; Codex prefers it over .codex-plugin/plugin.json\n' >&2
+		return 1
+	fi
+	# Test the $schema key specifically. A bare substring match over the file would
+	# false-FAIL on a homepage or keywords entry mentioning agent-plugins, and this
+	# function is a blocking release gate.
+	hits=""
+	while IFS= read -r manifest; do
+		if ! jq -e . "$manifest" >/dev/null 2>&1; then
+			printf 'FAIL: %s is not valid JSON; cannot rule out an Agent Plugins $schema\n' "$manifest" >&2
+			return 1
+		fi
+		# A $schema that is present but not a string is malformed: Codex's routing
+		# behavior on it is unknown, so a blocking gate has to fail closed rather
+		# than read "not a string" as "not a reroute".
+		if jq -e 'has("$schema") and (.["$schema"] | type != "string")' "$manifest" >/dev/null 2>&1; then
+			printf 'FAIL: %s has a non-string $schema; cannot rule out an Agent Plugins reroute\n' "$manifest" >&2
+			return 1
+		fi
+		if jq -e '(.["$schema"] // "") | test("agent-plugins")' "$manifest" >/dev/null 2>&1; then
+			hits+="$manifest"$'\n'
+		fi
+	done < <(find "$REPO_ROOT/.claude-plugin" "$REPO_ROOT/plugins/whetstone/.claude-plugin" \
+		"$REPO_ROOT/plugins/whetstone/.codex-plugin" -name 'plugin.json' 2>/dev/null)
+	if [[ -n "$hits" ]]; then
+		printf 'FAIL: Agent Plugins $schema found in a manifest, which reroutes Codex skill loading:\n%s' "$hits" >&2
+		return 1
+	fi
+
+	# Advisory, not a gate: the budget is the host's, and shrinking 20-odd skills is a
+	# separate decision. Printing the count keeps it from being discovered by a user.
+	over_budget=0
+	total=0
+	for skill in "$REPO_ROOT"/plugins/whetstone/skills/*/SKILL.md; do
+		total=$((total + 1))
+		if [[ $(wc -c <"$skill") -gt 8000 ]]; then
+			over_budget=$((over_budget + 1))
+		fi
+	done
+	if ((over_budget > 0)); then
+		printf 'NOTE: %d/%d skills exceed the 8000-byte Codex skill-prompt budget; they truncate silently if a root manifest ever reroutes loading\n' \
+			"$over_budget" "$total"
+	fi
+}
+
 test_sync_migrates_legacy_codex_links() {
 	local tmp unrelated_target fake_bin
 	tmp=$(mktemp -d)
@@ -344,6 +398,7 @@ PY
 
 main() {
 	test_manifest_parity
+	test_no_agent_plugins_schema_in_root_manifest
 	test_sync_migrates_legacy_codex_links
 	test_codex_source_exclusions_are_idempotent
 	test_development_refresh_restores_manifest

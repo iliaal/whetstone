@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Prints the project's dev-server port on stdout and nothing else, so callers can
+# capture it with $(...). Never fails: falls back to a default rather than exiting
+# non-zero, because a screenshot step blocked on port detection is worse than one
+# that tries the conventional port and reports a connection error.
+
+set -uo pipefail
+
+port=""
+
+# 1. Explicit argument wins.
+if [ $# -ge 1 ] && [ -n "${1:-}" ]; then
+    port="$1"
+fi
+
+# 2. A --port/-p flag in a package.json dev/start/serve script. Scoped to those script
+# values, not the whole file -- an unrelated field mentioning "-p 5000" is not a port.
+if [ -z "$port" ] && [ -f package.json ]; then
+    scripts=$(jq -r '(.scripts // {}) | to_entries[] | select(.key | test("^(dev|start|serve)")) | .value | select(type == "string")' package.json 2>/dev/null) || scripts=""
+    if [ -n "$scripts" ]; then
+        port=$(printf '%s\n' "$scripts" | grep -oE '(--port|-p)[ =]+[0-9]+' | grep -oE '[0-9]+' | head -1) || port=""
+    fi
+fi
+
+# 3. PORT= in the conventional env files, first match wins.
+if [ -z "$port" ]; then
+    for f in .env.development.local .env.local .env.development .env; do
+        [ -f "$f" ] || continue
+        port=$(grep -oE '^[[:space:]]*(export[[:space:]]+)?PORT[[:space:]]*=[[:space:]]*"?[0-9]+' "$f" 2>/dev/null | grep -oE '[0-9]+$' | head -1) || port=""
+        [ -n "$port" ] && break
+    done
+fi
+
+# 4. Framework default.
+if [ -z "$port" ]; then
+    # Read the dependency keys, not the whole file: a script argument or a description
+    # mentioning a framework name is not a dependency on it.
+    deps=$(jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]' package.json 2>/dev/null) || deps=""
+    if printf '%s\n' "$deps" | grep -qxE 'vite|astro|@sveltejs/kit|nuxt'; then
+        port=5173
+    else
+        port=3000
+    fi
+fi
+
+# A port sourced from a file is external input: reject anything non-numeric before
+# it reaches arithmetic or a URL, and force base 10 so a zero-padded value is not
+# read as octal.
+if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+    port=3000
+elif (( 10#$port < 1 || 10#$port > 65535 )); then
+    port=3000
+else
+    port=$(( 10#$port ))
+fi
+
+printf '%s\n' "$port"
