@@ -176,6 +176,8 @@ Skills are matched using a 3-tier priority system:
 
 Up to 5 matching skills are injected per subagent call, prioritized by tier. Subagent types without file read access (e.g., Bash) are skipped.
 
+**Requirements:** the hook is a Bash script and needs `bash` and `jq` on PATH. On Windows, run Claude Code under WSL or Git Bash. When either is missing the hook exits quietly and subagents run without injected skills — everything else in the plugin (agents, commands, skills invoked directly) works unchanged.
+
 ## MCP Servers
 
 | Server | Description |

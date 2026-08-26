@@ -122,6 +122,8 @@ Then dispatch the judge sub-agents and aggregate exactly as in Step 4 (`--score-
 
 Note: any past comparison run WITHOUT `--skill-file` measured the baseline twice; its "delta" is noise. Re-run those before trusting them.
 
+Note: this delta is **in-sample**. `evolve` trains GEPA/MIPROv2 on 60% of `golden.jsonl` (`evolve.py`, `i % 5 < 3`), and Steps 4 and 6 both score over that same file, so part of any gain is the optimizer reproducing text it was fitted on. Treat the number as an upper bound, not an effect size. A held-out split is the real fix but is not worth taking at current dataset sizes — `build-golden --top 20` leaves ~5 holdout examples, whose variance is larger than the bias being removed. Until the golden sets grow, prefer a small confirmed gain that also survives a manual read of the diff over a large unconfirmed one, and do not act on deltas under roughly +0.05 composite.
+
 Present a comparison table:
 
 ```
@@ -137,8 +139,10 @@ Present a comparison table:
 
 Present the user with:
 1. The diff from Step 5
-2. The score comparison from Step 6 (or note if no changes)
+2. The score comparison from Step 6 (or note if no changes), stated as in-sample
 3. Constraint status (growth %, size)
+
+A null result is a valid and expected outcome. When the optimizer produces no change, or a change whose delta falls below the action threshold, report that and ship nothing — adding skill text that does not move the number is the cargo-culting these evals exist to catch. Do not reframe a null result as a tooling problem to be retried with a different optimizer unless the diff itself shows a real improvement the metric failed to capture.
 
 Ask: "Apply the evolved skill to `plugins/whetstone/skills/<skill>/SKILL.md`?"
 

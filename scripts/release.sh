@@ -52,6 +52,22 @@ bash "$SCRIPT_DIR/update-metadata.sh" --check || {
 }
 echo "  Metadata in sync"
 
+echo "[Pre-commit] Validating plugin components..."
+python3 distillery/scripts/distiller.py validate-plugin >/dev/null || {
+	echo "ERROR: validate-plugin found HIGH-severity findings."
+	echo "       Run 'python3 distillery/scripts/distiller.py validate-plugin' to see them."
+	exit 1
+}
+echo "  Plugin validation passed (no HIGH findings)"
+
+echo "[Pre-commit] Validating cross-references..."
+bash "$SCRIPT_DIR/validate-cross-refs.sh" >/dev/null || {
+	echo "ERROR: Broken cross-reference(s) found."
+	echo "       Run 'bash scripts/validate-cross-refs.sh' to see them."
+	exit 1
+}
+echo "  Cross-references valid"
+
 echo "[Pre-commit] Running native Codex plugin regression tests..."
 bash "$SCRIPT_DIR/test-codex-plugin.sh" || {
 	echo "ERROR: Native Codex plugin regression tests failed."

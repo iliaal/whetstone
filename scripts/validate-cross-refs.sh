@@ -145,6 +145,17 @@ while IFS= read -r skill_file; do
         fi
     done < <(grep -oP '\]\(\./scripts/[^)]+\)' "$skill_file" 2>/dev/null | grep -oP '\./scripts/[^)]+' || true)
 
+    # Path-style links to a sibling skill resolve here but break in every
+    # distribution channel that strips the ia- prefix: mirror-to-ai-skills.sh
+    # renames the directory (ia-writing-tests -> writing-tests) and rewrites
+    # only the frontmatter name:, never body links. Reference a sibling by
+    # bare name instead -- see the `ia-writing-tests` skill.
+    while IFS= read -r ref; do
+        echo "  ERROR: skills/$skill_name/SKILL.md uses a path link to a sibling skill: $ref"
+        echo "         Sibling skills must be referenced by bare name (breaks in the ai-skills mirror)."
+        ((errors++))
+    done < <(grep -oF -e '](../ia-' "$skill_file" 2>/dev/null || true)
+
 done < <(find "$PLUGIN_DIR/skills" -name "SKILL.md" -type f 2>/dev/null)
 
 # --- Check README table entries ---

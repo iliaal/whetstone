@@ -162,13 +162,13 @@ Form state           → React Hook Form
 - Use `userEvent` over `fireEvent` for realistic interactions
 - `findBy*` for async elements, `waitFor` after state-triggering actions
 - `vi.clearAllMocks()` in `beforeEach`. Recreate state per test.
-General testing discipline (anti-patterns, rationalization resistance): see [ia-writing-tests](../ia-writing-tests/SKILL.md) skill.
+General testing discipline (anti-patterns, rationalization resistance): see the `ia-writing-tests` skill.
 See [testing patterns and examples](./references/testing.md) for component, hook, and mocking examples.
 See [e2e testing](./references/e2e-testing.md) for Playwright patterns.
 
 ## Tailwind Integration
 
-For Tailwind v4 configuration, utility patterns, dark mode, and component variants, see [ia-tailwind-css](../ia-tailwind-css/SKILL.md) skill.
+For Tailwind v4 configuration, utility patterns, dark mode, and component variants, see the `ia-tailwind-css` skill.
 
 **Class sorting in JSX**: keep Tailwind classes in canonical order (enforce via `eslint-plugin-better-tailwindcss`).
 

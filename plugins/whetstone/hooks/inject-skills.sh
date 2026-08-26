@@ -5,6 +5,12 @@ set -euo pipefail
 # Fires before every Task tool call. Matches the subagent prompt against skill trigger
 # patterns and prepends "Read these SKILL.md files" instructions via updatedInput.
 
+# Skill injection is an enhancement, never a precondition for running a subagent.
+# A missing dependency or a malformed payload must degrade to "no injection", not to
+# a visible hook error on every Task call, so bail out silently rather than failing.
+command -v jq >/dev/null 2>&1 || exit 0
+trap 'exit 0' ERR
+
 INPUT=$(cat)
 
 # Extract prompt and subagent type
