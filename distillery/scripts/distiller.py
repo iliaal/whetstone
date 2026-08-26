@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 import urllib.error
@@ -1498,18 +1499,42 @@ def _find_broken_relative_links(text, base_dir):
                 break
     return broken
 
+# Every tool, denied. A judge verdict must come from the prompt alone; a judge that
+# can read the repo answers a different question than one that can't, and the two
+# arms of any comparison would no longer be comparable.
+_JUDGE_DISALLOWED_TOOLS = (
+    "Bash,Read,Edit,Write,MultiEdit,NotebookEdit,Glob,Grep,Task,WebFetch,"
+    "WebSearch,TodoWrite,BashOutput,KillBash,SlashCommand,ExitPlanMode"
+)
+
+
 def _claude_cli_request(prompt, model=None):
-    """Call claude -p and return the response. Returns dict with response/tokens/status."""
+    """Call claude -p and return the response. Returns dict with response/tokens/status.
+
+    Runs hermetically: no user/project CLAUDE.md, no hooks, no ambient output style
+    (--setting-sources ""), no MCP servers, every tool denied, and an empty scratch
+    cwd. Without this the judge inherits whatever the operator's machine happens to
+    carry -- including whetstone's own inject-skills hook, which would feed a skill
+    into the context of the run that is scoring skills -- so scores would not be
+    reproducible across machines or comparable across runs.
+    """
     model = model or DEFAULT_CLI_MODEL
+    scratch = Path(tempfile.gettempdir()) / "whetstone_judge_scratch"
+    scratch.mkdir(parents=True, exist_ok=True)
     cmd = [
         "claude", "-p", prompt,
         "--model", model,
         "--effort", "medium",
         "--output-format", "json",
         "--permission-mode", "default",
+        "--setting-sources", "",
+        "--strict-mcp-config",
+        "--mcp-config", '{"mcpServers":{}}',
+        "--settings", '{"outputStyle":"default"}',
+        "--disallowedTools", _JUDGE_DISALLOWED_TOOLS,
     ]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180, cwd=str(scratch))
         if proc.returncode != 0:
             return {"response": "", "error": proc.stderr[:300], "status": "error"}
 

@@ -1,12 +1,12 @@
 ---
 name: eval-skills
-description: Eval all skills with sufficient data, rank by composite score, identify candidates for optimization
+description: Eval all skills with sufficient data, rank by procedure-following score, identify candidates for optimization
 argument-hint: "[--min-examples 30] [--top 10]"
 ---
 
 # Evaluate and rank all skills
 
-Score every skill that has sufficient harvested eval data, rank them by composite score, and identify the best candidates for `/evolve-skill`.
+Score every skill that has sufficient harvested eval data, rank them by procedure-following score, and identify the best candidates for `/evolve-skill`.
 
 ## Arguments
 
@@ -68,7 +68,7 @@ Cap at 10 examples per skill. **Mind session rate limits:** across all eligible 
 
 ### Step 4: Rank and present
 
-Collect all eval results. Present a ranked table sorted by composite score (lowest first):
+Collect all eval results. Present a ranked table sorted by procedure-following score (lowest first). Keep the composite column for continuity with saved history, but do not rank on it:
 
 ```
 | Rank | Skill                     | Composite | Correct | Procedure | Concise | Examples | Neg | Amb |
@@ -79,26 +79,38 @@ Collect all eval results. Present a ranked table sorted by composite score (lowe
 |  ... |                           |           |         |           |         |          |     |     |
 ```
 
-The last two columns are absolute COUNTS, not rates. **Neg** = genuine typed user corrections (rank by this — a raw count of 2-4 is meaningful and actionable). **Amb** = examples with no typed outcome (the normal case; not a dissatisfaction signal). Do not compute a "positive rate": with positives near zero and ambiguous dominating, a rate is noise.
+The last two columns are absolute COUNTS, not rates. **Neg** = genuine typed user corrections (the tie-breaker — a raw count of 2-4 is meaningful and actionable). **Amb** = examples with no typed outcome (the normal case; not a dissatisfaction signal). Do not compute a "positive rate": with positives near zero and ambiguous dominating, a rate is noise.
 
 ### Step 5: Recommendations
 
-Flag the bottom `TOP` skills and recommend action:
+Flag the bottom `TOP` skills and recommend action.
 
-- **Composite < 0.4**: Strong candidate for `/evolve-skill` -- skill is underperforming
-- **Composite 0.4-0.5**: Worth investigating -- check if low score is due to irrelevant injection or genuine skill weakness
-- **Composite 0.5-0.6**: Marginal -- may benefit from manual review more than automated evolution
-- **Composite > 0.6**: Performing well -- deprioritize unless it carries genuine negative examples
+**Rank by `procedure_following`, not by composite.** The composite is
+`0.5*correctness + 0.3*procedure + 0.2*conciseness` (`distiller.py`), and only the
+procedure axis measures what a skill claims to change. Correctness is mostly a
+property of the model and the task; conciseness moves with the ambient output
+style. Fusing the three hides the signal inside two axes the skill does not
+control, so a skill that improved procedure at a small cost in conciseness looks
+flat. Report all three axes and rank on procedure.
 
-Rank primarily by composite (lowest first), then break ties and prioritize by absolute **negative count** — each negative is a real typed user correction and is directly actionable via `/diagnose-negatives`. A skill with low composite AND one or more negatives is the strongest candidate. Do NOT rank by positive/negative *rate*: with ambiguous dominating, rates are dominated by the no-typed-outcome class and are not a quality signal.
+- **Procedure < 4.0**: Strong candidate for `/evolve-skill` -- the agent had the skill and did not follow it
+- **Procedure 4.0-5.0**: Read the judge notes before acting. 5.0 is the judge's "skill not applicable" default, so a cluster at exactly 5.0 is a *trigger* problem for `/analyze-misfires`, not a content problem
+- **Procedure 5.0-7.0**: Marginal -- manual review beats automated evolution
+- **Procedure > 7.0**: Performing well -- deprioritize unless it carries genuine negative examples
+
+Break ties by absolute **negative count** — each negative is a real typed user correction and is directly actionable via `/diagnose-negatives`. A skill with low procedure AND one or more negatives is the strongest candidate. Do NOT rank by positive/negative *rate*: with ambiguous dominating, rates are dominated by the no-typed-outcome class and are not a quality signal.
+
+Every score here is absolute with no reference point: nothing in this pipeline compares the skill against no skill at all, so a number cannot tell you whether the skill beats an empty prompt. Read these as "which skills to look at first", never as "this skill earns its injection cost".
 
 Present final recommendation:
 ```
-Recommended for /evolve-skill or /diagnose-negatives (lowest composite, most negatives):
-  1. ia-pinescript (composite: 0.42, 4 negatives)
-  2. ia-receiving-code-review (composite: 0.48, 2 negatives)
+Recommended for /evolve-skill or /diagnose-negatives (lowest procedure, most negatives):
+  1. ia-pinescript            (proc 5.0, corr 4.2, conc 5.1, 4 negatives)
+  2. ia-receiving-code-review (proc 5.0, corr 5.1, conc 4.8, 2 negatives)
   3. ...
 ```
+
+When several skills sit at exactly 5.0 procedure, say so and route them to `/analyze-misfires` first — that is the judge reporting "not applicable", which means the trigger fired on the wrong task, and evolving the body cannot fix a targeting problem.
 
 ## Notes
 
