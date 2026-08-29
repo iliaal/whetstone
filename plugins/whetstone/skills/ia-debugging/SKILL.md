@@ -51,7 +51,7 @@ If the bug is intermittent, run the loop N times under stress or simulate poor c
 
 **Pre-existing failure proof:** before claiming a test failure is "not related to our changes," prove it: run `git stash && [test command]` to confirm the failure exists on the base branch. Pre-existing without receipts is a lazy claim. The stash stack is shared across linked worktrees, so this recipe is unsafe in a tree that automation or a background agent also touches -- there, take a scratch copy or a dedicated worktree instead of stashing in place.
 
-**A cross-branch A/B needs a pristine baseline.** `git checkout <baseline>` does not discard a dirty working-tree edit that merges cleanly -- it carries it into the checked-out tree, so the "before" build silently contains the fix and the experiment runs patched-vs-patched. The tell is *before == after* to the byte when a delta was expected. Commit the fix on its branch first, then run `git status --porcelain` after the baseline checkout and before the baseline build; non-empty output means the comparison is already poisoned. When restoring a single file, name the source (`git checkout HEAD -- <file>` for the commit, `git checkout <base> -- <file>` for the baseline) -- the bare `git checkout -- <file>` restores the *index*, which may hold neither -- and assert the expected diff before rebuilding.
+**A cross-branch A/B needs a pristine baseline.** `git checkout <baseline>` does not discard a dirty working-tree edit that merges cleanly -- it carries it into the checked-out tree, so the "before" build silently contains the fix and the experiment runs patched-vs-patched. The tell is *before == after* to the byte when a delta was expected. Commit the fix on its branch first, then run `git status --porcelain` after the baseline checkout and before the baseline build; non-empty output means the comparison is already poisoned. When restoring a single file, name the source (`git checkout HEAD -- <file>` for the commit, `git checkout <base> -- <file>` for the baseline) -- the bare `git checkout -- <file>` restores from the *index*, which may hold neither -- and assert the expected diff before rebuilding.
 
 **Before external searches** (web, docs, forums): strip hostnames, IPs, file paths, SQL fragments, and customer data from the query. Raw stack traces leak privacy and return noise.
 
@@ -82,7 +82,7 @@ FIX:        [What changed]
 EVIDENCE:   [Verification output proving the fix]
 REGRESSION: [Test added to prevent recurrence]
 RELATED:    [Prior bugs in same area, known issues, architectural notes]
-STATUS:     DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT (definitions in `ia-verification-before-completion`)
+STATUS:     DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT (DONE = fix verified | DONE_WITH_CONCERNS = verified, residual risk noted | BLOCKED = blocker stated | NEEDS_CONTEXT = missing information named)
 ```
 
 ## Three-Fix Threshold
@@ -129,7 +129,7 @@ When you catch yourself doing or thinking these things, **stop and return to Ste
 | Ignoring intermittent failures ("works on my machine") | Instrument and reproduce under load. Isolation success doesn't explain integration failure. |
 | "I'll clean up the debugging later" | Remove diagnostic code now or it ships to production. |
 | "This failure is pre-existing, not related to our changes" | Prove it: run the test suite on the base branch. No receipts = no claim. |
-| "The tool truncated the output" / "the runner must be broken" | Check your own state first -- a moved HEAD, a stale context, or a dirty tree explains this far more often than tool misbehavior. Proving a tool bug means reproducing it at a known commit. A report filed from stale context wastes the fix and costs the tool its credibility for the next session. |
+| "The tool truncated the output" / "the runner must be broken" | Check local state first -- a moved HEAD, a stale context, or a dirty tree explains this far more often than tool misbehavior. Proving a tool bug means reproducing it at a known commit. A report filed from stale context wastes the fix and costs the tool its credibility for the next session. |
 | "The test is wrong, not the code" | Verify before dismissing. Read the test's intent. If the test is genuinely wrong, fix it with a clear rationale, not a silent update. |
 | "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the working example completely and apply it exactly. |
 

@@ -46,7 +46,7 @@
    - Adjust priority if different from initial assessment
 4. Deferred todos stay in `pending` status
 
-**Use slash command:** `/ia-triage` for interactive approval workflow
+**Interactive approval:** triage workflow (`/ia-triage` in Claude Code)
 
 ## Managing Dependencies
 
@@ -119,7 +119,7 @@ Work logs serve as:
 | Trigger | Flow | Tool |
 |---------|------|------|
 | Code review | `/ia-review` -> Findings -> `/ia-triage` -> Todos | Review agent + skill |
-| PR comments | `/resolve-pr-parallel` -> Individual fixes -> Todos | gh CLI + command |
+| PR comments | `/ia-resolve-pr` -> Individual fixes -> Todos | gh CLI + command |
 | Code TODOs | `/ia-resolve-todo-parallel` -> Fixes + Complex todos | Agent + skill |
 | Planning | Brainstorm -> Create todo -> Work -> Complete | Skill |
 | Feedback | Discussion -> Create todo -> Triage -> Work | Skill + slash |

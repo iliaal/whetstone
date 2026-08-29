@@ -55,7 +55,11 @@ When updating, detect project conventions automatically:
 
 If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md -- only update existing.
 
-When a doc prescribes a machine-consumed shape (a JSON artifact, config file, or request body) that code then validates, the two drift silently and each drift costs one caller a rejected write. A test that greps the doc for key names is a second copy of the doc: it goes green when both copies are wrong together, which is the only failure that matters. Have the tool report its validators' key sets as a versioned subcommand, sourced from the **same constants the validators read** — a constant only the report reads is decoration — then compare the doc against that report in both directions: a documented key no validator accepts, and a required key no example shows. Guard the guard: an example nothing can classify is a failure rather than a skip, and a validated artifact with no example is a failure. Assert nested rows separately (a walk over top-level examples cannot reach a row inside an array), assert field order when the doc's order is how a reader learns the shape, and run the comparison against the installed binary as well as the build tree.
+When a doc prescribes a machine-consumed shape (a JSON artifact, config file, or request body) that code then validates, the two drift silently and each drift costs one caller a rejected write. A test that greps the doc for key names is a second copy of the doc: it goes green when both copies are wrong together, which is the only failure that matters. Have the tool report its validators' key sets as a versioned subcommand, sourced from the **same constants the validators read** — a constant only the report reads is decoration — then compare the doc against that report in both directions: a documented key no validator accepts, and a required key no example shows. Guard the guard: an example nothing can classify is a failure rather than a skip, and a validated artifact with no example is a failure.
+
+- Assert nested rows separately -- a walk over top-level examples cannot reach a row inside an array.
+- Assert field order when the doc's order is how a reader learns the shape.
+- Run the comparison against the installed binary as well as the build tree.
 
 ### Initialize Context
 
@@ -119,7 +123,7 @@ Before overwriting: `cp FILE FILE.backup`; never auto-delete backups.
 - **Scannable**: headings every ~20 lines, bullet lists for ≥3 parallel items, fenced code blocks for every command.
 - **Verify every command and path against the codebase.** Run each command before committing; grep for each referenced path. Stale paths and untested commands are the most common doc defect.
 - **Verify every external identifier, not just internal paths.** A cited upstream PR, issue, RFC, or release tag is a claim about someone else's repository: open it and confirm the title matches what the sentence says it is. Shorthand that merely *looks* canonical (`PR-120`, `issue 99`) is the usual failure — it gets treated as the real ID by everything downstream and fans out into every artifact built from that file. Write the canonical form (`owner/repo#N`), and re-verify state claims ("merged", "fixed in") before publishing, since those rot fastest. One lookup per cited ID is cheaper than correcting the same wrong link in N places after it ships.
-- **Sentence case headings**, no emoji decoration (exception: changelog entries may use emoji per project convention).
+- **Sentence case headings**, no emoji decoration in CLAUDE.md/AGENTS.md/CONTRIBUTING/DOCS; README headers may carry at most one conventional emoji per header (see ia-writing's README rules); changelog entries may use emoji per project convention.
 - **Actionable headings**: "Set SAML before adding users" — not "SAML configuration timing". Reader should know what to do from the heading alone.
 - **Collapse depth** with `<details>` blocks instead of deleting content (blank line required after `<summary>` for GitHub rendering).
 

@@ -103,9 +103,12 @@ if [ "$symptom_count" -eq 0 ]; then
     if [ -z "$symptoms_line" ]; then
         errors+=("symptoms: MISSING (required, need 1-5 items)")
     elif echo "$symptoms_line" | grep -qE '\[.*\]'; then
-        # Inline array — count commas + 1
-        item_count=$(echo "$symptoms_line" | tr ',' '\n' | wc -l)
-        if [ "$item_count" -gt 5 ]; then
+        # Inline array — extract bracket content, count non-empty comma-separated items
+        inline_content=$(echo "$symptoms_line" | sed -E 's/^[^[]*\[(.*)\].*/\1/')
+        item_count=$(echo "$inline_content" | tr ',' '\n' | grep -cE '[^[:space:]]' || true)
+        if [ "$item_count" -eq 0 ]; then
+            errors+=("symptoms: empty array (required, need 1-5 items)")
+        elif [ "$item_count" -gt 5 ]; then
             errors+=("symptoms: has ${item_count} items (max 5)")
         fi
     else

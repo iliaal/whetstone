@@ -5,6 +5,8 @@ description: >-
   Software implementation planning with optional file-based persistence. Use
   when asked to plan, when unresolved architecture or scope decisions need a
   durable record, or when multi-phase implementation needs recovery state.
+  For the full research-and-issue workflow, use the ia-plan command (/ia-plan
+  in Claude Code).
 ---
 
 # Planning
@@ -117,7 +119,6 @@ When target behavior is hard to describe but an existing implementation embodies
 ## Phase 1: [Name]
 **Status**: pending | in_progress | complete
 **Files**: [specific files owned by this phase]
-**Posture**: [test-first | characterization-first | external-delegate]
 **Tasks**:
 - [ ] [Verb-first atomic task] -- `path/to/file.ts`
 - [ ] [Next task]

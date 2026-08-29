@@ -23,7 +23,7 @@ The script handles critical setup that raw git commands don't:
 
 All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh <command>`. If `CLAUDE_PLUGIN_ROOT` is unset (non-Claude-Code harness), resolve the script relative to this skill's own directory.
 
-The manager script branches from a fresh `origin/<base>`; if the prompt is unanswered it defaults to `origin/<base>` and lists unpushed commits in its output — report them in the change summary. Details: [troubleshooting.md](./references/troubleshooting.md).
+The manager script fetches `origin/<base>` fresh and branches from it -- it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. Details: [troubleshooting.md](./references/troubleshooting.md).
 
 ## Commands
 

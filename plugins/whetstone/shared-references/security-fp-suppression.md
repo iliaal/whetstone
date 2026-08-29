@@ -25,9 +25,9 @@ Load this reference when running a security audit — before filing any finding,
 
 ## Confidence floor
 
-Assign a confidence score (0.0-1.0) per finding. Report only at ≥ 0.8. Below 0.7 is suppressed entirely. At 0.7-0.8 the finding is recorded in "Residual Risks" rather than the main findings list.
+Assign a confidence score (0.0-1.0) per finding. Report only at ≥ 0.80. Below 0.70 is suppressed entirely. At 0.70-0.79 the finding is recorded in "Residual Risks" rather than the main findings list.
 
-This floor is deliberately stricter than `ia-code-review`'s general rubric (report at ≥ 0.6, critical security at ≥ 0.5). A dedicated security audit trades recall for precision — borderline findings belong in Residual Risks so reviewers aren't drowned in maybes. If a 0.7-0.8 finding does matter, it's still visible, just not in the main list.
+This floor is deliberately stricter than `ia-code-review`'s general rubric (report at ≥ 0.6, critical security at ≥ 0.5). A dedicated security audit trades recall for precision — borderline findings belong in Residual Risks so reviewers aren't drowned in maybes. If a 0.70-0.79 finding does matter, it's still visible, just not in the main list.
 
 ## Severity gates
 

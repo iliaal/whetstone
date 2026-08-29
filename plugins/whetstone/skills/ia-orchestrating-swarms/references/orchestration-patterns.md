@@ -211,20 +211,20 @@ Teammate({ operation: "spawnTeam", team_name: "refactor-auth" })
 // 2. Create tasks with clear file boundaries
 TaskCreate({
   subject: "Refactor User model",
-  description: "Extract authentication methods to AuthenticatableUser concern",
+  description: "Extract authentication methods to an `AuthenticatableUser` trait/mixin (src/lib/authenticatableUser.ts)",
   activeForm: "Refactoring User model..."
 })
 
 TaskCreate({
   subject: "Refactor Session controller",
-  description: "Update to use new AuthenticatableUser concern",
+  description: "Update src/controllers/api/v1/sessionsController.ts to use the new `AuthenticatableUser` trait/mixin",
   activeForm: "Refactoring Sessions..."
 })
 
 TaskCreate({
-  subject: "Update specs",
-  description: "Update all authentication specs for new structure",
-  activeForm: "Updating specs..."
+  subject: "Update tests",
+  description: "Update all authentication tests for new structure",
+  activeForm: "Updating tests..."
 })
 
 // Dependencies: specs depend on both refactors completing
@@ -249,9 +249,9 @@ Task({
 
 Task({
   team_name: "refactor-auth",
-  name: "spec-worker",
+  name: "test-worker",
   subagent_type: "general-purpose",
-  prompt: "Wait for task #3 to unblock (when #1 and #2 complete), then update specs",
+  prompt: "Wait for task #3 to unblock (when #1 and #2 complete), then update tests",
   run_in_background: true
 })
 ```

@@ -142,11 +142,13 @@ When passing work between agents (leader→implementer, implementer→reviewer, 
 
 The controller reads all tasks from the plan upfront and provides full task text directly to subagents. Never make subagents read plan files themselves -- they waste tokens navigating, may read different versions, and inherit unclear context. Paste the task content into the prompt. The same applies to skills: a dispatched agent cannot load the orchestrator's skills, so never brief one to "use skill X" by name -- run that skill's judgment in the orchestrator and inline the specific resulting instructions into the dispatch brief. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
 
-**The orchestrator mints identifiers; workers never do.** When a pipeline tracks items across runs by ID (findings, tickets, work units), two failure modes destroy dedupe. Models cannot compute hashes -- a prompt asking for "the first 8 hex characters of `hash(...)`" returns fabricated plausible hex, and nothing guarantees a tool was used even with shell access, so every rerun mints fresh IDs and exact-match dedupe silently never fires. And hashing any model-authored field (title, summary) forks identity on a model, temperature, or wording change, duplicating the whole backlog when you swap reviewers. Compute the ID in the merge step from model-independent fields only; let workers return raw tuples and echo a prior ID only when one was supplied. Absorb the residual instability with fuzzy prior-matching (same file and category within a small line window keeps the prior ID), and grep each item's quoted evidence against the cited file before persisting -- that kills hallucinated items at zero model cost and keeps the ID inputs honest.
+**The orchestrator mints identifiers; workers never do.** Models cannot compute hashes for dedupe IDs, and hashing a model-authored field forks identity on wording changes. See [cross-run-coordination.md](./references/cross-run-coordination.md) (Identifier minting section) for the full failure-mode analysis and the merge-step mitigation.
 
 **Standardize implementer outcome signals:**
 
-Require every implementer to distinguish completed and verified behavior from partial work, stubs, mocks, refusal-only paths, and blockers. Do not require empty report sections or a fixed status vocabulary. Route blockers through the decision tree below.
+Require every implementer to distinguish completed and verified behavior from partial work, stubs, mocks, refusal-only paths, and blockers. Do not require empty report sections. Route blockers through the decision tree below.
+
+**Worker status vocabulary:** `DONE` (task verified complete) | `DONE_WITH_CONCERNS` (complete, residual risk named) | `BLOCKED` (blocker stated, no partial claim) | `NEEDS_CONTEXT` (missing information named). Callers that require a structured return (`/ia-resolve-todo-parallel`, `/ia-work`) use this vocabulary; free-form reports elsewhere still distinguish the same states in prose.
 
 **BLOCKED triage decision tree** -- when a teammate reports BLOCKED, classify the root cause before acting. Never retry the same prompt on the same model without changing a variable.
 
@@ -208,14 +210,7 @@ Two approaches to multi-agent coordination exist. Choose based on the work patte
 
 For most work, start with stateless handoffs. Graduate to stateful coordination only when parallelism provides a real speedup and you have worktree isolation to prevent file conflicts.
 
-**Serialize a shared resource with a TTL lease file, not a coordination daemon.** When the participants are one-shot subprocesses and short-lived subagents rather than pollers, a message bus is a daemon where a lock is needed; the real concurrency is session-against-session on one checkout or one test database. Four design points decide whether the lease works:
-
-- A file-lock cannot express the lifetime. A round spans many separate invocations, so lock only the read-modify-write of a lease *file* stamped with the session id, and write it by rename from a temp file so a reader never sees a torn lease.
-- Process liveness is not a staleness signal. The acquiring shell exits immediately, so keying staleness on the recorded pid reads every live lease as breakable; expiry is TTL plus explicit release, and the pid is diagnostic only.
-- Expiry outranks ownership. Check the TTL *before* holder equality, or a session's own expired lease reports as held-by-me -- the exact false confidence the lease exists to remove.
-- Size the TTL above the work's realistic maximum and renew it while the work is alive. A TTL set exactly equal to the expected duration has no margin: the one run that overshoots frees the lease under itself and admits a second concurrent holder.
-
-Scope it honestly: the lease is advisory for the work. It removes one destructive collision and serializes one resource; it does not stop an agent that never asks.
+**Serialize a shared resource with a TTL lease file, not a coordination daemon.** For one-shot subprocesses and short-lived subagents contending on one checkout or one test database, use an advisory TTL lease file rather than a message bus or lock daemon. See [cross-run-coordination.md](./references/cross-run-coordination.md) (TTL lease file section) for the four design points that decide whether the lease works.
 
 ---
 
@@ -253,3 +248,4 @@ When designing multi-agent workflows that must survive partial failure, load [re
 | [context-carry-forward.md](./references/context-carry-forward.md) | Claude Code context controls | Continue / Rewind / compact / Subagent / clear+brief decision table |
 | [anti-sycophancy.md](./references/anti-sycophancy.md) | Judge panels, parallel reviewers, subjective evals | Cold-start isolation, fresh instances per round, label randomization, convergence detection |
 | [resilience-patterns.md](./references/resilience-patterns.md) | Designing workflows that survive partial failure | Cascade prevention, failure classification, mid-pipeline compensation, post-failure synthesis |
+| [cross-run-coordination.md](./references/cross-run-coordination.md) | Deduping items across reruns, or serializing a shared resource | Orchestrator-mints-identifiers rule, TTL lease file design points |

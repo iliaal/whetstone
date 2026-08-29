@@ -8,3 +8,10 @@
 {"prompt": "close the GitHub issue for this bug", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "update the Jira ticket status", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "draft a Linear comment for the team", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "add a todo for the auth refactor", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "triage the backlog", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "list my todos and their status", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "what's on my todo list right now", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "remove this TODO comment from the code", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "review the list of dependencies before upgrading the package", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "track the deployment status in the dashboard", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}

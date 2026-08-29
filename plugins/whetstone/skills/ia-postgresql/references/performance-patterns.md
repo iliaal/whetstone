@@ -28,3 +28,18 @@ When requests wait on connections, raising the application pool's `max` is usual
 - **Negative caching.** Cache "not found" results with a short TTL. Without it, requests for missing rows bypass the cache forever -- a scraper enumerating IDs turns every miss into a query.
 - **Cache-key completeness.** Every input that changes the response belongs in the key: tenant, locale, role/permission set, API version, feature flags. A key missing one of these serves one user's data to another; the bug presents as intermittent wrong data, not as an error.
 - **Invalidate on write, don't trust TTL alone.** TTL bounds staleness; it does not provide correctness for read-after-write paths the user observes.
+
+## Vector Search (pgvector)
+
+```sql
+CREATE EXTENSION vector;
+ALTER TABLE items ADD COLUMN embedding vector(1536);  -- match your model's output dimensions
+
+-- HNSW: better recall, higher memory. Default choice.
+CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);
+
+-- IVFFlat: lower memory for large datasets. Set lists = sqrt(row_count).
+CREATE INDEX ON items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);
+```
+
+Always filter BEFORE vector search (use partial indexes or CTEs with pre-filtered rows). Distance operators: `<=>` cosine, `<->` L2, `<#>` inner product.

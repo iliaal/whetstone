@@ -113,7 +113,7 @@ Every Critical and High finding must include an **Exploit Scenario**: 1-2 senten
 
 Example:
 ```
-SS-001 — SQL injection in search query (Critical, CVSS 9.8)
+SS-001 — SQL injection in search query (Critical, CVSS 9.8, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
 Location: src/api/search.ts:42
 Exploit Scenario: Attacker sends `/search?q=';DROP TABLE users;--` — the query is concatenated directly into the SQL string at line 42, allowing arbitrary statement execution with the DB user's privileges.
 Remediation: [code]

@@ -136,14 +136,14 @@ Use the Phase 1 comparison results as input. For each discrepancy found, impleme
    - Modify CSS/Tailwind classes following the responsive design patterns above
    - Prefer Tailwind default values when close to Figma specs (within 2-4px)
    - Ensure components are full width (`w-full`) without max-width constraints
-   - Move any width constraints and horizontal padding to wrapper divs in parent HTML/ERB
+   - Move any width constraints and horizontal padding to wrapper divs in parent HTML/JSX
    - Update component props or configuration
    - Adjust layout structures if needed
    - Ensure changes follow the project's coding standards from CLAUDE.md
    - Use mobile-first responsive patterns (e.g., `flex-col lg:flex-row`)
    - Preserve dark mode support
 
-6. **Verification and Confirmation**: After implementing changes, verify the build passes and the component renders correctly using `ia-verification-before-completion`. Confirm the fix fits the overall design -- check background, width, and flow against adjacent elements. State what was fixed with a summary.
+- **Verification and Confirmation**: After implementing changes, verify the build passes and the component renders correctly using `ia-verification-before-completion`. Confirm the fix fits the overall design -- check background, width, and flow against adjacent elements. State what was fixed with a summary.
 
 ## Responsive Design Patterns
 

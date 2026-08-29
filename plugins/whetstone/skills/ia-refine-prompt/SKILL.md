@@ -54,7 +54,7 @@ Applies when a model reads the output with no back-channel: tool and function de
 
 ## Persistence
 
-After refining, offer to save the result to `.ai/PROMPT.md` -- do not write without user confirmation. If approved, append with a heading and date:
+After refining, offer to save the result to `.ai/PROMPT.md` — ask first (AskUserQuestion in Claude Code, request_user_input in Codex, numbered options in chat otherwise); never write without confirmation. If approved, append with a heading and date:
 
 ```markdown
 ## [Prompt Name] -- YYYY-MM-DD

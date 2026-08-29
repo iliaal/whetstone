@@ -6,7 +6,7 @@ description: >-
   when working with Python code, building CLI apps, FastAPI services,
   async with asyncio, background jobs, or configuring uv, ruff, ty, pytest, or
   pyproject.toml.
-paths: "**/*.py"
+paths: "**/*.py,**/pyproject.toml,**/ruff.toml,**/uv.lock"
 ---
 
 # Python Services & CLI

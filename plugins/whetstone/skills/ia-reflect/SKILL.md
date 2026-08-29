@@ -58,7 +58,7 @@ Also scan for **information-access gaps**: points where the session stalled or g
 
 Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10 items: if more surface, the bottom items are noise -- drop them rather than batching or splitting.
 
-Ask: *"Which of these should I remember for future chats?"*
+Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat: *"Which of these should I remember for future chats?"*
 
 Save approved items to memory files at `~/.claude/projects/<project-slug>/memory/` (replace `<project-slug>` with the slug matching the current working directory, e.g., `-home-ilia-ai-whetstone`) using the Write tool with proper frontmatter (see MEMORY.md index).
 
@@ -84,7 +84,7 @@ For each skill invoked during the session:
 
 A skill invoked with no mismatch gets an explicit "no mismatch" line, same discipline as "no harvestable items is a valid outcome". "Line X is wrong in context Y, here's the workaround" is an actionable edit; "this skill has vague directives" is a research task.
 
-Present proposed changes as diffs. Ask: *"Apply these? (all / pick / skip)"*
+Present proposed changes as diffs. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat: *"Apply these? (all / pick / skip)"*
 
 ### 6. Capture Markers
 

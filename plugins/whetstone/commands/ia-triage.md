@@ -1,6 +1,6 @@
 ---
 name: ia-triage
-description: Triage and categorize findings for the CLI todo system
+description: Triage and categorize findings for file-based todos in `todos/`
 argument-hint: "[findings list or source type]"
 disable-model-invocation: true
 ---
@@ -61,7 +61,7 @@ Severity bridges to the `ia-code-review` skill's four tiers: **P1 = Critical**, 
 
 **When user says "yes":**
 
-1. **Update or create todo file** using the `ia-file-todos` skill for all naming, frontmatter, and status conventions. Change status from `pending` to `ready` in both filename and YAML frontmatter.
+1. **Update or create todo file** using the `ia-file-todos` skill (invoke it via an explicit Skill tool call, not a prose reference) for all naming, frontmatter, and status conventions. Change status from `pending` to `ready` in both filename and YAML frontmatter.
 
 3. **Confirm approval:** "Approved: `{new_filename}` (Issue #{issue_id}) - Status: **ready**"
 

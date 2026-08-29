@@ -169,7 +169,7 @@ options:
   - label: "Fast"
     description: "Stack reviewers + code simplicity only. Less context, quicker."
   - label: "Comprehensive"
-    description: "All above + git history, data integrity, agent-native checks."
+    description: "All above + git history, data integrity."
 ```
 
 ### Step 10: Build Agent List and Write File

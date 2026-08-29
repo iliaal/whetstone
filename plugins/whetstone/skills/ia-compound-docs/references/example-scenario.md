@@ -9,7 +9,7 @@
    - Module: Brief System
    - Symptom: Brief generation taking >5 seconds, N+1 query when loading email threads
    - Failed attempts: Added pagination (didn't help), checked background job performance
-   - Solution: Added eager loading with `includes(:emails)` on Brief model
+   - Solution: Added eager loading with `->with('emails')` on the Brief Eloquent model
    - Root cause: Missing eager loading causing separate database query per email thread
 3. **Check existing:** No similar issue found
 4. **Generate filename:** `n-plus-one-brief-generation-BriefSystem-20251110.md`
@@ -43,7 +43,7 @@ What's next?
 1. Continue workflow (recommended)
 2. Add to Required Reading - Promote to critical patterns (critical-patterns.md)
 3. Link related issues - Connect to similar problems
-4. Add to existing skill - Add to a learning skill (e.g., hotwire-native)
+4. Add to existing skill - Add to a learning skill (e.g., react-frontend)
 5. Create new skill - Extract into new learning skill
 6. View documentation - See what was captured
 7. Other

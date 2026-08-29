@@ -89,3 +89,15 @@ npx vitest run                     # Single run (CI)
 npx vitest run src/features/       # Test specific directory
 npx vitest --coverage              # Coverage report
 ```
+
+## Timing, Fidelity, and Interaction-Mode Pitfalls
+
+Report from `useLayoutEffect`, not `useEffect`, in a child stub whose report feeds a gate under test. A `useEffect` report lands a tick late: `render()` returns, the test queries and clicks before the report's `setState` has committed, and the click reads the pre-report state. RTL flushes layout effects *and their state updates* synchronously inside `render()`'s `act`. Awaiting a settled-state text papers over it only where there is a positive DOM signal -- a gate-*unsatisfiable* case has none, so it flakes or silently asserts the wrong branch.
+
+jsdom and happy-dom are not evidence about a browser-rendered artifact. Where the behavior is decided by a parser, layout, or print engine -- a serialized DOM re-parsed by Chromium, `inert`, `postMessage` across an opaque origin -- execute it in the *sink's* engine (Playwright/Chromium against the repo's own dependency) and carry a known-bad control in the same batch. jsdom does not enforce the radio-group invariant on parse and does not enforce the opaque-origin `targetOrigin` check, so the natural regression test passes while the bug ships. Engine fidelity and path fidelity are separate requirements: load the committed artifact verbatim and drive it through its real entry point, because a hand-rebuilt reconstruction can invert the result while looking like executed evidence.
+
+Use `userEvent.setup({ delay: null })` in component tests. A bare `setup()` inserts a `setTimeout(0)` macrotask between every simulated keystroke and pointer event -- pure idle time in a test DOM, and the single largest source of a slow suite's tail.
+
+`vi.useFakeTimers()` freezes `findBy`/`waitFor` polling **and** `userEvent` (v14 awaits real timers internally), so the two do not compose. Under fake timers drive with `fireEvent` plus an explicit settle -- `await act(async () => { await vi.runOnlyPendingTimersAsync(); })`, or `advanceTimersByTimeAsync(N)` for a debounce window -- and assert both sides of the boundary: not-called at N-1ms, called once at Nms. A one-sided assertion passes against an eager implementation.
+
+Fill forms with one `fireEvent.change` per field when typing is not the behavior under test. `user.type` into a `mode: 'onChange'` react-hook-form field pays a full-schema re-validation per keystroke, and it focuses the input, which mounts whatever popover is attached (a date field re-renders a 42-day calendar grid on every keystroke). Keep one keystroke-level test per form for validation coverage and convert the rest. `fireEvent` cannot drive components that need a real pointer sequence (a combobox opening on input click, a menu opening on `pointerdown`) -- those keep `userEvent`.

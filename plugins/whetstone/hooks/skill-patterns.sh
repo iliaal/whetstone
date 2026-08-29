@@ -80,7 +80,7 @@ SKILL_TIERS[ia-php-laravel]=2
 SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
 SKILL_TIERS[ia-react-frontend]=2
 
-SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript'
+SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,24}(auth|route|server|express)'
 SKILL_TIERS[ia-nodejs-backend]=2
 
 SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
@@ -160,7 +160,7 @@ SKILL_TIERS[ia-md-docs]=3
 SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt|tool.?description|mis-?(pars|interpret|read)'
 SKILL_TIERS[ia-refine-prompt]=3
 
-SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt'
+SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|steelman|devil.?s.?advocate'
 SKILL_TIERS[ia-meta-prompting]=3
 
 SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong'
@@ -172,10 +172,10 @@ SKILL_TIERS[ia-compound-docs]=3
 SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|spec)'
 SKILL_TIERS[ia-document-review]=3
 
-SKILL_PATTERNS[ia-file-todos]='todo.?directory|manage.?todo|file.?based.?todo'
+SKILL_PATTERNS[ia-file-todos]='todo.?directory|file.?based.?todo|\btodos?\b.{0,24}(file|list|add|creat|track|status|backlog)|(add|create|list|track|triage|manage).{0,24}\btodos?\b|\bbacklog\b'
 SKILL_TIERS[ia-file-todos]=3
 
-SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|task)|divide.?and.?conquer'
+SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|task)|divide.?and.?conquer|\bsub.?agents?\b|spawn.{0,24}agents?|fan.?out|orchestrat[a-z]*.{0,24}agents?|agents?.{0,16}in parallel'
 SKILL_TIERS[ia-orchestrating-swarms]=3
 
 # Management-intent only (2026-07-07): bare `worktree` matched location mentions

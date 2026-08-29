@@ -4,7 +4,8 @@ class: discipline
 description: >-
   Structured code reviews with severity-ranked findings and deep multi-agent
   mode. Use when performing a code review, auditing code quality, or critiquing
-  PRs, MRs, or diffs.
+  PRs, MRs, or diffs. For the full multi-agent workflow, use the ia-review
+  command (/ia-review in Claude Code).
 ---
 
 # Code Review
@@ -185,5 +186,5 @@ References load at their point of use above. Additionally: [security-test-covera
 - `ia-receiving-code-review` -- inbound side. Tier map: `safe_auto` ≈ AUTO-FIX, `gated_auto` ≈ ESCALATE-for-approval, `manual` ≈ ESCALATE, `advisory` ≈ FYI
 - `ia-kieran-reviewer` agent -- persona-driven Python/TypeScript deep quality review
 - `/ia-review` -- full ceremony (worktrees, ultra-thinking); deep review here is lighter: parallel specialists, no worktrees
-- `/resolve-pr-parallel` command -- batch-resolve PR comments with parallel agents
+- `/ia-resolve-pr` command -- batch-resolve PR comments with parallel agents
 - `ia-security-sentinel` agent -- deep security audit; threat-model mode for new trust boundaries

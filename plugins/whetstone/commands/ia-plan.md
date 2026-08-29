@@ -34,7 +34,7 @@ A brainstorm is relevant if its topic matches the feature description, created w
 
 If multiple brainstorms could match, use `AskUserQuestion` to ask which to use.
 
-**If no brainstorm found (or not relevant):** Run idea refinement using the `ia-brainstorming` skill's Phase 1 interview protocol and the deep interview protocol in CLAUDE.md. Use `AskUserQuestion` for all prompts. Continue until the idea is clear OR the user says "proceed."
+**If no brainstorm found (or not relevant):** Run idea refinement using the `ia-brainstorming` skill's Phase 1 interview protocol and the deep interview protocol in the skill's [deep-interview.md](../skills/ia-brainstorming/references/deep-interview.md) reference. Use `AskUserQuestion` for all prompts. Continue until the idea is clear OR the user says "proceed."
 
 **Gather signals for the research decision** during refinement: user familiarity with the codebase, intent (speed vs thoroughness), topic risk (security/payments/external APIs warrant more caution), and uncertainty level.
 

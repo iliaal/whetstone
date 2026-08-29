@@ -1,0 +1,15 @@
+# Durability and Attestation
+
+> When to read: designing checkpoint/resume for interrupted tasks, an audit log that must distinguish absent from measured-zero, or a governance gate whose enforcement boundary cannot itself spawn the judging agent.
+
+## Context Durability
+
+Incremental progress writes (WAL pattern) so interrupted tasks resume from last checkpoint. An atomic rename makes *one* file replacement atomic for readers; it does not make a sequence of replacements transactional, and without `fsync` it does not decide which renames survive a crash. Per file: write a temp file in the destination directory, `fsync` it, rename, then `fsync` the parent directory. Across files: persist a write-ahead record naming the complete old and new generation identities first, then dependent artifacts, then the current-generation pointer last, each step finishing its file and directory sync before the next begins. Recovery compares the on-disk combination against the latest write-ahead record and accepts only the reachable intermediate states, refusing anything else. Test by restoring the workspace to each crash point and re-running the command; happy-path and concurrent-writer tests never reach the transaction gap.
+
+## Audit Trail
+
+Agent actions logged with timestamp, tool, and outcome. Measurement provenance: the log must keep *absent*, *partial*, *complete*, *measured zero*, and *unavailable* distinct; they answer different questions, and collapsing any of them into `0` teaches the dashboard that an unmeasured operation was free. Persist an attempt record immediately **before** an external model or tool call and replace it with a terminal status after the child exits: a start row proves prepared input, not that the provider accepted a call, so a spawn failure records zero calls while an interrupted child records one. Retain failed, cancelled, and retried rows; a call whose output later fails validation was still a call. Attach provenance per metric, not only to the aggregate, and when one attempt is measured and another unavailable, keep the observed sum and mark it partial.
+
+## Content-Bound Attestation
+
+Use one when the enforcement boundary cannot spawn the agent. A script that commits, pushes, or publishes is the strongest place for a gate, but only the orchestrating session can run sub-agents. Split it: the orchestrator judges and writes an attestation hashing the exact judged content (a digest over the sorted set of path plus content hash, and the ref it was made against), and the script recomputes that hash over the current set and refuses to proceed without a matching clean attestation. The content binding is what makes it more than a checkbox: it fails closed on a file edited after judging, on a file added to or removed from the set, on a ref mismatch, on any judged-set member lacking a verdict, and on the attestation being absent entirely. Scope the judging to what changed rather than the whole corpus, and treat the attestation as a build artifact.

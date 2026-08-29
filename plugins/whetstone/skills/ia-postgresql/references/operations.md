@@ -32,6 +32,28 @@ FROM pg_database ORDER BY age DESC;
 
 Set `idle_in_transaction_session_timeout = '30s'` and `statement_timeout = '30s'` to prevent long-running transactions from blocking vacuum.
 
+**Detection queries:**
+
+```sql
+-- Slow queries (requires pg_stat_statements)
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC LIMIT 20;
+
+-- Table bloat (dead tuples awaiting vacuum)
+SELECT relname, n_dead_tup, last_vacuum, last_autovacuum
+FROM pg_stat_user_tables
+WHERE n_dead_tup > 10000
+ORDER BY n_dead_tup DESC;
+
+-- Unused indexes (candidates for removal)
+SELECT schemaname, relname, indexrelname, idx_scan
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0 AND indexrelname NOT LIKE '%_pkey'
+ORDER BY pg_relation_size(indexrelid) DESC;
+```
+
 ## WAL (Write-Ahead Logging)
 
 Changes write to `pg_wal/` before data files. Checkpoints flush dirty pages to disk. If "checkpoints occurring too frequently" appears in logs, increase `max_wal_size`. Never disable `fsync`.

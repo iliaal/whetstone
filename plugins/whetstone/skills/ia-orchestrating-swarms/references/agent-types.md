@@ -119,7 +119,6 @@ Task({
 ```
 
 **All review agents from whetstone:**
-- `ia-architecture-strategist` - Architectural compliance
 - `ia-code-simplicity-reviewer` - YAGNI and minimalism
 - `ia-database-guardian` - Database safety and migration validation
 - `ia-deployment-verification-agent` - Pre-deploy checklists
@@ -140,8 +139,8 @@ Task({
 // Framework documentation (use best-practices-researcher -- covers docs + best practices)
 Task({
   subagent_type: "whetstone:ia-best-practices-researcher",
-  description: "Research Active Storage",
-  prompt: "Gather comprehensive documentation about Active Storage file uploads"
+  description: "Research S3 file-upload patterns for Laravel",
+  prompt: "Gather comprehensive documentation about S3 file-upload patterns for Laravel"
 })
 
 // Git history analysis

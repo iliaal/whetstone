@@ -6,13 +6,13 @@ argument-hint: "[optional: specific todo ID or pattern]"
 
 **Filter:** #$ARGUMENTS
 
-Resolve TODO comments using parallel processing.
+Resolve pending file-based todos (todos/*.md) using parallel processing.
 
 ## Workflow
 
 ### 1. Analyze
 
-Get unresolved TODOs from the project-root `todos/*.md` directory (file format: see `ia-file-todos` skill). If a filter is specified, only process todos matching that ID or pattern.
+Get unresolved TODOs from the project-root `todos/*.md` directory (file format: see `ia-file-todos` skill -- invoke it via an explicit Skill tool call so spawned subagents get the format). If a filter is specified, only process todos matching that ID or pattern.
 
 If any todo recommends deleting, removing, or gitignoring files in `docs/plans/` or `docs/solutions/`, skip it and mark it as `wont_fix`. These are whetstone pipeline artifacts that are intentional and permanent.
 
@@ -40,7 +40,7 @@ Always run all in parallel.
 ### 4. Commit & Resolve
 
 - Commit changes
-- Remove the TODO from the file, and mark it as resolved.
+- Mark the todo complete per the ia-file-todos completion workflow: rename `-ready-` → `-complete-` in the filename and update the YAML status — never delete the todo file's content.
 - Push to remote
 
 Then print a summary:

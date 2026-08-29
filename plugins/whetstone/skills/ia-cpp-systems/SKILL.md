@@ -7,7 +7,7 @@ description: >-
   writing, reviewing, refactoring, or debugging C++, working with smart pointers,
   move semantics, memory leaks, template errors, or gtest. For plain C, see
   ia-c-systems.
-paths: "**/*.cpp,**/*.hpp,**/*.cc,**/*.hh,**/*.cxx"
+paths: "**/*.cpp,**/*.hpp,**/*.cc,**/*.hh,**/*.cxx,**/*.h,**/CMakeLists.txt,**/*.cmake"
 ---
 
 # C++ Systems & Libraries

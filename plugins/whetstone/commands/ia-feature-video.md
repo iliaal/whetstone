@@ -121,11 +121,7 @@ mkdir -p tmp/videos
 
 **Recording approach: Use browser screenshots as frames**
 
-agent-browser captures screenshots at key moments, then combine into video using ffmpeg:
-
-```bash
-ffmpeg -framerate 2 -pattern_type glob -i 'tmp/screenshots/*.png' -vf "scale=1280:-1" tmp/videos/feature-demo.gif
-```
+agent-browser captures screenshots at key moments, then combine into video using ffmpeg (see Step 5 for the conversion commands).
 
 </setup_recording>
 

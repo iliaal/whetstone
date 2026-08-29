@@ -237,20 +237,19 @@ Run context: <external repos scanned or specific focus>
 
 If a rejection reason generalizes to "we never do X because Y", also propose promoting it to a feedback-memory entry and link to the memory file from the log bullet instead of repeating the reasoning.
 
-## Phase 6: Discover new signals and outcome anomalies
+## Phase 6: Outcome anomalies
 
-**Confirm the Phase 1 background harvest finished successfully before running either analysis** — both read the eval data it produces. Check the background subagent's exit status; if the harvest failed or is still running, either wait for it or state plainly in the output that discover-signals/analyze-outcomes ran on stale (pre-sync) eval data and the results may be incomplete.
+**Confirm the Phase 1 background harvest finished successfully before running the analysis** — it reads the eval data the harvest produces. Check the background subagent's exit status; if the harvest failed or is still running, either wait for it or state plainly in the output that analyze-outcomes ran on stale (pre-sync) eval data and the results may be incomplete.
 
-Run signal discovery and outcome analysis on the freshly harvested data:
+Run outcome analysis on the freshly harvested data:
 
 ```bash
-python3 distillery/scripts/distiller.py discover-signals --top 20
 python3 distillery/scripts/distiller.py analyze-outcomes
 ```
 
-**Thin-yield caveat (post-2026-07-07 harvests).** Positive signal now requires 2+ typed user messages, so most recent sessions harvest as `ambiguous` rather than positive/negative. Expect both analyses to surface less than they did on older data. Treat sparse output as expected, not as "nothing wrong", and quote raw counts (N sessions, M flagged) in any anomaly finding so a small absolute number isn't dressed up as a rate.
+**discover-signals retired from this pipeline (2026-08-29)** after 8 consecutive 0-promotable runs (the unmatched-hint corpus is dominated by generic task verbs like `fix`, 41/41-unique). The subcommand remains available for manual investigation; re-add it here only if `_NEGATIVE_SIGNAL_PATTERNS` misses start showing up in audit findings.
 
-**discover-signals**: Surfaces new patterns of user dissatisfaction not yet captured by `_NEGATIVE_SIGNAL_PATTERNS`. If candidates are found, present them for review. For confirmed patterns, promote to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py` so future harvests classify them correctly.
+**Thin-yield caveat (post-2026-07-07 harvests).** Positive signal now requires 2+ typed user messages, so most recent sessions harvest as `ambiguous` rather than positive/negative. Expect both analyses to surface less than they did on older data. Treat sparse output as expected, not as "nothing wrong", and quote raw counts (N sessions, M flagged) in any anomaly finding so a small absolute number isn't dressed up as a rate.
 
 **analyze-outcomes**: Surfaces (skill, project) pairs where negative rate exceeds the global average by >10pp. Cross-reference anomalies against project-type constraints in `skill-patterns.sh` -- if a domain skill is consistently negative in a project whose type doesn't match, recommend adding a `SKILL_PROJECT_TYPES` entry to prevent injection.
 

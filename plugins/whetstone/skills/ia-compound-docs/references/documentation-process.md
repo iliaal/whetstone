@@ -127,7 +127,7 @@ Format: `[sanitized-symptom]-[module]-[YYYYMMDD].md`
 <validation_gate name="yaml-schema" blocking="true">
 
 **Validate against schema:**
-Load `schema.yaml` and classify the problem against the enum values defined in [yaml-schema.md](../references/yaml-schema.md). Ensure all required fields are present and match allowed values exactly.
+Load [yaml-schema.md](./yaml-schema.md) and classify the problem against the enum values. Ensure all required fields are present and match allowed values exactly.
 
 **BLOCK if validation fails:**
 
@@ -142,7 +142,7 @@ Errors:
 Please provide corrected values.
 ```
 
-**GATE ENFORCEMENT:** Do NOT proceed to Step 6 (Create Documentation) until YAML frontmatter passes all validation rules defined in `schema.yaml`.
+**GATE ENFORCEMENT:** Do NOT proceed to Step 6 (Create Documentation) until YAML frontmatter passes all validation rules defined in [yaml-schema.md](./yaml-schema.md).
 
 </validation_gate>
 </step>

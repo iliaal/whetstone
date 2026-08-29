@@ -51,7 +51,7 @@ When reviewing code:
 
    For any trap found, include a **scope self-check** in the finding: "Task as stated: X. Files touched beyond X: Y. Justification for each Y: [force the author to articulate or remove]."
 
-4. **Assess Readability**:
+5. **Assess Readability**:
    - Note where self-documenting code could replace comments
    - Flag poor names that need explanatory comments
    - Identify data structures more complex than actual usage requires

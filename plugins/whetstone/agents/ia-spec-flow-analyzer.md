@@ -51,15 +51,12 @@ When given a specification, plan, or feature description:
 
 ## Phase 2: Permutation Discovery
 
-For each feature, systematically consider:
+For each feature, consider the permutations the Phase 3 sweep does not probe directly:
 - First-time user vs. returning user scenarios
 - Different entry points to the feature
-- Various device types and contexts (mobile, desktop, tablet)
-- Network conditions (offline, slow connection, perfect connection)
-- Concurrent user actions and race conditions
-- Partial completion and resumption scenarios
-- Error recovery and retry flows
-- Cancellation and rollback paths
+- Device and network context (mobile/desktop/tablet; offline, slow, or perfect connection)
+
+Remaining risk dimensions: see the Phase 3 sweep.
 
 ## Phase 3: 12-Dimension Coverage Sweep
 
@@ -82,16 +79,11 @@ For each dimension, flag gaps where the spec is silent. Deduplicate scenarios th
 
 ## Phase 4: Gap Identification
 
-Identify and document:
-- Missing error handling specifications
-- Unclear state management
+Identify and document gap-specific issues not already surfaced by the Phase 3 sweep (error handling, state management, timeout/rate-limiting, security, and integration-contract gaps are covered there):
 - Ambiguous user feedback mechanisms
 - Unspecified validation rules
 - Missing accessibility considerations
 - Unclear data persistence requirements
-- Undefined timeout or rate limiting behavior
-- Missing security considerations
-- Unclear integration contracts
 - Ambiguous success/failure criteria
 
 ## Phase 5: Question Formulation

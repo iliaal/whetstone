@@ -93,19 +93,23 @@ create_worktree() {
   echo "  From: $from_branch"
   echo "  Path: $worktree_path"
 
-  # Update main branch
-  echo -e "${BLUE}Updating $from_branch...${NC}"
-  git checkout "$from_branch"
-  # GIT_TERMINAL_PROMPT=0: `|| true` catches a non-zero exit, not a credential
-  # prompt blocking on an inherited tty. Fail fast instead of hanging.
-  GIT_TERMINAL_PROMPT=0 git pull origin "$from_branch" || true
+  # Fetch a fresh remote base without touching the caller's checkout.
+  echo -e "${BLUE}Fetching $from_branch from origin...${NC}"
+  local base_ref="origin/$from_branch"
+  # GIT_TERMINAL_PROMPT=0: fail fast instead of hanging on a credential
+  # prompt blocking on an inherited tty. A non-zero exit (offline, no
+  # remote) falls back to the local branch ref below.
+  if ! GIT_TERMINAL_PROMPT=0 git fetch --no-tags origin "$from_branch"; then
+    echo -e "${YELLOW}Fetch failed; branching from local $from_branch instead${NC}"
+    base_ref="$from_branch"
+  fi
 
   # Create worktree
   mkdir -p "$WORKTREE_DIR"
   ensure_gitignore
 
   echo -e "${BLUE}Creating worktree...${NC}"
-  git worktree add -b "$branch_name" "$worktree_path" "$from_branch"
+  git worktree add -b "$branch_name" "$worktree_path" "$base_ref"
 
   # Copy environment files
   copy_env_files "$worktree_path"

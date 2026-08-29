@@ -8,3 +8,16 @@
 {"prompt": "write the migration script", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "commit and push the changes", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "run the test suite", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "/premortem this launch plan before we ship", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "run /confidence on the migration decision", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "check the /edge cases for this API design", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "list the /assumptions baked into this estimate", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "surface the /blindspot in this architecture review", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "map the /tensions between these two requirements", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "/flip the argument and see if it still holds", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "steelman the opposing view before we decide", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "let's stress test this rollout plan", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "play devil's advocate on this proposal", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "the handler lives at api/edge/index.ts", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "flip the switch on the feature flag before deploy", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "run the test suite and check coverage", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}

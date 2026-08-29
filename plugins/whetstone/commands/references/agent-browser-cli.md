@@ -37,7 +37,7 @@ Map changed files to testable routes:
 
 | File Pattern | Route(s) |
 |-------------|----------|
-| `app/views/users/*` | `/users`, `/users/:id`, `/users/new` |
+| `resources/views/users/*` | `/users`, `/users/:id`, `/users/new` |
 | `src/controllers/SettingsController.ts` | `/settings` |
 | `src/controllers/*.ts` | Pages using that controller |
 | `src/components/*.tsx` | Pages rendering that component |

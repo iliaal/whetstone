@@ -9,3 +9,12 @@
 {"prompt": "define the API contract with Zod schemas for the Express endpoints", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
 {"prompt": "add consistent error response format to the Node.js API", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
 {"prompt": "teach me about kubernetes operators", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "scaffold a new NestJS module for orders", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "build an API with Hono running on Cloudflare Workers", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "set up a Koa server with session middleware", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "define a tRPC procedure for user profile updates", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "write a Bun server that serves the API over HTTP", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "add authentication middleware to the Express app", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "grab a bun from the bakery on the way to the office", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "explain what middleware means in networking theory", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "compare koala and panda diets for the zoo report", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}

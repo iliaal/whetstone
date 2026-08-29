@@ -95,7 +95,7 @@ Merge preserved sections with regenerated ones in standard order.
 
 ## Formatting
 
-- Sentence case headings, no emoji headers
+- Sentence case headings; at most one conventional emoji per header is allowed (see ia-writing's README rules) -- never inline in prose
 - `##` for main sections, `###` for subsections
 - Code blocks with language tags
 - Tables for commands if 5+ items

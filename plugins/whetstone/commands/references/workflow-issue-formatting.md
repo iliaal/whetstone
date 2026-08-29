@@ -67,9 +67,7 @@ When user selects "Create Issue", detect their project tracker from CLAUDE.md:
 
 3. **If Linear:**
 
-   ```bash
-   linear issue create --title "<title>" --description "$(cat <plan_path>)"
-   ```
+   Linear has no official shell CLI. Create the issue through the Linear MCP tool (or the Linear API), passing the title and the plan file contents as the description.
 
 4. **If no tracker configured:**
    Ask user: "Which project tracker do you use? (GitHub/Linear/Other)"

@@ -10,18 +10,20 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 
 **When a dispatch fails.** A concurrency or active-agent-limit error is backpressure: leave the specialist queued and retry after a slot frees. A launch that fails for any other reason (bad agent type, malformed prompt, missing permission) does not stall the merge -- run that lens inline in the parent context using the same prompt template, and disclose it in one line of the report. The same applies when the harness exposes no subagent primitive at all. This is the sole exception to the main skill's "pass the diff to agents -- do NOT read it first" rule: the parent reads the diff for the substituted lens only, and the delegation rule still holds for every lens that dispatched successfully.
 
-| Agent | Lens | Focus | Model |
-|-------|------|-------|-------|
-| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed, and for every rule loosened or removed state what it suppresses in this same diff ("2 findings suppressed by a rule added in this PR", quoted) -- resolve criteria from the reviewed head, never silently apply a rule the diff introduces. | default |
-| correctness | Logic & behavior | Intent alignment (code matches stated PR intent), edge cases, off-by-ones, error paths, type safety, null handling, async ordering, state management | default |
-| security | Attack surface | Injection vectors (SQL, XSS, CSRF, SSRF, command), auth/authz gaps, secrets exposure, trust boundaries, race conditions. Load [security-patterns.md](./security-patterns.md) | default |
-| testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage | opus |
-| maintainability | Long-term health | Coupling, naming, complexity, API surface changes, SRP violations, leaky abstractions, dead code | opus |
-| performance | Efficiency | N+1 queries, unbounded collections, missing indexes, unnecessary allocations, cache opportunities, algorithmic complexity | opus |
-| reliability | Failure resilience | Error handling completeness, timeout/retry logic, circuit breakers, resource cleanup on error paths, graceful degradation. Load [reliability-patterns.md](./reliability-patterns.md) | opus |
-| cloud-infra | Infrastructure | Terraform/IaC review, cloud architecture, cost implications, disaster recovery. Only dispatch when diff touches infrastructure files (*.tf, Dockerfile, docker-compose.*, CI/CD configs). Use `ia-cloud-architect` agent. | opus |
-| api-contract | API surface | Breaking changes (removed fields, type changes, new required params), versioning strategy, error response consistency, backwards compatibility, documentation drift. Only dispatch when diff touches public endpoints, exported interfaces, or API route files. | opus |
-| data-migration | Migration safety | Reversibility (can it roll back?), data loss risk, lock duration on large tables, backfill strategy, index creation timing, multi-phase safety (deploy code first, then migrate). Only dispatch when diff includes migration files. Use `ia-database-guardian` agent. | default |
+| Agent | Lens | Focus |
+|-------|------|-------|
+| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed, and for every rule loosened or removed state what it suppresses in this same diff ("2 findings suppressed by a rule added in this PR", quoted) -- resolve criteria from the reviewed head, never silently apply a rule the diff introduces. |
+| correctness | Logic & behavior | Intent alignment (code matches stated PR intent), edge cases, off-by-ones, error paths, type safety, null handling, async ordering, state management |
+| security | Attack surface | Injection vectors (SQL, XSS, CSRF, SSRF, command), auth/authz gaps, secrets exposure, trust boundaries, race conditions. Load [security-patterns.md](./security-patterns.md) |
+| testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage |
+| maintainability | Long-term health | Coupling, naming, complexity, API surface changes, SRP violations, leaky abstractions, dead code |
+| performance | Efficiency | N+1 queries, unbounded collections, missing indexes, unnecessary allocations, cache opportunities, algorithmic complexity |
+| reliability | Failure resilience | Error handling completeness, timeout/retry logic, circuit breakers, resource cleanup on error paths, graceful degradation. Load [reliability-patterns.md](./reliability-patterns.md) |
+| cloud-infra | Infrastructure | Terraform/IaC review, cloud architecture, cost implications, disaster recovery. Only dispatch when diff touches infrastructure files (*.tf, Dockerfile, docker-compose.*, CI/CD configs). Use `ia-cloud-architect` agent. |
+| api-contract | API surface | Breaking changes (removed fields, type changes, new required params), versioning strategy, error response consistency, backwards compatibility, documentation drift. Only dispatch when diff touches public endpoints, exported interfaces, or API route files. |
+| data-migration | Migration safety | Reversibility (can it roll back?), data loss risk, lock duration on large tables, backfill strategy, index creation timing, multi-phase safety (deploy code first, then migrate). Only dispatch when diff includes migration files. Use `ia-database-guardian` agent. |
+
+Model tiers come from each agent's own frontmatter; do not override per-dispatch.
 
 ### Correctness coverage ownership
 
@@ -103,10 +105,7 @@ Limit to 10 findings, highest severity first.
 
 ### Model Selection
 
-- **standards**, **correctness**, **security**, **data-migration**: use default model (standards reading is high-precision; the others require deeper reasoning about logic, attack surfaces, or data safety)
-- **testing**, **maintainability**, **performance**, **reliability**, **cloud-infra**, **api-contract**: use opus (reasoning about absence -- untested paths, missing error handling, breaking changes -- requires deep code comprehension)
-
-Override: if the diff touches auth, payments, or crypto, upgrade security to opus.
+Model tiers come from each dispatched agent's own frontmatter; do not set a per-lens override. Single sanctioned exception: if the diff touches auth, payments, or crypto, upgrade the security lens to opus.
 
 ### Red-Team Pass (Second Phase)
 

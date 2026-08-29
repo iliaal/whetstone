@@ -8,3 +8,11 @@
 {"prompt": "write a unit test for one helper function", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "explain how a single agent loop works", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "debug this single subprocess call", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "run this in a subagent", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "spawn multiple agents to handle each module", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "fan out the review work across several agents", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "have several agents work on this in parallel", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "orchestrate five agents to review the PR", "expect": true, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "explain how the Task tool works in this SDK", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "the customer service agent replied to the ticket quickly", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "our travel agent found parallel flight options for the trip", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}

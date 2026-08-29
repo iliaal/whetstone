@@ -142,17 +142,7 @@ Based on problem type, optionally invoke specialized agents to review the docume
 
 - File: `docs/solutions/[category]/[filename].md`
 
-**Categories auto-detected from problem:**
-
-- build-errors/
-- test-failures/
-- runtime-errors/
-- performance-issues/
-- database-issues/
-- security-issues/
-- ui-bugs/
-- integration-issues/
-- logic-errors/
+Categories are auto-detected from the problem type; the canonical enum and directory mapping live in the ia-compound-docs skill's yaml-schema.md.
 
 ## Common Mistakes to Avoid
 

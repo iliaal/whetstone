@@ -116,7 +116,7 @@ impl Config {
 
 Validation runs in `load()` — never defer it to the first call site.
 
-Only `NotFound` collapses to defaults. `read_to_string(p).unwrap_or_default()` also swallows permission-denied, invalid UTF-8, and transient I/O, so a config that exists but cannot be read becomes an empty one — and the next write replaces the comments and unrelated entries you never saw.
+Only `NotFound` collapses to defaults. `read_to_string(p).unwrap_or_default()` also swallows permission-denied, invalid UTF-8, and transient I/O, so a config that exists but cannot be read becomes an empty one — and the next write replaces the comments and unrelated entries the read never surfaced.
 
 ## Logging
 

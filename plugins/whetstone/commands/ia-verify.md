@@ -1,6 +1,6 @@
 ---
 name: ia-verify
-description: "Run pre-PR verification chain: build, types, lint, tests, security scan, diff review"
+description: Run pre-PR verification chain -- build, types, lint, tests, security scan, diff review
 argument-hint: "[mode: quick|full|pre-commit|pre-pr]"
 ---
 
@@ -128,7 +128,9 @@ Report: file:line for each concern. These are warnings, not blockers, unless an 
 
 ### 8. Accessibility (pre-pr only, skip for backend-only and docs-only changes)
 
-If the diff includes frontend markup or component changes:
+If the diff touches frontend markup, templates, or components, dispatch the `ia-accessibility-tester` agent for a full WCAG pass (keyboard navigation, screen reader, contrast, ARIA, forms, cognitive) and fold its findings into this phase's report row.
+
+Fall back to the inline checks below only for a tiny diff where a full agent dispatch isn't warranted, or when the agent is unavailable:
 
 - **Keyboard navigation** -- interactive elements (`button`, `a`, custom clickable divs) must be focusable and operable via keyboard. Flag `onClick` on non-interactive elements without `role`, `tabIndex`, and `onKeyDown`.
 - **ARIA attributes** -- custom interactive elements (dropdowns, modals, tabs, accordions) need appropriate `role`, `aria-label`/`aria-labelledby`, and state attributes (`aria-expanded`, `aria-selected`).

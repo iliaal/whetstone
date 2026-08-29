@@ -144,7 +144,7 @@ This command takes a work document (plan, specification, or todo file) and execu
 4. **Test Continuously**
 
    - **Default ordering is tests-after** for new features: implement the smallest working version, then add tests alongside. The goal is that by the time the feature is done, tests exist and pass.
-   - **Opt into tests-first** per phase by setting `Posture: test-first` in the plan template (see `ia-planning` skill). Use test-first when behavior is well-defined upfront (bug fixes always; new features when the contract is clear before implementation).
+   - **Opt into tests-first** per phase by adding `[test-first]` to the phase header (see `ia-planning` skill, Execution Posture Signals). Use test-first when behavior is well-defined upfront (bug fixes always; new features when the contract is clear before implementation).
    - Run relevant tests after each significant change. Don't wait until the end.
    - Fix failures immediately.
    - **Unit tests with mocks prove logic in isolation. Integration tests with real objects prove the layers work together.** If your change touches callbacks, middleware, or error handling — you need both.
@@ -174,14 +174,7 @@ This command takes a work document (plan, specification, or todo file) and execu
 
 ### Phase 2.5: Verify Before Proceeding
 
-Before moving to quality checks, run the `ia-verification-before-completion` gate:
-
-1. Identify the verification command (project's test suite)
-2. Run it fresh -- not "it passed earlier"
-3. Read the full output -- check exit code, failure counts
-4. Confirm all tasks are actually complete (check TaskList)
-
-Do not proceed to Phase 3 if verification fails.
+Invoke the `ia-verification-before-completion` skill via an explicit Skill tool call and run its full gate (fresh evidence, positive executed-test count, binary identity, sweep completion). Do not proceed to Phase 3 if verification fails.
 
 ### Phase 3: Quality Check
 
