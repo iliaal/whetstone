@@ -48,7 +48,7 @@ Read signals from the user's first message to calibrate communication register:
 
 Adjust question style accordingly. Technical users get architecture-level probing. Non-technical users get experience-level probing. Don't ask about this calibration -- just do it. If signals are ambiguous, default to the vocabulary the user is already using.
 
-**Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality.
+**Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality. When the user's wording conflicts with what the code verifiably does ("the retry queue" when nothing retries; a table or endpoint named that doesn't exist), surface the conflict before treating the wording as settled -- silently adopting either side buries a requirements error.
 
 Ask questions **one at a time** by default. When probing a single dimension (e.g., data model, auth flow), clustering 2-3 related questions together is acceptable.
 

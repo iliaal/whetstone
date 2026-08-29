@@ -63,7 +63,7 @@ For fewer than 3 unresolved comments, skip clustering and resolve directly.
 
 ## Phase 3: Resolve (parallel)
 
-Create a TodoWrite list grouped by severity:
+Create a task list grouped by severity (TodoWrite where the harness provides it — current models may not ship the tool by default; otherwise track the same list in a scratch note so no item drops silently):
 - **Critical**: Logic bugs, security issues, broken functionality
 - **Important**: Code quality, missing tests, architecture concerns
 - **Minor**: Style, naming, convention fixes

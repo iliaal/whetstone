@@ -14,6 +14,24 @@ When re-running reviewers across iterations (QA retry loop, re-review after fixe
 
 When multiple candidates are evaluated (e.g., parallel implementations, competing approaches), judges see randomized labels — X/Y/Z, not A/B or "original"/"improved." Re-shuffle labels each evaluation round. This prevents anchoring on position ("A is always the baseline") or naming ("the synthesis must be better").
 
+## Never reveal the passing threshold to a judge
+
+A judge told "3.5 passes" anchors on the boundary and drifts scores toward it. The judge prompt carries the rubric and the scale; the orchestrator holds the threshold and applies it to the returned score. The same applies to consequences — "if this fails, the run aborts" is pressure toward leniency, not context.
+
+## Judge biases and countermeasures
+
+Structural isolation (the patterns above) does not remove per-judgment biases. Name the countermeasure in the judge prompt for the biases the task invites:
+
+| Bias | Failure mode | Countermeasure |
+|------|--------------|----------------|
+| Sycophancy | Scores drift up because output "looks like effort" | Require one named defect per candidate before any score; score-only replies are invalid |
+| Length | Longer output read as more thorough | Instruct scoring on criteria coverage; state that unrequested length is a cost, not a merit |
+| Authority | "The senior agent / the spec author wrote this" inflates trust | Strip authorship and provenance from candidate labels |
+| Completion | Finishing read as succeeding | Judge against acceptance criteria, not against "did it produce something" |
+| Effort | Visible struggle (retries, long reasoning) earns charity | Judge only the artifact; process narration is excluded from the packet |
+| Recency | Last-read candidate scores higher | Randomize read order per judge (extends label randomization above) |
+| Familiarity | Approaches resembling the judge's own style score higher | Require the verdict to cite criterion text, not style preference |
+
 ## Convergence detection
 
 Track an incumbent (current best candidate). If the same candidate wins N consecutive evaluation rounds (default: 3), stop iterating — the swarm has converged. This prevents infinite iteration on subjective tasks where no clear winner emerges and additional rounds just burn tokens.

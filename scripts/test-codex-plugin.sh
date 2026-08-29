@@ -252,6 +252,7 @@ write_fixture_files() {
 	cp "$REPO_ROOT/scripts/install-codex-plugin.sh" scripts/install-codex-plugin.sh
 	cp "$REPO_ROOT/scripts/configure-codex-skill-sources.py" scripts/configure-codex-skill-sources.py
 	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/update-metadata.sh
+	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/validate-cross-refs.sh
 	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/mirror-to-ai-skills.sh
 	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/publish-clawhub.sh
 	printf '%s\n' '#!/usr/bin/env bash' "python3 \"\$(dirname \"\$0\")/configure-codex-skill-sources.py\" >/dev/null" >scripts/sync-to-tools.sh

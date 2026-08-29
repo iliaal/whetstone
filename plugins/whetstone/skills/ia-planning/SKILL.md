@@ -33,13 +33,13 @@ Planning tokens are cheaper than implementation tokens. Front-load thinking; sca
 
 Run this gate before *When to Plan* below — a weak goal wastes tokens on any path and produces an unverifiable result. Answer these five questions first:
 
-1. **What concrete thing will be true when this is done?** (named artifact, system state, or user-visible behavior — not "improve X" or "investigate Y")
+1. **What concrete thing will be true when this is done?** (named artifact, system state verifiable without knowing the changed component's internals, or user-visible behavior — not "improve X" or "investigate Y")
 2. **What evidence will prove it?** (specific test, command, screenshot, metric — not "looks right")
 3. **What quantitative or binary threshold defines success?** (p95 < 250ms; `npm run test:checkout` passes; `gh pr view 123` shows no unresolved threads)
 4. **What scope boundaries matter?** (which files/modules/environments are in scope; which are explicitly not)
 5. **What should cause the agent to stop and ask?** (which decisions belong to the user, not Claude)
 
-Then apply the Means test to the answer to question 1: **if the implementation changed, would this still be the goal?** If not, what was named is a Means, not the Objective. A request that supplies only an approach ("move the retry logic out of the controller into a job") passes all five questions while anchoring the plan to a mechanism -- and when the mechanism turns out wrong there is nothing left to re-derive the plan from. Recover the Objective from why the approach was proposed, keep the approach as the current best route, and record it as a decision rather than as the goal.
+Then apply the Means test to the answer to question 1: **if the implementation changed, would this still be the goal?** If not, what was named is a Means, not the Objective. A request that supplies only an approach ("move the retry logic out of the controller into a job") passes all five questions while anchoring the plan to a mechanism -- and when the mechanism turns out wrong there is nothing left to re-derive the plan from. Recover the Objective from why the approach was proposed, keep the approach as the current best route, and record it as a decision rather than as the goal. An outcome-shaped Objective can still be a disguised mechanism -- apply the altitude test: could a reader who does not know the changed component's internals tell whether it was met? "X no longer holds the request open while it waits" fails that test; the real Objective is whatever depended on it ("checkout p95 under 300ms").
 
 Reject pure-activity goals ("make progress", "keep investigating", "improve things") -- repair them into a verifiable outcome or ask one concise clarification before planning. Skip this gate only when the request already names a specific artifact AND a clear success signal in the user's own words -- the same choice-free cases listed under *When to Plan* below. Anything vaguer than that runs the gate.
 
@@ -65,11 +65,11 @@ SKILL_DIR="<absolute path of the directory containing this SKILL.md>"
 bash "$SKILL_DIR/scripts/init-plan.sh" "Feature Name"
 ```
 
-Substitute the real absolute path before running; never execute the command with the angle-bracket placeholder. Anchor the call to `SKILL_DIR` rather than a bare `init-plan.sh` — a relative path resolves against the caller's working directory, not the skill, and breaks from a subdirectory or under a non-Claude harness.
+Substitute the real absolute path before running; never execute the command with the angle-bracket placeholder. The script refuses to overwrite a `task_plan.md` that still has unchecked tasks -- that is the never-overwrite gate below; pass `--force` only after deciding which plan wins. Anchor the call to `SKILL_DIR` rather than a bare `init-plan.sh` — a relative path resolves against the caller's working directory, not the skill, and breaks from a subdirectory or under a non-Claude harness.
 
 This creates `.plan/` with the three pre-populated files below and adds `.plan/` to `.gitignore`.
 
-`.plan/` files are ephemeral working state -- do not commit them; old files are overwritten when starting a new feature. Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; `.plan/` supports the work session.
+`.plan/` files are ephemeral working state -- do not commit them; old files are overwritten when starting a new feature. Before overwriting, check the existing `task_plan.md` for unchecked tasks: same work continuing means update in place, different work over an incomplete plan means stop and ask which plan wins -- never bulk-close or silently discard another plan's open items (the same rule applies to items mirrored into an external tracker). Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; `.plan/` supports the work session.
 
 | File | Purpose | Update When |
 |------|---------|-------------|

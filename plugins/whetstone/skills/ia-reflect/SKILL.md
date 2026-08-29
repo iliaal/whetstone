@@ -52,6 +52,8 @@ Before listing improvements, scan the session for operational insights worth pre
 
 Exclude harness-level noise — "File has not been read yet", token-limit truncations, bash-quoting slips, and other tooling artifacts. Those aren't project learnings; capture the *project's* behavior, not the agent's mechanics.
 
+Also scan for **information-access gaps**: points where the session stalled or guessed because the agent lacked read access to something a human would have checked — dev-server logs, a third-party dashboard, a staging database, CI output. Distinct from the harness noise excluded above: a one-off tooling hiccup isn't reusable, but a standing access gap is, since granting access pays off in every future session. Each gap is an improvement candidate ("grant readonly access to X" or "pipe X into a file the agent can read"), often higher-leverage than a prompt tweak.
+
 ### 4. Improvements
 
 Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10 items: if more surface, the bottom items are noise -- drop them rather than batching or splitting.

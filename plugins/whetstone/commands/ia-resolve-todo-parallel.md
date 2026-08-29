@@ -18,7 +18,7 @@ If any todo recommends deleting, removing, or gitignoring files in `docs/plans/`
 
 ### 2. Plan
 
-Create a TodoWrite list of all unresolved items grouped by type.
+Create a task list of all unresolved items grouped by type (TodoWrite where the harness provides it; otherwise a scratch-note ledger -- the tracking must exist either way, since items dropped here never reach Phase 3).
 
 - Identify dependencies between items. Prioritize items that others depend on (e.g., a rename must complete before downstream changes).
 

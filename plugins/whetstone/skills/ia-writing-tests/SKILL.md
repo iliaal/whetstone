@@ -84,6 +84,8 @@ Mocks should be a last resort, not a first choice. Every mock is an assumption a
 
 **Exception: framework-provided test doubles.** Framework faking mechanisms (Laravel `Queue::fake()`/`Event::fake()`, React test providers, `vi.mock` for API layers) are idiomatic and maintained alongside the framework -- use them. The rule targets hand-rolled mocks that drift, not framework-blessed utilities.
 
+**Where to cut the mock seam.** When a mock is warranted (the right column above -- external APIs, gateways, delivery services, rate-limited SDKs), place it at the last point owned code touches the unowned resource: mock the payment-client wrapper, not `fetch`; the mailer adapter, not the SMTP transport. Mocking below the wrapper re-implements the third party's behavior inside the test suite and leaves the wrapper's own logic untested. Database queries stay on the left column -- a real test DB, not a mocked repository.
+
 ### Tests expose bugs, not the reverse
 
 If a test uncovers broken or buggy behavior, fix the source code -- never adjust the test to match incorrect behavior. A test that passes against a bug is worse than no test at all.
@@ -144,6 +146,18 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 **Symptom:** Test passes but production breaks. Tests assert that mocks were called correctly, not that the actual system works.
 
 **Fix:** Replace mocks with real objects for internal code (see "Use real objects when practical").
+
+### Sleeping instead of waiting on a condition
+
+**Symptom:** `sleep(2)` / `setTimeout` / `time.sleep()` before asserting on async work. A sleep is a race condition with a timer attached: too short flakes under load, long enough is wasted wall-clock in every run forever.
+
+**Fix:** Wait on the observable condition with a deadline -- poll for the record, the event, or the state change (framework helpers: `waitFor`, `assertEventually`, polling with timeout). The deadline bounds the wait; the condition ends it.
+
+### Re-running a flaky test to green
+
+**Symptom:** A test fails intermittently and the response is re-run until it passes. Each re-run silences a detector -- the flake is a real race, ordering dependency, or shared-state bug in the test or the code.
+
+**Fix:** Treat flaky as red: fix it now, or skip it visibly with a reason and an owner (a linked issue, a named TODO) so it cannot quietly rot. Never leave it in the suite passing-by-retry.
 
 ### Test-only methods in production code
 

@@ -83,7 +83,7 @@ Rules for when and how to dispatch agents. Getting these wrong wastes tokens and
 
 **When to dispatch a team vs. do it yourself:**
 
-Assess 5 signals: file count, module span, dependency chain, risk surface, parallelism potential. If 3+ fall in the "complex" column, dispatch a team. Below 3, do it yourself. When in doubt, prefer the simple path -- team overhead is only justified when parallelism provides a real speedup.
+Assess 5 signals: file count, module span, dependency chain, risk surface, parallelism potential. If 3+ fall in the "complex" column, dispatch a team. Below 3, do it yourself. When in doubt, prefer the simple path -- team overhead is only justified when parallelism provides a real speedup. Every dispatched worker also pays a cold-start tax: a context ramp-up before its first useful write. When a unit is too small to outweigh that ramp-up, redefine the grain before dispatch -- merge related small units into one larger unit, or do the work inline. This happens at planning time, so the one-unit-per-worker rule below is untouched: each worker still receives exactly one (now right-sized) unit.
 
 **Task description template (for every dispatched task):**
 
@@ -140,7 +140,7 @@ When passing work between agents (leader→implementer, implementer→reviewer, 
 2. **Deliverable**: specific output expected from the receiving agent
 3. **Acceptance criteria**: how the receiving agent knows the work is correct
 
-The controller reads all tasks from the plan upfront and provides full task text directly to subagents. Never make subagents read plan files themselves -- they waste tokens navigating, may read different versions, and inherit unclear context. Paste the task content into the prompt. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
+The controller reads all tasks from the plan upfront and provides full task text directly to subagents. Never make subagents read plan files themselves -- they waste tokens navigating, may read different versions, and inherit unclear context. Paste the task content into the prompt. The same applies to skills: a dispatched agent cannot load the orchestrator's skills, so never brief one to "use skill X" by name -- run that skill's judgment in the orchestrator and inline the specific resulting instructions into the dispatch brief. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
 
 **Standardize implementer status signals:**
 
@@ -175,7 +175,7 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 **Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry. (Umbrella term: non-interactive context. Also called "Headless mode" in ia-brainstorming and ia-receiving-code-review.) Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
 
-**Decision presentation -- never silently drop options.** Use the active harness's structured question tool when available, otherwise ask in chat. If its option cap cannot represent every viable choice, split the choice into sequential rounds (`D1.1`, `D1.2`, ...) instead of truncating it. Surface cross-option dependencies in the round that introduces them. In spawned sessions, the rule above takes precedence: do not ask; choose the safe default and report it.
+**Decision presentation -- never silently drop options.** Use the active harness's structured question tool when available, otherwise ask in chat. If its option cap cannot represent every viable choice, split the choice into sequential rounds (`D1.1`, `D1.2`, ...) instead of truncating it. Surface cross-option dependencies in the round that introduces them. In spawned sessions, the rule above takes precedence: do not ask; choose the safe default and report it. When no safe default exists -- the ambiguity involves a destructive action, an external audience, or an approval only the user can give -- leave that item undone and record it as a finding in the completion report (evidence, the safe disposition taken instead, impact, decision needed), not as a question the run blocks on.
 
 ---
 

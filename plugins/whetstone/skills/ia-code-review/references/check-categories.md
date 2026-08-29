@@ -35,6 +35,7 @@ Load this reference during the line-by-line review step. Use the category lists 
 - Agentic confused-deputy — a tool or function exposed to an LLM can invoke an action the requesting user isn't authorized for; the model runs with broader scope than the caller. Check tool authorization against the caller's identity, not the agent's
 - Edge cases under pressure — max input size, zero items, first-run-ever, double-click within 100ms, concurrent identical requests
 - Partial completion — operations that can crash mid-way leaving state inconsistent (no rollback, no cleanup)
+- Floor guards — tightening a quality gate is silent, loosening is loud only if someone looks. Flag: a lowered threshold (coverage, lint level, timeout), a test weakened (`.skip`, deleted, assertion removed), a new suppression comment (`eslint-disable`, `# noqa`, `@ts-ignore`, `#[allow]`), a stub or empty catch replacing real handling, a new row in a tracked-exceptions list
 
 ## AI-generated code lens
 

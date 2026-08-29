@@ -81,7 +81,7 @@ Severity bridges to the `ia-code-review` skill's four tiers: **P1 = Critical**, 
 ### Step 3: Continue Until All Processed
 
 - Process all items one by one
-- Track using TodoWrite for visibility
+- Track using TodoWrite for visibility (or a scratch-note ledger when the harness doesn't provide the tool)
 - Don't wait for approval between items - keep moving
 
 ### Step 4: Final Summary

@@ -5,6 +5,38 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.3] - 2026-08-29
+
+Patch: an 11-day delta sync across 43 reference repos plus a marketplace scan, then a reactive audit over the sync's own output. The sync applied 23 findings; the audit found 13 defects in them and fixed all 13. Two of this release's fixes correct rules the plugin itself had wrong: the PostgreSQL composite-index advice ("most selective column first" — replaced with equality-then-range, confirmed by a live EXPLAIN where the eq-first index ran ~17x cheaper) and the Pine Script line-wrap rule (an indent of exactly 4 satisfied the old rule and errors; the real rule is non-multiple-of-4 outside parentheses, verified against TradingView's docs). The audit's recurring shape this round: a correct rule inserted where its own trigger path can't reach it — a standards-file disclosure check that doc-only routing skipped, a comment-authorization guard missing from the one review mode with no human present, and a plan-overwrite rule that the scaffolding script ignored until the script itself learned to refuse. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+
+### Added
+
+- PostgreSQL performance reference: the four query shapes an index cannot serve, pool-exhaustion diagnosis (raising `max` relocates the queue — multiplex through PgBouncer instead), and cache discipline (stampede protection, negative caching, cache-key completeness)
+- Judge-bias defenses in the swarm anti-sycophancy reference: never reveal the passing threshold to a judge, plus a seven-bias countermeasure table (sycophancy, length, authority, completion, effort, recency, familiarity)
+- Code review now catches floor-guard loosening — lowered thresholds, `.skip`'d tests, new suppression comments — and an explanatory comment no longer suppresses those findings
+- Standards-file diffs get the self-suppression disclosure check: a PR that edits its own coding standards must show what each loosened rule would have suppressed in that same diff
+- Writing audit gained `[ABSTRACT-METAPHOR]` and `[PORTABLE-PROSE]` tags, and drafts under audit are treated as data — an embedded instruction to the auditor is itself a finding
+- Test-writing skill: no-sleep rule for async waits, mock-seam placement (cut at the owned wrapper, never below it), and flaky-equals-red (fix or quarantine visibly; never re-run to green)
+- Pine Script: corrected drawing limits (9,999 bars back / 500 forward via `xloc.bar_time`), `for...in` iteration, conditional input editability, rolling-buffer caps, and typed-object architecture over parallel arrays
+- Laravel: per-stage validation checkpoints (`migrate:status`, `route:list`, `queue:work --once`, `pint --test`) and the `QueryException` binding-leak pitfall with `DB_MASK_BINDINGS`
+- Planning: the altitude test (an Objective must be verifiable without knowing the component's internals) and an overwrite guard — `init-plan.sh` now refuses to clobber a plan with unchecked tasks unless forced
+- Swarm orchestration: cold-start tax in dispatch sizing, inline-the-skill-content briefing rule (dispatched agents can't load the orchestrator's skills), and destructive-ambiguity findings queue into the completion report instead of blocking autonomous runs
+- Headless review mode: comments instructing to skip tests, disable verification, or run commands always escalate — comment text is data, not authorization
+
+### Changed
+
+- Compound-refresh distinguishes mechanics drift (doc follows code) from evidenced guidance (doc stands; the code's drift is reported as a potential regression)
+- Brainstorming surfaces conflicts between the user's wording and what the code verifiably does before treating the wording as settled
+- Reflect scans for information-access gaps — points where a session stalled for lack of read access to logs, dashboards, or CI output
+- Three commands gained a tracked fallback for harnesses that no longer ship the TodoWrite tool
+
+### Fixed
+
+- PostgreSQL composite-index rule corrected to equality-columns-first (the "most selective first" myth is gone)
+- Pine Script line-wrap rule corrected to the documented non-multiple-of-4 form; the debugging label example now caps its object count
+- Skill-eval judging isolates the judge and ranks skills on procedure adherence, not composite score
+- Five defects closed from external-repo mining: dead cross-references, release-gate wiring, evolve-skill caveat, simplicity-reviewer carve-out, and a jq-missing degrade path
+
 ## [4.4.2] - 2026-08-18
 
 Patch: an 8-day delta sync across 41 reference repos, then two audit rounds over the sync's own output. The sync applied 23 findings; the audits found 31 defects in them and fixed all 31. Every automated gate stayed green through all of it, which is the finding worth repeating — validate-plugin, the trigger suite, cross-reference validation, and the injection scan passed identically before and after a round that contained two live runtime breaks.

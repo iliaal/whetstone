@@ -50,7 +50,7 @@ Enumerate changed files **before** exclusions and track each path through `selec
 
 **Exceptions first** — these change types stay single-pass regardless of signal count: pure documentation/markdown changes; mechanical refactors (renames, moves) with no logic changes; single-file changes under 50 lines.
 
-**Verification-mechanism carve-out:** even when a change stays single-pass by the exceptions above, if it *is* a verification mechanism (CI/CD gate, merge-block check, coverage/lint gate, build/deploy step, or test infra/mock that could mask a real failure), apply the "can this silently false-pass?" lens during the single-pass review — the mechanism can go green while the thing it guards is red. In deep review this same lens runs as a size-independent red-team trigger (see [deep-review.md](./references/deep-review.md)).
+**Verification-mechanism carve-out:** even when a change stays single-pass by the exceptions above, if it *is* a verification mechanism (CI/CD gate, merge-block check, coverage/lint gate, build/deploy step, or test infra/mock that could mask a real failure), apply the "can this silently false-pass?" lens during the single-pass review — the mechanism can go green while the thing it guards is red. In deep review this same lens runs as a size-independent red-team trigger (see [deep-review.md](./references/deep-review.md)). A diff that modifies a documented-standards file (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, STYLE.md, lint configs) gets the same treatment: it is not "pure documentation" -- apply deep-review's standards-disclosure rule (quote each rule added or loosened and what it suppresses in this same diff) during the single-pass review.
 
 | Signal | Threshold |
 |--------|-----------|

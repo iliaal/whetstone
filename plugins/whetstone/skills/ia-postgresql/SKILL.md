@@ -90,7 +90,7 @@ Default chunked decode-encode loops are only safe during a maintenance window wi
 | BRIN | Large tables with natural ordering (timestamps, serial IDs) |
 
 **Index rules:**
-- Composite: most selective column first, max 3-4 columns
+- Composite: equality-predicate columns first, then the range/sort column, max 3-4 columns -- a leading range column stops the B-tree from navigating on anything after it. "Most selective first" is the myth version; selectivity only breaks ties among equality columns
 - Partial: `WHERE status = 'active'` -- smaller, faster
 - Covering: `INCLUDE (col)` -- avoids heap lookup
 - Expression: `ON (lower(email))` -- for function-based WHERE
@@ -216,6 +216,8 @@ Always pool in production. Direct connections cost ~10MB each.
 - `statement` mode if no session-level features (prepared statements, temp tables, advisory locks)
 
 **Prepared statement caveat:** Named prepared statements are bound to a specific connection. In transaction-mode pooling, the next request may hit a different connection. Use unnamed/extended-query-protocol statements (most ORMs default to this), or deallocate immediately after use.
+
+See [performance-patterns.md](./references/performance-patterns.md) for the query shapes an index cannot serve, pool-exhaustion diagnosis (raising `max` relocates the queue), and cache discipline (stampede, negative caching, key completeness).
 
 ## Operations
 

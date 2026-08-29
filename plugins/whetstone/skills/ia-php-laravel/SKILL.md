@@ -155,6 +155,8 @@ Real production footguns, invisible to PHPStan and feature tests alone. Extended
 
 **`BelongsToMany::attach` / `detach` / `sync` / `updateExistingPivot` are query-builder writes -- no pivot model events fire.** Observers and audit traits record nothing. Fix: make the pivot a real `Pivot` model (`->using(PivotModel::class)`) and write through it with `firstOrCreate(...)->fill([...])->save()`.
 
+**`QueryException::getMessage()` interpolates raw query bindings plus host/database into the message** -- any log sink or APM recording exception messages leaks parameter values on every failed query. Recent versions add per-connection `mask_bindings_in_exception_messages` (env `DB_MASK_BINDINGS`), default off; enable in production if query exceptions reach logs (confirm the option exists in the installed version).
+
 **`Carbon::parse('2020')` is today at 20:20, not year 2020** -- a bare 4-digit string parses as `HHMM` time-of-day, breaking `before_or_equal:today` / `after` / `before` on year-only input. Fix: `Carbon::createFromFormat('Y', $year)->startOfYear()` + partial-date-aware rules; when migrating a field's validator type, audit its sibling validators for the same incompatibility.
 
 ## Discipline
@@ -165,6 +167,7 @@ Real production footguns, invisible to PHPStan and feature tests alone. Extended
 - New abstraction requires 3+ usage sites; otherwise inline it
 - No empty catch blocks -- log or rethrow, never swallow
 - Verify before declaring done: `./vendor/bin/phpstan analyse --level=8 && ./vendor/bin/phpunit` with zero warnings
+- Checkpoint per stage, not only at the end: `migrate:status` after a migration, `route:list --path=<prefix>` after routing changes, `queue:work --once` after adding a job, `pint --test` before the PR -- each catches its failure class while the change is small
 
 ## Production Performance
 

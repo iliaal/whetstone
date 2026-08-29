@@ -19,7 +19,7 @@ paths: "**/*.pine"
   isBull = close > open
   barColor = isBull ? color.green : color.red
   ```
-- **Continuation lines MUST be indented MORE than the starting line** -- same indentation = error
+- **Continuation lines outside parentheses MUST be indented by a non-multiple of 4** -- same indentation as the start errors, and 4/8/12 spaces parse as a local block and error too (2 spaces is the conventional choice). Inside parentheses (function calls, parenthesized expressions) any indentation works, including multiples of 4
 - **NEVER use plot() inside local scopes** (if/for/functions) -- use conditional value instead: `plot(condition ? value : na)`
 - **barstate.isconfirmed** -- use to prevent repainting on real-time bars
 
@@ -27,18 +27,23 @@ paths: "**/*.pine"
 
 500 bars history for `request.security()` | 500 plot calls | 64 drawing objects | 40 `request.security()` calls | 100KB compiled size
 
+- Drawings positioned with `xloc.bar_index` reach at most 9,999 bars into the past and 500 into the future; for anything older, switch the drawing to `xloc.bar_time` and pass a timestamp (a time value without `xloc.bar_time` is treated as a future bar index and errors)
+- Cap drawing growth with a rolling buffer: push each new object into an array, then `line.delete(arr.shift())` once `arr.size()` exceeds the intended count -- otherwise the oldest drawings silently vanish at the 64-object limit
+
 ## Performance
 
 - **Tuple security calls** -- one `request.security()` returning `[close, high, low]` instead of 3 separate calls
 - Pre-allocate arrays with `array.new<type>(size)` instead of push-and-resize
 - Short-circuit signals: build conditions incrementally, exit early when first condition fails
 - Cache repeated calculations in variables -- Pine recalculates every bar
+- Iterate collections with `for item in myArray` (or `for [i, item] in myArray`) instead of `for i = 0 to array.size(...) - 1` -- the indexed form re-evaluates the bound each pass and breaks when the loop mutates the array's size
+- Model related values as a user-defined type, not parallel arrays: `type Trade` with `float entry`, `int startBar`, plus `method` functions, stored in one `array<Trade>`. Parallel arrays (`entries`, `startBars`, ...) desync on any missed push/remove and every operation must be repeated per array; one typed array keeps each object's fields together
 
 ## Debugging
 
 TradingView has no console or debugger. Use these patterns:
 
-- **Label debugging**: `label.new(bar_index, high, str.tostring(myVar))` to inspect values
+- **Label debugging**: `label.new(bar_index, high, str.tostring(myVar))` to inspect values -- cap with the rolling-buffer pattern from Platform Limits, or older labels silently vanish at the 64-object limit
 - **Table monitor**: `table.new()` with `barstate.islast` for real-time variable dashboard
 - **Debug mode toggle**: wrap all debug code in `if input.bool("Debug", false)` -- remove before publishing
 - **Repainting detector**: track `previousValue = value[1]`, flag when historical values change
@@ -56,6 +61,7 @@ TradingView has no console or debugger. Use these patterns:
 - `color.from_gradient()` for trend strength coloring
 - Adaptive text sizing: `size.small` for intraday, `size.normal` for daily+
 - Dynamic table rows -- resize based on enabled features via input toggles
+- `input.*(..., active = condition)` greys out an input when its controlling toggle is off (e.g. a smoothing length only editable while "Use smoothing" is checked) -- clearer than a tooltip saying "ignored unless..."
 - Professional color constants: define BULL_COLOR, BEAR_COLOR, NEUTRAL_COLOR once with transparency
 
 ## Publishing

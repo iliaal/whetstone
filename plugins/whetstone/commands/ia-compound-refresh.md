@@ -28,13 +28,15 @@ For each learning doc, check whether the code it references still exists:
 
 **Missing files prove the implementation is gone, not the problem.** If the application still deals with what the doc addresses, that is Replace, not Archive. A doc that never referenced in-repo code cannot satisfy "implementation gone" and must never auto-archive on that basis.
 
+**Mechanics follow the code; evidenced guidance does not.** A doc claim about how the system currently works (a path, a function name, a config value) follows the code -- when they disagree, the doc is stale. A practice the doc justifies on its own evidence (a measured fix, a post-incident rule, a vendor constraint) does not become false because the implementation stopped satisfying it. Classify that doc from its own evidence -- usually Keep -- and report the code's drift as a potential regression in the Step 4 report instead of rewriting the practice to match broken code. Refresh edits docs only; it never adjudicates or edits product code.
+
 ### 3. Classify
 
 For each doc, assign one status:
 
 | Status | Criteria | Action |
 |--------|----------|--------|
-| **Keep** | All references valid, patterns current | No changes |
+| **Keep** | All references valid, patterns current -- or evidenced guidance whose enforcing code drifted (per the mechanics-vs-guidance rule above: the doc stands, the drift is reported) | No changes to the doc; note the drift in the report |
 | **Update** | Partially stale -- some refs outdated but core insight valid | Fix stale references, update code examples |
 | **Replace** | Fundamentally wrong -- approach has changed | Rewrite with current approach, preserve the problem statement |
 | **Archive** | No longer relevant -- feature removed, problem no longer exists | Move to `docs/solutions/_archive/` |
@@ -49,6 +51,7 @@ Present findings as a table:
 | performance-issues/n-plus-one.md | Keep | All refs valid |
 | auth/session-token-bug.md | Update | `auth.js` renamed to `auth.ts` |
 | billing/stripe-webhook.md | Archive | Billing module removed in v3 |
+| ops/retry-backoff-policy.md | Keep | Code drift: `RetryPolicy` no longer applies jitter the doc mandates -- flag as potential regression |
 ```
 
 ### 4b. Inbound-link check (Archive candidates only)

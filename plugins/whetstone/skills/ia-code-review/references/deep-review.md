@@ -12,7 +12,7 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 
 | Agent | Lens | Focus | Model |
 |-------|------|-------|-------|
-| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. | default |
+| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed, and for every rule loosened or removed state what it suppresses in this same diff ("2 findings suppressed by a rule added in this PR", quoted) -- resolve criteria from the reviewed head, never silently apply a rule the diff introduces. | default |
 | correctness | Logic & behavior | Intent alignment (code matches stated PR intent), edge cases, off-by-ones, error paths, type safety, null handling, async ordering, state management | default |
 | security | Attack surface | Injection vectors (SQL, XSS, CSRF, SSRF, command), auth/authz gaps, secrets exposure, trust boundaries, race conditions. Load [security-patterns.md](./security-patterns.md) | default |
 | testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage | opus |
@@ -235,7 +235,7 @@ Include the count of multi-specialist-confirmed findings in the header so review
 
 ## When Deep Review Adds Less Value
 
-- Pure documentation/markdown changes -- single-pass is sufficient
+- Pure documentation/markdown changes -- single-pass is sufficient (exception: a diff touching a standards file still gets the standards-disclosure rule from the lens table, per the carve-out in SKILL.md)
 - Mechanical refactors (renames, moves) with no logic changes -- single-pass catches drift
 - Single-file changes under 50 lines -- multi-agent overhead isn't justified
 - The user explicitly requested a quick review
