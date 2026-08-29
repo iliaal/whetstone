@@ -83,7 +83,7 @@ Rules for when and how to dispatch agents. Getting these wrong wastes tokens and
 
 **When to dispatch a team vs. do it yourself:**
 
-Assess 5 signals: file count, module span, dependency chain, risk surface, parallelism potential. If 3+ fall in the "complex" column, dispatch a team. Below 3, do it yourself. When in doubt, prefer the simple path -- team overhead is only justified when parallelism provides a real speedup. Every dispatched worker also pays a cold-start tax: a context ramp-up before its first useful write. When a unit is too small to outweigh that ramp-up, redefine the grain before dispatch -- merge related small units into one larger unit, or do the work inline. This happens at planning time, so the one-unit-per-worker rule below is untouched: each worker still receives exactly one (now right-sized) unit.
+Dispatch a team only when independent work can run concurrently, specialized review materially reduces risk, or isolation preserves context that would otherwise be lost. File count and module span are signals, not a score. When the expected speedup or review gain does not exceed coordination and cold-start cost, work inline. Merge units too small to justify a worker before dispatch; each implementation worker still receives one right-sized unit.
 
 **Task description template (for every dispatched task):**
 
@@ -100,7 +100,7 @@ Every task prompt must include these fields to prevent integration failures:
 
 **One owner per aggregate check.** Exclusive file ownership has a verification counterpart: assign the aggregate checks -- full test suite, whole-package typecheck, repo-wide lint -- to exactly one owner per dispatch. That is the integration agent where one exists, otherwise the orchestrator at post-wave reconciliation. Every other agent's Acceptance Criteria names the *narrowest* checks that prove its own edits (lint/format/typecheck scoped to its owned files, tests covering those files), and its prompt names the aggregate checks it must not run. Duplicate suite runs across a wave are wasted wall-clock, not extra assurance. This is what the parallel-dispatch constraint below leaves unsaid: it tells agents not to run the suite, and this tells them what to run instead.
 
-Cardinal rule: one owner per file. When files must be shared, designate a single owner; other agents send change requests, owner applies sequentially. If an upstream dependency isn't ready yet, write a stub/mock so downstream work can continue unblocked.
+Cardinal rule: one owner per file. When files must be shared, designate a single owner; other agents send change requests, owner applies sequentially. If an upstream dependency is not ready, a stub or mock may unblock downstream development, but it cannot satisfy acceptance criteria or close the capability. Mark it explicitly and keep replacement work open.
 
 **No parallel implementation agents (without worktrees):**
 
@@ -142,9 +142,9 @@ When passing work between agents (leader→implementer, implementer→reviewer, 
 
 The controller reads all tasks from the plan upfront and provides full task text directly to subagents. Never make subagents read plan files themselves -- they waste tokens navigating, may read different versions, and inherit unclear context. Paste the task content into the prompt. The same applies to skills: a dispatched agent cannot load the orchestrator's skills, so never brief one to "use skill X" by name -- run that skill's judgment in the orchestrator and inline the specific resulting instructions into the dispatch brief. See [handoff-templates.md](./references/handoff-templates.md) for QA FAIL and Escalation Report formats.
 
-**Standardize implementer status signals:**
+**Standardize implementer outcome signals:**
 
-Include the four statuses defined in `ia-verification-before-completion` (DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT) in every teammate prompt so they know the reporting format. Expect teammates to report one. BLOCKED responses get further triage via the decision tree below.
+Require every implementer to distinguish completed and verified behavior from partial work, stubs, mocks, refusal-only paths, and blockers. Do not require empty report sections or a fixed status vocabulary. Route blockers through the decision tree below.
 
 **BLOCKED triage decision tree** -- when a teammate reports BLOCKED, classify the root cause before acting. Never retry the same prompt on the same model without changing a variable.
 
@@ -163,6 +163,16 @@ Never ignore an escalation. Never force the same agent to retry without changing
 
 Verify spec compliance first: does the output match what was requested? Only then evaluate quality. A beautifully written solution to the wrong problem is still wrong. Structure review as two explicit passes -- pass 1 rejects on spec mismatch without reading further, pass 2 assesses correctness and quality on spec-compliant outputs.
 
+### Delivery and credit discipline
+
+Keep the overwhelming majority of open implementation units tied to runnable capability. A coordination, validation, or operations unit must name the capability or observed defect class it gates. Use the ratio as a drift signal, never as a quota to game.
+
+Make closable units vertical: implementation and its tests ship together. Internal steps may separate types, code, and tests for sequencing, but they do not earn separate closures. A trivial commit, placeholder scaffold, refusal-only path, or stub that merely type-checks is not delivered capability.
+
+Claim the highest-priority ready capability that the worker can actually complete. Surface stale high-priority work instead of repeatedly selecting low-risk units. Only the role assigned closure authority may close shared work; never close a peer's unit merely to release dependents.
+
+After each wave, compare runnable units delivered with coordination, review, and governance rounds consumed. If orchestration activity grows while the deliverable count is flat, freeze the machinery at its current sufficient state and redirect the next wave to the deliverable.
+
 **QA retry loop:**
 
 Max 3 attempts per task. After each QA failure, pass structured feedback to the implementer using the [QA FAIL template](./references/handoff-templates.md). After 3 failures, mark the task as blocked, continue the pipeline (don't halt everything), and let final integration catch remaining issues. Counter resets when advancing to the next task.
@@ -173,7 +183,7 @@ Max 3 attempts per task. After each QA failure, pass structured feedback to the 
 
 **Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
 
-**Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry. (Umbrella term: non-interactive context. Also called "Headless mode" in ia-brainstorming and ia-receiving-code-review.) Focus on completing the task and reporting results via prose output. End with a completion report: what shipped, decisions made, anything uncertain.
+**Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry. (Umbrella term: non-interactive context. Also called "Headless mode" in ia-brainstorming and ia-receiving-code-review.) Focus on completing the task and report what shipped, verification evidence, and any material uncertainty without padding the response with empty sections.
 
 **Decision presentation -- never silently drop options.** Use the active harness's structured question tool when available, otherwise ask in chat. If its option cap cannot represent every viable choice, split the choice into sequential rounds (`D1.1`, `D1.2`, ...) instead of truncating it. Surface cross-option dependencies in the round that introduces them. In spawned sessions, the rule above takes precedence: do not ask; choose the safe default and report it. When no safe default exists -- the ambiguity involves a destructive action, an external audience, or an approval only the user can give -- leave that item undone and record it as a finding in the completion report (evidence, the safe disposition taken instead, impact, decision needed), not as a question the run blocks on.
 

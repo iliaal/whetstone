@@ -15,6 +15,12 @@ No completion claims without fresh verification evidence. If the verification co
 
 "Should pass", "probably works", and "looks correct" are not verification. Only command output confirming the claim counts (typically exit code 0). Pre-existing failures causing non-zero exits unrelated to the current changes: see "When Verification Fails" below.
 
+Evidence is invalid when the change makes the oracle easier to satisfy instead of making the behavior correct. Never weaken a specification, assertion, test, validator, or acceptance criterion to obtain a pass. Regenerate expected output only after reviewing and justifying the semantic change. Do not hard-code the exercised subject or success path.
+
+Classify proof honestly. Fixtures, mocks, seeded rows, retained captures, and recorded responses can support deterministic tests, but they are not live evidence. Claim live behavior only after a fresh process exercises the intended entry point against runtime-selected or independently varied subjects where that distinction matters.
+
+When the positive capability is safe, authorized, and in scope, a refusal-only path is incomplete. Verify and report the refusal behavior, but do not close the feature until the positive path works through its intended entry point.
+
 ## Pre-Verification Check
 
 Before running verification, check the working tree state: `git status --porcelain`. If there are uncommitted changes unrelated to the current task, handle them first (commit, stash, or acknowledge) -- verification commits on top of a dirty tree create tangled history.
@@ -27,7 +33,7 @@ For delegated work: never trust the implementer subagent's own report -- spec co
 
 ## Scope Confirmation (Pre-Edit Gate)
 
-This gate fires at task start, before the first edit. When a request uses ambiguous spatial scope -- "migrate my project", "refactor the codebase", "update everywhere", "fix this across the app", "my code/repo/project" -- confirm the concrete scope before any Write or Edit. Imperative phrasing is not defined scope.
+This gate fires at task start, before the first edit. When a request uses ambiguous spatial scope -- "migrate my project", "refactor the codebase", "update everywhere", "fix this across the app", "my code/repo/project" -- inspect the repository to resolve the concrete scope before any Write or Edit. Imperative phrasing is not defined scope.
 
 Run a breakdown command to surface the real blast radius:
 
@@ -36,9 +42,9 @@ rg -l 'pattern' | cut -d/ -f1 | sort | uniq -c | sort -rn   # files per top-leve
 rg -l 'pattern' | xargs dirname | sort -u                   # affected directories
 ```
 
-Present the result -- "This touches N files across M subsystems" -- with scope options: (a) everything, (b) just <subset>, (c) pick specific files. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. Do not start editing until the user commits to one option.
+When the request and repository structure identify one safe interpretation, state the assumption and proceed. If multiple interpretations materially change the result, present the breakdown and ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. Do not start editing until that material choice is resolved.
 
-**When this applies**: any request whose scope could plausibly span more than one directory AND where the user has not enumerated files. For a request with explicit file paths, skip this gate.
+**When this applies**: any request whose scope could plausibly span more than one subsystem and cannot be resolved safely from the request and repository structure. For a request with explicit file paths or one clear repository-wide interpretation, skip the question.
 
 ## Sweep Completion
 
@@ -103,15 +109,15 @@ Before shipping, check whether prior reviews (agent or human) are still valid. I
 
 - About to claim "tests pass", "build succeeds", or "bug fixed"
 - About to commit, push, create a PR, or mark a task complete
-- After completing each plan step / before starting the next file
+- Before closing a phase or work item
 - Reporting results to the user
 - A subagent reports success on delegated work
 
 ## Red Flags
 
-**Fantasy assessment auto-fail.** "Zero issues found" on a first implementation pass is a red flag, not a green light -- first implementations typically need 2-3 revision cycles, so "perfect on the first try" more likely means incomplete verification. Re-verify with a broader scope.
+**Clean results do not require manufactured findings.** A first pass with zero issues is valid when the evidence covers the stated acceptance criteria and relevant failure paths. Broaden verification only when the current proof leaves a named risk untested.
 
-**Negative confirmation at signoff.** State what defect classes were checked and NOT found, not just what passed: "tests pass, no type errors, no lint warnings, no security flags in the changed files" proves the scope of verification; "tests pass" alone does not.
+**Do not inflate the claim.** Name the proof scope when it is narrower than the natural reading of the completion claim. A targeted test supports the named behavior; only the full suite supports a full-suite claim.
 
 ## Requirements vs Tests
 
@@ -146,37 +152,11 @@ A failing pre-commit hook is a verification checkpoint, not an obstacle to route
 
 Reasoning about the outcome instead of running the command means the Gate is not satisfied. "Should work", "trivial change", "just a refactor", "new tests pass" (not "all tests pass"), "CI will catch it" -- all the same failure mode: substituting confidence for evidence. Any satisfaction expression ("looks good", "seems correct", "that should do it") or any positive statement about completion -- including paraphrases and synonyms -- triggers the Gate: spirit over letter, rephrasing a claim to avoid the trigger words does not exempt it from verification.
 
-## Completion Report Format
+## Completion Reporting
 
-After verification passes, produce a structured report rather than an open-ended summary:
+Report only facts that affect the handoff: the outcome, the command, URL, or click path that exercises it, failing or skipped checks, and any material residual risk. Include verification commands and observed results when the user cannot see them directly.
 
-```
-## Completion report
-
-**Status**: DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT
-
-**Changes made**
-- path/to/file.ts: [one-line description of what changed and why]
-- path/to/other.ts: [one-line description]
-
-**Next**
-- [the one command to paste, URL to open, or click-path that exercises this in one step -- or the decision now owed]
-
-**Things I didn't touch (intentionally)**
-- [thing noticed but out of scope, with one-line reason]
-- [adjacent issue deferred, with one-line reason]
-
-**Potential concerns**
-- [any risk, uncertainty, or open question the reviewer should know about]
-- [or "none"]
-
-**Verification evidence**
-- [command]: [exit code / result summary]
-```
-
-DONE_WITH_CONCERNS makes the `Potential concerns` section mandatory; BLOCKED and NEEDS_CONTEXT must name the blocker or the missing information. The `Things I didn't touch` section is not optional -- if nothing was noticed, write "nothing noticed"; the goal is to prove scope was considered, not to pad the report.
-
-`Next` is one line, and it is not a summary of what changed -- it is the thing the reader does now. It is usually *not* the verification command: `pytest tests/test_auth.py` proves the work happened, `npm run dev` then open `/settings` exercises it. When the result is not directly exercisable (docs, config, refactor), say so and name what was read or checked instead. When work is blocked or awaiting a decision, `Next` names the decision, not the blocker.
+Do not emit empty status sections, concern slots, or scope ledgers to prove diligence. Name partial implementations, stubs, mocks, unreachable paths, and refusal-only behavior explicitly. When blocked, name the concrete blocker and the authority or information needed to continue.
 
 ## References
 

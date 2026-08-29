@@ -46,6 +46,8 @@ Build test coverage from three independent sources and verify every item maps to
 
 Anything in any source with no corresponding test is a coverage gap -- implemented-but-untested features, claimed-but-unverified behavior.
 
+For each acceptance criterion, include at least one discriminating case that a naive wrong implementation would fail. Prefer the negative, boundary, or state-transition case that separates the intended contract from a hard-coded happy path. Do not add a meaningless negative-case quota when one strong case already distinguishes the behavior.
+
 For each source, enumerate user journeys ("As a [role], I want to [action], so that [benefit]") and generate test cases from each, so tests cover user-visible behavior rather than implementation details.
 
 ### DAMP over DRY in tests
@@ -171,6 +173,12 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Fix:** Snapshots catch unintended changes but don't verify correctness. Add behavioral assertions alongside snapshots.
 
+### Regenerating expected output to obtain green
+
+**Symptom:** A snapshot, golden, fixture, or generated expectation is replaced wholesale after a failure, with no review of what behavior changed.
+
+**Fix:** Treat expected-output changes as specification changes. Inspect the semantic diff, explain why the new output is intended, and verify the behavior with an independent assertion or exercised entry point. Follow any repository-specific approval marker for golden changes. If the implementation is wrong, fix the implementation instead of regenerating the oracle.
+
 ### Testing the framework
 
 **Symptom:** Tests verify that the ORM saves records, the router routes requests, or the framework does what its docs say.
@@ -249,7 +257,9 @@ Before considering tests complete:
 - [ ] Each test has a descriptive name stating expected behavior
 - [ ] Tests use real objects where possible (mocks only at system boundaries)
 - [ ] Edge cases covered (empty, null, boundary, error paths)
+- [ ] Each acceptance criterion has a discriminating case a naive wrong implementation would fail
 - [ ] Tests assert on outcomes, not implementation details
+- [ ] Snapshot, golden, fixture, and generated-expectation changes were reviewed semantically rather than regenerated to obtain green
 - [ ] Tests are independent -- no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
 - [ ] Tests run fast enough to run frequently (< 30 seconds for unit suite)
 - [ ] Bug fix tests reproduce the original bug

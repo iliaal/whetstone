@@ -16,9 +16,9 @@ Vertical slices are independently demonstrable and testable. Each slice should p
 
 ### Checkpoint system
 
-After every 2-3 completed tasks, pause and verify: are the completed pieces actually working together? Run tests, check integration points, confirm that data flows end-to-end. This catches drift early instead of discovering at the end that pieces don't fit.
+Pause and verify when completed pieces first cross an integration boundary, before an irreversible transition, and before phase closure. Run the narrowest test or user path that proves the pieces work together. This catches drift without turning task count into a ceremony trigger.
 
-Checkpoints are lightweight -- run the test suite, hit the endpoint, render the component. Not a formal review. The goal is a fast feedback signal: "everything built so far integrates correctly." Document checkpoint results in `.plan/progress.md`.
+Checkpoints are lightweight -- run the test suite, hit the endpoint, render the component. Not a formal review. The goal is a fast feedback signal: "everything built so far integrates correctly." Record a result in `task_plan.md` only when it changes phase state or matters for recovery.
 
 ## Execution Posture Signals
 
@@ -36,9 +36,9 @@ Add posture signals in the phase header: `## Phase 2: Auth middleware [test-firs
 
 ## Execution Handoff
 
-When a plan is complete and ready to execute, offer the user an explicit choice rather than drifting into implementation. Present two options:
+When a plan-only request is complete, deliver the plan and stop. When implementation is already authorized, choose the simpler of these execution modes unless the choice materially changes cost, risk, isolation, or review quality:
 
 1. **Subagent-driven** (recommended for multi-phase plans, independent slices, or worktree-isolated work): dispatch each phase to a focused subagent with a self-contained task prompt (Objective / Owned Files / Interface Contracts / Acceptance Criteria / Out of Scope / Validation Assignment). Orchestrator integrates results and verifies between phases. See `ia-orchestrating-swarms` for dispatch discipline. Anchor each task prompt portably -- repo/package names, public symbols, command names, config keys, branch and PR/issue references, exact error text, and relative file paths (not absolute, which vary across working directories) -- so a fresh agent starting in a different working directory can resolve every reference.
 2. **Inline execution**: main session runs the plan phase by phase. Use when phases are tightly coupled, require shared context that would be expensive to rehydrate, or the total work fits in one session without compaction risk.
 
-State the recommendation with a one-sentence reason, then wait for the user to pick. Do not auto-start either path -- drifting from "plan approved" to "plan in progress" without the user picking a handoff mode is how orchestration discipline silently decays.
+Ask the user to choose only when the execution-mode trade-off is material. Otherwise continue with the selected mode and keep the plan's `## Next Step` current.

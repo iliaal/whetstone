@@ -52,6 +52,17 @@ Enumerate changed files **before** exclusions and track each path through `selec
 
 **Verification-mechanism carve-out:** even when a change stays single-pass by the exceptions above, if it *is* a verification mechanism (CI/CD gate, merge-block check, coverage/lint gate, build/deploy step, or test infra/mock that could mask a real failure), apply the "can this silently false-pass?" lens during the single-pass review — the mechanism can go green while the thing it guards is red. In deep review this same lens runs as a size-independent red-team trigger (see [deep-review.md](./references/deep-review.md)). A diff that modifies a documented-standards file (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, STYLE.md, lint configs) gets the same treatment: it is not "pure documentation" -- apply deep-review's standards-disclosure rule (quote each rule added or loosened and what it suppresses in this same diff) during the single-pass review.
 
+### Outcome-integrity lens
+
+Apply these checks to tests, validators, CI gates, specifications, golden files, dependency policy, demos, and conformance tooling regardless of diff size:
+
+- Compare the base and head oracle. Flag weakened assertions, removed discriminating cases, narrower subjects, relaxed validators, or changed acceptance criteria that make the same defect pass.
+- Review golden and expected-output changes semantically. A regenerated file and a green suite do not prove that the new output is intended.
+- Require each new check, matrix, report, or process artifact to name the observed defect class or release capability it gates. Flag speculative verification machinery as scope without a deliverable.
+- Reject vendoring, wrappers, or shims that bypass an explicit dependency or runtime policy unless the policy itself changed through the repository's authorized decision path.
+- Look for demo identities, fixed records, special SKUs, or hard-coded subjects that prove only the showcased path. Require varied or runtime-selected subjects when general behavior is claimed.
+- Treat process-only changes as process changes. Do not describe them as feature delivery unless the requested deliverable is the process artifact itself.
+
 | Signal | Threshold |
 |--------|-----------|
 | Lines changed (excluding test files) | >300 |

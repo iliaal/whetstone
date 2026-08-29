@@ -2,7 +2,7 @@
 
 ## Intent
 
-`ia-planning` is a `workflow`-class skill (a multi-step process producing concrete artifacts). Software implementation planning with file-based persistence (.plan/). Use when asked to plan, break down a feature, or when a task touches 3+ files, has ambiguous scope, or requires architectural decisions. Skip for typos, single-file fixes, and obvious one-shots.
+`ia-planning` is a `workflow`-class skill (a multi-step process producing concrete artifacts). It plans software implementation when unresolved decisions, dependency depth, or session continuity justify an artifact. It keeps phases vertical, process work bound to named capability, and authorized implementation moving without a ceremonial handoff.
 
 ## Scope
 
@@ -51,6 +51,7 @@ Data that must not be stored in this skill or its references:
 | Trigger fixtures | complete | distillery/tests/fixtures/triggers/ia-planning.jsonl (>=5 should_trigger, >=5 should_not_trigger) |
 | Hook regex pattern | complete | plugins/whetstone/hooks/skill-patterns.sh (`SKILL_PATTERNS[ia-planning]`) |
 | Reference architecture | complete | 2 file(s) under references/ |
+| Outcome discipline | complete | `SKILL.md` When to Plan, Plan Quality Rules, Task Rules, and Execution Handoff |
 | Real-usage signal | <!-- populated by harvest-sessions when sessions exist --> | distillery/.eval-data/ia-planning/ (created by harvest-sessions) |
 
 ## Evaluation
@@ -76,9 +77,8 @@ Acceptance gates:
 
 ## Known Limitations
 
-<!-- to fill in over time as drift surfaces. Default rule: any time diagnose-negatives
-     surfaces a recurring failure pattern, document it here so future maintainers
-     understand the trade-off the current implementation accepts. -->
+- Planning thresholds remain judgment-based because file and tool-call counts do not measure decision or integration risk reliably.
+- `.plan/task_plan.md` is ephemeral recovery state, not a shipped project artifact or evidence of implementation progress.
 
 ## Maintenance Notes
 
