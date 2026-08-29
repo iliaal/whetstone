@@ -204,8 +204,15 @@ def compose_thread(tweets: list[dict], profile: str):
                 time.sleep(0.5)
                 add_btn = page.locator('[data-testid="addButton"]').first
                 add_btn.wait_for(timeout=5000)
+                # A long first post pushes the add button below the dialog
+                # fold; an unscrolled click lands on nothing and no box appears.
+                add_btn.scroll_into_view_if_needed()
                 add_btn.click()
-                time.sleep(1)
+                time.sleep(1.5)
+                next_box = page.locator(f'[data-testid="tweetTextarea_{idx + 1}"]')
+                if not next_box.count():
+                    add_btn.click(force=True)
+                    time.sleep(1.5)
     except PwTimeout:
         print(
             f"\nError: compose failed at tweet {current} of {len(tweets)} "
