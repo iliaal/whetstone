@@ -5,6 +5,41 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.0] - 2026-08-29
+
+Minor: 130 distilled cross-repo rules landed across 18 skills, then the first full-corpus audit since 2026-08-18 put every one of them (and the other 55 components) under execution-verified review -- 40 findings fixed, including two distilled rules that were factually wrong and one bundled script that silently switched the caller's git branch. The audit's corpus-level verdict: the plugin is under-delegated, not over-populated -- zero components were worth merging or removing, but three commands carried stale inline copies of skill process that had already drifted from their source. A full Tier-2 injection judge pass over the release delta came back 57/57 clean. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+
+### Added
+
+- 130 reviewed, provenance-stripped knowledge rules across 18 skills: Laravel validation/queue/cast/testing traps, C/C++ sanitizer and lifetime discipline, test-methodology anti-patterns, verification gates (zero-executed suites, binary identity, rebase survival), React Query/test-runner rules, Rust test isolation, Node/Python resilience, git worktree ownership, PostgreSQL migration locks, bash secret/exit-status discipline
+- Four reference files extracted from oversized skill bodies: writing-tests isolation/sandbox traps and false-pass oracle traps, orchestrating-swarms cross-run coordination (TTL leases, identifier minting), agent-native durability and attestation
+- Four-status worker vocabulary (DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT) now actually defined in orchestrating-swarms -- two files pointed at owners that never defined it
+- 27 trigger-regression fixture cases covering the recall gaps below
+
+### Changed
+
+- `/ia-review`, `/ia-work`, and `/ia-compound` now delegate to their skills via explicit Skill calls instead of inlining process copies -- the copies had drifted (merge-algorithm rules missing, verification gates dropped, category list 9-vs-13)
+- `paths:` frontmatter unlocked on five language skills that were auto-load-gated out of their own advertised scope: tailwind-css gains .tsx/.jsx/.html/.vue/.blade.php, cpp-systems gains .h and CMake files, python-services gains pyproject.toml/ruff.toml/uv.lock, react-frontend gains .ts, postgresql drops its .sql-only gate
+- Four trigger regexes widened from measured F1 0.0-0.57 to 1.0: meta-prompting (11 of 14 modifiers had no route in), nodejs-backend (NestJS/Hono/Koa/tRPC/Bun), orchestrating-swarms ("subagent", "fan out"), file-todos (every activation route was closed)
+- Oversized skill bodies trimmed to references: php-laravel 43.2KB to 33.9KB, writing-tests 6,449 to 4,979 tokens, react-frontend and agent-native-architecture now under the 4K flag
+- Posture signal canonicalized to the `[test-first]` phase-header bracket; the competing Plan Template field removed
+- Rails-flavored examples replaced with PHP/TS equivalents at five sites; twelve second-person insertions rewritten to objective voice; cross-harness skills now name their blocking ask tools (AskUserQuestion / request_user_input)
+- Model tiers for review agents now come from agent frontmatter (kieran-reviewer opus to sonnet); deep-review's per-lens model table removed
+- Meta-prompting decision evidence refined; agent workflows kept outcome-first
+- `discover-signals` retired from the sync pipeline after eight consecutive zero-promotable runs (remains available manually)
+
+### Fixed
+
+- Two false distilled rules, both execution-disproven: `cargo install --path .` always rebuilds (the silent no-op is registry/git installs only), and single-arg `z.record()` fails at type-check and first parse, not at JSON-Schema generation
+- `worktree-manager.sh create` no longer checks out and pulls in the caller's tree -- fetch-only with an offline fallback, so the active branch survives worktree creation
+- compound-docs validation: the blocking gate pointed at a phantom `schema.yaml`, and `validate-frontmatter.sh` passed `symptoms: []` -- both fixture-tested
+- Stale `/resolve-pr-parallel` command name (two sites), a fabricated `linear issue create` CLI (replaced with the Linear MCP route), and a dead CLAUDE.md protocol pointer
+- `/ia-resolve-todo-parallel` no longer instructs deleting todo content -- completion is the documented rename-to-complete workflow
+- md-docs emoji rule aligned with ia-writing's README carve-out (the two skills gave opposite instructions on the same files)
+- PHPUnit `--processes` corrected to ParaTest; Laravel route-closure serialization claim narrowed to reproduced behavior
+- `/ia-setup` Comprehensive tier no longer promises agent-native checks it never ran; `/ia-verify` now dispatches the accessibility-tester agent instead of a weaker inline copy
+- post-thread.py: scroll the add button into view and retry before waiting on the next box
+
 ## [4.4.3] - 2026-08-29
 
 Patch: an 11-day delta sync across 43 reference repos plus a marketplace scan, then a reactive audit over the sync's own output. The sync applied 23 findings; the audit found 13 defects in them and fixed all 13. Two of this release's fixes correct rules the plugin itself had wrong: the PostgreSQL composite-index advice ("most selective column first" — replaced with equality-then-range, confirmed by a live EXPLAIN where the eq-first index ran ~17x cheaper) and the Pine Script line-wrap rule (an indent of exactly 4 satisfied the old rule and errors; the real rule is non-multiple-of-4 outside parentheses, verified against TradingView's docs). The audit's recurring shape this round: a correct rule inserted where its own trigger path can't reach it — a standards-file disclosure check that doc-only routing skipped, a comment-authorization guard missing from the one review mode with no human present, and a plan-overwrite rule that the scaffolding script ignored until the script itself learned to refuse. Component counts unchanged at 32 skills, 19 agents, 22 commands.
