@@ -26,6 +26,7 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 - Pin `rust-toolchain.toml` per repo so every contributor and CI uses the same compiler.
 - `cargo update -p <crate>` for single-package upgrades. `cargo update` rewrites everything — avoid in PR diffs.
 - `Cargo.lock` goes in version control for binaries *and* libraries (modern guidance; reproducibility wins).
+- `cargo install --path .` **silently does nothing** when the package version and source path are unchanged — it reports "package is already installed" and leaves the previous binary in place, so a code-only change installs nothing while the switchover appears to succeed and the old build keeps running. Pass `--force` in any install script, and certify the **installed** artifact rather than the one in `target/release` (an env override pointing the test suite at an arbitrary bin directory does this with the same fixtures).
 
 ## Workspaces
 
@@ -75,6 +76,7 @@ Split by crate role:
 - Prefer `Result<T, E>` over panics for any recoverable error. Panics are for programmer bugs (broken invariants), not runtime failures.
 - **`#[must_use]` on fallible APIs**: annotate functions returning `Result` or newtype-wrapped results that callers frequently ignore. Catches `let _ = validate(x);` at compile time instead of shipping a silently-dropped error.
 - **Make illegal call-sequences unrepresentable** — the type-state pattern: encode a mandatory call order as distinct types (`Client<Uninitialized>` → `Client<Connected>`) so an out-of-order call fails to compile instead of erroring at runtime.
+- **`fs::read_to_string(p).unwrap_or_default()` to mean "an absent file is an empty config" swallows every read error, not just `NotFound`.** A file that exists but cannot be read — permission denied, invalid UTF-8, transient I/O — collapses to empty, and the next step writes a fresh file over the comments and unrelated entries you could not read. Match the kind: `Err(e) if e.kind() == ErrorKind::NotFound => Ok(default)`, everything else propagates with context. Test it by writing invalid UTF-8 bytes to the path and asserting the operation returns `Err` *and* leaves the bytes untouched.
 
 ## Ownership Discipline
 
@@ -84,6 +86,8 @@ Split by crate role:
 - `Cow<'_, str>` when a function sometimes allocates and sometimes borrows (e.g. normalization).
 - Rely on lifetime elision. More than one signature needing an explicit `'a` is a signal the type should own its data — convert the borrow to owned before adding lifetimes.
 - Reducing hot-path allocations (SmallVec, ArrayVec, string interning, `Bytes`, vectored writes): profile first, then load [performance.md](./references/performance.md).
+- **`str::lines()` splits on `\n` only.** A line-oriented scanner ported from a language with universal newlines (Python, Ruby) silently merges a bare-`\r` file into one line — in a redaction or filtering tool that is a security divergence, not a formatting one: the whole body rides through on whatever classification the merged first line matched. Write the splitter explicitly over CR, LF and CRLF, and emit the **original bytes** for every line the rules did not change rather than re-encoding a decoded copy — a round-trip through lossy decoding transcodes lines the tool was supposed to pass through untouched.
+- **The `regex` crate has no look-around.** If a rule is defined by a lookbehind or lookahead, reach for `fancy-regex` rather than hand-rolling boundary checks, which drift from the reference on the one input nobody tried. Three neighbours that type-check and still diverge: `regex::bytes` still applies Unicode `\b` (a byte-oriented token scan wants `(?-u:\b)`, or `cafémb-x1z` passes a boundary check ASCII `\b` would have failed); `str::to_lowercase()` is not case folding (`ß` maps to `ss` only under casefold, so a hash key derived from case-folded text differs between implementations — use `caseless`); and `char::is_whitespace()` excludes U+001C–U+001F, which Python's `\s` and `str.strip()` include.
 
 ## Async with Tokio
 
@@ -97,6 +101,8 @@ Split by crate role:
 - Backpressure via bounded `mpsc` channels — unbounded channels hide memory growth until OOM.
 - **`Semaphore` for hard concurrency limits** on spawn paths that don't fit a channel model (e.g. "at most 50 concurrent outbound HTTP calls"). `let _permit = sem.acquire().await?;` inside the task; dropping the permit releases the slot. Pair with `Arc<Semaphore>` shared across spawners.
 - Don't mix async runtimes. Pick `tokio` and stick with it; `async-std` and `smol` don't interop cleanly.
+- **A manually-constructed `Runtime`'s `Drop` joins already-running `spawn_blocking` tasks.** A daemon whose shutdown must not wait on wedged blocking work (long inference, stuck I/O) has to finish its cleanup and `std::process::exit(0)` rather than let the runtime drop, or use `shutdown_timeout`. `JoinSet::abort_all` does not help — abort takes effect at an await point, and a blocking closure that has already started has none.
+- **A panic inside a spawned per-request task is worse than an error.** Without a `catch_unwind` the panic unwinds that one task: the connection survives, no response is ever sent for that request id, and the caller waits until its own timeout. So every reachable `unwrap`/`expect`/slice index in a handler — a DB row with an unexpected enum string, a model output of unexpected shape, an index derived from untrusted input — is a client hang rather than a crash you would notice. Running the handler body under `spawn_blocking` gives the boundary for free: a panic arrives as a `JoinError` you convert into an error response, and the same call offloads the blocking work.
 
 ## CLI Tools (clap)
 
@@ -143,6 +149,8 @@ See [axum-service.md](./references/axum-service.md) for project layout, extracto
 - **Assert on error variants with `matches!`**: `assert!(matches!(result.unwrap_err(), MyError::Validation(_)))` — no `match` arms to update when unrelated variants are added.
 - Coverage: `cargo llvm-cov --workspace --html`. Target 70%+ on application code, higher on library crates.
 - **Fuzzing for parsers**: `cargo fuzz` + `libfuzzer-sys` on any code parsing untrusted input; nightly runs surface panics and UB unit tests miss.
+- **Never mutate process-global state in a test.** `set_var("TMPDIR", …)` in one test makes every *concurrent* `tempfile::tempdir()` create its scratch dir inside that test's `TempDir` — recursively deleted when it drops. The smoking gun is nested temp paths (`/tmp/.tmpXXXX/.tmpYYYY/…`) and `ENOENT` on files a victim just created, with the failing test rotating between runs. A mutex around the env-mutating tests does not fix it: the victims never take the mutex. Refactor the function under test into a thin env-reading wrapper over an env-free core that takes the values as parameters, and test the core.
+- **A concurrent `Command::spawn` briefly extends the lifetime of every open file descriptor.** `fork` duplicates the whole parent fd table and only `exec`'s `CLOEXEC` closes the copies, so in that window a sibling test holds your lock fd or your just-written script's write fd. Two symptoms, one cause: an `flock` that outlives its guard's `drop` (a test asserting "drop released it, re-acquire succeeds immediately" fails roughly 1 run in 12 next to spawn-heavy tests, 0 in N alone — fix with a bounded poll-acquire to a deadline, not a one-shot assert) and `ErrorKind::ExecutableFileBusy` on exec'ing a file you just `chmod +x`'d (fix with a bounded retry around the spawn). The already-held assertion needs no change in either case.
 
 For generic test discipline (anti-patterns, mock rules, rationalization resistance), see the `ia-writing-tests` skill.
 
@@ -173,6 +181,7 @@ General CI design lives with the `ia-infrastructure-engineer` agent. For Rust-sp
 - Only touch what's necessary — avoid unrelated changes in a PR.
 - No `#[allow(clippy::...)]` as a shortcut — fix the underlying issue. When a suppression is genuinely warranted, write `#[expect(clippy::lint_name, reason = "...")]` instead: `expect` warns once the lint stops firing, so a suppression that has outlived its cause reports itself, where `allow` rots silently forever. (`expect` needs Rust 1.81+; edition 2024 clears that floor.)
 - Before adding a trait or generic, verify it's used in 3+ places. Otherwise a concrete type is clearer.
+- **`bool::then_some(x)` takes `x` by value — the argument is computed before the bool is consulted**, so a guard written as a condition plus a fixed-width slice panics on exactly the inputs the condition was checking for: `(b.len() >= 19 && b[4] == b'-').then_some(&v[..19])` panics on any shorter value, exiting 101 inside the one function written to report the case as undetermined. Use `then(|| …)`, which is lazy. Clippy does not flag the difference. Grep `then_some(` for an argument that indexes, slices, unwraps, or allocates. Related: **a fixed-width slice is not a parse** — `&v[..19]` also panics mid-character on non-ASCII, and comparing two such prefixes lexicographically drops the timezone offset, so `01:00+02:00` sorts after `00:00Z` while being an hour earlier. Parse and normalize, or reject.
 
 ## Verify
 

@@ -121,6 +121,7 @@ Stacks (HCP -- check current release status): orchestrates multiple configs as a
 - Never hardcode credentials -- use assume_role, OIDC, or secrets managers.
 - Pre-commit: auto-format first (`terraform fmt -recursive` -- rewrites files), then verify (`terraform validate && tflint && trivy config .`)
 - `moved { from = old; to = new }` for refactoring resource names/modules without destroy-recreate. Remove block after apply.
+- `lifecycle { ignore_changes = [attr] }` suppresses **updates only**, and it substitutes the prior state value at plan time -- on the *first* plan after the config change, with no "first apply" exception. Two consequences reviewers get backwards: (1) on an already-provisioned resource the literal in the config is never written, and `ForceNew` never fires because `ignore_changes` erased the diff before replacement is evaluated -- so a change that replaces a committed value with a placeholder scrubs the repository and leaves the remote value live; (2) `ignore_changes` does not apply on create, so any later `-replace`, taint, `state rm` + re-add, or manual deletion re-seeds the placeholder over a value that was set out of band. Keep only the container resource in configuration and provision the value entirely out of band, or state the restore step in the runbook for every replace path.
 
 ## Troubleshooting
 

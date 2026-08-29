@@ -29,6 +29,7 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 
 - `-E` propagates ERR traps into functions
 - `inherit_errexit` propagates errexit into `$()`  command substitutions
+- Resolve the script's own data files against `SCRIPT_DIR`, never the caller's cwd or `git rev-parse --show-toplevel`. A shared linter invoked from another project's git hook, a cron job, or a wrapper runs with someone else's cwd, so a caller-relative rules path resolves to a file that does not exist: the rule set loads empty, zero violations are found, exit 0. It is a silent no-op, not an error, and running it from inside its own repo passes for the wrong reason. Exercise it once from a scratch directory that is not the script's own tree
 - Always create temp dirs under the EXIT trap: `_tmpdir=$(mktemp -d)`
 - Wrap body in `main() { ... }` with source guard: `[[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"` -- enables sourcing for testing
 
@@ -48,6 +49,8 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` -- shows file:line per command
 - Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` -- no magic numbers in `exit`
 - Pipeline diagnostics: `"${PIPESTATUS[@]}"` shows exit code of each pipe stage, not just last failure
+- Branch on a probe's exact exit status, not on nonzero-versus-zero. A tool that exits 2 for "ran, found nothing" and 128 for "could not run" collapses into a single negative under `if ! cmd`, and stderr is often empty for both. Treating every silent nonzero as "absent" converts a network, permission, or spawn failure into a confident false diagnosis
+- `A || B` is a fallback only when `A` **fails** on the case `B` exists for. When `A` succeeds while doing the wrong thing -- resolving a different tool, default, or directory -- `B` is dead code and the wrong behavior is silent. Same trap in `${VAR:-default}` on a path two processes must agree on: whoever lacks `VAR` gets a different location, the two silently stop sharing state, and neither errors. Pick one resolution and fail loudly when it is unavailable
 
 ## Safe Iteration
 
@@ -119,9 +122,19 @@ ensure_dir()  { [[ -d "$1" ]] || mkdir -p -- "$1"; }
 ensure_link() { [[ -L "$2" ]] || ln -s -- "$1" "$2"; }
 ```
 
+A linear script with irreversible steps (commit, push, tag, publish) must be re-runnable from any failure point, not just idempotent per primitive: make each step check-and-skip (`release_exists "$tag" || create_release "$tag"`) so a failure at step 4 is repaired by one re-invocation instead of a hand-reconstruction of steps 4-6.
+
 **Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` -- validate at script boundaries with `[[ =~ ]]`. The leading `[1-9]` also excludes zero-padded input, which arithmetic would read as octal; widening this to `^[0-9]+$` to admit `0` reintroduces that trap unless the value goes through `10#`
 
 - `umask 077` for scripts creating sensitive files
+- Moving a secret out of argv into a temp file closes the `ps` / `/proc/<pid>/cmdline` exposure and nothing else. Bash stores a multi-line command as **one** history entry, heredoc body included, and the single-line form `printf %s '<value>' >"$tmp"` puts the value on the command line too. Take it from stdin and let a JSON-aware writer escape it:
+  ```bash
+  umask 077; tmp=$(mktemp); trap 'rm -f -- "$tmp"' EXIT
+  read -rs SECRET                                   # stdin: never a command line, never in history
+  jq -n --arg pw "$SECRET" '{Password:$pw}' >"$tmp"
+  ```
+  `jq --arg` keeps `"` and `\` intact where a heredoc cannot; `mktemp` over a fixed path because `umask` sets the mode of files it *creates* and a predictable name on a shared host is writable through a pre-planted symlink
+- Generate secret/token files with no trailing newline. `cmd >"$f"` keeps the `\n`, `$(cat "$f")` strips it, and CLI arguments of the `file://$f` shape transmit it verbatim -- so one generated value installed into two consumers differs by one byte while both sides *display* the same characters and every constant-time comparison on the far side just returns false. Fix at the generator (`printf %s "$(cmd)" >"$f"`), never per reader, and verify with `wc -c < "$f"`
 - Signal cleanup: `trap 'cleanup; exit 130' INT TERM` -- preserves correct exit codes for callers
 
 ## Logging
@@ -141,6 +154,7 @@ die()   { error "$@"; exit 1; }
 | `for f in $(ls)` | `for f in *; do` or `find -print0 \| while read` |
 | `local x=$(cmd)` | `local x; x=$(cmd)` -- preserves exit code |
 | `x=$(cmd)` then an `[[ -z $x ]]` fallback check | `x=$(cmd) \|\| true` -- under `set -e` a failed `$()` in a bare assignment aborts the script there, so the fallback never runs (opposite of the `local` case: `local` masks the failure, a bare assignment propagates it) |
+| `x=$(cmd 2>/dev/null \|\| echo MISSING)` | Capture and test separately -- a tool that prints to stdout *and* exits nonzero (some echo their unresolved argument before failing) contributes both strings, so `x` becomes `<junk>` + `MISSING` and every comparison built on it reports a spurious difference. The `2>/dev/null` that quiets the loop is also what hides the error line |
 | `echo "$data"` | `printf '%s\n' "$data"` |
 | `cat file \| grep` | `grep pat file` |
 | `kill -9 $pid` first | `kill "$pid"` first, `-9` as last resort |

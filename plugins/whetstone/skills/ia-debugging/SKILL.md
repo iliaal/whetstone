@@ -20,6 +20,8 @@ Never propose a fix without first identifying the root cause. "Quick fix now, in
 
 **0. Read the error.** Read the full error message, stack trace, and line numbers before doing anything. Error messages frequently contain the exact fix. Don't skim -- read the entire output.
 
+**After a session resume or compaction, confirm HEAD before trusting file content carried in context.** Context survives compaction; the repository does not freeze while it does. A file body, class shape, or pipeline order in context describes the tree at the moment it was read, and commits from another session, a background agent, a teammate, or your own earlier push can have landed since -- nothing marks the drift. Run `git log --oneline -1` as the first call after any resume and compare it to the SHA the context assumes. Tells that HEAD moved: a deterministic count changes with no cause (test count, symbol count, file count), an edit's `old_string` is missing from a file you "just read", or a constant you remember is absent from it. Re-read a file before editing it after a resume; that is the only way staleness tracking engages.
+
 **1. Reproduce** -- build a feedback loop, *then* make the bug consistent. The loop is the deliverable of this step, not the analysis. Without a fast, deterministic "broken / fixed" signal, every later step is guesswork.
 
 **A loop already provided? Run it before touching source.** If the workspace has a test file, or the report says "run X to see the failure," that command *is* the feedback loop: run it after Step 0 and record the RED output before reading source, forming hypotheses, or editing -- without an observed failing run this session, nothing proves the fix changed anything.
@@ -47,7 +49,9 @@ If the bug is intermittent, run the loop N times under stress or simulate poor c
 
 **Multi-component systems** (CI -> build -> deploy, API -> service -> DB): before proposing fixes, log what data enters and exits each component boundary and verify env/config propagation across it. Run once to see WHERE it breaks, then investigate that component. Write probes unbuffered to stderr (`console.error`, `fwrite(STDERR, ...)`, `print(..., file=sys.stderr)`); application loggers may be suppressed in tests. Log BEFORE the dangerous operation, not after it fails. Include context: cwd, env vars, `new Error().stack`.
 
-**Pre-existing failure proof:** before claiming a test failure is "not related to our changes," prove it: run `git stash && [test command]` to confirm the failure exists on the base branch. Pre-existing without receipts is a lazy claim.
+**Pre-existing failure proof:** before claiming a test failure is "not related to our changes," prove it: run `git stash && [test command]` to confirm the failure exists on the base branch. Pre-existing without receipts is a lazy claim. The stash stack is shared across linked worktrees, so this recipe is unsafe in a tree that automation or a background agent also touches -- there, take a scratch copy or a dedicated worktree instead of stashing in place.
+
+**A cross-branch A/B needs a pristine baseline.** `git checkout <baseline>` does not discard a dirty working-tree edit that merges cleanly -- it carries it into the checked-out tree, so the "before" build silently contains the fix and the experiment runs patched-vs-patched. The tell is *before == after* to the byte when a delta was expected. Commit the fix on its branch first, then run `git status --porcelain` after the baseline checkout and before the baseline build; non-empty output means the comparison is already poisoned. When restoring a single file, name the source (`git checkout HEAD -- <file>` for the commit, `git checkout <base> -- <file>` for the baseline) -- the bare `git checkout -- <file>` restores the *index*, which may hold neither -- and assert the expected diff before rebuilding.
 
 **Before external searches** (web, docs, forums): strip hostnames, IPs, file paths, SQL fragments, and customer data from the query. Raw stack traces leak privacy and return noise.
 
@@ -92,6 +96,8 @@ After 3 failed fix attempts, STOP -- the problem is likely architectural, not a 
 
 In diagnosis-only work, the equivalent budget is 3 investigation cycles without narrowing the component under suspicion -- emit interim findings and the next instrumentation step instead of continuing.
 
+**When reasoning reaches the same contradiction twice, instrument it.** Re-deriving the same impossible conclusion from the source is not a new cycle -- it produces no edit, so it never trips the threshold -- and it is the signal that a value in the mental model is wrong. Log the two divergent values side by side at the point they disagree. One build usually collapses what repeated re-reading cannot.
+
 **Architectural problem indicators** -- signals the bug is structural, not a surface fix: each fix reveals unexpected shared state or coupling; fixes require massive refactoring to implement correctly; each fix creates new symptoms elsewhere in the system.
 
 **No root cause found:** if investigation is exhausted without a clear root cause, say so explicitly. Document what was checked, what was ruled out, and what instrumentation to add for next occurrence. An honest "unknown" with good diagnostics beats a fabricated cause.
@@ -123,6 +129,7 @@ When you catch yourself doing or thinking these things, **stop and return to Ste
 | Ignoring intermittent failures ("works on my machine") | Instrument and reproduce under load. Isolation success doesn't explain integration failure. |
 | "I'll clean up the debugging later" | Remove diagnostic code now or it ships to production. |
 | "This failure is pre-existing, not related to our changes" | Prove it: run the test suite on the base branch. No receipts = no claim. |
+| "The tool truncated the output" / "the runner must be broken" | Check your own state first -- a moved HEAD, a stale context, or a dirty tree explains this far more often than tool misbehavior. Proving a tool bug means reproducing it at a known commit. A report filed from stale context wastes the fix and costs the tool its credibility for the next session. |
 | "The test is wrong, not the code" | Verify before dismissing. Read the test's intent. If the test is genuinely wrong, fix it with a clear rationale, not a silent update. |
 | "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the working example completely and apply it exactly. |
 

@@ -50,6 +50,19 @@ If not ignored, add it to `.gitignore` before proceeding.
 
 After creating a worktree, run the project's test suite (or the fastest relevant subset if the full suite exceeds a few minutes) to establish a clean baseline. Pre-existing failures in the worktree should be caught before starting new work -- not discovered mid-implementation.
 
+## Dependency Provenance
+
+Never satisfy a worktree's gitignored dependency directory with a symlink to another checkout's. Generated autoloaders and module resolvers compute the application base directory from the *real* location of their own files, so the link resolves back into the donor tree and every first-party class or module loads from there -- your worktree's edits never execute, new files appear as "not found", and config comes from the other tree's `.env`. Give the worktree a real directory: `cp -al <donor>/vendor "$WT/vendor"` (hard links: same inodes, near-zero disk, correct base dir) for a read-only harness, or a full dereferencing copy / real install whenever anything will write into it -- hard links mean a package-manager write edits the donor too. Assert it once rather than assuming: print the resolved file path of one first-party symbol and confirm it names the worktree.
+
+## Ownership
+
+- One writer per worktree. Treat every `git worktree list` entry you did not create **in this session** as read-only -- a tree left from a previous round is not yours either. Reuse is most tempting exactly where it is most dangerous: an existing tree already has dependencies and env wired up, and another session may be running a suite in it.
+- Do not mutate a tree while your own suite runs there. Test runners load source files as they reach them, so a mid-run edit produces a mass-failure result that looks exactly like a real regression.
+- A failure burst that contradicts a claim is a harness **hypothesis**, not a conclusion. Do not record or report the self-inflicted attribution until a re-run on a tree you have just asserted clean (`git status --short` empty) has returned.
+- When a mutation is unavoidable, assert the restore (grep the token back to its original count, plus `git status --short`) rather than trusting `git checkout --`.
+
+Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persists across calls, so one `cd <repo-root>` for an unrelated reason silently relocates every later command: probe files get written into the shared main tree and run against its bytes, and the tidy-up reflex `git checkout -- <path>` becomes a **write** aimed at the wrong tree. The `git -C` habit does not generalize -- interpreters, test runners, linters, and a heredoc `cat >` all take the cwd. Have any probe print the tree it ran in.
+
 ## Environment Detection
 
 Before creating worktrees, detect the execution context:

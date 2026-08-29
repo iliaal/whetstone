@@ -19,6 +19,8 @@ Evidence is invalid when the change makes the oracle easier to satisfy instead o
 
 Classify proof honestly. Fixtures, mocks, seeded rows, retained captures, and recorded responses can support deterministic tests, but they are not live evidence. Claim live behavior only after a fresh process exercises the intended entry point against runtime-selected or independently varied subjects where that distinction matters.
 
+**Tightening validation on input you cannot read is not covered by green tests.** When a change moves a parser from lenient to strict (`validate=True`, `strict=True`, `errors="strict"`, a tight regex replacing a permissive built-in) and the value comes from a secret store, an environment variable, or a human, the tests construct their input with the canonical encoder and are green by construction -- they cannot emit the stray byte the old leniency was absorbing. "It has worked in production for a year" is likewise zero evidence: the leniency is precisely what hid the byte. Pair the strictness with an explicit normalization step and state the coverage gap rather than reporting the change as verified.
+
 When the positive capability is safe, authorized, and in scope, a refusal-only path is incomplete. Verify and report the refusal behavior, but do not close the feature until the positive path works through its intended entry point.
 
 ## Pre-Verification Check
@@ -70,6 +72,10 @@ Before any success claim, run through these five steps:
 | **4. Verify** | Does the output actually confirm the claim? | "42 passed, 0 failed" confirms "tests pass". "41 passed, 1 failed" does not. |
 | **5. Claim** | Only now make the statement | "All 42 tests pass" with the evidence visible |
 
+**A suite that executed nothing exits 0.** Zero failures is not a pass when the executed count is also zero -- an unloadable module, an unmet skip condition, a collection error, or a filter matching no tests all produce a green exit and an empty summary. Read the executed and passed counts, not just the failure count, and require the passed count to be positive before accepting a run as evidence. Where a suite can legitimately skip everything (optional dependency, service-backed cases), keep at least one unconditional case so a positive count still means something.
+
+**Prove which binary produced the evidence.** A green run says nothing about *what ran*. PATH lookup, a stale installed copy, a compiled sibling, or a system interpreter can shadow the tree under test: run `command -v`, resolve symlinks, and compare the reported version or build SHA against the source being verified. For deployed code, run the check through the exact interpreter or entry point the service uses -- the one named in the scheduler entry, the unit's `ExecStart`, or the image's `CMD` -- never the bare binary on PATH. An error about a symbol or argument the deployed code plainly uses is a tell that the check is on the wrong interpreter, not that the deploy is broken. A live failure from an installed helper does not refute a source fix until that identity is checked.
+
 ## Verification Strategies by Change Type
 
 Type-check and unit tests are the universal baseline — not sufficient proof on their own. Match the strategy to the change:
@@ -82,6 +88,7 @@ Type-check and unit tests are the universal baseline — not sufficient proof on
 | Infra / IaC (Terraform, Dockerfile, k8s) | `terraform plan` / `docker build` / `kubectl apply --dry-run=server`; review the diff before applying |
 | Database migration | Run migration up, down, then up again against production-shape data |
 | Refactoring (no behavior change) | Full test suite passes unchanged; public API surface diff shows no breakage (`grep` exported identifiers) |
+| Mechanical or scripted sweep (width-based rewrap, regex pass, in-place edit) | Verify with a parser or compiler (`compileall`, `cargo check`, `tsc --noEmit`, a build), never with the linter's error tally |
 | Library / package update | Run the consumer's test suite against the new version; check for deprecation warnings |
 | Schema change | Old consumers parse the new shape (forward compat); new consumers handle old data still present (backward compat) |
 | Documentation / prose | Read the rendered output; confirm links, formatting, and content match intent |
@@ -89,6 +96,12 @@ Type-check and unit tests are the universal baseline — not sufficient proof on
 | Non-runnable changes | `git diff`, confirm the diff matches intent, and state explicitly: "No automated verification available — verified by reading the diff." |
 
 Reading code is not a strategy. If the table has no row for the change, fall back to the Non-runnable row. The principle holds even when no test suite applies: state what was checked and how.
+
+A falling lint count is fully compatible with a corrupted file: most linters report only the *first* parse failure per file, so six broken literals surface as one error, six runs in a row, each looking like the last. A width-based rewriter has no parser -- it splits string literals into syntax errors and breaks comments mid-clause -- and a formatter run afterwards happily reformats prose that no longer says what the author wrote. In-place writes also replace a symlink with a regular file; check `git status --short` for a `T` (typechange) entry after any scripted edit.
+
+**"Successfully rebased" is not proof the commit survived intact.** A three-way merge can resolve a pure insertion toward the new base when the surrounding lines were rewritten upstream -- no conflict, no warning, the hunk simply gone from the commit. After any rebase, cherry-pick, or history rewrite, diff the commit's touched-file list across the operation (`git show --stat --name-only HEAD@{1}` against `HEAD`) and confirm the expected content is still present. Do this whenever the base moved since the branch was cut, not only when conflicts appeared: a clean run is not the evidence.
+
+**Self-review against the base, not HEAD.** `git diff` and `git diff HEAD` hide anything already committed on the branch. When HEAD holds an earlier attempt at the same fix, the superseded code is part of the base and never appears as an add or a remove -- the patch is unreviewable that way, and layering a second approach on top of a half-reverted first one is how a double-free or double-write ships. Diff against the upstream branch (`git diff origin/<branch> -- <files>`) and re-read the whole changed region, including lines you believe you reverted.
 
 ## Adversarial Probes
 
@@ -104,6 +117,8 @@ Exempt: docs changes, trivial typo fixes, pure rename refactors. Everything else
 ## Review Staleness
 
 Before shipping, check whether prior reviews (agent or human) are still valid. If commits landed after the last review (`git log --oneline <review-commit>..HEAD`), verify the new changes don't invalidate its conclusions: previously flagged issues are still fixed, and no new code contradicts the review's approval.
+
+**Refresh the source of truth before concluding from what it does not contain.** A snapshot fetched minutes ago supports "I did not see X", never "X does not exist" -- and a stale snapshot can *manufacture* a finding rather than merely miss one. Re-fetch immediately before the decision, not only before acting on it, whenever the conclusion depends on nothing having happened: unpushed local commits, a queued job, an unsynced remote all read as absence. Line numbers, anchors, and citations computed against the old state need re-deriving too; a moved base invalidates every coordinate even when the substance survives. Conclusions about a *person's* actions do not fail safe -- hold those to a fresh fetch and a second corroborating signal before they go anywhere external.
 
 ## When This Applies
 

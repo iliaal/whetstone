@@ -41,6 +41,8 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 
 Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`. Define z-index as tokens (`--z-modal: 50`) and reference via `z-(--z-modal)` instead of arbitrary `z-50`.
 
+**`@theme` tokens are tree-shaken.** v4 emits only the variables it can see used, so a token existing in a shared file says nothing about whether it reaches a given app's bundle -- measured on one shared token file feeding two apps: 20 of 59 `--color-*` emitted into one, 19 of 59 into the other. `@theme static` is the opt-out. A `var(--color-x)` reference inside your own hand-written CSS **counts as a use**, so pointing a custom property at a token (`--app-checkbox-border: var(--color-border-400)`) is self-sustaining, not fragile -- Tailwind sees your CSS, not just your class names. Never rate a "this indirection depends on some unrelated utility still existing" concern on tree-shaking alone: delete the last utility usage in that app's scan set, rebuild, and read the compiled CSS. Assert the utility actually vanished as the applied control, or a build that silently no-opped (wrong package filter, stale `dist`) reads identically and you draw the same conclusion from nothing.
+
 **CSS Modules**: when using `.module.css` with Tailwind v4, add `@reference "#tailwind";` at the top of the module file to enable theme token access inside the module.
 
 **Animations (tw-animate-css)**: use `animate-in`/`animate-out` base classes combined with effect classes (`fade-in`, `slide-in-from-top`). Decimal spacing gotcha: use bracket notation `[0.625rem]` instead of fractional values like `2.5`.
@@ -103,6 +105,8 @@ function Swatch({ color }: { color: keyof typeof BG }) {
 ```
 
 The same applies to classes built in a non-scanned location -- a string in a database, a CMS field, or a file outside the configured `@source` paths. Confirm the source actually gets scanned before assuming a literal is enough.
+
+`@source` directives resolve relative to the file they appear in, so a shared token package pulling in a sibling (`@source '../../ui/src/**/*.{ts,tsx}'`) is what makes a `libs/ui`-only utility generate in every consuming app. The real generation risk is a utility with **no** prior usage anywhere, and it fails invisibly rather than loudly: an SVG whose root carries `fill="none"` and whose paths swap `fill="#355BF5"` for `className="fill-primary-500"` renders *invisible*, not mis-colored. Grep the compiled CSS of every consuming app, not one.
 
 Verify by building, not by reading: when class names or scanned sources changed, run the real Tailwind build and grep the output CSS for the expected utilities. Reviewing the `className` attribute proves the string is right, not that the rule exists.
 

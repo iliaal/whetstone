@@ -20,6 +20,7 @@ These apply when *defining* a macro. An ordinary invocation of someone else's ma
 
 - **`Path` is not UTF-8.** On Unix a filename is arbitrary bytes; on Windows it is potentially ill-formed UTF-16. `path.to_str().unwrap()` panics on filenames that are perfectly legal on the user's disk. Use `to_string_lossy()` where the value is only ever displayed, `OsStr`/`OsString` where it is passed through, and reserve `to_str()` for cases where non-UTF-8 is a genuine error the caller should see — with a real error, not an unwrap.
 - The same applies to arguments and environment variables (`args_os()`, `var_os()`) when a value may originate outside the program.
+- **An argv ban-list that converts to `String` first is bypassable.** The reasoning "a non-UTF-8 argument is prose, never a flag" is false: `--slug=\xff` is a non-UTF-8 argument that is very much a flag, and lossy conversion mangles it into something the ban-list no longer recognises while the downstream tool, receiving the original `OsString`, still parses it as the flag. Match on `OsStr::as_bytes()`, splitting on `b'='` before comparing.
 - Subprocess output is bytes too. `String::from_utf8(output.stdout)` fails on any tool that emits non-UTF-8; decide deliberately between propagating that error and `from_utf8_lossy`.
 
 ## Crash-safe file updates

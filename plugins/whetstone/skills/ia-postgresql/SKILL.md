@@ -44,8 +44,9 @@ paths: "**/*.sql"
 **Core rules:**
 - Every schema change is a migration. No ad-hoc DDL in production.
 - Migrations are immutable once deployed -- never edit a migration that has run in any shared environment.
-- Schema migrations and data migrations are separate files. Schema changes are fast and transactional; data backfills are slow and may need batching.
+- Schema migrations and data migrations are separate files. Schema changes are fast and transactional; data backfills are slow and may need batching. Exception: when one transaction is what closes a rolling-deploy null window, do not split reflexively -- see the `ADD COLUMN` lock note under Dangerous operations for the table-size disposition.
 - Forward-only in production. Rollback = a new forward migration that reverses the change.
+- A re-run guard that checks one object (`IF EXISTS`-style early return on the main table) is a valid proxy for "everything already applied" **only** when the entire migration body runs in one transaction. PostgreSQL rolls `CREATE TABLE` / `CREATE TYPE` / `CREATE INDEX` (non-concurrent) / `CREATE FUNCTION` / `CREATE TRIGGER` / `ALTER TABLE` back together, so table-exists implies the rest committed. Any statement that cannot run inside a transaction -- `CREATE INDEX CONCURRENTLY`, `ALTER TYPE ... ADD VALUE` on older versions, `VACUUM` -- sits outside that guarantee, and the guard then skips it on re-run and ships a partial schema. Confirm every DDL object is inside the one transaction before relying on the guard.
 
 **Expand-contract pattern** for zero-downtime renames and removals:
 
@@ -58,6 +59,7 @@ Never rename or remove a column in a single migration -- callers reading the old
 **Dangerous operations:**
 - `NOT NULL` without a `DEFAULT` on an existing table locks and rewrites every row. Add the column nullable first, backfill, then add the constraint.
 - `CREATE INDEX` (without `CONCURRENTLY`) locks writes for the duration. Always use `CONCURRENTLY`, which cannot run inside a transaction block -- keep it in its own migration.
+- `ADD COLUMN ... NULL` with no default is metadata-only and fast, but it takes `ACCESS EXCLUSIVE` and that lock is held until the enclosing **transaction** commits -- not until the `ALTER` returns. A migration that adds the column and then backfills every row in the same transaction blocks all readers and writers for the backfill's duration. Do not reflexively split it: the single-transaction ordering (`ADD` nullable -> backfill -> `SET DEFAULT`) is itself the fix for the rolling-deploy window where an old release inserts `NULL` before the default exists. The disposition is table size, not a rule -- on a small table accept the sub-second hold and state the row count; on a large one use expand-contract (deploy the column with a constant `DEFAULT` first, then a separate chunked backfill outside a transaction).
 - Large data backfills: batch with `FOR UPDATE SKIP LOCKED` to avoid locking the entire table:
 
 ```sql

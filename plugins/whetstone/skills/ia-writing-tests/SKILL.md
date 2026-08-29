@@ -48,6 +48,10 @@ Anything in any source with no corresponding test is a coverage gap -- implement
 
 For each acceptance criterion, include at least one discriminating case that a naive wrong implementation would fail. Prefer the negative, boundary, or state-transition case that separates the intended contract from a hard-coded happy path. Do not add a meaningless negative-case quota when one strong case already distinguishes the behavior.
 
+**Make the fixture adversarial on the axis under test.** Realistic sample data carries globally unique ids, distinct values, and non-overlapping keys -- which is exactly what lets a wrong implementation pass. If the contract is a composite key, build a fixture where every child id collides across parents; if it is ordering, give every item the same timestamp. The right fixture is the one a naive implementation cannot survive, not the one that looks most like production.
+
+**An assertion of absence is discriminating only once it has been made to fail.** A test asserting that nothing was written to the shared path, nothing leaked into the production channel, or the fallback was never taken passes identically whether or not the guard works. Plant the forbidden violation and watch that specific assertion fail before trusting it (mechanics under Red-Green-Refactor).
+
 For each source, enumerate user journeys ("As a [role], I want to [action], so that [benefit]") and generate test cases from each, so tests cover user-visible behavior rather than implementation details.
 
 ### DAMP over DRY in tests
@@ -112,6 +116,7 @@ Tests must detect silent failures, not just happy paths. For every code path tha
 - **Converted errors** (`catch (e) { return defaultValue; }`) — assert the return value AND that the error was recorded where an operator can find it.
 - **Missing async handling** — assert a rejected promise inside the function surfaces as a failure, not just an unhandled-rejection warning.
 - **No rollback around transactional work** — assert a mid-transaction failure leaves no partial state (row counts match, queue unchanged).
+- **Correlated fallbacks feeding an aggregate** — make every item's dependency fail at once and assert the summary reports *unavailable*, not a clean 0% or 100%. A type-valid placeholder (a neutral verdict, a default score) left in the denominator turns a total outage into a confident, precise, entirely wrong number, and it degrades toward a value that reads as real signal. Assert the unavailable state reaches every surface a human reads, including the one-line summary.
 
 Assertion pattern: instead of `expect(result).toBe(null)` (which passes for both "handled gracefully" and "silent drop"), prefer `expect(logger.error).toHaveBeenCalledWith(expect.any(DatabaseError))` — make the observable signal part of the contract.
 
@@ -126,6 +131,8 @@ Tests-first answer "what should this do?"; tests-after answer "what does this do
 3. Apply the fix
 4. **Run it and watch it pass** -- confirm the fix addresses the specific failure AND other tests still pass. A fix that breaks something else isn't a fix.
 5. If the test passes immediately without a fix, the test is verifying existing behavior, not the bug. Go back to step 1.
+
+**Absence and isolation assertions need a manufactured red phase.** A test that asserts something did *not* happen has no bug in hand to fail against, so it goes green on day one and stays green every day after, including the days the guard is broken. Supply the missing red step: plant exactly the violation the assertion forbids, using a value only this run could produce (a run-unique token, a uniquely-named artifact), and confirm *that specific* assertion fails -- not merely that some assertion fails. Then remove the plant and watch it pass. A fixture that cannot observe the behavior under test passes vacuously in both directions, and nothing else in the suite will notice.
 
 ### New features: test alongside
 
@@ -143,6 +150,12 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Fix:** Establish the runner, the checked-in wrapper, and the CI command before writing tests (see "Discover the Test Setup First").
 
+### Host-local wrappers inside tracked test scripts
+
+**Symptom:** a checked-in test script invokes a tool that exists only on the author's machine -- an agent shell wrapper, a personal alias, a locally-installed helper. On a bare CI runner, in a container, or on a colleague's machine every otherwise-correct assertion fails before reaching the code under test.
+
+**Fix:** a tracked test is a portable artifact. Use ordinary POSIX tools inside it and apply any local wrapper to the *outer* invocation instead. Declare genuinely required non-standard dependencies in CI configuration, and grep the test tree for local wrappers before enabling a hosted gate.
+
 ### Testing mock behavior instead of real behavior
 
 **Symptom:** Test passes but production breaks. Tests assert that mocks were called correctly, not that the actual system works.
@@ -153,7 +166,13 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Symptom:** `sleep(2)` / `setTimeout` / `time.sleep()` before asserting on async work. A sleep is a race condition with a timer attached: too short flakes under load, long enough is wasted wall-clock in every run forever.
 
-**Fix:** Wait on the observable condition with a deadline -- poll for the record, the event, or the state change (framework helpers: `waitFor`, `assertEventually`, polling with timeout). The deadline bounds the wait; the condition ends it.
+**Fix:** Wait on the observable condition with a deadline -- poll for the record, the event, or the state change (framework helpers: `waitFor`, `assertEventually`, polling with timeout). The deadline bounds the wait; the condition ends it. A sleep placed to *reproduce* a race is the same mistake pointed the other way -- see "Synchronous adapters hide timing-dependent races" for the barrier form.
+
+### Asserting elapsed wall-clock time
+
+**Symptom:** the test calls the real timer and asserts `now() - started >= 100`. That tests the runtime clock and scheduler, not the code's delay policy -- millisecond rounding reports 99 on a run that plainly took longer, and a re-run goes green without any code change.
+
+**Fix:** inject the sleep boundary and assert the policy: the exact delay requested, the cap applied (6000 becomes 5000), and the ordering (the wait resolves before the dependent call). Keep a real-timer test only where integration with the runtime timer is itself the contract, and then use a monotonic clock with a documented tolerance, never a one-millisecond lower bound.
 
 ### Re-running a flaky test to green
 
@@ -206,11 +225,41 @@ LLM-written tests (including self-written) fail in predictable ways. **Before co
 - **Over-broad matchers** — `expect(result).toBeTruthy()` on a function that returns an object. Passes for `{}`, `true`, `"anything"`, all equally. Pin to the specific shape.
 - **Implementation-echo assertions** — `expect(repo.save).toHaveBeenCalledTimes(1)` when the real contract is "the user exists in the database afterward." Assert on outcomes (row exists, response body contains expected fields), not call counts or internal method invocations.
 
+### An aggregate assertion that names no offender
+
+**Symptom:** `assert all(r.returncode == 0 for r in results)` renders as a bare `assert False`. The failure names neither the failing item nor its message, so diagnosing it costs an extra cycle re-running under a patched assertion.
+
+**Fix:** collect the offenders and assert on the list -- `assert [r for r in results if r.returncode != 0] == []` -- so the output carries identity and error text. Same rule for regression pins: pin the specific offending names, not a count. A defect of this class re-enters as a different plausible-looking value, and a count notices nothing.
+
 ### Persistent test infrastructure state contamination
 
 **Symptom:** Integration tests fail with row-count multipliers (expected 2 rows, got 8) yet pass on a fresh container -- persistent infrastructure kept state from prior runs. **Diagnostic shortcut:** a clean integer multiple (2x, 3x, 4x...) between expected and actual means state contamination, not a logic bug -- logic bugs rarely produce uniform multipliers across unrelated assertions.
 
 **Fix:** Reset infrastructure state between runs -- ephemeral containers, fixture `TRUNCATE`, or volume teardown (ladder in the reference); never rely on tests "cleaning up after themselves."
+
+### Bounding a containerized command with an outside `timeout`
+
+**Symptom:** `timeout N docker exec <container> <test command>` returns 124 and the run looks bounded. `timeout` signalled the client, not the process inside the container, which keeps running -- and an orphaned test holds its transaction or lock, so every later run against the same database hangs for reasons unrelated to the code under test. The symptom looks like the *new* tests hanging.
+
+**Fix:** put the timeout inside the container (`docker exec <container> timeout N <cmd>`) or bound the runtime itself. After any aborted containerized run, sweep for orphans (`ps -eo pid,etime,args` inside the container) before trusting the next result -- an `etime` far larger than any run you know about is the tell. Better still, assert the function returns within the test rather than racing a wall clock against a suspected infinite loop.
+
+### The harness sandboxes the subject in the primitive under test
+
+**Symptom:** A probe about commit durability runs under a transaction-wrapping test trait (Laravel `RefreshDatabase`, Rails `use_transactional_tests`, a pytest rollback fixture). The `COMMIT` under test becomes a savepoint, the write never becomes durable, and "did the row survive the failure?" is unanswerable -- but the probe still returns a plausible, well-formed answer. Sometimes there is a loud tell (on Postgres, `SQLSTATE 25P02` refusing every later statement); when the injected failure does not poison the connection, or the assertion reads state captured before the failure, there is no tell at all, and a wrong commit-ordering result gets quoted downstream as measured evidence.
+
+**Fix:** Before trusting a probe, ask what the harness wraps the subject in and whether that is the same mechanism the question is about. Drop the trait for that one probe and assert a control proving you did -- print the transaction nesting depth and require 0. Without the control the probe is unfalsifiable: a nested run and a clean run produce output of the same shape. Same test for a filesystem probe run under a chroot of the path under test, or any sandbox built from the primitive being measured.
+
+### Global before/after snapshots as an isolation check
+
+**Symptom:** the isolation fixture hashes an entire shared directory, ledger, or registry before and after the run and requires it unchanged. The assertion cannot name a writer, so any legitimate concurrent process flips it and the test implicates itself. Retrying to green then hides a real fixture leak exactly as easily as it hides the unrelated write.
+
+**Fix:** assert on a per-run canary instead -- a unique token or uniquely-named artifact only this run can produce. Assert it lands in the disposable location and that the shared one holds zero copies. Verify both directions: an unrelated mutation elsewhere in the shared tree must leave the fixture green. If a leaked canary must be cleaned up, remove that one derived path, never sweep the shared directory.
+
+### Relocating an environment variable and calling it isolation
+
+**Symptom:** the suite points `HOME`, `TMPDIR`, or a state-root variable at a temp directory and concludes the code under test is sandboxed. The relocation only redirects paths derived from that variable *at call time*; anything anchored to the executable's own location, a compile-time constant, or the current uid still resolves to the real one. The fixture is green either way, because reading the real file usually succeeds -- the tell is absent by construction.
+
+**Fix:** enumerate the anchors (the running binary's neighbours, baked build-time paths, uid-derived paths, literal `/tmp/` prefixes) and pin each with a planted decoy plus a positive control. Run the suite a second time against *installed* binaries in a real install layout: a build-tree-only run cannot observe any defect whose trigger is the install layout, and no amount of fixture review closes that gap.
 
 ### Vacuous forall over an empty collection
 
@@ -230,11 +279,37 @@ LLM-written tests (including self-written) fail in predictable ways. **Before co
 
 **Fix:** Inject controllable latency (fake timers, staggered deferred resolution); assert the guard holds for arrival-staggered bursts, not just same-tick ones.
 
+**Reproducing the race deterministically.** Spawning N processes, or sleeping between the two steps, hits the window intermittently, and a fixture that fails two runs in six reads as flake and gets retried away. Release N threads from a single barrier so every participant enters the window on the first round, against a freshly-cold resource each round. Where the race spans an external boundary, use a deterministic hook between the two operations rather than a timing sleep. Validate with a mutant: with the guard removed the fixture must fail every run, not most of them.
+
 ### Asserting only presence, never absence
 
 **Symptom:** Payload/serializer tests assert expected fields exist but never that unexpected fields are absent -- a field leaking into a reused builder (CREATE vs UPDATE) passes every existing test.
 
 **Fix:** Where a field set is a contract, pin absence as well as presence: `assert "proof_document_id" not in payload`.
+
+### Piping a command into `grep -q` to assert on its output
+
+**Symptom:** the assertion reports "absent" for a string plainly present in a manual run. Under `set -o pipefail` the pipeline's status is the *writer's*: `grep -q` exits on first match and closes the pipe, so the producer dies of SIGPIPE and the pipeline fails **because the assertion matched**. Independently, a command that legitimately exits non-zero -- a refusal path, a status code that is part of the contract -- fails the pipeline regardless of the match. Either way the false negative reads as a behavioral finding and sends you into the production code.
+
+**Fix:** capture, then match. `out=$(cmd 2>&1)` on one line, `grep -q 'needle' <<<"$out"` on the next; never put the command and the matcher in one pipeline. Two adjacent shapes to avoid in assertions: `grep -c` prints `0` *and* exits 1, so `grep -c p f || printf 0` emits `0\n0`; and `cmd && x || y` is not if-then-else -- `y` also runs when `x` fails.
+
+### A comparison oracle that fails open
+
+**Symptom:** the harness compares two producers with `diff -q <(producer_a | filter) <(producer_b | filter)`. `diff` observes the streams, not whether either producer succeeded -- two failed producers yield two empty streams and compare equal. Comparing only added lines has the same hole: two deletions of *different* content both produce an empty `^+` stream, and identical file and line counts do not mean identical content.
+
+**Fix:** capture each producer to a temporary file and check its exit status before comparing. Compare both added and removed hunk bodies from a zero-context diff, not summaries or diffstats. Classify a producer failure, a binary or metadata-only patch, or a comparison I/O error as *undecidable*, never as *identical*.
+
+### A green suite over a feature the test environment disables
+
+**Symptom:** The code path that would fail is behind a config or environment flag that defaults off, and the test environment sets no override. Every test exercising the affected object passes, including tests written for it, and the failure appears on the first write in an environment where the flag is on. Grepping the repository reinforces the wrong conclusion, because the enabled value lives in deployment configuration (a task definition, a parameter store), not in the codebase -- the only value in the tree is the `false` default.
+
+**Fix:** Before reading a pass as coverage, check whether the flag gating the consumer that would fail is on under test. Re-run one existing test with the flag forced on, alongside a test touching only unaffected objects as a control, so a failure is attributable to the flag rather than to the environment change.
+
+### Retiring a test suite on a similar test count
+
+**Symptom:** a suite is rewritten in another runner and the migration is declared done because the counts match. Parameterized cases collapse many legacy assertions, and a translated expectation can faithfully repeat its source's mistake.
+
+**Fix:** keep the old suite frozen as an independent oracle until four gates pass: every legacy assertion or named section maps to a collected replacement contract; both suites run against the same built artifacts and are compared on exit codes, raw bytes, file modes, and artifacts rather than summaries; focused mutations of fail-closed boundaries make *both* suites fail on the intended assertion and go green again after cleanup; and the replacement passes serially, concurrently, and in randomized order. Never change a product expectation while translating it -- record the discovered defect separately and land its regression with the product fix.
 
 ## When Stuck
 
@@ -258,6 +333,7 @@ Before considering tests complete:
 - [ ] Tests use real objects where possible (mocks only at system boundaries)
 - [ ] Edge cases covered (empty, null, boundary, error paths)
 - [ ] Each acceptance criterion has a discriminating case a naive wrong implementation would fail
+- [ ] Every absence or isolation assertion was proven able to fail -- the forbidden violation was planted with a run-unique value and that specific assertion failed
 - [ ] Tests assert on outcomes, not implementation details
 - [ ] Snapshot, golden, fixture, and generated-expectation changes were reviewed semantically rather than regenerated to obtain green
 - [ ] Tests are independent -- no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)

@@ -96,6 +96,8 @@ Use a template when at least three concrete instantiations exist or are certain.
 - Structured bindings for pair and tuple returns; a named struct for anything a caller will read twice.
 - Use `std::move` only where the source is genuinely dead afterwards. Never depend on an *unspecified* post-move value; destroy, reassign, or invoke only operations whose post-move contract is documented. Some types do specify one (`unique_ptr` is null, `future` is invalid), and relying on those is fine.
 - Never return `std::move(local)`: it defeats copy elision.
+- Never call unknown code -- a user callback, a virtual, a comparator, a visitor -- from inside a loop over a container the callee can reach. Insertion invalidates iterators and pointers into the storage, and a callback that mutates the container being walked leaves the loop reading freed memory whose bytes usually still look plausible, so the first symptom is wrong output rather than a crash. Iterate a copy, or index by position and re-check `size()` after every reentrant call, and where elements are owned indirectly, take a strong reference on each one before the pass that can drop the last owner.
+- An empty `std::string_view` may have `data() == nullptr`, which the standard permits, and `memcpy` declares its source non-null regardless of the size argument. Every libc no-ops a zero-length copy in practice, so the defect surfaces only as a UBSan diagnostic on each empty append. Guard the copy with a size check rather than suppressing the check.
 
 ## Concurrency
 

@@ -2,11 +2,12 @@
 name: ia-c-systems
 class: language
 description: >-
-  C patterns for systems code, libraries, and native extensions: module layout,
-  function decomposition, status-enum errors, memory safety, and undefined
-  behavior. Use when writing, reviewing, refactoring, or debugging C, working
-  with malloc lifetimes, buffer overflows, sanitizers, or Valgrind, or building
-  native extensions. For C++, see ia-cpp-systems.
+  C patterns for systems code, libraries, and native extensions: module
+  layout, function decomposition, status-enum errors, memory safety, undefined
+  behavior, and performance measurement. Use when writing, reviewing,
+  refactoring, or debugging C, working with malloc lifetimes, buffer
+  overflows, sanitizers, or Valgrind, or building native extensions. For C++,
+  see ia-cpp-systems.
 paths: "**/*.c,**/*.h"
 ---
 
@@ -44,6 +45,8 @@ Never widen a scoped task into a repo-wide restyle because adjacent untouched C 
 | `clang-format` | Formatter, driven by the repo's `.clang-format`, never a personal preference |
 
 Compiler warnings are the cheapest static analysis available, and a build nobody can get clean has no signal left in it. Turning `-Wconversion` or `-Werror` on globally over a mature tree produces thousands of unrelated failures, so raise the bar on the diff rather than the repository unless the whole codebase is in scope.
+
+- A faulting load with a base register and a displacement is a field access, so name the field by counting the struct's offsets by hand with alignment and padding respected, and classify the base register against null, kernel space, the heap range, and the neighbourhood of the stack pointer. A non-null heap-shaped base whose displacement lands on unmapped memory fits both "the caller passed null" and "the object was freed between creation and use", and the fix that re-derives the pointer from a live anchor closes both, so prefer it over reproducing the exact trigger.
 
 ## File and module layout
 
@@ -109,7 +112,7 @@ Public entry points validate arguments and return the argument-error status. Int
 
 An assert is a machine-checked comment: it states what must stay true and sits exactly where an editor is about to change something. Standard `assert` costs nothing in builds that define `NDEBUG` before including `<assert.h>`, which is a project decision rather than an automatic property of a release build. Where assertions stay enabled in production, assert meaningful invariants and stop chasing density. Validation duplicated at every level is noise that hides logic.
 
-Check what a **project's own** assert macro degrades to before assuming it is free. A macro that becomes an *assume* rather than a no-op still evaluates its condition on some toolchains: clang's `__builtin_assume` and MSVC's `__assume` do not evaluate, but the GCC `__builtin_expect` plus `__builtin_unreachable` form does. So an assert whose condition calls a function in another translation unit emits a real call in a release build, silently paying back the check an optimization just removed, and it measures perfectly on clang while regressing on GCC. Wrap those in the project's debug-only conditional instead.
+Check what a **project's own** assert macro degrades to before assuming it is free. A macro that becomes an *assume* rather than a no-op still evaluates its condition on some toolchains: clang's `__builtin_assume` and MSVC's `__assume` do not evaluate, but the GCC `__builtin_expect` plus `__builtin_unreachable` form does. So an assert whose condition calls a function in another translation unit emits a real call in a release build, silently paying back the check an optimization just removed, and it measures perfectly on clang while regressing on GCC. Wrap those in the project's debug-only conditional instead. Do not answer that by marking the called predicate `pure` so the optimizer can drop it. The attribute is a promise to every caller, not a local hint, and it licenses common-subexpression elimination across exactly the state changes a context-dependent predicate exists to observe.
 
 ## Macros
 
@@ -140,7 +143,28 @@ Load [correctness-traps.md](./references/correctness-traps.md) for detection gre
 
 C has no dominant framework, so follow the repo's: Unity, Check, CMocka, Criterion, or plain assert-and-exit driven by the build. Whichever it is, run the suite under `-fsanitize=address,undefined` in CI, and make each new test fail against the unfixed code before accepting it.
 
+- A quarantined test is a memory-safety blind spot, not a compatibility note. Whatever a skipped or expected-fail case exercises stops being watched by the sanitizer lane for as long as the skip lasts, and its label was written by whoever quarantined it, usually from a glance, so "known leak" is the standing guess for anything that merely looked wrong about memory. Re-run every skipped test touching lifetimes, ownership, or teardown under the instrumented build before trusting its label, and when one turns out to be a real fault, move it into the instrumented suite rather than leaving it skipped.
+
 For generic test discipline (anti-patterns, real assertions, rationalization resistance), see the `ia-writing-tests` skill.
+
+## Trusting the build
+
+A verification result is a claim about a binary, not about a diff, and the two separate quietly.
+
+- A failing test in untouched, correct-reading code: rebuild from clean before debugging (stale-artifact procedure: the `ia-debugging` skill's specialized-patterns reference).
+- An incremental build can exit zero, echo the compile line for the file just edited, and still skip the link. Compare the artifact's timestamp against every source touched this session; neither the exit code nor the echoed command proves the binary changed. A result that matches the pre-edit behavior exactly is the tell, and forcing the rebuild sometimes surfaces a compile error the stale artifact had been hiding.
+- Never take a copy of a configured tree as the second variant of a comparison. Dependency files written by the configure step hold absolute paths into the original tree, so the copy's build evaluates prerequisites against files nobody edited, compiles nothing, and links an artifact differing only in build metadata. Take a fresh checkout and re-run configure per variant, and confirm the change is actually present with one cheap behavioral probe, or an observable side channel such as an output size, before spending time measuring.
+- A `CFLAGS=` handed to a configure script that inherits its base flags from elsewhere replaces them rather than appending, which silently drops the optimization level and produces a large unexplained regression from a flag that could not cause one. Keep the level explicit when adding a flag, and grep the generated makefile for it before believing any number the build produced.
+
+## Measuring a change
+
+- Never measure on a sanitizer or debug build. It inflates absolute time several-fold, which everyone remembers, and it distorts the ratio between implementations, which they do not: the per-access and per-allocation overhead falls hardest on allocation-heavy code, so a comparison against a differently-shaped competitor reads far better than it is. Worse, it systematically over-rewards the entire class of micro-optimization whose theory is "fewer allocation or append calls", which is how a genuine regression ships as a measured win. The sign flips on a release non-debug build, so check the optimization level too, not only the absence of a sanitizer.
+- Interleave the two variants per round and carry a case the change cannot reach. A uniform move across untouched code is the harness, not the code: on a machine with mixed core types, one variant's heavy cases leave the core throttled for the other's, and run-to-run spread for a single unchanged binary reaches double digits where a quiet machine gives a few tenths of a percent. The failure does not look noisy; it is a clean table of consistent wrong numbers.
+- A number stored from an earlier session is a different variant. Rebuild the old binary and measure it alongside the new one, because the comparison is what goes wrong, not either measurement.
+- Instruction counts are deterministic and immune to frequency and core type, so use them to reject a candidate cheaply and to bound a claimed win, never to assert one: a removed load plus a predicted branch retires nearly free. Read a zero delta as "this instrument cannot see this change", which is the correct reading for anything that only alters allocation timing or buffer headroom.
+- A measured win on a path the diff cannot reach is code layout, not the change. Confirm it on a second architecture, or rebuild the baseline with alignment flags only and watch the same case move by the same amount. Layout differences are deterministic per binary, so they produce large stable effects that survive any amount of repetition, and the resulting confidence is entirely misplaced.
+- Removing instructions the processor was already hiding is context-fragile; removing repeated work from the always-executed path survives context. An isolated tight loop keeps the branch predictor trained and the working set resident, so it overstates the first kind and can overstate the ceiling of a hotspot that is not addressable at all. Validate in a realistic mixed workload before believing either.
+- `__attribute__((optimize(...)))` is an inlining barrier, not a per-function optimization knob: the attributed function is not inlined into its callers and they are not inlined into it. It can isolate an optimization level for a self-contained local loop, cannot capture any win that depended on inlining, and pinning a hot function below its translation unit's level inserts a call wall that regresses past a uniform build at either level. Use a separate translation unit compiled at the other level.
 
 ## Refactoring existing C
 
@@ -153,6 +177,7 @@ Judge any proposed refactor by the cost of the next change, not by line count. F
 - Preserve behavior and ABI unless a semantic change was requested. Use an adapter when a foreign API conflicts with a local rule.
 - When a required constraint forces a deviation, comment at the deviation site and state the constraint. A note in the delivery message does not replace a comment in the source.
 - A frozen public signature that cannot return a status excuses the status rule and nothing else: internal asserts and every other locally satisfiable rule still apply.
+- Relocating a fix from a call site into a shared helper widens the set of struct fields that helper reads, and every caller that satisfied the old contract by accident, by leaving a now-read field uninitialized, becomes a fresh bug. Audit all callers when a shared function starts reading a new field, not only the one that motivated the change; an initialization assert on the aggregate is a debug check, not a guarantee that callers zero every member.
 - Do not claim compliance for checks that could not run. Name the command that did not execute.
 
 ## Verify

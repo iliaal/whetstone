@@ -54,6 +54,10 @@ while (b < hdr_size && (n = stream_read(s, (char *)&font[b], hdr_size - b)) > 0)
 
 Do not assume a read returns the full requested size until EOF. A partial read (`0 < n < requested`) is a normal outcome for network sockets, pipes, and any pluggable stream layer, and some implementations loop-to-fill for *some* backends only, which makes the partial case look impossible in local testing while remaining reachable in production. Every read loop must be correct under `0 < n < requested`, not just `n == size` or `n == 0`.
 
+### A read returning zero or less is two different events
+
+`n <= 0` collapses "the stream ended" and "the stream failed". A loop that breaks on it falls through to whatever completion code follows, so a failure part-way through commits the partially parsed prefix as though the input had ended there, silently and successfully. Classify before leaving the loop: negative is an error, and zero is an error unless the stream separately reports EOF. Layers below are not consistent about which they return, and a pluggable or user-supplied stream commonly reports failure as zero, so the EOF query is the only thing that separates them. Only a fault-injecting stream reproduces it; no real file will.
+
 ## Bounds arithmetic: validate before deriving
 
 `end = start + count - 1` is undefined behavior when `start` is extreme, **even if** a later validation would have rejected it. The overflow happens first; the check never runs.
@@ -63,6 +67,8 @@ Correct shape for range writes and slice APIs:
 1. Validate the start coordinate.
 2. Compare the count, as an unsigned value, against the remaining capacity after the validated start.
 3. Only then compute the end coordinate, now proven in range.
+
+The same rule covers the mirror image, a guard that subtracts: every assertion or guard macro containing a subtraction of unsigned operands is a candidate for this audit, and because an unsigned wrap is defined behavior, no sanitizer flags the ones that slip through.
 
 Probe with the type's extremes (`INT_MIN`/`INT_MAX`, `SIZE_MAX`) plus a multi-element input, under UBSan. A function that correctly returns "invalid" can still have signed-overflow UB on the way there.
 
@@ -75,6 +81,26 @@ Require `0 <= value <= INT_MAX` at every site where a wide integer crosses into 
 - **Grep the vendor's enum header for negative members before applying a blanket `0..INT_MAX` guard.** Negative sentinels are usually valid inputs, and a naive guard rejects an API's own documented default. Where one exists, use `value < -1 || value > INT_MAX`, or check the parameter's declared default first.
 - **The boundary is every crossing site, not the setters.** Constructors, `add*`/builder methods, rule and enum parameters all reach the same foreign `int`. Define the boundary as a predicate up front and fix every site in one pass; a constructor that throws needs the throwing form of the check, not the one that returns an error.
 - **Listing call sites is not auditing them.** Script it. Parse each function body, collect the wide-integer variables, find those passed by value into a foreign call, and flag any whose body lacks an *upper* bound for that variable. A sign-only `< 1` or `<= 0` check must not count as validated. Run to zero and keep the script with the review notes, because eyeballing which sites are "already guarded" is what turns one review into six.
+
+## A decoder's accept set must match its conversion arithmetic
+
+A hand-rolled decoder makes two independent decisions, "is this byte acceptable" and "what does it decode to", and both must agree on the exact character set. A case-insensitive accept check (`isxdigit`, an `[0-9a-fA-F]` class) in front of a conversion branching on one case boundary (`c >= 'A' ? c - 0x37 : c - 0x30`) accepts more than the arithmetic handles: every byte in the gap passes validation and decodes to the wrong value, with no error, no rejection, and no crash. Lowercase hex is the usual gap, and encoders that emit uppercase by specification do not stop real input from arriving lowercase.
+
+This is the opposite of over-lenient validation, which drops characters. Here validation is correct and the transform is narrow, so the corruption is silent and the round trip is what exposes it. Prefer the project's shared digit helper to a re-rolled magic-offset ternary, since the helper already covers every case; where one must be written, check the accept set against every case the arithmetic can be handed.
+
+## NUL truncation is accidental protection, and removing it resurrects the injection
+
+A value carried as a NUL-terminated `char *` loses everything from the first embedded NUL, so a reader splicing it into protocol text never sees a payload hidden behind one. That truncation masks injection rather than preventing it, and nothing in the code says so.
+
+Converting such a value to a length-carrying type for fidelity is the moment the masked surface goes live, and it needs two changes, not one. Replace `strcspn`-style scanning, which stops at the first NUL and therefore under-scans a length-carrying value, with `memchr` over the real length, taking the earliest terminator found. Then audit every reader of the value, classifying each by which append form it uses rather than by the field name: a length-aware append and a `strlen`-bounded one differ by one token and read as type cleanup in review. Each reader either gains the length-bounded scan or deliberately keeps the truncating form.
+
+The test that proves the conversion did work carries a NUL before the terminator sequence. On the old code the value truncates, nothing fires, and the test is genuinely red before and green after; without that case the change looks like a no-op refactor. Before calling any such delta a regression, check whether the same sink is fed by other sources that were already length-aware and already unguarded: consistency with an unguarded sibling is a smaller finding than a fresh hole.
+
+## A zero-length token underflows the length arithmetic and stops forward progress
+
+A generated lexer whose condition has no default rule backtracks, on unmatched input, to the nearest accept state, and that can be a zero-length accept: the cursor never moves and the token length is zero. Two failures then compound. Unsigned length arithmetic in the rule body, `len = token_len - prefix_len`, underflows to an enormous size and reaches the allocator, and the unmoved cursor makes the next call match zero length at the same offset forever.
+
+Clamping the subtraction fixes only the first and converts the crash into an infinite loop emitting empty tokens, so the fix belongs at the accept: give the unmatched input a rule that consumes at least one byte, either a default rule for the condition or a narrow rule for the offending characters. An allocation size near `(size_t)-N` is the signature of an unsigned underflow rather than a real request, and the generator's undefined-control-flow warning names exactly which input strings reach the undefined state.
 
 ## Function-like macros must not shadow caller variables
 
@@ -101,3 +127,5 @@ Two rules for any function-like macro that declares locals:
 - **32-bit is a different program.** `size_t` is 32-bit there, so a 64-bit length from the wire truncates on assignment. `time_t` can be 32-bit independently of any other type's width, so epoch arithmetic overflows on inputs a 64-bit build handles. A 32-bit container is real coverage; a cross-compile that never executes is not.
 - **POSIX-only functions that MSVC lacks**: `timegm` is the classic (`_mkgmtime` is the documented equivalent, same semantics). Never substitute `mktime`, which interprets the `tm` as **local** time and silently shifts results by the runner's timezone.
 - **Windows headers define `min` and `max` as macros**, which breaks any use of `std::min`/`std::max` and any templated code containing `(`. Define `NOMINMAX` before any Windows header, project-wide rather than per-file.
+- **`a * b + c` is a fused-multiply-add candidate and `FP_CONTRACT` is on by default.** Whether the compiler emits one fused operation with a single rounding or a separate multiply and add with two is a property of the target, and the two results differ by a representable step at integer boundaries. A digit-accumulation parser (`v = 10.f * v + digit`) or any Horner-form evaluation therefore lands on a different value per machine, and a test asserting the specific branch that value selects fails only elsewhere. The fingerprint is a numeric test passing on older x86-64 baselines and failing on arm64 and on distributions that raised their baseline to require FMA. Reproduce it anywhere by toggling `-ffp-contract=off` against `-ffp-contract=fast`; the hardware is not needed to confirm the hypothesis. Assert the contract rather than the branch where both outcomes are correct, and pin contraction per translation unit only when a specific parsed value is load-bearing.
+- **Hand-written ELF inline asm writes `call sym@PLT`, never a bare `call sym`.** Assemblers since binutils 2.31 emit a PLT-capable relocation for a bare branch, but some distributions carry a patch reverting that for branches, and the older relocation against a preemptible symbol cannot be resolved in a shared object: the link either demands a position-independent rebuild or produces a text relocation, which is a runtime segfault risk wherever indirect functions are in play. Compiler-generated code always emits the explicit form, so only hand-written asm is exposed, and the failure appears on one vendor's toolchain while every other CI lane stays green. The suffix changes the relocation and never the instruction encoding, so byte-pattern checks over the emitted sequence are unaffected and the object is identical on toolchains that already default to it.

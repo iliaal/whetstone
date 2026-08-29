@@ -95,10 +95,16 @@ pub struct Config {
 
 impl Config {
     pub fn load(project_root: &Path) -> Result<Self> {
-        let mut cfg: Config = toml::from_str(
-            &std::fs::read_to_string(project_root.join(".myapp/config.toml"))
-                .unwrap_or_default(),
-        )?;
+        let path = project_root.join(".myapp/config.toml");
+        let text = match std::fs::read_to_string(&path) {
+            Ok(text) => text,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+            Err(e) => {
+                return Err(e).with_context(|| format!("reading {}", path.display()));
+            }
+        };
+        let mut cfg: Config = toml::from_str(&text)
+            .with_context(|| format!("parsing {}", path.display()))?;
         if let Ok(key) = std::env::var("MYAPP_API_KEY") {
             cfg.api_key = Some(key);
         }
@@ -109,6 +115,8 @@ impl Config {
 ```
 
 Validation runs in `load()` — never defer it to the first call site.
+
+Only `NotFound` collapses to defaults. `read_to_string(p).unwrap_or_default()` also swallows permission-denied, invalid UTF-8, and transient I/O, so a config that exists but cannot be read becomes an empty one — and the next write replaces the comments and unrelated entries you never saw.
 
 ## Logging
 
