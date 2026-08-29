@@ -2,7 +2,11 @@
 
 ## Intent
 
-`ia-meta-prompting` is a `meta`-class skill (patterns about prompts, agents, or skills themselves). Structured reasoning modifiers (/think, /verify, /adversarial, /edge, /confidence, /assumptions, etc.) to stress-test decisions, surface assumptions, or enumerate edge cases. Use when validating an important design, architecture decision, or ambiguous plan before committing.
+`ia-meta-prompting` is a `meta`-class skill (patterns about prompts, agents, or
+skills themselves). Structured decision modifiers (/think, /verify,
+/adversarial, /edge, /confidence, /assumptions, etc.) stress-test conclusions,
+evidence, assumptions, alternatives, and edge cases. Use when validating an
+important design, architecture decision, or ambiguous plan before committing.
 
 ## Scope
 
