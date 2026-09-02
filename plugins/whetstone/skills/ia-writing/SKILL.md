@@ -53,6 +53,7 @@ Weight detection toward structure: models reproduce sentence *structures* more r
 - Narrator-from-a-distance: "This happens because...", "People tend to...", "Nobody designed this." Put the reader in the room instead.
 - Lazy extremes: every, always, never, everyone, nobody -- false authority. Use specifics instead of sweeping claims.
 - Meta-commentary: "Hint:", "Plot twist:", "Spoiler:", "In this section, we'll...", "As we'll see...", "Let me walk you through..."
+- Mannered prose: an idiom or metaphor standing in for a literal phrase ("earns its keep", "a dial worth turning", "does the heavy lifting"). It displays the writer, not the idea, and drags in connotations the writer did not choose. Use the literal phrase.
 
 **Formatting tells**:
 - No em dashes in delivered prose -- restructure the sentence (split, comma, colon, rewrite); en dash only in numeric ranges
@@ -104,12 +105,15 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 - Inanimate thing doing a human verb? Name the person.
 - "Not X, it's Y" contrast? State Y directly.
 - Three consecutive sentences match length? Break one.
+- Sentence past 30 words carrying two ideas? Split it.
+- Paragraph running six or more sentences on one topic sentence? Break it.
 - Vague declarative ("The implications are significant")? Name the specific implication.
 - Meta-joiner ("The rest of this section...")? Delete. Let the text move.
 
 **Restraint -- over-editing is a failure mode, equal in weight to under-editing.**
 - If a sentence already reads naturally, leave it. Touching prose that was fine introduces new tells and strips voice.
 - Match the smell, not the string. A listed word that reads naturally in its actual context stays -- flag the tone, not the token. Blanket-banning a word is mechanical editing, the same defect the skill exists to remove.
+- Under-formatting is a defect too. Three or more parallel items packed into one sentence want a list; a grid of attributes wants a table. Strip formatting that is mechanical, not formatting that carries structure.
 - Before the first edit, name the draft's core point and 3-5 concrete voice signals to preserve -- vocabulary, cadence, bluntness, humour, admitted uncertainty, digressions, how polished it is meant to sound. Keep the note internal; it is the reference the two checks below are measured against, not output.
 
 **Long-form output skeleton** (tag vocabulary, severity suffixes, and fix actions live in the audit workflow reference above):

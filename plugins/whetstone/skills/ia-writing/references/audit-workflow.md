@@ -33,6 +33,7 @@ Read the full text start to finish without changing anything. The text under aud
 | `[EMOJI]` | Emoji in running text or headings. Functional UI emoji in product copy is fine; editorial/promotional emoji is an AI tell. |
 | `[FALSE-RANGE]` | "From X to Y" where X and Y aren't on a coherent scale ("from code review to cultural shift"). Restructure to state both items without implying a continuum. |
 | `[ABSTRACT-METAPHOR]` | Jargon noun used metaphorically where a concrete term exists: flywheel, north star, substrate, scaffolding, wedge, vector, locus, nexus, primitive, bedrock, paradigm, ratchet, endgame |
+| `[MANNERED]` | Idiom or metaphor standing in for an available literal phrase ("earns its keep", "a dial worth turning", "does the heavy lifting"). Verb- and idiom-level flourish; `[ABSTRACT-METAPHOR]` covers nouns |
 | `[PORTABLE-PROSE]` | Sentence that could appear unchanged in anyone else's draft on any topic ("This raises important questions about the future of the field") -- no fact, opinion, or detail anchors it to this piece. Distinct from `[VAGUE-DECLARATIVE]`, which names this piece's topic but omits the implication; portable prose fits any topic verbatim |
 
 **Severity suffixes** when tagging: `+H` for high severity (strong tell or compound patterns), `+S` for structural (affects document structure, not just wording).
@@ -45,6 +46,7 @@ Read the full text start to finish without changing anything. The text under aud
 | `[LINK-ROT]` | Dead URLs, placeholder links (`example.com`, `#`), or links that return 404 |
 | `[ISBN-DOI-FAIL]` | Invalid ISBN/DOI identifiers -- wrong check digit, truncated, or fabricated |
 | `[REF-BUG]` | Reference formatting errors: mismatched footnote numbers, dangling `[1]` with no matching entry, duplicate reference IDs, inconsistent citation style within the same document |
+| `[UNMARKED-QUOTE]` | Source wording reproduced (six or more consecutive words) without quotation marks or attribution when summarizing a document |
 
 ### Audit output example
 
@@ -78,6 +80,8 @@ Correct tagged items in a single pass using the fix table below. Preserve everyt
 | `[INLINE-BOLD]` `[INLINE-LIST]` `[TITLE-CASE]` | Strip excess formatting; sentence case for headings. |
 | `[OAICITE]` `[LINK-ROT]` `[ISBN-DOI-FAIL]` `[REF-BUG]` | Remove the artifact or fix the reference; add a real citation or delete the claim it supported. |
 | `[ABSTRACT-METAPHOR]` | Replace with the concrete thing meant: "flywheel" -> the actual feedback loop, "north star" -> the actual metric or goal. |
+| `[MANNERED]` | Say the literal thing: "earns its keep" -> "still matters", "a dial worth turning" -> "a parameter worth varying". |
+| `[UNMARKED-QUOTE]` | Reword into indirect speech, or keep the passage and mark it as a quotation with its source. |
 | `[PORTABLE-PROSE]` | Anchor the sentence with a fact, number, or specific from this piece, or cut it. |
 
 ## Output format
