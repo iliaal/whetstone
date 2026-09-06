@@ -57,6 +57,8 @@ fi
 git worktree add .worktrees/<name> -b <branch> "$base_ref"
 ```
 
+A narrow `remote.origin.fetch` refspec makes `git fetch origin` silently partial. When the config maps only one branch, every other remote-tracking ref stays frozen, and `git log origin/<other>` or `git merge-base --is-ancestor` return stale answers with no error. Check `git config --get-all remote.origin.fetch`, and pass an explicit refspec before making any claim about another branch.
+
 Known gap: the script does not distinguish "stale-base contamination" (another session advanced local `<base>` past `origin/<base>` with unrelated commits) from "forgot-to-branch" (the user's own unpushed commits on local `<base>` that were meant for a feature branch) -- it always prefers `origin/<base>` when the fetch succeeds. To carry unpushed local commits on `<base>` forward into the new branch instead, branch manually: `git worktree add <path> -b <branch> <base>`.
 
 ---

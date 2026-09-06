@@ -85,7 +85,7 @@ When dismissing a suggestion (AUTO-DECLINE, manual push-back), tag the dismissal
 |----------|--------------------------|-------------------|------------------------------|
 | **FP-ASSUMPTION** | Reviewer assumed behavior that doesn't match the code | Quote the specific line that contradicts the assumption | "Is technically incorrect" |
 | **FP-CONVENTION** | Suggestion conflicts with this project's conventions | Cite the CLAUDE.md rule, ADR, or the established pattern in `file:line` | "Violates project conventions" |
-| **FP-ALREADY-HANDLED** | The concern is handled elsewhere (parent function, middleware, framework) | Show the existing handler in `file:line` | "Adds unnecessary complexity" |
+| **FP-ALREADY-HANDLED** | The concern is handled elsewhere (parent function, middleware, framework) | Show the existing handler in `file:line`. When the dismissal is "subsumed by the other fix", showing the handler is not enough -- check the covering fix against every precondition the dismissed finding needs, because two findings bundled together almost always fail under different conditions and the covering fix closes only one | "Adds unnecessary complexity" |
 | **FP-OUT-OF-SCOPE** | Valid concern but belongs in a separate change | State where it will be tracked (issue, todo, next PR) | YAGNI / scope creep |
 
 Use the tag in the reply: "FP-ALREADY-HANDLED: null check happens in `auth/middleware.ts:42` before this handler runs. Keeping as-is." Structured tags prevent the "you're wrong because reasons" reply pattern and make future triage faster (if the same comment class keeps hitting `FP-CONVENTION`, the convention needs better documentation).
@@ -112,6 +112,7 @@ Accept feedback when:
 | Batch-implementing then testing | Test after each individual fix |
 | Can't verify the suggestion | Say so: "Can't verify this without [X]. Should I [investigate/ask/proceed]?" -- don't guess or implement blind |
 | Treating your own fix as already-correct | A fix is new code -- re-review it adversarially, not just "does it address the finding?". Three shapes recur and the suite usually misses all three: a shared-helper default that violates an invariant you set elsewhere in the batch; a loosened guard now admitting bad input; a tightened matcher now dropping good values. Name one concrete bad/missed case for each shape the fix touches before claiming done |
+| Refuting a finding from a subject it did not name | Reproduce on the exact method, input, and path the finding names. A reviewer often senses a class before pinning the minimal case, so if your fix handles their example, test two neighbours -- the sibling function, the mid-buffer variant -- before replying "mistaken". Probing an adjacent method is worse than useless: siblings are frequently protected by different layers. "Needs a resource failure, not reproducible" is not a dismissal until you have checked for a deterministic hard cap. Reply by separating the parts: confirm the example with evidence, then name the residual |
 
 ## Approved Response Templates
 

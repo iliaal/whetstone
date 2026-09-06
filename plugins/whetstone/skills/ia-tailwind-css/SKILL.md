@@ -61,6 +61,7 @@ For projects upgrading from v3 to v4, see [v3-to-v4-migration.md](./references/v
 - **Never construct classes dynamically** -- `text-${color}-500` won't be detected; use complete class names
 - **`@utility` over `@apply` with `@layer`** -- `@apply` on `@layer` classes fails in v4
 - **Parent padding over last-child margin** -- use padding on containers instead of bottom margins on the last child
+- **Never express visibility as the native `hidden` attribute plus a display utility** -- the two resolve in opposite directions across versions. v4's Preflight ships `[hidden]:where(:not([hidden="until-found"])) { display: none !important }`, so the attribute wins and an element expected to be visible stays hidden; on v3, or wherever Preflight is disabled or not loaded, the author-origin utility (`block`, `flex`, `grid`) beats the UA-origin `[hidden]` rule regardless of specificity and the element stays on screen with `hidden` set. Toggle one mechanism: `clsx(base, open ? 'block' : 'hidden')`. Neither direction is visible to jsdom's `toBeInTheDocument` -- only `toBeVisible` or a real browser engine catches it
 
 ## ESLint Integration
 

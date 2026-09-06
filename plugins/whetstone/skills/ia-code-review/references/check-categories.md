@@ -10,6 +10,7 @@ Load this reference during the line-by-line review step. Use the category lists 
 - New enum/status/type values — trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff. Missing handler = wrong default at runtime.
 - Repeated switches — a diff adding another branch-set (switch/if-chain/map) over a discriminator already switched on elsewhere. Fix is a shared mapping or polymorphic dispatch at the owning layer, not another copy of the branch-set.
 - Sentinel overload — a diff that reuses an existing sentinel (`null`, `undefined`, empty array/object, fallback enum) for a *new* state. If one value now means two things (consumers can't tell "no data" from "data exists but unsummarizable"), require a richer shape or explicit discriminator. "Type-checks and doesn't crash" is not the bar.
+- Dormant constraint — a new condition or filter added to a shared helper whose only current call site does not exercise it. Nothing breaks today and no test can fail; the first caller to use the combination inherits the bug. Require the constraint be documented where the caller sees it, or the unexercised combination rejected outright.
 
 ## Maintainability & Readability
 

@@ -23,6 +23,8 @@ TESTS=tests/foo.phpt make test               # single test
 php -d extension=modules/<ext>.so -r '...'   # ad-hoc probe
 ```
 
+On a host carrying more than one PHP install, run `phpize` from the exact install the extension will load into, never whichever one is first on `PATH`. It bakes the thread-safety model, the module API number, and the include paths into the generated build system, and handing `--with-php-config` to `./configure` afterwards does not undo any of that. The build then succeeds and only `dlopen` fails, reporting an undefined TSRM symbol for a ZTS mismatch or a module API message for a version mismatch. Recover with `make distclean`, then re-run `phpize` and `php-config` from the same prefix.
+
 Tests are `.phpt`: `--TEST--`, optional `--SKIPIF--`, `--FILE--`, then `--EXPECT--` or `--EXPECTF--`. Prefer `--EXPECTF--` with `%d`/`%s` wherever output carries addresses, paths, or floats.
 
 ## Arginfo is generated, never hand-written

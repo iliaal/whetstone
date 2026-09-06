@@ -76,6 +76,8 @@ The silent rows in the last two tables are the dangerous ones. A break that chan
 
 Safe additions: new non-virtual, non-inline member functions; new free functions; new types; new overloads that do not displace existing ones.
 
+The C-side counterparts, where to consume a new flag bit in a published bitfield and why new state never goes into a released struct's padding, are in the `ia-c-systems` skill.
+
 ## PIMPL when ABI stability is required
 
 ```cpp

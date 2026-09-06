@@ -51,7 +51,9 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` -- no magic numbers in `exit`
 - Pipeline diagnostics: `"${PIPESTATUS[@]}"` shows exit code of each pipe stage, not just last failure
 - Branch on a probe's exact exit status, not on nonzero-versus-zero. A tool that exits 2 for "ran, found nothing" and 128 for "could not run" collapses into a single negative under `if ! cmd`, and stderr is often empty for both. Treating every silent nonzero as "absent" converts a network, permission, or spawn failure into a confident false diagnosis
-- `A || B` is a fallback only when `A` **fails** on the case `B` exists for. When `A` succeeds while doing the wrong thing -- resolving a different tool, default, or directory -- `B` is dead code and the wrong behavior is silent. Same trap in `${VAR:-default}` on a path two processes must agree on: whoever lacks `VAR` gets a different location, the two silently stop sharing state, and neither errors. Pick one resolution and fail loudly when it is unavailable
+- `A || B` is a fallback only when `A` **fails** on the case `B` exists for. When `A` succeeds while doing the wrong thing -- resolving a different tool, default, or directory -- `B` is dead code and the wrong behavior is silent. Same trap in `${VAR:-default}` on a path two processes must agree on: whoever lacks `VAR` gets a different location, the two silently stop sharing state, and neither errors. Pick one resolution and fail loudly when it is unavailable. A fallback chain must also test *usability*, not presence: `${XDG_RUNTIME_DIR:-/tmp}` falls through only when the variable is unset, so a variable pointing at an unwritable directory takes `mkdir` to `EACCES` and aborts on the step the chain made optional. Treat a permission or existence failure on a configured location the same as an unconfigured one, and log which candidate was chosen
+- A `;` list exits with its *last* command's status, so appending a status echo guarantees success: `./run.sh > log 2>&1; echo "EXIT=$?"` exits 0 no matter what `run.sh` did. Capture and re-raise: `rc=$?; printf 'EXIT=%d\n' "$rc"; exit "$rc"`
+- A wait loop that greps for the process it waits on matches itself: `pgrep -f` tests the full argv and the pattern sits in the waiter's own command line, so `until ! pgrep -f build_step; do sleep 10; done` never exits. A pipeline feeding `ps` straight into a matcher includes the matcher's own process the same way, and an empty substitution collapses `/proc/$(pgrep -f cmd | head -1)` to `/proc/`, which always exists. Match the exact process name (`pgrep -x`), drop your own PID (`pgrep -f "$pat" | grep -vx "$$"`), take the snapshot in one command and filter the saved output in the next, and prefer waiting on the process directly (`wait`, `flock`) over polling for it
 
 ## Safe Iteration
 
@@ -107,6 +109,8 @@ atomic_write() { local tmp; tmp=$(mktemp); cat >"$tmp"; mv -- "$tmp" "$1"; }
 generate_config | atomic_write /etc/app/config.yml
 ```
 
+**Atomic multi-file activation** -- N individually atomic copies are not an atomic interface: a failure after replacing the second of three leaves the old entry point running against a mixed set. Stage the release into a fresh uniquely-named directory, then swap one relative `current` symlink (`ln -sfn` onto a temp name, then `mv -T` it into place). A component that cannot join the swap -- a separately installed helper that an already-running caller invokes -- is installed *first*, so an interrupted run lands on old-caller/new-helper, and the helper's interface stays backward compatible. The failure fixture seeds a complete prior release, fails after one new component is staged, and asserts every prior component is still active.
+
 **Retry with backoff:**
 ```bash
 retry() { local n=0 max=5 delay=1; until "$@"; do ((++n>=max)) && return 1; sleep $delay; ((delay*=2)); done; }
@@ -130,6 +134,8 @@ A linear script with irreversible steps (commit, push, tag, publish) must be re-
 **Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` -- validate at script boundaries with `[[ =~ ]]`. The leading `[1-9]` also excludes zero-padded input, which arithmetic would read as octal; widening this to `^[0-9]+$` to admit `0` reintroduces that trap unless the value goes through `10#`
 
 - `umask 077` for scripts creating sensitive files
+- A mode argument to a create call is a request, not a result -- the process umask masks it. `mkdir -m 755` and its library equivalents yield `0700` under a service whose unit sets `UMask=0077`, so a permissive interactive shell hides the defect. Where a test asserts that a program *preserves* an existing mode, `chmod` the fixture explicitly; never loosen the service's umask to make the fixture pass
+- Staging a file across users through a world-writable directory fails on the rename, not the read: `/tmp`'s sticky bit lets only the file's owner rename or unlink it, so a second user's `mv /tmp/f "$dest"` fails with `Operation not permitted` while `cp` succeeds. Copy as the destination user (`sudo -u <dest> cp -- /tmp/f "$target"`), then remove the staging copy as its creator
 - Moving a secret out of argv into a temp file closes the `ps` / `/proc/<pid>/cmdline` exposure and nothing else. Bash stores a multi-line command as **one** history entry, heredoc body included, and the single-line form `printf %s '<value>' >"$tmp"` puts the value on the command line too. Take it from stdin and let a JSON-aware writer escape it:
   ```bash
   umask 077; tmp=$(mktemp); trap 'rm -f -- "$tmp"' EXIT
@@ -162,6 +168,7 @@ die()   { error "$@"; exit 1; }
 | `cat file \| grep` | `grep pat file` |
 | `kill -9 $pid` first | `kill "$pid"` first, `-9` as last resort |
 | `cd dir; cmd` | `cd dir || exit 1` or subshell `(cd dir && cmd)` |
+| A multi-command shell block embedded in YAML, a `RUN` line, or `sh -c` | Start every embedded block with `set -Eeuo pipefail`. Embedded blocks get no implicit errexit, and a runner that joins the commands into one string reports only the last command's status -- a block ending on a tolerance line (`… \|\| true`) reports success whatever failed above it and falls through with stale inputs. Explicit `\|\|` fallbacks stay exempt; `pipefail` unmasks the producer side. When validating such a block locally, reproduce the runner's flags -- a bare `sh` harness passes every scenario the production `sh -e` aborts on |
 
 ## Performance
 

@@ -69,6 +69,31 @@ via this fallback chain:
 all committed work on the branch and reviews only the uncommitted delta. Stop and
 ask which base to use instead.
 
+**The working tree is not the review head.** Unless the branch is checked out,
+every filesystem-backed tool -- file reads, greps, delegated sweeps, any test
+runner mounting the repository -- executes the *base*. The asymmetry is usable:
+findings on files the change touched are unreliable (already-fixed call sites
+report as broken), while findings on untouched files are sound. Partition
+delegated-sweep output by `git diff --name-only <base> <head>` and re-verify only
+the changed-file half against `git show <head>:<file>`. Anchoring reads to the
+head SHA does not cover execution: running the suite needs the full head
+materialized, so use a dedicated worktree rather than the changed files alone --
+the diff's runtime closure includes dependencies absent on a stale base, and the
+resulting setup error looks like a defect in the change. Never switch, stash, or
+clean the user's checkout to get there; see working-tree safety above.
+
+**`base...head` is not the tree that ships.** When the target has moved, neither
+endpoint of that range is the merged tree, and two regression classes are
+invisible in it: a branch forked before a fix landed and rewriting that region
+carries the pre-fix body forward, so the natural "keep my code" resolution
+reverts the fix; and a diff that widens a shared value shape auto-merges without
+conflict against a sibling that added a consumer under the old shape. The
+conflict list points the wrong way in both cases. When the merge-base lags the
+target, compare each rewritten unit between head and target directly
+(`git log -S<symbol> origin/<target>`), compose the merge mechanically, run the
+suite on the composed tree, and confirm the broken file carries zero conflict
+markers.
+
 ### Stacked branches
 
 When a branch is stacked on another unmerged branch, `git merge-base HEAD

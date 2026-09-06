@@ -43,6 +43,14 @@ A custom `CastsAttributes` whose `get()` returns an object is cached and merged 
 
 With `Relation::enforceMorphMap()`, a model missing from the map throws `ClassMorphViolationException` from `getMorphClass()` -- and almost nothing calls `getMorphClass()` on an ordinary `create()` except the audit layer, which is usually config-gated off under test. So a new model with no map entry passes the entire suite, including tests that create it, and 500s on the first write in an environment where auditing is on. The throw fires inside whatever transaction the write is in, so one unmapped child model rolls back the parent record, its links and any status transition -- the whole request, not just the audit. Add the map entry in the same commit as the model; with `enforceMorphMap` it is part of the class working at all, and overriding an audit-label method is a separate call site that does not substitute. A green suite is not evidence here: check whether the config flag gating the consumer is false under test.
 
+### latest()/orderByDesc() on an ordered relation appends
+
+`latest($column)` and `orderByDesc($column)` are `orderBy()` calls, and `orderBy()` pushes onto the builder's `$orders` array rather than replacing it. A relation defined as `hasMany(Version::class)->orderBy('created_at')` therefore compiles `->latest('created_at')->first()` to `ORDER BY created_at asc, created_at desc` -- the first key decides, so the call reads as "newest" and returns the OLDEST row. `reorder('created_at', 'desc')` clears the accumulated orders before adding its own and is the direct fix; a dedicated `latestVersion(): HasOne` is better where "the newest one" is a first-class concept. A fixture with one child per parent cannot fail either way, so the defect survives both review and the suite. On review, open the relation definition for every `->latest()` / `->oldest()` / `->orderBy*()` chained onto a relation before `first()`.
+
+### save() drops an assignment equal to the stale original
+
+`save()` writes only the dirty attributes, and dirtiness compares the in-memory value against `$original` -- the snapshot taken when the model was loaded, not the current row. Assigning `true` to a model that was loaded as `true` produces an empty dirty set, so the column is left out of the UPDATE entirely and there is no `WHERE` clause that could detect the row moved underneath. Adding row locks to the *other* writers makes it more deterministic rather than less: the unlocked writer computes its dirty set before any lock exists, blocks, then resumes exactly where its column has already been dropped from the statement. Locking some writers of a row and not others is a scheduler for the bug. Fix: `refresh()` or `lockForUpdate()` before the compare, or write a conditional UPDATE carrying the expected prior value in its `WHERE`.
+
 ## Queue pitfalls
 
 ### ShouldBeUnique silently discards, does not guarantee
@@ -61,6 +69,10 @@ With `Relation::enforceMorphMap()`, a model missing from the map throws `ClassMo
 
 `Context` cannot bleed between queued jobs -- it is flushed and rehydrated from each job's own dispatch payload before `handle()` runs. `ContextServiceProvider` dehydrates the dispatcher's context into the payload and calls `Context::hydrate()` on `JobProcessing`; `Repository::hydrate()` runs `flush()` first, every time, including when the payload is `null`. So "this job sets Context and never clears it, the next job inherits it" is not a bug. The genuine bleed surface is Octane/Swoole/RoadRunner on the HTTP path, where the repository is an app singleton and a middleware that sets Context for only some requests leaves it set for a later request that does not overwrite it -- a non-issue under PHP-FPM. Within one job Context is shared for the duration, so a handler serving multiple audiences must re-set it per audience.
 
+### A new constructor parameter breaks payloads already queued
+
+A queued job is serialized on dispatch, so a payload written by the old release is revived by the new one. `unserialize()` never runs the constructor: it instantiates from the class entry, applies the *declaration-level* defaults, then overwrites with whatever the payload carries. A promoted constructor property has no declaration-level default -- the default lives on the parameter -- so the new typed property comes back uninitialized and `handle()` throws `Typed property ... must not be accessed before initialization`. `failed_jobs` stores the same stale payload, so retrying the failed job re-throws for the same reason. `readonly` cannot be the fix either, since a readonly property may not declare a default. Use a plain `private`/`protected` property with a declaration-level default and assign it in the constructor body. Only a *new parameter* is exposed: changing a property's visibility or renaming a method is harmless, and rolling the deploy back is clean. Then treat the default as semantics, not syntax -- on a job whose new parameter gates behaviour, every in-flight payload runs the default branch, so set it to what an already-enqueued payload actually meant.
+
 ## Concurrency pitfalls
 
 ### `Concurrency::run()` leaks hidden Context into the child process environment
@@ -68,6 +80,10 @@ With `Relation::enforceMorphMap()`, a model missing from the map throws `ClassMo
 The process driver passes `'__LARAVEL_CONTEXT' => json_encode(Context::dehydrate())` as an env var to every pooled child process. `dehydrate()` does keep hidden values under a separate `hidden` key (`['data' => ..., 'hidden' => ...]`), but `ProcessDriver` JSON-encodes the whole array into one env var with no filtering, so hidden values travel with the visible ones regardless of the split. Any same-uid process can read that value from `/proc/<pid>/environ` for the child's lifetime, and it shows up in `ps e` too, so a credential stashed via `Context::addHidden()` leaks well beyond the job that set it. Applies from the 13.x context-propagation fix onward; keep credentials out of Context for concurrency work and resolve them inside the closure from config or a secret manager, or use the synchronous driver where the threat model requires it.
 
 ## Validation pitfalls
+
+### validated() drops unruled nested array keys
+
+`validated()` does not filter the request payload, it rebuilds it from the rule keys. Since Laravel 9 the validator excludes unvalidated array keys by default, so a parent key with sub-key rules is skipped and only the explicitly ruled sub-keys are written into the result. A FormRequest ruling `mapping.first_name` and not `mapping.middle_name` therefore returns a `mapping` array with `middle_name` absent -- no error, no message, and every consumer downstream of `validated()` sees a truncated payload. Unit tests that hand-build the array and call the service directly never cross the FormRequest and cannot see it. `Validator::includeUnvalidatedArrayKeys()` restores the pre-9 behaviour globally, which is the wrong lever for one endpoint: rule every sub-key the consumer reads instead. Whenever a diff adds a field to a nested payload, grep `rules()` for the dotted key and add a feature test that posts the real request body and asserts the stored value.
 
 ### Blank-ish strings skip every non-implicit rule
 
@@ -96,3 +112,9 @@ A custom auth guard whose failure path calls `report()` infinitely recurses, and
 ### Backed enum serialization by case name
 
 A backed enum serialises as `E:<len>:"<FQCN>:<CaseName>"` -- the case NAME, never the backing value -- so reordering cases is serialization-safe and renaming or removing one is not. Unserializing a removed case emits a warning and returns `false`; it does NOT raise `Enum::from()`'s `ValueError: X is not a valid backing value`, which is the message people write from memory into comments and MR descriptions. Under Laravel's `HandleExceptions` that warning becomes an `ErrorException`, so a `catch (Throwable)` decoder absorbs it and the entry degrades to a permanent MISS -- one rebuild plus one `report()` per read for the rest of its TTL. The other two shapes are worse because nothing catches them: a newly added promoted property unserializes fine and fires an `Error` at the consumer's first read, and a renamed or moved class warns not at all and serves `__PHP_Incomplete_Class` as a clean HIT. Version the cache key whenever a stored object graph's shape changes.
+
+## Tooling pitfalls
+
+### composer.lock conflicts confined to the content-hash line
+
+A `composer.lock` conflict whose only hunk is `content-hash` is not a conflict over packages. The `packages` and `packages-dev` arrays merged cleanly; the two hashes differ because each side computed one from its own `composer.json`, and both are stale against the merged file. Hand-picking either side records a hash that matches neither, and `composer install` then warns the lock is out of date while still installing from it. Verify the union first by grepping `"name"` for every package added, removed, or swapped on either branch, then run `composer update --lock --no-install` -- it recomputes the hash without touching resolution and prints `Nothing to modify in lock file` when the merged arrays were already correct. When both branches edited the same package entries, discard the merge, take the target branch's lock, and re-add the branch's packages with `composer require`.

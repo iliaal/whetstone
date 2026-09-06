@@ -86,6 +86,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Primitives over Workflows:** Tools expose atomic capabilities; compose workflows in prompts
 - [ ] **API as Validator:** Use `z.string()` inputs when the API validates, not `z.enum()`
 - [ ] **Eval Gate:** 10 Q/A pairs in CI (read-only, multi-hop, closed-data), 9/10 pass threshold. See [mcp-tool-design.md](./references/mcp-tool-design.md) Evaluation section.
+- [ ] **Per-session state cost:** a stdio MCP server is a child of the client -- one process per session and per subagent -- so every expensive resource it holds (model weights, GPU context, index handles) is duplicated that many times. Keep the registration stdio and make the command a thin proxy to a user-private socket served by a shared daemon started on first use. Key the socket on the binary's version so a rebuilt binary cannot talk to a stale daemon, and have the new daemon reap the orphan.
 
 ### Files & Workspace
 - [ ] **Shared Workspace:** Agent and user work in same data space
@@ -115,6 +116,8 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Approval Gates:** Destructive or irreversible actions require user confirmation
 - [ ] **Audit Trail:** Agent actions logged with timestamp, tool, and outcome, keeping absent/partial/complete/measured-zero/unavailable distinct. See [durability-and-attestation.md](./references/durability-and-attestation.md) Audit Trail section for the attempt-record provenance design.
 - [ ] **Scope Boundaries:** Agent cannot access resources outside its designated workspace
+- [ ] **Prompt instructions are not a security boundary:** the trusted orchestration layer, not the system prompt, owns argv, image digest, mounts, egress, credentials, and time/memory/process limits. Keep the target read-only and store evidence outside it. A harness can make control flow replayable; it cannot make model judgment or coverage guaranteed, so never state a sandbox guarantee that rests on the agent choosing to comply.
+- [ ] **Shared vocabulary is validated mechanically:** a status value or required field used across several prompt or schema files drifts into two spellings, and into fields one document declares and another omits. Extract the vocabulary to one source and assert every file against it in CI.
 - [ ] **Content-Bound Attestation:** use one when the enforcement boundary cannot spawn the agent. See [durability-and-attestation.md](./references/durability-and-attestation.md) Content-Bound Attestation section for the judge/gate split and content-binding design.
 
 ### Hooks & Governance Automation
@@ -123,6 +126,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Completion Gating:** SubagentStop hooks block premature completion when verification steps remain
 - [ ] **MCP Matchers:** Regex patterns target tools by server and operation for capability-based security
 - [ ] **Two-Tier Config:** Shared policy committed, personal overrides git-ignored, per-hook disable toggles
+- [ ] **Cold-start budget:** every hook invocation is a fresh process, so the runtime is chosen by cold-start latency against the hook timeout, not by warm throughput; a framework whose accelerator initialises lazily pays that cost on every invocation. Measure first-run latency.
 
 ### Mobile (if applicable)
 - [ ] **Checkpoint/Resume:** Handle iOS app suspension gracefully

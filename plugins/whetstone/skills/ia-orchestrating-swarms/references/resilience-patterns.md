@@ -35,3 +35,5 @@ When an agent fails mid-pipeline after earlier agents have already written files
 ## Post-failure synthesis
 
 Even partial results from a failed swarm run have value. When some agents succeed and others fail, collect and present the successful outputs rather than discarding everything. Mark failed tasks as incomplete in the synthesis so downstream consumers know which areas lack coverage.
+
+**Uniform failure across every unit is an infrastructure result, not a clean verdict.** A pipeline that emits "no findings" when every unit errored the same way is indistinguishable from a clean run. When the failure count equals the unit count and the failures share a cause, report the provider, auth, or model failure and suppress the verdict.

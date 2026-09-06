@@ -27,6 +27,7 @@ For slow, latency, or throughput symptoms, code reading is not the reproduction 
 - Attribute before optimizing: a profiler run or per-stage timing that shows where the time actually goes. A hot-spot guess is a hypothesis, not evidence -- optimizing an unmeasured suspect is shotgun debugging with extra steps.
 - If the slowness is a regression, bisect commits against the measurement (rerun the baseline at each candidate commit), not by reading diffs for code that looks expensive.
 - The fix is verified by re-running the same baseline measurement, not by reasoning that the change should be faster.
+- When several independent costs sit on one hot path, fixing the first moves the profile instead of flattening it, which reads as "the fix did nothing" unless the new stack is compared against the old. Compare stacks, not totals; once the same stack arrives a third time, stop bisecting configuration and get symbols.
 
 ## CI Failures
 
@@ -37,7 +38,11 @@ When a CI check fails on a PR or branch:
 3. **Reproduce locally**: run the same command from the CI config (`cat .github/workflows/*.yml` to find it). If it passes locally, the issue is environment-specific -- compare CI runner config against local (OS, versions, env vars, caching).
 4. **Fix and verify**: fix the issue, then suggest re-running the relevant checks: `gh pr checks <pr> --watch` or `gh run rerun <run_id> --failed`.
 
-Don't retry a CI run without changing something. If the same run failed twice, it's not flaky -- it's broken.
+**A fast red is a setup failure, not a test failure.** A job that dies in one or two minutes while its siblings take twenty never compiled the change. Compare wall-clock time against the passing jobs first, then grep for the *first* error inside the setup steps.
+
+**Every label for a red check is a claim with a one-command disproof.** "Flaky", "pre-existing", "stale base", and "the runner" each cost one command. Re-run the job exactly once, and only to classify it: an identical failure means the check is broken rather than flaky, so stop re-running and change something. Re-running to obtain a green is never the fix. The other labels have their own commands -- check the upstream's run on your merge-base; ancestry-check the allegedly missing fix against both a passing and a failing branch; find a passing job of the same name on the same base. Prove "environmental" positively by running the identical tree (compare tree hashes) in two places.
+
+**A parallel runner's diff output can attach to the wrong test.** With N workers and per-failure diffs, interleaving puts a diff block above a `FAIL <name>` line that belongs to a neighbor. Match the diff's content against that test's expected output before acting on it.
 
 ## Post-Fix Passes
 
@@ -59,9 +64,17 @@ After resolving non-trivial bugs, document a lightweight postmortem:
 - **Async ordering** -- missing `await`, unhandled promise rejection, callback firing before setup completes. The temporal gap between setup and callback is where bugs hide.
 - **Stale state** -- cached values, stale closures, outdated config, old build artifacts. When behavior contradicts the code you're reading, verify you're running what you think you're running.
 - **Stale build artifacts** -- a test failure whose source path is provably correct and untouched by your diff is the tell: the source on disk is right, but an incremental build relinked a stale object. A clean working tree (`git status`) does not mean a clean build tree -- build outputs are typically gitignored. Baseline the *build*, not the commit: rebuild from clean (`make clean`, fresh `target/`) before debugging the code. Checking out an old commit inherits the same stale objects and proves nothing.
+- **A crash and a leak reported against the same tests** -- two reports from one toolchain upgrade usually trace to a single defect with a single fix, and the closing commit credits only one of them. Search the tracker for reports naming the same test files, read the fix commit, then check per branch whether it landed and whether the buggy code exists there at all.
+- **A platform-specific fault is rarely a platform-specific bug** -- when a wrong pointer lands in benign mapped memory under one allocator and on the zero page under another, the defect is latent everywhere. A red/green comparison on the forgiving platform proves nothing, and shrinking the build changes the layout that decides whether the fault appears. Reproduce on the hostile platform with the full component set.
 - **Recurring fix site** -- if `git log` shows 3+ prior fixes in the same file, the file needs redesign, not another patch. Escalate as architectural smell.
 - **A metric pinned at a clean extreme** -- an aggregate landing on exactly 0%, 100%, or all-zero across a correlated set is usually the failure path feeding the metric, not a result. Check whether the error handler emits a value the aggregator accepts as real: a type-valid placeholder verdict, a default score, a swallowed exception returning the neutral case. Ask what number comes out when the dependency fails for *every* item at once; if it is indistinguishable from a genuine one, that is the bug. Size- or batch-correlated zeros (small inputs fine, large ones uniformly zero) point at the scoring call raising before it ever ran.
 - **Container-local id used as a global key** -- an id minted per parent (row N of a batch, finding N of a review, id 1 within a tenant) collides silently when flattened into one map. If that map feeds a completeness or coverage check, the failure is a *passing* gate rather than a wrong value: the erased information (which parent) is exactly what the check was measuring. Cheapest probe: the keyed map holds fewer entries than the source rows, with no error raised. Put the parent in the key, and make a collision that "cannot happen" assert instead of overwrite.
+
+## Diagnosis Completeness
+
+**When several branches share a destination, the artifact cannot say which one fired.** A guard chain or a validator whose branches reach one terminal produces a byte-identical symptom for each, so the failing artifact stays true after a fix and says nothing about completeness. Enumerate every branch that reaches that destination and establish each one at the fixed revision. A branch that is fail-open on absence (`!x || x.ok`) passes for the wrong reason on whatever environment was measured, and a cleanup step the fix's own instructions prescribe can remove the state that made a branch pass.
+
+**The same version working in another build variant rules the source out.** When one version passes in some builds and crashes in others, diff the source between the working and broken tags for the files the backtrace names; an empty diff ends the source hypothesis. Then name the build-axis differentiator: static versus dynamic module, distribution suite, compiler flags.
 
 ## First Move by Bug Class
 
@@ -75,7 +88,13 @@ The first debugging move depends on the bug class. "Add logging" is the default 
 
 **A log that changes the behavior is itself evidence.** If adding or removing a probe makes the bug appear, disappear, or move, that signals a timing, lifecycle, or concurrency defect -- the observation is perturbing the very ordering that is broken. Do not chase the now-hidden symptom; treat the sensitivity as the lead and investigate the race.
 
+**Weight a confirming probe more suspiciously than a refuting one.** Familiar oracle failures return empty; this one returns the answer you hoped for. A false negative costs a finding never filed, while a false positive kills a live hypothesis and cites executed output as proof. Check that the matched token cannot be derived from a fixture value you control -- name fixtures orthogonally, never by interpolating the loop variable -- and require any "no problem found" probe to have printed at least one subject's actual value.
+
+**The flag that makes the bug visible can disable behavior another test asserts.** An option that routes allocations around the runtime allocator so a memory checker can see them also removes that allocator's limits, so every test expecting an exhaustion error produces empty output or a timeout and reads as a regression. Re-run any failure whose expectation is a resource limit without the instrumentation flag.
+
 **When the probe kills the repro, switch to non-perturbing capture.** Once two of these hold -- fires under the real harness but not under a debugger, vanishes when print-style logging is added, vanishes under a built-in verbose dump, or crash-or-not flips across rebuilds of identical source -- stop trying I/O-based observation; every heavier tool makes it less reproducible. Record into a preallocated in-memory buffer using plain stores in the hot path (no formatting, no syscalls, no flush) and dump the buffer only from the failure or crash handler, where I/O is free. Keep the instrument behind a single build flag, add a per-entry invocation counter so re-dispatch within one call is distinguishable from a fresh entry, and commit each instrument increment -- shared automation can reset a worktree mid-task and take an uncommitted probe with it.
+
+**To settle whether a path executes at all, interpose the libc symbol rather than instrumenting the build.** At a 1-2% fault rate, before/after counts are weak evidence. An `LD_PRELOAD` shim that wraps the suspect entry point (`exit`, `close`, `free`), writes one marker, and forwards to `dlsym(RTLD_NEXT, ...)` answers "does this run" deterministically in a single execution, with no rebuild.
 
 ## Bug Triage
 

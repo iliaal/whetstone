@@ -103,3 +103,14 @@ Every parallel worker running `RefreshDatabase` needs its own database, and so d
 ## withToken() does not stub a custom guard
 
 `withToken('fake')` sets a header; it does not stub a custom guard. Mocking the action that ONE middleware uses to turn a token into a user leaves every other path -- a second middleware calling `$request->user()`, exception rendering, audit context -- resolving through the real guard, which will fetch keys over HTTP and decode the fake token for real. Use `actingAs($user, '<guard>')` when the intent is "this request is authenticated", and treat a test that only mocks the resolution action as covering that action, not auth.
+
+## Static memos outlive every database rollback
+
+A class caching a resolved model in a `private static` holds it for the lifetime of the PHP process -- one request under PHP-FPM, one whole suite under PHPUnit -- so `RefreshDatabase`, `DatabaseTransactions`, and an explicit rollback all leave it populated. The signature is a test that passes in isolation and fails in the suite while asserting an *absence*: the memo was filled by an earlier test's row, that row is gone, and the subject under test still resolves it. Do not delete the memo to fix the test; a per-request cache is correct production behaviour and removing it re-introduces the query the memo exists to avoid. Clear it for that one test through reflection in `setUp()`:
+
+```php
+$property = new ReflectionProperty(TenantResolver::class, 'resolved');
+$property->setValue(null, null);
+```
+
+Any static holding an Eloquent model, a container binding, or a config-derived value has the same exposure; grep the class under test for `static $` before accepting "passes alone, fails in the suite" as a database-isolation problem.

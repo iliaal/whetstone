@@ -84,6 +84,8 @@ What earns the space is the inverse: document what the agent cannot discover by 
 
 Treat fewer words as an optimization signal, not an acceptance criterion. Before condensing or merging rules in a context file, capture a baseline and predeclare the decisions the file exists to control: request authority, external actions, when to ask, proof standards, failure attribution. Compare baseline and candidate on the same cases; any safety, authority, or honesty regression rejects the candidate however much smaller it is. Prefer merging duplicated rules and deleting procedural restatement; preserve exact wording where it is what changes behavior. Change one rule group at a time, and add a case when a new failure mode appears rather than growing the file pre-emptively.
 
+A fact any flow might need belongs in the always-loaded context file, not in the one sub-document whose flow needs it today; a cross-cutting convention recorded only as a comment at one call site is invisible at the next. Put the shared fact in the file every session loads, and enforce a cross-site rule at the shared initialization point rather than restating it per site.
+
 ## Context File Hierarchy
 
 Structure CLAUDE.md (and AGENTS.md) content by priority so the most critical information loads first when context is compacted:
@@ -126,6 +128,7 @@ Before overwriting: `cp FILE FILE.backup`; never auto-delete backups.
 - **Sentence case headings**, no emoji decoration in CLAUDE.md/AGENTS.md/CONTRIBUTING/DOCS; README headers may carry at most one conventional emoji per header (see ia-writing's README rules); changelog entries may use emoji per project convention.
 - **Actionable headings**: "Set SAML before adding users" — not "SAML configuration timing". Reader should know what to do from the heading alone.
 - **Collapse depth** with `<details>` blocks instead of deleting content (blank line required after `<summary>` for GitHub rendering).
+- **Treat every published snippet as a test.** Code in a README or docs page is never exercised by the suite, so it drifts to a missing method or a wrong output. Extract every snippet and every stated output into one script and run it against the built artifact before publishing; keep runnable copies next to the code. Audit the reverse direction separately -- features that shipped and were never documented.
 
 ## README Anti-Patterns
 

@@ -22,6 +22,8 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `.env` tracked in git | Secrets committed to VCS | Add `.env`, `.env.local`, `.env.*.local` to `.gitignore` |
 | `JSON.stringify.*user`, `__INITIAL_STATE__.*token` | Sensitive data serialized into SSR HTML | Sanitize server-side state before client hydration |
 
+**Per-parameter secret redaction covers only the frame that declares the parameter.** The same secret sitting in an unannotated caller's parameter is still in the caller's frame, and a whole-trace scrubber hooked to one exception class is not equivalent -- changing the thrown type is then not redaction-neutral. Verify by triggering through a wrapper whose own parameter carries no annotation, and assert the secret is absent from the whole trace.
+
 ## Auth / AuthZ
 
 | Search for | Vulnerable pattern | Fix |
@@ -74,6 +76,8 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Upload without content validation | Malicious file type bypass (rename .php to .jpg) | Validate via magic bytes (file signature), not extension |
 | Serving uploaded files with `Content-Disposition: inline` | Uploaded HTML/JS executes in browser | Force `Content-Disposition: attachment`, serve from separate domain |
 | `file.name` or `original_name` used for storage path | User-controlled filename = path traversal | Generate server-side UUID, store with randomized path |
+| A no-follow open or `lstat` guard on a path whose parent directories come from untrusted content | Both apply to the last component only -- one symlinked parent redirects every fixed-name file below it, and `exists()` follows links, so a dangling symlink reads as absent | Validate the untrusted root before any leaf access, through one shared helper; use link-aware metadata rather than `exists()`; generate temp names freshly |
+| Read-whole-file under an untrusted root, guarded only against symlink writes | A symlink to an endless character device returns valid UTF-8 forever and the process exhausts memory | Require a regular file via `fstat` on the open descriptor, and cap the read by size |
 | `stat`/`lstat` on a path, then `open`/`unlink`/`chmod` on the same path | Link-following race (CWE-59/367) -- the path can be swapped for a symlink between the check and the operation, so a check on the path never covers the operation | Open with `O_NOFOLLOW`, then verify identity via `fstat` on the *descriptor* against a fresh `lstat` of the path (compare `dev`+`ino`), and reject `nlink != 1` to catch hardlink aliasing. A pre-open `lstat` check alone is still exploitable |
 
 ## SQL / NoSQL Injection

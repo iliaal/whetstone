@@ -8,6 +8,7 @@ Review lens for operational resilience: what happens when things go wrong at run
 - **Partial error handling**: catching at the top but not handling failures from intermediate steps. If step 2 of 5 fails, are steps 1's side effects cleaned up?
 - **Error type specificity**: catching broad exception types (`Exception`, `Error`) when only specific failures are expected. Broad catches mask unexpected bugs.
 - **Error context stripping**: re-throwing without the original cause/stack. Wrap, don't replace.
+- **Idempotent-retry branch that skips the rest of the operation**: when one logical operation is two calls (confirm then mark-verified, create then attach) and the handler treats "already done" on the first as "fully handled", a failure between the two becomes permanent — the retry returns success without ever performing the second call. The already-done path must still run the remaining calls.
 
 ## Timeout and Cancellation
 
@@ -44,6 +45,13 @@ When calling a flaky upstream service:
 - **No dead letter queue**: failed jobs that exceed retry limits must go somewhere observable, not disappear silently.
 - **No job idempotency**: workers may receive the same message twice (at-least-once delivery). The handler must be safe to re-execute.
 - **Missing visibility timeout**: if a worker crashes mid-processing, the message must become available again within a bounded time.
+- **A field added to an in-flight job class defaults for every message already queued.** Payload revival skips the constructor, so the well-known fix — give the field a real default — silently answers a second question: what did the old payload *mean*? A neutral default on a job whose identity is one mode inverts it, and a downstream filter then fans out to nothing. State what an already-enqueued payload stood for, and set the default to that.
+- **A pre-extended visibility timeout also floors the redelivery delay.** A worker that extends invisibility to cover slow work, then raises on an early failure so the message redelivers, inherits the extended window: a sub-second blip costs the full extension. Shorten the window explicitly in the early-failure branch, wrapped so a failure to shorten cannot fail the path. Accept the trade — a short loop burns receive count faster in a sustained outage and pages someone in minutes instead of hours.
+
+## Rollout and In-Flight State
+
+- **A flag that gates the producer is not a revert.** A staged rollout gates the writer on a flag while a shared list or type set gates the readers. Flag on gives a bounded window; flag off removes the bound — the producer never runs, replacement records never arrive, and the reader-side suppression becomes permanent. Grep the flag's config key for every reader; if its only consumer is the producer's dispatcher, "with the flag off the change is inert" is false. Classify each consumer of the shared list as row-keyed or type-keyed.
+- **A memoisation key must cover the transformer, not just the input.** A key over the source digest proves the input unchanged and says nothing about the code that transformed it; the first time two versions coexist (a binary replaced mid-run, a warm container outliving a deploy) the cache serves old-rule output forever. Bind the rule set's digest or the build revision, with a hand-bumped constant as the floor, and prefer over-invalidation. Ask of any added cache: what happens when the process is replaced while the cache directory survives?
 
 ## Detection Patterns
 

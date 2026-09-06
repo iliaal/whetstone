@@ -74,7 +74,15 @@ Before any success claim, run through these five steps:
 
 **A suite that executed nothing exits 0.** Zero failures is not a pass when the executed count is also zero -- an unloadable module, an unmet skip condition, a collection error, or a filter matching no tests all produce a green exit and an empty summary. Read the executed and passed counts, not just the failure count, and require the passed count to be positive before accepting a run as evidence. Where a suite can legitimately skip everything (optional dependency, service-backed cases), keep at least one unconditional case so a positive count still means something.
 
+**A command that cannot return a positive has not returned a negative.** A pathspec the tool globs differently than you read it, a filter that discards `command not found`, a wrapper exiting 0 on an empty stream -- each yields a clean zero that supports whatever is being tested. Run a positive control through the *same* invocation shape (same tool, ref, filter, shell) and read its output before you read the zero. Never filter stderr on the run that establishes the harness works.
+
+**An absent output artifact is a launch failure, never an empty result.** When a wrapper writes its findings to a file, a run that never started and a run that found nothing both give exit 0 and no file. Require the artifact to exist before interpreting it.
+
+**A reconciling total is not per-item agreement.** Counts, sums, and digests all pass when two items' verdicts are swapped, and two independent errors pointing opposite ways cancel into a *correct* aggregate. Make one typed per-item record the authority, cross-check every id against the producer that knows them, and derive summaries from that record; test with a two-row permutation whose totals do not move. For an evidence block you assemble yourself, write down the relation the counts satisfy by construction (baseline + added = total) and evaluate that instead of re-running -- a re-run reproduces the same reading.
+
 **Prove which binary produced the evidence.** A green run says nothing about *what ran*. PATH lookup, a stale installed copy, a compiled sibling, or a system interpreter can shadow the tree under test: run `command -v`, resolve symlinks, and compare the reported version or build SHA against the source being verified. For deployed code, run the check through the exact interpreter or entry point the service uses -- the one named in the scheduler entry, the unit's `ExecStart`, or the image's `CMD` -- never the bare binary on PATH. An error about a symbol or argument the deployed code plainly uses is a tell that the check is on the wrong interpreter, not that the deploy is broken. A live failure from an installed helper does not refute a source fix until that identity is checked.
+
+**When the subject is a tree materialized at a revision, prove the bytes before trusting the result.** Extracting a subtree at a commit can half-fail and leave what was there before. Diff one file under test against its content at that revision, or compare hashes, as a provenance control -- the same check catches a run against the working tree that was believed pinned.
 
 **Project-declared gates.** Before any push or PR open, read `CLAUDE.md`, `AGENTS.md`, and `CONTRIBUTING.md` if not already loaded, and extract any declared pre-push or review-ready requirement -- a metadata or drift `--check` script, a changelog-entry rule, a required lint or test target, or a release-gate list. Run each one found, in order, and stop on the first unmet gate, naming it verbatim from the instruction file. Do not invent a gate the instructions don't state, and do not skip one that is stated.
 
@@ -92,6 +100,7 @@ Type-check and unit tests are the universal baseline — not sufficient proof on
 | Refactoring (no behavior change) | Full test suite passes unchanged; public API surface diff shows no breakage (`grep` exported identifiers) |
 | Mechanical or scripted sweep (width-based rewrap, regex pass, in-place edit) | Verify with a parser or compiler (`compileall`, `cargo check`, `tsc --noEmit`, a build), never with the linter's error tally |
 | Library / package update | Run the consumer's test suite against the new version; check for deprecation warnings |
+| Published package or release artifact | Install the published version into a throwaway directory and exercise the API the release added; the working tree shares the source, autoloader, and every uncommitted edit, so it proves nothing about what a consumer receives |
 | Schema change | Old consumers parse the new shape (forward compat); new consumers handle old data still present (backward compat) |
 | Documentation / prose | Read the rendered output; confirm links, formatting, and content match intent |
 | Config with no validator | Validate syntax where possible (`jq .`, `yamllint`); otherwise read the file and confirm it matches the intended change |
@@ -101,7 +110,7 @@ Reading code is not a strategy. If the table has no row for the change, fall bac
 
 A falling lint count is fully compatible with a corrupted file: most linters report only the *first* parse failure per file, so six broken literals surface as one error, six runs in a row, each looking like the last. A width-based rewriter has no parser -- it splits string literals into syntax errors and breaks comments mid-clause -- and a formatter run afterwards happily reformats prose that no longer says what the author wrote. In-place writes also replace a symlink with a regular file; check `git status --short` for a `T` (typechange) entry after any scripted edit.
 
-**"Successfully rebased" is not proof the commit survived intact.** A three-way merge can resolve a pure insertion toward the new base when the surrounding lines were rewritten upstream -- no conflict, no warning, the hunk simply gone from the commit. After any rebase, cherry-pick, or history rewrite, diff the commit's touched-file list across the operation (`git show --stat --name-only HEAD@{1}` against `HEAD`) and confirm the expected content is still present. Do this whenever the base moved since the branch was cut, not only when conflicts appeared: a clean run is not the evidence.
+**"Successfully rebased" is not proof the commit survived intact.** A three-way merge can resolve a pure insertion toward the new base when the surrounding lines were rewritten upstream -- no conflict, no warning, the hunk simply gone from the commit. After any rebase, cherry-pick, or history rewrite, diff the commit's touched-file list across the operation (`git show --stat --name-only HEAD@{1}` against `HEAD`) and confirm the expected content is still present. Do this whenever the base moved since the branch was cut, not only when conflicts appeared: a clean run is not the evidence. A second mechanism drops a hunk just as quietly: `.gitattributes` can bind a path to a merge driver that keeps one side (`driver = true`, `driver = touch %A`) and records a successful merge of a file it never merged, and during a rebase "ours" is the new base, so the incoming edit is the one discarded. Ask before the operation (`git check-attr merge -- <path>`, `git config --get merge.<name>.driver`); `git merge-file` does not consult `.gitattributes`.
 
 **Self-review against the base, not HEAD.** `git diff` and `git diff HEAD` hide anything already committed on the branch. When HEAD holds an earlier attempt at the same fix, the superseded code is part of the base and never appears as an add or a remove -- the patch is unreviewable that way, and layering a second approach on top of a half-reverted first one is how a double-free or double-write ships. Diff against the upstream branch (`git diff origin/<branch> -- <files>`) and re-read the whole changed region, including lines believed reverted.
 
@@ -113,8 +122,11 @@ For any change that touches production logic, include at least one adversarial p
 - **Concurrency**: two parallel requests with the same identifier (for state changes, races, double-spend classes)
 - **Idempotency**: run the same mutation twice; the second should either no-op or error cleanly, not corrupt state
 - **Orphan op**: delete/update/get a nonexistent ID — does it 404/return-null as expected, or throw an internal error?
+- **Implementation shape**: vary what callers supply to an I/O path or an extension point -- a plugin with and without each optional method, a destination that exists and one that does not, a symlink, a read-only parent. A green suite, a clean sanitizer, and a differential API sweep share one blind spot: the signature is unchanged while the capability is gone, because an identical `false` for a different reason reads as no change. State the capability verified, not the aggregate.
 
 Exempt: docs changes, trivial typo fixes, pure rename refactors. Everything else: one probe minimum -- a report with zero adversarial probes is a happy-path confirmation, not verification.
+
+**A corpus assembled to expose a defect cannot test the fix.** Every row is an instance of the defect, so green proves only that the known cases are closed; the cases a fix can break are the ones the corpus omits, and it has a hole in exactly the region the defect reached through. Build a second set from cases the base already handles correctly, assert that none of them regresses, and state both numbers. If every row is a case the claim names, the measurement is of the claim, not of the code. When an author reports a wider run, check whether they varied a new dimension or only scaled yours.
 
 ## Review Staleness
 
@@ -165,6 +177,8 @@ Before marking a deliverable done, classify how it can be verified, then verify 
 
 The ledger tracks per-item sweep state; these outcomes classify each deliverable in the final report; a ledger row is `done` only when its deliverable classifies as done or changed. Outcomes are **done**, **partial**, **not done**, **changed** (same goal, different means -- say how), or **unverifiable**. A concrete filesystem path is never unverifiable: run the existence check and report done or not done. Code that *handles* a deliverable is not the deliverable -- shipping the extractor is not shipping the extracted file. When torn between done and unverifiable, report unverifiable; a confirmation prompt costs seconds, a silently missed deliverable does not.
 
+**Every per-branch scope claim is falsifiable and needs its own evidence.** "Master-only" and "the stable branch still has the guard" are assertions a reviewer will check, and reading the broken code on the branch being patched proves nothing about the others. For each branch named, run both a containment query for the introducing commit and a direct read of the function body at that branch's tip -- a branch can contain the commit and have been re-fixed since, or not contain it and be broken for another reason.
+
 ## When Verification Fails
 
 If the output does not confirm the claim:
@@ -172,7 +186,9 @@ If the output does not confirm the claim:
 1. **Do not claim completion.** Report the actual failure output to the user.
 2. **Do not retry the same verification** hoping for a different result.
 3. **Return to implementation.** Fix the issue, then re-run from Step 1 of the Gate Function.
-4. **Failure unrelated to the current changes** (pre-existing flaky test, environment issue)? State it explicitly with evidence: show the failure also occurs on the base branch or is a known issue.
+4. **Failure unrelated to the current changes** (pre-existing flaky test, environment issue)? State it explicitly with evidence: show the failure also occurs on the base branch or is a known issue. Pick that ref deliberately -- the prior head is an intermediate state, so a regression claim is measured against the base the branch was cut from -- and strip machinery the question does not need. Distrust a control that was expected to fail narrowly and came back with a wide sweep: a whole class may not have existed at that ref. "Environmental" and "pre-existing" are compatible, so naming one does not retire the other.
+
+**Where the harness has a known noise floor, the signal is the failing-set diff, not the pass count.** Against a stubbed dependency or an unsupported lane, a suite reports the same fixed block of failures every run. Capture the failing test names on the unmodified base, re-run with the change, and diff the sets; an empty diff is the pass criterion.
 
 ## Pre-Commit Hook Failures
 

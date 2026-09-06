@@ -9,7 +9,7 @@ Load this reference when classifying each finding. The four severity tiers and 5
 - **Medium** — should fix, non-blocking. Maintainability/reliability issues likely to cause near-term defects. Poor abstractions, missing validation on internal boundaries, test gaps for non-critical paths.
 - **Minor** — optional. Naming, style preferences, minor simplifications. Skip if linters already cover it.
 
-Tie every finding to concrete code evidence (file path, line number, specific pattern). Never fabricate references.
+Tie every finding to concrete code evidence (file path, line number, specific pattern). Never fabricate references. A citation that was not measured is fabricated whether or not it was invented: line numbers inherited from another pass, from a tool counting within a diff hunk, from an earlier note, or from a windowed read are unmeasured -- re-derive each by grepping the exact source text at the ref being cited. Identifiers derived by convention (a table name inferred from a class name) are guesses wearing a lookup's costume, and they fail silently. Bounds-check for free: a cited line in a file the change creates must not exceed that file's length.
 
 ## Assigning severity: evidence before score
 
@@ -20,6 +20,7 @@ Anchoring on the bug class inflates severity ("it's SQL injection, so Critical")
 3. **Preconditions** -- what must hold for it to trigger (non-default config, a specific flag, a narrow timing window)?
 4. **Authentication** -- unauthenticated, an authenticated user, or admin-only?
 5. **Blast radius** -- one user/tenant, or all of them; userland or privileged?
+6. **Magnitude** -- when impact scales with a value, measure the threshold and compare it against the range the application actually reaches. A downstream stage often absorbs small values, so a binary finding can be no defect under the application's cap and a defect over the top third. Grade both directions; the under-threshold side often fails silently.
 
 **Reachability, defined.** Reachability counts only when a path runs from a public interface -- a route, a CLI argument, a file the process reads, a message consumer -- to a first-party sink. Reach that exists only from tests, from an internal helper with no external caller, or from vendored code the host never invokes is not reachability.
 
@@ -28,6 +29,8 @@ Anchoring on the bug class inflates severity ("it's SQL injection, so Critical")
 Starting point: zero preconditions + unauthenticated remote = Critical/Important. One or two preconditions, or an authenticated path = Medium. Three or more, or local/trusted-only = Minor. When two axes disagree (a critical-class bug behind three preconditions), take the lower -- a 3+ precondition finding is almost never Critical.
 
 **Cap threat-model boosts at one tier.** If a finding matches a documented threat and that raises its severity, raise it by at most one tier. A stated threat must not re-inflate a Minor back to Critical and override the precondition-derived floor.
+
+**Grade a transient consequence at its terminal state.** "The record stays at status S" reads as latency and is true, which stops the next question: who watches S, and what do they write when they give up? Compare the recovery window against the watcher's retry budget -- when the window exceeds the budget, the record reaches the failure branch with a misleading cause, not a slow correct state. Deferrals banked against a follow-up have the same shape.
 
 ## Confidence Rubric
 

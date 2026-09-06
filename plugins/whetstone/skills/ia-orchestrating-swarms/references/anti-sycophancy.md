@@ -18,6 +18,12 @@ When multiple candidates are evaluated (e.g., parallel implementations, competin
 
 A judge told "3.5 passes" anchors on the boundary and drifts scores toward it. The judge prompt carries the rubric and the scale; the orchestrator holds the threshold and applies it to the returned score. The same applies to consequences — "if this fails, the run aborts" is pressure toward leniency, not context.
 
+The expected verdict is the same anchor. Briefing an evaluator with the outcome you anticipate — "we expect nothing here", "this probably duplicates ours" — produces confirmation: the reader string-matches against the expectation and stops, missing gaps one abstraction level up. State the question and the comparison basis; hold the prior.
+
+## Keep the judge out of the producer's lineage
+
+A second opinion is independent only while the evaluating model is neither the producer nor a sibling from the same lineage. A validator chain written as an ordered model list falls back on a transient error to the next entry, which is usually the producer's sibling — the fallback silently converts an independent review into a self-review. Order the chain by provider lineage, and drop whichever model produced the artifact under review.
+
 ## Judge biases and countermeasures
 
 Structural isolation (the patterns above) does not remove per-judgment biases. Name the countermeasure in the judge prompt for the biases the task invites:

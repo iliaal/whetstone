@@ -55,6 +55,9 @@ TradingView has no console or debugger. Use these patterns:
 - Sharpe: `dailyReturn * 252 / (stdDev * math.sqrt(252))`
 - **Walk-forward validation** -- optimize on period 1, test on period 2, re-optimize on period 2, test on period 3. If metrics degrade > 30%, parameters are overfit.
 - **Indicator accuracy testing** -- use forward-looking `close[lookforward]` to measure prediction accuracy, track true/false positive rates
+- **Count evaluations per slice** -- a slice scored N times during tuning is tuning data, whatever it is labelled, so a multi-parameter sweep run across every slice turns the "validation" numbers into selection bias. Reserve at least one slice with an explicit look budget, spend it after the parameters are locked, and treat "one more look" as the signal to stop
+- **Opposite per-slice optima mean no parameter can fix the strategy** -- when a knob's arg-max points in incompatible directions across out-of-sample slices, no constant satisfies both, and even the per-slice oracle may lose overall. The fix is a regime classifier computable before entry, or a different strategy
+- **Re-run every parameter sweep with the regime gate active** -- pre-gate sweeps do not transfer, because losing ungated sessions mask the parameter's real effect. A filter calibrated against one strategy's failure mode does not carry to a sibling on the same signal
 
 ## Visualization
 

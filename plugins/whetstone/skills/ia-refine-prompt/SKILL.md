@@ -39,6 +39,7 @@ description: >-
 - **Progressive complexity** -- start with the simplest prompt that could work. Add few-shot examples, chain-of-thought, or role framing only when the task demands it, not by default.
 - **Specific verbs** -- replace vague actions ("analyze", "process", "handle") with measurable ones ("list the top 3", "classify as A/B/C", "return JSON with keys X, Y").
 - **One output format** -- specify exactly one format (JSON schema, markdown template, numbered list). Ambiguous format expectations cause inconsistent results.
+- **Give the reason, not just the rule.** A dense block of `MUST`/`CRITICAL` anchors the model on the instruction at the expense of the context it applies to, and bare imperatives compete rather than compound. Keep them few and motivated: state what the rule prevents in the same sentence, so the model generalizes to the case the rule did not name.
 - **No meta-commentary** -- output only the refined prompt as markdown. No preamble ("Here's an improved version..."), no explanation of changes unless explicitly requested.
 
 ## Machine-Parsed Text

@@ -36,7 +36,9 @@ description: >-
 - A `DEFAULT` whose expression is `VOLATILE` rewrites the entire table under `ACCESS EXCLUSIVE`; only `IMMUTABLE`/`STABLE` defaults get the metadata-only fast path. Check before shipping the migration: `SELECT provolatile FROM pg_proc WHERE proname = 'gen_random_uuid';` -- `v` is volatile, `s`/`i` are not. So `DEFAULT 7` and `DEFAULT now()` are instant, `DEFAULT gen_random_uuid()` is a full rewrite; add the column nullable, backfill in batches, then set the default.
 - `NULLS NOT DISTINCT` on unique indexes (PG15+) -- treats NULLs as equal for uniqueness
 - Under `NULLS NOT DISTINCT`, a pre-flight duplicate check written with SQL `=` misses NULL/NULL collisions -- the index rejects the second row, but `NULL = NULL` evaluates to NULL (not true), so a self-join or `WHERE a.col = b.col` probe silently skips exactly the pairs the index will reject. Write the probe with `IS NOT DISTINCT FROM` so NULL/NULL compares as equal.
+- `ORDER BY col DESC` puts NULLs FIRST (ASC puts them last), so a "keep the newest row" dedup written `ORDER BY updated_at DESC` picks the row whose timestamp is NULL. ORM `timestamps()` helpers typically create `created_at`/`updated_at` as nullable, so the exposure is routine rather than exotic. Pin the order (`ORDER BY updated_at DESC NULLS LAST, id DESC`) or make the column `NOT NULL`. MySQL's DESC default is the opposite (NULLS LAST), so a query ported between the two silently changes which row survives.
 - Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
+- Derive every attribute at its own grain. A property of the parent -- a session, a day, an order -- computed from one child row lands on every child and is legitimately partial for most of them, so the aggregate disagrees with itself depending on which child is read. Put parent-scoped facts in a table keyed at the parent grain, populate them from the child the parent designates, and prefer a boundary observation (the last event's timestamp) over a count threshold.
 
 ## Migration Safety
 
@@ -59,6 +61,7 @@ Never rename or remove a column in a single migration -- callers reading the old
 - `NOT NULL` without a `DEFAULT` on an existing table locks and rewrites every row. Add the column nullable first, backfill, then add the constraint.
 - `CREATE INDEX` (without `CONCURRENTLY`) locks writes for the duration. Always use `CONCURRENTLY`, which cannot run inside a transaction block -- keep it in its own migration.
 - `ADD COLUMN ... NULL` with no default is metadata-only and fast, but it takes `ACCESS EXCLUSIVE` and that lock is held until the enclosing **transaction** commits -- not until the `ALTER` returns. A migration that adds the column and then backfills every row in the same transaction blocks all readers and writers for the backfill's duration. Do not reflexively split it: the single-transaction ordering (`ADD` nullable -> backfill -> `SET DEFAULT`) is itself the fix for the rolling-deploy window where an old release inserts `NULL` before the default exists. The disposition is table size, not a rule -- on a small table accept the sub-second hold and state the row count; on a large one use expand-contract (deploy the column with a constant `DEFAULT` first, then a separate chunked backfill outside a transaction).
+- A dedup pass preceding a **partial** unique index must carry the index's own predicate. `CREATE UNIQUE INDEX ... WHERE <pred>` constrains only the rows matching `<pred>`, but a dedup that ranks over the whole table collapses each key to a single row and hard-deletes `<pred>`-failing rows the index would have allowed -- silent data loss on a forward-only migration. Put `<pred>` inside the ranked subquery, and compare the delete's row count against a `SELECT count(*) ... WHERE NOT <pred>` before committing.
 - Large data backfills: batch with `FOR UPDATE SKIP LOCKED` to avoid locking the entire table:
 
 ```sql
@@ -80,6 +83,10 @@ Run in a loop until zero rows affected.
 - **Compare-and-swap retry:** include the original snapshot in `WHERE col = :original_value`, check the affected-row count; on 0, re-read and retry. Robust under contention, requires explicit retry-loop handling.
 
 Default chunked decode-encode loops are only safe during a maintenance window with writes blocked. ORM "chunkById + load + mutate + save" patterns hit this same trap.
+
+**A SQL backfill claiming parity with an application normalizer usually differs on a character class.** One-argument `btrim(x)` trims spaces only, while PHP's `trim()` and Python's `.strip()` trim the whole ASCII whitespace set -- so a value carrying a tab folds out of vocabulary in SQL, and on a value-dropping migration that is one-way data loss. Pass the character set explicitly (`btrim(x, E' \t\n\r\x0B')`, which mirrors PHP's default) and apply it to the blank guard as well as the comparison. Whenever a query re-implements an application normalizer, enumerate every class each side treats as insignificant -- whitespace, case folding, Unicode normalization, trailing punctuation -- and execute both over the same inputs, loading the committed implementation verbatim rather than retyping it.
+
+**Rollback fidelity is executable.** Reviewers compare the up and down SQL as strings and agree they look symmetric, which misses a renamed index, a dropped partial predicate, or an operator-class difference. Hold the migration out and build the baseline, restore and apply it, roll back one step, then diff the catalog's normalized output (`pg_indexes.indexdef`, `pg_get_constraintdef(oid)`); an empty diff is the answer, and no amount of reading is. Run it on anything that rebuilds a unique or partial index, or re-keys an index in place.
 
 ## Index Strategy
 
@@ -181,6 +188,7 @@ Always index columns referenced in RLS policies. For complex multi-table checks,
 - Cursor pagination (`WHERE id > $last ORDER BY id LIMIT $n`) over `OFFSET`
 - Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` -- avoids full `count(*)` on large tables
 - Materialized views for expensive aggregations: `REFRESH MATERIALIZED VIEW CONCURRENTLY` (needs unique index). Schedule refresh, not per-query.
+- Anchor a time bucket to the domain's own boundary, not to the epoch. `date_bin(stride, ts, origin)` lays the grid down at `origin`, and `date_trunc` is calendar-anchored, so a stride that does not divide the gap between domain boundaries produces a bucket straddling one; grouping by that bucket plus a row-derived day then emits two rows per bucket and violates an `(entity, bucket_start)` primary key. Pass the domain boundary as `origin`, key on `(entity, bucket_start)`, and derive the day from the bucket rather than from the row.
 
 ## Concurrency Patterns
 
@@ -202,6 +210,7 @@ Foreign keys *from* a partitioned table need PG11+; foreign keys *referencing* a
 - Keep transactions short -- long txns block vacuum and bloat tables
 - Advisory locks for application-level mutual exclusion: `pg_advisory_xact_lock(key)`
 - Non-blocking alternative: `pg_try_advisory_lock(key)` -- returns false instead of waiting
+- **`pg_advisory_xact_lock()` called outside an open transaction is released immediately.** Under autocommit the call is its own transaction, so the lock is taken and dropped before the protected code runs, and every test still passes because nothing contends. Assert the nesting depth the lock was taken at, not that the call happened -- a transaction-wrapping test harness already holds one, so depth 1 means the caller opened none. Reserve session-scoped `pg_advisory_lock()` for paths where the release sits on an unconditional cleanup.
 - Check blocked queries: `SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock'`
 - Monitor deadlocks: `SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()`
 - **`SELECT ... FOR UPDATE` only locks rows that already exist** -- it does not prevent a phantom insert of a missing row. Two transactions can both query a key, both see no row, both proceed to insert; the second fails the unique constraint (or both succeed if none existed). For a get-or-create / insert-if-missing race, `FOR UPDATE` is the wrong tool -- use a partial unique index + `INSERT ... ON CONFLICT DO NOTHING/UPDATE`, or serialize the key with `pg_advisory_xact_lock(hashtext(:key))` before the existence check.

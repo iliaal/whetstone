@@ -80,6 +80,7 @@ Stop and ask before proceeding when:
 - If a simplification would make the code harder to understand, skip it
 - Watch for over-simplification: inlining too aggressively removes names that gave concepts meaning; combining unrelated logic into one function hides distinct responsibilities; removing abstractions that exist for testability breaks the test suite
 - When unsure whether a block is dead code, ask instead of deleting
+- For artifacts whose value is self-containment -- prompts, skill and agent instructions, per-service configuration, vendored policy files -- duplication is cheaper than a shared dependency until edits actually drift. Extract only after coordinated changes have repeatedly gone out of sync, or a real consumer of the shared form exists
 
 ## Verify
 

@@ -69,6 +69,8 @@ Cardinal rule: one owner per file. When files must be shared, designate a single
 3. On overlap: either downgrade to serial, isolate each unit in a harness-supported worktree, or rewrite unit boundaries so files become exclusive.
 4. Even with no declared overlap, include this constraint verbatim in every parallel-dispatch prompt: *"Do not run `git add`, `git commit`, or the project's test suite while other parallel agents are active -- you'd race on the git index or thrash the test cache. Stage changes for the orchestrator to commit after integration."*
 
+That constraint is advisory, not enforcement: one checkout has one index, so a peer's staged files ride along with any commit made from it. The pathspec-on-commit protection for an unavoidable shared tree is in `ia-git-worktree` (Ownership).
+
 **One implementation unit per worker.** A worker dispatched to implement a unit gets a fresh context and is retired once that unit is integrated -- never retasked onto a second unit, never held as an idle pool. The same handle may continue or recover *its own* unit (the crash-relaunch path below). Persistent teammates are exempt. Scope, exemptions, and workspace-cleanup rules: [orchestration-patterns.md](./references/orchestration-patterns.md) (One implementation unit per worker).
 
 **Preset team compositions:** Start from a named preset before designing a custom team. See [team-compositions.md](./references/team-compositions.md) for the conceptual Review / Debug / Feature / Fullstack / Migration / Security / Research compositions. Its `subagent_type` fields are Claude-specific; in Codex, express the same read-only or implementation boundary in the task prompt and available permissions.
@@ -112,6 +114,10 @@ Never ignore an escalation. Never force the same agent to retry without changing
 **An agent that crashed or timed out without returning a usable result is a different case, and the working tree decides the response.** Inspect its owned files for partial edits first (`git status`, `git diff`): a clean tree is an ordinary retry; a dirty tree gets exactly one relaunch whose prompt names the touched files and instructs verify-and-continue, never redo. That relaunch is a retry of the same agent, not a new agent against the dispatch budget, and a second crash for the same agent is a hard stop: report it. Neither a crash nor a timeout licenses calling the run an infrastructure failure to justify a free retry. Why redo double-applies, and the declared-handoff-artifact variant: [resilience-patterns.md](./references/resilience-patterns.md). An agent-reported BLOCKED answered, so it routes to the table above.
 
 **Two-stage review gate on subagent outputs.** Verify spec compliance first: does the output match what was requested? Only then evaluate quality. Structure review as two explicit passes -- pass 1 rejects on spec mismatch without reading further, pass 2 assesses correctness and quality on spec-compliant outputs.
+
+**Compare an external reference against its class list, not its instances.** Asking "is this exact string already in ours?" returns no whenever the two sources encode the same classes in different vocabularies. Extract the reference's taxonomy and diff that against yours -- a source whose content is worthless can still be a valid coverage checklist.
+
+**Split recall from precision across agents, and keep precision context out of the finder.** Handing a discovery agent mitigating context -- the validating caller, the guard one layer up, a prior "this is fine" verdict -- trains it to self-censor, and a dropped candidate is unrecoverable. Give the finder the target and the discovery queries only, let it over-produce, then route every candidate to a separate verifier that starts from "assume this is wrong" and has the tool access to fetch the caller itself.
 
 ### Delivery and credit discipline
 

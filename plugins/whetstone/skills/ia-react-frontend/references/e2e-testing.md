@@ -109,6 +109,10 @@ Rules: locators as public readonly properties, actions as async methods with int
 
 Never use CSS selectors, XPath, or DOM structure selectors. When adding `data-testid`, use `<action>-<entity>-<type>` pattern: `create-user-btn`.
 
+## Filling Inputs
+
+Prefer `locator.fill(value)` to `page.keyboard.type()`. Synthesised keystrokes drop characters intermittently under a browser-attached session (CDP against an already-running browser), and the driver reports the full string as typed while the DOM holds a short value -- so the assertion that would catch it is the one nobody writes. Rich-text editors whose state lives outside the element's `value` (ProseMirror, Slate, TipTap) ignore programmatic writes and still need `type()`; there, assert `input_value()` (or the editor's own serialized content) after typing and retry on a short read.
+
 ## Wait Strategies
 
 Never use `waitForTimeout` or `setTimeout`. Use explicit conditions:
