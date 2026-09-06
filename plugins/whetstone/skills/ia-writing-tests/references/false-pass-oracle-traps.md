@@ -38,6 +38,12 @@ Assertion oracles that can report success without observing failure, moved from 
 
 **Fix:** read `${PIPESTATUS[0]}` and gate on it. Corollary: a historically green lane is not evidence the suite passed, so a tightening fix that turns a lane red is evidence the old gate was masking.
 
+## A readiness predicate whose alternation admits a mid-stream match
+
+**Symptom:** a background producer is waited on with a condition that ORs the real completion marker against something cheap -- `until [ -s "$OUT" ] && grep -qiE 'done marker|^\s*$' "$OUT"; do sleep 15; done`. The `^\s*$` branch matches the first blank line, which the producer emits before it answers anything, so the wait reports ready on poll #1. The half-written artifact then reads as a *wrong answer* rather than a visibly incomplete one: a tail lands in the middle of the producer's own echoed input, which files as a defect report about the tool when the truth was a read that landed a few kilobytes short of the end of the write. Nothing about the output's appearance separates the two.
+
+**Fix:** match a marker that cannot appear mid-stream -- the final result block, never a whitespace pattern and never a token the stream can print more than once -- and confirm the producer has exited before reading anything it wrote. A tail is evidence about the file; only the process table is evidence about completion. Prefer the harness's own completion signal to a hand-rolled poll, since the hand-rolled loop is what gets reached for when the wait has to happen inside one turn, and that is exactly when the predicate goes sloppy.
+
 ## A GNU-only matcher inside a cross-OS assertion
 
 **Symptom:** `grep -qP` as an `if` condition fails open on BSD grep -- there is no `-P`, exit 2 reads as "pattern absent", and the check passes. The same gap points the other way in a summary parser: `grep -oP` errors, the parsed count defaults to zero, and the "suite not effective" branch fires on a green suite.

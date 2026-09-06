@@ -178,7 +178,7 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Symptom:** `sleep(2)` / `setTimeout` / `time.sleep()` before asserting on async work. A sleep is a race condition with a timer attached: too short flakes under load, long enough is wasted wall-clock in every run forever.
 
-**Fix:** Wait on the observable condition with a deadline -- poll for the record, the event, or the state change (framework helpers: `waitFor`, `assertEventually`, polling with timeout). The deadline bounds the wait; the condition ends it. A sleep placed to *reproduce* a race is the same mistake pointed the other way -- see "Synchronous adapters hide timing-dependent races" for the barrier form.
+**Fix:** Wait on the observable condition with a deadline -- poll for the record, the event, or the state change (framework helpers: `waitFor`, `assertEventually`, polling with timeout). The deadline bounds the wait; the condition ends it. A sleep placed to *reproduce* a race is the same mistake pointed the other way -- see "Synchronous adapters hide timing-dependent races" for the barrier form. Write the readiness predicate so it cannot match mid-stream: an alternation that ORs the real marker with a cheap one (a blank line, a token the producer can print more than once) is satisfied on the first poll, and the half-written artifact then reads as a wrong answer rather than an incomplete one.
 
 ### Asserting elapsed wall-clock time
 
@@ -345,7 +345,7 @@ Isolation and sandbox traps -- containerized-timeout leaks, a harness sandboxing
 
 **Fix:** assert that the specific test reported PASS, not that the suite exited zero. Enable whatever the harness helper itself needs -- a helper can pull in unrelated capabilities that each skip for their own reason.
 
-False-pass oracle traps -- the `grep -q` pipefail trap, comparison oracles that fail open, feature-flag-disabled coverage illusions, retiring a suite on count alone, expectations ending in a bare wildcard, conformance harnesses that normalize before comparing, lane gates built on a summary grep, GNU-only matchers in cross-OS assertions, oracles newer than the supported floor, and smoke inputs that never reach a budget -- are in [false-pass-oracle-traps.md](./references/false-pass-oracle-traps.md).
+False-pass oracle traps -- the `grep -q` pipefail trap, comparison oracles that fail open, feature-flag-disabled coverage illusions, retiring a suite on count alone, expectations ending in a bare wildcard, conformance harnesses that normalize before comparing, lane gates built on a summary grep, GNU-only matchers in cross-OS assertions, oracles newer than the supported floor, smoke inputs that never reach a budget, and readiness predicates satisfied by a mid-stream match -- are in [false-pass-oracle-traps.md](./references/false-pass-oracle-traps.md).
 
 ## When Stuck
 

@@ -71,6 +71,20 @@ public function test_post_requires_title_and_content(): void
 }
 ```
 
+### assertJsonValidationErrors passes on ANY error for the field
+
+`assertJsonValidationErrors(['phone'])` asserts only that `phone` appears as an errored key. It does not check which rule produced the message, and Laravel stops at the first failing rule for an attribute -- so a fixture that trips an earlier format rule satisfies a test named `test_..._validates_unique_phone`. Deleting the rule under test leaves the test green, and the suite reads as coverage of a rule it never reaches.
+
+The second source escapes a rule-chain read entirely: the competing rejection is application code throwing `ValidationException::withMessages(['field' => ...])` further down the request -- a service-layer floor, a domain guard, a controller precondition. It is not in the FormRequest, so reading `rules()` finds nothing, and it lands on the identical key.
+
+Three steps, in order:
+
+1. Confirm the fixture would PASS every rule earlier in the chain than the one under test.
+2. Delete the rule and re-run. Still green means the rule is not under test. Do this mechanically rather than by reading, whenever a `ValidationException` exists anywhere on the path.
+3. Tighten to the message form -- `assertJsonValidationErrors(['field' => 'must not be greater than'])`, which substring-matches the message -- and prove it discriminates in both directions: green with the rule present, red with it deleted. The failure output names the guard that was really answering.
+
+Reviewer tell, free to run: when a change adds both a validation rule and a service-layer guard that reject on the same key, the new rule's test almost certainly cannot see it.
+
 ## API Response Structure
 
 ```php

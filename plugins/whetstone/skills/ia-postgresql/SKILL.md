@@ -22,6 +22,9 @@ description: >-
 | UUID | `gen_random_uuid()` (PG13+) | `uuid-ossp` extension |
 | IP addresses | `INET` / `CIDR` | text |
 | Ranges | `TSTZRANGE`, `INT4RANGE`, etc. | pair of columns |
+| Raw bytes (verbatim payload) | `BYTEA` | `JSONB`, `TEXT` -- both re-encode |
+
+A spec that says "log the raw response" is asking for byte fidelity, and no text type provides it. `JSONB` reparses: it drops insignificant whitespace, sorts object keys, keeps only the last of duplicate keys, and rewrites numbers out of exponent notation (`1e0` -> `1`; trailing zeros in `1.00` do survive, so "all numeric forms collapse" overstates it). A non-JSON body cannot be stored at all and usually lands as `NULL`. `TEXT` rejects a NUL byte and any sequence invalid in the database encoding, so a binary or mis-encoded body errors instead of storing. Persist the bytes in `BYTEA` with the content type beside them, and add a parsed `JSONB` column separately when queries need one -- reading the column type as proof the body is kept is the review error.
 
 ## Schema Rules
 
@@ -35,6 +38,7 @@ description: >-
 - Safe migrations: `CREATE INDEX CONCURRENTLY`, add columns with a **non-volatile** `DEFAULT` (instant add). Never `ALTER TYPE` on large tables in-place.
 - A `DEFAULT` whose expression is `VOLATILE` rewrites the entire table under `ACCESS EXCLUSIVE`; only `IMMUTABLE`/`STABLE` defaults get the metadata-only fast path. Check before shipping the migration: `SELECT provolatile FROM pg_proc WHERE proname = 'gen_random_uuid';` -- `v` is volatile, `s`/`i` are not. So `DEFAULT 7` and `DEFAULT now()` are instant, `DEFAULT gen_random_uuid()` is a full rewrite; add the column nullable, backfill in batches, then set the default.
 - `NULLS NOT DISTINCT` on unique indexes (PG15+) -- treats NULLs as equal for uniqueness
+- A `UNIQUE` constraint proves *at most* one row per key, never *exactly* one. The lower bound has to come from elsewhere -- a `NOT NULL` FK from the covered side, a `CHECK`, or a seeding invariant -- so any docblock, MR description, or review conclusion of the form "the index is unique, therefore every X has exactly one Y" is unsound until that other source is named. The tell is the word *exactly*, or a downstream promise phrased as a universal. One query settles it: enumerate the domain and count the members with zero rows.
 - Under `NULLS NOT DISTINCT`, a pre-flight duplicate check written with SQL `=` misses NULL/NULL collisions -- the index rejects the second row, but `NULL = NULL` evaluates to NULL (not true), so a self-join or `WHERE a.col = b.col` probe silently skips exactly the pairs the index will reject. Write the probe with `IS NOT DISTINCT FROM` so NULL/NULL compares as equal.
 - `ORDER BY col DESC` puts NULLs FIRST (ASC puts them last), so a "keep the newest row" dedup written `ORDER BY updated_at DESC` picks the row whose timestamp is NULL. ORM `timestamps()` helpers typically create `created_at`/`updated_at` as nullable, so the exposure is routine rather than exotic. Pin the order (`ORDER BY updated_at DESC NULLS LAST, id DESC`) or make the column `NOT NULL`. MySQL's DESC default is the opposite (NULLS LAST), so a query ported between the two silently changes which row survives.
 - Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
@@ -56,6 +60,8 @@ description: >-
 3. **Contract**: remove the old column/table in a later deploy
 
 Never rename or remove a column in a single migration -- callers reading the old name will break between deploy and code rollout.
+
+The transitional window covers every layer a client reads, not just the column. A migration can be flawlessly rolling-deploy-safe on the write side while the same release drops the field from the API response, and a bundle loaded before the deploy then reads `undefined` -- a render-time crash, not a graceful absence. Enumerate the field's treatment per layer (column, response payload, each client) and keep the response emitting it until the same later release that drops the column. "The client change ships alongside" addresses new bundles, not the ones already running.
 
 **Dangerous operations:**
 - `NOT NULL` without a `DEFAULT` on an existing table locks and rewrites every row. Add the column nullable first, backfill, then add the constraint.
@@ -99,7 +105,7 @@ Default chunked decode-encode loops are only safe during a maintenance window wi
 
 **Index rules:**
 - Composite: equality-predicate columns first, then the range/sort column, max 3-4 columns -- a leading range column stops the B-tree from navigating on anything after it. "Most selective first" is the myth version; selectivity only breaks ties among equality columns
-- Partial: `WHERE status = 'active'` -- smaller, faster
+- Partial: `WHERE status = 'active'` -- smaller, faster, and it constrains *only* the rows matching the predicate. A plain unique index likewise constrains only rows whose key columns are all non-NULL, since NULLs compare as distinct unless the index is `NULLS NOT DISTINCT`. So a "prevent duplicates" index validated against the new write path enforces nothing against an existing writer that leaves a key column NULL or writes rows the predicate excludes, and the dedup the migration promises is leaky for exactly those rows. Audit every writer of the table, not the one in the diff
 - Covering: `INCLUDE (col)` -- avoids heap lookup
 - Expression: `ON (lower(email))` -- for function-based WHERE
 - A GIN index on an array column serves the containment operators, not `=`: `WHERE 'x' = ANY(col)` seq-scans even with `enable_seqscan = off`, because `ANY` over an array expands to equality and no GIN operator class implements it. Write the predicate as `WHERE col @> ARRAY['x']` to reach the index.
@@ -215,6 +221,8 @@ Foreign keys *from* a partitioned table need PG11+; foreign keys *referencing* a
 - Monitor deadlocks: `SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()`
 - **`SELECT ... FOR UPDATE` only locks rows that already exist** -- it does not prevent a phantom insert of a missing row. Two transactions can both query a key, both see no row, both proceed to insert; the second fails the unique constraint (or both succeed if none existed). For a get-or-create / insert-if-missing race, `FOR UPDATE` is the wrong tool -- use a partial unique index + `INSERT ... ON CONFLICT DO NOTHING/UPDATE`, or serialize the key with `pg_advisory_xact_lock(hashtext(:key))` before the existence check.
 - **A unique-violation (SQLSTATE 23505) caught inside an open transaction can't continue in that same transaction** -- once any statement raises, the transaction enters the aborted state and every later statement fails with `current transaction is aborted, commands ignored until end of transaction block`. Wrap the risky statement in a `SAVEPOINT` and `ROLLBACK TO SAVEPOINT` on error, or push the insert-or-update into a single `ON CONFLICT` statement that never raises. A bare try/catch around the failing statement is not enough on PostgreSQL.
+- **A row lock orders the writes, not the reads that steer them.** A `FOR UPDATE` placed first in the transaction is still TOCTOU when the value deciding what the locked block writes was read *before* the lock and never re-read from the locked row -- whichever transaction the lock lets through second is then the one applying work computed from a stale input. Re-read every steering value inside the lock; see [concurrency-patterns.md](./references/concurrency-patterns.md).
+- **Inserting a child row takes `FOR KEY SHARE` on the parent it references**, and `FOR KEY SHARE` conflicts with `FOR UPDATE` alone. Locking the parent *before* the insert therefore serializes concurrent creators; locking it *after* the insert makes two concurrent runs of that same path deadlock against each other. `FOR SHARE` and `FOR NO KEY UPDATE` do not conflict with `KEY SHARE` and serialize nothing here -- see [concurrency-patterns.md](./references/concurrency-patterns.md).
 - **A nested `BEGIN` (or framework `transaction()` wrapper) becomes a `SAVEPOINT`, not an independent transaction** -- only the outermost `BEGIN` is a real transaction. A per-iteration "transaction" inside an outer one does not commit independently and does not release row locks between iterations (held until the outer `COMMIT`); an unhandled inner error aborts the whole outer transaction. For a long backfill that needs per-row commit and lock release, run each unit as its own top-level transaction -- don't nest it under an outer one.
 
 ## Full-Text Search

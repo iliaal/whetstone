@@ -112,3 +112,11 @@ $user = User::factory()->make();
 ```
 
 Always use `create()` for feature tests (persists to DB). Use `make()` only for unit tests that need a model instance without persistence.
+
+## Factories build the model unguarded
+
+`Factory::makeInstance()` wraps `new $model($attributes)` in `Model::unguarded(...)`, so a factory can set a column that `$fillable` would reject and `$guarded` would block. This is convenient for seeding and dangerous for evidence: a test whose fixture stamps a non-fillable column pins a row shape the runtime **cannot** produce, so the guard, resource, or query it asserts on is being exercised against data no production writer can create.
+
+Mechanical check for any test that pins a guard, a filter, or a "this column decides X" behaviour: diff the factory payload's keys against the model's `$fillable`. A key present in the payload and absent from `$fillable` means the fixture is unreachable, and the assertion proves nothing about production. The tell in a suite is a sibling test setting the same column to `null` while the guard test stamps a real value -- both shapes exist, only one of them can happen.
+
+The neighbouring question is the same one in the other direction: for every precondition the fixture supplies, name the production actor that supplies it. "Nothing does" is the finding.

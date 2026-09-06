@@ -139,6 +139,8 @@ Only pattern 2 is a finding.
 
 **PHP `preg_match` returns `false`, not `0`, on a PCRE engine error.** Exhausting `pcre.backtrack_limit` (default 1,000,000) is an error, so a plain truthiness test reads a correct subject as unmatched; a lazy `.*?` before an end anchor reaches that limit at around a megabyte of subject. Distinguish `false` from `0` and check `preg_last_error()`; the fix is usually a greedy `.*`.
 
+**PHP `empty()` as the absence test collapses an empty array into "not submitted".** `empty([]) === true`, so a partial-update endpoint written as `empty($data['key']) ? null : map(...)`, with the updater guarding `if ($dto->key !== null)`, cannot distinguish a client sending `{"key": []}` to mean "none" from a client omitting the key. Every partial update works and only the clear-all affordance breaks: 200 returned, nothing written, and the refetch restores what the user just deleted. `array_key_exists` distinguishes the two; `empty()`, `isset()`, `?? null`, and plain truthiness do not (`empty()` is a truthiness test, so `0`, `"0"`, and `""` collapse the same way — objects do not, since every object is truthy). Bound the finding to the remove-all case, since removing *some* items works, and attack the remedy before proposing it: letting `[]` through starts deleting on a payload that previously did nothing, so count the mapping function's callers, confirm the sync path survives an empty array, check whether an existing test pins `[]` as "unchanged", and sweep the request pipeline (`prepareForValidation`, serializer defaults, `array_filter`, `?? []`) for anything upstream that can synthesise `[]` from something that was not the client saying "none".
+
 **Laravel 11+ `HasUuids::newUniqueId()` returns `Str::uuid7()` (time-ordered).** `latest('id')` on a UUIDv7 PK sorts chronologically — the "UUIDs sort lexicographically, not chronologically" trap only applies to Laravel ≤10 or models overriding `newUniqueId()`.
 
 **Laravel 11+ `HasOneOrMany::limit()` in an eager-load is per-parent, not global.** `->with(['relation' => fn ($q) => $q->limit(N)])` uses `groupLimit` when `$this->parent->exists` is false (eager-load path), which the older "this limits rows total, not per parent" finding no longer applies to.
@@ -196,6 +198,14 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 **Reality:** a downstream validator or second reviewer reads those phrases as a self-dismissal and drops the finding regardless of real severity. Severity tags (`[Minor]`, `[FYI]`) are fine; dismissive prose is not. Hypothetical impact ("potentially hours") is easy to wave off.
 
 **Fix:** anchor severity in concrete constants and numbers from the code ("20-minute floor", "every inactive bar") — a named constant is harder to wave off than a hypothetical. State the severity tag and stop; no minimizing commentary.
+
+## A defect demoted to "considered, not raised" was never counted
+
+**Trap:** noticing one instance of a mechanical defect -- a stranded docblock, a stale comment, a magic literal, a missing `@param`, a duplicated predicate -- judging it too small for a thread, and putting it in the round's summary as a "considered, not raised" line.
+
+**Reality:** the demotion is a claim about the *count*, made without counting, and deciding the item is too small is exactly what removes the reason to measure it. The sweep is usually one command and was runnable before the demotion. N=1 is hygiene; N=8 is a thread, and the extra instances need not be the same defect in kind -- among eight stranded docblocks, two documented behavior the change had removed, which invites the next reader to restore it.
+
+**Fix:** before writing a mechanical defect into a summary line, run the sweep for its siblings at head *and* at base. The count decides the severity; the base run separates "this change introduced eight" from "the file was always like this"; and the sweep's output is the note, because an author fixes a table faster than a description.
 
 ## Plan-mandated defects vs. documented overrides
 
@@ -261,6 +271,14 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 **Reality:** guards arrive one site at a time. A cap added to one allocator leaves the neighbour unbounded; a fix naming two members of a family skips the third; the skipped sibling can carry an extra defect of its own.
 
 **Fix:** read the fix commit's changed-file list, grep every sibling for the same call or shape, and give each an explicit disposition. Before proposing the same guard to a sibling, check that its call site supports it -- a cleanup-on-failure guard needs an exclusive-creation signal.
+
+## A derived constant is cleared by its arithmetic, not by the dimension it guards
+
+**Trap:** a diff introduces a magic number and, unusually, shows its work -- a docblock or config comment derives it ("the tightest per-provider throttle is 10/min and a job gets 15 attempts, so 10 x 15 = 150"). Every term is checkable at head, so each one gets checked, all of them hold, and the constant is recorded as cleared.
+
+**Reality:** the derivation produces one quantity and the guard compares a different one. Same units, different dimension: the derived quantity was *how deep a queue one job survives*, while the guard reads `if ($requested > $cap)` where `$requested` is this invocation's candidate count. A per-call cap on a cumulative hazard is defeated by repetition, so the number can be perfectly derived and still not bound the thing it was derived against. Input verification is what suppresses the question -- the checks ran and came back clean, and a well-reasoned derivation reads as a sign the author thought about the hazard rather than a prompt to reopen it. A verified input can also be a *shared* budget: confirming that a job gets 15 attempts does not entitle this derivation to all 15 when cooldown waits and single-flight waits claim the same ceiling.
+
+**Fix:** for any guard shaped `if ($measured OP $CONST)` where `$CONST` arrives with a derivation, write two sentences before accepting it -- what the derivation produces, in words, with its scope; and what `$measured` holds at that line, in words, with its scope. If the scopes differ (per-call vs cumulative, per-entity vs global, per-window vs total), the guard does not bound the derived hazard however sound the arithmetic; then name what reopens the gap: repetition, concurrency, or a second producer writing the same resource. Check each input for other claimants before granting the derivation the whole budget. When the answer is repetition, read the text that tells the user what to do after a refusal -- copy instructing them to retry with a narrower filter builds exactly the depth the cap exists to prevent, and it is invisible from the file the guard lives in.
 
 ## Adding a member to a shared contract breaks outside the changed file set
 
