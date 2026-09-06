@@ -62,6 +62,10 @@ Task({
 }
 ```
 
+## Model Selection
+
+Subagent model resolution order: per-invocation `model` parameter, then the agent's frontmatter `model` field, then the main conversation's model. `CLAUDE_CODE_SUBAGENT_MODEL` sits below all three as a default (Claude Code v2.1.251+); earlier versions had it override every other setting, including `model: inherit`. To force one model onto every subagent regardless of frontmatter or invocation, also set `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+). Setting the variable to `inherit` is equivalent to leaving it unset. Confirm the resolved model with `/tasks` while a subagent is running.
+
 ## Error Handling
 
 ### Common Errors

@@ -16,3 +16,9 @@
 {"prompt": "explain how the Task tool works in this SDK", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "the customer service agent replied to the ticket quickly", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "our travel agent found parallel flight options for the trip", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt": "the driver dispatches ONE post-planner subagent in the background of the user wait", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
+{"prompt": "when the session forbids subagents, fall back to the inline drafting job", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
+{"prompt": "Phase 1 specialist fan-out is the default; inline only when the diff is under 10KB", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
+{"prompt": "bmpm_prefix_fanout_budget.phpt exceeds the 32 MiB work budget in the first leaf", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
+{"prompt": "you are in an isolated git worktree; implement item S5 and commit -- the change delegates Phase 5 filling to a stats scribe subagent", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
+{"prompt": "extract model-call latency and fan-out evidence for 18 review rounds run on 2026-09-01", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}

@@ -24,3 +24,9 @@ For each finding, answer two questions:
 
 1. What is the easiest path to exploit this? If it requires chaining three bugs, it's lower priority than a single unauthenticated endpoint that leaks PII.
 2. What is the highest-impact vulnerability that a standard automated scan would miss? Prioritize findings by exploitability and blast radius, not by category.
+
+## Verifying a security fix
+
+Re-audit a proposed fix in four modes, not one: regression (does the original proof-of-concept still fail against the patched code), bypass (same sink, a different encoding or path reaches it), incomplete fix (other call sites of the same pattern left untouched), sibling vulnerability (the same bug class in adjacent code the fix author never looked at).
+
+Bypass enumeration to try against string/path/URL inputs: double URL-encoding, case folding, Unicode normalization (NFKC look-alikes, overlong UTF-8 sequences), a null byte, path-separator variants, a trailing dot or space.

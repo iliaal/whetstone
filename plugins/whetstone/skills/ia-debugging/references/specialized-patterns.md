@@ -19,6 +19,15 @@ Collects system info, language versions, git state, project files, and environme
 - Resource exhaustion: monitor memory growth, connection pool depletion, file descriptor leaks. Under load: check pool size vs concurrent request count, verify connections are returned on error paths (finally/dispose)
 - Timing-dependent: replace arbitrary `sleep()` with condition-based polling -- wait for the actual state, not a duration
 
+## Performance Regressions
+
+For slow, latency, or throughput symptoms, code reading is not the reproduction step -- a numeric measurement is.
+
+- Establish a baseline before touching anything: time the same input, in the same environment, across N runs. That baseline is the failing test for a perf bug -- it stands in for Step 1's reproduction and Step 6's pass/fail check.
+- Attribute before optimizing: a profiler run or per-stage timing that shows where the time actually goes. A hot-spot guess is a hypothesis, not evidence -- optimizing an unmeasured suspect is shotgun debugging with extra steps.
+- If the slowness is a regression, bisect commits against the measurement (rerun the baseline at each candidate commit), not by reading diffs for code that looks expensive.
+- The fix is verified by re-running the same baseline measurement, not by reasoning that the change should be faster.
+
 ## CI Failures
 
 When a CI check fails on a PR or branch:

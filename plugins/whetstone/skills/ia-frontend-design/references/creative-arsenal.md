@@ -18,7 +18,7 @@ These are the telltale signs of AI-generated design. Avoid them:
 
 **Visual**: No pure `#000000` (use off-black, Zinc-950, charcoal). No neon outer glows or default `box-shadow` glows. No oversaturated accents. No purple/blue "AI gradient" aesthetic. No excessive gradient text on large headers. No custom mouse cursors. No arbitrary `z-50` or `z-9999` -- use z-index only for systemic layers (navbars, modals, overlays).
 
-**Typography**: No Inter font. No oversized H1s that scream -- control hierarchy with weight and color, not just scale. No serif fonts on dashboards or software UIs. No all-caps subheaders everywhere -- try eyebrow tags instead (`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium`), sentence case, lowercase italics, or small-caps.
+**Typography**: No Inter font. No oversized H1s that scream -- control hierarchy with weight and color, not just scale. No serif fonts on dashboards or software UIs. No all-caps subheaders everywhere -- default to sentence case, lowercase italics, or small-caps. Reserve an eyebrow tag (`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium`) for the one element whose label carries real category or status information (a post's section, a card's state); stamped above every heading regardless of content, it reads as template chrome, not information.
 
 **Layout**: No centered hero sections when the design calls for asymmetry -- use split-screen, left-aligned content, or offset compositions. No "three equal cards in a row" feature sections -- use zig-zag, asymmetric grid, horizontal scroll, or masonry instead. No random dark sections breaking a light-mode page (or vice versa) -- commit to a tone or use subtle shade shifts.
 

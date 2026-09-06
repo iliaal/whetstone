@@ -24,7 +24,9 @@ tsconfig essentials:
 
 ESM-first: set `"type": "module"` in package.json.
 
-Dev: `tsx watch src/server.ts` | Build: `tsc` | Node 22+: `--experimental-strip-types` for scripts
+Dev: `tsx watch src/server.ts` | Build: `tsc` | Node 22.18+/23.6+: type stripping on by default; Node 22.6-22.17/23.0-23.5: `--experimental-strip-types` for scripts
+
+Type stripping only erases syntax, so a TypeScript construct with runtime semantics fails at Node startup instead of at build time: enum declarations, namespaces/modules carrying runtime code, constructor parameter properties, and non-ECMAScript `import =` / `export =` assignments are the confirmed offenders. Enable `erasableSyntaxOnly` in tsconfig to catch them at `tsc` type-check time instead of at `node` runtime.
 
 Type-safe env at startup -- Zod schema as source of truth:
 ```typescript

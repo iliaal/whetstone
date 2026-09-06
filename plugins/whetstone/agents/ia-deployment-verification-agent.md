@@ -166,6 +166,7 @@ For any canary, percentage rollout, or feature-flag ramp, define quantified adva
 | p95 latency delta | < +10% | +10% to +25% | > +25% |
 | Client JS error rate (if web) | < baseline | = baseline | > baseline |
 | Business metric delta (conversion, completion rate) | ≥ baseline | slight dip (< 2%) | > 2% dip |
+| Error-budget burn rate (vs baseline pace, over the stage's observation window) | ≤ 1x | 1x-2x | > 2x sustained for the full window, or budget projected to exhaust before rollout completes |
 
 **Decision protocol**: advance to the next stage only if ALL metrics are in the Advance band over the stage's observation window. If ANY metric enters Hold, pause and investigate before advancing (do not rollback yet). If ANY metric enters Rollback, revert immediately per the Rollback Plan above.
 

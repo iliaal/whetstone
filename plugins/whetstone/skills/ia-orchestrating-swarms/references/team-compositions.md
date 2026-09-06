@@ -14,6 +14,8 @@ Start here before designing a custom team. Each preset is a proven shape for a s
 
 ## Sizing discipline
 
+Use the smallest preset that covers all required dimensions. Overlap between reviewers is a sizing signal to redefine focus areas, not to add more agents.
+
 Two reviewers flagging the same issues means the dimensions overlap. Redefine each focus area instead of adding more agents. Four agents doing six independent tasks are usually worse than three agents covering two tasks each — coordination overhead scales non-linearly.
 
 ## Cardinal `subagent_type` rule

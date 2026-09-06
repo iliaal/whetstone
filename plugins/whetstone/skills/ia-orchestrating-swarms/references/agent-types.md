@@ -2,6 +2,17 @@
 
 > When to read: when picking which agent type to spawn for a swarm role and weighing built-in vs plugin-defined options.
 
+## Subagent vs teammate
+
+| Aspect | Task (subagent) | Task + team_name + name (teammate) |
+|--------|-----------------|-----------------------------------|
+| Lifespan | Until task complete | Until shutdown requested |
+| Communication | Return value | Inbox messages |
+| Task access | None | Shared task list |
+| Team membership | No | Yes |
+| Coordination | One-off | Ongoing |
+| Best for | Searches, analysis, focused work | Parallel work, pipelines, collaboration |
+
 ## Built-in Agent Types
 
 These are always available without plugins:

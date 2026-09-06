@@ -454,3 +454,32 @@ Task({ team_name: "codebase-review", name: "worker-3", subagent_type: "general-p
 // Workers self-organize: race to claim tasks, naturally load-balance
 // Monitor progress with TaskList() or by reading inbox
 ```
+
+## Delivery and credit discipline
+
+Keep the overwhelming majority of open implementation units tied to runnable capability. A coordination, validation, or operations unit must name the capability or observed defect class it gates. Use the ratio as a drift signal, never as a quota to game.
+
+Make closable units vertical: implementation and its tests ship together. Internal steps may separate types, code, and tests for sequencing, but they do not earn separate closures. A trivial commit, placeholder scaffold, refusal-only path, or stub that merely type-checks is not delivered capability.
+
+Claim the highest-priority ready capability that the worker can actually complete. Surface stale high-priority work instead of repeatedly selecting low-risk units. Only the role assigned closure authority may close shared work; never close a peer's unit merely to release dependents.
+
+After each wave, compare runnable units delivered with coordination, review, and governance rounds consumed. If orchestration activity grows while the deliverable count is flat, freeze the machinery at its current sufficient state and redirect the next wave to the deliverable.
+
+## One implementation unit per worker
+
+A worker dispatched to implement a unit gets a context carrying no prior implementation unit, and it is retired once that unit is integrated -- never retasked onto a second unit, never held as an idle pool. The same handle may continue or recover *its own* unit (the crash-relaunch path in the main skill), but a worker that has already reasoned about one unit's constraints carries them into the next as unstated assumptions.
+
+This binds implementation dispatch on the subagent surface only. The persistent Teammate model is deliberately long-lived and unaffected, as is the mode-to-mode carry-forward in Context Carry-Forward.
+
+Invoke an explicit close or release only where the harness exposes one and assigns that action to the caller. Clean up an isolated workspace only after confirming the unit's work was integrated -- never infer a cleanup command from the provider name.
+
+## Coordination models
+
+| Aspect | Stateless (copy-paste outputs) | Stateful (file ownership + dependencies) |
+|--------|-------------------------------|------------------------------------------|
+| How agents share state | Leader copies full outputs between prompts | Agents read/write shared task files, claim ownership |
+| Best for | Short pipelines, 2-3 agents, sequential handoffs | Parallel work, 4+ agents, complex dependency graphs |
+| Failure mode | Context grows linearly with agent count | Concurrent modification conflicts |
+| Mitigation | Summarize before passing (keep essentials, drop navigation) | Use worktrees or exclusive file ownership per agent |
+
+For most work, start with stateless handoffs. Graduate to stateful coordination only when parallelism provides a real speedup and worktree isolation is available to prevent file conflicts.

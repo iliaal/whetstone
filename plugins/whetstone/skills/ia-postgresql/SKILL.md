@@ -195,6 +195,8 @@ Use when table exceeds ~100M rows or needs TTL purge:
 
 Partition key must be in every unique/PK constraint. Create indexes on partitions, not parent.
 
+Foreign keys *from* a partitioned table need PG11+; foreign keys *referencing* a partitioned table need PG12+ -- on older versions enforce with triggers.
+
 ## Transactions & Locking
 
 - Keep transactions short -- long txns block vacuum and bloat tables

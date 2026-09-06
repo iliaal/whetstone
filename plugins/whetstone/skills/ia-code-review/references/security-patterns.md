@@ -2,6 +2,8 @@
 
 Grep-able patterns for the common vulnerability classes. Each entry: what to search for, why it's vulnerable, how to fix. Use during code review (step 4) and security audits.
 
+**Diff-anchored disabled-protection rule** (diff review only, `ia-code-review` step 4): flag only when the diff turns off a protection (CORS tightened then removed, debug enabled, `@csrf_exempt` added); never-present is architecture advice, not a finding. A full-repo security audit (`ia-security-sentinel`) has no diff to anchor to, so it flags a disabled protection on presence instead.
+
 ## Deployment Entrypoints
 
 | Search for | Vulnerable pattern | Fix |
@@ -27,9 +29,13 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `?token=`, `?password=`, `?api_key=` | Secrets in URL query strings (logged, cached, referer-leaked) | Authorization headers, POST bodies, or HttpOnly cookies |
 | `plaintext.*password`, `md5(`, `sha1(`, `hashlib.sha` | Weak password hashing | bcrypt, argon2id, or scrypt |
 | `jwt.decode.*verify.*False`, `alg.*none` | JWT validation disabled or algorithm confusion | Enforce `verify_signature=True`, allowlist algorithms |
+| `kid`, `jku`, `x5u`, embedded `jwk` selecting the key | Attacker-controlled until pinned -- key-confusion accepts an RS256 public key as an HS256 secret | Resolve `kid` against a fixed JWKS only; never fetch `jku`/`x5u` or import `jwk` (version preconditions: Version-Gated False Positives below) |
 | Route without `Depends(get_current_user)` or auth middleware | Missing per-request authorization | Every state-changing endpoint must verify auth server-side |
 | Frontend-only route guards (no server check) | Client-side auth bypass | Server-side authorization on every request; client guards are UX only |
 | `===`, `!=`, `==`, `.equals(` comparing a bearer token, API key, webhook signature, or reset token | Byte-by-byte timing leak from early-exit comparison (CWE-208) | Compare length first (length is not secret), then `crypto.timingSafeEqual` (Node), `hash_equals` (PHP), `hmac.compare_digest` (Python), `subtle::ConstantTimeEq` (Rust). Guard the absent-header case before comparing |
+| `fill($request->all())`, `$guarded = []`, spreading `req.body` into a write | Mass assignment as an authz bug -- body maps onto owner/role/tenant/price | Explicit `$fillable`/DTO allowlist; never `fill()`/spread a raw body onto a privileged model |
+| List/index handler scopes by owner; sibling export/share/detail handler omits the check | IDOR/BOLA -- one route's guard doesn't cover its siblings | Diff every handler for the resource; each needs its own ownership check |
+| Unknown role reaching `allow`; `Gate::before` returning `true`; authz middleware after the route, or an in-check exception hitting `next()` | Fail-open authz -- default-allow or ordering grants access | Default denies; `Gate::before` reserved for a documented bypass; middleware before the route, reject not `next()` |
 
 ## CSRF
 
@@ -63,6 +69,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `sendFile(.*req`, `send_file(.*request`, `os.path.join(.*request` | Path traversal via user-controlled path | Allowlist file IDs mapped to paths, `send_from_directory`, `safe_join` |
+| Delete/move/overwrite on a job-payload or sibling-service path, guarded only by shape (absolute, N dirs deep) | Shape isn't authorization -- `startsWith(base)` matches `/base2` | Require: allowlisted root (post-symlink), one level below it, ownership evidence read first; log and stop on refusal, never a broader default |
 | File upload without size limit | Unrestricted upload = DoS | Set `MAX_CONTENT_LENGTH`, `express.json({ limit: '1mb' })` |
 | Upload without content validation | Malicious file type bypass (rename .php to .jpg) | Validate via magic bytes (file signature), not extension |
 | Serving uploaded files with `Content-Disposition: inline` | Uploaded HTML/JS executes in browser | Force `Content-Disposition: attachment`, serve from separate domain |
@@ -126,3 +133,14 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 |-----------|-------------------|-----|
 | `Math.random(`, `random.random(`, `mt_rand(` for tokens/secrets/IDs | Predictable value used as a security control | `crypto.randomBytes`, `secrets.token_urlsafe`, `random_bytes` |
 | `verify=False` (requests), `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true` | TLS certificate validation disabled — MITM | Remove the flag; trust/pin the proper CA in the client |
+| ECB mode, static/reused IV or nonce, home-rolled crypto, MD5/SHA1 for integrity | Deterministic ciphertext, reused nonce, forgeable integrity checks | AES-GCM/ChaCha20-Poly1305 with a fresh nonce, audited libraries, HMAC-SHA256+ |
+
+## Version-Gated False Positives
+
+| Pattern | Only a finding when |
+|---------|---------------------|
+| PHP `assert("...")` string-eval; `preg_replace(...)` with `/e` | PHP < 8.0 (assert removed); PHP < 7.0 (`/e` removed) |
+| `yaml.load(...)` without `Loader=SafeLoader` | PyYAML < 5.4 (`FullLoader` exploitable before); use `safe_load` regardless |
+| XXE via default entity expansion | libxml2 < 2.9.0 (disabled by default since); PHP `libxml_disable_entity_loader()` is dead code from 8.0 |
+| `jsonwebtoken`/`PyJWT` key-confusion via `kid`/`jku`/`x5u`/`jwk` | `jsonwebtoken` < 9.0.0 (CVE-2022-23540/23539) -- finding only when all of: `jwt.verify` called with no explicit `algorithms` option and a falsy/empty verification key, or an RSA key accepted for an HS-family algorithm. `PyJWT` < 2.4.0 (CVE-2022-29217) -- finding only when all of: the app allows both asymmetric and HMAC algorithms and the supplied public key is in a PEM/SSH format the pre-2.4.0 blocklist missed |
+| Next.js Server Actions SSRF | Next.js < 14.1.1, CVE-2024-34351 -- finding only when all of: self-hosted (not Vercel), the `Host` header reaching the app is attacker-controllable, Server Actions are in use, and a Server Action redirects to a relative path |

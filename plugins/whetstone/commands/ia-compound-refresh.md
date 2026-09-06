@@ -41,6 +41,18 @@ For each doc, assign one status:
 | **Replace** | Fundamentally wrong -- approach has changed | Rewrite with current approach, preserve the problem statement |
 | **Archive** | No longer relevant -- feature removed, problem no longer exists | Move to `docs/solutions/_archive/` |
 
+### 3b. Worth lens (opt-in, default off)
+
+Run this step only when the request explicitly asks to clean up, cull, prune, or upgrade the store to the capture bar -- never on an ordinary refresh. Before investigating anything under this step, confirm: "This also archives or trims docs whose reasoning the codebase already states elsewhere -- proceed, or run the accuracy-only refresh instead?" Decline or silence means skip this step; Step 3's classification is the whole run.
+
+For each doc Step 3 classified **Keep**, apply the counterfactual gate in `ia-compound-docs`: for every claim the doc makes, does a named in-repo artifact -- the final code, a test assertion, a code comment, `CLAUDE.md`/`AGENTS.md`, a skill reference, or another surviving doc -- state that same reasoning in its own text? Do not infer coverage from a related file name or topic; quote the artifact and the line for each claim checked.
+
+- **Every claim recoverable:** reclassify **Archive**; the quoted artifacts are the report's evidence.
+- **Some claims recoverable:** reclassify **Update**; cut the recoverable content, keep what no other artifact states, and point at the artifact in one line where a reader would otherwise look for the cut material.
+- **Nothing recoverable:** leave as **Keep**.
+
+Every worth-based Archive or Update still goes through the Step 5 confirmation before anything is applied.
+
 ### 4. Report
 
 Present findings as a table:
@@ -104,3 +116,4 @@ For approved items:
 - Never delete learning docs -- archive them
 - Preserve YAML frontmatter structure when updating
 - Don't rewrite docs that are still accurate just to "improve" them
+- The Step 3b worth lens is the one exception, and only when the user opted into it: an accurate doc may be archived or trimmed there when its claims are fully recoverable from a quoted in-repo artifact

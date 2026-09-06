@@ -44,6 +44,7 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - Never `eval` user input; build commands as arrays: `cmd=("grep" "--" "$pat" "$f"); "${cmd[@]}"`
 - Keep untrusted/derived bytes off the command line: never build a heredoc body or an `sh -c` string from external data. An unquoted `<<EOF` command-substitutes `$(...)`/backticks in the content, and even a quoted `<<'EOF'` breaks if a content line equals the delimiter (the heredoc ends early and the rest runs as shell). Write the data to a file with a non-shell writer and have the consumer read the file
 - Allowlisting a command? Match the whole command against an anchored pattern (`^…$`), never inspect individual arguments — shell operators (`;`, `&&`, `|`, `#`, newline) smuggle a second command past a per-argument check (`rm -rf node_modules; rm -rf /`). Unrecognized syntax must fail closed to deny/ask
+- Validating a path component before it reaches a destructive command? Anchor it against an allowlist (`[[ "$name" =~ ^[a-z0-9][a-z0-9._-]*$ ]]`) before `rm -rf -- "$base/$name"` -- a prefix/`startswith` check on the joined path is defeated by `../` (`$base/../x` still starts with `$base`) and by a sibling directory sharing the prefix (`/srv/app` matches `/srv/app2`). When a full path must be accepted, `realpath -e` it and compare against the resolved base plus a trailing slash
 - Validate a numeric before it reaches `(( ))` or `$(( ))` when it came from a file, env var, or command output rather than a literal. Two distinct failures: **(1) command execution** -- arithmetic evaluates an array subscript, so a value of `a[$(cmd)]` runs `cmd` (a bare `$(cmd)` is only a syntax error, so testing that form will wrongly suggest the trap isn't real); **(2) octal abort** -- a leading zero makes `08` base-8 and `$(( v + 1 ))` dies with `value too great for base`, taking the script down under `set -e`. Gate on `[[ "$v" =~ ^-?[0-9]+$ ]]` first, then force base 10 with `$(( 10#$v ))` for zero-padded input
 - Separate `local` from assignment to preserve exit codes: `local val; val=$(cmd)`
 - Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` -- shows file:line per command
@@ -83,6 +84,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 ```
+
+A single-destination override flag (`--out FILE`) combined with more than one positional target clobbers silently -- last write wins, no error, no diagnostic. Detect the combination (`(( ${#targets[@]} > 1 )) && [[ -n "$output" ]]`) and exit `EX_USAGE` instead of letting the last target overwrite every prior one.
 
 ## Production Patterns
 

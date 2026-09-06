@@ -88,12 +88,12 @@ Always offer choice:
 
 ## Branch Completion
 
-When work in a worktree is done, verify tests pass, then present exactly 4 options. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat.
+When work in a worktree is done, verify tests pass, then present exactly 3 options. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat.
 
 1. **Merge locally** -- merge into base branch, delete worktree branch, clean up worktree
 2. **Push + PR** -- push branch, create PR with `gh pr create`, keep worktree until merged
 3. **Keep as-is** -- leave branch and worktree for later
-4. **Discard** -- requires typing "discard" to confirm. Deletes branch and worktree. No silent discards.
+Discarding is never offered as an option. Delete the branch and worktree only when the user asks for it explicitly, and require typing "discard" to confirm first. No silent discards.
 
 ## Change Summary
 

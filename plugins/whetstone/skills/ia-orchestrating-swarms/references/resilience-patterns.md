@@ -8,6 +8,10 @@ Set timeout boundaries per agent. If one agent fails or hangs, do not let it cas
 
 Apply circuit-breaker logic to agent types: after N consecutive failures from the same agent type, stop dispatching to it and route to an alternative (different model, different decomposition). Apply bulkhead isolation: a failing agent type cannot exhaust the shared task queue or block other agent types from proceeding.
 
+## Dispatch backpressure
+
+When the harness accepts a dispatch but caps active execution, the overflow queues rather than fails. Treat transient capacity-related spawn errors as backpressure: any retryable error indicating the limiter rejected the dispatch — exact wording varies across harness versions and platforms, so do not pattern-match on a fixed string list. Re-dispatch queued agents as active ones complete. Record an agent as failed only after a successful dispatch times out or returns an error, or when dispatch fails for a non-capacity reason (bad tool name, malformed prompt, missing permission). A rate-capped fan-out is still parallel; it is just limited to what the harness can run concurrently.
+
 ## Recovery strategy
 
 When an agent fails, classify the failure before acting:

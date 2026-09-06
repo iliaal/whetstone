@@ -24,6 +24,8 @@ Never propose a fix without first identifying the root cause. "Quick fix now, in
 
 **1. Reproduce** -- build a feedback loop, *then* make the bug consistent. The loop is the deliverable of this step, not the analysis. Without a fast, deterministic "broken / fixed" signal, every later step is guesswork.
 
+**Match the exact reported symptom, not a nearby one.** The loop is not reproduction until it fails with the same error text or the same failing assertion the report names -- a different exception, a different failing test, or a generic error on the same feature is a different bug wearing the same file path. Treating it as the same defect sends every later step against the wrong target.
+
 **A loop already provided? Run it before touching source.** If the workspace has a test file, or the report says "run X to see the failure," that command *is* the feedback loop: run it after Step 0 and record the RED output before reading source, forming hypotheses, or editing -- without an observed failing run this session, nothing proves the fix changed anything.
 
 Pick the cheapest loop that triggers the bug:
@@ -60,6 +62,8 @@ If the bug is intermittent, run the loop N times under stress or simulate poor c
 **5. Hypothesize and test** -- one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to pinpoint the exact commit that introduced a regression. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set; do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
 
 **6. Fix and verify** -- create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).
+
+**No reachable seam for the bug as it actually triggered** (a race or timing window, hardware- or platform-specific behavior, a defect that only appears against production data) is not license to write a test anyway. A test built around a seam that cannot exercise the real trigger passes for the wrong reason and reads as coverage that does not exist. Record the missing seam as a finding in the Debug Report instead.
 
 **Reproduce-passes is not fixed.** The bad state is often still reachable from a nearby variant when the fix landed at the crash site, not the root cause. Before declaring done, run the **bypass self-check**: name one input variation that reaches the same bad state without tripping the change -- if one exists, the fix is at the wrong layer; return to root cause. **Suppression is not a fix**, and the check assumes the fix attacks the bug: swallowing the error (`try/except: pass`, a blanket catch), disabling the failing assertion, or special-casing the reproduction input hides the signal while the defect lives on (a global swallow even *passes* the bypass check). Change behavior at the root cause, not the symptom. For security-relevant bugs, escalate to an **adversarial re-attack**: a fresh-context agent attacks the patched code ([specialized-patterns.md](./references/specialized-patterns.md)).
 
@@ -115,6 +119,7 @@ When the cause isn't obvious, find working similar code and compare it structura
 In [specialized-patterns.md](./references/specialized-patterns.md) unless noted:
 
 - **Intermittent issues** -- races, deadlocks, resource exhaustion, timing. Key signals: shared mutable state, check-then-act, circular lock acquisition, pool exhaustion under load.
+- **Performance regressions** -- slow, latency, or throughput symptoms. Measure a numeric baseline before reading code for the cause.
 - **Defense-in-depth validation** -- after fixing, validate at every layer, not just where the bug appeared: [defense-in-depth.md](./references/defense-in-depth.md).
 - **Common bug patterns and triage** -- async ordering, stale state, stale build artifacts, recurring fix site; severity-vs-priority triage.
 - **Off-track signals** -- user phrases ("stop guessing", "we're going in circles") that mean the systematic process was abandoned.

@@ -25,6 +25,8 @@ Follow the 7-step documentation capture process. For full details, see [document
 6. **Create documentation** -- Write file to `docs/solutions/[category]/[filename].md` using [resolution-template.md](./assets/resolution-template.md).
 7. **Cross-reference** -- Link related issues. Detect critical patterns (3+ similar issues).
 
+**Capture gate (step 1):** capture only if, without this doc, a future engineer reading the final code, tests, comments, CLAUDE.md/AGENTS.md, and existing docs or skills would still repeat the mistake or redo the investigation. Skip when any of those already carries the lesson.
+
 ---
 
 ## Decision Menu

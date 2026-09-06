@@ -107,6 +107,9 @@ Reviews the *reviewed repository's* CI, not the harness the review runs under.
 - `permissions: write-all`, or no `permissions:` key at all so the job inherits the repository default
 - Jobs with no `timeout-minutes` -- a hung job holds a runner until the 6-hour ceiling
 - Misspelled action inputs (`fetch-detph`, `fetch_depth`) -- unknown `with:` keys are **silently ignored**, not errors, so the step runs with the default and the intent is lost
+- `actions/upload-artifact` of a directory containing `.git/` ships `.git/config` with the persisted `GITHUB_TOKEN` -- `actions/checkout`'s default is `persist-credentials: true` -- and anyone who can download the artifact gets the token for its lifetime
+- `permissions: id-token: write` at workflow level lets any job on any ref, including a fork PR under `pull_request_target`, mint an OIDC token that the cloud-side trust policy may accept -- scope the permission to the deploy job alone and pin the trust policy's subject to a specific ref (e.g. `ref:refs/heads/main`)
+- `${{ github.event.* }}` interpolated inside `actions/github-script`'s `script:` is the same injection as in `run:` -- pass the value through `env:` and read it back as `process.env.X`
 
 Scope the pinning check before filing it: report a mutable ref only for a **third-party** action in a **privileged** job -- one holding secrets, an OIDC token, a write-scoped `GITHUB_TOKEN`, or release/deploy/publish/signing power. First-party `actions/*` and `github/*` on a version tag, same-repo `./.github/actions/...` refs, and unprivileged read-only jobs are not findings. When ownership is unclear, treat anything outside `actions/*`, `github/*`, and local paths as third-party.
 

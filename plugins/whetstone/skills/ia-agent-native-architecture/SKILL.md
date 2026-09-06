@@ -118,7 +118,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Content-Bound Attestation:** use one when the enforcement boundary cannot spawn the agent. See [durability-and-attestation.md](./references/durability-and-attestation.md) Content-Bound Attestation section for the judge/gate split and content-binding design.
 
 ### Hooks & Governance Automation
-- [ ] **Event Coverage:** Only 6 hook events fire in agent context (PreToolUse, PostToolUse, PermissionRequest, PostToolUseFailure, Stop/SubagentStop); session lifecycle logic lives in the orchestrator
+- [ ] **Event Coverage:** All 33 hook events are declarable in agent frontmatter; PreToolUse, PostToolUse, and Stop/SubagentStop are the ones agent-native architectures lean on for tool-execution and completion gating
 - [ ] **Decision Gates:** PreToolUse hooks enforce tool-level policy (allow/deny/ask/defer) instead of hardcoded checks
 - [ ] **Completion Gating:** SubagentStop hooks block premature completion when verification steps remain
 - [ ] **MCP Matchers:** Regex patterns target tools by server and operation for capability-based security

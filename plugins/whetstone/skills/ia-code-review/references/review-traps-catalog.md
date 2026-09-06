@@ -219,3 +219,27 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 **Reality:** the cap bounds memory and silently truncates. Once the limit is hit, later chunks are dropped and the handler parses the prefix it happened to keep. A truncated JSON prefix usually throws, so the bug arrives disguised as a parse failure; a truncated NDJSON, CSV, or log buffer parses cleanly as a *shorter valid document*, and no caller can tell a 3-record payload from a 3000-record one. Dropping chunks without draining the stream also hands the writer an `EPIPE`.
 
 **Fix:** on overflow, set a rejected flag, discard the buffer, return the empty or error value, and surface the overflow on stderr -- never parse a prefix. Keep consuming and discarding the stream so a finite writer can finish. When reviewing, trace what happens to the buffer *after* the cap fires; that the cap exists is not the question.
+
+## Exhaustive primitive-hit accounting
+
+**Trap:** grepping for a dangerous primitive (unsafe memory op, raw SQL build, unchecked cast) across a large diff or codebase, reading the first handful of hits, forming an opinion, and stopping there.
+
+**Reality:** a sampled pass misses the one exploitable hit among forty safe ones, and there is no record of which hits were never opened. Every hit needs an explicit disposition, not a vibe.
+
+**Fix:** for every primitive grep, assign each hit one of four dispositions before writing the review: safe by construction, mitigated upstream, a finding, or needs-trace. If a wrapper expands to several call sites, account for the wrapper call and its underlying primitive sites separately. An unaccounted-for hit is a gap to close, not a rounding error.
+
+## Vendored or submodule code is not automatically out of scope
+
+**Trap:** skipping review of a directory named `vendor/`, `third_party/`, or a Git submodule on the assumption that the directory name settles ownership.
+
+**Reality:** modified vendored code is first-party and carries the same review obligation as any other first-party file. Only unmodified third-party code stays dependency code — and even then the host's bridge into it (the call site, the wrapper, the size conversion) is first-party and reviewable. A defect whose only location is inside a Git submodule, reachable solely behind a gitlink, belongs to that submodule's own repository, not the host's.
+
+**Fix:** before excluding a path from review, check whether this repository has modified it, not just where it lives. Never file a finding whose location exists only behind a gitlink; trace host-bridge reachability into unmodified third-party code instead, and treat a known upstream issue there as prior art, not a new finding.
+
+## Destructive replace on an empty result
+
+**Trap:** a sync, import, or report job that deletes existing rows then reinserts from a source response, reviewed only for whether the reinsert logic is correct. The delete step is treated as safe because "if the source has zero rows, the reinsert is correctly empty too."
+
+**Reality:** the job cannot distinguish *confirmed empty* (the source explicitly answered "zero rows") from *could not check* (an auth failure, a timeout, or a malformed response deserialized to an empty list). The failure shape recurs: an upstream 401 becomes an empty array, the empty array is read as "zero rows," and the job wipes every good row in place of the rows it failed to fetch.
+
+**Fix:** fail the job on any non-success status before the destructive step. Require the source to assert emptiness explicitly — a count or checksum, not merely an empty array. Make the replace transactional so a failed reinsert rolls back the delete instead of leaving the table empty.

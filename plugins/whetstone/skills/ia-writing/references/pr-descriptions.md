@@ -43,10 +43,11 @@ Token parsing is centralized; the secret is read once at process start.
 
 ## Place the PR in its program (only when there is one)
 
-A PR that is one slice of a larger effort -- a stack, a series, a multi-unit plan -- needs one more sentence than a standalone one, because the reviewer's first question is "why only this much?" and Scope rationale answers what is excluded, not what came before. Lead with the program outcome in one sentence, then this PR's contribution, then the neighbors: what already landed (lead-in) and what remains (lead-out). Early PRs need only the lead-out, late ones only the lead-in.
+A PR that is one slice of a larger effort -- a stack, a series, a multi-unit plan -- usually still opens with its own outcome: state the local change, then follow it with a short block that supplies the program, the lead-in (what already landed), and the lead-out (what remains). Early PRs need only the lead-out, late ones only the lead-in. Fold the program into the opening's own sentence instead only when the local outcome does not stand on its own -- when the program is what gives this change its shape or its point, not just its context. Either half may lead in that case, whichever reads better, but the opening still has to name which part of the program this PR delivers; naming the arc without saying what changed fails the same test a standalone opening would.
 
-**Don't**: "Issue-close now revokes the active session on the server."
-**Do**: "Continues the session-revocation rewrite after the refresh-path change landed. This PR revokes the active session on issue-close. Multi-device revocation is follow-on."
+**Don't** (outcome stands alone, but the program is missing entirely): "Issue-close now revokes the active session on the server." with no placement anywhere else in the body.
+**Do**: same opening, then a block: "Continues the session-revocation rewrite after the refresh-path change landed; multi-device revocation remains follow-on."
+**Do** (program gives the change its shape, so it belongs in the opening): "Sessions now carry a revocation epoch -- the field that makes server-side revocation possible at all. Nothing reads it yet."
 
 Two hard limits. Derive the program only from what is already in hand -- the request, a known plan file, the existing PR body, the commit messages -- and never run a repository-wide scan of open PRs to manufacture one. If a neighbor is unknown, omit it; an invented arc ("continues the auth rewrite") on a standalone PR is worse than no framing at all. A PR with no program gets none of this, and the sizing matrix still governs: a one-sentence PR stays one sentence.
 

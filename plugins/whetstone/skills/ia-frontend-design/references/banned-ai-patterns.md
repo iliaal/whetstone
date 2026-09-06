@@ -36,9 +36,10 @@ The rows above ban individual tokens. These three ban whole *combinations* that 
 
 | Look | Composition | Alternative |
 |------|-------------|-------------|
-| Warm editorial | Cream ground near `#F4F1EA` + high-contrast serif display + terracotta accent | Keep the serif/neutral structure, move the ground and accent off the cream-terracotta pairing |
+| Warm editorial | Cream ground near `#F4F1EA` + high-contrast serif display + terracotta accent (near `#D97757`, Anthropic's own accent) | Keep the serif/neutral structure, move the ground and accent off the cream-terracotta pairing |
 | Acid dark | Near-black ground + exactly one bright acid-green or vermilion accent | Keep one accent on neutrals; derive its hue from the subject rather than the default two |
 | Broadsheet | Hairline rules + zero border-radius + dense newspaper columns | Keep the density; vary rule weight, radius, or column rhythm so all three do not co-occur |
+| SaaS-card kit | Identical rounded cards everywhere, one border-radius regardless of hierarchy, the same soft grey shadow (`rgba(0,0,0,.1)`) under each, gradient washes as decoration | Vary card treatment by hierarchy; drop the shared radius/shadow/gradient combination even where each token alone would pass a per-token check |
 
 Observed as of 2026-08. Treat as a dated list of over-used combinations, not a permanent ban -- if the brief pins one of these looks, follow the brief.
 
@@ -49,6 +50,7 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 | Inter/Roboto/System font everywhere | Zero personality | Distinctive choices: Geist, Outfit, Cabinet Grotesk, Satoshi |
 | Uniform font-weight (400 regular everywhere) | Flat hierarchy | Weight contrast: 500/600 for headings, 400 for body |
 | Title Case In Every Heading Word | Overly formal, AI tell | Sentence case |
+| Single word or phrase accented inside a headline (italic, bold, or a different color on just one word) | Each token is legitimate elsewhere; applied mid-headline it reads as an AI tell | Let the whole headline carry one consistent treatment; drive emphasis through word choice, not mid-sentence formatting |
 
 ## Decoration Patterns
 
@@ -63,6 +65,8 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 | Floating gradient blobs as background | Overused AI aesthetic | Noise textures, mesh gradients, geometric patterns |
 | Custom mouse cursors (`cursor: url(...)`) | Novelty that signals template code | Use system cursors; reserve custom cursors for drawing tools or games |
 | shadcn/ui components left in generic default state | Identifiably "template starter kit" | Customize colors, spacing, and radii to match the design system |
+| Meta strings joined with middle dots (`A · B · C`) | Templated info-string formatting, appears regardless of subject | Use a separator suited to the content -- comma, pipe, or a line break |
+| Trailing `→` appended to link or button text | Template chrome, not a functional affordance | Let the link text stand alone, or use a real icon component that carries intent |
 
 ## Interaction Patterns
 

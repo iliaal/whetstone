@@ -2,7 +2,21 @@
 
 Code snippets for the common spawn/message/task/shutdown operations. Load when setting up a specific coordination pattern — the decision logic lives in the main SKILL.md.
 
-## Spawn Team + Teammate
+## Spawn a Subagent (short-lived, returns a result)
+
+```javascript
+Task({ subagent_type: "Explore", description: "Find auth files", prompt: "..." })
+```
+
+## Parallel Fan-Out (one message, multiple tool uses)
+
+```javascript
+Task({ subagent_type: "whetstone:ia-security-sentinel", ... })
+Task({ subagent_type: "whetstone:ia-performance-oracle", ... })
+Task({ subagent_type: "whetstone:ia-architecture-strategist", ... })
+```
+
+## Spawn Team + Teammate (persistent, communicates via inbox)
 
 ```javascript
 Teammate({ operation: "spawnTeam", team_name: "my-team" })

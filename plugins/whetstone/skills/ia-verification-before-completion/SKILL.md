@@ -76,6 +76,8 @@ Before any success claim, run through these five steps:
 
 **Prove which binary produced the evidence.** A green run says nothing about *what ran*. PATH lookup, a stale installed copy, a compiled sibling, or a system interpreter can shadow the tree under test: run `command -v`, resolve symlinks, and compare the reported version or build SHA against the source being verified. For deployed code, run the check through the exact interpreter or entry point the service uses -- the one named in the scheduler entry, the unit's `ExecStart`, or the image's `CMD` -- never the bare binary on PATH. An error about a symbol or argument the deployed code plainly uses is a tell that the check is on the wrong interpreter, not that the deploy is broken. A live failure from an installed helper does not refute a source fix until that identity is checked.
 
+**Project-declared gates.** Before any push or PR open, read `CLAUDE.md`, `AGENTS.md`, and `CONTRIBUTING.md` if not already loaded, and extract any declared pre-push or review-ready requirement -- a metadata or drift `--check` script, a changelog-entry rule, a required lint or test target, or a release-gate list. Run each one found, in order, and stop on the first unmet gate, naming it verbatim from the instruction file. Do not invent a gate the instructions don't state, and do not skip one that is stated.
+
 ## Verification Strategies by Change Type
 
 Type-check and unit tests are the universal baseline — not sufficient proof on their own. Match the strategy to the change:
@@ -149,6 +151,19 @@ Before shipping, check whether prior reviews (agent or human) are still valid. I
 | "No regressions" | Full test suite passes, not just new tests |
 | "Regression test works" | Red-green cycle: test passes, revert fix, test fails, restore fix, test passes |
 | "Linting clean" | Linter output showing 0 errors/warnings |
+
+## Classify Before Claiming Done
+
+Before marking a deliverable done, classify how it can be verified, then verify by that route:
+
+| Class | Example | Verification route |
+|-------|---------|-------------------|
+| Diff-verifiable | new service, validation logic, migration file | the change appears in `git diff <base>...HEAD` and its check runs |
+| Cross-repo | a file or contract in a sibling repository | the sibling is reachable on disk: check the path exists and holds the expected content; unreachable means unverifiable, cite what to check |
+| External state | DNS record, cloud console setting, OAuth allowlist, secret-manager entry | unverifiable from the tree; name the system and the exact check the user must run |
+| Content shape | a file must follow a convention | in this repo: run the project's validator; elsewhere: cross-repo rules apply |
+
+The ledger tracks per-item sweep state; these outcomes classify each deliverable in the final report; a ledger row is `done` only when its deliverable classifies as done or changed. Outcomes are **done**, **partial**, **not done**, **changed** (same goal, different means -- say how), or **unverifiable**. A concrete filesystem path is never unverifiable: run the existence check and report done or not done. Code that *handles* a deliverable is not the deliverable -- shipping the extractor is not shipping the extracted file. When torn between done and unverifiable, report unverifiable; a confirmation prompt costs seconds, a silently missed deliverable does not.
 
 ## When Verification Fails
 

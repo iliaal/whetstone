@@ -22,6 +22,7 @@ Load this reference when running a security audit — before filing any finding,
 - **v4 UUIDs may be assumed unguessable.** A v4 UUID used as an identifier does not require an added unguessability control; "the UUID could be brute-forced" is not a finding. (v1 embeds a timestamp/MAC and v3/v5 are deterministic hashes — those are not unguessable.)
 - **Theoretical races are not findings.** Report a race only with a concrete interleaving and an observable corruption or impact — not "this could race under load." (Counterweight to race *hunting*: hunt for TOCTOU, but file only a demonstrated one.)
 - **Log spoofing / forging** (unsanitized user input written to logs) is not, by itself, a vulnerability.
+- **Capability gain is the bar for a true positive.** A finding is a true positive only if exploiting it grants the attacker something they do not already have — data, privilege, execution, or persistence. A deployment precondition (a non-default flag, admin-only reach) is a severity floor, handled by the reachability and precondition questions in `ia-code-review`'s `severity-and-confidence.md` — it does not refute the finding. Internal-only reach is the exception below: it does not lower severity either. Do not suppress on it.
 
 ## Confidence floor
 

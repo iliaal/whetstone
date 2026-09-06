@@ -5,6 +5,45 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.1] - 2026-09-06
+
+Patch: an 8-day delta sync across 42 reference repos (first pass over scrutineer's 326-commit security-skill delta), then a reactive audit over the sync's own output. The sync applied 34 findings; the audit fixed 19 more, five of them conflicts the sync had just created and two of them false claims that came from the sync's own briefs rather than from any external source. The trigger regression is the headline: the orchestrating-swarms pattern fired on 30 of 30 harvested executor briefs (workers that merely mention a subagent), so an orchestrator skill was being injected into the workers it orchestrates. The fixture suite scored 1.0 before and after because no fixture covered that shape. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+
+### Added
+
+- Swarm wave contract reference: five conditions for parallel implementers in one working tree (committed baseline, exclusive ownership of hidden write surfaces such as lockfiles and codegen, no worker git operations, orchestrator-owned verification, scoped rollback), a worktree base-SHA pre-check, and a five-round QA ladder that hands off to a fresh implementer on a stronger model after round three and forces a disposition on every open finding at the cap
+- Verification skill: classify each deliverable as diff-verifiable, cross-repo, external-state, or content-shape before claiming it done; a concrete path is never "unverifiable", and code that handles a deliverable is not the deliverable. The skill also now owns the project-declared pre-push gates rule (read CLAUDE.md, AGENTS.md, and CONTRIBUTING.md, run every declared check, stop on the first unmet one)
+- Code review: quote-or-downgrade (a finding that can't quote its motivating line is capped as speculative; ORM and metaclass symbols quote the meta-construct), reachability defined as a public-interface-to-first-party-sink path, the precondition-subsumes-conclusion circularity check, repeated-switch detection, and three catalog traps (exhaustive primitive-hit accounting, vendored and submodule ownership, destructive replace on an empty result)
+- Security patterns: JWT key-confusion via `kid`/`jku`/`x5u`/embedded `jwk`, destructive-path authorization (allowlisted root, depth floor, ownership evidence), mass assignment and IDOR-by-sibling-handler as authorization bugs, an ECB/static-IV/home-rolled-crypto row, and a version-gated false-positive table (PHP `assert` string eval, `preg_replace /e`, PyYAML `FullLoader`, libxml2 XXE defaults, Next.js CVE-2024-34351) with the real CVE preconditions spelled out
+- Debugging: a performance-regression lane (numeric baseline, profiler attribution, bisect against the measurement); a test-first exception when no reachable seam can exercise the bug as it triggered; reproduction must match the exact reported symptom
+- Test writing: the change-detector anti-pattern, when trivial code earns a test, and a mutation check in the closing checklist
+- Compound docs: the counterfactual capture gate (capture only if a future engineer reading the final code, tests, comments, and existing docs would still repeat the mistake) now lives in the skill, so it ships to Codex and .agents too; `/ia-compound-refresh` gained an opt-in worth lens that culls docs the codebase now carries on its own
+- Hooks reference: matcher semantics (`"*"`, `""`, or omitted match all; anything else is an unanchored JS regex), the `if` permission-rule filter, `PermissionDenied` with its `retry` decision, and the fail-closed vs fail-open boundary (decision logic fails closed; bookkeeping failure fails open with a named warning)
+- Planning: cut-first vs protect table for context management, task-critical content placed last, a standalone-readability test on the Objective, and an optional `Spec:` field
+- Laravel: `Concurrency::run()` ships hidden Context values into the child process environment; Bash: anchored allowlist on path components before destructive interpolation, reject a single `--out` with multiple targets; Node: `erasableSyntaxOnly` constraints and caller-supplied-server listener teardown; PostgreSQL: FK version gates for partitioned tables; infra and deployment agents: error-budget consumption gate and burn-rate hold/rollback bands
+- Frontend design: the SaaS-card-kit composite, single-word headline accents, middle-dot meta strings, and trailing arrows named as tells; eyebrow tags demoted from default fix to a conditional
+- Six should-not-trigger fixtures for orchestrating-swarms drawn from the real misfires
+
+### Changed
+
+- Orchestrating-swarms trigger regex tightened: `fan-out` now needs an agent, worker, or reviewer object in the same clause, and subagent mentions only fire in imperative dispatch forms. Real-corpus false fires went from 30 of 30 to 0 of 30 with fixture F1 unchanged at 1.0
+- All 19 commands that read `$ARGUMENTS` now frame it as caller data, not instructions; `/ia-resolve-pr` and `/ia-reproduce-bug` (which ingest PR comments and issue bodies) use a `<user_request>` block
+- The branch-finish menu in `/ia-work` and git-worktree no longer offers Discard; it acts on discard only when asked explicitly, still behind a typed confirmation
+- Orchestrating-swarms body trimmed 25,030 to 22,084 bytes by relocating eleven cold clusters into references, the first shrink after four consecutive growth syncs
+- Hooks reference corrected against the live docs: 33 hook events, all declarable in agent frontmatter (was "27, only 6 supported"); `Stop` converts to `SubagentStop` in a spawned subagent; `UserPromptSubmit` fires only when the agent runs as the main session
+- `CLAUDE_CODE_SUBAGENT_MODEL` documented as a default since Claude Code v2.1.251 with `_FORCE=1` (v2.1.257+) to force it
+- PR descriptions: program-first placement made conditional; the file's own "Do" example no longer opens with the "This PR" construction the file bans
+- Node type-stripping guidance updated: default from Node 22.18 and 23.6, flag needed only on 22.6 through 22.17 and 23.0 through 23.5
+- `/ia-verify` gained a project-declared-gates phase 0 (listed in the mode table); `/ia-work` and `/ia-verify` both point at the verification skill for the rule text
+- Writing skill: mannered-prose, density, under-formatting, and unmarked-quote checks
+
+### Fixed
+
+- Five rule conflicts the sync introduced: quote-or-downgrade vs the protected-subject exception, capability-gain vs the internal-network no-downgrade floor, diff-anchored disabled-protection vs full-repo audits, "all events declarable" vs "not inside agents", and a 3-attempt handoff template vs the 5-round ladder
+- Two false claims from the sync's own apply briefs: a linked worktree's index does not live in the shared git common dir (it is per-worktree), and Laravel's `dehydrate()` does keep hidden values under a separate key (the leak is `ProcessDriver` encoding both into one env var)
+- Worker status vocabulary now says where partial, stub, and unverifiable work lands (`DONE_WITH_CONCERNS` or `BLOCKED`, never `DONE`); the verification skill links its ledger states to its deliverable outcomes
+- Deployment agent burn-rate bands no longer overlap (1 to 2x is Hold, sustained above 2x is Rollback)
+
 ## [4.5.0] - 2026-08-29
 
 Minor: 130 distilled cross-repo rules landed across 18 skills, then the first full-corpus audit since 2026-08-18 put every one of them (and the other 55 components) under execution-verified review -- 40 findings fixed, including two distilled rules that were factually wrong and one bundled script that silently switched the caller's git branch. The audit's corpus-level verdict: the plugin is under-delegated, not over-populated -- zero components were worth merging or removing, but three commands carried stale inline copies of skill process that had already drifted from their source. A full Tier-2 injection judge pass over the release delta came back 57/57 clean. Component counts unchanged at 32 skills, 19 agents, 22 commands.

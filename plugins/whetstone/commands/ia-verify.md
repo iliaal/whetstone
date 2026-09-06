@@ -19,7 +19,9 @@ Run a structured verification pipeline and produce a single READY / NOT READY re
 | `quick` | Build + type check only |
 | `full` | Build + types + lint + tests |
 | `pre-commit` | Build + types + lint + tests + console.log audit |
-| `pre-pr` | Build + types + lint + tests + console.log audit + security scan + performance + accessibility + infrastructure + documentation + diff review |
+| `pre-pr` | Project-declared gates + build + types + lint + tests + console.log audit + security scan + performance + accessibility + infrastructure + documentation + diff review |
+
+Project-declared gates (phase 0) also run before any push, regardless of mode.
 
 ## Applicability Detection
 
@@ -43,6 +45,10 @@ Log which phases were skipped and why in the report.
 ## Pipeline
 
 Run each phase in order. Stop on the first failure unless the mode skips that phase.
+
+### 0. Project-Declared Gates (runs in pre-pr mode and before any push in every mode)
+
+Run the project-declared gates check from the `ia-verification-before-completion` skill's Gate Function. Stop and report NOT READY if any gate is unmet, naming it.
 
 ### 1. Build
 
@@ -181,6 +187,7 @@ Produce a structured report:
 
 | Phase | Status | Details |
 |-------|--------|---------|
+| Project gates | PASS/FAIL/SKIP | [unmet gate, if any] |
 | Build | PASS/FAIL | [summary] |
 | Types | PASS/FAIL/SKIP | [summary] |
 | Lint | PASS/FAIL/SKIP | [summary] |

@@ -61,6 +61,12 @@ With `Relation::enforceMorphMap()`, a model missing from the map throws `ClassMo
 
 `Context` cannot bleed between queued jobs -- it is flushed and rehydrated from each job's own dispatch payload before `handle()` runs. `ContextServiceProvider` dehydrates the dispatcher's context into the payload and calls `Context::hydrate()` on `JobProcessing`; `Repository::hydrate()` runs `flush()` first, every time, including when the payload is `null`. So "this job sets Context and never clears it, the next job inherits it" is not a bug. The genuine bleed surface is Octane/Swoole/RoadRunner on the HTTP path, where the repository is an app singleton and a middleware that sets Context for only some requests leaves it set for a later request that does not overwrite it -- a non-issue under PHP-FPM. Within one job Context is shared for the duration, so a handler serving multiple audiences must re-set it per audience.
 
+## Concurrency pitfalls
+
+### `Concurrency::run()` leaks hidden Context into the child process environment
+
+The process driver passes `'__LARAVEL_CONTEXT' => json_encode(Context::dehydrate())` as an env var to every pooled child process. `dehydrate()` does keep hidden values under a separate `hidden` key (`['data' => ..., 'hidden' => ...]`), but `ProcessDriver` JSON-encodes the whole array into one env var with no filtering, so hidden values travel with the visible ones regardless of the split. Any same-uid process can read that value from `/proc/<pid>/environ` for the child's lifetime, and it shows up in `ps e` too, so a credential stashed via `Context::addHidden()` leaks well beyond the job that set it. Applies from the 13.x context-propagation fix onward; keep credentials out of Context for concurrency work and resolve them inside the closure from config or a secret manager, or use the synchronous driver where the threat model requires it.
+
 ## Validation pitfalls
 
 ### Blank-ish strings skip every non-implicit rule

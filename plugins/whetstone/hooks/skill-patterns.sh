@@ -175,7 +175,12 @@ SKILL_TIERS[ia-document-review]=3
 SKILL_PATTERNS[ia-file-todos]='todo.?directory|file.?based.?todo|\btodos?\b.{0,24}(file|list|add|creat|track|status|backlog)|(add|create|list|track|triage|manage).{0,24}\btodos?\b|\bbacklog\b'
 SKILL_TIERS[ia-file-todos]=3
 
-SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel.*(agent|task)|divide.?and.?conquer|\bsub.?agents?\b|spawn.{0,24}agents?|fan.?out|orchestrat[a-z]*.{0,24}agents?|agents?.{0,16}in parallel'
+# Dispatch-intent only (2026-09-06): bare `fan.?out` and bare `\bsub.?agents?\b`
+# matched a reviewed system's own vocabulary ("Phase 1 specialist fan-out",
+# "the driver dispatches ONE post-planner subagent", `bmpm_prefix_fanout_budget`)
+# and fired on 30/30 harvested executor briefs. Both now require an agent-shaped
+# object, and the subagent form requires imperative dispatch framing.
+SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel [a-z ]{0,20}(agents?|reviewers?|workers?)\b|(several|multiple|three|four|five) (agents?|subagents?|reviewers?|workers?)\b|divide.?and.?conquer|\bin (a|another|its own|one) sub.?agent\b|spawn.{0,24}agents?|fan.?out\b[^.]{0,40}\b(agents?|workers?|reviewers?)\b|orchestrat[a-z]*.{0,24}agents?|agents?.{0,16}in parallel|(^|[.;:] *|\band |\bthen )(dispatch|launch|delegate to|hand off to) (a|an|one|two|three|four|five|multiple|several) ?[a-z-]{0,14} ?sub.?agents?\b'
 SKILL_TIERS[ia-orchestrating-swarms]=3
 
 # Management-intent only (2026-07-07): bare `worktree` matched location mentions

@@ -36,6 +36,10 @@ Good:  "rejects user with duplicate email"
 Bad:   "creates user and sends welcome email and updates counter"
 ```
 
+### When trivial code earns a test
+
+Getters, constructors, constants, and pass-through wrappers earn a test only if they validate, normalize, default, derive, enforce, or carry a side effect -- otherwise assert the first consumer-visible result that depends on them.
+
 ### Derive test cases from three sources
 
 Build test coverage from three independent sources and verify every item maps to at least one test:
@@ -192,6 +196,12 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Fix:** Snapshots catch unintended changes but don't verify correctness. Add behavioral assertions alongside snapshots.
 
+### Change detector
+
+**Symptom:** the test fails only when an intentional decision changes -- a constant's value, exact wording, private structure -- so it fires on every redesign and sleeps through real bugs.
+
+**Fix:** assert the consumer-visible outcome the decision drives, not the decision's literal value -- same fix as Implementation-echo assertions: assert the consumer-visible outcome.
+
 ### Regenerating expected output to obtain green
 
 **Symptom:** A snapshot, golden, fixture, or generated expectation is replaced wholesale after a failure, with no review of what behavior changed.
@@ -295,6 +305,7 @@ Before considering tests complete:
 - [ ] Tests are independent -- no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
 - [ ] Tests run fast enough to run frequently (< 30 seconds for unit suite)
 - [ ] Bug fix tests reproduce the original bug
+- [ ] Mutation check run: mentally mutate the code (wrong constant, flipped branch, dropped side effect, empty/default return) and confirm some test fails for each
 
 ## Integration
 

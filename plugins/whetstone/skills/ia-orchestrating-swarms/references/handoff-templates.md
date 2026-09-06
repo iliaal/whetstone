@@ -1,13 +1,13 @@
 # Handoff Templates
 
-> When to read: when one agent is handing work back or forward (QA fail, implementation complete, blocked, escalation) and you want a structured template instead of free-form prose.
+> When to read: when one agent is handing work back or forward (QA fail, implementation complete, blocked, escalation) and a structured template is wanted instead of free-form prose.
 
 ## QA FAIL
 
 Use when returning failed QA results to an implementer agent.
 
 ```
-**QA Result: FAIL** (Attempt N of 3)
+**QA Result: FAIL** (Round N of 5)
 
 **Expected:** [what the spec/test requires]
 **Actual:** [what the implementation does]
@@ -67,22 +67,24 @@ Review this implementation for code quality. Spec compliance already verified.
 
 ## Escalation Report
 
-Use after 3 failed attempts on the same task to escalate to the orchestrator.
+Use at the round-5 cap, or earlier on non-convergence -- a finding that oscillates rather than narrows after its second attempt. Rounds 1-3 resume the same implementer; rounds 4-5 hand the task to a fresh implementer on a stronger model. Round mechanics: [wave-contract.md](./wave-contract.md).
 
 ```
-**Escalation: Task [N] blocked after 3 attempts**
+**Escalation: Task [N] blocked after [N] rounds** ([cap reached | non-convergence after round 2])
 
 **Failure history:**
-- Attempt 1: [what was tried, what failed]
-- Attempt 2: [what was tried, what failed]
-- Attempt 3: [what was tried, what failed]
+- Round 1 (same implementer): [what was tried, what failed]
+- Round 2 (same implementer): [what was tried, what failed]
+- Round 3 (same implementer): [what was tried, what failed]
+- Round 4 (fresh implementer, stronger model): [what was tried, what failed]
+- Round 5 (fresh implementer, stronger model): [what was tried, what failed]
 
 **Root cause analysis:** [Why does this task keep failing? Systemic issue vs. one-off?]
 
-**Resolution options:**
-1. Reassign to a different agent (fresh context)
-2. Decompose into smaller subtasks
-3. Revise the approach entirely
-4. Accept current state with known limitations
-5. Defer to user for guidance
+**Forced disposition per open finding** (exactly one each, recorded before the run advances):
+1. Fixed now under an orchestrator ruling
+2. Recorded in the plan or ledger with a named owner
+3. Parked with a stated reason
+
+**Escalate to the user instead** when the block is a spec contradiction, a destructive action, or a decision only the user can make.
 ```

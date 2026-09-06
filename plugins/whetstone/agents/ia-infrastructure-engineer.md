@@ -138,6 +138,7 @@ For Dockerfile, image optimization, container security, graceful shutdown, and d
 - **USE method** for resources: Utilization, Saturation, Errors
 - Track business metrics alongside technical ones (signups, orders, conversions)
 - Set SLIs (what to measure) and SLOs (target thresholds) for critical paths
+- **Error-budget gate**: track SLO error budget remaining. Above 20% remaining, ship normally. Between 0-20% remaining, allow only slow, canary-only rollouts -- no high-risk changes. At 0% (exhausted), freeze feature deploys until the budget recovers or the SLO is renegotiated.
 
 ### Structured Logging
 
