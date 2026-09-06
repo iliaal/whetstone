@@ -30,7 +30,7 @@ Ask the user to confirm the bump type before writing anything, and offer a short
 ## Phase 3: Apply the bump
 
 1. Update `version` in `plugins/whetstone/.claude-plugin/plugin.json`, `plugins/whetstone/.codex-plugin/plugin.json`, and `.claude-plugin/marketplace.json`. All three must match.
-2. Prepend a new CHANGELOG.md entry with today's date, the new version, a one-line summary, and buckets of commits grouped under `### Added` / `### Changed` / `### Fixed` / `### Removed`. Use the writing skill to polish the tone before committing.
+2. Prepend a new CHANGELOG.md entry with today's date, the new version, a one-line summary, and buckets of commits grouped under `### Added` / `### Changed` / `### Fixed` / `### Removed`. Use the writing skill to polish the tone before committing. Name the skill in every skill-related bullet (`ia-foo`, `foo-bar`, or "foo bar" form) so the ai-skills CHANGELOG filter in `release.sh` picks it up; bullets that name only a command or agent are correctly excluded from ai-skills.
 3. Run `bash scripts/update-metadata.sh` to sync component counts into plugin.json and marketplace.json descriptions.
 4. Verify README.md agent/command/skill counts and tables still match reality — update if drift.
 5. Validate JSON: `jq . .claude-plugin/marketplace.json .agents/plugins/marketplace.json plugins/whetstone/.claude-plugin/plugin.json plugins/whetstone/.codex-plugin/plugin.json plugins/whetstone/.mcp.json`.

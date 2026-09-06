@@ -208,10 +208,13 @@ bash "$SCRIPT_DIR/mirror-to-ai-skills.sh"
 echo "  Syncing changelog..."
 # Build allowlist from actual skill directories (longest names first to avoid prefix conflicts)
 skill_names=$(find "$ROOT_DIR/plugins/whetstone/skills" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | awk '{print length, $0}' | sort -rn | awk '{print $2}' | tr '\n' '|' | sed 's/|$//')
-# Keep ### headers and lines referencing known skills. Bullets use the backtick
-# form (- `ia-foo`: ...); also match the legacy bold form (- **ia-foo**) so old
-# entries still sync. A format change that stops matching trips the WARNING below.
-skill_notes=$(printf '%s\n' "$release_notes" | grep -E "^### |^- \`(${skill_names})(\`|/)|^- \*\*(${skill_names})(\*\*|/)" || true)
+# Keep ### headers and bullets that name a known skill anywhere in the line:
+# backticked or bare, with or without the ia- prefix, hyphenated (orchestrating-swarms)
+# or spaced (orchestrating swarms). Changelog bullets are prose since 4.4.3, so a
+# start-of-line match misses most of them. A format change that stops matching still
+# trips the WARNING below.
+skill_names_spaced=$(printf '%s\n' "$skill_names" | tr '|' '\n' | sed 's/-/ /g' | paste -sd'|')
+skill_notes=$(printf '%s\n' "$release_notes" | grep -iE "^### |^- .*(\b(ia-)?(${skill_names})\b|\b(${skill_names_spaced})\b)" || true)
 # Strip orphan ### headers (headers with no entries after them)
 skill_notes=$(printf '%s\n' "$skill_notes" | awk '/^### /{header=$0; next} /^- /{if(header){print header; header=""} print}')
 if [[ -n "$skill_notes" ]]; then
