@@ -55,19 +55,21 @@ H2: Stale config cached after deploy
   → STRONGEST candidate
 ```
 
-### 3. Score confidence
+### 3. Compare evidential support
 
-| Confidence | Meaning | Action |
+| Support | Meaning | Action |
 |------------|---------|--------|
-| **>80%** | Strong evidence, weak counter-evidence | Proceed with fix, but verify |
-| **50-80%** | Mixed evidence | Investigate further before fixing |
-| **<50%** | Weak or contradictory evidence | Do NOT attempt a fix yet |
+| **Strong** | Concrete causal path, competing explanations checked | Test the smallest supported remedy |
+| **Mixed** | Consequential premises unresolved | Choose a discriminating probe |
+| **Weak** | Little evidence or direct contradiction | Gather evidence or reject the hypothesis |
+
+These are judgment labels, not calibrated probabilities. State the observations and remaining uncertainty instead of manufacturing numerical precision.
 
 ### 4. Investigate the top hypothesis
 
 Test the highest-confidence hypothesis first. One change at a time. Fully revert if wrong.
 
-If the top two hypotheses are equally supported (within 10%), suspect a compound cause -- both may be true simultaneously.
+When two hypotheses remain plausible, design a probe that distinguishes them. Consider a compound cause only when evidence supports their interaction; similar confidence alone does not establish it.
 
 ## Anti-Patterns
 

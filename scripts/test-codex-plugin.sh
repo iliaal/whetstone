@@ -59,14 +59,14 @@ test_no_agent_plugins_schema_in_root_manifest() {
 	hits=""
 	while IFS= read -r manifest; do
 		if ! jq -e . "$manifest" >/dev/null 2>&1; then
-			printf 'FAIL: %s is not valid JSON; cannot rule out an Agent Plugins $schema\n' "$manifest" >&2
+			printf "FAIL: %s is not valid JSON; cannot rule out an Agent Plugins \$schema\n" "$manifest" >&2
 			return 1
 		fi
 		# A $schema that is present but not a string is malformed: Codex's routing
 		# behavior on it is unknown, so a blocking gate has to fail closed rather
 		# than read "not a string" as "not a reroute".
 		if jq -e 'has("$schema") and (.["$schema"] | type != "string")' "$manifest" >/dev/null 2>&1; then
-			printf 'FAIL: %s has a non-string $schema; cannot rule out an Agent Plugins reroute\n' "$manifest" >&2
+			printf "FAIL: %s has a non-string \$schema; cannot rule out an Agent Plugins reroute\n" "$manifest" >&2
 			return 1
 		fi
 		if jq -e '(.["$schema"] // "") | test("agent-plugins")' "$manifest" >/dev/null 2>&1; then
@@ -75,7 +75,7 @@ test_no_agent_plugins_schema_in_root_manifest() {
 	done < <(find "$REPO_ROOT/.claude-plugin" "$REPO_ROOT/plugins/whetstone/.claude-plugin" \
 		"$REPO_ROOT/plugins/whetstone/.codex-plugin" -name 'plugin.json' 2>/dev/null)
 	if [[ -n "$hits" ]]; then
-		printf 'FAIL: Agent Plugins $schema found in a manifest, which reroutes Codex skill loading:\n%s' "$hits" >&2
+		printf "FAIL: Agent Plugins \$schema found in a manifest, which reroutes Codex skill loading:\n%s" "$hits" >&2
 		return 1
 	fi
 
@@ -313,7 +313,7 @@ EOF
 write_no_codex_commands() {
 	local fake_bin="$1" command_path name
 	mkdir -p "$fake_bin"
-	for name in awk bash cut date dirname find git grep head jq mv python3 sed sort tail tr; do
+	for name in awk bash cut date dirname find git grep head jq mv paste python3 sed sort tail tr; do
 		command_path=$(command -v "$name")
 		ln -s "$command_path" "$fake_bin/$name"
 	done

@@ -8,6 +8,8 @@ argument-hint: "[feature description, bug report, or improvement idea]"
 
 Follow the `ia-planning` skill for methodology (file persistence in `.plan/`, phase sizing, context management rules). This command adds structured research, issue templates, and `docs/plans/` output on top of that methodology.
 
+**Interaction mode:** Only explicit caller-provided non-interactive context enables pipeline mode. In that mode, replace routine questions with conservative in-scope defaults, preserve material unresolved choices in the plan, and return its exact path to the parent. `disable-model-invocation` metadata does not imply approval or headless execution.
+
 ## Introduction
 
 Transform feature descriptions, bug reports, or improvement ideas into well-structured markdown files issues that follow project conventions and best practices. This command provides flexible detail levels to match your needs.
@@ -167,7 +169,7 @@ Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<d
 
 Confirm: "Plan written to docs/plans/[filename]"
 
-**Pipeline mode:** If invoked from an automated workflow (LFG or any `disable-model-invocation` context), skip all AskUserQuestion calls. Make decisions automatically and proceed to writing the plan without interactive prompts.
+**Pipeline mode:** Apply the caller's explicit decision scope above and return the exact plan path plus unresolved blockers. Do not open an issue or begin implementation unless the caller authorized that action.
 
 ## Output Format
 
@@ -188,7 +190,7 @@ Examples:
 
 ## Post-Generation Options
 
-After writing the plan file, use the **AskUserQuestion tool** to present these options:
+After writing the plan file in interactive mode, use the **AskUserQuestion tool** to present these options. In pipeline mode, return to the parent instead:
 
 **Question:** "Plan ready at `docs/plans/YYYY-MM-DD-<type>-<name>-plan.md`. What would you like to do next?"
 

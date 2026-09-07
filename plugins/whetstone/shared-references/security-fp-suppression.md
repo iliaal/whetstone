@@ -4,16 +4,16 @@ Load this reference when running a security audit — before filing any finding,
 
 ## Hard exclusions (skip regardless of detection)
 
-- **Denial of service / rate limiting / resource leaks** — unless the diff introduces explicit user-triggerable allocation of unbounded state, *or* an unauthenticated-reachable path to a paid-model API call / uncapped agent loop (billing/cost exhaustion is a distinct, fileable harm from availability DoS). Generic "this could be a DoS vector" findings are noise.
+- **Denial of service / rate limiting / resource leaks** — require a reachable hostile input and concrete resource or cost impact within actual limits: CPU exhaustion, unbounded allocation, blocking work, or paid-model/agent-loop exhaustion. Generic "this could be a DoS vector" without those conditions is noise; a CPU-bound fixed-regex exploit is not excluded merely because it allocates no unbounded state.
 - **Memory safety in managed languages** — no memory-safety findings on `.ts/.tsx/.js/.py/.php/.rb/.go` files. Only report on `.c/.cc/.cpp/.h/.rs` (and only in `unsafe` blocks for Rust).
 - **SSRF in client-rendered HTML** — `.html/.jsx/.tsx/.vue` client code does not make server-side requests. Skip.
-- **Regex injection / ReDoS** — only report when the regex is user-controlled AND runs server-side in a request-handling hot path. Static regexes compiled from developer input are not findings.
-- **Markdown files** — documentation is not code; no findings.
+- **Regex injection / ReDoS** — require a reachable attacker-controlled pattern or input and evidence of excessive work within the application's input limits. A fixed developer-written regex can catastrophically backtrack on hostile input; pattern ownership is not a defense. Bound reproduction time and report the input size and measured cost.
+- **Markdown files** — distinguish passive prose from instructions consumed by agents, executable snippets, configuration, and exposed secrets. Review the behavior the content actually drives; a file extension does not establish a trust boundary.
 - **React/Vue XSS without `dangerouslySetInnerHTML` / `v-html` / `innerHTML`** — frameworks escape by default. Flag only when the dangerous method is present.
 
 ## Precedents (not findings)
 
-- User-provided content placed in the user-message position of an LLM prompt is NOT prompt injection. Flag only when user content enters system prompts, tool schemas, or function definitions.
+- A user's ordinary request is not prompt injection merely because it reaches an LLM. Trace whether lower-trust content can redirect the agent beyond the requesting user's authority or the application's intended task. Message role alone does not prove isolation: retrieved text inside a user message can still influence privileged tools. Require a concrete source, trust-boundary crossing, and unauthorized effect.
 - Logging non-PII request metadata (method, path, status) is not a vulnerability.
 - Command-injection risk in project-internal shell scripts is a finding only when the script accepts untrusted external input. Internal-ops scripts run by developers are not in scope.
 - "Consider adding validation" without a concrete failure mode is not a finding. Name the specific input, the specific sink, and the specific exploit.
@@ -22,18 +22,16 @@ Load this reference when running a security audit — before filing any finding,
 - **v4 UUIDs may be assumed unguessable.** A v4 UUID used as an identifier does not require an added unguessability control; "the UUID could be brute-forced" is not a finding. (v1 embeds a timestamp/MAC and v3/v5 are deterministic hashes — those are not unguessable.)
 - **Theoretical races are not findings.** Report a race only with a concrete interleaving and an observable corruption or impact — not "this could race under load." (Counterweight to race *hunting*: hunt for TOCTOU, but file only a demonstrated one.)
 - **Log spoofing / forging** (unsanitized user input written to logs) is not, by itself, a vulnerability.
-- **Capability gain is the bar for a true positive.** A finding is a true positive only if exploiting it grants the attacker something they do not already have — data, privilege, execution, or persistence. A deployment precondition (a non-default flag, admin-only reach) is a severity floor, handled by the reachability and precondition questions in `ia-code-review`'s `severity-and-confidence.md` — it does not refute the finding. Internal-only reach is the exception below: it does not lower severity either. Do not suppress on it.
+- **Capability gain is the bar for a true positive.** Show what exploitation grants beyond the attacker's existing authority — data, privilege, execution, persistence, or a concrete availability/cost impact. Deployment preconditions and internal reach affect feasibility and severity; neither automatically refutes a finding nor fixes its tier. Use the impact and reachability evidence in `ia-code-review`'s severity rubric.
 
 ## Confidence floor
 
-Assign a confidence score (0.0-1.0) per finding. Report only at ≥ 0.80. Below 0.70 is suppressed entirely. At 0.70-0.79 the finding is recorded in "Residual Risks" rather than the main findings list.
-
-This floor is deliberately stricter than `ia-code-review`'s general rubric (report at ≥ 0.6, critical security at ≥ 0.5). A dedicated security audit trades recall for precision — borderline findings belong in Residual Risks so reviewers aren't drowned in maybes. If a 0.70-0.79 finding does matter, it's still visible, just not in the main list.
+State confidence from the evidence: reproduced, supported by a traced path, or unresolved. Numeric scores, when the caller requires them, are uncalibrated judgment labels, not probabilities. Main findings need a concrete failure path and supporting evidence; consequential unresolved candidates belong in Residual Risks with the missing check. Neither a high score nor reviewer agreement substitutes for proof.
 
 ## Severity gates
 
 - **Medium findings** must be obvious and concrete (specific input, specific sink, specific harm). "Consider adding validation" without a failure mode belongs in advisory notes, not Medium findings.
-- **Local-network-only exploitability does NOT auto-downgrade severity.** An auth bypass exploitable only from the internal network is still HIGH — internal services carry real blast radius, and lateral movement is cheap.
+- **Local-network-only exploitability does not determine severity.** Assess the required foothold, controls, capability gain, and blast radius. An internal auth bypass can still be severe; an internal-only label alone justifies neither a downgrade nor HIGH.
 
 ## Project-level overrides
 

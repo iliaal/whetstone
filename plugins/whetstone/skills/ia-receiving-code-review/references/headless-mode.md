@@ -11,7 +11,7 @@ When invoked programmatically (by another skill or command with `mode:headless`)
 | Classification | Criteria | Action |
 |---------------|----------|--------|
 | **AUTO-FIX** | Clearly correct, matches project conventions, mechanical change (<10 lines), passes source-specific checks | Classify for `ia-pr-comment-resolver` dispatch |
-| **AUTO-DECLINE** | Technically incorrect (provable with code evidence), contradicts project conventions, YAGNI (zero callers via grep) | Draft push-back response with evidence |
+| **AUTO-DECLINE** | Technically invalid, demonstrated against the actual contract and usage. A convention alone cannot refute facts or user requirements; zero local callers cannot establish disuse until public and external callers are accounted for. | Draft push-back response with evidence; escalate if those premises remain unknown |
 | **ESCALATE** | Ambiguous intent, architectural decision, reasonable engineers could disagree, changes user-visible behavior | Surface to user with context summary |
 
 4. **Return** structured output:

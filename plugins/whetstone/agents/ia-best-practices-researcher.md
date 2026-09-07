@@ -68,7 +68,7 @@ Only after checking skills AND verifying API availability:
 
 ### Phase 4: Synthesize Findings
 
-1. **Prioritize sources**: Skill-based guidance (curated) > official documentation > community consensus
+1. **Separate facts from conventions**: Verify API signatures and version-sensitive behavior against installed source, a scoped runtime probe, or matching official documentation. Curated skills are useful starting points, not factual overrides. Explicit project conventions may choose among valid approaches; report a conflict with observed behavior instead of preserving an incorrect skill claim.
 2. **Organize by actionability**: "Must Have", "Recommended", "Optional"
 3. **Attribute sources**: "From skill: react-frontend" vs "From official docs" vs "Community consensus" vs "Observed (local environment)" -- the last covers behavior verified by running the installed tool, and outranks official docs only for the environment it was observed in (see Phase 3)
 4. **Flag conflicts**: Present different viewpoints and explain trade-offs

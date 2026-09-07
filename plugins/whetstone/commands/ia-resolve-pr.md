@@ -68,8 +68,8 @@ For fewer than 3 unresolved comments, skip clustering and resolve directly.
 ## Phase 3: Resolve (parallel)
 
 Create a task list grouped by severity (TodoWrite where the harness provides it — current models may not ship the tool by default; otherwise track the same list in a scratch note so no item drops silently):
-- **Critical**: Logic bugs, security issues, broken functionality
-- **Important**: Code quality, missing tests, architecture concerns
+- **Critical**: Reachable failures with severe impact under the `ia-code-review` impact rubric
+- **Important**: Material failures of intended behavior, security, reliability, or performance
 - **Minor**: Style, naming, convention fixes
 - **Questions**: Clarifications to answer (not code changes)
 
@@ -96,7 +96,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-pr-thread THREAD_ID
 bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
-The `unresolved` array should be empty. If threads remain there, repeat from Phase 1.
+Separate remaining threads into actionable and deferred (`Referent not found`, `Needs decision`, or unavailable verification). Do not redispatch deferred threads without new information or authority. Continue only for newly actionable feedback, with at most three fix/verify rounds per item; at the limit, report the residual and stop that item. An unresolved deferred thread is an honest partial result, not a reason for an unbounded loop.
 
 `conversation` does not empty out — a comment has no resolved state — so close it out by disposition instead: every entry triaged as an actionable request is either fixed, or listed as deferred with a reason. State the count triaged and the count acted on; an untriaged conversation entry is unresolved feedback regardless of what the thread array says.
 
@@ -109,9 +109,9 @@ Run `ia-verification-before-completion` before reporting done.
 
 ## Success Criteria
 
-- All unresolved review threads addressed
+- Every selected review thread has an evidenced fixed or deferred disposition
 - Systemic patterns identified and fixed at the root (not comment-by-comment)
 - Changes committed and pushed
 - Threads resolved via GraphQL
-- Empty `unresolved` array from get-pr-comments on verify
+- Remaining `unresolved` threads match the reported deferred set; no actionable item silently omitted
 - Every `conversation` entry triaged, and every one triaged as an actionable request either fixed or listed as deferred with a reason

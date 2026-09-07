@@ -1,161 +1,69 @@
 ---
 name: evolve-skill
-description: Run the full skill evolution pipeline -- harvest sessions, discover signals, build golden dataset, eval baseline, evolve via DSPy, compare scores
+description: Propose a skill revision and compare fresh executions under a frozen rubric
 argument-hint: "<skill-name> [--optimizer gepa|mipro|bootstrap]"
 ---
 
-# Evolve a skill via DSPy optimization
+# Evolve a skill
 
-Run the complete skill evolution pipeline for a single skill. Harvests fresh session data, discovers new negative patterns, builds a golden eval dataset, scores the baseline, runs DSPy optimization, and presents a before/after comparison for review.
+Use historical traces to diagnose weaknesses and propose a candidate. Evaluate the candidate by executing the same tasks with both full skill versions and judging the resulting outputs against one unchanged rubric.
 
-## Arguments
+## 1. Diagnose and prepare
 
+Run `harvest-sessions`, then `build-golden <skill> --top 20`. Review candidates and label explicit successes `positive`, failures `negative`, and ungraded examples `skip`; run `approve-golden <skill>`.
+
+Optional `dspy-eval <skill> --dataset golden --emit-tasks` assesses recorded outputs retrospectively. Its `--skill-file` changes only the judge rubric. Neither score nor score difference measures how a candidate behaves. Older before/after comparisons using this method are invalid, including those that supplied `--skill-file`.
+
+Before optimization, reserve self-contained comparison cases outside the training and selection data. Each JSONL row requires:
+
+```json
+{"case_id":"decimal-sum","task_input":"Return the sum of 17 and 25 as a JSON object with key total. No tools are needed.","acceptance_criteria":"Return exactly {\"total\":42}, with no other text."}
 ```
-SKILL_NAME=$1  (required: e.g., "code-review", "pinescript", "planning")
-OPTIMIZER=$2   (optional: "gepa" (default), "mipro", or "bootstrap")
-```
 
-Parse from: `$ARGUMENTS`
+Replace this illustrative case with tasks relevant to the skill. Include all necessary source/context in the task or use separately reset, isolated fixtures. Historical prompts lacking their repository state are not executable fixtures. Freeze an independent rubric in a text file before seeing either output. Define correctness, applicable procedure, and conciseness on a 0–10 scale.
 
-If no skill name provided, ask the user which skill to evolve. Show skills with the most harvested data as suggestions.
-
-## Pipeline
-
-Maximize parallelism. Steps within the same group run concurrently (use background subagents or parallel bash). Steps across groups are sequential.
-
-### Group A (parallel): Harvest + Discover
-
-Run these two concurrently:
-
-**Step 1: Harvest sessions (full, all projects)**
+## 2. Propose a candidate
 
 ```bash
-python3 distillery/scripts/distiller.py harvest-sessions
+python3 distillery/scripts/distiller.py evolve <skill> --optimizer gepa --iterations 5 --save
 ```
 
-Report: total examples harvested, how many attributed to the target skill.
+This step uses paid model calls; follow the user's spending authorization. Keyword fitness is a lexical proxy restricted to positive references or curated `expected_output`, never failed traces. LLM-judge fitness generates single-turn responses, not tool-using execution. Neither proves agentic improvement. Inspect the diff and size constraints; unchanged output is a null result, not proof of Pareto optimality.
 
-**Step 2: Discover new negative signal patterns**
+## 3. Emit and execute the comparison
 
 ```bash
-python3 distillery/scripts/distiller.py discover-signals --top 20
+python3 distillery/scripts/distiller.py compare-skill <skill> --emit-tasks \
+  --candidate distillery/.eval-data/<skill>/evolved-SKILL.md \
+  --dataset /tmp/skill-cases.jsonl --rubric /tmp/skill-rubric.md \
+  > /tmp/skill-executions.json
 ```
 
-Present the top candidates to the user. If any look like genuine dissatisfaction patterns (not neutral task requests), ask whether to add them to `_NEGATIVE_SIGNAL_PATTERNS` in `distiller.py` before proceeding. If patterns are added, re-run harvest (Step 1) to update signal classifications.
+The manifest freezes the live baseline, complete candidate, inputs, and rubric. Use `--baseline <file>` if the intended baseline is stored elsewhere.
 
-If no new patterns worth adding, continue.
+Dispatch each `tasks[].prompt` to a separate fresh native subagent using the same model and settings. Do not show one execution the other's result. Reset mutable fixtures between executions; do not let concurrent agents edit the same checkout. No CLI model calls are needed for this path.
 
-### Group B (sequential): Build golden
+Collect a JSON array following `execution_contract`: copy `task_id`, `input_sha256`, and `skill_sha256`; add the manifest's `run_id`, actual `executor_id` and `model`, `status` (`completed` or `blocked`), and verbatim `output`. Never substitute historical responses or invent tool evidence. A blocked run leaves the comparison incomplete.
 
-Depends on Group A completing.
-
-**Step 3: Build golden eval dataset**
-
-RECOMMENDED (human-label) path — post-2026-07-07 harvest data is mostly `ambiguous` (no typed user outcome), and a golden set dominated by `ambiguous` drives GEPA to degenerate results:
+## 4. Judge against the frozen criteria
 
 ```bash
-python3 distillery/scripts/distiller.py build-golden <skill> --top 20
-# → writes candidates.jsonl. Open it, set each "label" to positive / negative / skip
-#   (drop the ambiguous ones as "skip" unless you can grade them), then:
-python3 distillery/scripts/distiller.py approve-golden <skill>
+python3 distillery/scripts/distiller.py compare-skill <skill> \
+  --manifest /tmp/skill-executions.json --outputs /tmp/skill-outputs.json \
+  > /tmp/skill-judges.json
 ```
 
-`approve-golden` writes `label` into `signal` for every kept row and HARD-ERRORS on any unknown label (including a left-over `ambiguous`), so the golden set is fully graded before GEPA runs.
-
-Fast path (only when the harvested signal is already well-graded — mostly positive/negative, few ambiguous):
+Dispatch only each judge prompt to a fresh judging subagent. These prompts contain the same rubric and case criteria, plus the corresponding fresh output; candidate instructions cannot redefine success. Collect the `verdict_contract` fields and each judge's JSON as `response`.
 
 ```bash
-python3 distillery/scripts/distiller.py build-golden <skill> --top 20 --auto
+python3 distillery/scripts/distiller.py compare-skill <skill> \
+  --manifest /tmp/skill-judges.json --score-from-verdicts /tmp/skill-verdicts.json
 ```
 
-`--auto` labels straight from harvested signal and prints a stderr WARNING when >50% of the rows are `ambiguous`; if you see that warning, stop and switch to the human-label path above.
+Execution manifests freeze local skill resources in temporary snapshots: `references/`, `scripts/`, `assets/`, and local Markdown dependencies. Dependencies must remain within the candidate or baseline skill directories; directory links must stay within standard resource directories. Absolute links and escaping symlinks are rejected. Snapshots retain executable permissions and materialize valid local symlinks at their referenced paths. Candidate files outside the installed skill directory inherit missing resource directories from the baseline. Verify this is the intended candidate bundle. Executor prompts name the frozen skill path so relative links resolve; keep these snapshots until collection finishes. Required external resources must be supplied as controlled fixtures or reported blocked. Outputs must copy `bundle_sha256` as well as the other contract fields. The collector rejects modified snapshots, missing/duplicate/mismatched records, blocked executions, mixed execution models, and malformed scores. Report the per-case results and mean paired delta, the number of cases, execution settings, and whether cases were withheld from optimization. Hashes detect accidental record mixing; they do not attest that a caller actually executed an agent. A small paired sample is not a calibrated effect estimate.
 
-Report: examples selected, positive/negative split, mean quality score.
+## 5. Review and apply
 
-### Group C (parallel): Eval baseline + Evolve
+Show the candidate diff, paired results, failures, coverage limits, and size constraints. Do not apply based on a retrospective score delta or a universal numerical threshold. Ask whether to apply the candidate to `plugins/whetstone/skills/<skill>/SKILL.md`; after approval, run the applicable skill and trigger checks. Leave release versions and counts to release time.
 
-Run these two concurrently -- both read from the golden dataset, neither writes to the other's output.
-
-**Step 4: Eval baseline**
-
-Run the eval judge as **in-session sub-agents** (no billed `claude -p`):
-
-```bash
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --emit-tasks
-```
-
-This returns `{count, tasks:[{index, prompt, ...}]}`. Dispatch one sub-agent per task (Agent tool, batched ~8); each returns its judge JSON. Collect `[{index, signal, session_id, skill_version, response}]`, then aggregate + record history:
-
-```bash
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --score-from-verdicts @<file>
-```
-
-Record the baseline composite score and per-dimension scores. This is the "before" measurement.
-
-**Step 5: Evolve**
-
-```bash
-python3 distillery/scripts/distiller.py evolve <skill> --optimizer <optimizer> --iterations 5 --save
-```
-
-If the optimizer produces changes:
-- Show the diff
-- Report growth percentage and constraint pass/fail
-- If constraints fail (>20% growth or >15KB), note the violation
-
-If no changes produced, report that the baseline is already Pareto-optimal for this metric and suggest trying a different optimizer or improving the golden dataset.
-
-### Group D (sequential): Eval evolved + Review
-
-Depends on Group C completing.
-
-**Step 6: Eval evolved (if changed)**
-
-If Step 5 produced an evolved skill and it was saved, score the **evolved text**, not the live skill. The `--emit-tasks` call MUST carry `--skill-file` pointing at the saved candidate, or the judge re-measures the baseline and the "Evolved" column is a copy of "Baseline":
-
-```bash
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --emit-tasks \
-  --skill-file distillery/.eval-data/<skill>/evolved-SKILL.md
-```
-
-Then dispatch the judge sub-agents and aggregate exactly as in Step 4 (`--score-from-verdicts @<file>` — this step takes no `--skill-file`; the override only changes the prompt built at emit-tasks time). The example set is identical to Step 4 because relevance still keys off the live skill's keywords, so the two composites are directly comparable.
-
-Note: any past comparison run WITHOUT `--skill-file` measured the baseline twice; its "delta" is noise. Re-run those before trusting them.
-
-Note: this delta is **in-sample**. `evolve` trains GEPA/MIPROv2 on 60% of `golden.jsonl` (`evolve.py`, `i % 5 < 3`), and Steps 4 and 6 both score over that same file, so part of any gain is the optimizer reproducing text it was fitted on. Treat the number as an upper bound, not an effect size. A held-out split is the real fix but is not worth taking at current dataset sizes — `build-golden --top 20` leaves ~5 holdout examples, whose variance is larger than the bias being removed. Until the golden sets grow, prefer a small confirmed gain that also survives a manual read of the diff over a large unconfirmed one, and do not act on deltas under roughly +0.05 composite.
-
-Present a comparison table:
-
-```
-| Metric         | Baseline | Evolved | Delta    |
-|----------------|----------|---------|----------|
-| Composite      | 0.64     | 0.71    | +0.07 (+11%) |
-| Correctness    | 7.0      | 7.8     | +0.8     |
-| Procedure      | 5.0      | 5.5     | +0.5     |
-| Conciseness    | 6.8      | 7.2     | +0.4     |
-```
-
-**Step 7: Review and apply**
-
-Present the user with:
-1. The diff from Step 5
-2. The score comparison from Step 6 (or note if no changes), stated as in-sample
-3. Constraint status (growth %, size)
-
-A null result is a valid and expected outcome. When the optimizer produces no change, or a change whose delta falls below the action threshold, report that and ship nothing — adding skill text that does not move the number is the cargo-culting these evals exist to catch. Do not reframe a null result as a tooling problem to be retried with a different optimizer unless the diff itself shows a real improvement the metric failed to capture.
-
-Ask: "Apply the evolved skill to `plugins/whetstone/skills/<skill>/SKILL.md`?"
-
-If approved:
-- Copy the evolved text to the skill's SKILL.md
-- Run `bash scripts/update-metadata.sh`
-- Report completion
-
-If rejected, leave everything as-is. The evolved version remains in `.eval-data/<skill>/evolved-SKILL.md` for future reference.
-
-## Notes
-
-- The harvest (Step 1) runs across ALL projects, not just the target skill. This ensures eval data is fresh for everything.
-- The evolve step uses OpenRouter (DeepSeek V3.2) for the DSPy optimizer since it needs many fast LLM calls. The eval steps (4 and 6) run **in-session sub-agents** via `--emit-tasks` → judge sub-agents → `--score-from-verdicts` (no billed `claude -p`); the judge runs on whatever model the session/sub-agent uses. The direct `dspy-eval` backend defaults to `claude-cli` (`DEFAULT_CLI_MODEL = "opus"`) if you bypass the sub-agent path.
-- If DSPy is not installed, Step 5 will fail. Install with: `pip install dspy`
-- The growth constraint (20%) prevents runaway skill bloat. If the optimizer consistently hits this limit, the skill may need manual editing to make room for improvements.
+For process skills requiring tool use, prefer SkillOpt's existing isolated fixture execution or the native execution path above. Retrospective trace scoring remains useful for diagnosis only.

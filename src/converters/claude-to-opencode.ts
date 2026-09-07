@@ -38,28 +38,6 @@ const TOOL_MAP: Record<string, string> = {
   todoread: "todoread",
 }
 
-type HookEventMapping = {
-  events: string[]
-  type: "tool" | "session" | "permission" | "message"
-  requireError?: boolean
-  note?: string
-}
-
-const HOOK_EVENT_MAP: Record<string, HookEventMapping> = {
-  PreToolUse: { events: ["tool.execute.before"], type: "tool" },
-  PostToolUse: { events: ["tool.execute.after"], type: "tool" },
-  PostToolUseFailure: { events: ["tool.execute.after"], type: "tool", requireError: true, note: "Claude PostToolUseFailure" },
-  SessionStart: { events: ["session.created"], type: "session" },
-  SessionEnd: { events: ["session.deleted"], type: "session" },
-  Stop: { events: ["session.idle"], type: "session" },
-  PreCompact: { events: ["experimental.session.compacting"], type: "session" },
-  PermissionRequest: { events: ["permission.requested", "permission.replied"], type: "permission", note: "Claude PermissionRequest" },
-  UserPromptSubmit: { events: ["message.created", "message.updated"], type: "message", note: "Claude UserPromptSubmit" },
-  Notification: { events: ["message.updated"], type: "message", note: "Claude Notification" },
-  Setup: { events: ["session.created"], type: "session", note: "Claude Setup" },
-  SubagentStart: { events: ["message.updated"], type: "message", note: "Claude SubagentStart" },
-  SubagentStop: { events: ["message.updated"], type: "message", note: "Claude SubagentStop" },
-}
 
 export function convertClaudeToOpenCode(
   plugin: ClaudePlugin,
@@ -68,7 +46,7 @@ export function convertClaudeToOpenCode(
   const agentFiles = plugin.agents.map((agent) => convertAgent(agent, options))
   const cmdFiles = convertCommands(plugin.commands)
   const mcp = plugin.mcpServers ? convertMcp(plugin.mcpServers) : undefined
-  const plugins = plugin.hooks ? [convertHooks(plugin.hooks)] : []
+  const plugins = plugin.hooks ? [convertHooks(plugin.hooks, plugin.manifest.name)] : []
 
   const config: OpenCodeConfig = {
     $schema: "https://opencode.ai/config.json",
@@ -78,6 +56,7 @@ export function convertClaudeToOpenCode(
   applyPermissions(config, plugin.commands, options.permissions)
 
   return {
+    hookSource: plugin.hooks ? { name: plugin.manifest.name, root: plugin.root } : undefined,
     config,
     agents: agentFiles,
     commandFiles: cmdFiles,
@@ -154,96 +133,33 @@ function convertMcp(servers: Record<string, ClaudeMcpServer>): Record<string, Op
   return result
 }
 
-function convertHooks(hooks: ClaudeHooks) {
-  const handlerBlocks: string[] = []
-  const hookMap = hooks.hooks
-  const unmappedEvents: string[] = []
-
-  for (const [eventName, matchers] of Object.entries(hookMap)) {
-    const mapping = HOOK_EVENT_MAP[eventName]
-    if (!mapping) {
-      unmappedEvents.push(eventName)
-      continue
+function convertHooks(hooks: ClaudeHooks, pluginName: string) {
+  if (!/^[a-z0-9][a-z0-9_-]*$/i.test(pluginName)) throw new Error("Invalid plugin name for hook installation")
+  for (const [event, matchers] of Object.entries(hooks.hooks)) {
+    if (event !== "PreToolUse" && event !== "PostToolUse") {
+      throw new Error(`OpenCode conversion does not support Claude hook event ${event}`)
     }
-    if (matchers.length === 0) continue
-    for (const event of mapping.events) {
-      handlerBlocks.push(
-        renderHookHandlers(event, matchers, {
-          useToolMatcher: mapping.type === "tool" || mapping.type === "permission",
-          requireError: mapping.requireError ?? false,
-          note: mapping.note,
-        }),
-      )
+    for (const matcher of matchers) {
+      if (matcher.matcher && matcher.matcher !== "*") new RegExp(matcher.matcher)
+      for (const hook of matcher.hooks) {
+        if (hook.type !== "command") throw new Error(`OpenCode conversion does not support ${hook.type} hooks`)
+        if (hook.timeout !== undefined && (!Number.isFinite(hook.timeout) || hook.timeout <= 0)) {
+          throw new Error("Hook timeout must be a positive number")
+        }
+      }
     }
   }
-
-  const unmappedComment = unmappedEvents.length > 0
-    ? `// Unmapped Claude hook events: ${unmappedEvents.join(", ")}\n`
-    : ""
-
-  const content = `${unmappedComment}import type { Plugin } from "@opencode-ai/plugin"\n\nexport const ConvertedHooks: Plugin = async ({ $ }) => {\n  return {\n${handlerBlocks.join(",\n")}\n  }\n}\n\nexport default ConvertedHooks\n`
-
+  const supportPath = `../.whetstone/${pluginName}`
   return {
     name: "converted-hooks.ts",
-    content,
+    content: `import { fileURLToPath } from "node:url"
+import { createHooks } from ${JSON.stringify(`${supportPath}/opencode-hooks.ts`)}
+
+export default async function ({ directory }: { directory: string }) {
+  const root = fileURLToPath(new URL(${JSON.stringify(`${supportPath}/plugin/`)}, import.meta.url))
+  return createHooks(${JSON.stringify(hooks)}, root, directory)
+}`,
   }
-}
-
-function renderHookHandlers(
-  event: string,
-  matchers: ClaudeHooks["hooks"][string],
-  options: { useToolMatcher: boolean; requireError: boolean; note?: string },
-) {
-  const statements: string[] = []
-  for (const matcher of matchers) {
-    statements.push(...renderHookStatements(matcher, options.useToolMatcher))
-  }
-  const rendered = statements.map((line) => `    ${line}`).join("\n")
-  const wrapped = options.requireError
-    ? `    if (input?.error) {\n${statements.map((line) => `      ${line}`).join("\n")}\n    }`
-    : rendered
-  const note = options.note ? `    // ${options.note}\n` : ""
-  return `    "${event}": async (input) => {\n${note}${wrapped}\n    }`
-}
-
-function renderHookStatements(
-  matcher: ClaudeHooks["hooks"][string][number],
-  useToolMatcher: boolean,
-): string[] {
-  if (!matcher.hooks || matcher.hooks.length === 0) return []
-  const tools = matcher.matcher
-    ? matcher.matcher
-        .split("|")
-        .map((tool) => tool.trim().toLowerCase())
-        .filter(Boolean)
-    : []
-
-  const useMatcher = useToolMatcher && tools.length > 0 && !tools.includes("*")
-  const condition = useMatcher
-    ? tools.map((tool) => `input.tool === "${tool}"`).join(" || ")
-    : null
-  const statements: string[] = []
-
-  for (const hook of matcher.hooks) {
-    if (hook.type === "command") {
-      if (condition) {
-        statements.push(`if (${condition}) { await $\`${hook.command}\` }`)
-      } else {
-        statements.push(`await $\`${hook.command}\``)
-      }
-      if (hook.timeout) {
-        statements.push(`// timeout: ${hook.timeout}s (not enforced)`)
-      }
-      continue
-    }
-    if (hook.type === "prompt") {
-      statements.push(`// Prompt hook for ${matcher.matcher ?? "*"}: ${hook.prompt.replace(/\n/g, " ")}`)
-      continue
-    }
-    statements.push(`// Agent hook for ${matcher.matcher ?? "*"}: ${hook.agent}`)
-  }
-
-  return statements
 }
 
 function rewriteClaudePaths(body: string): string {
@@ -337,7 +253,7 @@ function applyPermissions(
     }
   }
 
-  const permission: Record<string, "allow" | "deny"> = {}
+  const permission: Record<string, "allow" | "deny" | Record<string, "allow" | "deny">> = {}
   const tools: Record<string, boolean> = {}
 
   for (const tool of sourceTools) {
@@ -356,7 +272,7 @@ function applyPermissions(
         for (const pattern of toolPatterns) {
           patternPermission[pattern] = "allow"
         }
-        ;(permission as Record<string, typeof patternPermission>)[tool] = patternPermission
+        permission[tool] = patternPermission
       } else {
         permission[tool] = enabled.has(tool) ? "allow" : "deny"
       }
@@ -370,7 +286,7 @@ function applyPermissions(
       for (const pattern of toolPatterns) {
         patternPermission[pattern] = "allow"
       }
-      ;(permission as Record<string, typeof patternPermission>)[tool] = patternPermission
+      permission[tool] = patternPermission
     }
   }
 
@@ -386,8 +302,8 @@ function applyPermissions(
     for (const pattern of combined) {
       combinedPermission[pattern] = "allow"
     }
-    ;(permission as Record<string, typeof combinedPermission>).edit = combinedPermission
-    ;(permission as Record<string, typeof combinedPermission>).write = combinedPermission
+    permission.edit = combinedPermission
+    permission.write = combinedPermission
   }
 
   config.permission = permission

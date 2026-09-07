@@ -25,16 +25,17 @@ Project-declared gates (phase 0) also run before any push, regardless of mode.
 
 ## Applicability Detection
 
-Before running the pipeline, classify the change scope from the diff:
+Resolve one verification scope before classifying or scanning changes:
 
-1. Run `git diff --name-only` (or `git diff --cached --name-only` for pre-commit) to get changed files.
-2. Classify:
+1. In `pre-pr` mode, resolve the PR base (`gh pr view --json baseRefName -q .baseRefName`) or the repository's verified default branch, and freeze the current HEAD SHA. Resolve the merge-base against the available base ref, then use `git diff <merge-base-sha> <head-sha>` and its `--name-only` form for every diff-based phase below. If the base cannot be resolved, report NOT READY with that missing input; do not silently substitute an empty working-tree diff. For a dirty checkout, either verify the committed head in isolation or explicitly include and identify local changes; do not claim tests of a different tree verify the frozen PR head.
+2. In `pre-commit` mode, use the staged diff (`git diff --cached`) and state that scope. In `quick`/`full` mode, use the caller's selected scope, defaulting to tracked staged and unstaged changes (`git diff HEAD`) plus explicitly enumerated untracked files. Record the selected scope and tested tree in the report. An empty selected diff is not evidence that a feature branch is unchanged.
+3. Classify the selected files:
    - **frontend** -- files under `src/components/`, `src/pages/`, `app/`, `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, templates
    - **backend** -- files under `src/api/`, `routes/`, `controllers/`, `services/`, `*.php`, `*.py` (non-frontend), `*.go`, server-side TS
    - **infrastructure** -- migration files, Dockerfiles, terraform/ansible, CI configs, env templates, k8s manifests
-   - **docs-only** -- only `.md`, `.txt`, `CHANGELOG`, `README` files changed
+   - **docs-only** -- passive prose only; agent instructions, executable snippets, and configuration embedded in Markdown must be classified by the behavior they drive
 
-3. Apply phase filters (pre-pr mode only):
+4. Apply phase filters (pre-pr mode only):
    - **Performance** -- skip for docs-only changes
    - **Accessibility** -- skip for backend-only or docs-only changes
    - **Infrastructure** -- skip for pure frontend changes (no migrations, no env changes, no CI changes)
@@ -78,7 +79,7 @@ Detect and run the project's linter:
 - `golangci-lint run` → for Go
 - PHPStan, PHP-CS-Fixer → for PHP
 
-Compare warning counts against the base branch when possible (`git stash && lint && git stash pop` or lint the base ref). Flag any net-new warnings even if the overall run passes.
+Compare warning counts against the same explicit base SHA in an isolated checkout when useful. Stashing does not change a committed branch to its base and is not a baseline comparison. Report a skipped baseline comparison directly. Flag net-new warnings even if the overall run passes.
 
 Record: pass/fail + warning/error counts + new warnings introduced (if measurable).
 
@@ -168,7 +169,7 @@ Report: list of missing documentation. These are warnings, not blockers, but the
 
 ### 11. Diff Review (pre-pr only)
 
-Run `git diff` against the base branch. Check for:
+Inspect the same frozen diff selected above; do not resolve a different range for this phase. Check for:
 - Files that changed but have no test coverage
 - Large files (>500 lines changed) that may need splitting
 - Unrelated changes mixed into the diff
@@ -183,6 +184,7 @@ Produce a structured report:
 ## Verification Report
 
 **Mode:** [mode]
+**Scope:** [base SHA → head SHA, staged diff, or explicit local scope; tested tree and local changes]
 **Result:** READY / NOT READY
 
 | Phase | Status | Details |

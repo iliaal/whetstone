@@ -1,0 +1,23 @@
+# Standard review process
+
+Read when conducting a complete standard review. A caller-defined specialist brief retains its own scope and output contract.
+
+## Review Process
+
+**Standard reviews only** -- deep review is handled by the dispatched specialists.
+
+1. **Context** — before reading code:
+   - **Scope drift**: compare `git diff --stat` against the PR's stated intent. Classify CLEAN / DRIFT DETECTED / REQUIREMENTS MISSING; on drift, ask the author: ship as-is, split, or remove?
+   - **Intent**: read the PR description, linked issue, or task spec. Deviation or under-delivery is a finding — the wrong problem solved correctly is still wrong.
+   - **Prior discussions**: reconcile existing review comments so resolved issues aren't re-raised. Gate on a presence check; commands in [scope-resolution.md](./scope-resolution.md). On a re-review, read a resolved thread and a "Done" reply as claims, not evidence: status fields are cheap to flip, and truthful scope lives in the free-form narrative an author writes for engineers, so read the commit messages across the review range alongside thread states -- when a commit body says "does not address" and the thread is resolved, the commit body wins. Verify a "use the safe form" remedy mechanically: grep the OLD pattern at the new head and treat a nonzero count as the finding, still live. A commit message enumerating the sites it converted reads as the sweep and is not one.
+   - **Automated gates**: run the project's test/lint suite (canonical commands in CI config). A green pipeline proves only that the jobs it actually ran **and gated on** passed. Before citing "CI green" — or accepting an author's citation of it — read the CI config, enumerate the jobs, and check two things per job: whether it is allowed to fail (`allow_failure`, `continue-on-error`), and whether anything downstream depends on it. A job that runs, fails, and blocks nothing yields the same green as a job that never existed, so green does not even prove the jobs that ran passed. When a finding turns on test behavior ("the test would have caught this"), verify locally or assume the test does not run. A suite that was never dispatched is indistinguishable from a green one: a skip-CI marker in the head commit suppresses push and pull-request workflows while target-event workflows (labelers, triage bots) still report green. Enumerate the workflow runs for the exact head SHA and require a row for the suite being cited, positive-controlled against a sibling change known to have run it. State only what the query proves ("the suite has not run on this head"), never an inferred cause.
+2. **Structural scan** -- architecture, file organization, API surface; flag breaking changes. Added (`A`) files on a remote branch: use the diff content, not the working tree.
+3. **Line-by-line** -- resolve each unit's deterministic route via [language-profiles.md](./language-profiles.md); load one primary stack skill and at most one evidence-backed supplement, or use the generic fallback. Apply correctness, maintainability, performance, adversarial, and AI-code checks from [check-categories.md](./check-categories.md). Prefer questions ("What happens if `input` is empty?") over declarations.
+4. **Security** -- input validation, auth checks, secrets exposure, injection vectors (SQL, XSS, CSRF, SSRF, command, path traversal, unsafe deserialization), race conditions (TOCTOU). Grep-able patterns for the common vulnerability classes in [security-patterns.md](./security-patterns.md).
+5. **Test coverage** -- untested new paths, error paths, and behavioral changes without test updates. Flag implementation-coupled tests (mocked internals, private methods) -- test behavior, not wiring.
+6. **Reliability** -- error handling completeness, timeout/retry, resource cleanup on error paths, graceful degradation. Patterns in [reliability-patterns.md](./reliability-patterns.md).
+7. **Removal candidates** -- dead code, unused imports, cleanup-ready feature flags; safe-to-delete (no references) vs defer-with-plan.
+8. **Verify** -- run formatter/lint/tests on touched files; state what was skipped and why. Note doc staleness (README/ARCHITECTURE/CONTRIBUTING) as informational.
+9. **Summary** -- reconcile the coverage ledger, then group findings by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Never emit either Ready verdict when coverage is partial.
+
+**Large diffs:** >500 lines → review by module, not file-by-file. Flag oversized PRs (ideal ~100-300 meaningful lines) and suggest a split — thresholds and the four split strategies in [pr-sizing.md](./pr-sizing.md).

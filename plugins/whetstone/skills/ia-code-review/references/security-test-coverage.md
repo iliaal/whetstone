@@ -1,8 +1,8 @@
 # Security Test Coverage Checklist
 
-Audit deliverable template for the `ia-security-sentinel` agent. Every security audit must produce this checklist as an explicit artifact, not a narrative summary. Each item is either verified with evidence (file:line + passing test) or explicitly flagged as uncovered.
+Audit checklist for the `ia-security-sentinel` report. Classify each item as verified (cite source and actual test evidence), uncovered (name the missing check), or not applicable (explain why). A checklist may be inline; create a separate artifact only when the caller requests or needs one.
 
-Each finding ties to severity (CVSS 3.1 base score + vector), proof of exploitability (curl command, test snippet, or PoC), and copy-paste-ready remediation code.
+Demonstrated vulnerabilities carry CVSS 3.1 base score/vector, exploit evidence, and a verified remediation or a concrete remedy explicitly awaiting validation. Missing tests are coverage gaps, not evidence of exploitability.
 
 ## Authentication edge cases
 
@@ -51,6 +51,6 @@ For each finding, emit:
 1. **ID**: `SS-001`, `SS-002`... sequential across all severities
 2. **Severity**: CVSS 3.1 base score + vector string
 3. **Proof**: curl command, test snippet, or exploit PoC that demonstrates the vulnerability
-4. **Remediation**: copy-paste-ready code fix, not just a description
+4. **Remediation**: a verified code fix, or a concrete proposed remedy labeled unvalidated with the command or test needed to validate it
 
-Uncovered checklist items are explicit findings too — mark them `UNCOVERED: no test exists for <item>` so the user sees both failures AND gaps.
+Report uncovered items under Coverage gaps / Residual Risks, separate from demonstrated vulnerabilities. Do not assign a CVSS score or fabricate exploit proof for the absence of a test.

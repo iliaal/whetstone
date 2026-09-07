@@ -12,11 +12,16 @@ description: >-
 
 Improve brainstorm or plan documents through structured review.
 
+## Working rules
+
+- Assess before editing, preserve implementation-relevant constraints and rationale, and distinguish minor edits from substantive decisions.
+
 ## Step 1: Get the Document
 
 **If a document path is provided:** Read it, then proceed to Step 2.
 
 **If no document is specified:** Ask which document to review, or look for the most recent brainstorm/plan in `docs/brainstorms/` or `docs/plans/`.
+
 
 ## Step 2: Assess
 
@@ -32,6 +37,7 @@ Read through the document and ask:
 
 These questions surface issues. Note findings without fixing yet.
 
+
 ## Step 3: Activate Review Lenses
 
 Based on the document's content, activate specialized review perspectives. Scan for signals and apply matching lenses:
@@ -45,6 +51,7 @@ Based on the document's content, activate specialized review perspectives. Scan 
 | **Adversarial** | >5 distinct requirements, explicit architectural decisions, high-stakes domains | Unstated assumptions, optimistic estimates, single points of failure, missing failure modes |
 
 Activate a lens when ANY of its signals match. Most documents trigger 1-2 lenses; brainstorm notes may trigger none. When a lens is active, weave its checks into the assessment and evaluation steps rather than running it as a separate pass.
+
 
 ## Step 4: Evaluate
 
@@ -60,9 +67,11 @@ Score the document against these criteria:
 If invoked within a workflow (after `/ia-brainstorm` or `/ia-plan`), also check:
 - **User intent fidelity** -- Document reflects what was discussed, assumptions validated
 
+
 ## Step 5: Identify the Critical Improvement
 
 Among everything found in Steps 2-4, does one issue stand out? If something would significantly improve the document's quality, this is the "must address" item. Highlight it prominently.
+
 
 ## Step 6: Make Changes
 
@@ -106,27 +115,6 @@ Simplification is purposeful removal of unnecessary complexity, not shortening f
 - Rationale that explains why alternatives were rejected
 - Open questions that need resolution
 
-## Step 7: Reader Test (Optional)
-
-For standalone documents that must be self-contained (onboarding guides, ADRs, external-facing docs), dispatch a zero-context sub-agent to simulate a first-time reader. The sub-agent has no conversation history — it sees only what a future reader would see.
-
-**How to run the test:**
-
-1. **Predict 5-10 reader questions** from the document's stated goals — one per major section or decision. Mix three kinds:
-   - Concrete retrieval: "What command sets up the dev environment?"
-   - Decision rationale: "Why did we pick X over Y?"
-   - Ambiguity probe: "Could a reader interpret <specific phrase> in more than one way?"
-2. **Dispatch a fresh sub-agent** with the document attached and the questions. No prior context, no session history.
-3. **Compare the sub-agent's answers** against author intent. Also ask the sub-agent directly: "What feels ambiguous? What prior knowledge does this assume? Are there internal contradictions?"
-
-**Interpret results:**
-
-- Correct, confident answers → document is self-contained for that question.
-- Wrong answer with high confidence → document actively misleads. Highest-priority fix.
-- Hedged or "insufficient information" → the document has a gap the author didn't notice. Fill it.
-- Sub-agent flags ambiguity the author didn't intend → reword for precision.
-
-Skip for context-dependent docs (brainstorm notes, plan files, internal working docs) where the reader will always have prior context. The sub-agent test only adds value when the real reader has no other channel.
 
 ## Step 8: Offer Next Action
 
@@ -143,12 +131,14 @@ After 2 refinement passes, recommend completion--diminishing returns are likely.
 
 Return control to the caller (workflow or user) after selection.
 
+
 ## Constraints
 
 - Fix targeted sections, don't rewrite the whole document. If the structure is fundamentally broken, surface the structural problem and ask for permission to restructure.
 - Flag missing sections in the review, but don't add them. The user decides what to include.
 - Keep changes minimal. If a paragraph needs tightening, tighten it. Don't expand scope.
 - Review inline. No separate review files or metadata sections.
+
 
 ## Success Criteria
 
@@ -157,3 +147,9 @@ Return control to the caller (workflow or user) after selection.
 - Critical improvements identified with specific suggestions
 - User presented with clear next-action choice (refine or complete)
 - Revised document saved if changes were approved
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For an optional zero-context reader test of a standalone document: [reader-test.md](./references/reader-test.md).

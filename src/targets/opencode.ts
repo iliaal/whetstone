@@ -1,5 +1,6 @@
 import path from "path"
-import { backupFile, copyDir, ensureDir, pathExists, readJson, writeJson, writeText } from "../utils/files"
+import { fileURLToPath } from "url"
+import { backupFile, copyDir, ensureDir, pathExists, readJson, readText, writeJson, writeText } from "../utils/files"
 import type { OpenCodeBundle, OpenCodeConfig } from "../types/opencode"
 
 // Merges plugin config into existing opencode.json. User keys win on conflict. See ADR-002.
@@ -56,6 +57,16 @@ async function mergeOpenCodeConfig(
 
 export async function writeOpenCodeBundle(outputRoot: string, bundle: OpenCodeBundle): Promise<void> {
   const openCodePaths = resolveOpenCodePaths(outputRoot)
+  if (bundle.hookSource) {
+    const source = path.resolve(bundle.hookSource.root)
+    const destination = path.join(openCodePaths.supportDir, bundle.hookSource.name)
+    if (destination === source || destination.startsWith(source + path.sep)) {
+      throw new Error("Hook installation output must be outside the source plugin")
+    }
+    await copyDir(source, path.join(destination, "plugin"))
+    const runtime = await readText(fileURLToPath(new URL("../runtime/opencode-hooks.ts", import.meta.url)))
+    await writeText(path.join(destination, "opencode-hooks.ts"), runtime)
+  }
   await ensureDir(openCodePaths.root)
 
   const backupPath = await backupFile(openCodePaths.configPath)
@@ -94,13 +105,14 @@ export async function writeOpenCodeBundle(outputRoot: string, bundle: OpenCodeBu
   }
 }
 
-function resolveOpenCodePaths(outputRoot: string) {
+export function resolveOpenCodePaths(outputRoot: string) {
   const base = path.basename(outputRoot)
   // Global install: ~/.config/opencode (basename is "opencode")
   // Project install: .opencode (basename is ".opencode")
-  if (base === "opencode" || base === ".opencode") {
+  if (base === ".opencode" || (base === "opencode" && path.basename(path.dirname(outputRoot)) === ".config")) {
     return {
       root: outputRoot,
+      supportDir: path.join(outputRoot, ".whetstone"),
       configPath: path.join(outputRoot, "opencode.json"),
       agentsDir: path.join(outputRoot, "agents"),
       pluginsDir: path.join(outputRoot, "plugins"),
@@ -113,6 +125,7 @@ function resolveOpenCodePaths(outputRoot: string) {
   // Custom output directory - nest under .opencode subdirectory
   return {
     root: outputRoot,
+    supportDir: path.join(outputRoot, ".opencode", ".whetstone"),
     configPath: path.join(outputRoot, "opencode.json"),
     agentsDir: path.join(outputRoot, ".opencode", "agents"),
     pluginsDir: path.join(outputRoot, ".opencode", "plugins"),

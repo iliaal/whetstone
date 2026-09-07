@@ -13,43 +13,12 @@ paths: "**/*.css,**/tailwind.config.*,**/*.tsx,**/*.jsx,**/*.html,**/*.vue,**/*.
 
 **Verify before implementing**: For v4-specific syntax (`@theme`, `@variant`, CSS-first config), look up current docs via Context7 (`query-docs`) before writing code. Tailwind v4 changed significantly from v3 and training data may be stale.
 
-## CSS-First Configuration
+## Working rules
 
-v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
-
-| Directive | Purpose |
-|-----------|---------|
-| `@import "tailwindcss"` | Entry point (replaces `@tailwind base/components/utilities`) |
-| `@theme { }` | Define/extend design tokens -- auto-generates utility classes |
-| `@theme inline { }` | Map CSS variables to Tailwind utilities without generating new vars |
-| `@theme static { }` | Define tokens that don't generate utilities |
-| `@utility name { }` | Create custom utilities (replaces `@layer components` + `@apply`) |
-| `@custom-variant name (selector)` | Define custom variants |
-
-```css
-@import "tailwindcss";
-
-@theme {
-  --color-brand: oklch(0.72 0.11 178);
-  --font-display: "Inter", sans-serif;
-  --animate-fade-in: fade-in 0.2s ease-out;
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-}
-
-@custom-variant dark (&:where(.dark, .dark *));
-```
-
-Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`. Define z-index as tokens (`--z-modal: 50`) and reference via `z-(--z-modal)` instead of arbitrary `z-50`.
-
-**`@theme` tokens are tree-shaken.** v4 emits only the variables it can see used, so a token existing in a shared file says nothing about whether it reaches a given app's bundle -- measured on one shared token file feeding two apps: 20 of 59 `--color-*` emitted into one, 19 of 59 into the other. `@theme static` is the opt-out. A `var(--color-x)` reference inside your own hand-written CSS **counts as a use**, so pointing a custom property at a token (`--app-checkbox-border: var(--color-border-400)`) is self-sustaining, not fragile -- Tailwind sees your CSS, not just your class names. Never rate a "this indirection depends on some unrelated utility still existing" concern on tree-shaking alone: delete the last utility usage in that app's scan set, rebuild, and read the compiled CSS. Assert the utility actually vanished as the applied control, or a build that silently no-opped (wrong package filter, stale `dist`) reads identically, producing the same false conclusion from nothing.
-
-**CSS Modules**: when using `.module.css` with Tailwind v4, add `@reference "#tailwind";` at the top of the module file to enable theme token access inside the module.
-
-**Animations (tw-animate-css)**: use `animate-in`/`animate-out` base classes combined with effect classes (`fade-in`, `slide-in-from-top`). Decimal spacing gotcha: use bracket notation `[0.625rem]` instead of fractional values like `2.5`.
-
-## v3 to v4 Migration
-
-For projects upgrading from v3 to v4, see [v3-to-v4-migration.md](./references/v3-to-v4-migration.md) for the full breaking-change table and codemod guidance. For greenfield v4 work, current patterns are above.
+- Keep utility names as complete source literals and confirm their files are scanned.
+- Use shared design tokens and one consistent visibility mechanism.
+- Inspect generated CSS after source/configuration changes; JSX strings alone do not prove utilities exist.
+- Test scrolling, overlays, and focus behavior in a browser when layout containment changes.
 
 ## Coding Rules
 
@@ -64,92 +33,6 @@ For projects upgrading from v3 to v4, see [v3-to-v4-migration.md](./references/v
 - **`overflow-x-auto` makes a scroll container on BOTH axes** -- the utility emits only `overflow-x: auto`, but CSS Overflow 3 computes a `visible` value on the other axis to `auto` once either axis is scrollable, so a wrapper added purely to allow horizontal panning silently clips or scrolls whatever overflows it vertically: a non-portalled dropdown, popover, tooltip, custom select, or focus ring. jsdom does no layout, so no unit test catches it -- enumerate every component rendered inside the new wrapper and confirm each overlay-ish one escapes it. Portaling is opt-in, not automatic: Radix exposes it as a separate `*.Portal` part wrapping `*.Content`, so read the component rather than assuming a library handles it. Same computed-value rule read backwards: before blaming a page-level scrollbar, walk every ancestor's `overflow` and name the element that actually scrolls
 - **Never express visibility as the native `hidden` attribute plus a display utility** -- the two resolve in opposite directions across versions. v4's Preflight ships `[hidden]:where(:not([hidden="until-found"])) { display: none !important }`, so the attribute wins and an element expected to be visible stays hidden; on v3, or wherever Preflight is disabled or not loaded, the author-origin utility (`block`, `flex`, `grid`) beats the UA-origin `[hidden]` rule regardless of specificity and the element stays on screen with `hidden` set. Toggle one mechanism: `clsx(base, open ? 'block' : 'hidden')`. Neither direction is visible to jsdom's `toBeInTheDocument` -- only `toBeVisible` or a real browser engine catches it
 
-## ESLint Integration
-
-Use `eslint-plugin-better-tailwindcss` for automated class validation:
-- `no-conflicting-classes` -- catches `text-red-500 text-blue-500`
-- `no-unknown-classes` -- flags typos
-- `enforce-canonical-classes` -- normalizes shorthand
-- `no-duplicate-classes` -- removes redundant entries
-- `no-deprecated-classes` -- catches v3 classes removed in v4
-- `useSortedClasses` -- enforces canonical class order; configure `attributes: ["classList"]` and `functions: ["clsx", "cva", "cn", "tv", "tw"]` to cover JSX utility functions
-
-## Class Merging
-
-Use `cn()` combining `clsx` + `tailwind-merge` for conditional/dynamic classes. Use plain strings for static `className` attributes.
-
-```typescript
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
-```
-
-```typescript
-// Static: plain string
-<button className="rounded-lg px-4 py-2 font-medium bg-blue-600">
-
-// Conditional: use cn()
-<button className={cn("rounded-lg px-4 py-2", isActive ? "bg-blue-600" : "bg-gray-700")} />
-```
-
-**Keep class names whole in the source.** The example above works because both branches are complete literals -- Tailwind's scanner does literal string matching over source text and never evaluates JavaScript, so a class assembled by interpolation is invisible to it and the utility is simply never generated. The failure is silent: no error, no warning, just missing styles.
-
-```typescript
-// Broken: `bg-red-500` never appears in the source, so it is never generated
-<div className={`bg-${color}-500`} />
-
-// Works: every candidate class is a complete literal the scanner can see
-const BG = { red: "bg-red-500", blue: "bg-blue-500" } as const;
-
-function Swatch({ color }: { color: keyof typeof BG }) {
-  return <div className={BG[color]} />;
-}
-```
-
-The same applies to classes built in a non-scanned location -- a string in a database, a CMS field, or a file outside the configured `@source` paths. Confirm the source actually gets scanned before assuming a literal is enough.
-
-`@source` directives resolve relative to the file they appear in, so a shared token package pulling in a sibling (`@source '../../ui/src/**/*.{ts,tsx}'`) is what makes a `libs/ui`-only utility generate in every consuming app. The real generation risk is a utility with **no** prior usage anywhere, and it fails invisibly rather than loudly: an SVG whose root carries `fill="none"` and whose paths swap `fill="#355BF5"` for `className="fill-primary-500"` renders *invisible*, not mis-colored. Grep the compiled CSS of every consuming app, not one.
-
-Verify by building, not by reading: when class names or scanned sources changed, run the real Tailwind build and grep the output CSS for the expected utilities. Reviewing the `className` attribute proves the string is right, not that the rule exists.
-
-## Component Variants
-
-Use `tailwind-variants` (`tv()`) for type-safe variant components. Alternative: `class-variance-authority` (`cva()`).
-
-```typescript
-import { tv } from "tailwind-variants";
-const button = tv({
-  base: "rounded-lg px-4 py-2 font-medium transition-colors",
-  variants: {
-    color: { primary: "bg-blue-600 text-white", secondary: "bg-gray-200 text-gray-800" },
-    size: { sm: "text-sm px-3 py-1", md: "text-base", lg: "text-lg px-6 py-3" },
-  },
-  defaultVariants: { color: "primary", size: "md" },
-});
-```
-
-See [tailwind-variants patterns](./references/component-patterns.md) for slots, composition, and responsive variants.
-
-## Common Errors
-
-| Symptom | Fix |
-|---------|-----|
-| `bg-primary` doesn't work | Add `@theme inline { --color-primary: var(--primary); }` |
-| Colors all black/white | Double `hsl()` wrapping -- use `var(--color)` not `hsl(var(--color))` |
-| `@apply` fails on custom class | Use `@utility` instead of `@layer components` |
-| Build fails after migration | Delete `tailwind.config.ts` |
-| Animations broken | Replace `tailwindcss-animate` with `tw-animate-css` |
-| `.dark { @theme { } }` fails | v4 does not support nested `@theme` -- use `:root`/`.dark` CSS vars mapped via `@theme inline` |
-
-## Dark Mode (v4 Pattern)
-
-```css
-:root { --background: hsl(0 0% 100%); --foreground: hsl(222 84% 4.9%); }
-.dark { --background: hsl(222 84% 4.9%); --foreground: hsl(210 40% 98%); }
-@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); }
-```
-
-Semantic classes (`bg-background`, `text-foreground`) auto-switch -- no `dark:` variants needed for themed colors.
 
 ## Verify
 
@@ -157,7 +40,19 @@ Semantic classes (`bg-background`, `text-foreground`) auto-switch -- no `dark:` 
 - No v3 class names remain in changed files (check with `@tailwindcss/upgrade --dry-run` if available)
 - No conflicting classes on the same element
 
+
 ## References
 
 - [Component patterns](./references/component-patterns.md) -- tailwind-variants slots, CVA, compound components
 - [Layout patterns](./references/layout-patterns.md) -- grid areas, container queries, z-index management, fluid typography
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For theme tokens, build configuration, version migration, dark mode, or missing styles: [configuration-and-migration.md](./references/configuration-and-migration.md).
+- For class merging, scanning paths, variants, or lint integration: [class-generation-and-composition.md](./references/class-generation-and-composition.md).
+
+Existing specialized references, when the corresponding topic applies:
+
+- [v3-to-v4-migration.md](./references/v3-to-v4-migration.md).

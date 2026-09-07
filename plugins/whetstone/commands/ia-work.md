@@ -18,7 +18,7 @@ This command takes a work document (plan, specification, or todo file) and execu
 
 ## Execution Workflow
 
-**Pipeline mode:** If invoked from an automated workflow (LFG or any `disable-model-invocation` context), skip all AskUserQuestion calls. Make decisions automatically: auto-proceed past the Phase 1 approval, resolve the branch-setup prompt by creating a new feature branch when on the default branch, and default the Phase 4 branch-finish choice to **Push + PR**. Never commit directly to the default branch, even in pipeline mode.
+**Pipeline mode:** Enable only when the caller explicitly delegates non-interactive execution and defines the work/decision scope. Invocation metadata alone is not approval. Use conservative in-scope defaults for routine choices, create a feature branch when on the default branch, and report material unresolved decisions to the parent. Default branch finish to **Keep as-is** so the parent can complete review and final gates before any authorized publication. Never infer push/PR permission from pipeline mode.
 
 ### Phase 1: Quick Start
 
@@ -27,9 +27,8 @@ This command takes a work document (plan, specification, or todo file) and execu
    - Read the work document completely
    - Review any references or links provided in the plan
    - If anything is unclear or ambiguous, ask clarifying questions now
-   - Get user approval to proceed
-   - **Do not skip this** - better to ask questions now than build the wrong thing
-   - **Pipeline mode:** auto-proceed without waiting for approval (see Pipeline mode note above)
+   - Proceed when the request already authorizes this implementation; ask only for material unresolved choices or missing authority
+   - **Pipeline mode:** proceed within the caller's delegated scope and return unresolved blockers (see Pipeline mode above)
 
 2. **Setup Environment**
 
@@ -191,12 +190,12 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
 2. **Code Review** (gate, not a judgement call)
 
-   Read agents from `whetstone.local.md` frontmatter (`review_agents`). If no settings file, run `/ia-setup` to create one. Run configured agents in parallel with Task tool, present findings, and address critical issues.
+   Read agents from `whetstone.local.md` frontmatter (`review_agents`). If absent, select applicable available reviewers for this invocation without opening the setup wizard. Deduplicate the list. Run independent reviewers in parallel, present findings, and address authorized critical fixes. Record the reviewed revision, protocol, and exact created todo paths for a parent pipeline; an unchanged diff need not repeat an identical review.
 
    This step is not optional. It closes one of two ways, and both the PR template's Testing section and the Phase 4 Notify User summary have to say which:
 
    - **Reviewed** -- agents ran, findings presented, criticals addressed or explicitly accepted with a reason.
-   - **Skipped**, with one of these stated verbatim plus a one-line reason: `Code review: skipped (mechanical diff)` for a rename, a formatting sweep, a lockfile bump, or a generated-file refresh where the diff carries no behavior change; `Code review: skipped (unavailable)` when no `review_agents` are configured and `/ia-setup` has not been run.
+   - **Skipped**, with one of these stated verbatim plus a one-line reason: `Code review: skipped (mechanical diff)` for a rename, formatting sweep, lockfile bump, or generated-file refresh with no behavior change; `Code review: skipped (unavailable)` when no independent review capability is available.
 
    A self-assessment does not close this gate. "I already reviewed it as I wrote it" and "the findings were applied during implementation" are the implementer judging their own work, which is what the review exists to avoid. If the diff is large enough to want a worktree and multiple lenses, hand it to `/ia-review` and record that as the receipt.
 
@@ -220,9 +219,9 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
 ### Phase 4: Ship It
 
-1. **Capture and Upload Screenshots for UI Changes** (REQUIRED for any UI work)
+1. **Capture Screenshots for UI Changes**
 
-   For **any** design changes, new views, or UI modifications, you MUST capture and upload screenshots:
+   Capture screenshots when they provide meaningful visual verification or review context. Keep them local unless the caller authorized an upload destination and audience; a private UI change does not imply publication to a public image host.
 
    **Step 1: Start dev server** (if not running)
    ```bash
@@ -239,11 +238,10 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    Resolve the port rather than assuming 3000 -- Vite and SvelteKit default to 5173, and `PORT=` in `.env` overrides either.
    Run `agent-browser --help` for full CLI usage.
 
-   **Step 3: Upload screenshots**
+   **Step 3: Upload screenshots only when authorized**
    ```bash
-   # Upload using imgup CLI (if available):
-   imgup -h pixhost screenshot.png  # pixhost works without API key
-   # Alternative hosts: catbox, imagebin, beeimg
+   # Use the caller-approved host and the actual captured file:
+   imgup -h <approved-host> output.png
    ```
 
    **What to capture:**
@@ -251,7 +249,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    - **Modified screens**: Before AND after screenshots
    - **Design implementation**: Screenshot showing Figma design match
 
-   **IMPORTANT**: Always include uploaded image URLs in PR description. This provides visual context for reviewers and documents the change.
+   Include authorized image URLs in a PR, or report local artifact paths when publication is deferred.
 
 2. **Update Plan Status**
 
@@ -264,7 +262,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
    **Before any push or PR open:** run the project-declared gates check from the `ia-verification-before-completion` skill. If any gate is unmet, stop here and name it; do not proceed to Present options below.
 
-   Present options: **Merge locally** (solo work) / **Push + PR** (team work) / **Keep as-is** (WIP). Never offer discarding the work; act on it only when the user asks for it explicitly, and then require a typed "discard" confirmation before deleting the branch. In pipeline mode, skip the prompt and default to **Push + PR**.
+   Follow an already authorized branch-finish choice; otherwise present **Merge locally** / **Push + PR** / **Keep as-is**. Never infer destructive or external authority. In pipeline mode, return local work and verification to the parent with **Keep as-is**; publication belongs to the parent's final stage unless explicitly delegated here.
 
    For PRs, use this template:
    ```
@@ -322,7 +320,7 @@ Before creating PR, verify:
 - [ ] Code review closed -- reviewed, or skipped with the verbatim phrase and reason from Phase 3
 - [ ] Project-declared pre-push/review-ready gates from CLAUDE.md/AGENTS.md/CONTRIBUTING.md run and passing (Phase 4)
 - [ ] Figma designs match implementation (if applicable)
-- [ ] Before/after screenshots captured and uploaded (for UI changes)
+- [ ] Meaningful UI screenshots captured; any upload used an authorized destination
 - [ ] Commit messages follow conventional format
 - [ ] PR description includes Post-Deploy Monitoring & Validation section (or explicit no-impact rationale)
 - [ ] PR description includes summary, testing notes, and screenshots

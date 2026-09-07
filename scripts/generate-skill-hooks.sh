@@ -20,9 +20,18 @@ SKILLS_DIR="$PLUGIN_DIR/skills"
 force=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --force) force=true; shift ;;
-    -h|--help) printf 'Usage: %s [--force]\n' "${0##*/}"; exit 0 ;;
-    *) printf 'Unknown option: %s\n' "$1" >&2; exit 1 ;;
+    --force)
+      force=true
+      shift
+      ;;
+    -h | --help)
+      printf 'Usage: %s [--force]\n' "${0##*/}"
+      exit 0
+      ;;
+    *)
+      printf 'Unknown option: %s\n' "$1" >&2
+      exit 1
+      ;;
   esac
 done
 
@@ -38,52 +47,38 @@ fi
 
 declare -A TIER_MAP=(
   # Tier 1: Methodology
-  [ia-planning]=1
-  [ia-debugging]=1
-  [ia-code-review]=1
-  [ia-simplifying-code]=1
-  [ia-brainstorming]=1
-  [ia-verification-before-completion]=1
-  [ia-receiving-code-review]=1
-  [ia-writing-tests]=1
+  ["ia-planning"]=1
+  ["ia-debugging"]=1
+  ["ia-code-review"]=1
+  ["ia-simplifying-code"]=1
+  ["ia-brainstorming"]=1
+  ["ia-verification-before-completion"]=1
+  ["ia-receiving-code-review"]=1
+  ["ia-writing-tests"]=1
   # Tier 2: Domain/Language
-  [ia-php-laravel]=2
-  [ia-react-frontend]=2
-  [ia-nodejs-backend]=2
-  [ia-python-services]=2
-  [ia-rust-systems]=2
-  [ia-postgresql]=2
-  [ia-terraform]=2
-  [ia-linux-bash-scripting]=2
-  [ia-pinescript]=2
-  [ia-frontend-design]=2
-  [ia-tailwind-css]=2
-  [ia-agent-native-architecture]=2
+  ["ia-php-laravel"]=2
+  ["ia-react-frontend"]=2
+  ["ia-nodejs-backend"]=2
+  ["ia-python-services"]=2
+  ["ia-rust-systems"]=2
+  ["ia-postgresql"]=2
+  ["ia-terraform"]=2
+  ["ia-linux-bash-scripting"]=2
+  ["ia-pinescript"]=2
+  ["ia-frontend-design"]=2
+  ["ia-tailwind-css"]=2
+  ["ia-agent-native-architecture"]=2
   # Tier 3: Supporting/Workflow
-  [ia-writing]=3
-  [ia-md-docs]=3
-  [ia-refine-prompt]=3
-  [ia-meta-prompting]=3
-  [ia-reflect]=3
-  [ia-compound-docs]=3
-  [ia-document-review]=3
-  [ia-file-todos]=3
-  [ia-orchestrating-swarms]=3
-  [ia-git-worktree]=3
-)
-
-# --- Project-type constraints ---
-# Maps tier 2 domain skills to the project types they apply to.
-# Skills not listed pass unconditionally (cross-stack, methodology, workflow).
-# Types: php, js, python, rust, go, terraform
-declare -A PROJECT_TYPE_MAP=(
-  [ia-php-laravel]="php"
-  [ia-react-frontend]="js"
-  [ia-nodejs-backend]="js"
-  [ia-python-services]="python"
-  [ia-terraform]="terraform"
-  [ia-tailwind-css]="js"
-  [ia-frontend-design]="js"
+  ["ia-writing"]=3
+  ["ia-md-docs"]=3
+  ["ia-refine-prompt"]=3
+  ["ia-meta-prompting"]=3
+  ["ia-reflect"]=3
+  ["ia-compound-docs"]=3
+  ["ia-document-review"]=3
+  ["ia-file-todos"]=3
+  ["ia-orchestrating-swarms"]=3
+  ["ia-git-worktree"]=3
 )
 
 # Ensure hooks directory exists
@@ -104,7 +99,7 @@ HEADER
   printf '# Then hand-tune each new regex and merge into skill-patterns.sh.\n\n'
   printf 'declare -A SKILL_PATTERNS\n'
   printf 'declare -A SKILL_TIERS\n\n'
-} > "$OUTPUT"
+} >"$OUTPUT"
 
 count=0
 current_tier=0
@@ -120,14 +115,14 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   frontmatter=$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$skill_file")
 
   # Extract description field (may span multiple lines)
-  description=$(printf '%s\n' "$frontmatter" \
-    | awk '
+  description=$(printf '%s\n' "$frontmatter" |
+    awk '
       /^description:/ { sub(/^description:[[:space:]]*/, ""); sub(/^>-[[:space:]]*/, ""); printing=1; print; next }
       printing && /^[a-z]+:/ { printing=0; next }
       printing { sub(/^[[:space:]]+/, ""); print }
-    ' \
-    | tr '\n' ' ' \
-    | sed 's/[[:space:]]\+/ /g; s/[[:space:]]*$//')
+    ' |
+    tr '\n' ' ' |
+    sed 's/[[:space:]]\+/ /g; s/[[:space:]]*$//')
 
   if [[ -z "$description" ]]; then
     printf "  WARN: no description for %s, skipping\n" "$skill_name" >&2
@@ -143,9 +138,9 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   # Add tier section header if tier changed
   if [[ "$tier" != "$current_tier" ]]; then
     case "$tier" in
-      1) printf '\n# --- Tier 1: Methodology (process/approach skills) ---\n\n' >> "$OUTPUT" ;;
-      2) printf '\n# --- Tier 2: Domain/Language (language/framework-specific) ---\n\n' >> "$OUTPUT" ;;
-      3) printf '\n# --- Tier 3: Supporting/Workflow ---\n\n' >> "$OUTPUT" ;;
+      1) printf '\n# --- Tier 1: Methodology (process/approach skills) ---\n\n' >>"$OUTPUT" ;;
+      2) printf '\n# --- Tier 2: Domain/Language (language/framework-specific) ---\n\n' >>"$OUTPUT" ;;
+      3) printf '\n# --- Tier 3: Supporting/Workflow ---\n\n' >>"$OUTPUT" ;;
     esac
     current_tier="$tier"
   fi
@@ -155,27 +150,12 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     printf "# Triggers: %s\n" "${trigger_text:-$description}"
     printf 'SKILL_PATTERNS[%s]=%q\n' "$skill_name" "${trigger_text:-$description}"
     printf 'SKILL_TIERS[%s]=%s\n\n' "$skill_name" "$tier"
-  } >> "$OUTPUT"
+  } >>"$OUTPUT"
 
   count=$((count + 1))
 done
 
-# --- Project-type constraints section ---
-{
-  printf '\n# --- Project-type constraints (Tier 2 domain skills only) ---\n'
-  printf '# Skills listed here are suppressed when the detected project type does not match.\n'
-  printf '# Skills NOT listed pass unconditionally (tier 1 methodology, tier 3 workflow,\n'
-  printf '# and cross-stack domain skills like postgresql, linux-bash-scripting).\n'
-  printf 'declare -A SKILL_PROJECT_TYPES\n\n'
-  for skill_name in "${!PROJECT_TYPE_MAP[@]}"; do
-    # Only emit if the skill directory exists
-    if [[ -d "$SKILLS_DIR/$skill_name" ]]; then
-      printf 'SKILL_PROJECT_TYPES[%s]="%s"\n' "$skill_name" "${PROJECT_TYPE_MAP[$skill_name]}"
-    fi
-  done
-} >> "$OUTPUT"
-
-printf '\n# Total skills: %d\n' "$count" >> "$OUTPUT"
+printf '\n# Total skills: %d\n' "$count" >>"$OUTPUT"
 
 printf "Generated %d skill patterns to %s\n" "$count" "$OUTPUT"
 if [[ "$force" == true ]]; then

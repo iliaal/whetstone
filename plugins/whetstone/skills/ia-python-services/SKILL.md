@@ -11,139 +11,14 @@ paths: "**/*.py,**/pyproject.toml,**/ruff.toml,**/uv.lock"
 
 # Python Services & CLI
 
-## Modern Tooling
+## Working rules
 
-| Tool | Replaces | Purpose |
-|------|----------|---------|
-| **uv** | pip, virtualenv, pyenv, pipx | Package/dependency management |
-| **ruff** | flake8, black, isort | Linting + formatting |
-| **ty** | mypy, pyright | Type checking (Astral, faster) |
-
-- `uv init --package myproject` for distributable packages, `uv init` for apps
-- `uv add <pkg>`, `uv add --group dev <pkg>`, never edit pyproject.toml deps manually
-- `uv run <cmd>` instead of activating venvs -- auto-activates the venv without explicit activation
-- `uv add --upgrade <pkg>` to upgrade a single package without touching others
-- `uv tree --outdated` to preview what would be upgraded before committing
-- `uv.lock` goes in version control
-- uv treats an exactly-pinned (`==`) yanked transitive version as unsolvable; plain `pip` only warns and installs it. If a dependency hard-pins a yanked release (and bumping the leaf won't help because the pin is exact), `uv pip install` fails resolution where a pip-based script stays green. Drop the package from the requirements you feed uv when it's off your code path; fall back to `pip` only when the path genuinely needs it
-- A user-level `~/.config/uv/uv.toml` carrying `exclude-newer` is serialized into `uv.lock` as an `[options]` block, and a clean CI runner with no matching global policy then rejects the committed lock: `Ignoring existing lockfile due to removal of global exclude newer`, followed by `uv sync --locked` failing. Pinning CI to the same uv version does not fix it -- the difference is configuration, not resolver. Generate repository locks with `uv --no-config lock` and spell canonical commands `uv --no-config sync --locked` / `uv --no-config run …`; strip any inherited `[options]` `exclude-newer` from the committed lock and add a contract test that rejects those entries and pins the `--no-config` command shape, or a later local regeneration reintroduces the CI failure silently
-- Use `[dependency-groups]` (PEP 735) for dev/test/docs, not `[project.optional-dependencies]`
-- PEP 723 inline metadata for standalone scripts with deps
-- `ruff check --fix . && ruff format .` for lint+format in one pass
-
-**Standard project layout:**
-```
-src/mypackage/
-    __init__.py
-    main.py
-    services/
-    models/
-tests/
-    conftest.py
-    test_main.py
-pyproject.toml
-```
-
-See [cli-tools.md](./references/cli-tools.md) for Click patterns, argparse, and CLI project layout.
-
-## Parallelism
-
-| Workload | Approach |
-|----------|----------|
-| Many concurrent I/O calls | `asyncio` (gather, create_task) |
-| CPU-bound computation | `multiprocessing.Pool` or `concurrent.futures.ProcessPoolExecutor` |
-| Mixed I/O + CPU | `asyncio.to_thread()` to offload blocking work |
-| Simple scripts, few connections | Stay synchronous |
-
-### Sync vs Async Decision
-
-**Use async (asyncio) when:**
-- I/O-bound work has multiple concurrent operations (HTTP calls, database queries, file I/O happening in parallel)
-- WebSocket servers or long-lived connections require it
-- The framework requires it (FastAPI async endpoints, aiohttp)
-
-**Stay synchronous when:**
-- Work is CPU-bound (computation, data transformation) -- async adds nothing, use multiprocessing instead
-- Building simple scripts and CLI tools with sequential I/O
-- All I/O is sequential anyway (one DB query, process result, one API call)
-- The team lacks async debugging experience (asyncio stack traces are harder to read)
-
-**Rule of thumb:** if the code is not waiting on multiple I/O operations concurrently, sync is simpler and correct. Do not add async complexity for a single sequential pipeline.
-
-**Key rule:** Stay fully sync or fully async within a call path.
-
-**asyncio patterns:**
-- `asyncio.gather(*tasks)` for concurrent I/O -- use `return_exceptions=True` for partial failure tolerance
-- `asyncio.TaskGroup` (3.11+) for structured concurrency -- automatic cancellation of sibling tasks on failure; prefer over `gather` when all tasks must succeed
-- A bare `asyncio.create_task(...)` whose result is discarded can vanish mid-flight: the event loop holds only a weak reference, so an unreferenced task may be garbage-collected before it finishes, and any exception it raised is swallowed with at most a "Task exception was never retrieved" warning. Keep a strong reference (`_bg = set()`; `t = asyncio.create_task(c)`; `_bg.add(t)`; `t.add_done_callback(_bg.discard)`) or use `TaskGroup`, which holds its children until they finish
-- `asyncio.Semaphore(n)` to limit concurrency (rate limiting external APIs)
-- `asyncio.wait_for(coro, timeout=N)` for timeouts
-- `asyncio.Queue` for producer-consumer
-- `asyncio.Lock` when coroutines share mutable state
-- Never block the event loop: `asyncio.to_thread(sync_fn)` for sync libs, `aiohttp`/`httpx.AsyncClient` for HTTP
-- Handle `CancelledError` -- always re-raise after cleanup
-- Async generators (`async for`) for streaming/pagination
-
-**multiprocessing** for CPU-bound:
-```python
-from concurrent.futures import ProcessPoolExecutor
-with ProcessPoolExecutor(max_workers=4) as pool:
-    results = list(pool.map(cpu_task, items))
-```
-
-See [fastapi.md](./references/fastapi.md) for project structure, lifespan, config, DI, async DB, and repository pattern.
-
-## Background Jobs
-
-- Return job ID immediately, process async. Client polls `/jobs/{id}` for status
-- **Celery**: `@app.task(bind=True, max_retries=3, autoretry_for=(ConnectionError,))` -- exponential backoff: `raise self.retry(countdown=2**self.request.retries * 60)`
-- **Alternatives**: Dramatiq (modern Celery), RQ (simple Redis), cloud-native (SQS+Lambda, Cloud Tasks)
-- **Idempotency is mandatory** -- tasks may retry. Use idempotency keys for external calls and atomic upserts for writes (`ON CONFLICT DO UPDATE`, `INSERT ... ON DUPLICATE KEY UPDATE`). A read-then-write pair is not idempotent under concurrent retry: two workers both read "absent" and both insert. Uniqueness has to be enforced by a database constraint, not by the preceding read
-- Dead letter queue for permanently failed tasks after max retries
-- Task workflows: `chain(a.s(), b.s())` for sequential, `group(...)` for parallel, `chord(group, callback)` for fan-out/fan-in
-
-## Resilience
-
-**Retries with tenacity:**
-```python
-from tenacity import retry, stop_after_attempt, wait_exponential_jitter, retry_if_exception_type
-
-@retry(
-    retry=retry_if_exception_type((ConnectionError, TimeoutError)),
-    stop=stop_after_attempt(5) | stop_after_delay(60),
-    wait=wait_exponential_jitter(initial=1, max=30),
-    before_sleep=log_retry_attempt,
-)
-def call_api(url: str) -> dict: ...
-```
-
-- Retry only transient errors: network, 429/502/503/504. Never retry 4xx (except 429), auth errors, validation errors
-- Every network call needs a timeout
-- `@fail_safe(default=[])` decorator for non-critical paths -- return cached/default on failure. **Never on a path where the call is the security decision** (authz check, trust score, entitlement or license gate): there the default has to be deny, and a `default=[]` or `default=None` that a caller reads as "no restrictions" is a fail-open with a decorator on it. Any fail-open allowance scopes to transport failure alone -- `ConnectError`, `ConnectTimeout`. A response that arrived but cannot be trusted (4xx/5xx, malformed JSON, a body that fails schema validation, an unrecognized verdict string) stays denied, because the endpoint was reached and did not answer. Same for a "no record yet" state: reject by default, allow only through an explicit onboarding opt-in
-- `functools.lru_cache(maxsize=N)` for pure-function memoization; `functools.cache` (unbounded) for small domains
-- Stack decorators: `@traced @with_timeout(30) @retry(...)` -- separate infra from business logic
-
-**Connection pooling** is mandatory for production: reuse `httpx.AsyncClient()` across requests, configure SQLAlchemy `pool_size`/`max_overflow`, use `aiohttp.TCPConnector(limit=N)`.
-
-- **Switching to a shared pooled `requests.Session` newly exposes stale keep-alive failures.** Module-level `requests.get`/`requests.post` build a fresh `Session` and connection pool per call, so a dead or half-closed socket can never be served; a process-wide `Session` reuses keep-alive connections, and urllib3 does not liveness-probe one before reuse. When an LB or NAT has silently dropped an idle socket (an ALB's default idle timeout is 60s), the next reuse raises `ConnectionError` wrapping urllib3 `ProtocolError` / `http.client.RemoteDisconnected` -- and under `HTTPAdapter(max_retries=0)`, chosen to "keep behavior unchanged", it reaches the caller unretried. That claim is true of *response* semantics (status, timeouts, body) and false of *connection-failure* semantics. It bites hardest during traffic lulls, when the connection has been idle past the LB timeout
-- **`Retry(connect=1)` does not cover a stale keep-alive** -- wrong layer. urllib3 routes errors by class and a stale socket is a *read*/protocol error: `Retry._is_connection_error(ProtocolError('Connection aborted.', OSError()))` is `False` while `_is_read_error(...)` is `True`, so a connect budget never applies. Covering it needs `read >= 1`, but `Retry.DEFAULT_ALLOWED_METHODS` is `{GET, HEAD, PUT, DELETE, OPTIONS, TRACE}` -- POST and PATCH are excluded, and widening `allowed_methods` retries non-idempotent writes that may already have reached the server. There is no one-liner that safely covers everything: either scope the retry to idempotent verbs and let writes bubble, or accept the risk deliberately because an outer layer (a queue redelivery that re-runs the whole unit of work) self-heals it -- and then stop claiming the behavior is unchanged. Before prescribing any HTTP-retry config, name the exact exception class, map it through `_is_connection_error`/`_is_read_error`, and check `allowed_methods` against the verbs actually in use
-
-## Production Resilience
-
-- **Fail-fast config validation**: use a Pydantic `BaseSettings` model with `model_validator` to parse and validate all environment variables at startup. If invalid, crash before serving traffic. Never discover a missing secret on the first request that needs it.
-- **Health endpoints**: expose `/health` (shallow liveness -- returns 200 if the process responds) and `/ready` (deep readiness -- verifies database, Redis, and critical dependencies are reachable). Load balancers route traffic based on `/ready`; orchestrators restart based on `/health`.
-
-## Observability
-
-- **Define "working" before instrumenting**: write the questions an on-call engineer will ask when this breaks ("which dependency is slow?", "is it all callers or one?"), then add only the telemetry that answers them. Instrumentation with no question behind it is cost and noise.
-- **Pick the signal by the question it answers**: logs = "what happened in this one case?" (high-detail, sampled under load); metrics = "how often / how fast / how saturated?" (cheap aggregates, bounded cardinality); traces = "where did the time or error go across services?".
-- **structlog** for JSON structured logging. Configure once at startup with `JSONRenderer`, `TimeStamper`, `merge_contextvars`
-- **Correlation IDs** -- generate at ingress (`X-Correlation-ID` header), bind to `contextvars`, propagate to downstream calls
-- **Log levels**: DEBUG=diagnostics, INFO=operations, WARNING=anomalies handled, ERROR=failures needing attention. Never log expected behavior at ERROR
-- **Prometheus metrics** -- track latency (Histogram), traffic (Counter), errors (Counter), saturation (Gauge). Keep label cardinality bounded (no user IDs)
-- **OpenTelemetry** for distributed tracing across services -- start the SDK before importing the libraries it patches, or auto-instrumentation no-ops. Before trusting a signal, force an error and test traffic in staging and confirm the log/metric/trace lands; untested instrumentation fails silent
-- **Alert on symptoms, not causes**: page on user-visible symptoms (error-rate spike, latency SLO burn, readiness flapping), not on causes (CPU high, queue depth growing). A cause with no symptom is a dashboard, not a page.
-- **Never mutate `LogRecord` attributes from a `Formatter`.** A custom `logging.Formatter.format()` that rewrites `record.name` (or any record attribute) in place leaks to every other handler attached to the same logger and to pytest `caplog`. `Logger.callHandlers` passes the same `LogRecord` object to each handler — whichever formats first wins the mutation, and downstream handlers and test filters see the modified state. Tests filtering by full logger name (`if r.name == "src.services.foo"`) then silently miss; routing handlers doing `LOGGER_TO_MODEL.get(record.name)` fall through to defaults. Use a `logging.Filter` that adds a non-mutating attribute (`record.short_name`) and reference it in the format string as `%(short_name)s`, or override `formatMessage` instead of `format`. `try`/`finally` restore works for synchronous handler chains but is fragile under async handlers that interleave.
+- Validate external inputs and responses at boundaries; preserve exception causes.
+- Keep simple sequential work synchronous. Bound concurrent work, preserve cancellation, and keep task references.
+- Give network calls timeouts; retry only failures and operations whose semantics permit it.
+- Enforce job idempotency with atomic writes and database constraints.
+- Preserve published API behavior and shared migration history.
+- Match telemetry to an operational question and verify its output.
 
 ## Discipline
 
@@ -154,43 +29,6 @@ def call_api(url: str) -> dict: ...
 - Verify: see Verify section below -- pass all checks with zero warnings before declaring done
 - Coverage target: 80%+ (`uv run pytest --cov --cov-report=html`)
 
-## Testing Patterns
-
-- **pytest flags**: `--lf` (last failed), `-x` (stop on first failure), `-k "pattern"` (filter), `--pdb` (debugger on failure)
-- **Fixtures**: use `conftest.py` for shared fixtures. Scope wisely: `@pytest.fixture(scope="session")` for expensive setup (DB connections), `scope="function"` (default) for test isolation
-- **`tmp_path`**: built-in fixture for temp files -- no manual cleanup needed
-- **Parametrize with IDs**: `@pytest.mark.parametrize("input,expected", [...], ids=["empty", "single", "overflow"])` for readable test names
-- **Mock discipline**: always `autospec=True` on mocks to catch API drift. `assert_awaited_once()` for async mocks.
-- **Test markers**: register in `pyproject.toml` under `[tool.pytest.ini_options]` with `markers = ["slow", "integration"]`. Run fast tests with `-m "not slow"`.
-- **Protocol duck typing**: use `class Renderable(Protocol)` for structural typing at service boundaries -- enables testing with plain objects instead of mocks
-- **Context managers**: `@contextmanager` for connection/transaction lifecycle. Always implement `__exit__` cleanup.
-- **A package `__init__.py` that eager-imports a heavy stack defeats every in-test skip guard.** Under pytest's default `prepend` import mode, importing `pkg.test_foo` imports `pkg` first and runs its `__init__.py` before any line of the test module executes -- so `pytest.importorskip(...)` and a module-level `pytest.skip(allow_module_level=True)` are both dead code, and a `conftest.py` *inside* the package imports as `pkg.conftest` and fails identically. `collect_ignore`/`collect_ignore_glob` prune directory *recursion* and are **not** honored for paths named explicitly on the command line, so they cannot skip a broken file either. There is no clean in-test-file option once `__init__` is the failing layer: make the package `__init__` lazy (the real fix, but it touches production code), drop `__init__.py` from the test directory so a module-level guard can run, or scope `testpaths` so a bare `pytest` never collects it -- and document the limitation in the test docstring rather than shipping a guard that cannot fire.
-
-## Error Handling
-
-- Validate inputs at boundaries before expensive ops. Report all errors at once when possible
-- Use specific exceptions: `ValueError`, `TypeError`, `KeyError`, not bare `Exception`
-- `raise ServiceError("upload failed") from e` -- always chain to preserve debug trail
-- Convert external data to domain types (enums, Pydantic models) at system boundaries
-- Batch processing: `BatchResult(succeeded={}, failed={})` -- don't let one item abort the batch
-- Pydantic `BaseModel` with `field_validator` for complex input validation
-
-## Migrations
-
-- Separate schema and data migrations -- data backfills in their own migration file
-- Renames/removals use expand-contract: add new column → backfill → switch reads → drop old (see `ia-postgresql` skill for the full pattern)
-- Never edit a migration that has already run in a shared environment
-- Alembic: use `--autogenerate` as a starting point, always review generated SQL before committing
-- Test migrations against production-sized data -- a migration that takes 2ms on dev can lock a table for minutes in production
-
-## API Design
-
-- **Contract-first**: define Pydantic `BaseModel` request/response schemas and FastAPI `response_model` before writing endpoint logic. The schema is the contract -- implementation follows. Generate OpenAPI docs from these models automatically.
-- **Hyrum's Law awareness**: every observable response field, ordering, or timing becomes a dependency for callers. Use explicit `response_model` and `model_config = ConfigDict(extra="forbid")` to control exactly what's serialized -- never return raw dicts or ORM objects from endpoints.
-- **Addition over modification**: add new optional fields (`field: str | None = None`) rather than changing or removing existing ones. Removing a Pydantic field from a response model breaks callers silently. Deprecate first (`Field(deprecated=True)`), remove in a later version.
-- **Consistent error structure**: all exceptions should produce the same envelope: `{"error": {"code": "...", "message": "...", "details": ...}}`. Register `@app.exception_handler` for `RequestValidationError`, `HTTPException`, and application-specific exceptions to normalize into one format. Callers build error handling once.
-- **Boundary validation via Pydantic**: validate at the endpoint/handler level with Pydantic models and FastAPI's automatic request parsing. Internal services and repositories trust that input was validated at entry -- no redundant validation scattered through business logic.
-- **Third-party responses are untrusted data**: validate shape and content of external API responses before using them in logic, rendering, or decision-making. A compromised or misbehaving service can return unexpected types, malicious content, or missing fields. Parse through a Pydantic model before use.
 
 ## Verify
 
@@ -198,3 +36,16 @@ def call_api(url: str) -> dict: ...
 - `uv run ruff check .` passes with zero warnings
 - `uv run ty check .` passes with zero errors
 - Coverage target: 80%+ (`uv run pytest --cov`)
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For packaging, environment configuration, CLI setup, or pytest behavior: [tooling-and-tests.md](./references/tooling-and-tests.md).
+- For asyncio, background jobs, retries, pooling, timeouts, or health checks: [concurrency-and-resilience.md](./references/concurrency-and-resilience.md).
+- For APIs, validation, errors, migrations, logging, metrics, or traces: [service-boundaries.md](./references/service-boundaries.md).
+
+Existing specialized references, when the corresponding topic applies:
+
+- [cli-tools.md](./references/cli-tools.md).
+- [fastapi.md](./references/fastapi.md).

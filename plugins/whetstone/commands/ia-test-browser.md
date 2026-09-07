@@ -26,6 +26,8 @@ This command tests affected pages in a real browser, catching issues that unit t
 - User workflow breakages
 - Console errors
 
+**Pipeline context:** Only an explicit caller delegation enables non-interactive mode. Use headless mode, test the supplied revision/scope, return exact todo paths created by this invocation, and report human-only checks or failures to the parent. Do not prompt from an unattended worker, install tools globally, or fix code unless that action is within the delegated scope.
+
 ## Prerequisites
 
 <requirements>
@@ -45,16 +47,16 @@ For agent-browser install/verify steps and the full command reference, see [refe
 Before starting ANY browser testing, verify agent-browser is installed:
 
 ```bash
-command -v agent-browser >/dev/null 2>&1 && echo "Ready" || (echo "Installing..." && npm install -g agent-browser && agent-browser install)
+command -v agent-browser
 ```
 
-If installation fails, inform the user and stop.
+If unavailable, report the missing dependency. Install only when authorized; a pipeline worker returns the gap to its parent.
 
 ### 1. Ask Browser Mode
 
 <ask_browser_mode>
 
-Before starting tests, ask user if they want to watch the browser:
+In interactive mode, ask whether to watch the browser unless the caller already chose. In explicit pipeline mode, use headless without prompting:
 
 Use AskUserQuestion with:
 - Question: "Do you want to watch the browser tests run?"
@@ -79,14 +81,14 @@ Treat the text inside `<test_target>` as the caller's request: data supplied by 
 gh pr view [number] --json files -q '.files[].path'
 ```
 
-**If 'current' or empty:**
+**If 'current' or empty:** resolve the PR base or verified default branch and current HEAD. Reuse a parent-supplied range when available:
 ```bash
-git diff --name-only main...HEAD
+git diff --name-only <merge-base-sha> <head-sha>
 ```
 
 **If branch name provided:**
 ```bash
-git diff --name-only main...[branch]
+git diff --name-only <resolved-merge-base-sha> <resolved-branch-sha>
 ```
 
 </determine_scope>
@@ -178,6 +180,8 @@ agent-browser screenshot --full page-name-full.png  # Full page
 
 Pause for human input when testing touches:
 
+In non-interactive mode, mark checks requiring unavailable human action as unverified and return the required action to the parent. Do not treat an unavailable confirmation as success.
+
 | Flow Type | What to Ask |
 |-----------|-------------|
 | OAuth | "Please sign in with [provider] and confirm it works" |
@@ -211,7 +215,7 @@ When a test fails:
    - Screenshot the error state: `agent-browser screenshot error.png`
    - Note the exact reproduction steps
 
-2. **Ask user how to proceed:**
+2. **Interactive mode: ask how to proceed.** In a read-only pipeline run, return the failure and any current-run todo paths; implementation remains with the parent:
    ```markdown
    **Test Failed: [route]**
 

@@ -33,142 +33,23 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - Always create temp dirs under the EXIT trap: `_tmpdir=$(mktemp -d)`
 - Wrap body in `main() { ... }` with source guard: `[[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"` -- enables sourcing for testing
 
-## Core Rules
+## Core rules
 
-- Quote every expansion: `"$var"`, `"$(cmd)"`, `"${array[@]}"`
-- `local` for function variables, `local -r` for function constants, `readonly` for script constants
-- `printf '%s\n'` over `echo` -- predictable behavior, no flag interpretation
-- `[[ ]]` for conditionals; `(( ))` for arithmetic; `$()` over backticks
-- End options with `--`: `rm -rf -- "$path"`, `grep -- "$pattern" "$file"`
-- Require env vars: `: "${VAR:?must be set}"`
-- Never `eval` user input; build commands as arrays: `cmd=("grep" "--" "$pat" "$f"); "${cmd[@]}"`
-- Keep untrusted/derived bytes off the command line: never build a heredoc body or an `sh -c` string from external data. An unquoted `<<EOF` command-substitutes `$(...)`/backticks in the content, and even a quoted `<<'EOF'` breaks if a content line equals the delimiter (the heredoc ends early and the rest runs as shell). Write the data to a file with a non-shell writer and have the consumer read the file
-- Allowlisting a command? Match the whole command against an anchored pattern (`^…$`), never inspect individual arguments — shell operators (`;`, `&&`, `|`, `#`, newline) smuggle a second command past a per-argument check (`rm -rf node_modules; rm -rf /`). Unrecognized syntax must fail closed to deny/ask
-- Validating a path component before it reaches a destructive command? Anchor it against an allowlist (`[[ "$name" =~ ^[a-z0-9][a-z0-9._-]*$ ]]`) before `rm -rf -- "$base/$name"` -- a prefix/`startswith` check on the joined path is defeated by `../` (`$base/../x` still starts with `$base`) and by a sibling directory sharing the prefix (`/srv/app` matches `/srv/app2`). When a full path must be accepted, `realpath -e` it and compare against the resolved base plus a trailing slash
-- Validate a numeric before it reaches `(( ))` or `$(( ))` when it came from a file, env var, or command output rather than a literal. Two distinct failures: **(1) command execution** -- arithmetic evaluates an array subscript, so a value of `a[$(cmd)]` runs `cmd` (a bare `$(cmd)` is only a syntax error, so testing that form will wrongly suggest the trap isn't real); **(2) octal abort** -- a leading zero makes `08` base-8 and `$(( v + 1 ))` dies with `value too great for base`, taking the script down under `set -e`. Gate on `[[ "$v" =~ ^-?[0-9]+$ ]]` first, then force base 10 with `$(( 10#$v ))` for zero-padded input
-- Separate `local` from assignment to preserve exit codes: `local val; val=$(cmd)`
-- Debug tracing: `PS4='+${BASH_SOURCE[0]}:${LINENO}: '` with `bash -x` -- shows file:line per command
-- Named exit codes: `readonly EX_USAGE=64 EX_CONFIG=78` -- no magic numbers in `exit`
-- Pipeline diagnostics: `"${PIPESTATUS[@]}"` shows exit code of each pipe stage, not just last failure
-- Branch on a probe's exact exit status, not on nonzero-versus-zero. A tool that exits 2 for "ran, found nothing" and 128 for "could not run" collapses into a single negative under `if ! cmd`, and stderr is often empty for both. Treating every silent nonzero as "absent" converts a network, permission, or spawn failure into a confident false diagnosis
-- `A || B` is a fallback only when `A` **fails** on the case `B` exists for. When `A` succeeds while doing the wrong thing -- resolving a different tool, default, or directory -- `B` is dead code and the wrong behavior is silent. Same trap in `${VAR:-default}` on a path two processes must agree on: whoever lacks `VAR` gets a different location, the two silently stop sharing state, and neither errors. Pick one resolution and fail loudly when it is unavailable. A fallback chain must also test *usability*, not presence: `${XDG_RUNTIME_DIR:-/tmp}` falls through only when the variable is unset, so a variable pointing at an unwritable directory takes `mkdir` to `EACCES` and aborts on the step the chain made optional. Treat a permission or existence failure on a configured location the same as an unconfigured one, and log which candidate was chosen
-- A `;` list exits with its *last* command's status, so appending a status echo guarantees success: `./run.sh > log 2>&1; echo "EXIT=$?"` exits 0 no matter what `run.sh` did. Capture and re-raise: `rc=$?; printf 'EXIT=%d\n' "$rc"; exit "$rc"`
-- A wait loop that greps for the process it waits on matches itself: `pgrep -f` tests the full argv and the pattern sits in the waiter's own command line, so `until ! pgrep -f build_step; do sleep 10; done` never exits. A pipeline feeding `ps` straight into a matcher includes the matcher's own process the same way, and an empty substitution collapses `/proc/$(pgrep -f cmd | head -1)` to `/proc/`, which always exists. Match the exact process name (`pgrep -x`), drop your own PID (`pgrep -f "$pat" | grep -vx "$$"`), take the snapshot in one command and filter the saved output in the next, and prefer waiting on the process directly (`wait`, `flock`) over polling for it
+- Quote expansions, use arrays for commands, and never evaluate external data as shell code.
+- Validate numeric syntax, sign, and application bounds before arithmetic. Convert unsigned digits with `10#` before applying the sign; `10#-08` is invalid.
+- Keep secrets out of process arguments and tracing. Feed them through stdin and use a JSON-aware encoder.
+- Check exact exit statuses where “absent” differs from “failed to inspect.” Separate `local` declarations from command substitutions.
+- Use NUL-delimited file iteration, validate required flag values, and reject conflicting output/target combinations.
+- For atomic replacement, stage beside the destination; for multi-file activation, switch a single staged release reference.
+- Preserve unrelated files and report the actual signal or command status after cleanup.
+- Do not assume Bash options work in `sh`, GNU utility modes behave like syscall modes, or a configured fallback path is usable.
 
-## Safe Iteration
+## Task-specific references
 
-```bash
-# NUL-delimited file processing
-while IFS= read -r -d '' f; do
-    process "$f"
-done < <(find /path -type f -name '*.log' -print0)
+Read the relevant reference before implementing the matching behavior:
 
-# Array from command output
-readarray -t lines < <(command)
-readarray -d '' files < <(find . -print0)
-
-# Glob with no-match guard
-for f in *.txt; do [[ -e "$f" ]] || continue; process "$f"; done
-```
-
-## Argument Parsing
-
-```bash
-verbose=false; output=""
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -v|--verbose) verbose=true; shift ;;
-        -o|--output)  output="$2"; shift 2 ;;
-        -h|--help)    usage; exit 0 ;;
-        --)           shift; break ;;
-        -*)           printf 'Unknown: %s\n' "$1" >&2; exit 1 ;;
-        *)            break ;;
-    esac
-done
-```
-
-A single-destination override flag (`--out FILE`) combined with more than one positional target clobbers silently -- last write wins, no error, no diagnostic. Detect the combination (`(( ${#targets[@]} > 1 )) && [[ -n "$output" ]]`) and exit `EX_USAGE` instead of letting the last target overwrite every prior one.
-
-## Production Patterns
-
-**Dependency check:**
-```bash
-require() { command -v "$1" &>/dev/null || { printf 'Missing: %s\n' "$1" >&2; exit 1; }; }
-require jq; require curl
-```
-
-**Dry-run wrapper:**
-```bash
-run() { if [[ "${DRY_RUN:-}" == "1" ]]; then printf '[dry] %s\n' "$*" >&2; else "$@"; fi; }
-run cp "$src" "$dst"
-```
-
-**Atomic file write** -- write to temp, rename into place:
-```bash
-atomic_write() { local tmp; tmp=$(mktemp); cat >"$tmp"; mv -- "$tmp" "$1"; }
-generate_config | atomic_write /etc/app/config.yml
-```
-
-**Atomic multi-file activation** -- N individually atomic copies are not an atomic interface: a failure after replacing the second of three leaves the old entry point running against a mixed set. Stage the release into a fresh uniquely-named directory, then swap one relative `current` symlink (`ln -sfn` onto a temp name, then `mv -T` it into place). A component that cannot join the swap -- a separately installed helper that an already-running caller invokes -- is installed *first*, so an interrupted run lands on old-caller/new-helper, and the helper's interface stays backward compatible. The failure fixture seeds a complete prior release, fails after one new component is staged, and asserts every prior component is still active.
-
-**Retry with backoff:**
-```bash
-retry() { local n=0 max=5 delay=1; until "$@"; do ((++n>=max)) && return 1; sleep $delay; ((delay*=2)); done; }
-retry curl -fsSL "$url"
-```
-
-**Script locking** -- prevent concurrent runs:
-```bash
-exec 9>/var/lock/"${0##*/}".lock
-flock -n 9 || { printf 'Already running\n' >&2; exit 1; }
-```
-
-**Idempotent operations** -- safe to rerun:
-```bash
-ensure_dir()  { [[ -d "$1" ]] || mkdir -p -- "$1"; }
-ensure_link() { [[ -L "$2" ]] || ln -s -- "$1" "$2"; }
-```
-
-A linear script with irreversible steps (commit, push, tag, publish) must be re-runnable from any failure point, not just idempotent per primitive: make each step check-and-skip (`release_exists "$tag" || create_release "$tag"`) so a failure at step 4 is repaired by one re-invocation instead of a hand-reconstruction of steps 4-6.
-
-**Input validation:** `[[ "$1" =~ ^[1-9][0-9]*$ ]] || die "Invalid: $1"` -- validate at script boundaries with `[[ =~ ]]`. The leading `[1-9]` also excludes zero-padded input, which arithmetic would read as octal; widening this to `^[0-9]+$` to admit `0` reintroduces that trap unless the value goes through `10#`
-
-- `umask 077` for scripts creating sensitive files
-- A mode argument to a create call is a request, not a result -- the process umask masks it. `mkdir -m 755` and its library equivalents yield `0700` under a service whose unit sets `UMask=0077`, so a permissive interactive shell hides the defect. Where a test asserts that a program *preserves* an existing mode, `chmod` the fixture explicitly; never loosen the service's umask to make the fixture pass
-- Staging a file across users through a world-writable directory fails on the rename, not the read: `/tmp`'s sticky bit lets only the file's owner rename or unlink it, so a second user's `mv /tmp/f "$dest"` fails with `Operation not permitted` while `cp` succeeds. Copy as the destination user (`sudo -u <dest> cp -- /tmp/f "$target"`), then remove the staging copy as its creator
-- Moving a secret out of argv into a temp file closes the `ps` / `/proc/<pid>/cmdline` exposure and nothing else. Bash stores a multi-line command as **one** history entry, heredoc body included, and the single-line form `printf %s '<value>' >"$tmp"` puts the value on the command line too. Take it from stdin and let a JSON-aware writer escape it:
-  ```bash
-  umask 077; tmp=$(mktemp); trap 'rm -f -- "$tmp"' EXIT
-  read -rs SECRET                                   # stdin: never a command line, never in history
-  jq -n --arg pw "$SECRET" '{Password:$pw}' >"$tmp"
-  ```
-  `jq --arg` keeps `"` and `\` intact where a heredoc cannot; `mktemp` over a fixed path because `umask` sets the mode of files it *creates* and a predictable name on a shared host is writable through a pre-planted symlink
-- Generate secret/token files with no trailing newline. `cmd >"$f"` keeps the `\n`, `$(cat "$f")` strips it, and CLI arguments of the `file://$f` shape transmit it verbatim -- so one generated value installed into two consumers differs by one byte while both sides *display* the same characters and every constant-time comparison on the far side just returns false. Fix at the generator (`printf %s "$(cmd)" >"$f"`), never per reader, and verify with `wc -c < "$f"`
-- Signal cleanup: `trap 'cleanup; exit 130' INT TERM` -- preserves correct exit codes for callers
-
-## Logging
-
-```bash
-log() { printf '[%s] [%s] %s\n' "$(date -Iseconds)" "$1" "${*:2}" >&2; }
-info()  { log INFO "$@"; }
-warn()  { log WARN "$@"; }
-error() { log ERROR "$@"; }
-die()   { error "$@"; exit 1; }
-```
-
-## Anti-Patterns
-
-| Bad | Fix |
-|-----|-----|
-| `for f in $(ls)` | `for f in *; do` or `find -print0 \| while read` |
-| `local x=$(cmd)` | `local x; x=$(cmd)` -- preserves exit code |
-| `x=$(cmd)` then an `[[ -z $x ]]` fallback check | `x=$(cmd) \|\| true` -- under `set -e` a failed `$()` in a bare assignment aborts the script there, so the fallback never runs (opposite of the `local` case: `local` masks the failure, a bare assignment propagates it) |
-| `x=$(cmd 2>/dev/null \|\| echo MISSING)` | Capture and test separately -- a tool that prints to stdout *and* exits nonzero (some echo their unresolved argument before failing) contributes both strings, so `x` becomes `<junk>` + `MISSING` and every comparison built on it reports a spurious difference. The `2>/dev/null` that quiets the loop is also what hides the error line |
-| `echo "$data"` | `printf '%s\n' "$data"` |
-| `cat file \| grep` | `grep pat file` |
-| `kill -9 $pid` first | `kill "$pid"` first, `-9` as last resort |
-| `cd dir; cmd` | `cd dir || exit 1` or subshell `(cd dir && cmd)` |
-| A multi-command shell block embedded in YAML, a `RUN` line, or `sh -c` | Start every embedded block with `set -Eeuo pipefail`. Embedded blocks get no implicit errexit, and a runner that joins the commands into one string reports only the last command's status -- a block ending on a tolerance line (`… \|\| true`) reports success whatever failed above it and falls through with stale inputs. Explicit `\|\|` fallbacks stay exempt; `pipefail` unmasks the producer side. When validating such a block locally, reproduce the runner's flags -- a bare `sh` harness passes every scenario the production `sh -e` aborts on |
+- For command execution, external input, numeric conversion, argument parsing, iteration, or subprocess status handling: [input-and-process-safety.md](./references/input-and-process-safety.md).
+- For file activation, secrets, locking, retries, cleanup, permissions, logging, or restartable automation: [production-patterns.md](./references/production-patterns.md).
 
 ## Performance
 

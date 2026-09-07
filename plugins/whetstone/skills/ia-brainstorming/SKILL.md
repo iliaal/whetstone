@@ -10,226 +10,24 @@ description: >-
 
 # Brainstorming
 
-Clarify **WHAT** to build before **HOW** to build it.
+Clarify what to build before planning how to implement it.
 
-## Hard Gate
+## Scope and interaction
 
-**No implementation until the design is approved.** Brainstorming produces a design document, not code. Do not invoke implementation skills, write production code, or create files outside `docs/brainstorms/` until the user explicitly approves the design and moves to planning.
+Produce exploration and a design, not implementation. Obtain approval before interactive handoff. Enable headless mode only when the caller explicitly delegates non-interactive execution and its decision scope; `disable-model-invocation` is selection metadata, not approval. Replace headless confirmations with stated conservative assumptions. Return material decisions without a safe authorized default unresolved. Never label inferred choices user-approved or infer implementation, commit, or publication authority from this skill.
 
-## Core Process
+Use the active question mechanism for material questions: AskUserQuestion in Claude Code (load via ToolSearch `select:AskUserQuestion` when needed), request_user_input in Codex where supported, otherwise chat. Return missing decisions to the parent from an unattended worker.
 
-### Phase 0: Assess and Ground
+## Process
 
-Before diving into questions, do two things:
+1. **Assess and ground.** For an existing project, read relevant code, documentation, constraints, and recent commits before questions. Surface contradictions between the request and observed behavior. Skip repository research for abstract topics. Brainstorm ambiguous goals, competing interpretations, unresolved trade-offs, uncertain needs, solution-framed requests, or multiple independent subsystems. If requirements are clear, suggest planning or implementation without forcing dialogue.
+2. **Right-size and decompose.** A brainstorm resolved in three messages may need only a summary; sustained architectural work needs a durable design. For multiple independent subsystems, identify boundaries and dependencies, choose build order, then give each sub-project its own design → plan → implementation cycle. Start with the first sub-project.
+3. **Understand and compare.** When dialogue or approach selection is needed, read [interview-and-approaches.md](./references/interview-and-approaches.md). Match the user's vocabulary. Normally ask one question across dimensions, or two to three within one dimension; for a substantial initial dump (>200 words), use the reference's bounded batch. Explore purpose, users, constraints, success, edge cases, patterns, and non-goals. Apply [deep-interview.md](./references/deep-interview.md) when assumptions, evidence, unfamiliar domains, or combined answers need probing; its integration check applies before interview exit. Stop questioning when clear or told to proceed. Summarize in three to five bullets and confirm in interactive mode.
+4. **Choose an approach.** Compare two to three concrete alternatives with descriptions, pros, cons, and best-use conditions. Lead with the recommendation, reference existing patterns, and expose trade-offs. If none is accepted after two rounds, ask for the preferred direction. For a wide design space, use two to three lenses from the approach reference. State the chosen approach's explicit Not Doing list and a validation method for every key assumption.
+5. **Confirm interpreted scope.** Before writing after substantive dialogue, read [scope-synthesis.md](./references/scope-synthesis.md). Separate stated requirements, inferred assumptions, and exclusions internally; present only the reference's concise scoping synthesis. Lightweight work without blocking questions uses announce-mode; Standard/Deep work or any blocking dialogue requires interactive confirmation. Re-present revisions and await confirmation. In headless mode preserve sources and unresolved assumptions without prompts. Clear requirements that skipped dialogue need no synthesis checkpoint.
+6. **Capture and self-review.** For a durable artifact, read [design-and-handoff.md](./references/design-and-handoff.md). Save `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` with date/topic frontmatter, What We're Building, Why This Approach, Key Decisions and rationale, Open Questions, and Next Steps. Collapse interview history in a details block. Describe each component's purpose, usage, dependencies, and testable boundary. Commit only within caller authority.
+7. **Handoff.** Preserve settled decisions and their rationale rather than repeatedly challenging them; a cold directive gets one approach challenge. Neither label suppresses concrete defect or infeasibility evidence. Require consistent terminology, concrete criteria, scope traceability, unambiguous decisions, explicit non-goals, assumption validation, and a named source for every produced value. Return failures to approach selection or drafting. Present the design for interactive approval; return caller-delegated decisions and unresolved assumptions in headless mode.
 
-**Ground in the codebase (when applicable).** If the brainstorm relates to existing code, read the relevant modules, patterns, and constraints before generating options. This prevents suggesting approaches that conflict with the actual architecture. Skip for purely abstract brainstorms (tech choices, product direction) where no codebase context applies.
+## Completion
 
-**Right-size the artifact.** Match ceremony to problem size. If the brainstorm resolves in 3 messages, don't force a formal design doc -- a summary comment is enough. If it spans multiple sessions and touches architecture, write the full Phase 3 doc. No ceremony tax.
-
-**Assess whether brainstorming is needed.** Brainstorm when any of these fire: vague terms ("make it better", "add something like"), multiple reasonable interpretations, undiscussed trade-offs, user uncertainty, solution-framing instead of problem-framing ("build a dashboard"), or request spanning multiple independent subsystems (decompose first — see Scope Decomposition below). Otherwise, requirements are clear — suggest: "Your requirements seem clear. Consider proceeding directly to planning or implementation."
-
-### Scope Decomposition Gate
-
-If the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs decomposition first.
-
-1. Identify the independent pieces and how they relate
-2. Determine build order (dependencies, shared infrastructure first)
-3. Brainstorm the first sub-project through the normal Phase 1-3 flow
-4. Each sub-project gets its own spec -> plan -> implementation cycle
-
-### Phase 1: Understand the Idea
-
-**User context calibration (before diving into the idea):**
-
-Read signals from the user's first message to calibrate communication register:
-- **Vocabulary**: Are they using technical terms (API, schema, migration) or describing experiences (it's slow, it breaks when...)?
-- **Framing**: Are they describing a solution ("build a dashboard") or a problem ("I can't see what's happening")?
-- **References**: Are they pointing to code, files, and patterns, or to analogies and comparisons ("something like Notion")?
-
-Adjust question style accordingly. Technical users get architecture-level probing. Non-technical users get experience-level probing. Don't ask about this calibration -- just do it. If signals are ambiguous, default to the vocabulary the user is already using.
-
-**Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality. When the user's wording conflicts with what the code verifiably does ("the retry queue" when nothing retries; a table or endpoint named that doesn't exist), surface the conflict before treating the wording as settled -- silently adopting either side buries a requirements error.
-
-Ask questions **one at a time** by default. When probing a single dimension (e.g., data model, auth flow), clustering 2-3 related questions together is acceptable.
-
-**Info-dump gate (when user offers rich context up-front):** if the user's first message is substantial (>200 words, or dumps requirements in stream-of-consciousness), resist the urge to ask questions one-at-a-time. Instead, respond with 5-10 **numbered clarifying questions** the user can answer in shorthand (`1: yes, 2: channel #ops, 3: no because backwards compat`). Pick questions that remove ambiguity, not questions that show you read the dump. Exit this batched mode when the user's answers show they can be asked about edge cases without basics being explained back to them.
-
-Example after a spec dump:
-
-```
-Before I propose approaches, quick clarifications:
-
-1. Auth — SSO (which provider?) or username/password?
-2. Sync or async for the webhook delivery?
-3. Which of the three integrations is P0?
-4. "Fast enough" in the spec — what's the actual number?
-
-Answer whichever you know; leave blanks for the rest.
-```
-
-**Question Techniques:**
-
-1. **Prefer multiple choice when natural options exist.** Good: "Notification: (a) email, (b) in-app, (c) both?" Avoid: "How should users be notified?"
-2. **Start broad, then narrow.** Core purpose → users → constraints.
-3. **Validate assumptions and probe success early.** "I'm assuming users are logged in — correct?" / "How will you know this is working?"
-
-**Key Topics to Explore:**
-
-| Topic | Example Questions |
-|-------|-------------------|
-| Purpose | What problem does this solve? What's the motivation? |
-| Users | Who uses this? What's their context? |
-| Constraints | Any technical limitations? Timeline? Dependencies? |
-| Success | How will you measure success? What's the happy path? |
-| Edge Cases | What shouldn't happen? Any error states to consider? |
-| Existing Patterns | Are there similar features in the codebase to follow? |
-| Non-goals | What is explicitly NOT in scope? |
-
-See [deep-interview.md](./references/deep-interview.md) for deep interview techniques, including **rigor probes** (evidence/specificity/counterfactual/attachment as open-ended forced production, not menus), the **blindspot pass** for domains the user can't evaluate, and the **integration check** that fires before Phase 1 exit when combining stated answers + agent defaults produces an unsurfaced downstream effect.
-
-**Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets and confirm with the user.
-
-### Phase 2: Explore Approaches
-
-After understanding the idea, propose 2-3 concrete approaches.
-
-**Structure for Each Approach:**
-
-```markdown
-### Approach A: [Name]
-
-[2-3 sentence description]
-
-**Pros:**
-- [Benefit 1]
-- [Benefit 2]
-
-**Cons:**
-- [Drawback 1]
-- [Drawback 2]
-
-**Best when:** [Circumstances where this approach shines]
-```
-
-**Guidelines:**
-- Lead with a recommendation and explain why
-- Be honest about trade-offs
-- Consider YAGNI--simpler is usually better
-- Reference codebase patterns when relevant
-- If no approach is accepted after 2 rounds, ask the user to describe their preferred direction directly
-
-**Ideation lenses** (use 2-3 to stress-test approaches when the design space is wide):
-- **Inversion**: What if we solved the opposite problem?
-- **Constraint removal**: What would we build if [biggest constraint] didn't exist?
-- **Simplification**: What's the version that ships in a day?
-- **10x version**: What if this needed to handle 10x the scale?
-- **Expert lens**: How would [domain expert] approach this?
-
-**"Not Doing" list:** Include an explicit list of what the chosen approach will NOT do. Focus is about saying no to good ideas. Make the trade-offs visible so they're a deliberate choice, not an oversight.
-
-**Assumptions with validation:** For each key assumption in the chosen approach, state how to test it. Not just "we assume X" but "we assume X -- we'll know by [validation method]."
-
-### Phase 2.5: Pre-Write Scope Synthesis
-
-Surface the scope interpretation so the user can correct it before Phase 3 writes the design doc. Phase 2.5 catches scope misalignment before the doc is written; Phase 3b catches drafting issues after.
-
-**Two-stage shape: internal draft, then chat-time scoping synthesis.** Compose in two stages. Stage 1 is an internal three-bucket thinking pass (Stated / Inferred / Out of scope) for comprehensive scope analysis. Stage 2 is what the user sees — shaped like what two product collaborators would confirm before writing a PRD. The internal draft never reaches the user verbatim; it routes into the Phase 3 doc body.
-
-**Stage 1 — internal three-bucket draft (thinking, not output):**
-- **Stated** — what the user said directly. Explicit user-language anchors.
-- **Inferred** — gaps the agent filled with assumptions. Most actionable bucket; bets the user can correct.
-- **Out of scope** — deliberately excluded items.
-
-Use this as a thinking step. Do not paste it into chat.
-
-**Stage 2 — user-facing scoping synthesis.** Up to four named sections, each render-conditional. Empty sections are omitted, not padded:
-
-1. **What we're building** (always present) — 1-3 sentences. The shape that emerged from dialogue, forward-looking, plain words. Not a transcript of "you said X".
-2. **Key trade-offs** (conditional) — 1-3 bullets, each with a brief why. Render only when real trade-offs were made.
-3. **What's not in scope** (conditional) — 1-3 bullets, or fold into a sentence. Render only when deferred items would surprise a downstream reader if absent.
-4. **Call-outs** (conditional) — 0-3 bullets. Residual forks the dialogue didn't resolve: post-dialogue consequences, silent agent inferences, or — in pre-loaded contexts — scope bets the user is seeing for the first time. Not "questions the agent could have asked during Phase 1 but didn't" — if a call-out reads like a missed dialogue question, Phase 1's integration check failed; flag the gap.
-
-Close with: *"Confirm and I'll write the design doc next. Or tell me what to change."*
-
-**Path A vs Path B gate.** Routing depends on TWO signals: (1) did any *blocking* question fire before Phase 2.5? AND (2) what tier did Phase 0 classify? Blocking questions = scope disambiguation, dialogue probes, approach selection menus. Internal classification and pressure-tests do not count.
-
-- **Path A** — Lightweight tier AND no blocking questions fired → announce-mode. Emit "What we're building" prose only (no other sections, no confirmation question), then proceed to Phase 3 doc-write in the same turn. Lightweight Path A docs are short; post-hoc revision is cheap.
-- **Path B** — Standard/Deep tier OR any blocking question fired → full synthesis with confirmation gate. Two scenarios fire Path B: the user invested answer-time in dialogue, or pre-loaded substantive scope content. Either way, the substance earns a real checkpoint. The tier guard catches pre-loaded Deep brainstorms that would otherwise shortcut via the no-questions branch.
-
-**Keep tests per section.** Each conditional section has its own keep test; failing items dissolve into the internal draft only.
-- **Trade-offs**: would the user be surprised if I didn't surface this acknowledgment? Mechanical or inevitable choices fail.
-- **Deferred**: is a reasonable downstream reader likely to ask "why isn't X here?" Mechanical excludes fail.
-- **Call-outs**: two-step test. (1) Affirmability: would the user need to read code to evaluate this? If yes, it's doc-body content — cut. (2) Keep only if it's a real scope fork, non-obvious inclusion/exclusion, cheap-now-expensive-later correction, or non-obvious consequence of combined multi-turn answers. (3) Phase 1 boundary: if the call-out depends only on Phase 1 facts (no Phase 2 approach, no later-surfaced default), Phase 1's integration check failed — cut and revisit Phase 1. Call-outs catch what Phase 1 *couldn't* surface, not what it *should have*.
-
-Cut re-statements of Q&A turns, re-statements of the picked Phase 2 approach, mechanical items, and implementation choices that settle during planning.
-
-**Bullet budget across sections 2-4 combined.** Heuristic, not law — the real discipline is each section's keep test:
-
-| Tier | Typical total | Hard ceiling |
-|---|---|---|
-| Lightweight | 0-1 | 2 |
-| Standard | 2-4 | 5 |
-| Deep | 3-7 | 9 |
-
-Above the ceiling means the synthesis is mis-shapen — re-cut at a higher level of abstraction, do not raise the cap.
-
-**Detail level: conversational, not documentary.** 1 line ideally, 2 max. Bullets that need semicolons stringing clauses or an internal list are two decisions sharing a bullet — split or drop.
-
-**Re-present after revision; write only on confirm.** If the user revises any bullet (even trivially), integrate the change, re-present, and wait for explicit confirmation. A revision is not a confirmation.
-
-**Headless mode** (`/ia-lfg` or any `disable-model-invocation` context): compose the synthesis but skip the confirmation step. Route internal-draft Inferred items to a `## Assumptions` section in the Phase 3 doc — explicitly labeled as un-validated bets — instead of into Key Decisions. Stated routes to Requirements; Out-of-scope routes to Non-Goals. (Umbrella term: non-interactive context. Also called "Spawned-session behavior" in ia-orchestrating-swarms and "Headless Mode" in ia-receiving-code-review; same rule: suppress blocking prompts when no user is present.)
-
-Skip Phase 2.5 entirely when Phase 0.2 detected requirements were already clear and the flow proceeded straight to summary without a Phase 1 dialogue. Path A handles every other Lightweight case.
-
-### Phase 3: Capture the Design
-
-Summarize key decisions in a structured format. For each major component, verify isolation and clarity: it must answer "what does it do, how do you use it, what does it depend on?" and be independently understandable and testable. If working in an existing codebase, note which existing patterns to follow and where targeted improvements fit naturally.
-
-**Design Doc:** Save to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`. Required sections: What We're Building, Why This Approach, Key Decisions (with rationale), Open Questions, Next Steps. Collapse the Q&A interview log in a `<details>` block. Include YAML frontmatter with `date` and `topic`. Commit to git -- design decisions are project history.
-
-**Settled vs. directive — don't re-litigate.** A decision the user made with the alternative and its trade-off in view is **settled**: record it in Key Decisions with its rationale and carry it forward — do not re-ask it in Phase 3b, at planning, or during work. A cold **directive** (a choice asserted without anyone weighing it — "build it with X") earns exactly **one** in-pipeline challenge (one pass of the Phase 2 ideation lenses against that specific choice), then it too is recorded and not re-challenged at every downstream stage. A settled label never suppresses defect evidence — a real bug or infeasibility found *inside* a settled approach keeps full severity and is surfaced.
-
-### Phase 3b: Spec Self-Review
-
-Run this checklist before presenting the design doc. Any failure returns to Phase 2 or Phase 3, not Phase 4.
-
-- **Placeholder scan**: no TBD, "figure out later", "appropriate error handling", bracketed gaps, or tasks without concrete criteria.
-- **Internal consistency**: names, types, and verbs match across sections (no `createOrder()` in one place and `placeOrder()` in another).
-- **Scope containment**: every decision traces back to a stated goal; otherwise cut or surface as explicit scope expansion.
-- **Ambiguity sweep**: each Key Decision survives "could a reasonable implementer interpret this two ways?"
-- **Assumption validation**: every assumption names its validation method ("we assume X — we'll confirm by Y").
-- **Value sourcing**: enumerate every value the work must produce, compute, or display, and confirm the spec names each one's source (an input param, a stored field, a derivation from a named value, or a prior decision). A produced value with no named source is an owed design decision — surface it, don't invent it. Judge by positive enumeration, not introspection: "show the user's local day" that never says where the timezone comes from passes every other check yet hides an undecided source.
-- **Non-goals present**: the explicit "Not Doing" list exists and is specific.
-
-Silent pass is valid. Clean draft → move to Phase 4.
-
-### Phase 4: Review and Handoff
-
-Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `/ia-brainstorm`, the command handles spec review dispatch and next-step orchestration.
-
-**Headless mode** (invoked via `/ia-lfg` or any `disable-model-invocation` context): skip the user approval step at Phase 4 — same carve-out as Phase 2.5. The doc-write completes; the artifact is the audit surface for downstream review (`/ia-plan`, PR review, the `ia-document-review` skill), not chat confirmation.
-
-## Anti-Patterns to Avoid
-
-| Anti-Pattern | Better Approach |
-|--------------|-----------------|
-| Asking 5 questions at once | Ask one at a time across dimensions; cluster 2-3 within a dimension |
-| Jumping to implementation details | Stay focused on WHAT, not HOW |
-| Proposing overly complex solutions | Start simple, add complexity only if needed |
-| Ignoring existing codebase patterns | Research what exists first |
-| Making assumptions without validating | State assumptions explicitly and confirm |
-| Creating lengthy design documents | Keep it concise--details go in the plan |
-
-## Success Criteria
-
-- Design doc saved to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`
-- User explicitly approves the spec before handoff to planning
-- All open questions resolved or explicitly deferred with rationale
-
-## Integration
-
-Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `/ia-plan` (Claude Code) or the ia-planning skill detects it and skips idea refinement.
-
-- **Next step:** planning, always (`/ia-plan` in Claude Code; the `ia-planning` skill elsewhere)
-- **Threat modeling:** when the brainstorm involves auth, payments, external API surfaces, or multi-tenant data, suggest a `ia-security-sentinel` threat model before moving to planning. Catching trust boundary issues at the design stage prevents costly rework.
-- **Predecessor:** user request or ambiguous feature description
+Return the scoped summary or saved design path, decisions, and open questions resolved or explicitly deferred with reasons. Interactive approval precedes handoff; a headless handoff remains within caller authority. Planning (`ia-planning`, or `/ia-plan` in Claude Code) follows design and reuses its settled requirements. For auth, payments, external APIs, or multi-tenant data, suggest an available security threat-model review before planning.

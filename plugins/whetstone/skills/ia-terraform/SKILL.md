@@ -10,6 +10,11 @@ paths: "**/*.tf,**/*.tfvars"
 
 # Terraform & OpenTofu
 
+## Working rules
+
+- Preserve state and resource addresses during refactoring; inspect the plan for unintended replacement.
+- Separate plan-only checks from apply-mode tests that create real infrastructure and incur cost.
+
 ## File Organization & Naming
 
 | File | Purpose |
@@ -27,6 +32,7 @@ paths: "**/*.tf,**/*.tfvars"
 - `this` for singleton resources (one of that type per module)
 - Contextual variable prefixes: `vpc_cidr_block` not `cidr`
 
+
 ## Block Ordering
 
 **Resources:** `count`/`for_each` (blank line after) → arguments → nested blocks → `tags` → `depends_on` → `lifecycle` (last)
@@ -34,6 +40,7 @@ paths: "**/*.tf,**/*.tfvars"
 **Variables:** `description` → `type` → `default` → `validation` → `nullable`
 
 Every variable needs `type` + `description`. Every output needs `description`. Mark secrets `sensitive = true`.
+
 
 ## Module Structure
 
@@ -55,6 +62,7 @@ module-name/
 
 Keep modules small (single responsibility). `examples/` double as documentation and integration test fixtures. Semantic versioning for all published modules.
 
+
 ## count vs for_each
 
 | Scenario | Use |
@@ -65,39 +73,6 @@ Keep modules small (single responsibility). `examples/` double as documentation 
 
 Default to `for_each` -- removing a middle item from a `count` list recreates all subsequent resources. Use `count` only for boolean conditionals or truly identical replicas.
 
-## Testing
-
-| Situation | Approach |
-|-----------|----------|
-| Quick validation | `terraform fmt -check && terraform validate` |
-| Pre-commit | + `tflint` + `trivy config .` / `checkov -d .` |
-| Logic validation (1.6+) | Native `terraform test` with `command = plan` |
-| Cost-free unit tests (1.7+) | Native tests + `mock_provider` |
-| Real infra validation | Native tests with `command = apply`, or Terratest (Go) |
-
-**Native test essentials** (`.tftest.hcl` in `tests/`):
-- `command = plan` for fast unit tests; `command = apply` for integration (default)
-- `assert { condition = expr; error_message = "..." }` -- multiple per run block
-- `expect_failures = [var.name]` for negative testing (validate rejection of bad input)
-- `mock_provider "aws" { mock_resource "..." { defaults = { ... } } }` -- plan-mode only, no credentials, fast CI
-- `variables {}` at file level (all runs) or within a `run` block (override)
-- Reference prior run outputs: `run.setup.vpc_id`
-- `parallel = true` on independent runs with separate state -- creates sync point at next sequential run
-- `state_key = "name"` required for `parallel = true` runs with independent state
-- File naming: `*_unit_test.tftest.hcl` (plan mode) vs `*_integration_test.tftest.hcl` (apply mode)
-- A `module {}` block inside a `run` accepts local paths and registry modules only -- not git or HTTP sources. Repos consuming git-sourced modules must vendor or localize them before they can be tested.
-- After a test file completes, resources are destroyed in **reverse run-block order**. Order dependent runs accordingly (create the bucket before the run that puts objects in it), or the destroy fails and leaves billable resources behind. There is no CLI flag to skip cleanup -- inspect a failure with `-verbose`.
-
-**Running them:**
-
-```bash
-terraform test                                     # all *.tftest.hcl under tests/
-terraform test -filter=vpc_unit_test.tftest.hcl    # one test FILE (not a run-block name)
-terraform test -verbose                            # show the plan/apply per run block
-terraform test -test-directory=path                # non-default test dir
-```
-
-Split by cost in CI: plan-mode unit tests on every PR, apply-mode integration tests on merge only.
 
 ## Version Pinning
 
@@ -111,6 +86,7 @@ Split by cost in CI: plan-mode unit tests on every PR, apply-mode integration te
 Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
 Stacks (HCP -- check current release status): orchestrates multiple configs as a single deployment unit -- evaluate for multi-environment patterns.
 
+
 ## State & Security
 
 - Remote backend with locking: S3 with `use_lockfile = true` (1.10+), Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure. DynamoDB-based S3 locking (`dynamodb_table`) is deprecated and slated for removal -- prefer `use_lockfile`; both may be set at once while migrating an existing table off.
@@ -123,12 +99,14 @@ Stacks (HCP -- check current release status): orchestrates multiple configs as a
 - `moved { from = old; to = new }` for refactoring resource names/modules without destroy-recreate. Remove block after apply.
 - `lifecycle { ignore_changes = [attr] }` suppresses **updates only**, and it substitutes the prior state value at plan time -- on the *first* plan after the config change, with no "first apply" exception. Two consequences reviewers get backwards: (1) on an already-provisioned resource the literal in the config is never written, and `ForceNew` never fires because `ignore_changes` erased the diff before replacement is evaluated -- so a change that replaces a committed value with a placeholder scrubs the repository and leaves the remote value live; (2) `ignore_changes` does not apply on create, so any later `-replace`, taint, `state rm` + re-add, or manual deletion re-seeds the placeholder over a value that was set out of band. Keep only the container resource in configuration and provision the value entirely out of band, or state the restore step in the runbook for every replace path.
 
+
 ## Troubleshooting
 
 - State lock stuck: `terraform force-unlock <ID>` -- only after confirming no other operation running
 - Resource drift: `terraform plan -refresh-only` to detect, `terraform apply -refresh-only` to accept
 - Replace tainted: `terraform apply -replace=ADDR` (not deprecated `terraform taint`)
 - Import existing: `import` blocks (1.5+) for declarative import, or `terraform import ADDR ID`
+
 
 ## Dependency Management
 
@@ -145,6 +123,7 @@ This forces Terraform to destroy subnets before CIDR associations -- prevents de
 - `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs -- never hardcode subnets
 - Multi-region: `provider "aws" { alias = "eu_west_1" }` + `providers = { aws = aws.eu_west_1 }` in module blocks
 
+
 ## Verify
 
 Run before declaring done:
@@ -154,3 +133,9 @@ terraform fmt -check && terraform validate && tflint && trivy config .
 ```
 
 All commands must pass with zero errors. Where plan-mode tests exist, add `terraform test -filter=<unit-test-file>` -- restrict this to plan-mode suites, since apply-mode tests stand up real infrastructure and do not belong in a pre-completion check.
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For native plan/apply tests, fixture ordering, or CI test selection: [native-test-patterns.md](./references/native-test-patterns.md).

@@ -12,7 +12,7 @@ The finding exists in code that was NOT changed in this diff. Don't raise issues
 
 ### 2. Linter/formatter covered
 
-Style issues that the project's linter or formatter already enforces (or should enforce). Don't duplicate automated tooling. If the project lacks a linter and should have one, note that once in the summary, not per-finding.
+Style issues that the project's linter or formatter already enforces. Don't duplicate automated tooling. If tooling is missing, distinguish a documented convention violation from a personal preference.
 
 ### 3. Intentional design
 
@@ -40,8 +40,4 @@ Test code follows different rules than production code. Don't flag: hardcoded te
 
 ## When to Override Suppression
 
-Suppress rules don't apply when the finding is **Critical severity** (security vulnerability, data loss, crash, race condition). Critical findings are always reported regardless of category, though they should still include evidence.
-
-This override covers the eight categories above, and only those. The separate confidence-band suppression in [severity-and-confidence.md](./severity-and-confidence.md) is the other gate, and its Protected Subjects list names the classes exempt from that one.
-
-The two gates are independent and either one alone suppresses: a finding is reported only if it clears both. So a protected-subject finding still has to survive the categories here, and a Critical finding still has to clear the confidence floor unless an exemption applies.
+A category is not a substitute for checking the actual case. An intentional design or framework idiom can still introduce a concrete defect; report that consequence with the stated rationale as context. Conversely, a severe-sounding bug class does not override a verified guard, lack of reachability, or the selected review scope. Use the evidence and impact rubric in [severity-and-confidence.md](./severity-and-confidence.md); preserve consequential uncertainty in Residual Risks.

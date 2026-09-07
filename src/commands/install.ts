@@ -5,7 +5,7 @@ import path from "path"
 import { loadClaudePlugin } from "../parsers/claude"
 import { targets } from "../targets"
 import { pathExists } from "../utils/files"
-import type { PermissionMode } from "../converters/claude-to-opencode"
+import type { ClaudeToOpenCodeOptions, PermissionMode } from "../converters/claude-to-opencode"
 import { ensureCodexAgentsFile } from "../utils/codex-agents"
 import { expandHome, resolveTargetHome } from "../utils/resolve-home"
 
@@ -79,7 +79,7 @@ export default defineCommand({
       const outputRoot = resolveOutputRoot(args.output)
       const codexHome = resolveTargetHome(args.codexHome, path.join(os.homedir(), ".codex"))
 
-      const options = {
+      const options: ClaudeToOpenCodeOptions = {
         agentMode: String(args.agentMode) === "primary" ? "primary" : "subagent",
         inferTemperature: Boolean(args.inferTemperature),
         permissions: permissions as PermissionMode,
@@ -155,7 +155,7 @@ function resolveOutputRoot(value: unknown): string {
     const expanded = expandHome(String(value).trim())
     return path.resolve(expanded)
   }
-  return path.join(os.homedir(), ".config", "opencode")
+  return process.cwd()
 }
 
 function resolveTargetOutputRoot(targetName: string, outputRoot: string, codexHome: string): string {

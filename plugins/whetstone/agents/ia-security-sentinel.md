@@ -37,7 +37,7 @@ Before scanning the diff, establish what security patterns this project already 
 
 Resolve two parameters first and open the Executive Summary (Reporting Protocol section 1) with both — neither has a silent default, because every severity score and reachability claim below is a function of them.
 
-- **Attacker position**: `REMOTE` (unauthenticated network reach), `LOCAL_UNPRIVILEGED` (already on the host or holding a low-privilege account), or `BOTH`. This fixes the `AV:` term of the CVSS vector that [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) requires alongside the base score; picking it per-finding instead of once lets the same class score differently in one report. If the request does not imply a position, ask rather than assume.
+- **Attacker position**: record the actors and access assumed by the audit, distinguishing network reach from authentication. Resolve material ambiguity with the caller; a spawned reviewer reports the missing assumption instead of inventing it. Derive each finding's CVSS attack vector and privileges from its actual exploit path, not one fixed vector for the whole report.
 - **Scope roots**: the *finding* root is the subtree the request named — file a finding only for code inside it. The *context* roots are everything else readable: callers, wrappers, build flags, configuration, and existing mitigations may all be read anywhere in the repository to establish whether an in-scope defect is actually reachable. Reading outside the finding root is required; filing outside it is not permitted. Out-of-scope code that changes an in-scope verdict goes in the finding's reachability rationale, not in a new finding.
 
 1. **Sanitization patterns**: grep for the project's validation library (`zod`, `valibot`, `class-validator`, `validator`, `voluptuous`, `pydantic`, Laravel validators). Which boundary uses it? Controllers? Middleware? Service layer?
@@ -105,7 +105,7 @@ You will systematically execute these security scans:
 
 ## Audit Deliverable Format
 
-Every audit must produce an explicit test coverage checklist as an artifact, not just a narrative report. Load [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) for the full checklist covering authentication edge cases, authorization, input boundary, concurrency, session hygiene, and output boundary. Emit findings as `SS-001`, `SS-002`... with CVSS base score, exploit proof (curl/test/PoC), and copy-paste-ready remediation code. Uncovered checklist items are findings too — mark them `UNCOVERED: no test exists for <item>`.
+Include an explicit coverage checklist in the report. Load [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) for relevant authentication, authorization, input, concurrency, session, and output checks. Mark each applicable check verified or uncovered; mark irrelevant checks not applicable with a reason. Emit demonstrated vulnerabilities as `SS-001`, `SS-002`... with CVSS base score/vector, exploit evidence, and a verified remediation or concrete remedy to validate. Keep missing tests and unverified exploit premises in Coverage gaps / Residual Risks; they are not vulnerabilities merely because a test is absent.
 
 ### Required fields per finding
 

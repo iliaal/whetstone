@@ -70,6 +70,7 @@ python3 distillery/scripts/distiller.py diagnose-negatives ia-brainstorming
 ```
 
 Acceptance gates:
+- Headless execution requires an explicit caller delegation and decision scope; invocation metadata alone preserves interactive approval gates.
 - `validate-plugin --component ia-brainstorming` returns 0 HIGH findings.
 - `test-triggers --skill ia-brainstorming` returns F1 = 1.0 with floors of 5 should_trigger and 5 should_not_trigger.
 - For dspy-eval, the composite score does not regress against the most recent saved baseline (see `distillery/.eval-data/ia-brainstorming/history.json`).

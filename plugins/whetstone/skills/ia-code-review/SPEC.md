@@ -74,6 +74,9 @@ python3 distillery/scripts/distiller.py diagnose-negatives ia-code-review
 ```
 
 Acceptance gates:
+- Severity follows demonstrated impact and reachability, not category names or a count of preconditions.
+- Confidence reports evidence and unresolved assumptions; any required numeric score is explicitly uncalibrated and receives no automatic agent-count boost.
+- Agent-consumed Markdown and lower-trust content in user-role messages remain reviewable when they cross a concrete trust boundary.
 - `validate-plugin --component ia-code-review` returns 0 HIGH findings.
 - `test-triggers --skill ia-code-review` returns F1 = 1.0 with floors of 5 should_trigger and 5 should_not_trigger.
 - For dspy-eval, the composite score does not regress against the most recent saved baseline (see `distillery/.eval-data/ia-code-review/history.json`).

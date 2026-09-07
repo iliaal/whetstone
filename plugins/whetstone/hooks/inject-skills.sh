@@ -12,6 +12,11 @@ command -v jq >/dev/null 2>&1 || exit 0
 trap 'exit 0' ERR
 
 INPUT=$(cat)
+printf '%s' "$INPUT" | jq -e '
+  (.tool_input | type == "object") and
+  (.tool_input.prompt | type == "string") and
+  ((.tool_input.subagent_type // "") | type == "string")
+' >/dev/null || exit 0
 
 # Extract prompt and subagent type
 PROMPT=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // empty')
@@ -24,7 +29,7 @@ fi
 
 # Skip agent types that can't read files
 case "$AGENT_TYPE" in
-  Bash|statusline-setup) exit 0 ;;
+  Bash | statusline-setup) exit 0 ;;
 esac
 
 # Resolve paths
@@ -38,11 +43,6 @@ fi
 
 # shellcheck source=skill-patterns.sh
 source "$PATTERNS_FILE"
-
-# Guard: older pattern files may not declare SKILL_PROJECT_TYPES
-if ! declare -p SKILL_PROJECT_TYPES &>/dev/null; then
-  declare -A SKILL_PROJECT_TYPES
-fi
 
 # Guard: older pattern files may not declare SKILL_MAINT_SUPPRESS
 if ! declare -p SKILL_MAINT_SUPPRESS &>/dev/null; then
@@ -58,20 +58,9 @@ fi
 # skill files, or maintenance commands, skills whose names appear as references
 # shouldn't fire as if the user is invoking them.
 IS_MAINT_CONTEXT=false
-if printf '%s' "$PROMPT" | grep -qE 'plugins/whetstone/(skills|agents|commands)/|distiller\.py|skill-patterns\.sh|/sync-from-repos\b|/audit-plugin\b|/analyze-misfires\b|/diagnose-negatives\b|/evolve-skill\b|/eval-skills\b' 2>/dev/null; then
+if printf '%s' "$PROMPT" | grep -qiE 'plugins/whetstone/(skills|agents|commands)/|skill-patterns\.sh|/sync-from-repos\b|/audit-plugin\b|/(analyze-misfires|diagnose-negatives|evolve-skill|eval-skills)\b|^run .{0,80}distiller\.py +(analyze-misfires|diagnose-negatives)\b' 2>/dev/null; then
   IS_MAINT_CONTEXT=true
 fi
-
-# Detect project types from marker files in working directory.
-# Used as a negative filter: domain skills that declare a project type
-# are suppressed when the project stack doesn't match.
-PROJECT_TYPES=()
-[[ -f "composer.json" || -f "artisan" ]] && PROJECT_TYPES+=("php")
-[[ -f "package.json" ]] && PROJECT_TYPES+=("js")
-[[ -f "pyproject.toml" || -f "setup.py" || -f "requirements.txt" ]] && PROJECT_TYPES+=("python")
-[[ -f "Cargo.toml" ]] && PROJECT_TYPES+=("rust")
-[[ -f "go.mod" ]] && PROJECT_TYPES+=("go")
-compgen -G "*.tf" > /dev/null 2>&1 && PROJECT_TYPES+=("terraform")
 
 # Lowercase prompt for case-insensitive matching
 PROMPT_LOWER=$(printf '%s' "$PROMPT" | tr '[:upper:]' '[:lower:]')
@@ -81,7 +70,8 @@ TIER1=()
 TIER2=()
 TIER3=()
 
-for skill_name in "${!SKILL_PATTERNS[@]}"; do
+readarray -t SKILL_NAMES < <(printf '%s\n' "${!SKILL_PATTERNS[@]}" | LC_ALL=C sort)
+for skill_name in "${SKILL_NAMES[@]}"; do
   pattern="${SKILL_PATTERNS[$skill_name]}"
   if printf '%s' "$PROMPT_LOWER" | grep -qE "$pattern" 2>/dev/null; then
     skill_path="$PLUGIN_ROOT/skills/$skill_name/SKILL.md"
@@ -102,17 +92,6 @@ for skill_name in "${!SKILL_PATTERNS[@]}"; do
     # prompts (skill name in file path, command discussion, distiller output, etc.).
     if $IS_MAINT_CONTEXT && [[ -n "${SKILL_MAINT_SUPPRESS[$skill_name]+x}" ]]; then
       continue
-    fi
-
-    # Suppress skills whose project-type constraint doesn't match.
-    # Only filters when both: (a) skill declares a type, (b) we detected types.
-    if [[ -n "${SKILL_PROJECT_TYPES[$skill_name]+x}" ]] && [[ ${#PROJECT_TYPES[@]} -gt 0 ]]; then
-      _required="${SKILL_PROJECT_TYPES[$skill_name]}"
-      _match=false
-      for _pt in "${PROJECT_TYPES[@]}"; do
-        [[ "$_pt" == "$_required" ]] && { _match=true; break; }
-      done
-      $_match || continue
     fi
 
     tier="${SKILL_TIERS[$skill_name]}"
@@ -143,7 +122,7 @@ fi
 # Log injected skills when running in test mode (zero overhead otherwise)
 if [[ -n "${TEST_INJECTION_LOG:-}" ]]; then
   for skill_name in "${ALL_MATCHES[@]}"; do
-    printf '%s\n' "$skill_name" >> "$TEST_INJECTION_LOG"
+    printf '%s\n' "$skill_name" >>"$TEST_INJECTION_LOG"
   done
 fi
 
@@ -156,16 +135,11 @@ done
 INJECTION="$INJECTION
 If you cannot read the files, proceed with your best judgment."
 
-# Prepend injection to original prompt
-MODIFIED_PROMPT=$(printf '%s\n\n%s' "$INJECTION" "$PROMPT")
-
 # Output updatedInput — must include ALL original tool_input fields since
 # updatedInput is a full replacement, not a merge. Only the prompt changes.
-TOOL_INPUT=$(printf '%s' "$INPUT" | jq '.tool_input')
-printf '%s' "$TOOL_INPUT" | jq --arg prompt "$MODIFIED_PROMPT" '{
+printf '%s' "$INPUT" | jq --arg injection "$INJECTION" '{
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
-    "permissionDecision": "allow",
-    "updatedInput": (. + {"prompt": $prompt})
+    "updatedInput": (.tool_input | .prompt = ($injection + "\n\n" + .prompt))
   }
 }'

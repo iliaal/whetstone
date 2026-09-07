@@ -10,6 +10,12 @@ description: >-
 
 # Simplifying Code
 
+## Working rules
+
+- Preserve behavior, interfaces, side effects, and domain intent; prove any unshipped-shape exception has no consumers outside scope.
+- Before removing a guard for an external hazard, reproduce its precondition and show the hazard is handled; otherwise retain it.
+- Verify standard-library substitutions on empty, null, no-match, ordering, and zero-value cases.
+
 ## Principles
 
 | Principle | Rule |
@@ -22,6 +28,7 @@ description: >-
 
 Changing an interface, exported name, persisted format, or path reaches past the import graph. Enumerate the producers, consumers, schemas, fixtures, generators, manifests, scripts and CI recipes, config references, and documents that carry the old identifier, and migrate them in the same pass. Close out by searching for the old identifier: zero hits, or one line accounting for each intentional remainder. Renames rot in the fixture holding the old key and the `.env.example` entry, neither of which any import graph contains. When the identifier is a public or exported API, Stop Conditions applies first -- confirm with the user, then enumerate; the sweep runs unprompted only for internal identifiers.
 
+
 ## Process
 
 1. **Read first** -- understand the full file and its dependents before changing anything. Apply Chesterton's Fence: if you see code that looks unnecessary but don't understand why it's there, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
@@ -31,35 +38,6 @@ Changing an interface, exported name, persisted format, or path reaches past the
 5. **Verify** -- confirm no behavior change: tests pass, types check, imports resolve
 6. **Pre-submit scope audit** -- walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. Drive-by edits belong in a separate change, not the current patch. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `ia-verification-before-completion`'s Scope Confirmation gate.
 
-## Smell → Fix
-
-| Smell | Fix |
-|-------|-----|
-| Deep nesting (>2 levels) | Guard clauses with early returns |
-| Long function (>20 lines) | Extract into named functions by responsibility |
-| Too many parameters (>3) | Group into an options/config object |
-| Duplicated block (**3+** occurrences) | Extract shared function. Two copies = leave inline; wait for the third |
-| Magic numbers/strings | Named constants |
-| Complex conditional | Extract to descriptively-named boolean or function |
-| Boolean-returning `if/else` (each branch returns a literal `True`/`False`) | Collapse to the boolean expression itself: `return a and b`, not a branch per literal |
-| Dense transform chain (3+ chained methods) | Break into named intermediates for debuggability |
-| Dead code / unreachable branches | Delete entirely -- no commented-out code |
-| Unnecessary `else` after return | Remove `else`, dedent |
-
-## AI Slop Removal
-
-When simplifying AI-generated code, specifically target:
-
-- **Redundant comments** that restate the code (`// increment counter` above `counter++`) -- delete them
-- **Unnecessary defensive checks** for conditions that cannot occur in context -- remove the guard. Where the guard, retry, workaround, or flag counters an *external* hazard (a harness default, an upstream bug, a race, a platform quirk), "cannot occur" needs evidence: demonstrate the hazard's precondition is present and handled. A green suite is not that evidence when the run may never have triggered the hazard at all -- absence of failure and absence of the hazard look identical from the outside. If the precondition cannot be reproduced, keep the code and record the gap. Guards against conditions the type system already excludes need no such proof, provided the type is enforced at that boundary rather than merely declared -- deserialized payloads, unchecked API responses, and anything reached through a cast or assertion do not qualify
-- **Gratuitous type casts** (`as any`, `as unknown as T`) -- fix the actual type or use a proper generic
-- **Over-abstraction** (factory for 2 objects, wrapper around a single call, util file with 1 function) -- inline the code
-- **Inconsistent style** that drifts from the file's existing conventions -- match the file
-- **Placeholder stubs** (`// ...`, `// rest of code`, `// similar to above`, `// continue pattern`, `// add more as needed`) -- leave unsimplified code as-is rather than replacing it with stubs
-- **Redundant error wrapping** (`catch(e) { throw e; }`, `catch(e) { throw new Error(e.message); }`) that strips the original stack for no reason -- remove the try/catch entirely and let errors propagate
-- **Verbose stdlib reimplementations** (hand-rolled loops that replicate `array_filter`, `Array.from`, `Collection::pluck()`, `itertools`) -- replace with the stdlib/framework one-liner, but verify edge-case parity first: empty input, null/None guard, no-match default, zero-value path. The one-liner can silently differ from the loop (an empty-input crash, a missing no-match default, lost ordering) -- a structurally cleaner version that changes behavior on an edge case is not a simplification
-- **Hand-maintained guarantees** the platform, framework, or a downstream layer already enforces (a manual retry wrapping a client that already retries, a hand-rolled TTL cache the ORM/query layer already provides, manual null-coalescing on a value the contract guarantees non-null) -- name the layer that owns the guarantee and what the code collapses to without it. Remove only when it preserves every output, error, side-effect, and ordering; cite the test or a direct comparison proving equivalence, since "it's already guaranteed" over-fires easily
-- **Copy-paste with variation** -- before proposing a shared abstraction, check whether the duplicated construct can be *eliminated* by deriving it from an existing source of truth (a constant, an existing map, a generated value). Consolidate into a helper only when elimination isn't behavior-preserving *and* the duplication has already cleared the 3-occurrence gate (Smell → Fix); below that, leave it inline per Constraints
 
 ## Stop Conditions
 
@@ -68,6 +46,7 @@ Stop and ask before proceeding when:
 - Behavior parity cannot be verified (no tests exist and behavior is non-obvious)
 - Code is intentionally complex for domain reasons (performance-critical, protocol compliance)
 - Scope implies a redesign rather than a simplification
+
 
 ## Constraints
 
@@ -82,6 +61,7 @@ Stop and ask before proceeding when:
 - When unsure whether a block is dead code, ask instead of deleting
 - For artifacts whose value is self-containment -- prompts, skill and agent instructions, per-service configuration, vendored policy files -- duplication is cheaper than a shared dependency until edits actually drift. Extract only after coordinated changes have repeatedly gone out of sync, or a real consumer of the shared form exists
 
+
 ## Verify
 
 - Tests pass and types check after changes
@@ -89,35 +69,11 @@ Stop and ask before proceeding when:
 - Scope limited to requested files -- no drive-by cleanups
 - Match test scope to the importer count surfaced in step 1 (Surface assumptions). Zero external importers: scoped tests on the changed paths. One or more external importers, or shared/utility code edited: run tests covering each importer. Run the full suite when the test runner has no path-scoping mechanism.
 
-## Orchestrator Mode (When Chained With Other Skills)
-
-When this skill is invoked by an orchestrator that also runs `ia-code-review`, `ia-writing-tests`, or `ia-verification-before-completion` on the same scope, each sub-skill re-resolving scope independently wastes tokens and risks drift. Avoid this by resolving scope exactly once and passing a canonical block to every sub-skill.
-
-**Resolved scope format** — the orchestrator builds this once, before dispatching any sub-skill:
-
-```
-## Resolved scope
-Files:
-- path/to/file-a.ts
-- path/to/file-b.ts
-
-Commit range: HEAD~3..HEAD (or "uncommitted")
-
-Intent: [one-sentence description pulled from the user request or PR description]
-
-Constraints:
-- Preserve public API
-- No behavior change
-- [other constraints specific to this run]
-```
-
-Every chained sub-skill receives this block verbatim in its prompt and uses it as the source of truth — no re-running `git diff --name-only`, no re-parsing the user request, no independent scope resolution. Sub-skills accept `--no-verify --no-report` flags when chained so verification and reporting happen once at the end of the chain, not per-skill. The last sub-skill in the chain runs verification; the orchestrator trusts that result rather than re-verifying.
-
-This prevents two failure modes: scope drift (sub-skill A simplifies one set of files, sub-skill B reviews a different set) and double work (every sub-skill rediscovers the same facts).
 
 ## Integration
 
 - `ia-code-simplicity-reviewer` agent -- analysis-only pass producing a simplification report (no code changes). Use before refactoring to identify targets.
+
 
 ## Output
 
@@ -126,3 +82,10 @@ After simplifying, report:
 - **Key simplifications**: what changed and why (one line each)
 - **Verification**: tests pass, types check, no behavior change
 - **Residual risks**: assumptions made, areas not touched that may need attention
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For identifying smells, removing AI-generated clutter, or eliminating a guard or workaround: [simplification-patterns.md](./references/simplification-patterns.md).
+- When chained with other skills on a shared resolved scope: [orchestrated-simplification.md](./references/orchestrated-simplification.md).

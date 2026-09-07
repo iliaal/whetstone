@@ -18,6 +18,8 @@ This command creates professional video walkthroughs of features for PR document
 - Uploads the video for easy sharing
 - Updates the PR description with an embedded video
 
+**Pipeline context:** When the caller explicitly delegates non-interactive capture, use the supplied feature scope and conservative shot list without a confirmation prompt. Upload and PR edits still require the caller's authority and an approved destination; otherwise return local artifacts. Skip capture when no browser-visible flow exists.
+
 ## Prerequisites
 
 <requirements>
@@ -85,7 +87,7 @@ Before recording, create a shot list:
 4. **Edge cases**: Error states, validation, etc. (if applicable)
 5. **Success state**: Completed action/result
 
-Ask user to confirm or adjust the flow:
+In interactive mode, ask the user to confirm or adjust the flow; an explicitly delegated pipeline uses the scoped shot list:
 
 ```markdown
 **Proposed Video Flow**
@@ -116,7 +118,7 @@ Does this look right?
 
 **Create videos directory:**
 ```bash
-mkdir -p tmp/videos
+mkdir -p tmp/videos tmp/screenshots
 ```
 
 **Recording approach: Use browser screenshots as frames**
@@ -189,7 +191,7 @@ ffmpeg -y -framerate 0.5 -pattern_type glob -i 'tmp/screenshots/*.png' \
 
 <upload_video>
 
-**Upload with rclone (skip if rclone is not configured):**
+**Upload with rclone only to an authorized destination (otherwise retain local artifacts):**
 
 ```bash
 # Check rclone is configured -- abort upload step if not

@@ -93,6 +93,6 @@ Therefore:
    read `outputs/<run>/history.json` (per-step `selection_hard` + `action`), diff
    `best_skill.md` against the seed skill, and report what changed and whether the
    gate accepted. Remind: **promotion is manual + gated** — inspect for
-   reward-hacking, re-eval on held-out/golden data (`distiller.py dspy-eval --emit-tasks` → judge sub-agents → `--score-from-verdicts`, no billed `claude -p`),
+   reward-hacking, execute both skills on reserved cases with `distiller.py compare-skill` (execution tasks → fresh agents → outputs → fixed-rubric judges → verdicts; see `/evolve-skill`). Historical `dspy-eval` rescoring is diagnosis, never held-out behavioral validation. Keep cases outside optimization and candidate selection,
    `distiller.py test-triggers`, Codex Flow A cycle, then commit; `/release` ships
    it. Never auto-promote `best_skill.md`.

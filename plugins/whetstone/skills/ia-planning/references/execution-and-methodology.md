@@ -4,7 +4,7 @@ Load when decomposing a plan into slices, annotating phases with execution postu
 
 ## Reference Implementations
 
-When the target behavior is hard to describe in prose but an existing implementation already embodies it, cite that implementation as the spec instead of paraphrasing it. Source code is a higher-fidelity reference than a doc, diagram, or screenshot -- it pins exact semantics, edge-case handling, and structure that prose drops. Name the file or module, state what to match, and plan to reimplement the *semantics* (not copy the code verbatim) in the target stack, even when the reference is in a different language. Record the pointer in the plan so the implementer reads the source, not a summary of it: `ref: legacy/pricing.py -> reimplement semantics in src/pricing.ts`.
+When an authorized reference implementation embodies target behavior, cite its source to preserve exact semantics and edge cases that a summary may omit. Treat it as evidence subordinate to governing requirements, not a replacement specification; existing bugs do not become requirements merely because the source contains them. Name the file or module and the behavior to match, resolve conflicts against user requirements, and plan to reimplement the *semantics* rather than copy code verbatim, including across languages. Record the pointer so the implementer reads the source: `ref: legacy/pricing.py -> reimplement the specified pricing semantics in src/pricing.ts`.
 
 ## Task Decomposition
 

@@ -90,7 +90,7 @@ Classify frontend-performance findings against Google's canonical bands rather t
 | INP (Interaction to Next Paint) | ≤ 200ms | ≤ 500ms | > 500ms |
 | CLS (Cumulative Layout Shift) | ≤ 0.1 | ≤ 0.25 | > 0.25 |
 
-Flag Poor-band violations as Critical, Needs-improvement as Important. Tie each CWV finding to the likely cause (render-blocking resource, unoptimized hero image, late-loading font, layout-shifting ads, oversized main-thread task) rather than just the metric value.
+Use these bands to describe measured performance, not to assign code-review severity automatically. Grade findings by user impact, affected journeys, frequency, and the project's performance objectives. Tie each CWV finding to evidence for its cause (render-blocking resource, unoptimized hero image, late-loading font, layout-shifting ads, oversized main-thread task).
 
 **Metric honesty:** static source analysis cannot measure real-world LCP, INP, or CLS — those need a live profile (Lighthouse, CrUX, field RUM). Tag every finding derived from reading code as *potential impact* and name the band it risks, never a fabricated number ("this synchronous hero-image decode risks a Poor LCP" — not "LCP is 3.2s"). Emit concrete metric values only when they come from a measurement artifact the user supplied.
 
@@ -112,7 +112,7 @@ Scan changed files and their call graphs for these concrete anti-patterns. When 
 Search for database calls (`->get()`, `->first()`, `->find()`, `->fetch()`, `query()`, `execute()`, `.findOne()`, `.findMany()`) inside `for`, `foreach`, `while`, or `.map()` / `.forEach()` loops. Each iteration fires a separate query. Fix: batch the IDs and issue a single `WHERE IN` query, use eager loading (`with()`, `include`), or rewrite as a join.
 
 ### Missing Database Indexes
-Identify columns referenced in `WHERE`, `ORDER BY`, `GROUP BY`, or `JOIN ON` clauses. Cross-reference against migration files, schema definitions, or `CREATE INDEX` statements. Flag any filtered/sorted column that lacks a corresponding index. For composite conditions, verify a composite index exists in the correct column order.
+Identify columns referenced in `WHERE`, `ORDER BY`, `GROUP BY`, or `JOIN ON` clauses and inspect existing indexes. A missing index alone is not a defect: consider table size, selectivity, write cost, and the actual query plan. Recommend a single or composite index only when the workload and measured plan justify it.
 
 ### O(n²) in Hot Paths
 Detect nested loops over the same or related collections inside request handlers, API route handlers, controller actions, or functions called more than once per request. Includes `.filter()` inside `.map()`, repeated `array_search()` / `in_array()` in a loop, or nested `for` over two arrays. Fix: build a lookup map (hash/dict/Set) in a single pass, then probe in O(1).
@@ -130,7 +130,7 @@ Flag components or route-level imports pulled in synchronously when the componen
 Detect API endpoints or database queries that return collections without `LIMIT`/`OFFSET`, cursor parameters, or any upper bound on result size. Unbounded queries become production incidents as data grows. Fix: enforce a default page size with a maximum cap.
 
 ### Blocking in Async Context
-Search for synchronous I/O calls inside `async` functions: `fs.readFileSync`, `fs.writeFileSync`, `execSync`, `dns.lookupSync`, `file_get_contents()` in async PHP contexts, `open()` without `aiofiles` in Python async functions. These block the event loop or reactor. Fix: replace with async equivalents (`fs.promises.*`, `asyncio.open`, `proc_open` with non-blocking reads).
+Search for synchronous I/O calls inside `async` functions: `fs.readFileSync`, `fs.writeFileSync`, `execSync`, `file_get_contents()` in async PHP contexts, or blocking file operations in Python async functions. Check whether they run on the event-loop thread and contribute material blocking. Use supported async APIs (`fs.promises.*`), or move a complete blocking Python operation into `asyncio.to_thread()`; `aiofiles` is another option when already used by the project. For PHP, use the active runtime's async facilities and verify subprocess streams are non-blocking.
 
 ## Analysis Output Format
 

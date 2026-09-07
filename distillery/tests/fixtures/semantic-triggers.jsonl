@@ -9,3 +9,7 @@
 {"prompt": "Review plugins/whetstone/skills/ia-brainstorming/SKILL.md for consistency issues with the writing skill", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
 {"prompt": "Run python3 distillery/scripts/distiller.py analyze-misfires and diagnose why brainstorming, writing-tests, and planning keep misfiring", "should_trigger": [], "should_not_trigger": ["ia-brainstorming", "ia-planning", "ia-writing-tests"]}
 {"prompt": "Compare skills/ia-planning/SKILL.md against the version in ~/ai/repos/other-plugin/ and note differences", "should_trigger": [], "should_not_trigger": ["ia-planning"]}
+{"prompt": "Implement a Python CLI service", "project_files": ["package.json"], "should_trigger": ["ia-python-services"], "should_not_trigger": ["ia-nodejs-backend"]}
+{"prompt": "Fix the bug in distiller.py Python CLI service", "project_files": ["package.json"], "should_trigger": ["ia-debugging", "ia-python-services"], "should_not_trigger": []}
+{"prompt": "Fix the bug in distiller.py analyze-misfires Python CLI service", "project_files": ["package.json"], "should_trigger": ["ia-debugging", "ia-python-services"], "should_not_trigger": []}
+{"prompt": "Build a React component with loading and error states", "project_files": ["composer.json"], "permission_mode": "bypassPermissions", "tool_input": {"model": "sonnet", "run_in_background": true}, "should_trigger": ["ia-react-frontend"], "should_not_trigger": ["ia-php-laravel"]}

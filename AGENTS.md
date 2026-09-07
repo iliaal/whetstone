@@ -174,35 +174,31 @@ grep -E '^description:' skills/*/SKILL.md
 
 ## Common tasks
 
+Keep component edits separate from release bookkeeping. Defer version changes, metadata/count regeneration, README component tables, mirroring, and publishing to `/release`.
+
 ### Adding a new agent
 
 1. Create `plugins/whetstone/agents/ia-new-agent.md` (flat layout)
-2. Run `bash scripts/update-metadata.sh`
-3. Update README tables
-4. Test with `claude agent new-agent "test"`
+2. Validate the agent's references and exercise it through the installed Claude Code delegation interface.
 
 ### Adding a new command
 
-1. Create `plugins/whetstone/commands/new-command.md`
-2. Run `bash scripts/update-metadata.sh`
-3. Update README tables
-4. Test with `claude /new-command`
+1. Create `plugins/whetstone/commands/ia-new-command.md`.
+2. Validate references and invoke `/ia-new-command` in an installed Claude Code session.
 
 ### Adding a new skill
 
-1. Create `plugins/whetstone/skills/skill-name/SKILL.md`
-2. Run `bash scripts/update-metadata.sh`
-3. Update README tables and `hooks/skill-patterns.sh` (add trigger pattern)
-4. Add trigger regression fixtures to `distillery/tests/fixtures/triggers/skill-name.jsonl`
-5. Run `python3 distillery/scripts/distiller.py test-triggers --skill skill-name` to verify
-6. Test with `claude skill skill-name`
+1. Create `plugins/whetstone/skills/ia-skill-name/SKILL.md` with the required frontmatter.
+2. Add its trigger pattern to `plugins/whetstone/hooks/skill-patterns.sh`.
+3. Add trigger regression fixtures to `distillery/tests/fixtures/triggers/ia-skill-name.jsonl`.
+4. Run `python3 distillery/scripts/distiller.py test-triggers --skill ia-skill-name`.
+5. Exercise the skill through a matching task in the intended installed harness.
 
 ### Adding a new hook
 
 1. Add hook entry to `plugins/whetstone/hooks/hooks.json`
 2. Create hook script in `plugins/whetstone/hooks/`
-3. Run `bash scripts/update-metadata.sh`
-4. Update README tables
+3. Test the hook's emitted protocol and intended caller behavior.
 
 ## Skill distillery
 
@@ -216,7 +212,7 @@ python3 distillery/scripts/distiller.py fetch --skills '<json>'
 
 # Promote to plugin
 cp -r distillery/generated-skills/<name> plugins/whetstone/skills/<name>
-bash scripts/update-metadata.sh
+# Metadata and distribution run during /release.
 
 # Mirror to ai-skills (read-only public distribution)
 bash scripts/mirror-to-ai-skills.sh
@@ -298,11 +294,11 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 
 | Script | Purpose | When to run |
 |--------|---------|-------------|
-| `scripts/update-metadata.sh` | Count components, update `plugin.json` + `marketplace.json` descriptions; `--check` fails on metadata/version drift (a `/release` gate) | After any component change |
+| `scripts/update-metadata.sh` | Count components, update `plugin.json` + `marketplace.json` descriptions; `--check` fails on metadata/version drift (a `/release` gate) | During `/release` |
 | `scripts/check-trigger-overlap.py` | Advisory Jaccard report on trigger-regex vocabulary; surfaces skill pairs competing for the same phrases (`[same-tier]` = expected stack family) | During `/audit-plugin`, or after adding/editing skill triggers |
 | `scripts/generate-spec.py` | Generate starter `SPEC.md` per skill from SKILL.md + fixture; skips skills that already have one | When adding a new skill, or after `class:` taxonomy refresh |
 | `scripts/generate-manifest.py` | Update `distillery/.skill-versions.json` with current skill/pattern hashes | Automatically during release |
-| `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | After editing or adding skills |
+| `scripts/mirror-to-ai-skills.sh` | Mirror plugin skills to `~/ai/ai-skills` (read-only distribution) | During `/release`, or when explicitly requested |
 | `scripts/generate-skill-hooks.sh` | Generate draft `hooks/skill-patterns.sh` from SKILL.md frontmatter | After adding/removing skills (hand-tune regex after) |
 | `scripts/publish-clawhub.sh` | Publish skills to clawhub.ai registry (handles rate limits, skips existing versions) | During release (automatic) or manually |
 | `scripts/sync-to-tools.sh` | Symlink skills to shared directories; remove legacy Codex links and configure duplicate-source exclusions | After editing or adding skills |

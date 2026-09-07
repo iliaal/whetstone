@@ -15,7 +15,7 @@ Bundles agents, skills, workflow commands, and a skill distillery for PHP, Pytho
 
 **Teams using Claude Code for real work.** You're building with PHP, Python, TypeScript, or React. You want the agent to plan before building, verify before shipping, and debug by reasoning instead of guessing. This plugin provides that structure.
 
-**Solo developers who want consistency.** Write a Bash script and the agent enforces `set -Eeuo pipefail` and ShellCheck compliance. Touch a Laravel controller and it applies strict types and thin-controller patterns. No setup, no toggling.
+**Solo developers who want consistency.** Bash tasks receive guidance on strict mode and ShellCheck; Laravel tasks receive strict-type and thin-controller patterns. Skills guide the agent; only checks actually run can establish compliance.
 
 **Anyone building with AI agents.** Includes skills for multi-agent orchestration, agent-native architecture design, and a distillery that generates new skills from top-rated community sources.
 
@@ -23,7 +23,7 @@ Bundles agents, skills, workflow commands, and a skill distillery for PHP, Pytho
 
 AI coding agents skip planning, claim "done" without verifying, patch symptoms over root causes, and forget what they learned when context resets. The output looks polished. The behavior underneath is undisciplined.
 
-The long-form argument is at [AI Agents Don't Lack Capability. They Lack Process.](https://ilia.ws/blog/ai-agents-dont-lack-capability-they-lack-process). This plugin enforces it.
+The long-form argument is at [AI Agents Don't Lack Capability. They Lack Process.](https://ilia.ws/blog/ai-agents-dont-lack-capability-they-lack-process). This plugin supplies that process as instructions and supporting tools.
 
 ## 🚀 Install
 
@@ -72,9 +72,13 @@ bash scripts/refresh-codex-plugin.sh
 
 The legacy converter remains available for OpenCode and other non-plugin targets.
 
+In this checkout, Codex also discovers the 12 repository commands and `skill-distiller` through `.agents/skills/`. Invoke them as `$release`, `$audit-plugin`, `$write-skill`, or `$skill-distiller`, with arguments after the name. Command wrappers read the maintained `.claude/commands/` sources. If an existing session has not refreshed its skill list, start a new Codex session. These repository workflows are separate from the distributed plugin skills.
+
 ### OpenCode
 
 Same converter, different target. OpenCode reads skills from its per-project config. The converter translates the plugin's `SKILL.md` format into OpenCode's expected shape and writes output into the current project (override with `--output <dir>`).
+
+Command-based `PreToolUse` and `PostToolUse` hooks use a bundled adapter; unsupported hook events and types cause conversion to fail. Whetstone's injection hook requires Bash and `jq` on PATH. The installed bundle includes its scripts and skill files, so it does not depend on the source checkout.
 
 ```bash
 bun run src/index.ts install ./plugins/whetstone --to opencode
@@ -88,6 +92,8 @@ bun run src/index.ts cleanup --target kilocode
 bun run src/index.ts cleanup --target agents
 ```
 
+Use `cleanup --target opencode --output <dir>` for a custom installation. Default OpenCode cleanup checks the current project and legacy global locations. Cleanup backs up individually identified Whetstone artifacts and preserves unrelated or customized files; files whose ownership cannot be established require manual review.
+
 ### Additional targets (symlink-based)
 
 For tools that read skills directly from `~/.agents/skills` or `~/.kilocode/skills`, `scripts/sync-to-tools.sh` symlinks the plugin's skill directory into each path so edits land immediately without re-conversion. It removes legacy Whetstone-owned links from `~/.codex/skills` and adds managed Codex exclusions for the same skills discovered through `~/.agents/skills`; the native plugin remains Codex's single source.
@@ -99,7 +105,7 @@ bash scripts/sync-to-tools.sh --dry-run    # preview changes
 
 ## 🔗 Works well with
 
-- **[codesage](https://github.com/iliaal/codesage)** adds structural code intelligence (find symbols, references, dependencies, blast-radius analysis) as an MCP server. The plugin enforces discipline; codesage gives the agent the map of the codebase to apply that discipline against.
+- **[codesage](https://github.com/iliaal/codesage)** adds structural code intelligence (find symbols, references, dependencies, blast-radius analysis) as an MCP server. Whetstone supplies process guidance; CodeSage supplies codebase structure for applying it.
 - **[ai-skills](https://github.com/iliaal/ai-skills)** is the read-only mirror of this plugin's skills for agents without native Whetstone plugin support.
 
 ## 🛠️ The workflow
@@ -120,7 +126,7 @@ You don't have to use all five. `/ia-review` on its own is a solid pre-merge che
 
 ## ✨ Skills
 
-Skills are instructions that activate based on what you're working on. They shape how the agent behaves, enforcing procedures and anti-patterns rather than adding knowledge.
+Skills are instructions selected for the task. They guide procedures and identify anti-patterns; they are not runtime enforcement of the agent's decisions.
 
 ### Architecture & design
 
@@ -141,7 +147,7 @@ Skills are instructions that activate based on what you're working on. They shap
 | [ia-rust-systems](plugins/whetstone/skills/ia-rust-systems/SKILL.md) | Edition 2024, workspace layout with inward-only deps, `thiserror` in libraries / `anyhow` in binaries, no `unwrap`/`expect` outside `main` and tests, every `unsafe` block needs a `// SAFETY:` comment. Tokio patterns (JoinSet, CancellationToken, bounded mpsc) and axum service layout. For Rust CLIs, axum services, or cargo workspaces. |
 | [ia-c-systems](plugins/whetstone/skills/ia-c-systems/SKILL.md) | Repo conventions outrank the skill, so it defers on tabs, `goto cleanup`, and macros that return rather than fighting established C. Function altitudes (orchestrator / leaf / adapter) gated behind a name test that stops over-decomposition, status enums with one producer per error value, public-validates / internal-asserts boundaries. Separate references for memory safety (sanitizers, overflow-checked allocation, recursion to bounded worklists) and PHP extension C. For C11 and later, native extensions, and systems code. |
 | [ia-cpp-systems](plugins/whetstone/skills/ia-cpp-systems/SKILL.md) | Rule of zero by default and rule of five once a destructor appears, since a user-declared destructor silently suppresses moves. `unique_ptr` first and `shared_ptr` third. API rules that break callers when ignored: decide `explicit` at introduction, keep the narrow overload, delete rather than silently ignore. Separate references for ABI boundaries (exceptions must not cross `extern "C"`, PIMPL, visibility) and CMake tooling. For C++17 and later libraries and services. |
-| [ia-pinescript](plugins/whetstone/skills/ia-pinescript/SKILL.md) | Prevents silent TradingView errors (ternary formatting, `plot()` scope restrictions), enforces `barstate.isconfirmed` to avoid repainting, requires walk-forward validation over pure backtesting. Flags indicator stacking and overfitted parameters. For Pine Script v6. |
+| [ia-pinescript](plugins/whetstone/skills/ia-pinescript/SKILL.md) | Guides Pine Script v6 syntax, platform limits, signal stability checks, and walk-forward validation. Distinguishes historical indexing from future outcomes and chart-bar confirmation from requested-timeframe confirmation. |
 | [ia-tailwind-css](plugins/whetstone/skills/ia-tailwind-css/SKILL.md) | Enforces v4's CSS-first config model (`@theme`, `@utility`, `@custom-variant` directives). Provides a v3-to-v4 breaking changes table. Prohibits dynamic class construction, mandates `gap` over `space-x`, `size-*` over paired `w-*/h-*`. For Tailwind v4 or v3 migrations. |
 
 ### Infrastructure
@@ -272,7 +278,7 @@ All commands carry the `ia-` prefix to avoid collisions with Claude Code built-i
 
 Skills eat context. Every token a skill spends is one the agent can't use on your code. So these are built tight:
 
-- **Under 1K tokens, 2K hard cap.** Overflow goes to `references/` files loaded on demand.
+- **Aim below 1K body tokens; 2K hard cap.** Generated and shipped skill validators use the same budget estimator (`cl100k_base`, or characters/4 when unavailable). Keep operative scope and verification rules inline; move detailed topic guidance to conditionally loaded `references/` files.
 - **Front-loaded.** Critical rules first. Model attention drops off, so the important stuff leads.
 - **Actions, not explanations.** Tell the agent what to do, not what things are. Skip anything the model already knows.
 - **Every "don't" has a "do instead."** Bare prohibitions leave the agent guessing. Alternatives give it a clear path.

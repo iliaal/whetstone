@@ -6,7 +6,7 @@ argument-hint: "[--min-examples 30] [--top 10]"
 
 # Evaluate and rank all skills
 
-Score every skill that has sufficient harvested eval data, rank them by procedure-following score, and identify the best candidates for `/evolve-skill`.
+Assess historical outputs against each skill's current rubric to identify traces worth investigating. These scores do not measure a skill's effect or compare baseline and candidate behavior. `--skill-file` changes only the retrospective rubric. For a behavioral comparison, use `compare-skill`'s fresh paired executions described in `/evolve-skill`.
 
 ## Arguments
 
@@ -41,7 +41,7 @@ Present a table (include the `ambiguous` count — it is the dominant class post
 
 Read the columns honestly:
 - **ambiguous** — no typed user outcome. This is the NORMAL case for subagent sessions (they end without a human reply), so a high ambiguous count is expected, not a problem.
-- **positive** — requires 2+ typed user messages with satisfaction signal; rare for subagent-driven skills.
+- **positive** — requires an explicit typed satisfaction signal; neutral replies and skipped long messages remain ambiguous.
 - **negative** — a genuine typed user correction. Low counts (0-3) are the norm now; each one is high-signal.
 
 ### Step 3: Eval each eligible skill (in-session sub-agents)
@@ -93,7 +93,7 @@ style. Fusing the three hides the signal inside two axes the skill does not
 control, so a skill that improved procedure at a small cost in conciseness looks
 flat. Report all three axes and rank on procedure.
 
-- **Procedure < 4.0**: Strong candidate for `/evolve-skill` -- the agent had the skill and did not follow it
+- **Procedure < 4.0**: Inspect the trace and injected skill version; a low retrospective score alone does not prove the agent received or ignored the current instructions
 - **Procedure 4.0-5.0**: Read the judge notes before acting. 5.0 is the judge's "skill not applicable" default, so a cluster at exactly 5.0 is a *trigger* problem for `/analyze-misfires`, not a content problem
 - **Procedure 5.0-7.0**: Marginal -- manual review beats automated evolution
 - **Procedure > 7.0**: Performing well -- deprioritize unless it carries genuine negative examples
@@ -115,6 +115,6 @@ When several skills sit at exactly 5.0 procedure, say so and route them to `/ana
 ## Notes
 
 - This command can take 5-15 minutes depending on how many skills have data, since each eval dispatches judge sub-agents.
-- Eval history is automatically saved per-skill, so running this periodically builds a trend over time.
-- Skills with fewer than MIN_EXAMPLES (default 30) are skipped -- below that threshold, scores are dominated by outliers and don't represent real skill effectiveness.
+- Eval history records retrospective assessments. Changes in tasks, models, and rubrics prevent interpreting score differences as skill improvement.
+- MIN_EXAMPLES (default 30) is a triage volume cutoff, not a statistically validated threshold for skill effectiveness.
 - The orchestrator runs `build-golden`/`approve-golden` then `dspy-eval --emit-tasks` per skill (deterministic, no LLM), and the emitted judge tasks are what fan out to sub-agents. Each sub-agent judges ONE emitted task and returns its JSON verdict; the orchestrator aggregates them with `--score-from-verdicts`. A sub-agent does not run `build-golden` or `dspy-eval` itself.

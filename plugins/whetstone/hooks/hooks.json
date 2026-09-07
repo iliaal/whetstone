@@ -2,11 +2,11 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Task",
+        "matcher": "Task|Agent",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh\"",
             "timeout": 5,
             "statusMessage": "Injecting relevant skills..."
           }

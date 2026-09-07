@@ -9,7 +9,7 @@ triggered, offline. It is not in the release pipeline and not automatic.
 
 | Tier | Tool | Cost | Use for |
 |---|---|---|---|
-| 1 | `distiller.py dspy-eval` / `eval-skills` | cheap | rank skills, find weak ones |
+| 1 | `distiller.py dspy-eval` / `eval-skills` | cheap | retrospectively triage traces; no behavioral effect measured |
 | 2 | `distiller.py evolve` (DSPy) | cheap | single-turn prompt tuning |
 | 3 | **SkillOpt** | expensive | a **process** skill whose value is agentic, where Tier 2 plateaued |
 
@@ -126,8 +126,12 @@ ia-debugging, ia-simplifying-code, ia-verification-before-completion, ia-code-re
 `best_skill.md` is a **proposal**, never auto-shipped:
 
 1. Inspect `history.json` for reward-hacking; review the `best_skill.md` diff.
-2. **Re-eval on held-out / golden data** (`distiller.py dspy-eval`) — the in-run
-   `val` may overlap `train`, so confirm the gain generalizes out of sample.
+2. **Execute baseline and candidate on reserved cases** with `distiller.py compare-skill`
+   (full workflow in `.claude/commands/evolve-skill.md`), or repeat SkillOpt's fixture
+   execution with both skills and an unchanged reward. Keep cases outside training
+   and candidate selection; the in-run `val` may overlap `train`. Use fresh agents,
+   identical model/settings, and reset fixtures. `dspy-eval` only rescores historical
+   outputs; it cannot demonstrate candidate behavior or generalization.
 3. `distiller.py test-triggers` — confirm activation is unchanged (content edit,
    not an activation edit).
 4. Run a Codex Flow A cycle — it is a behavior-affecting edit to a shipped skill.

@@ -15,6 +15,14 @@ paths: "**/*.c,**/*.h"
 
 Covers C11 and later for libraries, systems code, and native extensions. For C++ (RAII, templates, move semantics), see the `ia-cpp-systems` skill.
 
+## Working rules
+
+- Preserve the repository's sanctioned idioms and ABI; do not turn a scoped fix into a restyle.
+- State ownership, check fallible calls, validate public boundaries, and assert internal invariants.
+- Bound traversal of external input and check sizes before allocation or narrowing.
+- Choose helpers only when they name a concept, own an error, or isolate a side effect.
+- Verify the actual rebuilt artifact; use instrumented tests for safety and representative release builds for performance.
+
 ## Repo conventions outrank this skill
 
 Read the repo's `AGENTS.md`/`CLAUDE.md`, its public headers, and two adjacent `.c` files before writing anything. Where they conflict with the rules below, they win, and the diff carries no note about it.
@@ -32,165 +40,6 @@ Never widen a scoped task into a repo-wide restyle because adjacent untouched C 
 
 **When the target is a PHP extension** (`php_*.h`, `PHP_FUNCTION`, `zend_`, `config.m4`), load [php-extension-c.md](./references/php-extension-c.md) before applying any rule below. Layout, macros, the error model, memory, and assertions all carry extension-specific overrides, and the memory one in particular inverts the base guidance: extensions use a request-scoped allocator, not `malloc`/`free`.
 
-## Tooling
-
-| Tool | Purpose |
-|------|---------|
-| `gcc` / `clang` | `-Wall -Wextra -Werror -Wconversion -Wshadow` from the first commit on a new project; on an existing tree, the repo's profile plus zero *newly introduced* warnings |
-| ASan + UBSan | `-fsanitize=address,undefined -fno-omit-frame-pointer`: default for test builds |
-| `valgrind --leak-check=full` | Leak and uninitialized-read detection where ASan cannot be linked |
-| `clang-tidy` | Lint (`bugprone-*`, `cert-*`, `clang-analyzer-*`) |
-| `cppcheck` | Second opinion; catches different classes than clang-tidy |
-| `gdb` / `lldb` | `bt full`, `p *ptr`, watchpoints on corrupted fields |
-| `clang-format` | Formatter, driven by the repo's `.clang-format`, never a personal preference |
-
-Compiler warnings are the cheapest static analysis available, and a build nobody can get clean has no signal left in it. Turning `-Wconversion` or `-Werror` on globally over a mature tree produces thousands of unrelated failures, so raise the bar on the diff rather than the repository unless the whole codebase is in scope.
-
-- A faulting load with a base register and a displacement is a field access, so name the field by counting the struct's offsets by hand with alignment and padding respected, and classify the base register against null, kernel space, the heap range, and the neighbourhood of the stack pointer. A non-null heap-shaped base whose displacement lands on unmapped memory fits both "the caller passed null" and "the object was freed between creation and use", and the fix that re-derives the pointer from a live anchor closes both, so prefer it over reproducing the exact trigger.
-- Warning suppressions that vendored code needs must not ride the shared flag string. One `CFLAGS` disabling a warning class disables it for first-party code too, and the comment claiming the first-party code is clean without them is unverifiable in the build that carries them. Register vendored sources as their own target with their own flags, and keep the first-party set unsuppressed under `-Werror`.
-
-## File and module layout
-
-Every `.c` file in this order: file comment naming what the module owns; system includes, blank line, project includes; constants (enums first, `#define` for strings and conditional compilation only); types; prototypes for every static function, each with its contract comment; public definitions in header order; static definitions in call order.
-
-Every `.h`: include guard, includes, constants, types, prototypes. What a header must not carry is a *definition* with external or tentative linkage, meaning a non-inline function body or a variable that allocates storage. A `static inline` definition is fine and is the only way to publish one; an `extern` declaration is fine and is sometimes required.
-
-A reader who finishes the first screen holds the module's complete vocabulary and never meets an unresolved symbol.
-
-## Naming
-
-- Module prefix on every symbol with external linkage, and on statics too: `rb_push`, `net_send`.
-- Functions are verb_object. Predicates start `is_`/`has_` and are never negated: `is_valid`, not `is_not_ready`.
-- Lifetime pairs are exact and carry meaning: `_create`/`_destroy` implies heap allocation with ownership transfer, `_init`/`_deinit` implies caller-owned storage, `_open`/`_close`.
-- Precise beats verbose: `retry_count`, not `number_of_connection_retry_attempts`.
-- Name length scales with the distance between declaration and last use. `i` is fine in a five-line loop; anything crossing 20 lines gets a real name.
-- Units live in the name: `TIMEOUT_MS`, `MAX_PAYLOAD_BYTES`.
-
-Naming is the primary navigation channel for both greps and models, not decoration. A magic number is a fact with no grep anchor; a named constant is editable in exactly one place.
-
-## Functions
-
-Apply the name test **first**, before any decomposition rule below: if the most honest name for a candidate helper merely paraphrases its body, inline it and stop. A helper earns existence by naming a concept, owning an error value, or isolating a side effect. Nothing else counts.
-
-Having passed it:
-
-- One job per function. A contract comment needing the word "and" means two functions.
-- Target 15 lines, hard cap 40. Nesting depth 2. Guard clauses first, happy path at the left margin.
-- Parameter order: context pointer, outputs, pure inputs. A buffer and its length stay adjacent, buffer first. Past 4 parameters, the list is a struct trying to exist.
-- No static locals except `static const` lookup tables.
-- Classify every function as orchestrator (helper calls, status checks, branches on named predicates), leaf (straight-line logic calling only accessors and pure utilities), or adapter (wraps exactly one foreign call and translates its convention). Never a mix. Public visibility is a separate axis, not a fourth altitude.
-
-## Control flow
-
-- Early return over else chains.
-- `goto` only where the repo sanctions it, or for one forward jump to one cleanup label when three or more interdependent resources are live. A `goto` whose label only returns is indirection buying nothing.
-- Every `switch` case ends in `break` or an explicit `/* fallthrough */`. Require `default` when switching on an open-ended integer or an externally supplied value. On a closed internal enum, prefer *omitting* `default` with `-Wswitch-enum` enabled, because that is what makes adding an enumerator produce a warning at every switch that needs updating; a `default` silences exactly the diagnostic worth having. If the control flow needs proving, add a real `assert(0)`, never an unreachable annotation (see the UB table in [memory-safety.md](./references/memory-safety.md) for why). The consequence worth carrying here: because reaching one is UB rather than a diagnostic, a bug filed as "assertion failure on a debug build" is usually also a live user-visible bug on stock release builds, wearing a completely different symptom. A foreign library's enum is the opposite case, since the compiler cannot warn about members it was never shown: a `default` arm returning a plausible value such as null or zero turns every member the switch forgot into silent data loss, so make that arm fail loudly and re-enumerate the foreign enum against the switch on every dependency upgrade.
-- A loop body over 10 lines becomes a named function.
-- Give an explicit named bound to every loop whose trip count comes from untrusted or externally-supplied data. Traversals bounded by a structure's own size invariant (`while (fgets(...))`, a list walk, a scan to a terminator) do not need one; name the invariant in a comment or an assert instead. A deliberate event pump carries a comment saying exactly that.
-- No recursion over externally-supplied input. Convert to a loop over an explicit bounded worklist: stack depth becomes visible and termination checkable. Unbounded recursion over attacker-controlled nesting is a live CVE class in parsers and serializers.
-- No side effects inside conditions. No assignment inside `if`. No nested ternaries.
-
-## Errors
-
-- Every fallible function returns a status. Adopt the project's type if one exists; otherwise one enum per module, success 0 and named (`RB_OK`), values prefixed (`RB_ERR_ALLOC`).
-- Never return `bool` from anything that can fail more than one way.
-- Never mix errno-style and enum-style inside module code. Wrap libc at the boundary and convert once.
-- Every fallible call is checked. Status propagates upward unchanged; only the top of the chain logs, converts, or decides.
-- Minimize producers per error value. `grep RB_ERR_FULL` landing on one producing line turns a failure report into a location.
-
-## Types and data
-
-- Pick the type from the value's domain. Exact-width types (`uint32_t`, `int64_t`) where the representation is externally fixed: wire formats, file layouts, registers, exact modular arithmetic. `size_t` for object sizes, counts, and indices; `ptrdiff_t` for pointer differences. Ordinary `int` is correct for an ordinary counter or status whose guaranteed range suffices, and churning established `int` usage to exact-width changes ABI and warning behavior for nothing.
-- `const` on every pointer parameter not written through.
-- Initialize every object at declaration, and declare it at the smallest scope and the latest point where its first value is already valid.
-- One level of dereference per expression. `a->b->c->d` smuggles three lifetimes and three nullability questions into one term; bind intermediates.
-- Every union carries a tag. Structs use designated initializers, and any invariant tying two fields together is stated in a comment above the struct.
-- Function pointers belong in `static const` dispatch tables, or as a documented callback parameter (a `qsort` comparator, a visitor walk). What to avoid is a function pointer stored loose in mutable state, where the reachable targets cannot be enumerated from the code.
-
-## Boundaries and assertions
-
-Public entry points validate arguments and return the argument-error status. Internal statics do not re-validate; they `assert` their invariants instead. Every state-mutating leaf asserts at least one invariant.
-
-An assert is a machine-checked comment: it states what must stay true and sits exactly where an editor is about to change something. Standard `assert` costs nothing in builds that define `NDEBUG` before including `<assert.h>`, which is a project decision rather than an automatic property of a release build. Where assertions stay enabled in production, assert meaningful invariants and stop chasing density. Validation duplicated at every level is noise that hides logic.
-
-Check what a **project's own** assert macro degrades to before assuming it is free. A macro that becomes an *assume* rather than a no-op still evaluates its condition on some toolchains: clang's `__builtin_assume` and MSVC's `__assume` do not evaluate, but the GCC `__builtin_expect` plus `__builtin_unreachable` form does. So an assert whose condition calls a function in another translation unit emits a real call in a release build, silently paying back the check an optimization just removed, and it measures perfectly on clang while regressing on GCC. Wrap those in the project's debug-only conditional instead. Do not answer that by marking the called predicate `pure` so the optimizer can drop it. The attribute is a promise to every caller, not a local hint, and it licenses common-subexpression elimination across exactly the state changes a context-dependent predicate exists to observe.
-
-Never discover a foreign container's end by incrementing an index until the accessor returns null. An accessor documented as a plain index may throw or terminate on an out-of-range argument instead of reporting one, so bound every traversal by the API's own count accessor. Bounds-check any index that came from the data as well: a tag byte lifted out of a payload and used to select a child is where untrusted bytes become a structural index.
-
-Constructing a library's objects directly bypasses the validation its high-level path performed. Raw `create_*` constructors skip the range and encoding checks the convenience call made on the way in, so a narrowing constructor wraps silently and a text constructor forces binary through the string encoder. Re-implement those checks when hand-building objects for a bulk path, or keep the convenience path.
-
-## Macros
-
-Uppercase names, every argument and the whole body parenthesized, multi-statement bodies in `do { } while (0)`. No macro evaluates an argument twice. Prefer `static inline` wherever types allow.
-
-Hidden control flow inside a macro makes visible code lie about its own paths, so a macro containing `return`, `goto`, `break`, or `continue` is banned unless the project already sanctions one. Where a project has none and unchecked calls are a recurring bug, a single `MODULE_TRY(expr)` beside the status enum is a defensible exception, restricted to functions that acquire nothing. Adding a second hidden-return mechanism to a codebase that already has one is a net loss.
-
-## Memory and lifetime
-
-State ownership at the interface, in the name (`_create` vs `_init`) and in the contract comment. Treat allocation failure as a status, never an abort, outside `main`.
-
-For sanitizer invocation, the integer overflow and truncation rules, allocation and lifetime patterns, the recursion-to-worklist conversion, and untrusted-input parsing discipline, load [memory-safety.md](./references/memory-safety.md).
-
-## Correctness traps
-
-Four shapes compile clean, pass review, and fail in production. Check for them by name:
-
-| The code does this | The trap |
-|---|---|
-| Formats a number another program parses | The `printf` float family follows process-global `LC_NUMERIC`; one `setlocale` anywhere emits `12,5` into SVG or JSON |
-| Reads from a stream | Short reads are normal, and `&buf[n]` on a typed pointer advances `n * sizeof(*buf)` |
-| Derives a range from user input | `end = start + count - 1` overflows before the validation that would reject it |
-| Passes an integer to a foreign API | A value that passes a sign check still narrows to something else |
-
-Load [correctness-traps.md](./references/correctness-traps.md) for detection greps, fix patterns, macro shadowing, and the portability checklist.
-
-## Testing
-
-C has no dominant framework, so follow the repo's: Unity, Check, CMocka, Criterion, or plain assert-and-exit driven by the build. Whichever it is, run the suite under `-fsanitize=address,undefined` in CI, and make each new test fail against the unfixed code before accepting it.
-
-- A quarantined test is a memory-safety blind spot, not a compatibility note. Whatever a skipped or expected-fail case exercises stops being watched by the sanitizer lane for as long as the skip lasts, and its label was written by whoever quarantined it, usually from a glance, so "known leak" is the standing guess for anything that merely looked wrong about memory. Re-run every skipped test touching lifetimes, ownership, or teardown under the instrumented build before trusting its label, and when one turns out to be a real fault, move it into the instrumented suite rather than leaving it skipped.
-
-For generic test discipline (anti-patterns, real assertions, rationalization resistance), see the `ia-writing-tests` skill.
-
-## Trusting the build
-
-A verification result is a claim about a binary, not about a diff, and the two separate quietly.
-
-- A failing test in untouched, correct-reading code: rebuild from clean before debugging (stale-artifact procedure: the `ia-debugging` skill's specialized-patterns reference).
-- An incremental build can exit zero, echo the compile line for the file just edited, and still skip the link. Compare the artifact's timestamp against every source touched this session; neither the exit code nor the echoed command proves the binary changed. A result that matches the pre-edit behavior exactly is the tell, and forcing the rebuild sometimes surfaces a compile error the stale artifact had been hiding.
-- Never take a copy of a configured tree as the second variant of a comparison. Dependency files written by the configure step hold absolute paths into the original tree, so the copy's build evaluates prerequisites against files nobody edited, compiles nothing, and links an artifact differing only in build metadata. Take a fresh checkout and re-run configure per variant, and confirm the change is actually present with one cheap behavioral probe, or an observable side channel such as an output size, before spending time measuring.
-- A `CFLAGS=` handed to a configure script that inherits its base flags from elsewhere replaces them rather than appending, which silently drops the optimization level and produces a large unexplained regression from a flag that could not cause one. Keep the level explicit when adding a flag, and grep the generated makefile for it before believing any number the build produced.
-- A call to a function the target platform does not declare is a warning, not an error. The compiler emits an implicit declaration, where an indirection-level or implicit-declaration warning at the assignment is the tell; the linker leaves the symbol undefined in a shared object; and `dlopen` succeeds because resolution is lazy, so the failure arrives as a symbol lookup error the first time that path runs, on the platform CI runs last. Build with `-Werror=implicit-function-declaration` and `-Wl,--no-undefined`, and exercise every conditionally compiled path on the oldest supported platform. Once a tree carries `#ifdef` splits for these calls, a caller added on a POSIX host compiles clean everywhere locally and breaks every Windows lane at once: every lane of one platform failing at compile while the others stay green is that signature, not a flake.
-- A shared object is only self-contained on a machine that lacks its dependencies. `-fvisibility=hidden` hides nothing that a vendored header re-exports through its own `visibility("default")` macro, and `-static-libstdc++` and `-static-libgcc` are driver flags the C driver ignores, so a module that loads on the build host fails `dlopen` elsewhere on undefined `std::` or `__cxxabi` symbols. Gate the artifact instead: `nm -D --defined-only` shows no vendor symbols, `nm -D -u` shows no unexpected undefined ones, and the load-and-exercise check runs in a clean minimal container.
-- Probe a library capability with a link test, not a header grep. A header newer than the installed library passes the grep and fails at link, and from GCC 14 and Clang 16 onward the implicit declaration is a hard error rather than a warning. Use the link-test macro in every build system the project ships, and where a capability is genuinely unavailable on one platform, state that platform consequence in the release notes.
-
-## Measuring a change
-
-- Never measure on a sanitizer or debug build. It inflates absolute time several-fold, which everyone remembers, and it distorts the ratio between implementations, which they do not: the per-access and per-allocation overhead falls hardest on allocation-heavy code, so a comparison against a differently-shaped competitor reads far better than it is. Worse, it systematically over-rewards the entire class of micro-optimization whose theory is "fewer allocation or append calls", which is how a genuine regression ships as a measured win. The sign flips on a release non-debug build, so check the optimization level too, not only the absence of a sanitizer.
-- Interleave the two variants per round and carry a case the change cannot reach. A uniform move across untouched code is the harness, not the code: on a machine with mixed core types, one variant's heavy cases leave the core throttled for the other's, and run-to-run spread for a single unchanged binary reaches double digits where a quiet machine gives a few tenths of a percent. The failure does not look noisy; it is a clean table of consistent wrong numbers.
-- A number stored from an earlier session is a different variant. Rebuild the old binary and measure it alongside the new one, because the comparison is what goes wrong, not either measurement.
-- Instruction counts are deterministic and immune to frequency and core type, so use them to reject a candidate cheaply and to bound a claimed win, never to assert one: a removed load plus a predicted branch retires nearly free. Read a zero delta as "this instrument cannot see this change", which is the correct reading for anything that only alters allocation timing or buffer headroom.
-- A measured win on a path the diff cannot reach is code layout, not the change. Confirm it on a second architecture, or rebuild the baseline with alignment flags only and watch the same case move by the same amount. Layout differences are deterministic per binary, so they produce large stable effects that survive any amount of repetition, and the resulting confidence is entirely misplaced.
-- Removing instructions the processor was already hiding is context-fragile; removing repeated work from the always-executed path survives context. An isolated tight loop keeps the branch predictor trained and the working set resident, so it overstates the first kind and can overstate the ceiling of a hotspot that is not addressable at all. Validate in a realistic mixed workload before believing either.
-- `__attribute__((optimize(...)))` is an inlining barrier, not a per-function optimization knob: the attributed function is not inlined into its callers and they are not inlined into it. It can isolate an optimization level for a self-contained local loop, cannot capture any win that depended on inlining, and pinning a hot function below its translation unit's level inserts a call wall that regresses past a uniform build at either level. Use a separate translation unit compiled at the other level.
-- A/B a compile-time-selected path from one tree by injecting the disable macro through the compiler variable. Gate the `#ifdef` branch behind a single disable token and rebuild with `make CC='cc -DDISABLE_X'`, because re-running configure with a flags variable replaces the base flags, including the optimization level. Confirm from a runtime banner which path each build selected, assert that the two produce identical output, and carry a null control: an operation the gated path cannot reach must move by roughly 0% between the builds.
-
-## Refactoring existing C
-
-Short, flat, guarded, and free of magic numbers is not the same as done. Before accepting an existing function, run the near-miss test: duplicated mutation, data encoded as control flow, interleaved concepts, declarations sitting above their first valid value.
-
-Judge any proposed refactor by the cost of the next change, not by line count. For the full three-stage worked example with its change-cost proof, and the deeper normative rules behind the sections above, load [legibility-standard.md](./references/legibility-standard.md).
-
-## Discipline
-
-- Preserve behavior and ABI unless a semantic change was requested. Use an adapter when a foreign API conflicts with a local rule.
-- Consume a new flag bit after the existing bitfield members, never ahead of one. Inserting ahead of a published field shifts every following field's position for consumers built against the old header, while `sizeof` and the struct's member offsets stay unchanged, so the usual ABI evidence stays green. Append, and reserve spare bits when publishing a bitfield.
-- On a released ABI, new state never goes into a public struct, not even into existing padding: consumers keep the old offsets, and maintainers reject the change regardless of how the layout happens to work out. Take the ladder instead, in order: a file-scope `static` in the using translation unit, a thread-local where the state is per-thread, an encoding into an existing field that the owner sanctions, or the next ABI-breaking branch. Audit the diff against the public headers of a stable branch before proposing it.
-- When a required constraint forces a deviation, comment at the deviation site and state the constraint. A note in the delivery message does not replace a comment in the source.
-- A frozen public signature that cannot return a status excuses the status rule and nothing else: internal asserts and every other locally satisfiable rule still apply.
-- Relocating a fix from a call site into a shared helper widens the set of struct fields that helper reads, and every caller that satisfied the old contract by accident, by leaving a now-read field uninitialized, becomes a fresh bug. Audit all callers when a shared function starts reading a new field, not only the one that motivated the change; an initialization assert on the aggregate is a debug check, not a guarantee that callers zero every member.
-- A fork that diverged on its data model cannot be merged from upstream, only cherry-picked into. Once the two trees disagree on field types, a pointer and length against an owned string or an enum against a narrow int, a three-way merge has no conflict to report: it resolves by picking one side and invalidates the other side's assumptions in every consumer. The dangerous part is an accessor that still compiles because both sides declare a member of that name. Port fixes by hand into the fork's shapes, and record each as a local patch naming its upstream origin.
-- Do not claim compliance for checks that could not run. Name the command that did not execute.
 
 ## Verify
 
@@ -200,3 +49,18 @@ Judge any proposed refactor by the cost of the next change, not by line count. F
 - Every new fallible call site checked; every new error value traced to one producer
 - Every new state-mutating leaf carries an assert
 - No new `goto` outside the repo's sanctioned form or the single-forward-jump cleanup; no recursion over external input; no loop over external input without a named bound
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For module layout, naming, decomposition, control flow, errors, types, or macros: [implementation-structure.md](./references/implementation-structure.md).
+- For memory, external input, assertions, ABI changes, or shared-helper contracts: [runtime-safety.md](./references/runtime-safety.md).
+- For compiler setup, tests, build provenance, packaging, or performance claims: [build-and-measurement.md](./references/build-and-measurement.md).
+
+Existing specialized references, when the corresponding topic applies:
+
+- [php-extension-c.md](./references/php-extension-c.md).
+- [memory-safety.md](./references/memory-safety.md).
+- [correctness-traps.md](./references/correctness-traps.md).
+- [legibility-standard.md](./references/legibility-standard.md).

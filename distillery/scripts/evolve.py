@@ -96,6 +96,28 @@ def _make_diff(original, evolved, skill_name):
     return "".join(diff)
 
 
+def _fitness_examples(examples, fitness):
+    if fitness != "keyword":
+        return examples
+    return [ex for ex in examples if ex.get("expected_output") or
+            (ex.get("signal") == "positive" and ex.get("agent_output"))]
+
+
+def _keyword_score(gold, output_text):
+    """Lexical proxy against a successful reference, never a failed trace."""
+    reference = gold.get("expected_output")
+    if not reference and gold.get("signal") == "positive":
+        reference = gold.get("agent_output")
+    if not reference:
+        raise ValueError("keyword fitness requires expected_output or a positive reference")
+    gold_words = {w for w in reference.lower().split() if len(w) >= 4}
+    pred_words = {w for w in output_text.lower().split() if len(w) >= 4}
+    overlap = len(gold_words & pred_words) / len(gold_words) if gold_words else 0.0
+    ratio = len(output_text) / max(len(reference), 1)
+    score = 0.3 + 0.5 * overlap - (0.15 if ratio > 2.0 else 0.2 if ratio < 0.1 else 0)
+    return round(max(0.0, min(1.0, score)), 3), "Lexical similarity to successful reference; not behavioral correctness."
+
+
 def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
                  optimizer="gepa", max_growth_pct=20, fitness="keyword"):
     """Run DSPy optimization on a skill's body text.
@@ -146,6 +168,13 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
             if line:
                 examples_raw.append(json.loads(line))
     print(f"Loaded {len(examples_raw)} eval examples from {dataset_path}", file=sys.stderr)
+    eligible = _fitness_examples(examples_raw, fitness)
+    if not eligible:
+        return {"error": "keyword fitness needs positive references or curated expected_output; use llm-judge for unlabeled/negative tasks"
+                if fitness == "keyword" else "evaluation dataset contains no examples"}
+    if len(eligible) != len(examples_raw):
+        print(f"Excluded {len(examples_raw) - len(eligible)} failed/ungraded traces from keyword imitation.", file=sys.stderr)
+    examples_raw = eligible
 
     # Configure DSPy LM
     model = model or "openrouter/deepseek/deepseek-v3.2"
@@ -202,7 +231,7 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
         """Score the predicted output against the gold example.
         Returns ScoreWithFeedback for GEPA's reflective evolution.
         """
-        expected_signal = gold.get("signal", "positive")
+        expected_signal = gold.get("signal", "ambiguous")
         output_text = pred.output if hasattr(pred, "output") else str(pred)
 
         if not output_text or len(output_text.strip()) < 10:
@@ -214,39 +243,11 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
             return _keyword_fitness(gold, output_text, expected_signal)
 
     def _keyword_fitness(gold, output_text, expected_signal):
-        """Fast keyword-overlap fitness. Cheap but coarse."""
-        gold_output = gold.get("agent_output", "")
-        if gold_output:
-            gold_words = {w for w in gold_output.lower().split() if len(w) >= 4}
-            pred_words = {w for w in output_text.lower().split() if len(w) >= 4}
-            overlap = len(gold_words & pred_words) / len(gold_words) if gold_words else 0.5
-        else:
-            overlap = 0.5
-
-        score = 0.3 + 0.5 * overlap
-        output_len = len(output_text)
-        gold_len = len(gold_output) if gold_output else 1000
-        ratio = output_len / max(gold_len, 1)
-        if ratio > 2.0:
-            score -= 0.15
-        elif ratio < 0.1:
-            score -= 0.2
-        score = max(0.0, min(1.0, score))
-
-        feedback_parts = []
-        if overlap < 0.3:
-            feedback_parts.append("Low content overlap -- skill instructions may be too vague.")
-        if ratio > 2.0:
-            feedback_parts.append("Output excessively verbose.")
-        if ratio < 0.1:
-            feedback_parts.append("Output far too short.")
-        if expected_signal == "negative":
-            feedback_parts.append("Historically negative example -- original skill failed here.")
-        feedback = " ".join(feedback_parts) if feedback_parts else "Acceptable output."
-        return ScoreWithFeedback(score=round(score, 3), feedback=feedback)
+        score, feedback = _keyword_score(gold, output_text)
+        return ScoreWithFeedback(score=score, feedback=feedback)
 
     def _llm_judge_fitness(gold, output_text, expected_signal):
-        """LLM-as-judge fitness via claude -p. Expensive but accurate."""
+        """Judge new single-turn output against the unchanged baseline rubric."""
         import re as _re_local
         task_input = gold.get("task_input", "")[:3000]
 
@@ -265,7 +266,7 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
                 capture_output=True, text=True, timeout=120,
             )
             if proc.returncode != 0:
-                return ScoreWithFeedback(score=0.3, feedback=f"Judge call failed: {proc.stderr[:100]}")
+                raise RuntimeError(f"Judge call failed: {proc.stderr[:100]}")
 
             data = json.loads(proc.stdout)
             result_text = data.get("result", "")
@@ -293,11 +294,12 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
                         continue
 
             if not scores:
-                return ScoreWithFeedback(score=0.3, feedback=f"Judge parse failed: {result_text[:100]}")
+                raise RuntimeError(f"Judge parse failed: {result_text[:100]}")
 
-            c = max(0, min(10, int(scores.get("correctness", 5)))) / 10
-            p = max(0, min(10, int(scores.get("procedure_following", 5)))) / 10
-            co = max(0, min(10, int(scores.get("conciseness", 5)))) / 10
+            keys = ("correctness", "procedure_following", "conciseness")
+            if any(type(scores.get(key)) is not int or not 0 <= scores[key] <= 10 for key in keys):
+                raise RuntimeError("Judge returned missing or invalid scores")
+            c, p, co = (scores[key] / 10 for key in keys)
             composite = 0.5 * c + 0.3 * p + 0.2 * co
 
             feedback = scores.get("feedback", "")
@@ -307,7 +309,7 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
             return ScoreWithFeedback(score=round(composite, 3), feedback=feedback)
 
         except (_sp.TimeoutExpired, json.JSONDecodeError, OSError) as e:
-            return ScoreWithFeedback(score=0.3, feedback=f"Judge error: {str(e)[:100]}")
+            raise RuntimeError(f"Judge unavailable: {e}") from e
 
     # --- Convert eval data to DSPy Examples ---
 
@@ -317,6 +319,7 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
         dspy_ex = dspy.Example(
             task_input=ex.get("task_input", "")[:3000],
             agent_output=ex.get("agent_output", "")[:5000],
+            expected_output=ex.get("expected_output", "")[:5000],
             signal=ex.get("signal", "ambiguous"),
         ).with_inputs("task_input")
 
@@ -425,6 +428,9 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
 
     return {
         "skill": skill_name,
+        "evaluation_kind": "single_turn_optimization",
+        "fitness": fitness,
+        "behavioral_effect_measured": False,
         "optimizer": optimizer,
         "model": model,
         "changed": changed,

@@ -6,7 +6,7 @@ import { convertClaudeToCodex } from "../converters/claude-to-codex"
 import { writeOpenCodeBundle } from "./opencode"
 import { writeCodexBundle } from "./codex"
 
-export type TargetHandler<TBundle = unknown> = {
+export type TargetHandler<TBundle = OpenCodeBundle | CodexBundle> = {
   name: string
   implemented: boolean
   convert: (plugin: ClaudePlugin, options: ClaudeToOpenCodeOptions) => TBundle | null
@@ -18,12 +18,18 @@ export const targets: Record<string, TargetHandler> = {
     name: "opencode",
     implemented: true,
     convert: convertClaudeToOpenCode,
-    write: writeOpenCodeBundle,
+    write: (root, bundle) => {
+      if (!("agents" in bundle)) throw new Error("Expected an OpenCode bundle")
+      return writeOpenCodeBundle(root, bundle)
+    },
   },
   codex: {
     name: "codex",
     implemented: true,
-    convert: convertClaudeToCodex as TargetHandler<CodexBundle>["convert"],
-    write: writeCodexBundle as TargetHandler<CodexBundle>["write"],
+    convert: convertClaudeToCodex,
+    write: (root, bundle) => {
+      if (!("prompts" in bundle)) throw new Error("Expected a Codex bundle")
+      return writeCodexBundle(root, bundle)
+    },
   },
 }

@@ -70,6 +70,8 @@ python3 distillery/scripts/distiller.py diagnose-negatives ia-debugging
 ```
 
 Acceptance gates:
+- Working behavior in another build variant does not exonerate identical source; causal conclusions distinguish measured facts from unverified hypotheses.
+- Authorized incident mitigation can precede root-cause discovery, and a completed diagnosis does not claim the proposed repair was verified.
 - `validate-plugin --component ia-debugging` returns 0 HIGH findings.
 - `test-triggers --skill ia-debugging` returns F1 = 1.0 with floors of 5 should_trigger and 5 should_not_trigger.
 - For dspy-eval, the composite score does not regress against the most recent saved baseline (see `distillery/.eval-data/ia-debugging/history.json`).
