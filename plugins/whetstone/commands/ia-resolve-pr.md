@@ -81,6 +81,8 @@ Spawn an `ia-pr-comment-resolver` only for disjoint ownership groups in parallel
 
 State the item's source channel in the prompt — `review thread` (has a file and line, reply threads under the original) or `conversation` (no file or line, replies as a top-level PR comment). The reply APIs differ and the agent cannot infer which to use from the comment body.
 
+For each review-thread item, pass its GraphQL thread ID from `unresolved[].node.id` alongside the comments, and retain that ID with the drafted reply for the authorized sender. Do not substitute a nested comment ID or a REST numeric ID.
+
 ## Phase 4: Commit and Verify
 
 - Group related changes into logical commits (one per concern, not per file)

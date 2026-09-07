@@ -57,7 +57,20 @@ When receiving a comment or review feedback:
 
 Draft the reply for the channel the item came from -- the dispatch prompt states which. Send only when explicitly authorized and not delegated to the parent:
 
-- **Review thread** (file + line): `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f in_reply_to={comment_id}`, not a top-level PR comment, so the resolution threads under the original.
+- **Review thread** (file + line): use the GraphQL thread ID from `get-pr-comments` at `unresolved[].node.id`. Set `THREAD_ID` to that item's thread ID and `REPLY_FILE` to the file containing the exact approved reply. The nested `comments.nodes[].id` identifies a comment, not its thread. Send with:
+
+  ```bash
+  gh api graphql \
+    -f query='mutation($thread: ID!, $body: String!) {
+      addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $thread, body: $body}) {
+        comment { id url }
+      }
+    }' \
+    -f thread="$THREAD_ID" \
+    -F body=@"$REPLY_FILE"
+  ```
+
+  Require a successful exit, no GraphQL errors, and a returned comment ID and URL before reporting the reply as posted. Replying does not resolve the thread. If the result is uncertain, re-fetch the thread before retrying to avoid duplicate replies.
 - **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply -- these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
 
 Your response format should be:
