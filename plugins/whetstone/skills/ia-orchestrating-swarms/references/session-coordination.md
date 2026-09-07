@@ -12,11 +12,11 @@
 
 ## Context Carry-Forward
 
-Choose context carry-forward through capabilities the active harness exposes. Claude Code can use Continue, Rewind, `/compact`, Subagent, or `/clear`+brief; see [context-carry-forward.md](./context-carry-forward.md). In Codex, use a follow-up task for the same agent, a fresh agent with a focused handoff, automatic compaction, or a new thread with a brief. Do not emit Claude slash commands in Codex.
+Choose context carry-forward through capabilities the active harness exposes. Claude Code can use Continue, Rewind, `/compact`, Subagent, or `/clear`+brief; see [context-carry-forward.md](./context-carry-forward.md). In Codex, continue the same implementer's own unit with a follow-up task, or use a fresh agent with a focused handoff, automatic compaction, or a new thread with a brief. Independent reviewers always start fresh without inherited history on every round. Do not emit Claude slash commands in Codex.
 
 ## Coordination Models
 
-Choose by work pattern. **Stateless** -- the leader copies full outputs between prompts -- fits short pipelines of 2-3 agents with sequential handoffs; it fails by context growing linearly with agent count, mitigated by summarizing before passing. **Stateful** -- agents read and write shared task files and claim ownership -- fits parallel work, 4+ agents, and complex dependency graphs; it fails by concurrent modification, mitigated by worktrees or exclusive file ownership per agent. Start stateless; graduate to stateful only when parallelism buys a real speedup and worktree isolation is available. Comparison table: [orchestration-patterns.md](./orchestration-patterns.md) (Coordination models).
+Choose by work pattern. **Stateless** -- the leader copies full outputs between prompts -- fits short pipelines of 2-3 agents with sequential handoffs; it fails by context growing linearly with agent count, mitigated by summarizing before passing. **Stateful** -- agents read and write shared task files and claim ownership -- fits parallel work, 4+ agents, and complex dependency graphs; it fails by concurrent modification, mitigated by worktrees or exclusive file ownership per agent. Start stateless; graduate to stateful only when parallelism buys a real speedup and either worktree isolation or every shared-tree wave condition is satisfied. Comparison table: [orchestration-patterns.md](./orchestration-patterns.md) (Coordination models).
 
 **Serialize a shared resource with a TTL lease file, not a coordination daemon.** Applies to one-shot subprocesses and short-lived subagents contending on one checkout or one test database. The four design points that decide whether the lease works: [cross-run-coordination.md](./cross-run-coordination.md) (TTL lease file section).
 
@@ -46,7 +46,7 @@ When designing multi-agent workflows that must survive partial failure, load [re
 |----------|-------------|----------------|
 | [team-compositions.md](./team-compositions.md) | Sizing a team or choosing a preset | 7 preset compositions, subagent_type cardinal rule, custom-team guidelines |
 | [agent-types.md](./agent-types.md) | Claude Code agent types | Built-in and plugin `subagent_type` examples |
-| [teammate-operations.md](./teammate-operations.md) | Claude Code persistent teammates | All 13 operations (spawnTeam, write, broadcast, requestShutdown, etc.) |
+| [teammate-operations.md](./teammate-operations.md) | Claude Code persistent teammates | Agent/SendMessage operations, automatic lifecycle, and explicit review gates |
 | [task-system.md](./task-system.md) | Claude Code work items and dependencies | TaskCreate, TaskList, TaskGet, TaskUpdate, file structure |
 | [quick-reference.md](./quick-reference.md) | Claude Code spawn/message/task/shutdown syntax | Subagent, fan-out, team, task, and shutdown snippets |
 | [codex-quick-reference.md](./codex-quick-reference.md) | Codex collaboration calls | Spawn, message, follow up, wait, and worktree guidance |

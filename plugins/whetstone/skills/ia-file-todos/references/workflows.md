@@ -70,7 +70,14 @@ grep -l 'dependencies:.*"002"' todos/*.md
 **To verify blockers are complete before starting:**
 ```bash
 for dep in 001 002 003; do
-  [ -f "todos/${dep}-complete-*.md" ] || echo "Issue $dep not complete"
+  complete=false
+  for file in todos/"${dep}"-complete-*.md; do
+    if [ -f "$file" ]; then
+      complete=true
+      break
+    fi
+  done
+  "$complete" || echo "Issue $dep not complete"
 done
 ```
 

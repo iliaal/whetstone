@@ -10,17 +10,17 @@ Load the reference for the active harness: [primitives.md](./primitives.md) plus
 
 Resolve the host primitives before dispatching:
 
-- **Claude Code:** `Task(...)` for short-lived subagents; `Teammate(...)` plus named `Task(...)` for persistent teams.
+- **Claude Code:** `Agent(...)` for subagents; in an interactive session with agent teams enabled, `Agent(...)` with a `name` launches a teammate. Use `SendMessage` for coordination. No manual team creation or `team_name` routing is needed; inspect the active schemas.
 - **Codex:** `spawn_agent(...)` for short-lived subagents; `send_message(...)`, `followup_task(...)`, and `wait_agent(...)` for coordination. Use persistent teammates only when the active Codex environment exposes that capability.
 - **Other harnesses:** use their native subagent surface. If none exists, execute the units sequentially in the main thread.
 
 Never emit a tool name or argument the active harness does not expose.
 
-Choose the mode by lifespan. A **subagent** lives until its task completes, returns one value, holds no task-list access, and suits searches, analysis, and focused work. A **teammate** lives until shutdown is requested, communicates by inbox, shares the team task list, and suits parallel work, pipelines, and ongoing collaboration. Aspect-by-aspect comparison and agent types: [agent-types.md](./agent-types.md). Call syntax: [quick-reference.md](./quick-reference.md).
+Choose the mode by lifespan. A **subagent** returns its result to the caller and suits searches, analysis, and focused work. A **teammate** supports ongoing messaging and shared tasks where its tools permit them, and suits parallel work, pipelines, and ongoing collaboration. Task-tool access depends on the active model and tool configuration, not the role label alone. Aspect-by-aspect comparison and agent types: [agent-types.md](./agent-types.md). Call syntax: [quick-reference.md](./quick-reference.md).
 
 ### Parallel Fan-Out (for independent work)
 
-When dispatching independent read-only or worktree-isolated agents, issue the harness's native spawn calls without waiting between them: in Claude Code, all `Task` calls in one assistant message; in Codex, concurrent `spawn_agent` calls up to the active-agent limit. Sequential dispatch -- each call in its own message, waiting on the previous to return -- is a serialization bug, not a coordination pattern. If agents truly depend on each other's output, that is a pipeline; see [Coordination models](./session-coordination.md#coordination-models).
+When dispatching independent read-only, worktree-isolated, or valid shared-tree-wave agents, issue the harness's native spawn calls without waiting for earlier workers to finish: in Claude Code, multiple `Agent` calls; in Codex, direct `spawn_agent` calls up to the active-agent limit. Waiting for each worker's completion before dispatching the next independent unit serializes the work. If agents depend on each other's output, that is a pipeline; see [Coordination models](./session-coordination.md#coordination-models).
 
 **Bounded parallelism when the harness caps active subagents.** Single-message fan-out dispatches in parallel; the harness then decides how many to *run* concurrently. Queue the overflow rather than failing: dispatch as many as the harness accepts, treat capacity-related spawn errors as backpressure, and re-dispatch queued agents as active ones complete. Record an agent as failed only after a successful dispatch times out or errors, or when dispatch fails for a non-capacity reason. Error-classification detail: [resilience-patterns.md](./resilience-patterns.md) (Dispatch backpressure).
 

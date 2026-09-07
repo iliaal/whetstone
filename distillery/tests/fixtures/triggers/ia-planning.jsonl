@@ -12,3 +12,9 @@
 {"prompt": "break this feature into vertical slices instead of horizontal layers", "expect": true, "added_in": "2.53.0", "source": "sync-from-repos"}
 {"prompt": "scan ~/ai/repos/ for new skill candidates and write a findings report", "expect": false, "added_in": "3.0.6", "source": "diagnose-negatives 2026-05-02"}
 {"prompt": "audit the codesage repo for architecture inconsistencies", "expect": false, "added_in": "3.0.6", "source": "diagnose-negatives 2026-05-02"}
+{"prompt":"Plan the implementation of this feature","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Create a multi-phase migration plan","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Record the architecture decisions needed before coding","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Execute the already approved plan","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Fix this misspelled word","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review this finished plan for clarity","expect":false,"source":"audit-2026-09-07"}

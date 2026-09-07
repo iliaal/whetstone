@@ -10,3 +10,12 @@
 {"prompt": "query OHLC data from the broker API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "audit this tradingview-mcp server for test coverage", "expect": false, "added_in": "3.0.4", "source": "diagnose-negatives-2026-04-27"}
 {"prompt": "review the JS MCP server that connects to TradingView API", "expect": false, "added_in": "3.0.4", "source": "diagnose-negatives-2026-04-27"}
+{"prompt":"Plot a Pine Script moving average","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Debug a TradingView repainting signal","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Write a .pine strategy with commission settings","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Rewrite the product launch email","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Draw a logo for a bakery","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Summarize the quarterly hiring plan","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review the TradingView MCP transport in TypeScript","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"Create TradingView indicators","expect":true,"source":"audit-2026-09-07-boundary"}
+{"prompt":"Configure TradingView charts","expect":true,"source":"audit-2026-09-07-boundary"}

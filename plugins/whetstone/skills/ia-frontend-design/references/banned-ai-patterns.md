@@ -79,12 +79,14 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 
 ## Content Patterns
 
+Preserve supplied or measured metrics, prices, names, and contact details. Apply placeholder styling advice only to clearly labeled synthetic demo/test data; use reserved example contact information. Roundness is not evidence that a factual value is fabricated.
+
 | Pattern | Problem | Alternative |
 |---------|---------|-------------|
 | "Welcome to X" / "Unlock the power of..." / "Revolutionize your..." hero copy | Generic AI copy; instant credibility killer | Write specific, benefit-driven copy tied to the actual product |
 | "John Doe" / "Jane Smith" / "Sarah Chan" placeholder users | Lazy, unrealistic | Diverse, realistic names with messy data |
 | "Acme Corp" / "Nexus" / "Synergy" startup slop names | Template feel, obviously generated | Industry-specific realistic names |
-| Fake round numbers ("99.99%", "50%", "10x faster") | Suspiciously clean metrics signal fabrication | Use irregular numbers ("47.2%", "3.8x", "1,247") |
+| Invented metrics presented as real | Unsupported claims mislead readers regardless of their digits | Use verified values; vary clearly labeled synthetic values only to exercise demo layouts |
 | Lorem ipsum visible in output | Unfinished | Realistic copy, even if placeholder |
 | Broken Unsplash links (`source.unsplash.com` or expired URLs) | Renders as broken images, amateurish | Use `https://picsum.photos/seed/{name}/800/600` or local assets |
 | Perfectly aligned testimonial cards with star ratings | Template pattern | Varied formats, pull quotes, inline mentions |
@@ -97,4 +99,4 @@ The pattern tables above catch known tells one at a time. These three tests catc
 
 - **Template test** -- swap in completely different content (a different product, different copy, different data). If the layout still makes sense without any structural change, a template was built, not a design. Redo it. A real design carries the fingerprint of its specific content; a template tolerates any payload.
 - **AI Slop test** -- would a stranger glancing at only the first viewport immediately say "an AI made this"? If yes, the committed direction was not committed enough. Push the signature visual choice further until the answer is no.
-- **Content authenticity tell** -- organic numbers beat round ones. Prefer `99.94%` over `99.99%`, `$99.00` over `$100.00`, `3.8x` over `10x`, `1,247` over `1,000`. Real metrics carry irregular digits; clean ones read as fabricated. No `John Doe` / `Jane Smith` users, no `Acme Corp` / `Nexus` brands -- placeholder content is the fastest authenticity failure to spot.
+- **Content authenticity check** -- trace metrics, prices, identities, and contact details to supplied or measured sources. Preserve factual values even when round. Label synthetic demo content explicitly and keep it separate from production claims.

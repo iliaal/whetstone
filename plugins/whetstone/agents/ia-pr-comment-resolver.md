@@ -24,6 +24,8 @@ Implement pre-agreed PR review comments with side-effect tracing, pattern compli
 
 After implementing fixes, verify using the `ia-verification-before-completion` skill.
 
+When dispatched with an exclusive file list, edit only those files. Return any additional required write scope to the parent before editing it; do not claim shared files independently. In a parallel `/ia-resolve-pr` run, return verification evidence and drafted replies to the parent, which owns integration, commits, and authorized external actions.
+
 When receiving a comment or review feedback:
 
 1. **Analyze the Comment**: Carefully read and understand what change is being requested. Identify:
@@ -53,7 +55,7 @@ When receiving a comment or review feedback:
    - Any additional considerations or notes for the reviewer
    - A confirmation that the issue has been resolved
 
-Reply on the channel the item came from -- the dispatch prompt states which:
+Draft the reply for the channel the item came from -- the dispatch prompt states which. Send only when explicitly authorized and not delegated to the parent:
 
 - **Review thread** (file + line): `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f in_reply_to={comment_id}`, not a top-level PR comment, so the resolution threads under the original.
 - **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply -- these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.

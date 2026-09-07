@@ -18,7 +18,7 @@ Use the `ia-receiving-code-review` skill for how to handle each comment (verify 
 
 ## Phase 1: Fetch
 
-Fetch review threads:
+Fetch review threads (requires `gh` and Python 3; follows every feedback connection before returning JSON):
 
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
@@ -75,7 +75,9 @@ Create a task list grouped by severity (TodoWrite where the harness provides it 
 
 **Medium** findings from the `ia-code-review` scale group under **Important** or **Minor** per judgment (blocking-ish → Important, cosmetic-ish → Minor).
 
-Spawn a `ia-pr-comment-resolver` agent for each item in parallel. For systemic clusters, spawn one agent for the cluster with all related comments in its prompt.
+Before dispatch, map each actionable item to every file it may change, including tests and shared helpers. Apply the `ia-orchestrating-swarms` ownership rule on every round, including first-round feedback that skips thematic clustering: one writer per file. Combine intersecting write sets under one resolver or serialize them. Resolve unknown write scope before parallel dispatch; a worker must return a newly discovered overlap to the parent before editing that file.
+
+Spawn an `ia-pr-comment-resolver` only for disjoint ownership groups in parallel. Supply all assigned comments and the exclusive file list. Workers return changes, verification evidence, and drafted replies; the parent integrates changes, runs combined verification, and owns commits and authorized external actions. Thematic clusters do not replace the write-ownership check.
 
 State the item's source channel in the prompt — `review thread` (has a file and line, reply threads under the original) or `conversation` (no file or line, replies as a top-level PR comment). The reply APIs differ and the agent cannot infer which to use from the comment body.
 

@@ -37,7 +37,7 @@ A spec that says "log the raw response" is asking for byte fidelity, and no text
 
 ## Verify
 
-Run `EXPLAIN (ANALYZE, BUFFERS)` on changed queries. Confirm no sequential scans on large tables and no unindexed FK columns before declaring done.
+Run `EXPLAIN (ANALYZE, BUFFERS)` on changed queries with representative data. Investigate unexpected sequential scans and compare actual costs; accept a sequential scan when reading much of a table is cheaper than using an index. Confirm no unindexed FK columns before declaring done.
 
 ## Task-specific references
 

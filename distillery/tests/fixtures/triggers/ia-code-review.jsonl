@@ -13,3 +13,9 @@
 {"prompt": "Fix pre-existing PHPUnit failures on the chore/paratest branch; the audit log config and seeder code are in database/seeders", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "auditing the changes on this branch before merge", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "audit the codebase for dead code", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt":"Review this pull request for correctness","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Audit the code quality of this module","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Critique the attached diff","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Rewrite this marketing paragraph","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Explain what a pull request means","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Design a new API from scratch","expect":false,"source":"audit-2026-09-07"}

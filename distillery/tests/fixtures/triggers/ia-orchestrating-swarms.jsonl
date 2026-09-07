@@ -22,3 +22,11 @@
 {"prompt": "bmpm_prefix_fanout_budget.phpt exceeds the 32 MiB work budget in the first leaf", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
 {"prompt": "you are in an isolated git worktree; implement item S5 and commit -- the change delegates Phase 5 filling to a stats scribe subagent", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
 {"prompt": "extract model-call latency and fan-out evidence for 18 review rounds run on 2026-09-01", "expect": false, "added_in": "4.5.0", "source": "misfire-fix"}
+{"prompt":"Coordinate a team of agents","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Run reviewers concurrently","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Build a pipeline where one agent output feeds the next","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"You are one reviewer in a parallel review; inspect only the parser","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Read this article about agents","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Write a unit test","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review the driver that coordinates a team of agents","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"The design document says run reviewers concurrently","expect":false,"source":"audit-2026-09-07-boundary"}

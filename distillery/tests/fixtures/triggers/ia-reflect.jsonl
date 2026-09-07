@@ -8,3 +8,9 @@
 {"prompt": "plan the next feature", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write the implementation", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "commit and push", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Reflect on this session effectiveness","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Run a retrospective of our work","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Audit what went wrong in this session","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Implement the next feature","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review this function for correctness","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Explain reflection in JavaScript","expect":false,"source":"audit-2026-09-07"}

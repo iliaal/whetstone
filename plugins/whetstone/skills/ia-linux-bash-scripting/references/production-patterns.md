@@ -14,12 +14,13 @@ run() { if [[ "${DRY_RUN:-}" == "1" ]]; then printf '[dry] %s\n' "$*" >&2; else 
 run cp "$src" "$dst"
 ```
 
-**Atomic file write** -- write to temp, rename into place:
+**Atomic file write** -- run the producer into a temp file, then rename only after it succeeds:
 ```bash
 atomic_write() {
-    local tmp
-    tmp=$(mktemp -- "${1}.tmp.XXXXXXXX") || return
-    if cat >"$tmp" && mv -f -- "$tmp" "$1"; then
+    local target=$1 tmp
+    shift
+    tmp=$(mktemp -- "${target}.tmp.XXXXXXXX") || return
+    if "$@" >"$tmp" && mv -fT -- "$tmp" "$target"; then
         return 0
     else
         local rc=$?
@@ -27,8 +28,10 @@ atomic_write() {
         return "$rc"
     fi
 }
-generate_config | atomic_write /etc/app/config.yml
+atomic_write /etc/app/config.yml generate_config
 ```
+
+The producer must return nonzero on generation failure; explicitly propagate failures inside shell functions because Bash suppresses `errexit` in this conditional context. Pipeline producers must enable `pipefail`. Do not pipe into this helper: an upstream failure cannot prevent a rename that already happened.
 
 **Atomic multi-file activation** -- N individually atomic copies are not an atomic interface: a failure after replacing the second of three leaves the old entry point running against a mixed set. Stage the release into a fresh uniquely-named directory, then swap one relative `current` symlink (`ln -sfn` onto a temp name, then `mv -T` it into place). A component that cannot join the swap -- a separately installed helper that an already-running caller invokes -- is installed *first*, so an interrupted run lands on old-caller/new-helper, and the helper's interface stays backward compatible. The failure fixture seeds a complete prior release, fails after one new component is staged, and asserts every prior component is still active.
 

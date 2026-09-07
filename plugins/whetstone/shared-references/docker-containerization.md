@@ -9,7 +9,7 @@ Load this reference when reviewing a Dockerfile, docker-compose setup, or contai
 - **Layer ordering**: least-changing layers first (OS packages → dependency install → copy source → build)
 - **Dependency caching**: copy lockfile first, install deps, then copy source (cache deps layer separately)
 - **Non-root user**: create the account, then switch by **numeric** id — `RUN adduser -D -u 10001 app` then `USER 10001:10001`. A name-based `USER app` resolves against the image's own passwd database, so it breaks when the base image changes distro and defeats host-side uid checks and `runAsNonRoot` admission rules
-- **No secrets in image**: use build args for build-time only, mount secrets at runtime
+- **No secrets in image**: reserve build arguments for non-secret configuration. Pass build credentials with `docker build --secret` and consume them with `RUN --mount=type=secret`, or use SSH mounts for SSH credentials; never copy mounted secrets into build artifacts. Mount runtime secrets or retrieve them from a secrets manager.
 - **.dockerignore**: exclude `.git/`, `node_modules/`, `.env`, test files, docs
 
 ## Image Optimization

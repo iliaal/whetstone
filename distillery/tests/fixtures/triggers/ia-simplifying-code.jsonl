@@ -9,3 +9,9 @@
 {"prompt": "write tests for the service layer", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "plan the next sprint", "expect": false, "added_in": "2.51.0", "source": "initial"}
 {"prompt": "design a new microservice architecture", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Refactor this function without changing behavior","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Remove dead code from this module","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Simplify this implementation for readability","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"List simplification opportunities without editing","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Design new behavior","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Write a release announcement","expect":false,"source":"audit-2026-09-07"}

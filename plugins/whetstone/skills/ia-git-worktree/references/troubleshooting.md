@@ -4,15 +4,14 @@
 
 ### "Worktree already exists"
 
-If you see this, the script will ask if you want to switch to it instead.
+The script offers to print its path. This does not transfer ownership or change the caller's working directory.
 
 ### "Cannot remove worktree: it is the current worktree"
 
-Switch out of the worktree first (to main repo), then cleanup:
+Run cleanup with the main checkout as workdir. Obtain its path from `list`; `git rev-parse --show-toplevel` inside a linked checkout returns that linked checkout, not the main one.
 
 ```bash
-cd $(git rev-parse --show-toplevel)
-bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh cleanup
+env -C "$main_checkout" bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh cleanup feature-name
 ```
 
 ### Lost in a worktree?
@@ -31,11 +30,15 @@ If a worktree was created without .env files (e.g., via raw `git worktree add`),
 bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh copy-env feature-name
 ```
 
-Navigate back to main:
+Use the main path shown by `list` for commands aimed at the main checkout:
 
 ```bash
-cd $(git rev-parse --show-toplevel)
+env -C "$main_checkout" git status --short
 ```
+
+### Cleanup refuses a tree
+
+Supply explicit names and the `WORKTREE_SESSION_ID` set before creation. Do not reuse another session's token. Preserve any dirty, untracked, or ignored files, including copied environment files and dependencies; arrange their disposition under user authority before retrying. A locked tree remains protected by Git. A clean tree from this session can be removed after confirming no process uses it.
 
 ---
 

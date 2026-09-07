@@ -30,6 +30,8 @@ The script handles critical setup that raw git commands don't:
 
 All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh <command>`. If `CLAUDE_PLUGIN_ROOT` is unset (non-Claude-Code harness), resolve the script relative to this skill's own directory.
 
+Before creating worktrees, export a unique `WORKTREE_SESSION_ID` and retain that same value for this session's later manager calls. For example, `export WORKTREE_SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"`. The manager records ownership in each new worktree's Git metadata. Creation without a session ID remains available, but manager cleanup then refuses that tree; never adopt a previous session's ID to bypass ownership.
+
 The manager script fetches `origin/<base>` fresh and branches from it -- it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. Details: [troubleshooting.md](./references/troubleshooting.md).
 
 
@@ -39,11 +41,13 @@ The manager script fetches `origin/<base>` fresh and branches from it -- it neve
 |---------|-------------|---------|
 | `create <branch> [from]` | Create worktree + branch (default: from main) | `...worktree-manager.sh create feature-login` |
 | `list` / `ls` | List all worktrees with status | `...worktree-manager.sh list` |
-| `switch <name>` / `go` | Switch to existing worktree | `...worktree-manager.sh switch feature-login` |
+| `switch <name>` / `go` | Print the registered worktree's absolute path; the caller applies it as workdir | `target=$(...worktree-manager.sh switch feature-login)` |
 | `copy-env <name>` | Copy .env files to existing worktree | `...worktree-manager.sh copy-env feature-login` |
-| `cleanup` / `clean` | Interactively remove inactive worktrees | `...worktree-manager.sh cleanup` |
+| `cleanup <name> [...]` / `clean` | Confirm removal of named, session-owned, clean worktrees | `...worktree-manager.sh cleanup feature-login` |
 
-After cleanup, run `git worktree prune` to remove any orphaned worktree metadata from manually deleted directories.
+Run commands with `env -C "$target" <command>` or the harness workdir argument. A child script cannot change the caller's working directory. Listing and resolving names work from the main checkout, linked checkouts, and their subdirectories.
+
+Cleanup refuses the current checkout, another session's tree, and tracked, untracked, or ignored files. Auto-copied `.env` files and installed dependencies therefore require explicit user-managed disposition before cleanup. Confirm no process uses the named trees; the manager cannot detect every external reader. Git's normal removal safeguards remain enabled, including locked-tree refusal. Do not force deletion or suppress failures to finish cleanup.
 
 
 ## Safety Verification

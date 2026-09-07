@@ -63,35 +63,37 @@ tool("write_file", async ({ path, content }) => {
 });
 ```
 
-**Auto-commit before changes:**
+**Checkpoint an exclusive deployment checkout before changes:**
+
+Run this recipe only in a dedicated deployment checkout with an exclusive deployment lock held for the whole operation. Refuse dirty or untracked user files; never stash a shared checkout. Build into that checkout's generated output, with no external side effects. The serving process must continue using the prior immutable release until restart. If the application reads mutable build files at runtime, use separate release directories and switch a release pointer instead.
+
 ```typescript
 tool("self_deploy", async () => {
-  // Save current state first
-  runGit("stash");  // or commit uncommitted changes
-
-  // Then pull/merge
+  if (runGit("status --porcelain --untracked-files=all").trim()) {
+    return { text: "Deployment checkout is dirty; preserve its changes", isError: true };
+  }
+  const previousCommit = runGit("rev-parse HEAD").trim();
   runGit("fetch origin");
-  runGit("merge origin/main --no-edit");
-
-  // Build and verify
-  runCommand("npm run build");
-
-  // Only then restart
+  runGit("merge --ff-only origin/main");
+  try {
+    runCommand("npm run build", { timeout: 120000 });
+  } catch (error) {
+    try {
+      runGit(`reset --hard ${previousCommit}`);
+      runCommand("npm run build", { timeout: 120000 });
+    } catch (rollbackError) {
+      return { text: `Deploy failed; rollback failed: ${rollbackError}`, isError: true };
+    }
+    return { text: "Build failed; previous source and build restored; no restart", isError: true };
+  }
   scheduleRestart();
+  return { text: "Build passed; restart scheduled, runtime health not yet verified" };
 });
 ```
 
 **Build verification:**
-```typescript
-// Don't restart unless build passes
-try {
-  runCommand("npm run build", { timeout: 120000 });
-} catch (error) {
-  // Rollback the merge
-  runGit("merge --abort");
-  return { text: "Build failed, aborting deploy", isError: true };
-}
-```
+
+The command wrappers above must throw on nonzero exit. A successful merge has no active merge to abort. Restore the recorded commit and rebuild its generated artifacts before reporting rollback, and report rollback failure distinctly. Exercise both build failure after a successful fast-forward and failure while rebuilding the prior revision. Check the running revision and application health after restart before claiming deployment success.
 
 **Health checks after restart:**
 ```typescript

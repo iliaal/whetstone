@@ -4,41 +4,30 @@
 
 ## Environment Variables
 
-Spawned teammates automatically receive these:
+Enable teams with the documented setting `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Inspect the installed runtime rather than depending on internal identity environment variables. Supply the assigned worker name explicitly in its prompt:
 
-```bash
-CLAUDE_CODE_TEAM_NAME="my-project"
-CLAUDE_CODE_AGENT_ID="worker-1@my-project"
-CLAUDE_CODE_AGENT_NAME="worker-1"
-CLAUDE_CODE_AGENT_TYPE="Explore"
-CLAUDE_CODE_AGENT_COLOR="#4A90D9"
-CLAUDE_CODE_PLAN_MODE_REQUIRED="false"
-CLAUDE_CODE_PARENT_SESSION_ID="session-xyz"
-```
-
-**Using in prompts:**
 ```javascript
-Task({
-  team_name: "my-project",
+Agent({
   name: "worker",
   subagent_type: "general-purpose",
-  prompt: "Your name is $CLAUDE_CODE_AGENT_NAME. Use it when sending messages to team-lead."
+  description: "Complete assigned work",
+  prompt: "Your assigned name is worker. Report task results to team-lead through SendMessage."
 })
 ```
 
 ## Team Config Structure
 
-`~/.claude/teams/{team-name}/config.json`:
+`~/.claude/teams/{team-name}/config.json`, using the runtime-provided session-derived name. Inspect it read-only; this illustrative layout is not a schema to pre-author or edit:
 
 ```json
 {
-  "name": "my-project",
+  "name": "session-a1b2c3d",
   "description": "Working on feature X",
-  "leadAgentId": "team-lead@my-project",
+  "leadAgentId": "team-lead@session-a1b2c3d",
   "createdAt": 1706000000000,
   "members": [
     {
-      "agentId": "team-lead@my-project",
+      "agentId": "team-lead@session-a1b2c3d",
       "name": "team-lead",
       "agentType": "team-lead",
       "color": "#4A90D9",
@@ -46,7 +35,7 @@ Task({
       "backendType": "in-process"
     },
     {
-      "agentId": "worker-1@my-project",
+      "agentId": "worker-1@session-a1b2c3d",
       "name": "worker-1",
       "agentType": "Explore",
       "model": "haiku",
@@ -72,40 +61,20 @@ Subagent model resolution order: per-invocation `model` parameter, then the agen
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| "Cannot cleanup with active members" | Teammates still running | `requestShutdown` all teammates first, wait for approval |
-| "Already leading a team" | Team already exists | `cleanup` first, or use different team name |
-| "Agent not found" | Wrong teammate name | Check `config.json` for actual names |
-| "Team does not exist" | No team created | Call `spawnTeam` first |
-| "team_name is required" | Missing team context | Provide `team_name` parameter |
-| "Agent type not found" | Invalid subagent_type | Check available agents with proper prefix |
+| Named agent launches as a subagent | Teams disabled or noninteractive session | Check the teams setting and session mode; use subagents when teams are unavailable |
+| Agent not found | Stale or wrong recipient | Inspect the active roster or runtime config for current names |
+| Agent type not found | Invalid subagent_type | Inspect available built-in and plugin-qualified types |
 
-### Graceful Shutdown Sequence
+### Graceful shutdown sequence
 
-**Always follow this sequence:**
+1. Account for each worker's assigned work and evidence.
+2. Request shutdown through `SendMessage` using the [active protocol](./teammate-operations.md).
+3. Wait for acknowledgement or an observed stopped state; idle is not stopped.
+4. Let the runtime manage session cleanup. Task records persist; worktree cleanup remains separately scoped.
 
-```javascript
-// 1. Request shutdown for all teammates
-Teammate({ operation: "requestShutdown", target_agent_id: "worker-1" })
-Teammate({ operation: "requestShutdown", target_agent_id: "worker-2" })
+### Handling crashed teammates
 
-// 2. Wait for shutdown approvals
-// Check for {"type": "shutdown_approved", ...} messages
-
-// 3. Verify no active members
-// Read ~/.claude/teams/{team}/config.json
-
-// 4. Only then cleanup
-Teammate({ operation: "cleanup" })
-```
-
-### Handling Crashed Teammates
-
-Teammates have a 5-minute heartbeat timeout. If a teammate crashes:
-
-1. They'll be automatically marked as inactive after timeout
-2. Their tasks remain in the task list
-3. Another teammate can claim their tasks
-4. Cleanup will work after timeout expires
+Inspect the returned error, worker state, and owned-file diff before reassigning work. Do not assume a fixed heartbeat timeout proves termination or releases ownership. Follow the bounded verify-and-continue recovery procedure in [worker-lifecycle.md](./worker-lifecycle.md), reconcile task ownership, and report any unknown worker state.
 
 ### Debugging
 

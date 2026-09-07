@@ -1,122 +1,132 @@
 #!/usr/bin/env bash
 
-set -e
+exec python3 - "$@" <<'PY'
+import json
+import subprocess
+import sys
 
-if [ $# -lt 1 ]; then
-    echo "Usage: get-pr-comments PR_NUMBER [OWNER/REPO]"
-    echo "Example: get-pr-comments 123"
-    echo "Example: get-pr-comments 123 owner/repo"
-    exit 1
-fi
 
-PR_NUMBER=$1
+def gh(*args):
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or f"gh exited {result.returncode}")
+    return json.loads(result.stdout)
 
-if [ -n "$2" ]; then
-    OWNER=$(echo "$2" | cut -d/ -f1)
-    REPO=$(echo "$2" | cut -d/ -f2)
-else
-    # || true is load-bearing: under `set -e` a failed command substitution in
-    # an assignment aborts the script, making the friendly error below unreachable
-    # when run outside a git repo (gh repo view exits 1, stderr swallowed).
-    OWNER=$(gh repo view --json owner -q .owner.login 2>/dev/null) || true
-    REPO=$(gh repo view --json name -q .name 2>/dev/null) || true
-fi
 
-if [ -z "$OWNER" ] || [ -z "$REPO" ]; then
-    echo "Error: Could not detect repository. Pass OWNER/REPO as second argument."
-    exit 1
-fi
+def graphql(query, **fields):
+    args = ["api", "graphql", "-f", "query=" + query]
+    for name, value in fields.items():
+        if value is not None:
+            args.extend(["-F" if isinstance(value, int) else "-f", f"{name}={value}"])
+    response = gh(*args)
+    if response.get("errors"):
+        raise RuntimeError("GraphQL errors: " + json.dumps(response["errors"]))
+    if not response.get("data"):
+        raise RuntimeError("GraphQL response has no data")
+    return response["data"]
 
-gh api graphql -f owner="$OWNER" -f repo="$REPO" -F pr="$PR_NUMBER" -f query='
-query FetchPrFeedback($owner: String!, $repo: String!, $pr: Int!) {
-  repository(owner: $owner, name: $repo) {
-    pullRequest(number: $pr) {
-      title
-      url
-      author {
-        login
-      }
-      comments(first: 100) {
-        totalCount
-        nodes {
-          id
-          author {
-            login
+
+def pages(fetch, initial=None):
+    cursor = None
+    seen = set()
+    nodes = []
+    while True:
+        connection = initial if initial is not None else fetch(cursor)
+        initial = None
+        nodes.extend(connection["nodes"])
+        info = connection["pageInfo"]
+        if not info["hasNextPage"]:
+            return nodes
+        cursor = info["endCursor"]
+        if not cursor or cursor in seen:
+            raise RuntimeError("Pagination did not advance; feedback is incomplete")
+        seen.add(cursor)
+
+
+PAGE = "pageInfo { hasNextPage endCursor }"
+COMMENT = "id author { login } body createdAt url"
+REVIEW = "id author { login } body state submittedAt url"
+THREAD_COMMENT = COMMENT + " updatedAt outdated"
+THREAD = "id isResolved isOutdated isCollapsed path line startLine diffSide"
+
+
+def main():
+    if len(sys.argv) not in (2, 3) or not sys.argv[1].isdigit() or int(sys.argv[1]) < 1:
+        raise RuntimeError("Usage: get-pr-comments PR_NUMBER [OWNER/REPO]")
+    pr = int(sys.argv[1])
+    if len(sys.argv) == 3:
+        parts = sys.argv[2].split("/")
+        if len(parts) != 2 or not all(parts):
+            raise RuntimeError("Repository must be OWNER/REPO")
+        owner, repo = parts
+    else:
+        detected = gh("repo", "view", "--json", "owner,name")
+        owner, repo = detected["owner"]["login"], detected["name"]
+
+    metadata = graphql(
+        """query FeedbackMetadata($owner: String!, $repo: String!, $pr: Int!) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $pr) { author { login } }
           }
-          body
-          createdAt
-          url
-        }
-      }
-      reviews(first: 100) {
-        totalCount
-        nodes {
-          id
-          author {
-            login
-          }
-          body
-          state
-          submittedAt
-          url
-        }
-      }
-      reviewThreads(first: 100) {
-        totalCount
-        edges {
-          node {
-            id
-            isResolved
-            isOutdated
-            isCollapsed
-            path
-            line
-            startLine
-            diffSide
-            comments(first: 100) {
-              totalCount
-              nodes {
-                id
-                author {
-                  login
-                }
-                body
-                createdAt
-                updatedAt
-                url
-                outdated
-              }
-            }
-          }
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  }
-}' | jq '
-  .data.repository.pullRequest as $pr
-  | $pr.reviewThreads.edges as $edges
-  | {
-      unresolved: ($edges | map(select(.node.isResolved == false and .node.isOutdated == false))),
-      conversation: {
-        pr_author: ($pr.author.login // "unknown"),
-        comments: ($pr.comments.nodes | map(select((.body // "") | gsub("\\s"; "") != "")) | map({
-          id, author: (.author.login // "unknown"), body, createdAt, url,
-          by_pr_author: ((.author.login // "") == ($pr.author.login // "\u0000"))
-        })),
-        review_bodies: ($pr.reviews.nodes | map(select((.body // "") | gsub("\\s"; "") != "")) | map({
-          id, author: (.author.login // "unknown"), body, state, submittedAt, url,
-          by_pr_author: ((.author.login // "") == ($pr.author.login // "\u0000"))
-        }))
-      },
-      cross_invocation: {
-        signal: (($edges | map(select(.node.isResolved == true)) | length) > 0
-                 and ($edges | map(select(.node.isResolved == false and .node.isOutdated == false)) | length) > 0),
-        resolved_threads: ($edges | map(select(.node.isResolved == true)) | map({
-          node: {id: .node.id, path: .node.path, line: .node.line}
-        }))
-      }
-    }'
+        }""", owner=owner, repo=repo, pr=pr
+    )["repository"]["pullRequest"]
+    if metadata is None:
+        raise RuntimeError("Pull request not found")
+    author = (metadata.get("author") or {}).get("login")
+
+    def connection(name, fields):
+        query = (
+            "query FeedbackPage($owner: String!, $repo: String!, $pr: Int!, $cursor: String) {"
+            "repository(owner: $owner, name: $repo) { pullRequest(number: $pr) {"
+            + name + "(first: 100, after: $cursor) { nodes {" + fields + "} " + PAGE + "}"
+            "}}}"
+        )
+        return pages(lambda cursor: graphql(
+            query, owner=owner, repo=repo, pr=pr, cursor=cursor
+        )["repository"]["pullRequest"][name])
+
+    comments = connection("comments", COMMENT)
+    reviews = connection("reviews", REVIEW)
+    threads = connection("reviewThreads", THREAD + " comments(first: 100) { totalCount nodes {"
+                         + THREAD_COMMENT + "} " + PAGE + "}")
+    for thread in threads:
+        query = (
+            "query ThreadComments($thread: ID!, $cursor: String) { node(id: $thread) {"
+            "... on PullRequestReviewThread { comments(first: 100, after: $cursor) {"
+            "nodes {" + THREAD_COMMENT + "} " + PAGE + "}}}}"
+        )
+        thread_comments = pages(lambda cursor: graphql(
+            query, thread=thread["id"], cursor=cursor
+        )["node"]["comments"], initial=thread["comments"])
+        thread["comments"] = {"totalCount": len(thread_comments), "nodes": thread_comments}
+
+    def conversation(items):
+        result = []
+        for item in items:
+            if not (item.get("body") or "").strip():
+                continue
+            login = (item.get("author") or {}).get("login")
+            result.append({**item, "author": login or "unknown",
+                           "by_pr_author": author is not None and login == author})
+        return result
+
+    unresolved = [{"node": thread} for thread in threads
+                  if not thread["isResolved"] and not thread["isOutdated"]]
+    resolved = [{"node": {key: thread.get(key) for key in ("id", "path", "line")}}
+                for thread in threads if thread["isResolved"]]
+    print(json.dumps({
+        "unresolved": unresolved,
+        "conversation": {"pr_author": author or "unknown",
+                         "comments": conversation(comments),
+                         "review_bodies": conversation(reviews)},
+        "cross_invocation": {"signal": bool(resolved and unresolved),
+                             "resolved_threads": resolved},
+    }))
+
+
+try:
+    main()
+except (OSError, ValueError, KeyError, TypeError, RuntimeError) as error:
+    print(f"Error fetching PR feedback: {error}", file=sys.stderr)
+    sys.exit(1)
+PY

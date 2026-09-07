@@ -118,8 +118,8 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
-| `Access-Control-Allow-Origin: *` with `Access-Control-Allow-Credentials: true` | Credentialed wildcard CORS = session theft | Explicit origin allowlist when using credentials |
-| `CORS()` or `CORSMiddleware()` without explicit config | Default permissive CORS | Explicitly configure origins, methods, headers |
+| `Access-Control-Allow-Origin: *` with `Access-Control-Allow-Credentials: true` | Browsers block credentialed response access with a wildcard origin; this combination alone does not establish session theft | Use an explicit origin allowlist for intended credentialed clients; test actual response headers and browser access |
+| `CORS()` or `CORSMiddleware()` without explicit config | Defaults depend on the package and version; Starlette's CORSMiddleware defaults are restrictive | Inspect the installed middleware and effective configuration before reporting exposure; configure the origins, methods, and headers the application needs |
 | Reflecting `Origin` header as `Access-Control-Allow-Origin` | Dynamic CORS that trusts any origin | Validate Origin against allowlist before reflecting |
 | `Access-Control-Allow-Methods: *` | All HTTP methods exposed | Whitelist only needed methods |
 

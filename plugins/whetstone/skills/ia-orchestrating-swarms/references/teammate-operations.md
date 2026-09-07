@@ -1,173 +1,112 @@
-# TeammateTool Operations
+# Claude Code teammate operations
 
-> When to read: when working with the `TeammateTool` orchestration backend and needing the spawnTeam, sendMessage, broadcast, or shutdown call signatures.
+> When to read: when spawning persistent teammates, sending messages, handling shutdown, or distinguishing automatic protocol transitions from review decisions.
 
-## 1. spawnTeam - Create a Team
+Use the installed session's tool schemas. The examples below match Claude Code 2.1.263's `Agent` and `SendMessage` surface; older runtimes need their own exposed schema. See [official agent-team behavior](https://code.claude.com/docs/en/agent-teams) and [tool reference](https://code.claude.com/docs/en/tools-reference).
+
+## Start teammates
+
+Enable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in an interactive Claude Code session. Named agents then launch as teammates:
 
 ```javascript
-Teammate({
-  operation: "spawnTeam",
-  team_name: "feature-auth",
-  description: "Implementing OAuth2 authentication"
+Agent({
+  name: "auth-worker",
+  subagent_type: "general-purpose",
+  description: "Implement authentication",
+  prompt: "Implement the assigned authentication unit within its supplied file ownership and acceptance criteria. Report evidence to team-lead.",
+  run_in_background: true
 })
 ```
 
-**Creates:**
-- `~/.claude/teams/feature-auth/config.json`
-- `~/.claude/tasks/feature-auth/` directory
-- You become the team leader
+No explicit team creation is required. The runtime derives the team name from the session; omit the ignored `team_name` argument. Noninteractive `-p` sessions use subagents instead.
 
-## 2. discoverTeams - List Available Teams
+## Discover current members
 
-```javascript
-Teammate({ operation: "discoverTeams" })
-```
+Read the runtime-provided roster or the actual session's team config for member names. Use `ListAgents` only when exposed. Do not invent team discovery, join-request, or join-approval operations; spawn the needed teammate from the current session instead. Do not edit team config to add a member.
 
-**Returns:** List of teams you can join (not already a member of)
-
-## 3. requestJoin - Request to Join Team
+## Message one teammate
 
 ```javascript
-Teammate({
-  operation: "requestJoin",
-  team_name: "feature-auth",
-  proposed_name: "helper",
-  capabilities: "I can help with code review and testing"
+SendMessage({
+  to: "security-reviewer",
+  message: "Prioritize the authentication module and report verified findings or explicitly no findings.",
+  summary: "Prioritize authentication review"
 })
 ```
 
-## 4. approveJoin - Accept Join Request (Leader Only)
+Use the recipient's actual name or returned agent ID. Teammates send results to the lead through `SendMessage`; finishing a turn or becoming idle is not proof that a report was delivered.
 
-When you receive a `join_request` message:
-```json
-{"type": "join_request", "proposedName": "helper", "requestId": "join-123", ...}
+## Notify multiple teammates
+
+Send one message per intended recipient. There is no separate broadcast operation in this schema.
+
+```javascript
+SendMessage({ to: "auth-worker", message: "Pause edits: the shared authentication interface is changing." })
+SendMessage({ to: "test-worker", message: "Pause edits: the shared authentication interface is changing." })
 ```
 
-Approve it:
+Multiple messages cost more than one. Notify everyone only for a coordination change that affects everyone; otherwise send directly to the affected worker.
+
+## Request shutdown
+
+When the assigned work is accounted for and shutdown is authorized:
+
 ```javascript
-Teammate({
-  operation: "approveJoin",
-  target_agent_id: "helper",
-  request_id: "join-123"
+SendMessage({
+  to: "security-reviewer",
+  message: { type: "shutdown_request", reason: "Assigned review is complete" }
 })
 ```
 
-## 5. rejectJoin - Decline Join Request (Leader Only)
+Wait for the actual acknowledgement or stopped state. An idle notification is not shutdown.
+
+## Accept or reject a shutdown request
+
+Use the request identifier received from the runtime, not an invented ID:
 
 ```javascript
-Teammate({
-  operation: "rejectJoin",
-  target_agent_id: "helper",
-  request_id: "join-123",
-  reason: "Team is at capacity"
+SendMessage({
+  to: "team-lead",
+  message: { type: "shutdown_response", request_id: "received-request-id", approve: true }
 })
 ```
 
-## 6. write - Message One Teammate
+Approving terminates the teammate. If work remains, reject with the reason:
 
 ```javascript
-Teammate({
-  operation: "write",
-  target_agent_id: "security-reviewer",
-  value: "Please prioritize the authentication module. The deadline is tomorrow."
+SendMessage({
+  to: "team-lead",
+  message: {
+    type: "shutdown_response",
+    request_id: "received-request-id",
+    approve: false,
+    reason: "The assigned verification is still running"
+  }
 })
 ```
 
-**Important for teammates:** Your text output is NOT visible to the team. You MUST use `write` to communicate.
+## Plan-mode transitions and review
 
-## 7. broadcast - Message ALL Teammates
+Current Claude Code automatically approves teammate plan requests; that transition is not evidence of a reviewed design or user authorization. For a real review gate, dispatch a read-only planner that returns a plan and stops. Review the artifact against explicit criteria, resolve material decisions, then dispatch implementation within existing authority. Do not depend on a teammate's automatic plan-mode exit to enforce this gate.
+
+If an older active runtime actually delivers a plan request requiring a response, its `SendMessage` schema may expose the legacy response:
 
 ```javascript
-Teammate({
-  operation: "broadcast",
-  name: "team-lead",  // Your name
-  value: "Status check: Please report your progress"
+SendMessage({
+  to: "architect",
+  message: {
+    type: "plan_approval_response",
+    request_id: "received-request-id",
+    approve: false,
+    feedback: "Add failure recovery and rate limiting before implementation"
+  }
 })
 ```
 
-**WARNING:** Broadcasting is expensive - sends N separate messages for N teammates. Prefer `write` to specific teammates.
+Use `approve: true` only for an actual reviewed plan within the caller's authority. A protocol response cannot grant permissions the user has not supplied.
 
-**When to broadcast:**
-- Critical issues requiring immediate attention
-- Major announcements affecting everyone
+## Session cleanup
 
-**When NOT to broadcast:**
-- Responding to one teammate
-- Normal back-and-forth
-- Information relevant to only some teammates
+The runtime cleans up team config when the session ends; the task list persists for resumption. Do not call removed team-creation/deletion tools or delete the task store as cleanup.
 
-## 8. requestShutdown - Ask Teammate to Exit (Leader Only)
-
-```javascript
-Teammate({
-  operation: "requestShutdown",
-  target_agent_id: "security-reviewer",
-  reason: "All tasks complete, wrapping up"
-})
-```
-
-## 9. approveShutdown - Accept Shutdown (Teammate Only)
-
-When you receive a `shutdown_request` message:
-```json
-{"type": "shutdown_request", "requestId": "shutdown-123", "from": "team-lead", "reason": "Done"}
-```
-
-**MUST** call:
-```javascript
-Teammate({
-  operation: "approveShutdown",
-  request_id: "shutdown-123"
-})
-```
-
-This sends confirmation and terminates your process.
-
-## 10. rejectShutdown - Decline Shutdown (Teammate Only)
-
-```javascript
-Teammate({
-  operation: "rejectShutdown",
-  request_id: "shutdown-123",
-  reason: "Still working on task #3, need 5 more minutes"
-})
-```
-
-## 11. approvePlan - Approve Teammate's Plan (Leader Only)
-
-When teammate with `plan_mode_required` sends a plan:
-```json
-{"type": "plan_approval_request", "from": "architect", "requestId": "plan-456", ...}
-```
-
-Approve:
-```javascript
-Teammate({
-  operation: "approvePlan",
-  target_agent_id: "architect",
-  request_id: "plan-456"
-})
-```
-
-## 12. rejectPlan - Reject Plan with Feedback (Leader Only)
-
-```javascript
-Teammate({
-  operation: "rejectPlan",
-  target_agent_id: "architect",
-  request_id: "plan-456",
-  feedback: "Please add error handling for the API calls and consider rate limiting"
-})
-```
-
-## 13. cleanup - Remove Team Resources
-
-```javascript
-Teammate({ operation: "cleanup" })
-```
-
-**Removes:**
-- `~/.claude/teams/{team-name}/` directory
-- `~/.claude/tasks/{team-name}/` directory
-
-**IMPORTANT:** Will fail if teammates are still active. Use `requestShutdown` first.
+Account for all assigned work and teammate states before ending orchestration. Worktree cleanup is separate: verify integration and preserve dirty or unrelated worktrees under the main skill's ownership rules.

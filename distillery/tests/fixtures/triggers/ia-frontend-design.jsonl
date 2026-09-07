@@ -13,3 +13,9 @@
 {"prompt": "review codesage feature feat_x (php method clickhouse::insert) in project php_clickhouse", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "you are auditing a personal knowledge-base wiki for consolidation opportunities", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "review the changes to builddashboardproviders.ts and the dashboard grid", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt":"Design a distinctive landing page","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Give this dashboard a visual identity","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Redesign the settings page layout","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Fix a backend query","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Diagnose a React hook infinite loop","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Add a unit test for a parser","expect":false,"source":"audit-2026-09-07"}

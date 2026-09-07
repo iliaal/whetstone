@@ -123,7 +123,7 @@ Forcing writers to articulate exploitation separates real findings from theoreti
 
 ## False-Positive Suppression
 
-Before filing any finding, apply the suppression rules in [security-fp-suppression.md](../shared-references/security-fp-suppression.md): hard exclusions (DoS/resource leaks, memory safety in managed languages, SSRF in client HTML, ReDoS, markdown, framework-escaped XSS), precedents for non-findings (LLM user-position content, non-PII logging, internal-ops scripts, generic "consider validation"), confidence floor ≥ 0.8 (stricter than `ia-code-review` by design), severity gates (Medium must be concrete; local-network still counts HIGH), and project-level override honoring.
+Before filing any finding, read and apply [security-fp-suppression.md](../shared-references/security-fp-suppression.md). Establish the attacker-controlled input, reachable sink, existing mitigations, and concrete harm; use that reference's evidence and severity rules. Report consequential unresolved premises as coverage gaps or residual risks.
 
 ## Security Requirements Checklist
 

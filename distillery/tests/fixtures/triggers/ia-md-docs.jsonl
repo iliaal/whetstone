@@ -13,3 +13,11 @@
 {"prompt": "note that CLAUDE.md is a symlink to AGENTS.md in this repo", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "security-review the php_clickhouse extension; project conventions are in CLAUDE.md", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "refresh CLAUDE.md to match the current build steps", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt":"Update AGENTS.md for this repository","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Create CONTRIBUTING.md","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Refresh the README to reflect the new CLI","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Edit this blog post","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review a Python function","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Write a product tagline","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Read CONTRIBUTING.md before editing","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"The README describes the new CLI","expect":false,"source":"audit-2026-09-07-boundary"}

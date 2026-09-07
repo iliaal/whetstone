@@ -67,7 +67,7 @@ Severity bridges to the `ia-code-review` skill's four tiers: **P1 = Critical**, 
 
 **When user says "next":**
 
-- **Delete the todo file** - Remove it from todos/ directory since it's not relevant
+- **Preserve the todo file unchanged** - Leave it pending in todos/; skipping makes no relevance or deletion decision
 - Skip to the next item
 - Track skipped items for summary
 
@@ -98,17 +98,17 @@ After all items processed:
 - `042-ready-p1-transaction-boundaries.md` - Transaction boundary issue
 - `043-ready-p2-cache-optimization.md` - Cache performance improvement ...
 
-### Skipped Items (Deleted):
+### Skipped Items (Still Pending):
 
-- Item #5: [reason] - Removed from todos/
-- Item #12: [reason] - Removed from todos/
+- Item #5: [reason] - Preserved in todos/
+- Item #12: [reason] - Preserved in todos/
 
 ### Summary of Changes Made:
 
 During triage, the following status updates occurred:
 
 - **Pending → Ready:** Filenames and frontmatter updated to reflect approved status
-- **Deleted:** Todo files for skipped findings removed from todos/ directory
+- **Still pending:** Todo files for skipped findings preserved unchanged in todos/
 - Each approved file now has `status: ready` in YAML frontmatter
 
 ### Next Steps:

@@ -10,7 +10,7 @@
 | Duplicated block (**3+** occurrences) | Extract shared function. Two copies = leave inline; wait for the third |
 | Magic numbers/strings | Named constants |
 | Complex conditional | Extract to descriptively-named boolean or function |
-| Boolean-returning `if/else` (each branch returns a literal `True`/`False`) | Collapse to the boolean expression itself: `return a and b`, not a branch per literal |
+| Boolean-returning `if/else` (each branch returns a literal `True`/`False`) | Preserve the boolean return type and truthiness evaluation: in Python use `return True if a and b else False`; use `return a and b` only when both operands are guaranteed booleans |
 | Dense transform chain (3+ chained methods) | Break into named intermediates for debuggability |
 | Dead code / unreachable branches | Delete entirely -- no commented-out code |
 | Unnecessary `else` after return | Remove `else`, dedent |

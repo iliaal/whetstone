@@ -17,3 +17,10 @@
 {"prompt": "Update .phpt test expectations for the new command behavior in php-src ext/standard/tests/file/touch.phpt", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "merge the upstream libmagic changes into ext/fileinfo, the test command output for cdf.c regressed", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "test the OrderController endpoint in tests/Feature/OrderControllerTest.php", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt":"Add an Eloquent scope for active customers","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Write a Laravel queued notification","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Test a FormRequest authorization rule","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Rewrite the product launch email","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Draw a logo for a bakery","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Summarize the quarterly hiring plan","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Write a PHP extension in C","expect":false,"source":"audit-2026-09-07-boundary"}

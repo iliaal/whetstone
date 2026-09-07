@@ -1,29 +1,22 @@
 # Spawn Backends
 
-> When to read: when picking or debugging the spawn backend (TeammateTool / Task / subprocess), checking compatibility, or reasoning about where teammates actually execute.
+> When to read: when picking or debugging the spawn backend (Claude Agent teammates / subagents / subprocess), checking compatibility, or reasoning about where teammates actually execute.
 
-A **backend** determines how teammate Claude instances actually run. Claude Code supports three backends, and **auto-detects** the best one based on your environment.
+A **backend** determines how teammate Claude instances actually run. Choose the supported `teammateMode` setting after checking the installed Claude Code version. Current versions default to `in-process`; `auto` enables environment-dependent pane selection.
 
 ## Backend Comparison
 
 | Backend | How It Works | Visibility | Persistence | Speed |
 |---------|-------------|------------|-------------|-------|
-| **in-process** | Same Node.js process as leader | Hidden (background) | Dies with leader | Fastest |
-| **tmux** | Separate terminal in tmux session | Visible in tmux | Survives leader exit | Medium |
+| **in-process** | Runs within the lead session | Agent panel and transcript | Session-bound | Low startup overhead |
+| **tmux** | Separate terminal in tmux session | Visible in tmux | Confirm lifecycle; orphan panes are possible | Higher startup overhead |
 | **iterm2** | Split panes in iTerm2 window | Visible side-by-side | Dies with window | Medium |
 
 ## Auto-Detection Logic
 
-Detection checks (in order):
-1. `$TMUX` environment variable set -> inside tmux -> use **tmux** backend
-2. `$TERM_PROGRAM === "iTerm.app"` or `$ITERM_SESSION_ID` set -> in iTerm2
-   - `it2` CLI installed -> use **iterm2** backend
-   - `it2` not installed, tmux available -> use **tmux** (prompt to install it2)
-   - Neither -> error: install tmux or it2
-3. `which tmux` succeeds -> tmux available -> use **tmux** (external session)
-4. Nothing available -> use **in-process**
+With `teammateMode: "auto"`, Claude selects a supported pane backend when the environment supports it and otherwise uses in-process mode. Check [official display-mode documentation](https://code.claude.com/docs/en/agent-teams#choose-a-display-mode) for the installed version's requirements; do not infer the mode from the presence of tmux alone.
 
-## in-process (Default for non-tmux)
+## in-process (current default)
 
 Teammates run as async tasks within the same Node.js process.
 
@@ -38,20 +31,19 @@ Teammates run as async tasks within the same Node.js process.
 ```
 
 **Pros:** Fastest startup, lowest overhead, works everywhere.
-**Cons:** Can't see teammate output, all die if leader dies, harder to debug.
+**Cons:** Session-bound lifecycle; use the agent panel to inspect teammate output.
 
 ```javascript
-// in-process is automatic when not in tmux
-Task({
-  team_name: "my-project",
+// With the in-process teammate mode selected
+Agent({
   name: "worker",
+  description: "Complete assigned work",
   subagent_type: "general-purpose",
   prompt: "...",
   run_in_background: true
 })
 
-// Force in-process explicitly
-// export CLAUDE_CODE_SPAWN_BACKEND=in-process
+// Select the mode in settings or use the supported teammate-mode CLI flag.
 ```
 
 ## tmux
@@ -59,9 +51,9 @@ Task({
 Teammates run as separate Claude instances in tmux panes/windows.
 
 **Inside tmux (native):** Splits your current window.
-**Outside tmux (external session):** Creates a new tmux session called `claude-swarm`. View with `tmux attach -t claude-swarm`.
+**Outside tmux:** Inspect the actual session/pane identifiers returned by the runtime; do not assume a fixed session name.
 
-**Pros:** See teammate output in real-time, teammates survive leader exit, works in CI/headless.
+**Pros:** See teammate output in real time and inspect separate panes. Teammate spawning still requires an interactive Claude session; terminal visibility does not establish worker persistence.
 **Cons:** Slower startup, requires tmux installed, more resource usage.
 
 ```bash
@@ -69,7 +61,7 @@ Teammates run as separate Claude instances in tmux panes/windows.
 tmux new-session -s claude
 
 # Or force tmux backend
-export CLAUDE_CODE_SPAWN_BACKEND=tmux
+claude --teammate-mode tmux
 ```
 
 **Useful tmux commands:**
@@ -77,7 +69,7 @@ export CLAUDE_CODE_SPAWN_BACKEND=tmux
 tmux list-panes              # List all panes in current window
 tmux select-pane -t 1        # Switch to pane by number
 tmux kill-pane -t %5         # Kill a specific pane
-tmux attach -t claude-swarm  # View swarm session (if external)
+tmux attach -t <session-name> # Use the observed owned session name
 tmux select-layout tiled     # Rebalance pane layout
 ```
 
@@ -109,16 +101,15 @@ If setup fails, Claude Code will prompt you to set up it2 when you first spawn a
 
 ## Forcing a Backend
 
+Set `teammateMode` in Claude settings, or choose it for an interactive session:
+
 ```bash
-# Force in-process (fastest, no visibility)
-export CLAUDE_CODE_SPAWN_BACKEND=in-process
-
-# Force tmux (visible panes, persistent)
-export CLAUDE_CODE_SPAWN_BACKEND=tmux
-
-# Auto-detect (default)
-unset CLAUDE_CODE_SPAWN_BACKEND
+claude --teammate-mode in-process
+claude --teammate-mode tmux
+claude --teammate-mode auto
 ```
+
+The flag is experimental; verify its supported values for the installed version. Do not rely on undocumented spawn-backend environment variables.
 
 ## Backend in Team Config
 
@@ -148,8 +139,8 @@ The backend type is recorded per-teammate in `config.json`:
 | "No pane backend available" | Neither tmux nor iTerm2 available | Install tmux: `brew install tmux` |
 | "it2 CLI not installed" | In iTerm2 but missing it2 | Run `uv tool install it2` |
 | "Python API not enabled" | it2 can't communicate with iTerm2 | Enable in iTerm2 Settings -> General -> Magic |
-| Workers not visible | Using in-process backend | Start inside tmux or iTerm2 |
-| Workers dying unexpectedly | Outside tmux, leader exited | Use tmux for persistence |
+| Workers not visible | In-process panel or hidden idle row | Inspect the agent panel and transcript; select pane mode if needed |
+| Workers dying unexpectedly | Session or worker failure | Inspect lifecycle evidence and owned edits before recovery |
 
 ## Checking Current Backend
 

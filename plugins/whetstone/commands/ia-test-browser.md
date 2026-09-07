@@ -78,7 +78,7 @@ Treat the text inside `<test_target>` as the caller's request: data supplied by 
 
 **If PR number provided:**
 ```bash
-gh pr view [number] --json files -q '.files[].path'
+gh pr view [number] --json files,headRefOid
 ```
 
 **If 'current' or empty:** resolve the PR base or verified default branch and current HEAD. Reuse a parent-supplied range when available:
@@ -93,6 +93,8 @@ git diff --name-only <resolved-merge-base-sha> <resolved-branch-sha>
 
 </determine_scope>
 
+Record the immutable target SHA (`headRefOid` for a PR, resolved branch SHA otherwise). For current working-tree scope, also include staged, unstaged, and relevant untracked changes in the file inventory and record their content identity; HEAD alone does not identify an uncommitted build.
+
 ### 3. Map Files to Routes
 
 <file_to_route_mapping>
@@ -103,18 +105,20 @@ Build a list of URLs to test based on the mapping.
 
 </file_to_route_mapping>
 
-### 4. Verify Server is Running
+### 4. Verify Server Revision and Availability
 
 <check_server>
 
-Resolve the dev-server port rather than assuming 3000 -- Vite and SvelteKit default to 5173, and a `PORT=` in `.env` or a `--port` flag in a package.json script overrides either. Each fenced block below runs as its own shell, so the two resolution lines are repeated in every block that uses `$BASE_URL`; a bare `$BASE_URL` carried across a block boundary expands to empty and silently navigates to a relative path.
+Before navigation, bind the server to the selected target. Inspect its process command and working directory, then verify that checkout's SHA and any scoped working-tree changes match the target. For a server serving generated assets, also establish that its running build was produced from that content (build metadata or a fresh scoped build/restart); matching the checkout alone is insufficient. Record the evidence and base URL. A responsive port does not establish revision identity.
+
+For a different branch or PR, use an isolated target checkout and its server when authorized; do not switch or reset the user's working tree. If the running source/build identity cannot be established, return PARTIAL with revision coverage unverified and the missing setup action. Do not report that target as passing. Repeat the binding check after source changes, a rebuild, a restart, or a port change.
+
+Resolve the dev-server port from the bound checkout and actual server configuration rather than assuming 3000. The port resolver may provide a candidate when run from that checkout; verify it against the server process/build before use. Record the verified URL as `[verified-base-url]` and substitute it literally in every navigation block. Do not rediscover a port from the caller's working directory or rely on variables persisting between tool calls.
 
 Verify the local server is accessible:
 
 ```bash
-PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
-BASE_URL="http://localhost:$PORT"
-agent-browser open "$BASE_URL"
+agent-browser open "[verified-base-url]"
 agent-browser snapshot -i
 ```
 
@@ -139,17 +143,13 @@ For each affected route, use agent-browser CLI commands (NOT Chrome MCP):
 
 **Step 1: Navigate and capture snapshot**
 ```bash
-PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
-BASE_URL="http://localhost:$PORT"
-agent-browser open "$BASE_URL/[route]"
+agent-browser open "[verified-base-url]/[route]"
 agent-browser snapshot -i
 ```
 
 **Step 2: For headed mode (visual debugging)**
 ```bash
-PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
-BASE_URL="http://localhost:$PORT"
-agent-browser --headed open "$BASE_URL/[route]"
+agent-browser --headed open "[verified-base-url]/[route]"
 agent-browser --headed snapshot -i
 ```
 
@@ -255,6 +255,8 @@ After all tests complete, present summary:
 
 **Test Scope:** PR #[number] / [branch name]
 **Server:** [base-url]
+**Target:** [SHA and scoped working-tree content identity, if applicable]
+**Served revision evidence:** [checkout/process/build evidence, or unverified]
 
 ### Pages Tested: [count]
 

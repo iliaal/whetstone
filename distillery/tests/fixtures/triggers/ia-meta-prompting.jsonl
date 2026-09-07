@@ -21,3 +21,10 @@
 {"prompt": "the handler lives at api/edge/index.ts", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "flip the switch on the feature flag before deploy", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "run the test suite and check coverage", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt":"Stress-test this architecture decision","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Give the strongest counterargument to this recommendation","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Analyze which assumptions could overturn this conclusion","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Fix the syntax error","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Rename the variable","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"List repository files","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Explain assumptions in a statistical model","expect":false,"source":"audit-2026-09-07-boundary"}

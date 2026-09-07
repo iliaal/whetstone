@@ -9,7 +9,7 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 | `@import "tailwindcss"` | Entry point (replaces `@tailwind base/components/utilities`) |
 | `@theme { }` | Define/extend design tokens -- auto-generates utility classes |
 | `@theme inline { }` | Map CSS variables to Tailwind utilities without generating new vars |
-| `@theme static { }` | Define tokens that don't generate utilities |
+| `@theme static { }` | Emit all theme variables, including unused ones; utility generation still applies |
 | `@utility name { }` | Create custom utilities (replaces `@layer components` + `@apply`) |
 | `@custom-variant name (selector)` | Define custom variants |
 
@@ -27,6 +27,8 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 ```
 
 Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`. Define z-index as tokens (`--z-modal: 50`) and reference via `z-(--z-modal)` instead of arbitrary `z-50`.
+
+For custom properties that should not define Tailwind utilities, declare them in ordinary CSS such as `:root`, outside `@theme`.
 
 **`@theme` tokens are tree-shaken.** v4 emits only the variables it can see used, so a token existing in a shared file says nothing about whether it reaches a given app's bundle -- measured on one shared token file feeding two apps: 20 of 59 `--color-*` emitted into one, 19 of 59 into the other. `@theme static` is the opt-out. A `var(--color-x)` reference inside your own hand-written CSS **counts as a use**, so pointing a custom property at a token (`--app-checkbox-border: var(--color-border-400)`) is self-sustaining, not fragile -- Tailwind sees your CSS, not just your class names. Never rate a "this indirection depends on some unrelated utility still existing" concern on tree-shaking alone: delete the last utility usage in that app's scan set, rebuild, and read the compiled CSS. Assert the utility actually vanished as the applied control, or a build that silently no-opped (wrong package filter, stale `dist`) reads identically, producing the same false conclusion from nothing.
 

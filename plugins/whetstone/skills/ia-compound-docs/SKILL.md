@@ -21,7 +21,7 @@ Follow the 7-step documentation capture process. For full details, see [document
 2. **Gather context** -- Extract module, symptom, investigation attempts, root cause, solution, prevention. BLOCK if critical context missing.
 3. **Check existing docs** -- Search `docs/solutions/` for similar issues. If found, offer: new doc with cross-reference, update existing, or other.
 4. **Generate filename** -- Format: `[sanitized-symptom]-[module]-[YYYYMMDD].md`
-5. **Validate YAML** -- Run [validate-frontmatter.sh](./scripts/validate-frontmatter.sh) against the file. If invalid, fix the frontmatter and re-run until it passes.
+5. **Validate YAML** -- Save the draft to a temporary Markdown file, then run [validate-frontmatter.sh](./scripts/validate-frontmatter.sh) against it. The validator requires Python 3 and PyYAML; report a missing dependency rather than claiming validation. If invalid, fix the frontmatter and re-run until it passes.
 6. **Create documentation** -- Write file to `docs/solutions/[category]/[filename].md` using [resolution-template.md](./assets/resolution-template.md).
 7. **Cross-reference** -- Link related issues. Detect critical patterns (3+ similar issues).
 
@@ -73,6 +73,7 @@ For detailed response handling, see [documentation-process.md](./references/docu
 - [resolution-template.md](./assets/resolution-template.md) - Template for documentation files
 - [critical-pattern-template.md](./assets/critical-pattern-template.md) - Template for critical pattern entries
 - [validate-frontmatter.sh](./scripts/validate-frontmatter.sh) - Validate YAML frontmatter against schema
+- [validate-frontmatter.py](./scripts/validate-frontmatter.py) - Safe YAML parser and field validation; install its dependency with `python3 -m pip install PyYAML` when authorized
 
 ## Integration
 

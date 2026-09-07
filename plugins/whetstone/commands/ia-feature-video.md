@@ -116,10 +116,15 @@ Does this look right?
 
 <setup_recording>
 
-**Create videos directory:**
+**Create an invocation-owned capture directory:**
 ```bash
-mkdir -p tmp/videos tmp/screenshots
+mkdir -p tmp
+CAPTURE_DIR=$(mktemp -d "$PWD/tmp/feature-video.XXXXXXXX")
+mkdir -p "$CAPTURE_DIR/videos" "$CAPTURE_DIR/screenshots"
+printf '%s\n' "$CAPTURE_DIR"
 ```
+
+Record that absolute path as `[capture-dir]` and its unique basename as `[capture-id]`. Substitute both in subsequent blocks; shell variables do not persist between tool calls. Capture, encode, upload, and clean up only this invocation's artifacts. Never reuse an existing capture directory.
 
 **Recording approach: Use browser screenshots as frames**
 
@@ -137,7 +142,7 @@ Execute the planned flow, capturing each step:
 ```bash
 agent-browser open "[base-url]/[start-route]"
 agent-browser wait 2000
-agent-browser screenshot tmp/screenshots/01-start.png
+agent-browser screenshot "[capture-dir]/screenshots/01-start.png"
 ```
 
 **Step 2: Perform navigation/interactions**
@@ -145,7 +150,7 @@ agent-browser screenshot tmp/screenshots/01-start.png
 agent-browser snapshot -i  # Get refs
 agent-browser click @e1    # Click navigation element
 agent-browser wait 1000
-agent-browser screenshot tmp/screenshots/02-navigate.png
+agent-browser screenshot "[capture-dir]/screenshots/02-navigate.png"
 ```
 
 **Step 3: Demonstrate feature**
@@ -153,32 +158,32 @@ agent-browser screenshot tmp/screenshots/02-navigate.png
 agent-browser snapshot -i  # Get refs for feature elements
 agent-browser click @e2    # Click feature element
 agent-browser wait 1000
-agent-browser screenshot tmp/screenshots/03-feature.png
+agent-browser screenshot "[capture-dir]/screenshots/03-feature.png"
 ```
 
 **Step 4: Capture result**
 ```bash
 agent-browser wait 2000
-agent-browser screenshot tmp/screenshots/04-result.png
+agent-browser screenshot "[capture-dir]/screenshots/04-result.png"
 ```
 
 **Create video/GIF from screenshots:**
 
 ```bash
 # Create directories
-mkdir -p tmp/videos tmp/screenshots
+mkdir -p "[capture-dir]/videos" "[capture-dir]/screenshots"
 
 # Create MP4 video (RECOMMENDED - better quality, smaller size)
 # -framerate 0.5 = 2 seconds per frame (slower playback)
 # -framerate 1 = 1 second per frame
-ffmpeg -y -framerate 0.5 -pattern_type glob -i 'tmp/screenshots/*.png' \
+ffmpeg -y -framerate 0.5 -pattern_type glob -i '[capture-dir]/screenshots/*.png' \
   -c:v libx264 -pix_fmt yuv420p -vf "scale=1280:-2" \
-  tmp/videos/feature-demo.mp4
+  "[capture-dir]/videos/feature-demo.mp4"
 
 # Create low-quality GIF for preview (small file, for GitHub embed)
-ffmpeg -y -framerate 0.5 -pattern_type glob -i 'tmp/screenshots/*.png' \
+ffmpeg -y -framerate 0.5 -pattern_type glob -i '[capture-dir]/screenshots/*.png' \
   -vf "scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse" \
-  -loop 0 tmp/videos/feature-demo-preview.gif
+  -loop 0 "[capture-dir]/videos/feature-demo-preview.gif"
 ```
 
 **Note:**
@@ -202,18 +207,18 @@ R2_REMOTE="${R2_REMOTE:-r2}"              # rclone remote name
 R2_BUCKET="${R2_BUCKET:-my-bucket}"       # bucket name
 PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://your-domain.r2.dev}"  # NO trailing slash
 
-UPLOAD_PATH="$R2_REMOTE:$R2_BUCKET/pr-videos/pr-[number]"
+UPLOAD_PATH="$R2_REMOTE:$R2_BUCKET/pr-videos/pr-[number]/[capture-id]"
 
 # Upload video, preview GIF, and screenshots
-rclone copy tmp/videos/ "$UPLOAD_PATH/" --s3-no-check-bucket --progress
-rclone copy tmp/screenshots/ "$UPLOAD_PATH/screenshots/" --s3-no-check-bucket --progress
+rclone copy "[capture-dir]/videos/" "$UPLOAD_PATH/" --s3-no-check-bucket --progress
+rclone copy "[capture-dir]/screenshots/" "$UPLOAD_PATH/screenshots/" --s3-no-check-bucket --progress
 
 # List uploaded files
 rclone ls "$UPLOAD_PATH/"
 
 # Build and validate public URLs BEFORE updating PR
-VIDEO_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/feature-demo.mp4"
-PREVIEW_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/feature-demo-preview.gif"
+VIDEO_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/[capture-id]/feature-demo.mp4"
+PREVIEW_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/[capture-id]/feature-demo-preview.gif"
 
 # Require HTTP 200 for both URLs; stop if either fails
 curl -I "$VIDEO_URL" | head -n 1 | grep -q ' 200 ' || exit 1
@@ -271,11 +276,11 @@ _Automated walkthrough of the changes in this PR_"
 <cleanup>
 
 ```bash
-# Optional: Clean up screenshots
-rm -rf tmp/screenshots
+# Optional: Remove only this invocation's frames after checking the recorded path
+rm -r -- "[capture-dir]/screenshots"
 
 # Keep videos for reference
-echo "Video retained at: tmp/videos/feature-demo.mp4"
+echo "Video retained at: [capture-dir]/videos/feature-demo.mp4"
 ```
 
 </cleanup>

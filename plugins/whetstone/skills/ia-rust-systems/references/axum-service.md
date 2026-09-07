@@ -72,8 +72,13 @@ impl IntoResponse for AppError {
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal")
             }
         };
+        let message = if status == StatusCode::INTERNAL_SERVER_ERROR {
+            "internal server error".to_owned()
+        } else {
+            self.to_string()
+        };
         let body = Json(json!({
-            "error": { "code": code, "message": self.to_string() }
+            "error": { "code": code, "message": message }
         }));
         (status, body).into_response()
     }

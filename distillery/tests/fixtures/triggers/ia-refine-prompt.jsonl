@@ -12,3 +12,9 @@
 {"prompt": "this error message keeps getting misparsed by the downstream agent", "expect": true, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}
 {"prompt": "the model misinterprets this instruction half the time", "expect": true, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}
 {"prompt": "parse the description field out of the tool response json", "expect": false, "added_in": "4.3.2", "source": "ste-machine-parsed-text"}
+{"prompt":"Improve this AI prompt","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Turn this vague request into precise agent instructions","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Sharpen the system prompt for our assistant","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Improve the database query","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Explain a shell prompt","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Proofread a newspaper article","expect":false,"source":"audit-2026-09-07"}

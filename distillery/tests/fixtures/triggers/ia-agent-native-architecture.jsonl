@@ -8,3 +8,9 @@
 {"prompt": "port this CRUD form to a chat-style frontend", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write integration tests for the REST API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "debug the failing pytest fixture", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Design MCP tools for an agent-operated calendar","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Review our agent loop architecture","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Design a system prompt for a file-editing agent","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Build a calendar grid in CSS","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Fix a SQL query","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Write a release note","expect":false,"source":"audit-2026-09-07"}

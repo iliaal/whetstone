@@ -17,7 +17,7 @@
 - **Feature tests** (`tests/Feature/`): HTTP through the full stack (`getJson()`, `postJson()`) -- default for anything touching routes, controllers, or models. **Unit tests** (`tests/Unit/`): isolated services, actions, value objects.
 - `RefreshDatabase` for full migration reset per test; `DatabaseTransactions` for transaction-wrap (faster, no migration testing); `DatabaseMigrations` to run and rollback per test
 - Model factories for all test data -- never raw `DB::table()` inserts
-- **Factories build the model inside `Model::unguarded()`, so a fixture can set a column `$fillable` rejects** -- the test then pins a row shape the runtime cannot produce, not merely one it does not. Fix: diff the factory payload's keys against `$fillable` before reading a guard test as coverage. Full mechanism in [factories.md](./factories.md).
+- **Factories build the model inside `Model::unguarded()`, so a fixture can set a column `$fillable` rejects** -- investigate mismatches against actual production writers, including direct assignment, query-builder writes, observers, and database defaults. Absence from `$fillable` alone does not prove a fixture unreachable. Full mechanism in [factories.md](./factories.md).
 - One behavior per test. Name with `test_` prefix: `test_user_can_update_own_profile`
 - Assert both response status AND side effects (DB state, jobs, notifications): `assertDatabaseHas` / `assertDatabaseMissing`
 - `actingAs($user)` for auth, `Sanctum::actingAs($user, ['ability'])` for API auth
@@ -49,7 +49,7 @@ Real production footguns, invisible to PHPStan and feature tests alone. Mechanis
 - **`chunkById + json_decode + mutate + json_encode + update`** -- loses any concurrent write to a jsonb column between the SELECT and the UPDATE ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **`date:<fmt>` cast format** -- reaches `$model->toArray()` only, never `JsonResource::resolve()`.
 - **A string that trims to empty** -- skips every non-implicit validation rule, `nullable` or not ([pitfalls-deep.md](./pitfalls-deep.md)).
-- **An empty array versus an absent key** -- indistinguishable through `empty()`, `?? null` and `isset()`, so a Clear-all save is a silent no-op; form encoding drops it on the wire too.
+- **An empty array versus an absent key** -- `empty()` and truthiness conflate them, so a Clear-all save can become a silent no-op. `isset()` and `?? null` distinguish `[]` from absence, but conflate `null` with absence; use `array_key_exists()` when null presence matters. Form encoding can drop empty arrays on the wire too.
 - **Nested-array validation** -- `'items.*.name'` rules do not stop `items.*` from being a scalar; always pair with `'items.*' => 'array'`.
 - **`validated()`** -- rebuilds a nested key from its ruled sub-keys only and drops the rest ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **The `boolean` rule** -- validates but never normalises, so `=== true` is false for input it accepted ([pitfalls-deep.md](./pitfalls-deep.md)).

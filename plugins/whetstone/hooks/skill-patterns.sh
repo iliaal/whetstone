@@ -29,7 +29,7 @@ declare -A SKILL_NEGATIVE
 
 # --- Tier 1: Methodology (process/approach skills) ---
 
-SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice'
+SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice|\b(record|plan|identify).{0,20}\barchitecture decisions.{0,20}\bbefore coding\b'
 SKILL_TIERS[ia-planning]=1
 
 # Intent-anchored symptoms (2026-07-07 audit-misfire): bare `crash(es)`, unbounded
@@ -39,28 +39,28 @@ SKILL_TIERS[ia-planning]=1
 # (kills `debugging/foo-crash.md` wiki path lists); `why\s+<aux>` question form (rubric
 # "why it's/why-real" lacks the aux); crash needs a subject/temporal anchor; regression
 # needs a break-symptom not "test/fix". Also replaced PCRE `(?:...)` with plain groups.
-SKILL_PATTERNS[ia-debugging]='debug(ging)?\s.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+((the|this)\s+)?bug|why\s+(is|are|was|were|does|did|do|isn.t|doesn.t|won.t|can.t|would|might).{0,30}(fail|crash|broke|error|hang|wrong|null|undefined|throw|freeze|not.?work)|(server|service|app|process|function|test|page|binary|worker|browser|daemon|program|script|query|request|keeps?|still|randomly|intermittent|production|prod|deploy).{0,15}crash(ed|ing|es)?|crash(ed|ing|es).{0,25}(after|when|on.?start|in.?prod|randomly|intermittent|during|deploy|repeatedly|every)|troubleshoot|(analyz|read|paste|inspect|got|this|following).{0,15}stack.?trace|broken.?test|test.{0,10}broken|flaky.?test|regression.{0,15}(bug|broke|broken|fail|introduced|caused)|unexpected.?behav'
+SKILL_PATTERNS[ia-debugging]='debug(ging)?\s.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+((the|this)\s+)?bug|why\s+(is|are|was|were|does|did|do|isn.t|doesn.t|won.t|can.t|would|might).{0,30}(fail|crash|broke|error|hang|wrong|null|undefined|throw|freeze|not.?work)|(server|service|app|process|function|test|page|binary|worker|browser|daemon|program|script|query|request|keeps?|still|randomly|intermittent|production|prod|deploy).{0,15}crash(ed|ing|es)?|crash(ed|ing|es).{0,25}(after|when|on.?start|in.?prod|randomly|intermittent|during|deploy|repeatedly|every)|troubleshoot|(analyz|read|paste|inspect|got|this|following).{0,15}stack.?trace|broken.?test|test.{0,10}broken|flaky.?test|regression.{0,15}(bug|broke|broken|fail|introduced|caused)|unexpected.?behav|\b(diagnos|investigat)[a-z]*.{0,30}\b(failure|regression|crash|error|bug)\b'
 SKILL_TIERS[ia-debugging]=1
 
 # Bounded gaps + word anchors (2026-07-07): unbounded `review.*code` / `audit.*code`
 # spanned multi-KB prompts and fired on codebases whose domain noun is "audit"
 # (AuditControllerTest, audit.enabled) — 16/27 harvested negatives were this misfire.
-SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu'
+SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu|\breview.{0,30}\bpull request\b'
 SKILL_TIERS[ia-code-review]=1
 
-SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability'
+SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b'
 SKILL_TIERS[ia-simplifying-code]=1
 
 SKILL_PATTERNS[ia-brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.{0,40}(approach|idea|option|feature)|compare.{0,30}approach|clarify.{0,30}(requirement|ambigu)|vague.{0,30}(idea|feature|requirement)'
 SKILL_TIERS[ia-brainstorming]=1
 
-SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,15}(commit|push|pr|merge|complet)|mark.{0,15}(done|complet)|ready.?to.?merge|claim.{0,30}(fixed|done|complete)'
+SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,15}(commit|push|pr|merge|complet)|mark.{0,15}(done|complet)|ready.?to.?merge|claim.{0,30}(fixed|done|complete)|\bverify.{0,20}\bfix.{0,30}\bdeclaring.{0,10}\bdone\b'
 SKILL_TIERS[ia-verification-before-completion]=1
 
-SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)'
+SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)|\b(check|evaluate|assess).{0,30}\bcode review feedback\b'
 SKILL_TIERS[ia-receiving-code-review]=1
 
-SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline'
+SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b'
 SKILL_TIERS[ia-writing-tests]=1
 
 
@@ -69,7 +69,7 @@ SKILL_TIERS[ia-writing-tests]=1
 # Bounded gaps + \.php\b (2026-07-07): unbounded `test.*(...).*\.php` spanned
 # multi-KB prompts and `\.php` matched inside `.phpt`, injecting into php-src /
 # extension C tasks the description explicitly excludes (~10/50 harvested negatives).
-SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.{0,60}\.php\b|unit.?test.{0,60}\.php\b|test.{0,40}(controller|model|service|action|job|command|endpoint).{0,60}\.php\b'
+SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.{0,60}\.php\b|unit.?test.{0,60}\.php\b|test.{0,40}(controller|model|service|action|job|command|endpoint).{0,60}\.php\b|\bformrequest\b.{0,20}\b(authorization|validation|rule)\b'
 SKILL_TIERS[ia-php-laravel]=2
 
 # React-intent required near .tsx/.jsx (2026-07-07 audit-misfire): bare `\bjsx\b|\btsx\b`
@@ -83,7 +83,7 @@ SKILL_TIERS[ia-react-frontend]=2
 SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,24}(auth|route|server|express)'
 SKILL_TIERS[ia-nodejs-backend]=2
 
-SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b'
+SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b|\basyncio\b|\bty\b.{0,20}\bpyproject\.toml\b|\b(implement|build|write|configure|test)\b.{0,20}\bclick\b.{0,20}\b(command|cli|option|subcommand)\b'
 SKILL_TIERS[ia-python-services]=2
 
 SKILL_PATTERNS[ia-rust-systems]='(write|review|refactor|debug|fix|implement|design|structure|optimi[sz]e|port|migrate|test)\b[^.]{0,40}\brust\b|\brust\b.{0,30}(cli|service|binary|workspace|backend|api|server|handler|async|tokio|axum)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\bcrates?\.io\b|\bcrate\b.{0,25}\bworkspace\b|\bworkspace\b.{0,25}\bcrates?\b'
@@ -108,7 +108,7 @@ SKILL_TIERS[ia-rust-systems]=2
 # those two languages by name. C++ is deliberately absent from that list: a C++
 # prompt naming a segfault or a header genuinely wants the C memory rules too, so
 # co-firing with ia-cpp-systems is correct.
-SKILL_PATTERNS[ia-c-systems]='(^|[^-a-zA-Z0-9_+#])c +(code|function|file|header|module|struct|api|library|extension|program|source|compiler|standard|string|pointer|macro|project|codebase|parser|daemon|driver|allocator|protocol|binary|server|client|buffer|callback|wrapper|routine)\b|(code|written|write|writing|program|library|implement|implemented) +in +c([^+#a-zA-Z0-9_]|$)|\bc(89|99|11|17|23)\b|\.c\b|\.h\b|\bmalloc\b|\bcalloc\b|\brealloc\b|\bmemcpy\b|\bmemmove\b|\bmemset\b|\bstrncpy\b|\bstrlcpy\b|\bsnprintf\b|\bsize_t\b|(u?int(8|16|32|64)_t)|valgrind|address ?sanitizer|\basan\b|\bubsan\b|\bsegfault\b|segmentation fault|\bgdb\b|double ?free|use.?after.?free|dangling pointer|null pointer deref|pointer arithmetic|\-wall\b|\-wextra\b|\-werror\b|\-fsanitize|zend_|\bphpize\b|arginfo|gen_stub|\.phpt\b|config\.m4|php[ _-]?extension'
+SKILL_PATTERNS[ia-c-systems]='(^|[^-a-zA-Z0-9_+#])c +(code|function|file|header|module|struct|api|library|extension|program|source|compiler|standard|string|pointer|macro|project|codebase|parser|daemon|driver|allocator|protocol|binary|server|client|buffer|callback|wrapper|routine)\b|(code|written|write|writing|program|library|implement|implemented) +in +c([^+#a-zA-Z0-9_]|$)|\bc(89|99|11|17|23)\b|\.c\b|\.h\b|\bmalloc\b|\bcalloc\b|\brealloc\b|\bmemcpy\b|\bmemmove\b|\bmemset\b|\bstrncpy\b|\bstrlcpy\b|\bsnprintf\b|\bsize_t\b|(u?int(8|16|32|64)_t)|valgrind|address ?sanitizer|\basan\b|\bubsan\b|\bsegfault\b|segmentation fault|\bgdb\b|double ?free|use.?after.?free|dangling pointer|null pointer deref|pointer arithmetic|\-wall\b|\-wextra\b|\-werror\b|\-fsanitize|zend_|\bphpize\b|arginfo|gen_stub|\.phpt\b|config\.m4|php[ _-]?extension|\bzend\b.{0,20}\b(object|handler|extension)\b'
 SKILL_TIERS[ia-c-systems]=2
 SKILL_NEGATIVE[ia-c-systems]='\bc#|\bc sharp\b|\bcsharp\b|objective-?c\b|\bdotnet\b|\.cs\b'
 
@@ -128,7 +128,7 @@ SKILL_TIERS[ia-terraform]=2
 SKILL_PATTERNS[ia-linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script'
 SKILL_TIERS[ia-linux-bash-scripting]=2
 
-SKILL_PATTERNS[ia-pinescript]='pine.?script|pinescript|tradingview.{0,30}(pine|indicator|strategy|chart|script)|\bindicator\b.{0,20}(pine|trading.?view)|\bstrategy\b.{0,20}(pine|trading.?view)|\.pine\b'
+SKILL_PATTERNS[ia-pinescript]='pine.?script|pinescript|tradingview.{0,30}\b(pine|indicators?|strateg(y|ies)|charts?|scripts?)\b|\bindicator\b.{0,20}(pine|trading.?view)|\bstrategy\b.{0,20}(pine|trading.?view)|\.pine\b|\btradingview\b.{0,20}\brepainting\b'
 SKILL_TIERS[ia-pinescript]=2
 
 # Word-bounded UI + spaced build verb (2026-07-07 audit-misfire): `ui.*(build|create)`
@@ -137,13 +137,13 @@ SKILL_TIERS[ia-pinescript]=2
 # Fixes: `\bui\b` word-bounds the token; `(design|build)\s` requires a space so CamelCase
 # file names like `BuildDashboardProviders.ts` no longer fire; bounded the `frontend.*`
 # and `ai.?generated.*` spans.
-SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build)\s.{0,20}(web.?component|web.?page|landing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|color.?palette|visual.?identity'
+SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build)\s.{0,20}(web.?component|web.?page|landing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|color.?palette|visual.?identity|\bredesign.{0,30}\bpage layout\b'
 SKILL_TIERS[ia-frontend-design]=2
 
 SKILL_PATTERNS[ia-tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|style.{0,30}utility.?class|dark.?mode.*css'
 SKILL_TIERS[ia-tailwind-css]=2
 
-SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?(tool|server)|self.?modif|agent.?(native|loop|hook)|prompt.?native|pretooluse|posttooluse'
+SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?(tool|server)|self.?modif|agent.?(native|loop|hook)|prompt.?native|pretooluse|posttooluse|\bdesign.{0,20}\bsystem prompt.{0,30}\bfile-editing agent\b'
 SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
@@ -154,25 +154,25 @@ SKILL_TIERS[ia-writing]=3
 # Intent-anchored (2026-07-07): bare `claude\.md` fired on any prompt citing
 # CLAUDE.md as reference material (6/6 harvested negatives); unbounded `update.*`
 # alternates spanned multi-KB prompts. Verbs required near the doc noun.
-SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md'
+SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md|\b(create|write|refresh|regenerate)\b.{0,30}\b(readme|contributing)(\.md)?\b'
 SKILL_TIERS[ia-md-docs]=3
 
-SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt|tool.?description|mis-?(pars|interpret|read)'
+SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt|tool.?description|mis-?(pars|interpret|read)|\bsharpen.{0,20}\b(system )?prompt\b|\b(turn|convert|refine).{0,25}\b(vague request|prompt).{0,30}\bagent instructions\b'
 SKILL_TIERS[ia-refine-prompt]=3
 
-SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|steelman|devil.?s.?advocate'
+SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|steelman|devil.?s.?advocate|\bstrongest counterargument\b|\b(analy[sz]e|examine).{0,20}\bassumptions.{0,25}\b(overturn|invalidate|undermine).{0,20}\bconclusion\b'
 SKILL_TIERS[ia-meta-prompting]=3
 
-SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong'
+SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong|\breflect on.{0,20}\bsession\b'
 SKILL_TIERS[ia-reflect]=3
 
-SKILL_PATTERNS[ia-compound-docs]='document.{0,40}(solution|problem|workaround)|capture.{0,40}(knowledge|solved|solution|debug)|compound.{0,30}(doc|knowledge)|post.?mortem'
+SKILL_PATTERNS[ia-compound-docs]='document.{0,40}(solution|problem|workaround)|capture.{0,40}(knowledge|solved|solution|debug)|compound.{0,30}(doc|knowledge)|post.?mortem|\bdocument.{0,25}\b(resolved|fixed) incident\b|\bcapture.{0,20}\blessons learned.{0,25}\b(fix|debug|resolv)|\bwrite up.{0,30}\b(debugging )?solution\b'
 SKILL_TIERS[ia-compound-docs]=3
 
-SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|spec)'
+SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|spec)|\bcheck.{0,20}\b(adr|document|spec|plan).{0,20}\b(clarity|completeness)\b'
 SKILL_TIERS[ia-document-review]=3
 
-SKILL_PATTERNS[ia-file-todos]='todo.?directory|file.?based.?todo|\btodos?\b.{0,24}(file|list|add|creat|track|status|backlog)|(add|create|list|track|triage|manage).{0,24}\btodos?\b|\bbacklog\b'
+SKILL_PATTERNS[ia-file-todos]='todo.?directory|file.?based.?todo|\btodos?\b.{0,24}(file|list|add|creat|track|status|backlog)|(add|create|list|track|triage|manage).{0,24}\btodos?\b|\bbacklog\b|\btodos directory\b|\bconvert.{0,25}\bpr comments.{0,20}\btracked tasks\b'
 SKILL_TIERS[ia-file-todos]=3
 
 # Dispatch-intent only (2026-09-06): bare `fan.?out` and bare `\bsub.?agents?\b`
@@ -180,7 +180,7 @@ SKILL_TIERS[ia-file-todos]=3
 # "the driver dispatches ONE post-planner subagent", `bmpm_prefix_fanout_budget`)
 # and fired on 30/30 harvested executor briefs. Both now require an agent-shaped
 # object, and the subagent form requires imperative dispatch framing.
-SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel [a-z ]{0,20}(agents?|reviewers?|workers?)\b|(several|multiple|three|four|five) (agents?|subagents?|reviewers?|workers?)\b|divide.?and.?conquer|\bin (a|another|its own|one) sub.?agent\b|spawn.{0,24}agents?|fan.?out\b[^.]{0,40}\b(agents?|workers?|reviewers?)\b|orchestrat[a-z]*.{0,24}agents?|agents?.{0,16}in parallel|(^|[.;:] *|\band |\bthen )(dispatch|launch|delegate to|hand off to) (a|an|one|two|three|four|five|multiple|several) ?[a-z-]{0,14} ?sub.?agents?\b'
+SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel [a-z ]{0,20}(agents?|reviewers?|workers?)\b|(several|multiple|three|four|five) (agents?|subagents?|reviewers?|workers?)\b|divide.?and.?conquer|\bin (a|another|its own|one) sub.?agent\b|spawn.{0,24}agents?|fan.?out\b[^.]{0,40}\b(agents?|workers?|reviewers?)\b|orchestrat[a-z]*.{0,24}agents?|agents?.{0,16}in parallel|(^|[.;:] *|\band |\bthen )(dispatch|launch|delegate to|hand off to) (a|an|one|two|three|four|five|multiple|several) ?[a-z-]{0,14} ?sub.?agents?\b|(^|[.;:] *|\band |\bthen )(please )?coordinate\b.{0,20}\b(team of )?agents\b|(^|[.;:] *|\band |\bthen )(please )?run.{0,20}\breviewers concurrently\b|(^|[.;:] *|\band |\bthen )(please )?(build|create).{0,20}\bpipeline.{0,30}\bagent output.{0,20}\b(feeds|passes)\b'
 SKILL_TIERS[ia-orchestrating-swarms]=3
 
 # Management-intent only (2026-07-07): bare `worktree` matched location mentions

@@ -4,7 +4,7 @@ Load this reference when dispatching judge panels, running parallel reviewers, o
 
 ## Cold-start agent isolation
 
-Each agent in a swarm receives only the task description and fresh context. No session history, no prior agent outputs until an explicit synthesis phase. When running parallel reviewers or evaluators, the orchestrator holds all outputs until every agent has submitted independently, then passes the collected results to a synthesis agent.
+Each independent reviewer or evaluator receives the full task, target artifact, criteria, and operative instructions in fresh context. No implementer session history or prior verdicts until an explicit synthesis phase. In Codex use `fork_turns: "none"`. When running parallel reviewers or evaluators, the orchestrator holds all outputs until every agent has submitted independently, then passes the collected results to a synthesis agent. Implementers continuing their own unit may retain its context.
 
 ## Fresh instances on every re-dispatch round
 
@@ -30,7 +30,7 @@ Structural isolation (the patterns above) does not remove per-judgment biases. N
 
 | Bias | Failure mode | Countermeasure |
 |------|--------------|----------------|
-| Sycophancy | Scores drift up because output "looks like effort" | Require one named defect per candidate before any score; score-only replies are invalid |
+| Sycophancy | Scores drift up because output "looks like effort" | Require criterion-linked evidence before scoring each candidate: verified defects, or explicitly no defects found with checked scope and limitations. Never invent a defect to meet a quota; score-only replies are invalid |
 | Length | Longer output read as more thorough | Instruct scoring on criteria coverage; state that unrequested length is a cost, not a merit |
 | Authority | "The senior agent / the spec author wrote this" inflates trust | Strip authorship and provenance from candidate labels |
 | Completion | Finishing read as succeeding | Judge against acceptance criteria, not against "did it produce something" |

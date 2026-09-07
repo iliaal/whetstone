@@ -8,3 +8,9 @@
 {"prompt": "review this pull request for code quality", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "review the security implications of this change", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "review my test coverage", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Review this design document for missing assumptions","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Check this ADR for clarity and completeness","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Polish this implementation plan before handoff","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Review this code diff for buffer overflows","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Implement the approved plan","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Generate a product idea from scratch","expect":false,"source":"audit-2026-09-07"}

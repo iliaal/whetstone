@@ -20,3 +20,11 @@
 {"prompt": "review: missing regression test coverage for the recent fix", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "every font byte is attacker-controlled; the parser crashes on malformed input", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "read the full body of each file: debugging/php-sapi-variant-crash-triage.md and debugging/foo.md", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt":"Diagnose this intermittent failure","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Investigate a production regression","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Find the root cause of this stack trace","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Design a new landing page","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Summarize the completed investigation","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Add a new configuration flag","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review the incident report describing a failure","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"The regression tests cover intermittent errors","expect":false,"source":"audit-2026-09-07-boundary"}

@@ -26,12 +26,12 @@ tool("process_feedback", async ({ message }) => {
 "When feedback comes in, decide importance, store it, notify if high"
 ```
 
-**Artificial limits on agent capability:**
+**Workflow limits beyond the caller's existing read authorization:**
 ```typescript
-// RED FLAG: Tool prevents agent from doing what users can do
 tool("read_file", async ({ path }) => {
-  if (!ALLOWED_PATHS.includes(path)) {
-    throw new Error("Not allowed to read this file");
+  if (!isAllowed(path)) throw new Error("Forbidden");
+  if (!REPORT_FILES.includes(path)) {
+    throw new Error("Only files in the report workflow can be read");
   }
   return readFile(path);
 });
@@ -109,21 +109,26 @@ tool("store_item", { key: z.string(), value: z.any() }, ...simple storage...)
 tool("send_message", { channel: z.string(), content: z.string() }, ...simple send...)
 ```
 
-**Step 5: Remove artificial limits**
+**Step 5: Remove workflow limits while retaining authorization**
+
+Keep the trusted runtime's `isAllowed` check in both versions. It must enforce the caller's resource grants, tenant boundary, and workspace containment after resolving symlinks. Model-supplied paths or prompts cannot grant read access. Remove `REPORT_FILES` only after confirming it encodes a workflow preference rather than a confidentiality or integrity boundary.
 
 ```typescript
-// Before: Limited capability
+// Before: Authorization plus a workflow-only restriction
+tool("read_file", async ({ path }) => {
+  if (!isAllowed(path)) throw new Error("Forbidden");
+  if (!REPORT_FILES.includes(path)) throw new Error("Outside report workflow");
+  return readFile(path);
+});
+
+// After: Every authorized file remains available
 tool("read_file", async ({ path }) => {
   if (!isAllowed(path)) throw new Error("Forbidden");
   return readFile(path);
 });
-
-// After: Full capability
-tool("read_file", async ({ path }) => {
-  return readFile(path);  // Agent can read anything
-});
-// Use approval gates for WRITES, not artificial limits on READS
 ```
+
+Enforce authorization on reads and writes. Approval gates for mutations complement read confidentiality checks; they do not replace them. Test an authorized file outside the old workflow list and an unauthorized file, including sibling-prefix and symlink escape cases.
 
 **Step 6: Test with outcomes, not procedures**
 

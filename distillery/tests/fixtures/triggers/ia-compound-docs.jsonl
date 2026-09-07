@@ -8,3 +8,9 @@
 {"prompt": "write the user-facing docs for this feature", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "update the README with new install steps", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "draft the API reference page", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Document this resolved incident for team reuse","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Capture lessons learned after fixing the deadlock","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Write up this debugging solution for our knowledge base","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Debug this unsolved deadlock","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Edit a button label","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Find the current git branch","expect":false,"source":"audit-2026-09-07"}

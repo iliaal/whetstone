@@ -1,33 +1,32 @@
 # Orchestrating Swarms — Quick Reference
 
-Code snippets for the common spawn/message/task/shutdown operations. Load when setting up a specific coordination pattern — the decision logic lives in the main SKILL.md.
+Code snippets for the common spawn/message/task/shutdown operations. Load when setting up a specific coordination pattern — the decision logic lives in the main SKILL.md. These are Claude Code examples: inspect active schemas and use [teammate-operations.md](./teammate-operations.md) for prerequisites and lifecycle details. No explicit team creation or deletion is needed.
 
 ## Spawn a Subagent (short-lived, returns a result)
 
 ```javascript
-Task({ subagent_type: "Explore", description: "Find auth files", prompt: "..." })
+Agent({ subagent_type: "Explore", description: "Find auth files", prompt: "..." })
 ```
 
 ## Parallel Fan-Out (one message, multiple tool uses)
 
 ```javascript
-Task({ subagent_type: "whetstone:ia-security-sentinel", ... })
-Task({ subagent_type: "whetstone:ia-performance-oracle", ... })
-Task({ subagent_type: "whetstone:ia-architecture-strategist", ... })
+Agent({ subagent_type: "whetstone:ia-security-sentinel", description: "Review security", prompt: "Independently review the supplied change for security; return evidence or no findings." })
+Agent({ subagent_type: "whetstone:ia-performance-oracle", description: "Review performance", prompt: "Independently review the supplied change for performance; return evidence or no findings." })
+Agent({ subagent_type: "whetstone:ia-architecture-strategist", description: "Review architecture", prompt: "Independently review the supplied change against its architecture constraints; return evidence or no findings." })
 ```
 
-## Spawn Team + Teammate (persistent, communicates via inbox)
+## Spawn a teammate (interactive session with agent teams enabled)
 
 ```javascript
-Teammate({ operation: "spawnTeam", team_name: "my-team" })
-Task({ team_name: "my-team", name: "worker", subagent_type: "general-purpose",
+Agent({ name: "worker", subagent_type: "general-purpose", description: "Complete assigned unit",
        prompt: "...", run_in_background: true })
 ```
 
 ## Message a Teammate
 
 ```javascript
-Teammate({ operation: "write", target_agent_id: "worker-1", value: "..." })
+SendMessage({ to: "worker-1", message: "..." })
 ```
 
 ## Create Task Pipeline
@@ -49,7 +48,8 @@ TaskUpdate({ taskId: "1", status: "completed" })
 ## Shutdown Team
 
 ```javascript
-Teammate({ operation: "requestShutdown", target_agent_id: "worker-1" })
+SendMessage({ to: "worker-1", message: { type: "shutdown_request", reason: "Assigned work complete" } })
 // Wait for shutdown_approved message...
-Teammate({ operation: "cleanup" })
 ```
+
+Session cleanup is automatic; retain task records and handle owned worktrees separately.

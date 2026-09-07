@@ -15,6 +15,7 @@ Improve brainstorm or plan documents through structured review.
 ## Working rules
 
 - Assess before editing, preserve implementation-relevant constraints and rationale, and distinguish minor edits from substantive decisions.
+- A review-only request authorizes findings, not file edits. Apply changes only when the user has requested editing or approved the proposed changes; do not ask again for changes already authorized.
 
 ## Step 1: Get the Document
 
@@ -77,9 +78,9 @@ Among everything found in Steps 2-4, does one issue stand out? If something woul
 
 Present findings, then:
 
-1. **Auto-fix** minor issues (vague language, formatting) without asking
-2. **Ask approval** before substantive changes (restructuring, removing sections, changing meaning). Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. Render the finding per the contract below in visible text in the same turn *before* the question fires -- on harnesses where the question opens a modal it covers the preceding text, so a question stem that carries no decision content strands the reader.
-3. **Update** the document inline
+1. **Apply authorized edits** within the requested scope, including minor wording and formatting fixes. For review-only requests, report these as suggestions.
+2. **Ask approval** for changes outside the existing authorization (restructuring, removing sections, changing meaning). Use the active harness's supported approval interface, or ask directly in chat. Render the finding per the contract below before asking so the decision is concrete.
+3. **Update** the document inline only for authorized changes; otherwise return the findings.
 
 ### Rendering a finding for decision
 

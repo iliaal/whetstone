@@ -15,3 +15,9 @@
 {"prompt": "remove this TODO comment from the code", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "review the list of dependencies before upgrading the package", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "track the deployment status in the dashboard", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt":"List pending todo files","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Convert these PR comments into tracked tasks","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Check dependencies in our todos directory","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Explain JavaScript comments","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Implement this feature directly","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review my prose","expect":false,"source":"audit-2026-09-07"}

@@ -8,3 +8,9 @@
 {"prompt": "review someone else's PR", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "write a code review for this diff", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "audit this branch for security issues", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Evaluate this reviewer suggestion before implementing it","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Respond to the PR review comments","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Check whether this code review feedback is correct","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Review this code from scratch","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Create a new pull request","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Write a parser","expect":false,"source":"audit-2026-09-07"}

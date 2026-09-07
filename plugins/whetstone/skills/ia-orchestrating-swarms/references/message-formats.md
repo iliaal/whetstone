@@ -1,6 +1,8 @@
 # Message Formats
 
-> When to read: when composing inter-agent messages and needing the canonical JSON shapes for regular messages, broadcasts, structured payloads, or QA handoffs.
+> When to read: when interpreting received teammate messages or distinguishing runtime envelopes from outgoing tool arguments.
+
+These illustrate received payloads, not a stable schema to write into inbox files. Send through the active `SendMessage({ to, message })` schema in [teammate-operations.md](./teammate-operations.md); use plain text for progress and task results. Copy request IDs from actual runtime requests. Do not manufacture protocol messages from these examples.
 
 ## Regular Message
 
@@ -38,7 +40,7 @@
 }
 ```
 
-### Idle Notification (auto-sent when teammate stops)
+### Idle notification (turn ended; teammate may still be running)
 ```json
 {
   "type": "idle_notification",
@@ -68,17 +70,6 @@
   "requestId": "plan-xyz789",
   "planContent": "# Implementation Plan\n\n1. ...",
   "timestamp": "2026-01-25T23:41:00.000Z"
-}
-```
-
-### Join Request
-```json
-{
-  "type": "join_request",
-  "proposedName": "helper",
-  "requestId": "join-abc123",
-  "capabilities": "Code review and testing",
-  "timestamp": "2026-01-25T23:42:00.000Z"
 }
 ```
 

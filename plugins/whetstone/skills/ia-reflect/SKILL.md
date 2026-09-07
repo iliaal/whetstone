@@ -14,8 +14,8 @@ description: >-
 - Every mistake/friction point cites the specific moment and its impact
 - Improvements are actionable and prioritized (cap defined in step 4)
 - Each skill audit proposes measurable changes (not vague suggestions)
-- User is asked which items to persist to memory
-- If review activity occurred, review-trap patterns are captured to persistent memory, or explicitly marked as "none"
+- Memory persistence follows existing authorization, or the user selects concrete proposed items before any write
+- If review activity occurred, review-trap candidates are reported; persist only with authorization, or explicitly report no candidates
 
 ## Process
 
@@ -34,10 +34,12 @@ Skip one-time typos, external tool failures, and issues outside agent control.
 
 ### 2. Review Activity Scan (if applicable)
 
+Collect candidates in the response. A retrospective alone does not authorize memory writes or skill edits; apply only changes already authorized by the user or approved in steps 4 and 5.
+
 If the session included PR or MR review activity in either direction, run this scan before moving on. Skip only if no reviews happened.
 
 **Inbound (my code was reviewed):** For each review comment received:
-- Did I accept it? If yes, what pattern did the reviewer catch that I missed? Is it a recurring blind spot? Capture the one-liner to persistent memory.
+- Did I accept it? If yes, what pattern did the reviewer catch that I missed? Is it a recurring blind spot? Propose a one-line memory candidate for step 4.
 - Did I push back? If I was right and the reviewer was wrong, nothing to capture. If I was wrong and had to retract mid-thread, capture what I learned.
 
 **Outbound (I reviewed someone else's code):** For each comment I authored:
@@ -58,9 +60,9 @@ Also scan for **information-access gaps**: points where the session stalled or g
 
 Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10 items: if more surface, the bottom items are noise -- drop them rather than batching or splitting.
 
-Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat: *"Which of these should I remember for future chats?"*
+For items not already authorized for persistence, present the concrete candidates and ask which to remember. Use the active harness's supported approval interface, or ask directly in chat. Do not ask again for items the user already authorized.
 
-Save approved items to memory files at `~/.claude/projects/<project-slug>/memory/` (replace `<project-slug>` with the slug matching the current working directory, e.g., `-home-ilia-ai-whetstone`) using the Write tool with proper frontmatter (see MEMORY.md index).
+Save authorized items in the project's configured memory location using the active harness's file-editing tool and memory format. In Claude Code, inspect `~/.claude/projects/<project-slug>/memory/` and its MEMORY.md index; use the configured project slug rather than inventing one.
 
 Before writing, grep the existing memory directory for the item's key terms. On a near-duplicate, update that file instead of adding a second. On a direct contradiction with an entry already on file ("use tabs" when "use spaces" is recorded), do not blind-append — surface both and let the user choose merge, replace, or keep-both. Silent duplicate and contradiction accumulation is the main way a curated memory index rots.
 
@@ -69,8 +71,8 @@ Before writing, grep the existing memory directory for the item's key terms. On 
 For each skill invoked during the session:
 
 **A. Self-check gate** -- If the skill lacks success criteria + verification loop:
-- Add `## Success Criteria` at top (3-5 measurable checks)
-- Add `## Self-Check` at bottom: "Verify all success criteria are met before presenting output. If not, iterate (max 5 times)."
+- Propose `## Success Criteria` at top (3-5 measurable checks)
+- Propose `## Self-Check` at bottom: "Verify all success criteria are met before presenting output. If not, iterate (max 5 times)."
 
 **B. Token efficiency** -- Flag: redundant phrasing, mergeable sections, oversized examples, "Claude already knows this" content, inert frontmatter metadata.
 
@@ -84,7 +86,7 @@ For each skill invoked during the session:
 
 A skill invoked with no mismatch gets an explicit "no mismatch" line, same discipline as "no harvestable items is a valid outcome". "Line X is wrong in context Y, here's the workaround" is an actionable edit; "this skill has vague directives" is a research task.
 
-Present proposed changes as diffs. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat: *"Apply these? (all / pick / skip)"*
+Present proposed changes as diffs. Apply changes within existing editing authorization; otherwise ask which concrete changes to apply using the active harness's supported approval interface or directly in chat.
 
 ### 6. Capture Markers
 

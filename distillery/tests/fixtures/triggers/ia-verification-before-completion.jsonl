@@ -8,3 +8,9 @@
 {"prompt": "claim the bug is fixed and hand off", "expect": true, "added_in": "3.0.3", "source": "tier1-restored-after-regex-tighten"}
 {"prompt": "explore approaches for the new feature", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "brainstorm naming options for the API", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt":"Verify the fix before declaring it done","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Check that this is ready to merge","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Verify completion of the implemented feature","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Brainstorm a new feature","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Explain a language construct","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"List files in this directory","expect":false,"source":"audit-2026-09-07"}

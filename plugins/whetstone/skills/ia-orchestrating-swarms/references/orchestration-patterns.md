@@ -2,48 +2,48 @@
 
 > When to read: when designing a multi-agent workflow shape — parallel specialists, sequential pipeline, hub-and-spoke, or hierarchical sub-teams.
 
+Claude examples below use the active `Agent`, `SendMessage`, and optional Task tools. For named teammates, first confirm an interactive session with agent teams enabled. Team setup and session cleanup are automatic; use the actual session-derived paths. Supply the full dispatch contract and fresh reviewer context with each example. Task IDs are illustrative: use IDs returned by TaskCreate. If Task tools are absent, the orchestrator tracks dependencies and dispatches ready work through messages.
+
 ## Pattern 1: Parallel Specialists (Leader Pattern)
 
 Multiple specialists review code simultaneously:
 
 ```javascript
-// 1. Create team
-Teammate({ operation: "spawnTeam", team_name: "code-review" })
+// 1. Prepare the work items in the current session
 
-// 2. Spawn specialists in parallel (single message, multiple Task calls)
-Task({
-  team_name: "code-review",
+// 2. Spawn specialists without waiting for earlier workers to finish
+Agent({
   name: "security",
+  description: "Assigned security work",
   subagent_type: "whetstone:ia-security-sentinel",
   prompt: "Review the PR for security vulnerabilities. Focus on: SQL injection, XSS, auth bypass. Send findings to team-lead.",
   run_in_background: true
 })
 
-Task({
-  team_name: "code-review",
+Agent({
   name: "performance",
+  description: "Assigned performance work",
   subagent_type: "whetstone:ia-performance-oracle",
   prompt: "Review the PR for performance issues. Focus on: N+1 queries, memory leaks, slow algorithms. Send findings to team-lead.",
   run_in_background: true
 })
 
-Task({
-  team_name: "code-review",
+Agent({
   name: "simplicity",
+  description: "Assigned simplicity work",
   subagent_type: "whetstone:ia-code-simplicity-reviewer",
   prompt: "Review the PR for unnecessary complexity. Focus on: over-engineering, premature abstraction, YAGNI violations. Send findings to team-lead.",
   run_in_background: true
 })
 
 // 3. Wait for results (check inbox)
-// cat ~/.claude/teams/code-review/inboxes/team-lead.json
+// Use the current session's delivered messages and runtime-provided paths
 
-// 4. Synthesize findings and cleanup
-Teammate({ operation: "requestShutdown", target_agent_id: "security" })
-Teammate({ operation: "requestShutdown", target_agent_id: "performance" })
-Teammate({ operation: "requestShutdown", target_agent_id: "simplicity" })
-// Wait for approvals...
-Teammate({ operation: "cleanup" })
+// 4. Synthesize findings and request shutdown
+SendMessage({ to: "security", message: { type: "shutdown_request", reason: "Assigned work complete" } })
+SendMessage({ to: "performance", message: { type: "shutdown_request", reason: "Assigned work complete" } })
+SendMessage({ to: "simplicity", message: { type: "shutdown_request", reason: "Assigned work complete" } })
+// Wait for shutdown acknowledgements; session cleanup is automatic.
 ```
 
 ## Pattern 2: Pipeline (Sequential Dependencies)
@@ -51,8 +51,7 @@ Teammate({ operation: "cleanup" })
 Each stage depends on the previous:
 
 ```javascript
-// 1. Create team and task pipeline
-Teammate({ operation: "spawnTeam", team_name: "feature-pipeline" })
+// 1. Prepare the work items in the current session
 
 TaskCreate({ subject: "Research", description: "Research best practices for the feature", activeForm: "Researching..." })
 TaskCreate({ subject: "Plan", description: "Create implementation plan based on research", activeForm: "Planning..." })
@@ -67,17 +66,17 @@ TaskUpdate({ taskId: "4", addBlockedBy: ["3"] })
 TaskUpdate({ taskId: "5", addBlockedBy: ["4"] })
 
 // 2. Spawn workers that claim and complete tasks
-Task({
-  team_name: "feature-pipeline",
+Agent({
   name: "researcher",
+  description: "Assigned researcher work",
   subagent_type: "whetstone:ia-best-practices-researcher",
   prompt: "Claim task #1, research best practices, complete it, send findings to team-lead. Then check for more work.",
   run_in_background: true
 })
 
-Task({
-  team_name: "feature-pipeline",
+Agent({
   name: "implementer",
+  description: "Assigned implementer work",
   subagent_type: "general-purpose",
   prompt: "Poll TaskList every 30 seconds. When task #3 unblocks, claim it and implement. Then complete and notify team-lead.",
   run_in_background: true
@@ -91,8 +90,7 @@ Task({
 Workers grab available tasks from a pool:
 
 ```javascript
-// 1. Create team and task pool
-Teammate({ operation: "spawnTeam", team_name: "file-review-swarm" })
+// 1. Prepare the work items in the current session
 
 // Create many independent tasks (no dependencies)
 for (const file of ["auth.ts", "user.ts", "apiController.ts", "payment.ts"]) {
@@ -104,9 +102,9 @@ for (const file of ["auth.ts", "user.ts", "apiController.ts", "payment.ts"]) {
 }
 
 // 2. Spawn worker swarm
-Task({
-  team_name: "file-review-swarm",
+Agent({
   name: "worker-1",
+  description: "Assigned worker-1 work",
   subagent_type: "general-purpose",
   prompt: `
     You are a swarm worker. Your job:
@@ -115,23 +113,23 @@ Task({
     3. Claim it with TaskUpdate (set owner to your name)
     4. Do the work
     5. Mark it completed with TaskUpdate
-    6. Send findings to team-lead via Teammate write
+    6. Send findings to team-lead via SendMessage
     7. Repeat until no tasks remain
   `,
   run_in_background: true
 })
 
-Task({
-  team_name: "file-review-swarm",
+Agent({
   name: "worker-2",
+  description: "Assigned worker-2 work",
   subagent_type: "general-purpose",
   prompt: `[Same prompt as worker-1]`,
   run_in_background: true
 })
 
-Task({
-  team_name: "file-review-swarm",
+Agent({
   name: "worker-3",
+  description: "Assigned worker-3 work",
   subagent_type: "general-purpose",
   prompt: `[Same prompt as worker-1]`,
   run_in_background: true
@@ -146,14 +144,14 @@ Research first, then implement:
 
 ```javascript
 // 1. Research phase (synchronous, returns results)
-const research = await Task({
+const research = await Agent({
   subagent_type: "whetstone:ia-best-practices-researcher",
   description: "Research caching patterns",
   prompt: "Research best practices for implementing API caching. Include: cache invalidation strategies, Redis vs Memcached, cache key design."
 })
 
 // 2. Use research to guide implementation
-Task({
+Agent({
   subagent_type: "general-purpose",
   description: "Implement caching",
   prompt: `
@@ -168,45 +166,26 @@ Task({
 
 ## Pattern 5: Plan Approval Workflow
 
-Require plan approval before implementation:
+Require a reviewed plan before implementation. The runtime's automatic teammate plan approval is not this gate.
+
+1. Dispatch a read-only planner for the complete requirements and acceptance criteria.
+2. Inspect its returned plan, resolve contradictions, and obtain any genuinely missing user decision.
+3. Dispatch implementation only after the review passes and the action is authorized.
 
 ```javascript
-// 1. Create team
-Teammate({ operation: "spawnTeam", team_name: "careful-work" })
-
-// 2. Spawn architect with plan_mode_required
-Task({
-  team_name: "careful-work",
-  name: "architect",
+Agent({
   subagent_type: "Plan",
-  prompt: "Design an implementation plan for adding OAuth2 authentication",
-  mode: "plan",  // Requires plan approval
-  run_in_background: true
-})
-
-// 3. Wait for plan approval request
-// You'll receive: {"type": "plan_approval_request", "from": "architect", "requestId": "plan-xxx", ...}
-
-// 4. Review and approve/reject
-Teammate({
-  operation: "approvePlan",
-  target_agent_id: "architect",
-  request_id: "plan-xxx"
-})
-// OR
-Teammate({
-  operation: "rejectPlan",
-  target_agent_id: "architect",
-  request_id: "plan-xxx",
-  feedback: "Please add rate limiting considerations"
+  description: "Plan authentication changes",
+  prompt: "Design an OAuth2 implementation plan including failure recovery and rate limiting. Read-only: return the plan and unresolved decisions, then stop."
 })
 ```
+
+After reviewing the returned artifact, send a separate implementation brief with the accepted plan and owned files. Do not use an automatic plan-mode transition as proof of review. Legacy protocol responses, if the active schema exposes them, are documented in [teammate-operations.md](./teammate-operations.md).
 
 ## Pattern 6: Coordinated Multi-File Refactoring
 
 ```javascript
-// 1. Create team for coordinated refactoring
-Teammate({ operation: "spawnTeam", team_name: "refactor-auth" })
+// 1. Prepare the work items in the current session
 
 // 2. Create tasks with clear file boundaries
 TaskCreate({
@@ -231,25 +210,25 @@ TaskCreate({
 TaskUpdate({ taskId: "3", addBlockedBy: ["1", "2"] })
 
 // 3. Spawn workers for each task
-Task({
-  team_name: "refactor-auth",
+Agent({
   name: "model-worker",
+  description: "Assigned model-worker work",
   subagent_type: "general-purpose",
   prompt: "Claim task #1, refactor the User model, complete when done",
   run_in_background: true
 })
 
-Task({
-  team_name: "refactor-auth",
+Agent({
   name: "controller-worker",
+  description: "Assigned controller-worker work",
   subagent_type: "general-purpose",
   prompt: "Claim task #2, refactor the Session controller, complete when done",
   run_in_background: true
 })
 
-Task({
-  team_name: "refactor-auth",
+Agent({
   name: "test-worker",
+  description: "Assigned test-worker work",
   subagent_type: "general-purpose",
   prompt: "Wait for task #3 to unblock (when #1 and #2 complete), then update tests",
   run_in_background: true
@@ -264,13 +243,12 @@ Task({
 
 ```javascript
 // === STEP 1: Setup ===
-Teammate({ operation: "spawnTeam", team_name: "pr-review-123", description: "Reviewing PR #123" })
 
 // === STEP 2: Spawn reviewers in parallel ===
 // (Send all these in a single message for parallel execution)
-Task({
-  team_name: "pr-review-123",
+Agent({
   name: "security",
+  description: "Assigned security work",
   subagent_type: "whetstone:ia-security-sentinel",
   prompt: `Review PR #123 for security vulnerabilities.
 
@@ -281,13 +259,13 @@ Task({
   - Sensitive data exposure
 
   When done, send your findings to team-lead using:
-  Teammate({ operation: "write", target_agent_id: "team-lead", value: "Your findings here" })`,
+  SendMessage({ to: "team-lead", message: "Your findings here" })`,
   run_in_background: true
 })
 
-Task({
-  team_name: "pr-review-123",
+Agent({
   name: "perf",
+  description: "Assigned perf work",
   subagent_type: "whetstone:ia-performance-oracle",
   prompt: `Review PR #123 for performance issues.
 
@@ -301,9 +279,9 @@ Task({
   run_in_background: true
 })
 
-Task({
-  team_name: "pr-review-123",
+Agent({
   name: "arch",
+  description: "Assigned arch work",
   subagent_type: "whetstone:ia-architecture-strategist",
   prompt: `Review PR #123 for architectural concerns.
 
@@ -319,24 +297,22 @@ Task({
 
 // === STEP 3: Monitor and collect results ===
 // Poll inbox or wait for idle notifications
-// cat ~/.claude/teams/pr-review-123/inboxes/team-lead.json
+// Use the current session's delivered messages and runtime-provided paths
 
 // === STEP 4: Synthesize findings ===
 // Combine all reviewer findings into a cohesive report
 
-// === STEP 5: Cleanup ===
-Teammate({ operation: "requestShutdown", target_agent_id: "security" })
-Teammate({ operation: "requestShutdown", target_agent_id: "perf" })
-Teammate({ operation: "requestShutdown", target_agent_id: "arch" })
-// Wait for approvals...
-Teammate({ operation: "cleanup" })
+// === STEP 5: Request shutdown ===
+SendMessage({ to: "security", message: { type: "shutdown_request", reason: "Assigned work complete" } })
+SendMessage({ to: "perf", message: { type: "shutdown_request", reason: "Assigned work complete" } })
+SendMessage({ to: "arch", message: { type: "shutdown_request", reason: "Assigned work complete" } })
+// Wait for shutdown acknowledgements; session cleanup is automatic.
 ```
 
 ### Workflow 2: Research -> Plan -> Implement -> Test Pipeline
 
 ```javascript
 // === SETUP ===
-Teammate({ operation: "spawnTeam", team_name: "feature-oauth" })
 
 // === CREATE PIPELINE ===
 TaskCreate({ subject: "Research OAuth providers", description: "Research OAuth2 best practices and compare providers (Google, GitHub, Auth0)", activeForm: "Researching OAuth..." })
@@ -352,41 +328,41 @@ TaskUpdate({ taskId: "4", addBlockedBy: ["3"] })
 TaskUpdate({ taskId: "5", addBlockedBy: ["4"] })
 
 // === SPAWN SPECIALIZED WORKERS ===
-Task({
-  team_name: "feature-oauth",
+Agent({
   name: "researcher",
+  description: "Assigned researcher work",
   subagent_type: "whetstone:ia-best-practices-researcher",
   prompt: "Claim task #1. Research OAuth2 best practices, compare providers, document findings. Mark task complete and send summary to team-lead.",
   run_in_background: true
 })
 
-Task({
-  team_name: "feature-oauth",
+Agent({
   name: "planner",
+  description: "Assigned planner work",
   subagent_type: "Plan",
   prompt: "Wait for task #2 to unblock. Read research from task #1. Create detailed implementation plan. Mark complete and send plan to team-lead.",
   run_in_background: true
 })
 
-Task({
-  team_name: "feature-oauth",
+Agent({
   name: "implementer",
+  description: "Assigned implementer work",
   subagent_type: "general-purpose",
   prompt: "Wait for task #3 to unblock. Read plan from task #2. Implement OAuth2 authentication. Mark complete when done.",
   run_in_background: true
 })
 
-Task({
-  team_name: "feature-oauth",
+Agent({
   name: "tester",
+  description: "Assigned tester work",
   subagent_type: "general-purpose",
   prompt: "Wait for task #4 to unblock. Write comprehensive tests for the OAuth implementation. Run tests. Mark complete with results.",
   run_in_background: true
 })
 
-Task({
-  team_name: "feature-oauth",
+Agent({
   name: "reviewer",
+  description: "Assigned reviewer work",
   subagent_type: "whetstone:ia-security-sentinel",
   prompt: "Wait for task #5 to unblock. Review the complete OAuth implementation for security. Send final assessment to team-lead.",
   run_in_background: true
@@ -399,7 +375,6 @@ Task({
 
 ```javascript
 // === SETUP ===
-Teammate({ operation: "spawnTeam", team_name: "codebase-review" })
 
 // === CREATE TASK POOL (all independent, no dependencies) ===
 const filesToReview = [
@@ -435,7 +410,7 @@ LOOP:
    - Start it: TaskUpdate({ taskId: "X", status: "in_progress" })
    - Do the review work
    - Complete it: TaskUpdate({ taskId: "X", status: "completed" })
-   - Send findings to team-lead via Teammate write
+   - Send findings to team-lead via SendMessage
    - Go back to step 1
 4. If no tasks available:
    - Send idle notification to team-lead
@@ -443,13 +418,13 @@ LOOP:
    - Try again (up to 3 times)
    - If still no tasks, exit
 
-Replace YOUR_NAME with your actual agent name from $CLAUDE_CODE_AGENT_NAME.
+Replace YOUR_NAME with the worker name explicitly supplied in its dispatch.
 `
 
 // Spawn 3 workers
-Task({ team_name: "codebase-review", name: "worker-1", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
-Task({ team_name: "codebase-review", name: "worker-2", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
-Task({ team_name: "codebase-review", name: "worker-3", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
+Agent({ name: "worker-1", description: "Assigned worker-1 work", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
+Agent({ name: "worker-2", description: "Assigned worker-2 work", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
+Agent({ name: "worker-3", description: "Assigned worker-3 work", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
 
 // Workers self-organize: race to claim tasks, naturally load-balance
 // Monitor progress with TaskList() or by reading inbox
@@ -469,7 +444,7 @@ After each wave, compare runnable units delivered with coordination, review, and
 
 A worker dispatched to implement a unit gets a context carrying no prior implementation unit, and it is retired once that unit is integrated -- never retasked onto a second unit, never held as an idle pool. The same handle may continue or recover *its own* unit (the crash-relaunch path in the main skill), but a worker that has already reasoned about one unit's constraints carries them into the next as unstated assumptions.
 
-This binds implementation dispatch on the subagent surface only. The persistent Teammate model is deliberately long-lived and unaffected, as is the mode-to-mode carry-forward in Context Carry-Forward.
+This binds implementation dispatch on the subagent surface only. The persistent teammate model is deliberately long-lived and unaffected, as is the mode-to-mode carry-forward in Context Carry-Forward.
 
 Invoke an explicit close or release only where the harness exposes one and assigns that action to the caller. Clean up an isolated workspace only after confirming the unit's work was integrated -- never infer a cleanup command from the provider name.
 
@@ -482,4 +457,4 @@ Invoke an explicit close or release only where the harness exposes one and assig
 | Failure mode | Context grows linearly with agent count | Concurrent modification conflicts |
 | Mitigation | Summarize before passing (keep essentials, drop navigation) | Use worktrees or exclusive file ownership per agent |
 
-For most work, start with stateless handoffs. Graduate to stateful coordination only when parallelism provides a real speedup and worktree isolation is available to prevent file conflicts.
+For most work, start with stateless handoffs. Graduate to stateful coordination only when parallelism provides a real speedup and either worktree isolation or every shared-tree wave condition prevents file conflicts.

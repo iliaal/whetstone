@@ -35,3 +35,10 @@
 {"prompt": "review MyClass.h in Objective-C", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
 {"prompt": "port the .cs file to native", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
 {"prompt": "debug this c++ segfault", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
+{"prompt":"Fix a malloc buffer overflow in a C parser","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Implement a Zend custom object handler","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Review a C function for signed overflow","expect":true,"source":"audit-2026-09-07"}
+{"prompt":"Rewrite the product launch email","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Draw a logo for a bakery","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Summarize the quarterly hiring plan","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Configure Zend Framework routing","expect":false,"source":"audit-2026-09-07-boundary"}
