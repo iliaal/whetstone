@@ -5,6 +5,36 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.2] - 2026-09-07
+
+Patch: strengthened skill guidance, corrected execution and review workflows, and repaired cross-tool installation behavior across seven commits. Component counts remained at 32 skills, 19 agents, and 22 commands.
+
+### Changed
+
+- Expanded practical guidance in `ia-code-review`, `ia-writing-tests`, `ia-debugging`, and `ia-verification-before-completion` for review evidence, regression oracles, baseline comparisons, and completion claims. Moved detailed guidance into conditional references to keep skill entrypoints within the shared token budget.
+- Expanded framework and systems references in `ia-php-laravel`, `ia-postgresql`, `ia-react-frontend`, `ia-tailwind-css`, `ia-c-systems`, `ia-cpp-systems`, and `ia-rust-systems`, including persistence pitfalls, concurrency, test selection, and API boundaries.
+- Aligned `ia-planning`, `ia-brainstorming`, `ia-receiving-code-review`, `ia-document-review`, and `ia-reflect` with the requested scope and existing authorization. Reviews and diagnoses retained their read-only scope unless changes were authorized.
+- Updated `ia-orchestrating-swarms` for current Claude team operations, exclusive file ownership, parent-owned integration, and fresh independent reviewers. Aligned the same ownership rules in parallel PR and todo resolution commands.
+- Exposed repository maintenance workflows to Codex through `.agents/skills/` wrappers that read the maintained Claude command sources.
+
+### Fixed
+
+- Preserved dirty, ignored, locked, current, and unowned worktrees in `ia-git-worktree` cleanup. Corrected main-checkout detection and made directory changes explicit to the calling shell.
+- Corrected authorization and rollback examples in `ia-agent-native-architecture`, path containment in `ia-debugging`, and atomic configuration replacement in `ia-linux-bash-scripting`.
+- Corrected examples in `ia-rust-systems`, `ia-terraform`, `ia-php-laravel`, `ia-postgresql`, `ia-tailwind-css`, and `ia-code-review`, including internal-error redaction, migration history, missing-versus-null values, query-plan assessment, and browser CORS behavior.
+- Preserved boolean types and evaluation counts in `ia-simplifying-code`. Clarified untrusted screenshot content, real metrics, and server/client composition in `ia-frontend-design`.
+- Repaired structured YAML validation in `ia-compound-docs` and completion/dependency handling in `ia-file-todos`. Kept skipped triage items pending.
+- Fixed missed triggers for `ia-planning`, `ia-python-services`, `ia-orchestrating-swarms`, and other process and language skills, with positive and negative regression fixtures and coverage through the actual injection hook.
+- Paginated PR comments, reviews, review threads, and nested replies, and rejected incomplete or failed responses. Corrected the resolver's GraphQL reply contract and the numeric REST comment-ID example in `ia-receiving-code-review`; both used approved reply text from a file.
+- Isolated feature-video artifacts per invocation and tied browser testing to the requested revision and verified running URL.
+- Repaired OpenCode hook execution and input validation. Restricted converter cleanup to identified Whetstone artifacts while preserving unrelated or customized files.
+- Corrected security suppression guidance and replaced build arguments with BuildKit secret mounts for build secrets.
+
+### For contributors
+
+- Compared fresh skill executions with frozen dependencies during evaluation and aligned the audit workflow with current validators and hook tests.
+- Fixed the ai-skills changelog filter to recognize skill names throughout release-note bullets.
+
 ## [4.5.1] - 2026-09-06
 
 Patch: an 8-day delta sync across 42 reference repos (first pass over scrutineer's 326-commit security-skill delta), then a reactive audit over the sync's own output. The sync applied 34 findings; the audit fixed 19 more, five of them conflicts the sync had just created and two of them false claims that came from the sync's own briefs rather than from any external source. The trigger regression is the headline: the orchestrating-swarms pattern fired on 30 of 30 harvested executor briefs (workers that merely mention a subagent), so an orchestrator skill was being injected into the workers it orchestrates. The fixture suite scored 1.0 before and after because no fixture covered that shape. Component counts unchanged at 32 skills, 19 agents, 22 commands.
