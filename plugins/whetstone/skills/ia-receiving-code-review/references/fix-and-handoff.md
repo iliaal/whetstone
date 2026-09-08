@@ -27,7 +27,14 @@ State the correction factually: "Checked this, you're correct because [reason]. 
 
 Draft replies first and obtain any required user authorization before posting or resolving threads. This procedure supplies no posting authority.
 
-- Reply in the inline comment thread, not as top-level PR comments: `gh api repos/{owner}/{repo}/pulls/{pr}/comments -f body="..." -f in_reply_to={comment_id}`
+- Reply in the inline review thread. Set `PR_NUMBER` to the PR number and `COMMENT_ID` to the numeric REST ID of the thread's original top-level review comment, not a GraphQL node ID or a reply's ID. Set `REPLY_FILE` to the file containing the exact approved reply:
+
+  ```bash
+  gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
+    -F body=@"$REPLY_FILE"
+  ```
+
+  `gh` resolves `{owner}` and `{repo}` from the repository context. Require a successful exit and a returned comment ID and URL before reporting the reply as posted. If the result is uncertain, re-fetch before retrying to avoid duplicates.
 - Reference specific lines when explaining why you disagree
 - Mark conversations as resolved only after the fix is verified
 - If a suggestion spawns a larger discussion, suggest moving it to an issue

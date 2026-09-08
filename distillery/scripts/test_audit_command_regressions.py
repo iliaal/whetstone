@@ -13,9 +13,13 @@ HELPER = Path(__file__).resolve().parents[2] / "plugins/whetstone/commands/scrip
 
 
 @pytest.mark.parametrize("exit_code", [0, 1])
-def test_review_reply_example_preserves_thread_body_and_exit_status(tmp_path, exit_code):
-    agent = HELPER.parents[2] / "agents/ia-pr-comment-resolver.md"
-    section = agent.read_text().split("- **Review thread**", 1)[1].split("- **Conversation**", 1)[0]
+@pytest.mark.parametrize("document", [
+    "agents/ia-pr-comment-resolver.md",
+    "skills/ia-receiving-code-review/references/fix-and-handoff.md",
+])
+def test_review_reply_example_preserves_thread_body_and_exit_status(tmp_path, exit_code, document):
+    source = HELPER.parents[2] / document
+    section = source.read_text().split("Draft", 1)[1]
     example = re.search(r"```bash\n(.*?)```", section, re.S)
     assert example, "Review-thread reply must provide an executable example"
     body = 'Fixed `path` with "quotes".\n$(touch unexpected) ${HOME} \\n\n'
@@ -27,7 +31,7 @@ def test_review_reply_example_preserves_thread_body_and_exit_status(tmp_path, ex
 import json, os, sys
 from pathlib import Path
 args = sys.argv[1:]
-assert args[:2] == ['api', 'graphql'], args
+assert args[0] == 'api', args
 fields = {}
 for flag, field in zip(args[2::2], args[3::2]):
     key, value = field.split('=', 1)
@@ -36,7 +40,7 @@ for flag, field in zip(args[2::2], args[3::2]):
     else:
         assert flag == '-f', flag
     fields[key] = value
-Path(os.environ['CAPTURE']).write_text(json.dumps(fields))
+Path(os.environ['CAPTURE']).write_text(json.dumps({'endpoint': args[1], 'fields': fields}))
 sys.exit(int(os.environ['EXIT_CODE']))
 """)
     mock.chmod(0o755)
@@ -44,15 +48,22 @@ sys.exit(int(os.environ['EXIT_CODE']))
         ["bash", "-c", example.group(1)], cwd=tmp_path, text=True, capture_output=True,
         env={**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}",
              "THREAD_ID": "PRRT_opaque-thread-id", "REPLY_FILE": str(reply),
+             "PR_NUMBER": "123", "COMMENT_ID": "456",
              "CAPTURE": str(capture), "EXIT_CODE": str(exit_code)},
     )
     assert result.returncode == exit_code, result.stderr
     request = json.loads(capture.read_text())
-    assert request["thread"] == "PRRT_opaque-thread-id"
-    assert request["body"] == body
-    assert "pullRequestReviewThreadId: $thread" in request["query"]
-    assert "body: $body" in request["query"]
-    assert "addPullRequestReviewThreadReply" in request["query"]
+    fields = request["fields"]
+    assert fields["body"] == body
+    if document.startswith("agents/"):
+        assert request["endpoint"] == "graphql"
+        assert fields["thread"] == "PRRT_opaque-thread-id"
+        assert "pullRequestReviewThreadId: $thread" in fields["query"]
+        assert "body: $body" in fields["query"]
+        assert "addPullRequestReviewThreadReply" in fields["query"]
+    else:
+        assert request["endpoint"] == "repos/{owner}/{repo}/pulls/123/comments/456/replies"
+        assert set(fields) == {"body"}
     assert not (tmp_path / "unexpected").exists()
 
 
