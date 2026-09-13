@@ -5,6 +5,32 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.3] - 2026-09-13
+
+Patch: a repo and marketplace sync landed 28 improvements and four new reference files across 25 components, then a post-sync audit resolved the rule conflicts the sync introduced. Two commits. Component counts remained at 32 skills, 19 agents, and 22 commands.
+
+### Changed
+
+- `ia-agent-native-architecture` gained two references: CLI-as-agent-interface design (stdout/stderr/exit-code contract, TTY-aware JSON, progressive schema disclosure, safety tiers) and an operator-approval loop for external sends (content-hash approval binding, single-winner claim, terminal `unknown`). MCP tool design now covers bounded-scan incompleteness and live-action opt-in; hooks guidance covers Node stdout flushing and CLI flag parsing in gates.
+- `ia-orchestrating-swarms` covers resource reach versus authorization, orchestrator context exhaustion with a disk handoff to leaf subagents, bounded result collection, lock-free right-of-way between independent sessions, mergeable registry shapes, and harness-injected instruction files. Nested dispatch is described as unreliable rather than impossible.
+- `ia-code-review` adds `--no-textconv --no-ext-diff` to every review-content `git diff` and `git show`, reports embedded instructions as findings, redacts credential values in reports, gives module passes full file bodies, defines an `uninspected` state, scopes reviewer independence to corroborating passes, and adds agent-lifecycle discipline for multi-agent reviews.
+- `ia-nodejs-backend` gained an observability-tracing reference: span kinds, the SERVER/CLIENT status asymmetry for 4xx, Collector-side sampling, a metric cardinality budget, and a never-instrument list.
+- `ia-frontend-design` asks for design register and mode, routes greenfield product work to an established component system before bespoke design, drops Geist and Outfit from the recommended faces, and catalogs crushed tracking, unthemed browser chrome, and nested cards as tells.
+- `ia-php-laravel` documents `Queue::route()`, the Mercure broadcast driver, vector search on pgvector/MariaDB/MongoDB, and the 13.31.0 change to closure-form `wherePivot()`. `ia-tailwind-css` covers `color-mix()` alpha tokens and `--color-*: initial`. `ia-python-services` marks ORJSON/UJSON responses deprecated and documents native SSE and `scope="function"` dependencies. `ia-terraform` names OpenTofu-only encryption and backend variables. `ia-rust-systems` adds tokio-console. `ia-linux-bash-scripting` reports a missing shellcheck as skipped, not passed.
+- `ia-planning` bans wall-clock estimates in favor of Small/Medium/Large scope sizing (triage and plan templates aligned), defers to an existing spec system's format, and requires execution approval to live in the plan artifact. `ia-brainstorming` resolves fact questions by inspection mid-interview. `ia-writing-tests` names horizontal slicing as an anti-pattern. `ia-receiving-code-review` reads Conventional Comments prefixes. `ia-simplifying-code` prefers deletion and treats a no-op pass as a valid result. `ia-writing` flags process narration and bare tallies while keeping counts that are evidence. `ia-verification-before-completion` rules out the task's own formatters and hooks before calling a failure pre-existing.
+- The infrastructure engineer agent ships a runbook content template; the security sentinel never reproduces credential values; PR resolution never merges on the agent's own judgment.
+
+### Fixed
+
+- `ia-compound-docs` and `ia-file-todos` dropped `disable-model-invocation` and the Codex `allow_implicit_invocation: false` twin: the harness refused the explicit `Skill()` calls four commands make into them. The Codex regression suite now asserts no skill carries either flag, and README describes the current state.
+- Document release no longer relies on `$$` across Bash calls; each call runs in a fresh shell, so the temp file path is created once and passed as a literal.
+- Sixteen agents dropped the `autoApprove: read` frontmatter key, which is not a Claude Code subagent field.
+- Six rule conflicts introduced by the sync were resolved on both sides: reviewer independence versus the Red-Team and Skeptic passes, released capacity versus backpressure re-dispatch, estimate bans versus triage hour bands, leaf handoff files versus the no-plan-hunting rule, nested cards versus the double-bezel pattern, and the planning default that undercut its own existing-system clause.
+
+### For contributors
+
+- `distiller.py fetch` runs `npx skills add` in a private temp directory; the old cleanup deleted the tracked `.agents/skills/` tree when run from the repo root. Regression tests cover both the success and all-failed paths.
+
 ## [4.5.2] - 2026-09-07
 
 Patch: strengthened skill guidance, corrected execution and review workflows, and repaired cross-tool installation behavior across seven commits. Component counts remained at 32 skills, 19 agents, and 22 commands.
