@@ -16,3 +16,7 @@
 - Size the TTL above the work's realistic maximum and renew it while the work is alive. A TTL set exactly equal to the expected duration has no margin: the one run that overshoots frees the lease under itself and admits a second concurrent holder.
 
 Scope it honestly: the lease is advisory for the work. It removes one destructive collision and serializes one resource; it does not stop an agent that never asks.
+
+## Deterministic right-of-way without a lock
+
+**Independent sessions with no shared coordination server converge on the same yield decision by computing it identically.** When two uncoordinated sessions edit one repository and no orchestrator assigned ownership, a lease has nothing to lease. Instead, each side computes a symmetric overlap or risk signal both can evaluate from the same inputs (working-set file overlap, tree distance between touched paths), and breaks ties with a fixed order-independent rule: more progress, then earlier start, then stable id. Both sides read the same facts and apply the same rule, so they never pick the same move. Bound any resulting block to a single tool call, not the session, and fail open on any error: a broken detector must never halt work. This is a design principle for a hook or scanner, not something a prompt can enforce on its own.

@@ -37,3 +37,7 @@ Extract or generate at ingress middleware, attach to the root span, propagate vi
 ## Distributed Tracing
 
 `tracing-opentelemetry` exports spans to Jaeger/Tempo/Honeycomb/Datadog. Gate the OpenTelemetry subscriber behind a feature flag to keep dev/test builds fast.
+
+## Live Task Introspection (tokio-console)
+
+Distinct from log/metric/trace export: `tokio-console` attaches to a running process and shows every Tokio task's state, poll count, busy/scheduled/idle durations with a poll-time histogram, and wakeup counts, and warns on self-wakes, lost wakers, and tasks that never yield -- the tool for a stuck or spinning task that emits no log line. Add the `console-subscriber` crate as a `tracing-subscriber` layer (`console_subscriber::init()` or `ConsoleLayer::builder()` alongside the fmt layer) and build with `RUSTFLAGS="--cfg tokio_unstable"` (or `rustflags = ["--cfg", "tokio_unstable"]` in `.cargo/config.toml`); without that cfg Tokio emits no task instrumentation. Keep it behind a feature flag like the OTel layer: it is a debugging aid, not production telemetry.

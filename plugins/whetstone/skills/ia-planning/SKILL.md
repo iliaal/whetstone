@@ -25,7 +25,7 @@ Produce the smallest plan that reduces implementation risk and preserves state c
 
 ## Durable state
 
-For a full working plan, read [plan-format.md](./references/plan-format.md) and scaffold with [init-plan.sh](./scripts/init-plan.sh), anchored to the installed skill directory rather than the caller's working directory. Use `.plan/task_plan.md` for uncommitted session state and `docs/plans/` for a formal committed plan.
+For a full working plan, read [plan-format.md](./references/plan-format.md) and scaffold with [init-plan.sh](./scripts/init-plan.sh), anchored to the installed skill directory rather than the caller's working directory. When the project already uses a spec or plan system, keep that system's artifact format; the skill owns the clarification, content, and approval gates, not the representation. Otherwise, use `.plan/task_plan.md` for uncommitted session state and `docs/plans/` for a formal committed plan.
 
 Inspect an existing plan before overwriting it. Continue the same work in place; ask which plan wins when different work would displace unchecked tasks. Never silently discard or bulk-close open work, including tracker items. Use `--force` only after resolving that choice. Add secondary artifacts only for requested deliverables or state the main plan cannot express clearly.
 

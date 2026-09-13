@@ -1,6 +1,6 @@
 # Laravel Ecosystem Patterns
 
-> When to read: when reaching for ecosystem features — notifications, queues, broadcasting, scheduling, file storage, mail — and needing the canonical Laravel approach.
+> When to read: when reaching for ecosystem features — notifications, queues, broadcasting, vector search, scheduling, file storage, mail — and needing the canonical Laravel approach.
 
 ## Notifications
 
@@ -46,6 +46,16 @@ Notification::send($users, new OrderShipped($order));
 - Use `toArray()` for database channel -- powers in-app notification feeds
 - Read: `$user->unreadNotifications`, mark: `$notification->markAsRead()`
 - Rate limit with `ShouldBeUnique` to prevent notification spam
+
+## Broadcasting
+
+Server-side drivers in Laravel 13: Reverb (first-party WebSocket server, `php artisan install:broadcasting --reverb`), Pusher Channels, Ably, plus `log` for local debugging and `null` for tests. All three real-time drivers speak the Pusher channel protocol to Echo over a persistent WebSocket.
+
+- **Mercure driver** (`MercureBroadcaster`, merged into the 13.x branch after 13.31.0; confirm the installed release ships `Illuminate\Broadcasting\Broadcasters\MercureBroadcaster` before depending on it, and expect the published docs to lag). Transport is Server-Sent Events: the app publishes updates over HTTP to a Mercure hub (a standalone hub, or FrankenPHP's built-in one, which needs no `url`), and browsers subscribe with `EventSource`, so the application stack runs no WebSocket server process. Channel authorization is a JWT the hub validates (`secret`/`subscribe_secret` config; the hub multiplexes every joined channel over one connection under one token), `private-encrypted-*` channels are end-to-end encrypted with an `encryption_key` the hub never sees, and presence channels are never encrypted because member payloads go through the hub's subscription API.
+
+## Vector Search
+
+- **Vector search** (Laravel 13, needs the Laravel AI SDK): `whereVectorSimilarTo('embedding', $queryEmbeddingOrText, minSimilarity: 0.4)` filters by cosine similarity (0.0-1.0) and orders most-similar first (`order: false` disables that); `selectVectorDistance(..., as: 'distance')`, `whereVectorDistanceLessThan()`, and `orderByVectorDistance()` expose raw distance. A string argument is embedded on the fly; pass a pre-computed array to skip the provider call. Supported on PostgreSQL with `pgvector` (`Schema::ensureVectorExtensionExists()`, `$table->vector('embedding', dimensions: 1536)->index()`), MariaDB 11.7+, and MongoDB via the Laravel MongoDB package; not MySQL or SQLite.
 
 ## Task Scheduling
 

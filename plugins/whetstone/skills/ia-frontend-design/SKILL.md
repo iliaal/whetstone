@@ -25,7 +25,7 @@ Before designing, assess the existing design environment. Count design signals i
 
 - **4+ signals** = Existing system. Match it. Do not impose new aesthetics -- extend what's there.
 - **1-3 signals** = Partial system. Blend: respect existing choices, fill gaps with this skill's guidance.
-- **0 signals** = Greenfield. Apply the full Design Philosophy below.
+- **0 signals** = Greenfield. Apply the full Design Philosophy below. Product register: read [design-system-routing.md](./references/design-system-routing.md) before bespoke design.
 
 When in doubt, check `package.json`, `tailwind.config.*`, global CSS files, and existing components before deciding.
 
@@ -47,7 +47,8 @@ For small components or quick additions to existing interfaces, skip the philoso
 
 With the philosophy written, commit to the specifics:
 - **Purpose**: What problem does this interface solve? Who uses it?
-- **Tone**: Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc. There are so many flavors to choose from. Use these for inspiration but design one that is true to the aesthetic direction.
+- **Tone**: Pick an extreme: brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc. Use these for inspiration but design one that is true to the aesthetic direction.
+- **Design register and mode** (distinct from copy register, the tone of the UI text, in the creative arsenal): brand (the design is the product; bolder) or product (the design serves a task; one component vocabulary, clarity and density). Mode: persuade, operate, read (docs, articles), or experience (portfolios, galleries).
 - **Constraints**: Technical requirements (framework, performance, accessibility).
 - **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
 
@@ -89,6 +90,7 @@ Most items below are observable only in a rendered viewport, not in the diff. Wh
 - [RSC / Client Component boundaries](./references/rsc-client-boundaries.md) -- Next.js App Router rules for Server vs Client Components, continuous animations, and provider isolation
 - [Premium detail patterns](./references/premium-details.md) -- `<kbd>` keystrokes, faux-OS chrome, hero image fade, banned meta-labels, card-group baseline alignment, browser-automation safety boundary
 - [Mobile collapse + performance guardrails](./references/mobile-and-performance.md) -- single-column below `md:`, touch targets, rotations on mobile, GPU-composited animation, z-index discipline
+- [Design system routing](./references/design-system-routing.md) -- brief-to-component-system table for greenfield product-register work, before drafting bespoke tokens
 - For WCAG accessibility audits, use the `ia-accessibility-tester` agent
 
 ## Task-specific references

@@ -134,6 +134,8 @@ Run the Task ia-code-simplicity-reviewer() to see if we can simplify the code. N
 
 **ALL findings MUST be stored in the todos/ directory using the file-todos skill.** Create todo files immediately after synthesis -- do NOT present findings for user approval first. Use the skill for structured todo management.
 
+**Context exhaustion**: once every parallel specialist, conditional agent, simplicity reviewer, and red-team result is collected, if the coordinating context is at risk of exhausting before synthesis finishes, Read `skills/ia-orchestrating-swarms/references/resilience-patterns.md`, section "Orchestrator context exhaustion mid-pipeline", and hand the remaining synthesis stages to fresh leaf subagents as that section describes. Do not apply it while any dispatch in section 1 or 2 is still outstanding; missing-file recovery and the red-team pass still dispatch.
+
 #### Step 1: Synthesize All Findings
 
 Consolidate all agent reports into a categorized list of findings. Remove duplicates, prioritize by severity and impact.

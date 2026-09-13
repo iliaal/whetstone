@@ -79,5 +79,6 @@ Read the relevant reference before implementing or reviewing the matching behavi
 
 - For framework choice, input validation, API contracts, or errors: [api-boundaries.md](./references/api-boundaries.md).
 - For concurrency, networking, startup, caches, lifecycle cleanup, or telemetry: [async-and-production.md](./references/async-and-production.md).
+- For span kinds, HTTP-status-to-span-status rules, sampling placement, metric cardinality, or telemetry data governance: [observability-tracing.md](./references/observability-tracing.md).
 
 Existing specialized references, when the corresponding topic applies:

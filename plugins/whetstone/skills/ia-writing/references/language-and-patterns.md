@@ -44,6 +44,8 @@ Weight detection toward structure: models reproduce sentence *structures* more r
 - Lazy extremes: every, always, never, everyone, nobody -- false authority. Use specifics instead of sweeping claims.
 - Meta-commentary: "Hint:", "Plot twist:", "Spoiler:", "In this section, we'll...", "As we'll see...", "Let me walk you through..."
 - Mannered prose: an idiom or metaphor standing in for a literal phrase ("earns its keep", "a dial worth turning", "does the heavy lifting"). It displays the writer, not the idea, and drags in connotations the writer did not choose. Use the literal phrase.
+- Process narration: steps the writer took that do not change what the reader does next ("First I checked X, then re-ran Y"). Keep the finding or decision; cut the account of how the time was spent.
+- Bare tallies: counts, scorecards, and lists of everything checked with no decision attached ("resolved 11 threads"). Say what was decided and why; if nothing non-routine was decided, say nothing. Counts that are themselves the evidence (tests executed and passed, gate pass/fail, coverage-ledger file counts) stay, stated exact.
 
 **Formatting tells**:
 - No em dashes in delivered prose -- restructure the sentence (split, comma, colon, rewrite); en dash only in numeric ranges

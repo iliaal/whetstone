@@ -1,7 +1,6 @@
 ---
 name: ia-performance-oracle
 model: sonnet
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Analyzes code for performance bottlenecks, algorithmic complexity, database queries, memory usage, and scalability. Use after implementing features or when performance concerns arise."
 ---

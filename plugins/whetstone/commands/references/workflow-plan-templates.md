@@ -155,19 +155,19 @@ origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md  # if originated from 
 
 - Tasks and deliverables
 - Success criteria
-- Estimated effort
+- Estimated effort (Small / Medium / Large by scope, not wall-clock)
 
 #### Phase 2: [Core Implementation]
 
 - Tasks and deliverables
 - Success criteria
-- Estimated effort
+- Estimated effort (Small / Medium / Large by scope, not wall-clock)
 
 #### Phase 3: [Polish & Optimization]
 
 - Tasks and deliverables
 - Success criteria
-- Estimated effort
+- Estimated effort (Small / Medium / Large by scope, not wall-clock)
 
 ## Alternative Approaches Considered
 

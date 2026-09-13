@@ -35,6 +35,8 @@ Read the full text start to finish without changing anything. The text under aud
 | `[ABSTRACT-METAPHOR]` | Jargon noun used metaphorically where a concrete term exists: flywheel, north star, substrate, scaffolding, wedge, vector, locus, nexus, primitive, bedrock, paradigm, ratchet, endgame |
 | `[MANNERED]` | Idiom or metaphor standing in for an available literal phrase ("earns its keep", "a dial worth turning", "does the heavy lifting"). Verb- and idiom-level flourish; `[ABSTRACT-METAPHOR]` covers nouns |
 | `[PORTABLE-PROSE]` | Sentence that could appear unchanged in anyone else's draft on any topic ("This raises important questions about the future of the field") -- no fact, opinion, or detail anchors it to this piece. Distinct from `[VAGUE-DECLARATIVE]`, which names this piece's topic but omits the implication; portable prose fits any topic verbatim |
+| `[PROCESS-NARRATION]` | Steps the writer took that do not change the reader's next action ("First I checked the config, then re-ran the suite"). The account of how time was spent, as opposed to what was found or decided |
+| `[BARE-TALLY]` | Counts, scorecards, or lists of everything checked with no decision attached ("resolved 11 threads", "reviewed 40 files"). Thoroughness displayed instead of a result. Not a tell when the count is itself the evidence the reader needs: tests executed and passed, a gate's pass/fail, files covered in a coverage ledger. The tell is a count standing in for a decision or padding a report |
 
 **Severity suffixes** when tagging: `+H` for high severity (strong tell or compound patterns), `+S` for structural (affects document structure, not just wording).
 
@@ -83,6 +85,8 @@ Correct tagged items in a single pass using the fix table below. Preserve everyt
 | `[MANNERED]` | Say the literal thing: "earns its keep" -> "still matters", "a dial worth turning" -> "a parameter worth varying". |
 | `[UNMARKED-QUOTE]` | Reword into indirect speech, or keep the passage and mark it as a quotation with its source. |
 | `[PORTABLE-PROSE]` | Anchor the sentence with a fact, number, or specific from this piece, or cut it. |
+| `[PROCESS-NARRATION]` | Delete the steps; keep only the finding or decision they produced and anything the reader must do next. |
+| `[BARE-TALLY]` | Replace the count with what was decided and why. If nothing non-routine was decided, cut the sentence. Keep counts that are the evidence (tests executed and passed, gate pass/fail, coverage-ledger file counts); state them exact. |
 
 ## Output format
 

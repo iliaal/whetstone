@@ -1,7 +1,6 @@
 ---
 name: ia-infrastructure-engineer
 model: sonnet
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker containerization, observability (metrics/logs/traces), and incident management. Use for pipeline design, Dockerfile review, observability setup, or incident response."
 ---
@@ -159,6 +158,9 @@ For Dockerfile, image optimization, container security, graceful shutdown, and d
 
 - Alert on symptoms (error rate, latency), not causes (CPU, disk) — causes change, symptoms are stable
 - Every alert must have a runbook link explaining what to check and how to remediate
+- Runbook minimum template, one line each: `# Runbook: <alert name>`; `**Means:**` what the alert signals; `**First check:**` the one command or dashboard that decides; `**Escalate to:**` owner or rotation
+- Grow a runbook past the template only when the first check alone cannot decide between causes
+- Update the runbook as part of closing every incident it was used in; a stale first check is worse than none
 - Severity levels: P1 (page immediately), P2 (respond within 1h), P3 (next business day)
 - Avoid alert fatigue: if an alert fires > 3x/week without action, fix the root cause or delete the alert
 

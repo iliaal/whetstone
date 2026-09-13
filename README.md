@@ -62,7 +62,7 @@ bash scripts/install-codex-plugin.sh
 
 Start a new Codex thread after installation or update. The native package includes Whetstone's cross-harness skills and Context7 MCP server. Claude-specific agents, slash commands, and hooks remain available only through the Claude Code plugin.
 
-Two shared skills retain Claude's explicit-only `disable-model-invocation` metadata. Codex enforces the equivalent restriction through each skill's `agents/openai.yaml`. The current Codex runtime installs and loads this dual-harness package, although the standalone plugin-creator validator rejects those two Claude fields. Whetstone's regression suite treats the mapped fields as an intentional compatibility exception; it does not claim validator-clean source metadata.
+No shipped skill carries Claude's `disable-model-invocation` flag or its Codex twin, `allow_implicit_invocation: false` in `agents/openai.yaml`. Commands reach skills through explicit `Skill()` tool calls, which the harness treats as model invocation, so either flag makes that call fail. Trigger control lives in each skill's `description`. `scripts/test-codex-plugin.sh` asserts the set of flagged skills stays empty.
 
 Normal Whetstone releases refresh the local Codex plugin before publication when `codex` is on `PATH`. For source edits between releases, use the wrapper that applies a temporary cachebuster, reinstalls, and restores the tracked release version:
 

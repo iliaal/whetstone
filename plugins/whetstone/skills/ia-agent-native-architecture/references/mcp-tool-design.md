@@ -1,6 +1,8 @@
 <overview>
 How to design MCP tools following prompt-native principles. Tools should be primitives that enable capability, not workflows that encode decisions.
 
+For a CLI rather than an MCP surface, see [cli-agent-interface.md](./cli-agent-interface.md).
+
 **Core principle:** Whatever a user can do, the agent should be able to do. Don't artificially limit the agent--give it the same primitives a power user would have.
 </overview>
 
@@ -539,6 +541,24 @@ return {
 **Pagination contract:** List endpoints must return `has_more`, `next_offset`, and `total_count`. Default page size 20-50 items. Never load all results into memory.
 </principle>
 
+<principle name="bounded-scan-incompleteness">
+## Bounded Scans Report Incompleteness
+
+A lookup or search tool that scans a bounded or paginated set can find a match and still not know whether it is unique, or find nothing and still not know whether the item is absent. Whenever the scan stopped at a size or count cap, or skipped unreadable or malformed records, return an explicit `incomplete` signal (a status field plus the reason and how far the scan got) distinct from `not_found` and from a confirmed unique match. A tool that collapses "scan truncated" into "not found" produces false negatives, and one that reports "unique" from a partial scan produces false positives; the agent then acts on both as facts. Callers that need absence or uniqueness reject `incomplete` and narrow the query or raise the cap rather than treating it as a pass.
+
+```json
+{ "status": "incomplete", "matches": [{ "id": "exp_41" }],
+  "scanned": 500, "cap": 500, "unreadable": 2,
+  "hint": "narrow by dateRange or continue with next_offset=500" }
+```
+</principle>
+
+<principle name="live-action-opt-in">
+## Live Actions Need an Opt-In Beyond Credentials
+
+Credential presence is necessary but not sufficient authorization for a tool that spends money, sends a message, submits, uploads, or otherwise acts on an external system. Gate the live path behind a separate explicit opt-in (an environment variable such as `ALLOW_LIVE=1` or a `--live` flag) that the operator sets only for the authorized run, so a configured environment does not make every invocation a real transaction. Ship a credential-free dry-run that exercises the full pipeline (validation, request construction, response handling) and returns placeholder output labelled as such, not a no-op that skips the code the live path depends on.
+</principle>
+
 <principle name="transport-selection">
 ## Transport Selection
 
@@ -595,6 +615,8 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
 - [ ] Error messages include recovery suggestions, not just failure descriptions
 - [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`
+- [ ] Bounded or paginated lookups return `incomplete` (distinct from not-found and unique) when a cap or unreadable records cut the scan short
+- [ ] Money-spending or live-external-effect tools require an explicit opt-in separate from credentials and ship a credential-free, labelled dry-run
 - [ ] Multi-server tool names use service prefix (`service_action_resource`)
 - [ ] 10 Q/A eval pairs defined before merge (read-only, multi-hop, closed-data); eval passes ≥ 9/10 in CI on every PR; regressions investigated before shipping. See the Evaluation principle above.
 

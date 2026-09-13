@@ -35,6 +35,8 @@ Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]
 
 Number findings `CR-001`, `CR-002`... sequentially across severities for stable IDs. Cap 10 per severity; note any overflow and show the highest-impact ones.
 
+**Secret redaction:** when a finding's subject is a live credential (API key, token, password, private key), cite `file:line` and describe the pattern (`AWS access key ID assigned to a constant`); never reproduce the value in `quoted code` or anywhere else in the report. Reports are posted to PRs and captured in transcripts, both of which outlive the credential's rotation.
+
 **Markdown safety:** in table cells, escape literal `|` as `\|` — code excerpts with pipes (`a | b`, `string | null`) split rows silently. Bullet output is pipe-safe.
 
 Multi-agent consolidation: apply the merge algorithm in [deep-review.md](./deep-review.md) (root-cause dedupe, evidence-based severity, `NEEDS DECISION`, cross-lens agreement provenance).

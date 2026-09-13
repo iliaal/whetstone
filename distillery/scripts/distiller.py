@@ -24,7 +24,9 @@ STAGING_DIR = DISTILLERY_DIR / ".skill-distiller" / "sources"
 GENERATED_DIR = DISTILLERY_DIR / "generated-skills"
 ENV_FILE = DISTILLERY_DIR / ".env"
 PLUGIN_DIR = DISTILLERY_DIR.parent / "plugins" / "whetstone"
-# CWD-relative paths for npx skills add cleanup (fetch creates these in CWD)
+# Layouts `npx skills add` writes relative to its working directory. fetch_skills
+# runs it inside a private temp dir, so these never resolve against the caller's
+# cwd (where `.agents/skills/` is the plugin's own tracked distribution tree).
 SKILLS_AGENT_DIR = Path(".agents/skills")
 SKILLS_SYMLINK_DIR = Path(".claude/skills")
 GROK_API_URL = "https://api.x.ai/v1/chat/completions"
@@ -429,8 +431,11 @@ def _validate_skill_id(skill_id):
     return skill_id
 
 
-def _stage_skill(skill_id):
+def _stage_skill(skill_id, work_dir=None):
     """Move a fetched skill to staging and remove symlinks.
+
+    `work_dir` is the directory `npx skills add` ran in; when None the layout is
+    resolved relative to the process cwd (test fixtures monkeypatch the constants).
 
     `npx skills add` places the fetched skill under one of two layouts depending
     on version/agent: the older `.agents/skills/<id>` real dir (symlinked into
@@ -441,9 +446,13 @@ def _stage_skill(skill_id):
     silently discarded the sole real copy for repos using the newer layout.
     """
     _validate_skill_id(skill_id)
-    agent_path = SKILLS_AGENT_DIR / skill_id
+    if work_dir is None:
+        agent_path = SKILLS_AGENT_DIR / skill_id
+        symlink_path = SKILLS_SYMLINK_DIR / skill_id
+    else:
+        agent_path = Path(work_dir) / ".agents" / "skills" / skill_id
+        symlink_path = Path(work_dir) / ".claude" / "skills" / skill_id
     staging_path = STAGING_DIR / skill_id
-    symlink_path = SKILLS_SYMLINK_DIR / skill_id
 
     moved = False
     if agent_path.exists():
@@ -471,6 +480,10 @@ def fetch_skills(skills_list):
     """Fetch, stage, and checksum skills. Returns enriched list with sha1 and path."""
     _check_npx_skills()
     STAGING_DIR.mkdir(parents=True, exist_ok=True)
+    # Private working directory: `npx skills add` writes `.agents/skills/` and
+    # `.claude/skills/` under its cwd, and the whetstone repo root has a tracked
+    # `.agents/skills/` of its own, so the tool must never run in the caller's cwd.
+    work_dir = Path(tempfile.mkdtemp(prefix="whetstone-fetch-"))
 
     # Group by source
     by_source = defaultdict(list)
@@ -486,7 +499,7 @@ def fetch_skills(skills_list):
         source_url = source if source.startswith("http") else f"https://github.com/{source}"
         cmd = ["npx", "skills", "add", source_url, "-s"] + skill_ids + ["-y", "--agent", "claude-code"]
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
+            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120, cwd=str(work_dir))
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             err_msg = e.stderr.strip()[:200] if hasattr(e, "stderr") and e.stderr else "timeout" if isinstance(e, subprocess.TimeoutExpired) else "unknown error"
             print(f"Error: fetch failed for {source}: {err_msg}", file=sys.stderr)
@@ -498,11 +511,11 @@ def fetch_skills(skills_list):
                     retry_cmd = ["npx", "skills", "add", new_source_url, "-s", skill["skillId"], "-y", "--agent", "claude-code"]
                     print(f"  Resolved: {skill['id']} -> {resolved['id']}", file=sys.stderr)
                     try:
-                        subprocess.run(retry_cmd, check=True, capture_output=True, text=True, timeout=120)
+                        subprocess.run(retry_cmd, check=True, capture_output=True, text=True, timeout=120, cwd=str(work_dir))
                         skill["id"] = resolved["id"]
                         skill["source"] = resolved["source"]
                         skill["installs"] = resolved["installs"]
-                        _stage_skill(skill["skillId"])
+                        _stage_skill(skill["skillId"], work_dir)
                     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
                         print(f"  Retry also failed for {resolved['id']}", file=sys.stderr)
                         fetch_failures.append({"id": skill["id"], "source": source, "error": err_msg})
@@ -512,7 +525,7 @@ def fetch_skills(skills_list):
 
         # Move to staging and remove symlinks
         for skill in group:
-            _stage_skill(skill["skillId"])
+            _stage_skill(skill["skillId"], work_dir)
 
     # If ALL fetches failed, report error (caller decides severity)
     if fetch_failures and len(fetch_failures) == len(skills_list):
@@ -568,43 +581,11 @@ def fetch_skills(skills_list):
     except Exception as e:
         print(f"WARNING: injection scan of staged skills failed: {e}", file=sys.stderr)
 
-    # Clean up any leftover artifacts from npx skills add
-    # (e.g. skills with colons in IDs that don't match expected paths)
-    _cleanup_fetch_artifacts()
+    # Drop the private working directory and any leftover npx artifacts in it
+    # (e.g. skills with colons in IDs that don't match expected paths).
+    shutil.rmtree(work_dir, ignore_errors=True)
 
     return results
-
-
-def _cleanup_fetch_artifacts():
-    """Remove leftover .agents/ entries and orphan symlinks in .claude/skills/."""
-    # Remove any remaining entries in .agents/skills/
-    if SKILLS_AGENT_DIR.exists():
-        for entry in list(SKILLS_AGENT_DIR.iterdir()):
-            if entry.is_dir():
-                shutil.rmtree(entry)
-            else:
-                entry.unlink()
-        # Remove .agents/skills/ and .agents/ if empty
-        try:
-            SKILLS_AGENT_DIR.rmdir()
-        except OSError:
-            pass
-        try:
-            SKILLS_AGENT_DIR.parent.rmdir()
-        except OSError:
-            pass
-
-    # Remove symlinks/dirs in .claude/skills/ that point into .agents/
-    if SKILLS_SYMLINK_DIR.exists():
-        agents_abs = str(SKILLS_AGENT_DIR.parent.resolve())
-        for entry in list(SKILLS_SYMLINK_DIR.iterdir()):
-            if entry.is_symlink():
-                try:
-                    target = str(Path(os.readlink(entry)).resolve())
-                except OSError:
-                    target = ""
-                if ".agents" in target or agents_abs in target:
-                    entry.unlink()
 
 
 def check_updates(name):

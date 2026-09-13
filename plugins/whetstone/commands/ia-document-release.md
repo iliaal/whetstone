@@ -213,14 +213,19 @@ git push
 
 **PR body update:**
 
-```bash
-# Read existing PR body
-gh pr view --json body -q .body > /tmp/doc-release-$$.md
+Each Bash tool call runs in a fresh shell, so `$$` and shell variables do not survive between blocks; create the temp file once, print its path, and reference the printed literal path in every later block.
 
-# Append or replace a ## Documentation section with a per-file change summary
-# Then write back:
-gh pr edit --body-file /tmp/doc-release-$$.md
-rm -f /tmp/doc-release-$$.md
+```bash
+# Create the temp file once and print its path
+body=$(mktemp /tmp/doc-release.XXXXXX); echo "$body"
+gh pr view --json body -q .body > "$body"
+```
+
+```bash
+# Append or replace a ## Documentation section with a per-file change summary,
+# then write back. Substitute the literal path printed above for <printed-path>.
+gh pr edit --body-file <printed-path>
+rm -f <printed-path>
 ```
 
 If no PR exists: skip with "No PR found -- documentation changes are in the commit."

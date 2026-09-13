@@ -1,7 +1,6 @@
 ---
 name: ia-cloud-architect
 model: sonnet
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Cloud infrastructure design: multi-cloud, Well-Architected Framework, cost optimization, disaster recovery, migration strategies. Use when reviewing or planning cloud architecture."
 ---

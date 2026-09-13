@@ -656,9 +656,9 @@ class TestValidateSkillId:
 # ---------------------------------------------------------------------------
 
 class TestFetchSkills:
-    def _make_agent_skill(self, tmp_project, skill_id, content="# Skill"):
-        """Create a skill in the agent directory (simulating npx fetch)."""
-        agent_dir = tmp_project / ".agents" / "skills" / skill_id
+    def _make_agent_skill(self, work_dir, skill_id, content="# Skill"):
+        """Create a skill under the npx working directory (simulating npx fetch)."""
+        agent_dir = Path(work_dir) / ".agents" / "skills" / skill_id
         agent_dir.mkdir(parents=True, exist_ok=True)
         (agent_dir / "SKILL.md").write_text(content)
 
@@ -667,8 +667,8 @@ class TestFetchSkills:
     def test_successful_fetch(self, mock_run, mock_check, tmp_project):
         content = "# Test Skill"
         def run_side_effect(cmd, **kwargs):
-            # Simulate npx creating the skill
-            self._make_agent_skill(tmp_project, "skill-a", content)
+            # Simulate npx creating the skill in its cwd
+            self._make_agent_skill(kwargs["cwd"], "skill-a", content)
             return mock.Mock(returncode=0)
 
         mock_run.side_effect = run_side_effect
@@ -689,6 +689,10 @@ class TestFetchSkills:
 
         failed = [r for r in results if r.get("status") == "fetch_failed"]
         assert len(failed) == 1
+        # The private npx work dir must not outlive the run, even when nothing was staged.
+        work_dir = Path(mock_run.call_args.kwargs["cwd"])
+        assert work_dir.name.startswith("whetstone-fetch-")
+        assert not work_dir.exists()
 
     @mock.patch.object(distiller, "_check_npx_skills")
     @mock.patch("subprocess.run")
@@ -725,7 +729,7 @@ class TestFetchSkills:
             if call_count[0] == 1:
                 raise subprocess.CalledProcessError(1, "npx", stderr="not found")
             # Second call (retry) succeeds
-            self._make_agent_skill(tmp_project, "skill-a", content)
+            self._make_agent_skill(kwargs["cwd"], "skill-a", content)
             return mock.Mock(returncode=0)
 
         mock_run.side_effect = run_side_effect
@@ -738,6 +742,35 @@ class TestFetchSkills:
         ok = [r for r in results if "sha1" in r]
         assert len(ok) == 1
         assert ok[0]["id"] == "owner/new-repo/skill-a"  # updated
+
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_never_touches_callers_agents_skills(self, mock_run, mock_check, tmp_project, monkeypatch):
+        """Regression: cleanup once rmtree'd cwd-relative .agents/skills/, which is
+        the plugin's tracked distribution tree when run from the repo root."""
+        monkeypatch.chdir(tmp_project)
+        tracked = tmp_project / ".agents" / "skills" / "release" / "SKILL.md"
+        tracked.parent.mkdir(parents=True)
+        tracked.write_text("tracked")
+        link_dir = tmp_project / ".agents" / "skills" / "skill-distiller"
+        link_dir.symlink_to(tmp_project / "elsewhere")
+        seen = {}
+
+        def run_side_effect(cmd, **kwargs):
+            seen["cwd"] = Path(kwargs["cwd"])
+            assert seen["cwd"].resolve() != tmp_project.resolve()
+            self._make_agent_skill(kwargs["cwd"], "skill-a", "# fetched")
+            return mock.Mock(returncode=0)
+
+        mock_run.side_effect = run_side_effect
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"}]
+        results = distiller.fetch_skills(skills)
+
+        assert results[0]["sha1"]
+        assert tracked.read_text() == "tracked"
+        assert link_dir.is_symlink()
+        assert not seen["cwd"].exists()  # private work dir removed
 
 
 # ---------------------------------------------------------------------------

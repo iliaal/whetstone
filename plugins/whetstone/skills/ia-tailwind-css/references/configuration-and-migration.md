@@ -26,7 +26,10 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 @custom-variant dark (&:where(.dark, .dark *));
 ```
 
-Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`. Define z-index as tokens (`--z-modal: 50`) and reference via `z-(--z-modal)` instead of arbitrary `z-50`.
+Tokens defined with `@theme` become utilities automatically: `--color-brand` produces `bg-brand`, `text-brand`, `border-brand`. Define z-index as tokens (`--z-modal: 50`) and reference via `z-(--z-modal)` instead of arbitrary `z-50`. The `oklch()` form above matches how v4 defines its own default palette; lightness is perceptually uniform there, so a scale stepped by L reads evenly, and the `/N` opacity modifier mixes in the same space (`bg-brand/50` compiles to `color-mix(in oklab, var(--color-brand) 50%, transparent)`).
+
+- **Derive alpha variants from one token instead of hand-picking shades**: `--color-brand-soft: color-mix(in oklab, var(--color-brand) 10%, transparent);` inside `@theme` yields a named `bg-brand-soft` that tracks the base token; use it only when a named token must exist (design-system contract, shared across apps), since the `/N` modifier already covers one-off use.
+- **Clear a namespace for a strict design system**: `--color-*: initial;` as the first line of `@theme` removes the entire default palette (no `bg-red-500`, no emitted `--color-red-*` variables), so only the tokens declared after it exist; `--color-lime-*: initial;` drops a single default color, and `--*: initial;` resets every namespace (spacing, fonts, breakpoints) for a fully custom theme.
 
 For custom properties that should not define Tailwind utilities, declare them in ordinary CSS such as `:root`, outside `@theme`.
 

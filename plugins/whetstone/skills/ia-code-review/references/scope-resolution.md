@@ -32,8 +32,8 @@ If the target diff genuinely requires a different branch or a clean tree, stop
 and ask before switching, stashing, resetting, or cleaning. Reviewing a branch
 does not require checking it out -- resolve the comparison range and read the
 diff range directly (see "Base-branch resolution for branch reviews" below); a
-remote branch reads via `git diff <base>...<branch>` without touching the
-working tree.
+remote branch reads via `git diff --no-textconv --no-ext-diff <base>...<branch>`
+without touching the working tree.
 
 **HEAD-drift guard (when the review ends in a stage/commit/push):** record the
 commit before staging and re-check before the write:
@@ -69,13 +69,19 @@ via this fallback chain:
 all committed work on the branch and reviews only the uncommitted delta. Stop and
 ask which base to use instead.
 
+**Pass `--no-textconv --no-ext-diff` to every `git diff` / `git show` that
+materializes the reviewed content.** A `.gitattributes` entry in the reviewed
+branch can select a diff or textconv driver already configured in the
+reviewer's environment, so without the flags the branch author chooses which
+program rewrites the diff the review reads.
+
 **The working tree is not the review head.** Unless the branch is checked out,
 every filesystem-backed tool -- file reads, greps, delegated sweeps, any test
 runner mounting the repository -- executes the *base*. The asymmetry is usable:
 findings on files the change touched are unreliable (already-fixed call sites
 report as broken), while findings on untouched files are sound. Partition
 delegated-sweep output by `git diff --name-only <base> <head>` and re-verify only
-the changed-file half against `git show <head>:<file>`. Anchoring reads to the
+the changed-file half against `git show --no-textconv --no-ext-diff <head>:<file>`. Anchoring reads to the
 head SHA does not cover execution: running the suite needs the full head
 materialized, so use a dedicated worktree rather than the changed files alone --
 the diff's runtime closure includes dependencies absent on a stale base, and the

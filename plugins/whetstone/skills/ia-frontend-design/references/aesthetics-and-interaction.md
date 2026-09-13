@@ -4,10 +4,10 @@
 
 Focus on:
 - **Typography** — choose fonts with character:
-  - **Font selection**: avoid Inter, Roboto, Arial, system fonts. Use `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Pair a display font with a refined body font.
+  - **Font selection**: avoid Inter, Roboto, Arial, system fonts. Use `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Treat the current reflex "personality" faces (Geist, Outfit, Fraunces, Playfair Display, Cormorant, Space Grotesk, Instrument Serif) as a tell in the display role; several remain fine as body or UI faces. Pair a display font with a refined body font.
   - **Headlines**: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust. AI defaults are undersized and timid — lack presence.
   - **H1 iron rule (2-3 lines max)**: every hero H1 must render in 2-3 lines, never 4-6. The fix is always wider container + smaller font, not the reverse. Minimum container: `max-w-5xl` (wider for longer headlines); adjust font with `clamp(3rem, 5vw, 5.5rem)` so it scales down instead of wrapping. A 6-line heading wall is a catastrophic failure, not a design choice.
-  - **Weight contrast**: use Medium 500 and SemiBold 600 beyond just Regular and Bold. Tighten letter-spacing, reduce line-height.
+  - **Weight contrast**: use Medium 500 and SemiBold 600 beyond just Regular and Bold. Tighten letter-spacing, but no tighter than about -0.04em on display type (crushed tracking is a tell; see [banned-ai-patterns.md](./banned-ai-patterns.md)); reduce line-height.
   - **Body text**: limit to ~65 characters wide, increase line-height.
   - **Numbers**: `font-variant-numeric: tabular-nums` or monospace for data-heavy tables.
   - **Orphaned words**: fix with `text-wrap: balance`.

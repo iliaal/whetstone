@@ -30,7 +30,7 @@ These are the telltale signs of AI-generated design. Avoid them:
 
 **Interactivity**: Implement full interaction cycles, not just the success state. Provide skeleton loaders (not circular spinners), composed empty states, inline error messages (not `window.alert()`), and tactile press feedback (`scale-[0.98]` or `translateY(1px)` on `:active`). For CTA buttons with icons, wrap the icon in its own circular container (`w-8 h-8 rounded-full bg-black/5`) with independent hover kinetics (`group-hover:translate-x-1 scale-105`). Add visible focus rings for keyboard navigation. Add `scroll-behavior: smooth` for anchor navigation.
 
-**Content Register**: Match copy to context. Dashboards and operational tools need utility copy -- section headings say what the area is, not what the brand aspires to be. If a sentence could appear in a homepage hero, rewrite it until it sounds like product UI. Hero sections on landing pages use marketing copy.
+**Content Register**: Match copy to context; the copy register follows the design register (brand or product) chosen in Design Thinking. Dashboards and operational tools need utility copy -- section headings say what the area is, not what the brand aspires to be. If a sentence could appear in a homepage hero, rewrite it until it sounds like product UI. Hero sections on landing pages use marketing copy.
 
 **Hero Construction**: Full-bleed heroes run edge-to-edge; constrain only the inner text/action column. Use `calc(100svh - var(--header-height))` to account for persistent UI chrome. Test: if the first viewport still works after removing the image, the image is too weak.
 

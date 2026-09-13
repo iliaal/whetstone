@@ -10,6 +10,8 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 
 **When a dispatch fails.** A concurrency or active-agent-limit error is backpressure: leave the specialist queued and retry after a slot frees. A launch that fails for any other reason (bad agent type, malformed prompt, missing permission) does not stall the merge -- run that lens inline in the parent context using the same prompt template, and disclose it in one line of the report. The same applies when the harness exposes no subagent primitive at all. This is the sole exception to the main skill's "pass the diff to agents -- do NOT read it first" rule: the parent reads the diff for the substituted lens only, and the delegation rule still holds for every lens that dispatched successfully.
 
+**Agent lifecycle.** Collect every specialist's terminal outcome, including failures, before any cleanup. When the harness offers caller-owned cleanup, close or release review-owned agent handles before refilling a slot, advancing a stage, or returning. Never message a completed agent that has no remaining work. A slot counts as free when the harness reports the agent finished (its completion notification arrived or its handle was released), not when output merely stops arriving and not when the agent is interrupted mid-run. Do not invent cleanup operations the harness does not expose.
+
 | Agent | Lens | Focus |
 |-------|------|-------|
 | standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed, and for every rule loosened or removed state what it suppresses in this same diff ("2 findings suppressed by a rule added in this PR", quoted) -- resolve criteria from the reviewed head, never silently apply a rule the diff introduces. |
@@ -78,6 +80,9 @@ DON'T:
 DIFF:
 {full diff content}
 
+FILES:
+{full current bodies of the unit's owned files at the review head, or the exact paths for the agent to read at that revision}
+
 PR INTENT:
 {PR description or task spec}
 
@@ -132,6 +137,8 @@ After all agents return, apply these rules in order. Each consolidated finding c
 **Preamble — fingerprint first.** Group findings by `path:line:issue_class`, then verify they describe the same root cause. Count distinct dispatched contexts, not repeated fingerprint hits; lenses run inline in the parent count as one contributor. Agreement records provenance, not a measured probability.
 
 **Separate contexts do not guarantee independent evidence.** State which lenses ran inline. Tag agreement between separately dispatched specialists as `MULTI-SPECIALIST AGREEMENT`, and cite the evidence each actually checked. Do not call agreement confirmation of an untested premise.
+
+**Independence starts with the prompt.** A corroborating pass whose job is to independently confirm or refute a specific finding receives only the artifact, the agreed outcome, and the constraints. Never forward the first reviewer's diagnostic questions, claims, or proposed wording to it: they prime the second pass toward the same reading, and its agreement then measures the priming, not the code. The adversarial passes differ by design: the Red-Team Pass and the Skeptic Pass receive the consolidated findings because their job is to attack them, additively and subtractively.
 
 **Shared inputs can preserve a shared blind spot.** Lenses reading the same diff may all miss a caller, producer, or guard. Compare their evidence, including probes and context outside the diff. Name untested premises in Residual Risks. Never add a fixed confidence increment for agent count; reassess confidence only from new evidence.
 

@@ -8,6 +8,7 @@ Every phase must be **context-safe**:
 - Fit in the available context, or record a clear recovery boundary before compaction or handoff.
 - Name dependencies whose failure would block the phase.
 - Split only when each part has a meaningful verification boundary; do not split to meet a file, task, or duration target.
+- Never state hour, day, or week estimates in a plan; an agent has no wall-clock experience, so such figures are confabulated. Size by dependency count, verification steps, and a relative Small/Medium/Large label instead.
 - Challenge scope when nonlocal invariants, ownership overlap, or integration dependencies make independent delivery unlikely.
 
 ## Task Decomposition

@@ -1,7 +1,6 @@
 ---
 name: ia-security-sentinel
 model: opus
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Performs security audits for vulnerabilities, input validation, auth/authz, hardcoded secrets, and OWASP compliance. Use when reviewing code for security issues or before deployment."
 ---
@@ -110,6 +109,8 @@ Include an explicit coverage checklist in the report. Load [security-test-covera
 ### Required fields per finding
 
 Every Critical and High finding must include an **Exploit Scenario**: 1-2 sentences describing the concrete attacker steps with an example payload. Medium findings may omit the scenario but only if obvious and concrete (see False-Positive Suppression below).
+
+A finding whose subject is a live credential cites `file:line` and the matched pattern, never the value itself, in every report field and example payload.
 
 Example:
 ```

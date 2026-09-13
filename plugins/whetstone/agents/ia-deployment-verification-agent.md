@@ -1,7 +1,6 @@
 ---
 name: ia-deployment-verification-agent
 model: sonnet
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Produces Go/No-Go deployment runbooks with SQL verification queries, rollback steps, and monitoring plans. Use after migration code is approved to build pre-check queries, watch commands, and rollback procedures for the deploy."
 ---

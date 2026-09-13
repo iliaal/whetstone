@@ -1,7 +1,6 @@
 ---
 name: ia-architecture-strategist
 model: sonnet
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Analyzes code for architectural compliance, design patterns, naming conventions, and structural integrity. Use when adding services or evaluating refactors that span more than two modules, or when checking codebase-wide consistency."
 ---

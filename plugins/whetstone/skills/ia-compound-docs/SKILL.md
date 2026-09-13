@@ -6,7 +6,6 @@ description: >-
   /ia-compound. Use when documenting a resolved issue, writing up
   lessons learned, capturing a post-mortem, adding to the knowledge base,
   or building searchable institutional knowledge after debugging.
-disable-model-invocation: true
 ---
 
 # compound-docs

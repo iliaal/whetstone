@@ -6,7 +6,6 @@ description: >-
   triaging, listing, or managing todo files, tracking work items, managing the
   backlog, converting PR comments to tracked tasks, or checking todo status
   and dependencies.
-disable-model-invocation: true
 ---
 
 # File-based todo tracking

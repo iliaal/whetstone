@@ -14,7 +14,7 @@ When asked to "deepen" or "strengthen" an existing plan, load [plan-deepening.md
 
 ## Execution Handoff
 
-When the user requested a plan only, stop after delivering the plan. When the request already authorizes implementation, continue with the simplest execution mode that fits the work. Ask the user to choose between inline and delegated execution only when the choice materially changes cost, risk, isolation, or review quality. Dispatch discipline and portable task-prompt anchoring are in [execution-and-methodology.md](./execution-and-methodology.md).
+When the user requested a plan only, stop after delivering the plan. When the request already authorizes implementation, continue with the simplest execution mode that fits the work. Do not infer execution approval from a prior conversation; approval carries across a session restart only when the durable plan artifact records it. Ask the user to choose between inline and delegated execution only when the choice materially changes cost, risk, isolation, or review quality. Dispatch discipline and portable task-prompt anchoring are in [execution-and-methodology.md](./execution-and-methodology.md).
 
 ## Verify
 

@@ -43,6 +43,8 @@ State the evidence supporting confidence:
 
 If a caller or schema requires a 0.0-1.0 score, label it **uncalibrated reviewer judgment**, not a probability or measured certainty. A decimal threshold does not decide truth, and agreement among agents does not earn an automatic numerical increment. Confidence changes when evidence changes.
 
+A verification or validation pass that runs out of budget marks every unreached finding as **uninspected** with the reason (for example `budget exhausted`); never fabricate a verdict for an item the pass did not inspect. An uninspected finding keeps its pre-pass severity and confidence and is reported under Residual Risks with the reason. A review or coverage ledger cannot be marked complete while any item is uninspected.
+
 ### Protected subjects
 
 For these easily missed classes, preserve consequential unresolved candidates in Residual Risks rather than silently dropping them. Promote them to findings when the evidence bar above is met:

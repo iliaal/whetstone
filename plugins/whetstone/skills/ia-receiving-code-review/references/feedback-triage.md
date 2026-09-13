@@ -31,6 +31,10 @@ When feedback is ambiguous or incomplete:
 
 **Batched clarification for critical-path ambiguity:** When multiple ambiguous findings land on critical-path code (auth, payments, data migrations, permission checks) AND the `AskUserQuestion` tool is available, batch up to 4 of them, within the active tool's actual limit, into a single call rather than asking one at a time. Each question's header is the truncated filename and line, and the options are `Valid / False positive / Defer`. Skip the batched ask entirely when ambiguous findings are only on non-critical paths — just auto-triage those and move on. If `AskUserQuestion` is not available, fall back to a single prose block listing all ambiguous items numbered, asking for Valid/False-positive/Defer decisions. Use 4 as the maximum editorial batch size; a lower active-tool limit takes precedence.
 
+## Conventional Comments Prefixes
+
+When a reviewer labels comments with Conventional Comments prefixes, read the label as an input signal for triage, alongside and never replacing the correctness assessment above: `issue:`, `todo:`, `chore:` = must address; `suggestion:` = consider; `nitpick:` = optional; `question:` = clarify before acting; `praise:`, `thought:`, `note:` = informational, no change required. A `nitpick:` that is technically wrong is still declined with evidence, and an `issue:` still gets verified before implementation.
+
 ## Source-Specific Handling
 
 ### From the user (project owner)

@@ -90,6 +90,7 @@ Stacks (HCP -- check current release status): orchestrates multiple configs as a
 ## State & Security
 
 - Remote backend with locking: S3 with `use_lockfile = true` (1.10+), Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure. DynamoDB-based S3 locking (`dynamodb_table`) is deprecated and slated for removal -- prefer `use_lockfile`; both may be set at once while migrating an existing table off.
+- OpenTofu-only: `terraform { encryption { key_provider "pbkdf2" "k" {...}  method "aes_gcm" "m" { keys = key_provider.pbkdf2.k }  state { method = method.aes_gcm.m }  plan { method = method.aes_gcm.m } } }` encrypts state and plan files client-side (or via `TF_ENCRYPTION`). Roll out with a `fallback { method = method.unencrypted.x }` so existing plaintext state still loads, and never rename a key provider or method without a `fallback` block. OpenTofu also accepts `var.*`/`local.*` in `backend {}` arguments and in module `source`/`version` (resolved at `init`; no state or provider-function references); the same HCL is a hard error in Terraform ("A backend block cannot refer to named values").
 - Encrypt state at rest. Never commit `.tfstate`, `.terraform/`, or `*.tfplan`. Always commit `.terraform.lock.hcl`.
 - `default_tags` on provider for consistent resource tagging.
 - Encryption at rest on all storage. Private networking by default -- public access is opt-in.

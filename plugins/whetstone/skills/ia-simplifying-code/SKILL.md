@@ -25,6 +25,7 @@ description: >-
 | **Simplicity over cleanliness** | Prefer straightforward code over pattern-heavy "clean" code. Three similar lines beat a premature abstraction |
 | **Surgical changes** | Touch only what needs simplifying. Match existing style, naming conventions, and formatting of the surrounding code |
 | **Surface assumptions** | Before changing a block, identify what imports it, what it imports, and what tests cover it. Edit dependents in the same pass |
+| **Delete before simplifying** | Prefer deletion over simplification, simplification over optimization, and optimization over automation. A pass that finds nothing to change is a valid, complete result |
 
 Changing an interface, exported name, persisted format, or path reaches past the import graph. Enumerate the producers, consumers, schemas, fixtures, generators, manifests, scripts and CI recipes, config references, and documents that carry the old identifier, and migrate them in the same pass. Close out by searching for the old identifier: zero hits, or one line accounting for each intentional remainder. Renames rot in the fixture holding the old key and the `.env.example` entry, neither of which any import graph contains. When the identifier is a public or exported API, Stop Conditions applies first -- confirm with the user, then enumerate; the sweep runs unprompted only for internal identifiers.
 

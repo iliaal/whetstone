@@ -123,13 +123,13 @@ Only pattern 2 is a finding.
 
 **Reality:** many code-hosting platforms reject comments anchored to lines outside the diff (GitLab DiffNote, GitHub inline comments on unchanged lines). Even when accepted, the finding is out-of-scope for the current change.
 
-**Fix:** before drafting a comment, confirm the target line is actually inside the MR's diff. `git diff <base>...<head> -- <file>` is authoritative. If the line isn't in the hunks, either drop the finding or reframe as follow-up: "this behavior is pre-existing but worth addressing separately" — raise as a separate issue, not an inline comment.
+**Fix:** before drafting a comment, confirm the target line is actually inside the MR's diff. `git diff --no-textconv --no-ext-diff <base>...<head> -- <file>` is authoritative. If the line isn't in the hunks, either drop the finding or reframe as follow-up: "this behavior is pre-existing but worth addressing separately" — raise as a separate issue, not an inline comment.
 
 ## Cross-repo contract claims need current remote state
 
 **Trap:** when a review cites cross-repo backend contracts (routes, schemas), the reviewer's view of the other repo is whatever's in their local working tree — which may be stale. A confident "this endpoint doesn't exist" can be wrong if the companion change has already merged on `origin/develop`.
 
-**Fix:** when making a cross-repo contract claim, verify with `git show origin/develop:path/to/file` before acting. If local is behind, `git fetch` and re-read. When handing a diff to a subagent for review, note which SHA the review is supposed to be against; LLM tools that supplement from the filesystem will otherwise read pre-change state.
+**Fix:** when making a cross-repo contract claim, verify with `git show --no-textconv --no-ext-diff origin/develop:path/to/file` before acting. If local is behind, `git fetch` and re-read. When handing a diff to a subagent for review, note which SHA the review is supposed to be against; LLM tools that supplement from the filesystem will otherwise read pre-change state.
 
 ## Language-specific gotchas reviewers re-discover
 
@@ -173,7 +173,7 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Reality:** a re-spec may have intentionally redefined the contract (its description, not the OLD code, is the oracle); a dropped branch may have been a latent bug; a sibling may have always omitted the field. Conversely, pre-existing code outside the diff *is* this change's responsibility when the new feature makes a previously-invisible defect user-visible — frame that as introduced here, not a follow-up.
 
-**Fix:** read the pre-change file at the base (`git show <base>:<file>`), not just the diff hunk, before filing a regression. When a regression is *confirmed* against the baseline, cite the introducing commit (SHA, author — via `git blame` or `git bisect`) as part of the finding's evidence, not just the symptom.
+**Fix:** read the pre-change file at the base (`git show --no-textconv --no-ext-diff <base>:<file>`), not just the diff hunk, before filing a regression. When a regression is *confirmed* against the baseline, cite the introducing commit (SHA, author — via `git blame` or `git bisect`) as part of the finding's evidence, not just the symptom.
 
 ## Mirror bug on widened/narrowed keys and guards
 

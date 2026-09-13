@@ -7,7 +7,7 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly REPO_ROOT
 
 test_manifest_parity() {
-	local claude_version codex_version marketplace_version explicit_only_actual explicit_only_expected
+	local claude_version codex_version marketplace_version explicit_only_actual
 	claude_version=$(jq -r '.version' "$REPO_ROOT/plugins/whetstone/.claude-plugin/plugin.json")
 	codex_version=$(jq -r '.version' "$REPO_ROOT/plugins/whetstone/.codex-plugin/plugin.json")
 	marketplace_version=$(jq -r '.plugins[0].version' "$REPO_ROOT/.claude-plugin/marketplace.json")
@@ -29,16 +29,19 @@ test_manifest_parity() {
     }]
   ' "$REPO_ROOT/.agents/plugins/marketplace.json" >/dev/null
 
-	for skill in ia-compound-docs ia-file-todos; do
-		grep -q '^disable-model-invocation: true$' "$REPO_ROOT/plugins/whetstone/skills/$skill/SKILL.md"
-		grep -q '^  allow_implicit_invocation: false$' "$REPO_ROOT/plugins/whetstone/skills/$skill/agents/openai.yaml"
-	done
-
-	explicit_only_actual=$(grep -rl '^disable-model-invocation: true$' "$REPO_ROOT/plugins/whetstone/skills" --include=SKILL.md | sort)
-	explicit_only_expected=$(printf '%s\n' \
-		"$REPO_ROOT/plugins/whetstone/skills/ia-compound-docs/SKILL.md" \
-		"$REPO_ROOT/plugins/whetstone/skills/ia-file-todos/SKILL.md")
-	[[ "$explicit_only_actual" == "$explicit_only_expected" ]]
+	# Commands invoke skills through explicit Skill() tool calls; the harness treats
+	# those as model invocation, so a skill carrying disable-model-invocation (or its
+	# Codex twin allow_implicit_invocation: false) is unreachable from ia-compound,
+	# ia-triage, ia-review, and ia-resolve-todo-parallel. Keep the set empty.
+	explicit_only_actual=$(grep -rl '^disable-model-invocation: true$' "$REPO_ROOT/plugins/whetstone/skills" --include=SKILL.md | sort || true)
+	if [[ -n "$explicit_only_actual" ]]; then
+		printf 'FAIL: a skill SKILL.md sets disable-model-invocation; commands invoke skills via Skill() calls:\n%s\n' "$explicit_only_actual" >&2
+		return 1
+	fi
+	if grep -rq '^  allow_implicit_invocation: false$' "$REPO_ROOT/plugins/whetstone/skills" --include=openai.yaml; then
+		printf 'FAIL: a skill openai.yaml disables implicit invocation; commands invoke skills via Skill() calls\n' >&2
+		return 1
+	fi
 }
 
 # Codex >= 0.147 picks a manifest by looking for a root plugin.json carrying the

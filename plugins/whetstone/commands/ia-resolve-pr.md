@@ -94,6 +94,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-pr-thread THREAD_ID
 ```
 
 - Push to remote
+- Never run `gh pr merge` or enable auto-merge on the agent's own judgment, including for a green, low-risk dependency bump; propose the merge and wait for explicit user approval
 - Re-fetch comments to confirm all resolved:
 
 ```bash

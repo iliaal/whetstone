@@ -48,6 +48,8 @@ Five principles govern agent-native design. For detailed explanations, examples,
 14. **Anti-patterns** - Common mistakes and how to avoid them
 15. **Success criteria** - Verify your architecture is agent-native
 16. **Hooks patterns** - Hook events, decision control, MCP matchers, async hooks
+17. **CLI interface** - Design a CLI that agents invoke: output channels, exit codes, self-description, safety tiers
+18. **Approval loop** - Durable human approval for agent-drafted external sends: content binding, single-winner claim, unknown outcomes
 
 **Wait for response before proceeding.**
 
@@ -75,6 +77,8 @@ Five principles govern agent-native design. For detailed explanations, examples,
 | 14, "anti-pattern", "mistake", "wrong" | Read [anti-patterns.md](./references/anti-patterns.md) |
 | 15, "success", "criteria", "verify", "checklist" | Read [success-criteria.md](./references/success-criteria.md) |
 | 16, "hook", "hooks", "PreToolUse", "decision control", "async hook", "permissionDecision" | Read [hooks-patterns.md](./references/hooks-patterns.md) |
+| 17, "cli", "command line", "stdout", "exit code", "--format", "--dry-run" | Read [cli-agent-interface.md](./references/cli-agent-interface.md) |
+| 18, "approval", "approve before send", "outbound", "ledger", "double-send" | Read [operator-approval-loop.md](./references/operator-approval-loop.md) |
 | 0, "quick start", "getting started", "overview", "introduction" | Read [quick-start.md](./references/quick-start.md) |
 
 **After reading the reference, apply those patterns to the user's specific context.**

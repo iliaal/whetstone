@@ -11,6 +11,7 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 | Perfectly symmetric grids everywhere | Real design uses intentional asymmetry | Vary column spans, use dominant/subordinate relationships |
 | Full-width sections stacked vertically with identical padding | Monotonous rhythm | Vary section widths, padding, and visual weight |
 | Everything inside cards (border + shadow + white bg) | Card overuse dilutes hierarchy | Use `border-t`, `divide-y`, or negative space for separation |
+| Nested cards (two independent cards, each with its own header, padding, and shadow, stacked one inside the other) | Stacked elevation with no hierarchy gain; reads as component nesting left visible. A single surface framed by a hairline `ring-1` wrapper (the double-bezel pattern in aesthetics-and-interaction.md) is one surface with one elevation and is not this pattern | Flatten the inner card to a plain region, `divide-y` row, or heading; one elevation level per container |
 | Cookie-cutter section rhythm (every section follows identical structure) | Monotonous, signals templated generation | Vary section types: hero, split, bento, full-bleed, editorial |
 | Colored left-border accent cards | Common AI component pattern | Use top borders, background tints, or typography weight for emphasis |
 | Bento grids with empty/dead cells | Missing `grid-flow-dense` lets grids render with visible gaps that read as broken | Apply `grid-auto-flow: dense` (Tailwind: `grid-flow-dense`); verify `col-span`/`row-span` values interlock mathematically; zero empty cells |
@@ -47,7 +48,8 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 
 | Pattern | Problem | Alternative |
 |---------|---------|-------------|
-| Inter/Roboto/System font everywhere | Zero personality | Distinctive choices: Geist, Outfit, Cabinet Grotesk, Satoshi |
+| Inter/Roboto/System font everywhere | Zero personality | Cabinet Grotesk, Satoshi, or a context-appropriate serif. The current reflex "personality" faces (Geist, Outfit, Fraunces, Playfair Display, Cormorant, Space Grotesk, Instrument Serif) are themselves a tell in the display role; several remain fine as body or UI faces |
+| Letter-spacing tighter than about -0.04em on display type | Tight tracking is a taste; crushed tracking is a tell | Stop at roughly -0.04em and get presence from size and weight instead |
 | Uniform font-weight (400 regular everywhere) | Flat hierarchy | Weight contrast: 500/600 for headings, 400 for body |
 | Title Case In Every Heading Word | Overly formal, AI tell | Sentence case |
 | Single word or phrase accented inside a headline (italic, bold, or a different color on just one word) | Each token is legitimate elsewhere; applied mid-headline it reads as an AI tell | Let the whole headline carry one consistent treatment; drive emphasis through word choice, not mid-sentence formatting |
@@ -65,6 +67,7 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 | Floating gradient blobs as background | Overused AI aesthetic | Noise textures, mesh gradients, geometric patterns |
 | Custom mouse cursors (`cursor: url(...)`) | Novelty that signals template code | Use system cursors; reserve custom cursors for drawing tools or games |
 | shadcn/ui components left in generic default state | Identifiably "template starter kit" | Customize colors, spacing, and radii to match the design system |
+| Browser chrome left at defaults (`::selection`, `caret-color`, scrollbar, focus ring, `text-underline-offset`) | Unthemed chrome reads as unfinished template output | Theme each from the palette; keep the focus ring visible, only restyled |
 | Meta strings joined with middle dots (`A · B · C`) | Templated info-string formatting, appears regardless of subject | Use a separator suited to the content -- comma, pipe, or a line break |
 | Trailing `→` appended to link or button text | Template chrome, not a functional affordance | Let the link text stand alone, or use a real icon component that carries intent |
 

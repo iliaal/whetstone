@@ -85,3 +85,5 @@ Pre-commit: `shellcheck *.sh && shfmt -i 2 -ci -d *.sh`
 ## Verify
 
 Run `shellcheck --enable=all` and `shfmt -d` with zero warnings before declaring done. Test edge cases: empty input, missing files, spaces in paths.
+
+If `shellcheck` or `shfmt` is not installed (`command -v shellcheck` fails), the check was skipped, not passed: report "static analysis not run: shellcheck unavailable" and fall back to `bash -n` for syntax only. A skipped linter is the same silent no-op as the empty rules file above.

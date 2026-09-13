@@ -1,7 +1,6 @@
 ---
 name: ia-kieran-reviewer
 model: sonnet
-autoApprove: read
 tools: Read, Grep, Glob, Bash
 description: "Persona-driven line-level Python and TypeScript code review with extremely high bar for type safety, naming conventions, and modern patterns. Use for line-level Py/TS quality after PR implementation. For broader review workflow, use the code-review skill."
 ---

@@ -46,7 +46,7 @@ Problem Scenario:
 Proposed Solution:
 [How to fix it]
 
-Estimated Effort: [Small (< 2 hours) / Medium (2-8 hours) / Large (> 8 hours)]
+Estimated Effort: [Small (one file, no new tests) / Medium (several files or new tests) / Large (cross-module or migration)]
 
 ---
 Do you want to add this to the todo list?
@@ -165,7 +165,7 @@ Operations Without Transaction:
 
 Proposed Solution: Wrap all operations in ApplicationRecord.transaction do ... end block
 
-Estimated Effort: Small (30 minutes)
+Estimated Effort: Small (one file, no new tests)
 
 ---
 
