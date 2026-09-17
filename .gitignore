@@ -19,3 +19,6 @@ docs/audit/
 
 # Tier-2 prompt-injection attestation (per-release build artifact, not committed)
 distillery/.injection-attestation.json
+
+# Plugin eval run artifacts (timestamped reports, not shared)
+plugins/whetstone/evals/results/
