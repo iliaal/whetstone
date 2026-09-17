@@ -121,7 +121,7 @@ if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
   ELIGIBLE=()
   for skill_name in "${SKILL_NAMES[@]}"; do
     [[ -f "$PLUGIN_ROOT/skills/$skill_name/SKILL.md" ]] || continue
-    [[ " ${ALL_MATCHES[*]} " == *" $skill_name "* ]] && continue
+    [[ " ${ALL_MATCHES[*]-} " == *" $skill_name "* ]] && continue
     if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]] &&
       printf '%s' "$PROMPT_LOWER" | grep -qE "${SKILL_NEGATIVE[$skill_name]}" 2>/dev/null; then
       continue
@@ -131,8 +131,13 @@ if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
     fi
     ELIGIBLE+=("$skill_name")
   done
+  JEV_CMD=(python3 "$SCRIPT_DIR/jev-skills.py" "$PLUGIN_ROOT/skills")
+  if [[ ${#ALL_MATCHES[@]} -gt 0 ]]; then
+    JEV_CMD+=(--selected "${ALL_MATCHES[@]}")
+  fi
+  JEV_CMD+=(-- ${ELIGIBLE[@]+"${ELIGIBLE[@]}"})
   if [[ ${#ELIGIBLE[@]} -gt 0 ]] &&
-    JEV_MATCHES=$(printf '%s' "$INPUT" | python3 "$SCRIPT_DIR/jev-skills.py" "$PLUGIN_ROOT/skills" "${ELIGIBLE[@]}" 2>/dev/null); then
+    JEV_MATCHES=$(printf '%s' "$INPUT" | "${JEV_CMD[@]}" 2>/dev/null); then
     while IFS= read -r skill_name; do
       [[ -n "$skill_name" ]] || continue
       ALL_MATCHES+=("$skill_name")

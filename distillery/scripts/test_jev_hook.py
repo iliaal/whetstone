@@ -53,7 +53,10 @@ def fake_jev(tmp_path, answers):
 
 
 def test_opt_in_adds_semantic_match_without_changing_arguments(tmp_path):
-    env, log = fake_jev(tmp_path, {"ia-debugging": {"type": "noul", "noul": 0.97}})
+    env, log = fake_jev(tmp_path, {
+        "__need__": {"type": "noul", "noul": 0.97},
+        "ia-debugging": {"type": "noul", "noul": 0.97},
+    })
     prompt = "Find out why yesterday's deployment now returns nothing to callers."
     assert run_hook(prompt, env) == ""
     assert not log.exists()
@@ -65,8 +68,9 @@ def test_opt_in_adds_semantic_match_without_changing_arguments(tmp_path):
     assert result["model"] == "sonnet"
     assert result["run_in_background"] is True
     request = json.loads(log.read_text())
-    assert request["state"] == prompt
+    assert request["state"] == {"request": prompt, "already_selected": []}
     assert request["questions"]["ia-debugging"]["type"] == "noul"
+    assert request["questions"]["__need__"]["type"] == "noul"
 
 
 @pytest.mark.parametrize("setting", [None, "", "0", "false", "yes"])
@@ -114,16 +118,32 @@ def test_invalid_score_preserves_regex_output(tmp_path, score):
 
 
 def test_threshold_is_configurable_and_regex_selections_remain_first(tmp_path):
-    env, log = fake_jev(tmp_path, {"ia-writing": {"type": "noul", "noul": 0.93}})
+    env, log = fake_jev(tmp_path, {
+        "__need__": {"type": "noul", "noul": 0.97},
+        "ia-debugging": {"type": "noul", "noul": 0.93},
+    })
     prompt = "Implement a Python CLI service"
     original = run_hook(prompt, env)
     env.update(WHETSTONE_JEV="1", WHETSTONE_JEV_THRESHOLD="0.95")
     assert run_hook(prompt, env) == original
     env["WHETSTONE_JEV_THRESHOLD"] = "0.90"
     updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["updatedInput"]["prompt"]
-    assert updated.index("ia-python-services/SKILL.md") < updated.index("ia-writing/SKILL.md")
+    assert updated.index("ia-python-services/SKILL.md") < updated.index("ia-debugging/SKILL.md")
     assert "Additional skill suggestions (Jev; check applicability before following):" in updated
-    assert "ia-python-services" not in json.loads(log.read_text())["questions"]
+    request = json.loads(log.read_text())
+    assert "ia-python-services" not in request["questions"]
+    assert request["state"]["already_selected"] == ["ia-python-services"]
+
+
+def test_leftover_slots_are_not_padded(tmp_path):
+    env, log = fake_jev(tmp_path, {"ia-writing": {"type": "noul", "noul": 0.93}})
+    prompt = "Implement a Python CLI service"
+    original = run_hook(prompt, env)
+    env["WHETSTONE_JEV"] = "1"
+    assert run_hook(prompt, env) == original
+    request = json.loads(log.read_text())
+    assert request["questions"]["ia-writing"]["type"] == "noul"
+    assert request["state"]["already_selected"] == ["ia-python-services"]
 
 
 @pytest.mark.parametrize("threshold", ["NaN", "Infinity", "bad", "-0.1", "1.1"])
@@ -145,17 +165,22 @@ def test_full_regex_selection_skips_jev(tmp_path):
     assert not log.exists()
 
 
-def test_semantic_matches_fill_only_remaining_slots(tmp_path):
+def test_high_scores_add_at_most_one_miss(tmp_path):
     env, _ = fake_jev(tmp_path, {
-        name: {"type": "noul", "noul": 0.99}
-        for name in ["ia-writing", "ia-debugging", "ia-planning", "ia-nodejs-backend", "ia-c-systems"]
+        "__need__": {"type": "noul", "noul": 0.99},
+        "ia-debugging": {"type": "noul", "noul": 0.99},
+        "ia-writing": {"type": "noul", "noul": 0.98},
+        "ia-planning": {"type": "noul", "noul": 0.97},
+        "ia-nodejs-backend": {"type": "noul", "noul": 0.96},
+        "ia-c-systems": {"type": "noul", "noul": 0.95},
     })
     env["WHETSTONE_JEV"] = "1"
     prompt = "Implement a Python CLI service"
     updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["updatedInput"]["prompt"]
     paths = [line for line in updated.splitlines() if line.startswith("- ")]
-    assert len(paths) == 5
+    assert len(paths) == 2
     assert paths[0].endswith("ia-python-services/SKILL.md")
+    assert paths[1].endswith("ia-debugging/SKILL.md")
     assert all(Path(line[2:]).is_file() for line in paths)
 
 
@@ -193,16 +218,22 @@ def test_skill_scope_is_read_from_frontmatter(tmp_path, text, expected):
     assert HELPER.description(path) == expected
 
 
+NEED_OK = {"type": "noul", "noul": 0.97}
+DEBUG_OK = {"type": "noul", "noul": 0.97}
+
+
 @pytest.mark.parametrize(("response", "expected"), [
-    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": 0.97}}}, "ia-debugging\n"),
-    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": 0.1}}}, ""),
-    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": float("nan")}}}, ""),
-    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "choice", "noul": 0.97}}}, ""),
-    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": None}}, ""),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": DEBUG_OK, "__need__": NEED_OK}}, "ia-debugging\n"),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": DEBUG_OK, "__need__": {"type": "noul", "noul": 0.1}}}, ""),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": 0.97}}}, ""),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": 0.1}, "__need__": NEED_OK}}, ""),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": float("nan")}, "__need__": NEED_OK}}, ""),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": {"type": "choice", "noul": 0.97}, "__need__": NEED_OK}}, ""),
+    ({"schema_version": 1, "status": "ok", "answers": {"ia-debugging": None, "__need__": NEED_OK}}, ""),
     ({"schema_version": 1, "status": "ok", "answers": {}}, ""),
     ({"schema_version": 1, "status": "error"}, ""),
-    ({"schema_version": True, "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": 0.97}}}, ""),
-    ({"schema_version": 1, "model": "other", "status": "ok", "answers": {"ia-debugging": {"type": "noul", "noul": 0.97}}}, ""),
+    ({"schema_version": True, "status": "ok", "answers": {"ia-debugging": DEBUG_OK, "__need__": NEED_OK}}, ""),
+    ({"schema_version": 1, "model": "other", "status": "ok", "answers": {"ia-debugging": DEBUG_OK, "__need__": NEED_OK}}, ""),
     ([], ""),
 ])
 def test_helper_validates_cli_reply(tmp_path, monkeypatch, capsys, response, expected):
@@ -234,3 +265,52 @@ def test_helper_declines_disabled_empty_and_invalid_requests(tmp_path, monkeypat
     assert HELPER.suggest(PLUGIN / "skills", ["ia-debugging"], "task") == []
     assert not log.exists()
     assert capsys.readouterr().out == ""
+
+
+def test_parse_args_accepts_selected_and_legacy_form():
+    _, names, selected = HELPER.parse_args(["jev-skills.py", "/skills", "ia-debugging"])
+    assert names == ["ia-debugging"]
+    assert selected == []
+    _, names, selected = HELPER.parse_args([
+        "jev-skills.py", "/skills", "--selected", "ia-python-services", "--", "ia-writing",
+    ])
+    assert selected == ["ia-python-services"]
+    assert names == ["ia-writing"]
+
+
+def test_helper_need_gate_and_single_winner(tmp_path, monkeypatch):
+    env, log = fake_jev(tmp_path, {
+        "__need__": {"type": "noul", "noul": 0.97},
+        "ia-debugging": {"type": "noul", "noul": 0.96},
+        "ia-writing": {"type": "noul", "noul": 0.95},
+    })
+    monkeypatch.setenv("WHETSTONE_JEV_COMMAND", env["WHETSTONE_JEV_COMMAND"])
+    assert HELPER.suggest(
+        PLUGIN / "skills", ["ia-debugging", "ia-writing"], "Find the cause.",
+        selected=["ia-python-services"],
+    ) == ["ia-debugging"]
+    request = json.loads(log.read_text())
+    assert request["state"]["already_selected"] == ["ia-python-services"]
+    env, _ = fake_jev(tmp_path, {"ia-writing": {"type": "noul", "noul": 0.93}})
+    monkeypatch.setenv("WHETSTONE_JEV_COMMAND", env["WHETSTONE_JEV_COMMAND"])
+    assert HELPER.suggest(
+        PLUGIN / "skills", ["ia-writing"], "Implement a Python CLI service",
+        selected=["ia-python-services"],
+    ) == []
+
+
+def test_helper_waits_longer_than_jev_deadline(tmp_path, monkeypatch):
+    env, _ = fake_jev(tmp_path, {})
+    monkeypatch.setenv("WHETSTONE_JEV_COMMAND", env["WHETSTONE_JEV_COMMAND"])
+    seen = {}
+    real = HELPER.subprocess.run
+
+    def wrapped(*args, **kwargs):
+        seen["timeout"] = kwargs.get("timeout")
+        seen["argv"] = args[0]
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(HELPER.subprocess, "run", wrapped)
+    HELPER.suggest(PLUGIN / "skills", ["ia-debugging"], "Find the cause.")
+    assert seen["timeout"] == 3
+    assert seen["argv"][1:4] == ["judge", "--timeout", "2"]
