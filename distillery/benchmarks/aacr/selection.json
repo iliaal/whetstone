@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "selection_policy": "PR-grouped diagnostic holdout; scoped file reviews, not exhaustive ground truth. Source-checked claims, no reviewer evaluation or target execution during curation. Original comment indices are zero-based within each polarity's PR record.",
+  "selection_policy": "PR-grouped development diagnostics; retired from confirmatory holdout use on 2026-09-17 because observed review outcomes informed changed-symbol context policy. Scoped file reviews, not exhaustive ground truth. Source-checked claims, no reviewer evaluation or target execution during initial curation. Original comment indices are zero-based within each polarity's PR record.",
   "source": {
     "repository": "https://github.com/alibaba/aacr-bench",
     "revision": "68a569759289a83654a59d06db2a72910edf0a4a",

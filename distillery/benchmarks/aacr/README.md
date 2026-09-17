@@ -1,6 +1,6 @@
-# AACR review holdout preparation
+# AACR review case preparation
 
-Prepare source-checked review cases from [AACR-Bench](https://github.com/alibaba/aacr-bench) without running a model. The selection is a small diagnostic holdout for future Whetstone, CodeSage, or independent-review experiments. It is not an exhaustive reference inventory or a reproduction of AACR's published scores.
+Prepare source-checked review cases from [AACR-Bench](https://github.com/alibaba/aacr-bench) without running a model. The initial five cases are development diagnostics for Whetstone, CodeSage, and independent-review experiments. They were retired from confirmatory holdout use on 2026-09-17 because their observed results informed the changed-symbol context policy. They are not an exhaustive reference inventory or a reproduction of AACR's published scores.
 
 The initial selection contains five PRs, five positive defect claims, and five rejected-claim negatives:
 
@@ -13,6 +13,8 @@ The initial selection contains five PRs, five positive defect claims, and five r
 | ComfyUI #6542 | Python | DirectML causal mask skips initialization | 0 |
 
 The [2026-09-17 frozen-context experiment](./context-experiment-2026-09-17.md) records 20 real Sol/high reviews through native discovery and OCR delegated criteria. The tested context recipe added no verified discoveries; it remains an experimental input, not a production default.
+
+The subsequent [changed-symbol experiment](./symbol-context-experiment-2026-09-17.md) used five different cases and 20 more Sol/high reviews. In those runs, diff-only versus context yielded six versus four supported Flow B-style discoveries and three versus five OCR discoveries, with 11.9–13.1% more input tokens for context. These exploratory results leave the production default unchanged.
 
 The positive annotations span one diff-level, two file-level, and two repository-level cases. No PHP positive passed the source-evidence threshold. The manifest records rejected candidates and leaves Appwrite's domain-guard change unscored until its interaction with DNS and duplicate-rule checks is established.
 
@@ -45,7 +47,7 @@ Treat negative labels as **specific rejected review claims**, not clean PRs. A r
 
 Preserve upstream `Diff Level`, `File Level`, and `Repo Level` annotations as provenance. They are not measured minimum-context requirements. Run a paired diff-only versus supplied-context comparison before attributing a result to retrieval.
 
-Reserve every selected PR and its revisions from prompt tuning and development examples. If a case informs a skill change, move that whole PR out of the holdout before a confirmatory run. These are public cases; model-training exposure is unknown. Curation has inspected their labels, but no evaluated reviewer has been run as part of preparation.
+Reserve newly selected evaluation PRs and their revisions from prompt tuning and development examples. If a case informs a policy or skill change, move that whole PR out of the holdout before a confirmatory run. The five initial PRs above have now been retired to development, including all their revisions. These are public cases; model-training exposure is unknown. The preparation utility itself does not run evaluated reviewers.
 
 ## Why the source is pinned
 
@@ -57,7 +59,7 @@ AACR's `source_commit` is not necessarily an ancestor of `target_commit`. The se
 
 ## Decision record
 
-**VERIFIED ANSWER:** use the curated subset as a diagnostic holdout, with original labels retained as provenance and each selected claim checked independently against source.
+**VERIFIED ANSWER:** use the initial curated subset as development diagnostics, with original labels retained as provenance and each selected claim checked independently against source. Select independent cases for subsequent evaluation.
 
 The strongest counterargument is label quality: some upstream positives describe already-fixed code or unchanged behavior, and incomplete annotations cannot establish an exhaustive truth set. Exclude those claims; do not repair the apparent score by accepting them. A private, independently adjudicated full-review cohort is the next-best alternative and is preferable for production-default decisions.
 
@@ -71,14 +73,33 @@ The current five-case seed lacks an independently clean review and mostly contai
 
 If context-sensitive misses justify an experiment, compare the existing blind diff review with a frozen context bundle selected independently of the first reviewer's findings. Preserve dual-review's isolated Flow B process, snapshot binding, redaction, verification, and publication gates. Direct OCR substitution is not implied by this dataset.
 
-## Check the preparation utility
+## Build experimental symbol context
+
+Use [symbol_context.py](./symbol_context.py) to select bounded source excerpts around changed calls and symbols. This standalone prototype reads the CodeSage 0.33.1 structural index; it does not change CodeSage or dual-review defaults and makes no model requests.
+
+Create a checkout at each case's exact head under `sources/<case-id>`, with its base commit available. Run `codesage init` and `codesage index --full --no-semantic` in each checkout, then:
+
+```bash
+python3 distillery/benchmarks/aacr/symbol_context.py \
+  --inputs distillery/.eval-data/aacr-prepared/reviewer/inputs.jsonl \
+  --reviewer-root distillery/.eval-data/aacr-prepared/reviewer \
+  --sources-root /path/to/sources \
+  --output /path/to/new-contexts.jsonl \
+  --budget 7000
+```
+
+The output must not exist. Each JSONL row contains a UTF-8 context packet, selected spans with source hashes, and unresolved or omitted candidates. The selector verifies prepared base/head bytes, index freshness, and emitted source against Git. It preserves whole numbered spans within the byte limit and prioritizes changed-line calls before enclosing symbols and their other calls, balancing files within each priority. Source rows use LF boundaries; ambiguous bare-CR files are refused.
+
+Call definitions are **name-based candidates**, not proven runtime targets. The prototype follows local import/include paths through at most three edges, with no global-name fallback; it withholds ambiguous matches and untyped receivers. Dependency reachability does not establish an import binding, and dynamic dispatch, aliases, package resolution, large symbols, and parser gaps can leave useful contracts unresolved. Inspect the recorded omissions before interpreting an empty or partial packet as adequate context. Keep labels and grading artifacts separate from reviewers.
+
+## Check the preparation and context utilities
 
 ```bash
 python3 -m unittest discover -s distillery/benchmarks/aacr -p 'test_*.py'
-ruff check distillery/benchmarks/aacr/prepare.py distillery/benchmarks/aacr/test_prepare.py
+ruff check distillery/benchmarks/aacr/*.py
 ```
 
-The unit tests use synthetic source records and a mocked download boundary. They check checksum refusal, label separation, merge-base selection, missing files, dependency-version separation, and offline reproducibility. A successful real-source preparation verifies availability and packaging; it does not execute the selected defects or establish review quality.
+The preparation tests use synthetic source records and a mocked download boundary. They check checksum refusal, label separation, merge-base selection, missing files, dependency-version separation, and offline reproducibility. Selector tests use temporary Git repositories and structural-index fixtures to check candidate resolution, ambiguity, budget ordering, call-site identity, line boundaries, and source hashes. A successful real-source preparation verifies availability and packaging; it does not execute the selected defects or establish review quality.
 
 ## Attribution
 
