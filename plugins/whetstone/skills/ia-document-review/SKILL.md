@@ -21,7 +21,7 @@ Improve brainstorm or plan documents through structured review.
 
 **If a document path is provided:** Read it, then proceed to Step 2.
 
-**If no document is specified:** Ask which document to review, or look for the most recent brainstorm/plan in `docs/brainstorms/` or `docs/plans/`.
+**If no document is specified:** Ask which document to review (via `AskUserQuestion` in Claude Code, `request_user_input` in Codex, or numbered options in chat as the fallback), or look for the most recent brainstorm/plan in `docs/brainstorms/` or `docs/plans/`.
 
 
 ## Step 2: Assess
@@ -79,7 +79,7 @@ Among everything found in Steps 2-4, does one issue stand out? If something woul
 Present findings, then:
 
 1. **Apply authorized edits** within the requested scope, including minor wording and formatting fixes. For review-only requests, report these as suggestions.
-2. **Ask approval** for changes outside the existing authorization (restructuring, removing sections, changing meaning). Use the active harness's supported approval interface, or ask directly in chat. Render the finding per the contract below before asking so the decision is concrete.
+2. **Ask approval** for changes outside the existing authorization (restructuring, removing sections, changing meaning). Ask via `AskUserQuestion` (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or `request_user_input` (Codex); fall back to numbered options in chat. Render the finding per the contract below before asking so the decision is concrete.
 3. **Update** the document inline only for authorized changes; otherwise return the findings.
 
 ### Rendering a finding for decision
@@ -117,7 +117,7 @@ Simplification is purposeful removal of unnecessary complexity, not shortening f
 - Open questions that need resolution
 
 
-## Step 8: Offer Next Action
+## Step 7: Offer Next Action
 
 After changes are complete, ask:
 

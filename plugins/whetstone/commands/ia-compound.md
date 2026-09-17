@@ -146,7 +146,7 @@ Categories are auto-detected from the problem type; the canonical enum and direc
 
 ## Common Mistakes to Avoid
 
-| ❌ Wrong | ✅ Correct |
+| Wrong | Correct |
 |----------|-----------|
 | Subagents write files like `context-analysis.md`, `solution-draft.md` | Subagents return text data; orchestrator writes one final file |
 | Research and assembly run in parallel | Research completes → then assembly runs |

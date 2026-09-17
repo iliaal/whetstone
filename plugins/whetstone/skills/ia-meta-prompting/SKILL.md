@@ -44,10 +44,10 @@ uncertainty, followed by a clearly separated final answer.
 **`/edge`** | `/break` -- 5+ inputs/scenarios that break the approach. Code: null/empty, concurrency, overflow, encoding, auth bypass. Strategies: market conditions, timing, dependencies.
 *Auto-triggers on: security, validation, parsing contexts.*
 
-**`/verify-think`** | `/check` -- Three phases: (1) **Answer** direct response, (2) **Challenge** 3 ways it could be wrong, (3) **Verify** investigate each, update if needed. Mark final as `VERIFIED ANSWER:` or `REVISED ANSWER:`. Distinct from the `/ia-verify` slash command, which runs the full pre-PR verification pipeline.
+**`/verify-think`** | `/check` -- Three phases: (1) **Answer** direct response, (2) **Challenge** 3 ways it could be wrong, (3) **Verify** investigate each, update if needed. Mark final as `VERIFIED ANSWER:` or `REVISED ANSWER:`. Distinct from the `/ia-verify` slash command (Claude Code), which runs the full pre-PR verification pipeline.
 *Auto-triggers on: architecture decisions, critical choices, "Am I right?"*
 
-**`/flip`** | `/alt` -- Identify the approach you'd take by default and state it. Then propose an alternative that uses a different mechanism (different data structure, different layer, different abstraction). State the conditions under which the alternative beats the default. Override: `/flip 3` for top 3 alternatives.
+**`/flip`** | `/alt` -- Identify the default approach and state it. Then propose an alternative that uses a different mechanism (different data structure, different layer, different abstraction). State the conditions under which the alternative beats the default. Override: `/flip 3` for top 3 alternatives.
 *Auto-triggers on: architecture decisions where the "easy" answer may break at scale.*
 
 **`/assumptions`** | `/presume` -- Before answering, list every implicit assumption in the question/task. Then answer with assumptions explicit. The assumption list is often more valuable than the answer.

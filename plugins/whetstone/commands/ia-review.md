@@ -162,7 +162,7 @@ For large PRs (15+ findings), launch parallel sub-agents grouped by severity (on
 After creating todo files, return the summary with the exact `current_review_todos` paths. In explicit pipeline mode, omit the interactive Next Steps below and return to the parent; do not execute triage or optional follow-on stages.
 
 ````markdown
-## ✅ Code Review Complete
+## Code Review Complete
 
 **Review Target:** PR #XXXX - [PR Title] **Branch:** [branch-name]
 

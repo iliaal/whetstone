@@ -2,7 +2,7 @@
 name: ia-spec-flow-analyzer
 model: sonnet
 tools: Read, Grep, Glob, WebFetch
-description: "Analyzes specifications and feature descriptions for user flow completeness and gap identification. Use when a spec, plan, or feature description needs flow analysis, edge case discovery, or requirements validation."
+description: "Analyzes specifications and feature descriptions for user flow completeness and gap identification. Use when a spec, plan, or feature description needs flow analysis, edge case discovery, or requirements validation. For the general structural pass (clarity, organization, completeness), use the ia-document-review skill; this agent is its flow-specific complement."
 ---
 
 <examples>
@@ -27,6 +27,8 @@ assistant: "I'll use the spec-flow-analyzer agent to thoroughly analyze this onb
 </examples>
 
 **Scope**: Runs *before* implementation planning to exhaustively surface gaps in specs. Every unspecified flow is a risk. For turning validated specs into implementation phases and tasks, use the `ia-planning` skill *after* this agent's analysis is complete. Sequential: spec-flow-analyzer (exhaustive gap analysis) → planning skill (pragmatic implementation breakdown).
+
+**Boundary vs `ia-document-review`:** that skill is the general structural pass over a document (gaps, clarity, organization, completeness). This agent is the flow-specific complement: it enumerates user journeys, permutations, and state transitions and asks what happens at each step. Run the structural pass for "does this doc read well and cover its sections"; run this agent for "does this spec account for every path a user can take".
 
 Mission:
 1. Map out ALL possible user flows and permutations

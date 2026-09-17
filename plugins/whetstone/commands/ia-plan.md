@@ -180,13 +180,13 @@ docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md
 ```
 
 Examples:
-- ✅ `docs/plans/2026-01-15-feat-user-authentication-flow-plan.md`
-- ✅ `docs/plans/2026-02-03-fix-checkout-race-condition-plan.md`
-- ✅ `docs/plans/2026-03-10-refactor-api-client-extraction-plan.md`
-- ❌ `docs/plans/2026-01-15-feat-thing-plan.md` (not descriptive - what "thing"?)
-- ❌ `docs/plans/2026-01-15-feat-new-feature-plan.md` (too vague - what feature?)
-- ❌ `docs/plans/2026-01-15-feat: user auth-plan.md` (invalid characters - colon and space)
-- ❌ `docs/plans/feat-user-auth-plan.md` (missing date prefix)
+- Good: `docs/plans/2026-01-15-feat-user-authentication-flow-plan.md`
+- Good: `docs/plans/2026-02-03-fix-checkout-race-condition-plan.md`
+- Good: `docs/plans/2026-03-10-refactor-api-client-extraction-plan.md`
+- Bad: `docs/plans/2026-01-15-feat-thing-plan.md` (not descriptive - what "thing"?)
+- Bad: `docs/plans/2026-01-15-feat-new-feature-plan.md` (too vague - what feature?)
+- Bad: `docs/plans/2026-01-15-feat: user auth-plan.md` (invalid characters - colon and space)
+- Bad: `docs/plans/feat-user-auth-plan.md` (missing date prefix)
 
 ## Post-Generation Options
 

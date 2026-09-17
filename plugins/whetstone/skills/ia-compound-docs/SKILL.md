@@ -30,7 +30,7 @@ Follow the 7-step documentation capture process. For full details, see [document
 
 ## Decision Menu
 
-After successful documentation, present and WAIT for user response:
+After successful documentation, present the options below via `AskUserQuestion` (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or `request_user_input` (Codex), falling back to the numbered menu in chat, and WAIT for the user's response:
 
 ```
 Solution documented

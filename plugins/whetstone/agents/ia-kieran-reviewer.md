@@ -76,3 +76,7 @@ Extract when you see: complex business rules, multiple concerns together, extern
 6. Always explain WHY something doesn't meet the bar
 
 For the broader review workflow (scope resolution, security patterns, spec compliance), see the `ia-code-review` skill.
+
+## Report format
+
+Findings follow the `ia-code-review` skill's reporting contract rather than a separate template: the four-tier severity ladder (**Critical** / **Important** / **Medium** / **Minor**), sequential `CR-XXX` identifiers, a measured `file:line` citation with quoted source per finding, and a closing verdict of **Ready to merge**, **Ready with fixes**, or **Not ready**. Optional notes carry the **Nit:** / **Consider:** / **FYI:** prefixes. When the invoking task supplies its own output format, that contract takes precedence.

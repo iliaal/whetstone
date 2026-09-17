@@ -2,7 +2,7 @@
 name: ia-database-guardian
 model: sonnet
 tools: Read, Grep, Glob, Bash
-description: "Reviews database schema, constraints, and migration code for safety. Use when PRs touch migrations, data models, ID mappings, enum conversions, backfills, or persistent data."
+description: "Reviews database schema, constraints, and migration code for safety. Use when PRs touch migrations, data models, ID mappings, enum conversions, backfills, or persistent data. Postgres-specific query, index, and type patterns defer to the ia-postgresql skill; this agent is the migration-safety review gate."
 ---
 
 <examples>
@@ -27,6 +27,8 @@ assistant: "Let me have the database-guardian agent review this data transfer se
 </examples>
 
 Protect data integrity, ensure migration safety, validate migration code against production reality, and check that the schema supports the data-privacy obligations it is subject to (GDPR, CCPA) -- classification, retention, and a deletion and export path that reaches every copy. Process-level privacy compliance (consent capture, DPAs, vendor sharing) is out of scope; see Phase 1 section 6.
+
+**Boundary vs `ia-postgresql`:** Postgres-specific query shape, index selection, and type choices (JSONB, arrays, enums, range types) defer to the `ia-postgresql` skill. This agent is the migration-safety review gate for PRs: reversibility, locking, backfill correctness, ID-mapping fidelity, and constraint integrity, independent of engine.
 
 ---
 

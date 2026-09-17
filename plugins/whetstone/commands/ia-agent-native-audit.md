@@ -88,21 +88,21 @@ After all agents complete, compile a summary with:
 
 | Core Principle | Score | Percentage | Status |
 |----------------|-------|------------|--------|
-| Action Parity | X/Y | Z% | ✅/⚠️/❌ |
-| Tools as Primitives | X/Y | Z% | ✅/⚠️/❌ |
-| Context Injection | X/Y | Z% | ✅/⚠️/❌ |
-| Shared Workspace | X/Y | Z% | ✅/⚠️/❌ |
-| CRUD Completeness | X/Y | Z% | ✅/⚠️/❌ |
-| UI Integration | X/Y | Z% | ✅/⚠️/❌ |
-| Capability Discovery | X/Y | Z% | ✅/⚠️/❌ |
-| Prompt-Native Features | X/Y | Z% | ✅/⚠️/❌ |
+| Action Parity | X/Y | Z% | Excellent/Partial/Needs Work |
+| Tools as Primitives | X/Y | Z% | Excellent/Partial/Needs Work |
+| Context Injection | X/Y | Z% | Excellent/Partial/Needs Work |
+| Shared Workspace | X/Y | Z% | Excellent/Partial/Needs Work |
+| CRUD Completeness | X/Y | Z% | Excellent/Partial/Needs Work |
+| UI Integration | X/Y | Z% | Excellent/Partial/Needs Work |
+| Capability Discovery | X/Y | Z% | Excellent/Partial/Needs Work |
+| Prompt-Native Features | X/Y | Z% | Excellent/Partial/Needs Work |
 
 **Overall Agent-Native Score: X%**
 
 ### Status Legend
-- ✅ Excellent (80%+)
-- ⚠️ Partial (50-79%)
-- ❌ Needs Work (<50%)
+- Excellent: 80%+
+- Partial: 50-79%
+- Needs Work: <50%
 
 ### Top 10 Recommendations by Impact
 

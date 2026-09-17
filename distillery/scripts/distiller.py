@@ -5215,7 +5215,7 @@ def _injection_purpose(path, fm):
 def _iter_corpus_files():
     """Markdown files that ship into a downstream agent's context."""
     files = []
-    for sub in ("skills", "agents", "commands", "shared-references"):
+    for sub in ("skills", "agents", "commands", "shared-references", "evals"):
         root = PLUGIN_DIR / sub
         if root.exists():
             files.extend(sorted(root.rglob("*.md")))

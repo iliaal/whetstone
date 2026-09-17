@@ -32,9 +32,9 @@ Changing an interface, exported name, persisted format, or path reaches past the
 
 ## Process
 
-1. **Read first** -- understand the full file and its dependents before changing anything. Apply Chesterton's Fence: if you see code that looks unnecessary but don't understand why it's there, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
+1. **Read first** -- understand the full file and its dependents before changing anything. Apply Chesterton's Fence: when code looks unnecessary but its reason is unclear, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
 2. **Identify invariants** -- what must stay the same? Public API, return types, side effects, error behavior
-3. **Identify targets** -- find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> types (see Smell -> Fix table)
+3. **Identify targets** -- find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> data shaping -> types (see Smell -> Fix table)
 4. **Apply in order** -- control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
 5. **Verify** -- confirm no behavior change: tests pass, types check, imports resolve
 6. **Pre-submit scope audit** -- walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. Drive-by edits belong in a separate change, not the current patch. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `ia-verification-before-completion`'s Scope Confirmation gate.

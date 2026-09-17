@@ -27,7 +27,6 @@ paths: "**/*.py,**/pyproject.toml,**/ruff.toml,**/uv.lock"
 - No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
 - Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - Verify: see Verify section below -- pass all checks with zero warnings before declaring done
-- Coverage target: 80%+ (`uv run pytest --cov --cov-report=html`)
 
 
 ## Verify
@@ -35,7 +34,7 @@ paths: "**/*.py,**/pyproject.toml,**/ruff.toml,**/uv.lock"
 - `uv run pytest` passes with zero failures
 - `uv run ruff check .` passes with zero warnings
 - `uv run ty check .` passes with zero errors
-- Coverage target: 80%+ (`uv run pytest --cov`)
+- Coverage target: 80%+ (`uv run pytest --cov`; add `--cov-report=html` for a browsable report)
 
 ## Task-specific references
 

@@ -211,7 +211,7 @@ Examples:
 ### Step 11: Confirm
 
 ```
-✅ Compound Engineering setup complete
+Compound Engineering setup complete
 
    Tools:        {n}/{total} installed
    Stack:        {type}

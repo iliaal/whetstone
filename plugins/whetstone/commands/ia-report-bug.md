@@ -127,7 +127,7 @@ After the issue is created:
 ## Output Format
 
 ```
-✅ Bug report submitted successfully!
+Bug report submitted successfully.
 
 Issue: https://github.com/iliaal/whetstone/issues/[NUMBER]
 Title: [whetstone] Bug: [description]
