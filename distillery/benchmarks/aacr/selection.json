@@ -1,0 +1,617 @@
+{
+  "schema_version": 1,
+  "selection_policy": "PR-grouped diagnostic holdout; scoped file reviews, not exhaustive ground truth. Source-checked claims, no reviewer evaluation or target execution during curation. Original comment indices are zero-based within each polarity's PR record.",
+  "source": {
+    "repository": "https://github.com/alibaba/aacr-bench",
+    "revision": "68a569759289a83654a59d06db2a72910edf0a4a",
+    "files": {
+      "positive_samples.json": {
+        "url": "https://raw.githubusercontent.com/alibaba/aacr-bench/68a569759289a83654a59d06db2a72910edf0a4a/dataset/positive_samples.json",
+        "sha256": "7a4a0e7046ffd1b8f41f951480bbb618d23d38d9f67364f38aabcda121a50be3",
+        "bytes": 1101548,
+        "pr_records": 196,
+        "comments": 1506
+      },
+      "negative_samples.json": {
+        "url": "https://raw.githubusercontent.com/alibaba/aacr-bench/68a569759289a83654a59d06db2a72910edf0a4a/dataset/negative_samples.json",
+        "sha256": "3859efe063c0e59852113c64feb81c18b1a1fcd2ce9d92d08a48e9d8d9879ebd",
+        "bytes": 495610,
+        "pr_records": 155,
+        "comments": 639
+      }
+    },
+    "license": {
+      "identifier": "Apache-2.0",
+      "url": "https://raw.githubusercontent.com/alibaba/aacr-bench/68a569759289a83654a59d06db2a72910edf0a4a/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  },
+  "hugging_face": {
+    "repository": "https://huggingface.co/datasets/Alibaba-Aone/aacr-bench",
+    "revision": "47be1d6df1e7faf222cf531587772d92f79fe6b2",
+    "url": "https://huggingface.co/datasets/Alibaba-Aone/aacr-bench/resolve/47be1d6df1e7faf222cf531587772d92f79fe6b2/dataset.json",
+    "sha256": "0804505f0a474765ce2840c832cfeaa6c4f0250dd6ccb169fe73c6758b245a86",
+    "bytes": 2101497,
+    "positive_comments": 1505,
+    "negative_comments": 640,
+    "card_url": "https://huggingface.co/datasets/Alibaba-Aone/aacr-bench/blob/47be1d6df1e7faf222cf531587772d92f79fe6b2/README.md",
+    "relationship": "After flattening GitHub PR records and adding label 1 for positive and 0 for negative, the old GitHub datasets exactly equal the HF dataset as row multisets. The current pinned GitHub datasets differ only in the documented DBeaver label correction."
+  },
+  "drift": {
+    "metadata_url": "https://github.com/alibaba/aacr-bench/blob/68a569759289a83654a59d06db2a72910edf0a4a/evaluation/benchmark/AACR-Bench/positive_samples.meta.json",
+    "cause": "Converter metadata combines a mutable main URL with the positive dataset checksum from an older revision.",
+    "expected_sha256": "d8683cb240249bc4e0aff6428802bdffa7b7573ace600552cab1cd0cb7e905c9",
+    "expected_hash_matching_revision": "ab8af8d5c74e2a4d1945d247ea4bbc49f93eb33f",
+    "history": [
+      {
+        "revision": "ab8af8d5c74e2a4d1945d247ea4bbc49f93eb33f",
+        "positive_sha256": "d8683cb240249bc4e0aff6428802bdffa7b7573ace600552cab1cd0cb7e905c9",
+        "meaning": "Matches the converter's expected positive checksum and, together with its negative dataset, the HF flattened dataset."
+      },
+      {
+        "revision": "665a815330b04342778f23f3d85c6a6021a1bd0f",
+        "positive_sha256": "c6e1d24320634ec07a6b62403c2d998ff8646d3f343275e7046639809391940c",
+        "meaning": "Adds a positive DBeaver contract finding."
+      },
+      {
+        "revision": "dae864774126df619243090cbae38d7db07caa64",
+        "date": "2026-08-24T07:27:21Z",
+        "url": "https://github.com/alibaba/aacr-bench/commit/dae864774126df619243090cbae38d7db07caa64",
+        "positive_sha256": "7a4a0e7046ffd1b8f41f951480bbb618d23d38d9f67364f38aabcda121a50be3",
+        "meaning": "Moves the original DBeaver negative comment into positives, replacing the newly added wording. These data bytes persist at the selected source revision."
+      }
+    ],
+    "label_correction": {
+      "pr_url": "https://github.com/dbeaver/dbeaver/pull/37564",
+      "path": "plugins/org.jkiss.dbeaver.model.rcp/src/org/jkiss/dbeaver/model/navigator/DBNResource.java",
+      "from_line": 428,
+      "to_line": 428,
+      "side": "right",
+      "topic": "Throwing RuntimeException on CoreException in the InputStream adapter violates the IAdaptable contract.",
+      "hf_label": 0,
+      "pinned_github_label": 1
+    },
+    "policy": "Use pinned GitHub labels and exact byte checksums; retain the correction record. Do not merge stale HF labels or disable integrity checking."
+  },
+  "base_semantics": {
+    "source_commit": "Upstream converter maps this to base_commit.",
+    "target_commit": "Upstream converter maps this to head_commit, the reviewed code state.",
+    "converter_url": "https://github.com/alibaba/aacr-bench/blob/68a569759289a83654a59d06db2a72910edf0a4a/evaluation/converters/aacr_bench.py",
+    "schema_documentation_url": "https://github.com/alibaba/aacr-bench/blob/68a569759289a83654a59d06db2a72910edf0a4a/evaluation/README.md",
+    "caveat": "source_commit is not necessarily an ancestor of target_commit. Preserve source/head and verify and pin the merge base for each selected PR diff rather than blindly subtracting source from head.",
+    "verified_examples": [
+      {
+        "pr_url": "https://github.com/nextcloud/server/pull/52846",
+        "source_commit": "4aa4972550bec08faf477113f223475f7fb3e5d2",
+        "target_commit": "51b5ea92ccb5f4683b0f52840a01031e1ed0baa3",
+        "status": "diverged",
+        "merge_base": "c3ddd1da46c9f75071f61d3cf7381570297a74d6"
+      },
+      {
+        "pr_url": "https://github.com/CherryHQ/cherry-studio/pull/5540",
+        "source_commit": "f258f5b2cb4a4cf9012e106837aba409b383e367",
+        "target_commit": "83a25941859179b635105c9b4fd79d5542e3701e",
+        "status": "diverged",
+        "merge_base": "ac0fe75078940c44159e83713558b899db8639b3"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "valkey-1889",
+      "pr_url": "https://github.com/valkey-io/valkey/pull/1889",
+      "language": "C",
+      "source_commit": "ea2e48a807e1d4a1a5a684a2a699eda1934a0c6f",
+      "target_commit": "36f37c0bafa72c091a9a3725b9a026a056130892",
+      "merge_base_commit": "06990c2e6360c90e5e0b1b5aa4e7708b13955851",
+      "compare_status": "diverged",
+      "positive_comment_indices": [
+        1
+      ],
+      "negative_comment_indices": [],
+      "context_paths": [
+        "src/networking.c"
+      ],
+      "claims": [
+        {
+          "polarity": "positive",
+          "index": 1,
+          "reason": "For a protocol error with at least 128 unconsumed query bytes, each parenthesized ternary branch is a C comma expression, not a list of snprintf arguments. The redaction branch yields a byte count in the format-pointer position; the other yields a pointer into user data as the format string with no matching variadic arguments. This introduces invalid format-pointer/format handling. Treat the crash/format misuse as the concrete defect; do not require literal sensitive data leakage to recognize it.",
+          "evidence": [
+            {
+              "path": "src/networking.c",
+              "commit": "36f37c0bafa72c091a9a3725b9a026a056130892",
+              "lines": [
+                2759,
+                2776
+              ],
+              "observation": "PROTO_DUMP_LEN is 128; the long-buffer branch passes one ternary expression as snprintf's third argument, with comma expressions inside both arms."
+            },
+            {
+              "path": "src/networking.c",
+              "commit": "06990c2e6360c90e5e0b1b5aa4e7708b13955851",
+              "lines": [
+                2767,
+                2772
+              ],
+              "observation": "The merge-base long-buffer branch passes a literal format followed by five proper arguments; the malformed argument structure is introduced by the target."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sdl-12718",
+      "pr_url": "https://github.com/libsdl-org/SDL/pull/12718",
+      "language": "C",
+      "source_commit": "ab34ea5a2684766e510de1daf8ae44c41b6af704",
+      "target_commit": "96dfef35c4b0b89f2f8d9c2ecc4f5e3a25d3e7a0",
+      "merge_base_commit": "ab34ea5a2684766e510de1daf8ae44c41b6af704",
+      "compare_status": "ahead",
+      "positive_comment_indices": [
+        1
+      ],
+      "negative_comment_indices": [
+        0
+      ],
+      "context_paths": [
+        "src/gpu/vulkan/SDL_gpu_vulkan.c"
+      ],
+      "claims": [
+        {
+          "polarity": "positive",
+          "index": 1,
+          "reason": "When cycling an in-use texture requires a new texture and Vulkan image creation fails, CreateTexture can return NULL. The newly inserted transition call dereferences that pointer before CycleActiveTexture's existing NULL guard. This is an introduced failure-path crash.",
+          "evidence": [
+            {
+              "path": "src/gpu/vulkan/SDL_gpu_vulkan.c",
+              "commit": "96dfef35c4b0b89f2f8d9c2ecc4f5e3a25d3e7a0",
+              "lines": [
+                5875,
+                5889
+              ],
+              "observation": "CreateTexture is followed by TextureTransitionToDefaultUsage before the NULL guard."
+            },
+            {
+              "path": "src/gpu/vulkan/SDL_gpu_vulkan.c",
+              "commit": "96dfef35c4b0b89f2f8d9c2ecc4f5e3a25d3e7a0",
+              "lines": [
+                2828,
+                2841
+              ],
+              "observation": "TextureTransitionToDefaultUsage immediately reads texture->subresourceCount."
+            },
+            {
+              "path": "src/gpu/vulkan/SDL_gpu_vulkan.c",
+              "commit": "96dfef35c4b0b89f2f8d9c2ecc4f5e3a25d3e7a0",
+              "lines": [
+                5639,
+                5647
+              ],
+              "observation": "A failed vkCreateImage destroys the texture and invokes the error macro with NULL as its return value."
+            },
+            {
+              "path": "src/gpu/vulkan/SDL_gpu_vulkan.c",
+              "commit": "ab34ea5a2684766e510de1daf8ae44c41b6af704",
+              "lines": [
+                5870,
+                5877
+              ],
+              "observation": "The previous implementation checked the result immediately, before using it."
+            }
+          ]
+        },
+        {
+          "polarity": "negative",
+          "index": 0,
+          "reason": "The rejected comment describes the old initialization and proposes exactly what the target already does. The target initializes presenting from presentDataCount > 0; there is no unconditional-false initialization at the cited right-side line.",
+          "evidence": [
+            {
+              "path": "src/gpu/vulkan/SDL_gpu_vulkan.c",
+              "commit": "96dfef35c4b0b89f2f8d9c2ecc4f5e3a25d3e7a0",
+              "lines": [
+                10424,
+                10424
+              ],
+              "observation": "bool presenting = vulkanCommandBuffer->presentDataCount > 0;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "n8n-20210",
+      "pr_url": "https://github.com/n8n-io/n8n/pull/20210",
+      "language": "TypeScript",
+      "source_commit": "291a39c87eb2bc228816d02c55a1f6857822006f",
+      "target_commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+      "merge_base_commit": "c3fff03945869778635d270085122fb01953d3b2",
+      "compare_status": "diverged",
+      "positive_comment_indices": [
+        18
+      ],
+      "negative_comment_indices": [
+        2,
+        6
+      ],
+      "context_paths": [
+        "packages/testing/playwright/tests/ui/user-service.spec.ts",
+        "packages/testing/playwright/services/user-api-helper.ts",
+        "packages/testing/playwright/pages/SettingsUsersPage.ts",
+        "packages/testing/playwright/tests/ui/39-projects.spec.ts",
+        "packages/testing/playwright/package.json"
+      ],
+      "external_context": [
+        {
+          "repository": "https://github.com/microsoft/playwright",
+          "commit": "00ce6a8b72f3845b8b45a3af684391d2eb8a5cef",
+          "version": "v1.54.2",
+          "paths": [
+            "docs/src/api/class-locatorassertions.md",
+            "docs/src/api/params.md"
+          ],
+          "reason": "Matches the exact @playwright/test 1.54.2 dependency in the target's package.json; verifies negative claims against the applicable API version."
+        }
+      ],
+      "claims": [
+        {
+          "polarity": "positive",
+          "index": 18,
+          "reason": "The new default-user test calls create() without a lastName override, then requires exact equality to User. The new helper always appends an eight-character suffix and returns that local value unchanged, so every successful creation fails this assertion. Both files are added relative to the merge base, as the comparison API confirms.",
+          "evidence": [
+            {
+              "path": "packages/testing/playwright/tests/ui/user-service.spec.ts",
+              "commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+              "lines": [
+                4,
+                10
+              ],
+              "observation": "create() receives no options; lastName is checked with toBe('User')."
+            },
+            {
+              "path": "packages/testing/playwright/services/user-api-helper.ts",
+              "commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+              "lines": [
+                5,
+                5
+              ],
+              "observation": "The nanoid generator produces eight characters."
+            },
+            {
+              "path": "packages/testing/playwright/services/user-api-helper.ts",
+              "commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+              "lines": [
+                26,
+                33
+              ],
+              "observation": "The default lastName is User followed by nanoid()."
+            },
+            {
+              "path": "packages/testing/playwright/services/user-api-helper.ts",
+              "commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+              "lines": [
+                62,
+                62
+              ],
+              "observation": "The helper returns id plus the unchanged local user object."
+            }
+          ]
+        },
+        {
+          "polarity": "negative",
+          "index": 2,
+          "reason": "The claim assumes getByRole's name filter is exact by default. In the project's pinned Playwright 1.54.2, name uses case-insensitive substring matching unless exact is supplied. Extra row text alone therefore does not establish the claimed matching failure.",
+          "evidence": [
+            {
+              "path": "packages/testing/playwright/pages/SettingsUsersPage.ts",
+              "commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+              "lines": [
+                10,
+                12
+              ],
+              "observation": "The locator supplies name: email and does not enable exact."
+            },
+            {
+              "repository": "https://github.com/microsoft/playwright",
+              "path": "docs/src/api/params.md",
+              "commit": "00ce6a8b72f3845b8b45a3af684391d2eb8a5cef",
+              "lines": [
+                1348,
+                1360
+              ],
+              "observation": "The applicable API defines substring matching by default and exact as false by default."
+            }
+          ]
+        },
+        {
+          "polarity": "negative",
+          "index": 6,
+          "reason": "The claim incorrectly says toBeHidden requires a DOM node. The project's pinned Playwright explicitly accepts both an absent node and a non-visible node. Conditional removal is valid for these assertions.",
+          "evidence": [
+            {
+              "path": "packages/testing/playwright/tests/ui/39-projects.spec.ts",
+              "commit": "ebe680fbcacd9210aa219ab01d98012ac1d6faae",
+              "lines": [
+                118,
+                120
+              ],
+              "observation": "The target checks that the initial save/cancel buttons are hidden using toBeHidden."
+            },
+            {
+              "repository": "https://github.com/microsoft/playwright",
+              "path": "docs/src/api/class-locatorassertions.md",
+              "commit": "00ce6a8b72f3845b8b45a3af684391d2eb8a5cef",
+              "lines": [
+                820,
+                826
+              ],
+              "observation": "The applicable assertion contract accepts a locator resolving to no DOM node or a non-visible node."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "browser-use-1482",
+      "pr_url": "https://github.com/browser-use/browser-use/pull/1482",
+      "language": "Python",
+      "source_commit": "fa461585f1fc2d4a430e68e6c115a12f4936fe73",
+      "target_commit": "0b21e50ca640581ecd46990475c8b223eaa05045",
+      "merge_base_commit": "b50bb2216721b82d81e0fda8fb50a31266e09ce4",
+      "compare_status": "diverged",
+      "positive_comment_indices": [
+        1
+      ],
+      "negative_comment_indices": [
+        1,
+        5
+      ],
+      "context_paths": [
+        "browser_use/browser/browser.py",
+        "browser_use/browser/chrome.py"
+      ],
+      "claims": [
+        {
+          "polarity": "positive",
+          "index": 1,
+          "reason": "The newly configurable port explicitly accepts None. With headless=True, no remote endpoint, and the built-in browser path, the %s flag formatter accepts None, then the newly changed socket.connect_ex call receives ('localhost', None), which is not a valid integer port. No field validator or local fallback repairs None. This is a newly introduced accepted-configuration failure; default 9222 is unaffected.",
+          "evidence": [
+            {
+              "path": "browser_use/browser/browser.py",
+              "commit": "0b21e50ca640581ecd46990475c8b223eaa05045",
+              "lines": [
+                100,
+                112
+              ],
+              "observation": "BrowserConfig declares chrome_remote_debugging_port: int | None = CHROME_DEBUG_PORT."
+            },
+            {
+              "path": "browser_use/browser/browser.py",
+              "commit": "0b21e50ca640581ecd46990475c8b223eaa05045",
+              "lines": [
+                265,
+                291
+              ],
+              "observation": "Built-in browser setup constructs arguments then passes the configurable port directly to socket.connect_ex; headless=True avoids screen discovery."
+            },
+            {
+              "path": "browser_use/browser/chrome.py",
+              "commit": "0b21e50ca640581ecd46990475c8b223eaa05045",
+              "lines": [
+                97,
+                97
+              ],
+              "observation": "CHROME_DEBUGGING_ARG uses %s, so formatting does not reject None before the socket call."
+            },
+            {
+              "path": "browser_use/browser/browser.py",
+              "commit": "b50bb2216721b82d81e0fda8fb50a31266e09ce4",
+              "lines": [
+                272,
+                275
+              ],
+              "observation": "Merge-base socket call used literal integer port 9222."
+            }
+          ]
+        },
+        {
+          "polarity": "negative",
+          "index": 1,
+          "reason": "The claim that starred unpacking in set displays or *{...} inside a list is invalid syntax is false. Both are valid Python syntax; this code uses them to deduplicate arguments. Reject this specific syntax-error claim, not all possible issues in this PR.",
+          "documentation": [
+            "https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries"
+          ],
+          "evidence": [
+            {
+              "path": "browser_use/browser/browser.py",
+              "commit": "0b21e50ca640581ecd46990475c8b223eaa05045",
+              "lines": [
+                218,
+                228
+              ],
+              "observation": "chrome_launch_args is a list display containing a starred set display; set elements also use iterable unpacking."
+            }
+          ]
+        },
+        {
+          "polarity": "negative",
+          "index": 5,
+          "reason": "Python sets have remove() as well as discard(). The formatted argument being removed is added to chrome_args at construction. The claimed AttributeError due to an absent set.remove method is false. This rejects only that claim; the independently selected None-port bug remains real.",
+          "documentation": [
+            "https://docs.python.org/3/library/stdtypes.html#set.remove"
+          ],
+          "evidence": [
+            {
+              "path": "browser_use/browser/browser.py",
+              "commit": "0b21e50ca640581ecd46990475c8b223eaa05045",
+              "lines": [
+                276,
+                292
+              ],
+              "observation": "chrome_args is a set containing the formatted remote-debugging-port flag and invokes the existing set.remove method when the port is occupied."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "comfyui-6542",
+      "pr_url": "https://github.com/comfyanonymous/ComfyUI/pull/6542",
+      "language": "Python",
+      "source_commit": "832e3f5ca3c357e527fdf811502357bd2798425e",
+      "target_commit": "b55c2247654476fbc744e572ba7a834fd9378745",
+      "merge_base_commit": "fca304debf5a4e6c71f8def10ac41cf69519fde3",
+      "compare_status": "diverged",
+      "positive_comment_indices": [
+        0
+      ],
+      "negative_comment_indices": [],
+      "context_paths": [
+        "comfy/clip_model.py",
+        "comfy/model_management.py",
+        "requirements.txt"
+      ],
+      "dependency_version_note": "The target requirements.txt lists torch without a version constraint. The cited PyTorch 2.14 documentation corroborates stable empty/triu semantics; it is not evidence of the runtime version used by this historical PR. No target-runtime reproduction was performed.",
+      "claims": [
+        {
+          "polarity": "positive",
+          "index": 0,
+          "reason": "The new DirectML branch drops initialization of the upper-triangular causal mask. torch.empty supplies uninitialized values and triu_(1) preserves values above the diagonal, so future positions are no longer reliably suppressed before passing the mask to the encoder. The initialized mask existed at the merge base. Validate the causal-mask defect; the upstream comment's specific blank-image symptom was not reproduced.",
+          "documentation": [
+            "https://docs.pytorch.org/docs/2.14/generated/torch.empty.html",
+            "https://docs.pytorch.org/docs/2.14/generated/torch.triu.html"
+          ],
+          "evidence": [
+            {
+              "path": "comfy/clip_model.py",
+              "commit": "b55c2247654476fbc744e572ba7a834fd9378745",
+              "lines": [
+                107,
+                117
+              ],
+              "observation": "Only DirectML skips fill_; the resulting causal_mask is added/assigned to mask and sent to the encoder."
+            },
+            {
+              "path": "comfy/clip_model.py",
+              "commit": "fca304debf5a4e6c71f8def10ac41cf69519fde3",
+              "lines": [
+                107,
+                114
+              ],
+              "observation": "The old path filled the tensor with -torch.finfo(x.dtype).max before triu_(1)."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "excluded_candidates": [
+    {
+      "pr_url": "https://github.com/google-gemini/gemini-cli/pull/9177",
+      "positive_comment_index": 3,
+      "reason": "Dropped empty-stdin hang claim: test-helper leaves stdin open, but the actual CLI readStdin implementation at target c6e624883852318b71baa2a060c933bb5de591ef has a 500ms no-data fallback. Without an identified command path whose EOF wait is unbounded, the stronger behavioral consequence remains unproved."
+    },
+    {
+      "pr_url": "https://github.com/cline/cline/pull/1808",
+      "positive_comment_index": 0,
+      "reason": "Dropped mislabeled Azure check explanation: target still has an azure.com branch. The branch differs from source, but the comment's described replacement is inaccurate, and source-versus-target divergence was not resolved for this rejected candidate."
+    },
+    {
+      "pr_url": "https://github.com/n8n-io/n8n/pull/13323",
+      "positive_comment_index": 0,
+      "reason": "Valid-looking workflow build-args command-substitution issue, but excluded from the TypeScript quota because the actual defect is YAML/action configuration, not TypeScript code."
+    },
+    {
+      "pr_url": "https://github.com/infiniflow/ragflow/pull/6691",
+      "positive_comment_indices": [
+        0
+      ],
+      "reason": "Fixed at target: entity_resolution.py changes list(sub_connect_graph.nodes) to list(sub_connect_graph), exactly removing the alleged AttributeError. Not a positive regression case at the dataset target."
+    },
+    {
+      "pr_url": "https://github.com/infiniflow/ragflow/pull/6691",
+      "positive_comment_indices": [
+        1
+      ],
+      "reason": "The lambda closure remains unchanged in the downloaded dataset source and target. No evidence that this PR introduced it; excluded rather than promoted as a changed-code finding."
+    },
+    {
+      "pr_url": "https://github.com/browser-use/browser-use/pull/1482",
+      "positive_comment_indices": [
+        0
+      ],
+      "reason": "A documentation typo is labeled Code Defect. Excluded from the actionable correctness selection."
+    },
+    {
+      "pr_url": "https://github.com/filamentphp/filament/pull/15181",
+      "positive_comment_indices": [
+        0,
+        3
+      ],
+      "reason": "Positive[0] describes reapplying ascending qualified-key order, but the inspected target now reorders from the first original order, so its exact alleged sequence was not established. Positive[3] overlooks PHP null-coalescing protection around the nested offset. Do not use these as validated positives."
+    },
+    {
+      "pr_url": "https://github.com/filamentphp/filament/pull/15267",
+      "positive_comment_indices": [
+        0
+      ],
+      "reason": "Inspected helper/diff, but could not establish the claimed json_extract plus arrow-string input from a real caller. Excluded rather than filling the PHP quota with an unverified scenario."
+    }
+  ],
+  "pending_candidates": [
+    {
+      "status": "unscored_pending_reachability",
+      "reason_pending": "Independent review found later DNS validation and createDocument duplicate handling. The local deny-list guard removal is established, but whether a conflicting primary-domain rule can survive upstream/default rule registration is not established. Targeted inspection of app/init.php, app/init/resources.php, app/init/registers.php, Maintenance.php, Install.php, and API/proxy.php did not resolve registration sufficiently. Exclude this case from scored holdout; do not treat it as a verified regression or a negative.",
+      "pr_url": "https://github.com/appwrite/appwrite/pull/9999",
+      "language": "PHP",
+      "source_commit": "d205ac457960f73d781547540cde1732f69076ac",
+      "target_commit": "710b8bda565c411ecb23e8b670d0ba7f45d2b3f3",
+      "merge_base_commit": "e267283fa9981f6f1e7af73d77437ad0bec5a255",
+      "compare_status": "diverged",
+      "positive_comment_indices": [
+        9
+      ],
+      "negative_comment_indices": [],
+      "context_paths": [
+        "src/Appwrite/Platform/Modules/Proxy/Http/Rules/API/Create.php",
+        "app/config/variables.php"
+      ],
+      "validated_claims": [
+        {
+          "polarity": "positive",
+          "index": 9,
+          "reason": "For a deployment with distinct nonempty _APP_CONSOLE_DOMAIN and _APP_DOMAIN and no manual deny-list duplicate, the modified API-rule action adds only the console host to deniedDomains. The previously rejected primary Appwrite domain passes the explicit domain-name guard. The built-in/site/function lists do not restore the primary domain. This is a concrete removal of the existing primary-domain collision guard; do not inflate it into a demonstrated takeover or claim all deployments fail.",
+          "evidence": [
+            {
+              "path": "src/Appwrite/Platform/Modules/Proxy/Http/Rules/API/Create.php",
+              "commit": "710b8bda565c411ecb23e8b670d0ba7f45d2b3f3",
+              "lines": [
+                74,
+                102
+              ],
+              "observation": "Console domain replaces primary domain in deniedDomains. Later additions cover site/function/custom-list domains only, then in_array gates the requested domain."
+            },
+            {
+              "path": "src/Appwrite/Platform/Modules/Proxy/Http/Rules/API/Create.php",
+              "commit": "e267283fa9981f6f1e7af73d77437ad0bec5a255",
+              "lines": [
+                74,
+                80
+              ],
+              "observation": "Merge base explicitly inserts _APP_DOMAIN into the deny list."
+            },
+            {
+              "path": "app/config/variables.php",
+              "commit": "710b8bda565c411ecb23e8b670d0ba7f45d2b3f3",
+              "lines": [
+                83,
+                87
+              ],
+              "observation": "_APP_DOMAIN is the required Appwrite domain address, independent of the new console-domain preference."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
