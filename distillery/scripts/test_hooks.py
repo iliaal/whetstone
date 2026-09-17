@@ -1,10 +1,11 @@
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 
-import pytest
-
 import distiller
+import pytest
 
 
 def run_hook(tmp_path, prompt, **fields):
@@ -18,7 +19,7 @@ def run_hook(tmp_path, prompt, **fields):
     process = subprocess.run(
         ["bash", str(distiller.INJECT_HOOK_PATH)],
         input=json.dumps(payload), capture_output=True, text=True, cwd=tmp_path,
-        timeout=5,
+        timeout=5, env={**os.environ, "WHETSTONE_JEV": "0"}, check=False,
     )
     assert process.returncode == 0, process.stderr
     return payload, json.loads(process.stdout) if process.stdout else None
@@ -106,3 +107,26 @@ def test_cap_and_order_are_stable(tmp_path):
     assert len(paths) == 5
     assert len(set(paths)) == 5
     assert all(Path(line[2:]).is_file() for line in paths)
+
+
+def test_semantic_runner_never_calls_opted_in_jev(tmp_path, monkeypatch):
+    marker = tmp_path / "jev-called"
+    executable = tmp_path / "jev"
+    executable.write_text(
+        f"#!{sys.executable}\nfrom pathlib import Path\n"
+        f"Path({str(marker)!r}).write_text('called')\nraise SystemExit(1)\n"
+    )
+    executable.chmod(0o700)
+    monkeypatch.setenv("WHETSTONE_JEV", "1")
+    monkeypatch.setenv("WHETSTONE_JEV_COMMAND", str(executable))
+    fixture = tmp_path / "fixtures.jsonl"
+    fixture.write_text(json.dumps({"prompt": "Fix the bug", "should_trigger": ["ia-debugging"]}) + "\n")
+    result = distiller.test_semantic(fixtures_path=fixture)
+    assert result["all_passed"] is True
+    assert not marker.exists()
+    subprocess.run(
+        ["bash", str(distiller.INJECT_HOOK_PATH)],
+        input=json.dumps({"tool_input": {"prompt": "Fix the bug"}}), text=True,
+        capture_output=True, env=os.environ.copy(), timeout=5, check=True,
+    )
+    assert marker.exists(), "Positive control must observe the opted-in CLI invocation"

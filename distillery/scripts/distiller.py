@@ -2437,7 +2437,7 @@ def test_semantic(max_tests=None, fixtures_path=None):
                 proc = subprocess.run(
                     ["bash", str(INJECT_HOOK_PATH)],
                     input=hook_input, capture_output=True, text=True,
-                    timeout=15, cwd=fixture_cwd,
+                    timeout=15, cwd=fixture_cwd, env={**os.environ, "WHETSTONE_JEV": "0"},
                 )
 
                 # A non-zero hook exit is an error, NOT "declined to inject".

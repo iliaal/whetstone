@@ -176,7 +176,48 @@ Skills are matched using a 3-tier priority system:
 
 Up to 5 matching skills are injected per subagent call, prioritized by tier. Subagent types without file read access (e.g., Bash) are skipped.
 
-**Requirements:** the hook is a Bash script and needs `bash` and `jq` on PATH. On Windows, run Claude Code under WSL or Git Bash. When either is missing the hook exits quietly and subagents run without injected skills — everything else in the plugin (agents, commands, skills invoked directly) works unchanged.
+**Requirements:** the hook is a Bash script and needs `bash` and `jq` on PATH. On Windows, run Claude Code under WSL or Git Bash. When either is missing the hook exits quietly and subagents run without injected skills; everything else in the plugin (agents, commands, skills invoked directly) works unchanged.
+
+### Optional Jev suggestions
+
+You can let Jev suggest additional skills when the keyword rules leave space.
+This is disabled by default: installing Whetstone does not require Jev, run
+Python, or send prompts to TypeSafe.
+
+To enable it, install and configure the shared `jev` judgment CLI, verify that
+`jev judge --help` works, and start Claude Code with:
+
+```bash
+export WHETSTONE_JEV=1
+claude
+```
+
+To try an unreleased checkout for one session, add
+`--plugin-dir /path/to/whetstone/plugins/whetstone` to that command.
+
+You also need `python3` on PATH. Configure your API credential through the Jev
+CLI; Whetstone does not read or store it. If the executable is elsewhere, set
+`WHETSTONE_JEV_COMMAND` to its path (one executable, without shell arguments).
+Set `WHETSTONE_JEV_THRESHOLD` to a number from `0` to `1` to adjust the minimum
+relevance score; the default is `0.90`. A high score is a suggestion, not proof
+that a skill applies.
+
+When enabled, the hook sends the subagent task prompt and eligible skill
+descriptions to the configured CLI for hosted evaluation. Enable it only for
+tasks you intend to send to that service. It keeps every keyword-selected skill
+in its original order, respects language and maintenance exclusions, and adds
+suggestions within the existing five-skill cap. It skips Jev when the cap is
+already full. A missing executable, missing credential, invalid result, or
+two-second timeout leaves the keyword result intact. Unset `WHETSTONE_JEV` or
+set it to `0` to disable the feature.
+
+The CLI contract is `jev judge --timeout 2`, with one JSON request on stdin:
+`{"state":"task prompt","questions":{"skill-name":{"type":"noul","instructions":"scope"}}}`.
+Successful stdout has `schema_version: 1`, `status: "ok"`, and an `answers`
+object containing every requested skill with `{"type":"noul","noul":0.95}`,
+using `model: "jev-1.13.0"`.
+Failures exit nonzero. This hook runs in Claude Code; the skills-only Codex
+distribution does not run it.
 
 ## MCP Servers
 

@@ -109,14 +109,40 @@ ALL_MATCHES=()
 [[ ${#TIER2[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER2[@]}")
 [[ ${#TIER3[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER3[@]}")
 
-if [[ ${#ALL_MATCHES[@]} -eq 0 ]]; then
-  exit 0
-fi
-
 # Cap at 5 skills to avoid context bloat
 MAX_SKILLS=5
 if [[ ${#ALL_MATCHES[@]} -gt $MAX_SKILLS ]]; then
   ALL_MATCHES=("${ALL_MATCHES[@]:0:$MAX_SKILLS}")
+fi
+REGEX_MATCH_COUNT=${#ALL_MATCHES[@]}
+
+if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
+  command -v python3 >/dev/null 2>&1 && command -v "${WHETSTONE_JEV_COMMAND:-jev}" >/dev/null 2>&1; then
+  ELIGIBLE=()
+  for skill_name in "${SKILL_NAMES[@]}"; do
+    [[ -f "$PLUGIN_ROOT/skills/$skill_name/SKILL.md" ]] || continue
+    [[ " ${ALL_MATCHES[*]} " == *" $skill_name "* ]] && continue
+    if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]] &&
+      printf '%s' "$PROMPT_LOWER" | grep -qE "${SKILL_NEGATIVE[$skill_name]}" 2>/dev/null; then
+      continue
+    fi
+    if $IS_MAINT_CONTEXT && [[ -n "${SKILL_MAINT_SUPPRESS[$skill_name]+x}" ]]; then
+      continue
+    fi
+    ELIGIBLE+=("$skill_name")
+  done
+  if [[ ${#ELIGIBLE[@]} -gt 0 ]] &&
+    JEV_MATCHES=$(printf '%s' "$INPUT" | python3 "$SCRIPT_DIR/jev-skills.py" "$PLUGIN_ROOT/skills" "${ELIGIBLE[@]}" 2>/dev/null); then
+    while IFS= read -r skill_name; do
+      [[ -n "$skill_name" ]] || continue
+      ALL_MATCHES+=("$skill_name")
+      [[ ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] || break
+    done <<<"$JEV_MATCHES"
+  fi
+fi
+
+if [[ ${#ALL_MATCHES[@]} -eq 0 ]]; then
+  exit 0
 fi
 
 # Log injected skills when running in test mode (zero overhead otherwise)
@@ -128,7 +154,15 @@ fi
 
 # Build injection text
 INJECTION="BEFORE STARTING: Read and follow these skill files for methodology and patterns relevant to this task:"
-for skill_name in "${ALL_MATCHES[@]}"; do
+if [[ $REGEX_MATCH_COUNT -eq 0 ]]; then
+  INJECTION="BEFORE STARTING: Jev suggests these skill files; check applicability before following their instructions:"
+fi
+for index in "${!ALL_MATCHES[@]}"; do
+  skill_name="${ALL_MATCHES[$index]}"
+  if [[ $index -eq $REGEX_MATCH_COUNT && $index -gt 0 ]]; then
+    INJECTION="$INJECTION
+Additional skill suggestions (Jev; check applicability before following):"
+  fi
   INJECTION="$INJECTION
 - ${PLUGIN_ROOT}/skills/${skill_name}/SKILL.md"
 done
