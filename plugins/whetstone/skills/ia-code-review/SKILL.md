@@ -25,6 +25,8 @@ When the invoking task defines scope, base SHA, or output format, retain that co
 
 ## Evidence and judgment
 
+When changes affect Composer dependencies, autoloading, or installation, read [composer-review.md](./references/composer-review.md). Keep this reference conditional; a PHP file alone does not require a Composer review.
+
 Trace an actual failure path and cite measured `file:line` plus quoted source/artifact. Read the base before calling something a regression; verify dependencies' claimed behavior against source or a probe. Check upstream callers/guards and downstream writers rather than assuming absence. Prove a search could find a known positive control, and state limits of text-only/dynamic callsite coverage. Read [source-and-boundary-evidence.md](./references/source-and-boundary-evidence.md) for completeness, producers, guards, redaction, cross-field consistency, or remedies spanning multiple sites.
 
 Use [review-judgment-traps.md](./references/review-judgment-traps.md) for disputed findings, test/gate changes, prior fixes, and remediation. Do not nitpick tooling-enforced style, widen scope with adjacent cleanup, suppress concrete plan-mandated defects, or accept resolved status as evidence of a repair. Replay a proposed remedy against the trigger and inspect its own consequences. Extended examples and anti-patterns live in [review-traps-catalog.md](./references/review-traps-catalog.md); load the relevant topics when a claim depends on an uncertain premise.
