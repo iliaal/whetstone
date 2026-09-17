@@ -1,4 +1,6 @@
+import copy
 import hashlib
+import json
 import sqlite3
 import subprocess
 import sys
@@ -92,6 +94,214 @@ class SymbolContextTests(unittest.TestCase):
         db.execute("INSERT INTO structural_index_state VALUES (1,?)", (self.case["head_commit"],))
         db.commit()
         db.close()
+
+    def create_receiver_case(self, unicode_prefix="", multiline=False):
+        other_call = "  (api\n   )();\n" if multiline else ""
+        method_line = 5 if multiline else 3
+        caller = ("import { UserApiHelper } from './helper';\n"
+                  "export function run(api: UserApiHelper) {\n"
+                  f"{other_call}"
+                  f"  {unicode_prefix}return api.create();\n"
+                  "}\n")
+        base = caller.replace("api.create()", "0")
+        helper = ("export class UserApiHelper {\n"
+                  "  create(id: string) {\n"
+                  "    return id;\n"
+                  "  }\n"
+                  "}\n")
+        files = {"app/main.py": "value = 0\n", "app/main.ts": caller,
+                 "app/helper.ts": helper, "tsconfig.json": '{"compilerOptions":{"strict":true}}\n'}
+        symbols = [("app/main.ts", "run", "function", 2, 6 if multiline else 4),
+                   ("app/helper.ts", "create", "method", 2, 4)]
+        self.create_case(files, "value = 0\n", symbols,
+                         [("app/main.ts", "create", "call", method_line)],
+                         review_bases={"app/main.ts": base})
+        db = sqlite3.connect(self.source / ".codesage/index.db")
+        db.execute("UPDATE symbols SET qualified_name='UserApiHelper.create' WHERE name='create'")
+        db.commit()
+        db.close()
+        compiler = self.root / "typescript.js"
+        compiler.write_text("exports.version = '5.9.2';\n", encoding="utf-8")
+        reads = [{"path": str(self.source / path), "sha256": hashlib.sha256(body.encode()).hexdigest(),
+                  "role": "project"} for path, body in files.items() if path in
+                 ("app/main.ts", "app/helper.ts", "tsconfig.json")]
+        col = len(("  " + unicode_prefix + "return api.").encode("utf-8"))
+        receipt = {"schema": 1, "kind": "typescript-contract-candidates",
+                   "project": str(self.source.resolve()), "head": self.case["head_commit"],
+                   "compiler": {"path": str(compiler), "version": "5.9.2",
+                                "sha256": hashlib.sha256(compiler.read_bytes()).hexdigest()},
+                   "scope": "explicit roots; no runtime dispatch proof", "reads": reads,
+                   "calls": [{"path": "app/main.ts", "line": method_line, "col": col,
+                              "name": "create", "expression": "api.create", "status": "candidate",
+                              "candidate": {"path": "app/helper.ts", "start": 2, "end": 4,
+                                            "name": "UserApiHelper.create"},
+                              "receiver_chain": [{"expression": "api", "type": "UserApiHelper",
+                                                  "declarations": [{"path": "app/main.ts", "start": 2,
+                                                                    "end": 2, "col": 20}]}]}],
+                   "diagnostics": {"count": 0, "codes": {}, "examples": [], "truncated": False},
+                   "dependency_fallbacks": []}
+        return receipt
+
+    def test_receiver_context_is_opt_in_and_preserves_default_output(self):
+        receipt = self.create_receiver_case()
+        original = symbol_context.build_context(self.case, self.reviewer, self.source)
+        explicit_default = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=None)
+        self.assertEqual(json.dumps(original, ensure_ascii=False), json.dumps(explicit_default, ensure_ascii=False))
+        self.assertNotIn("create(id: string)", original["context"])
+        self.assertTrue(any(item["reason"] == "untyped-receiver" for item in original["issues"]))
+        enabled = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        self.assertIn("create(id: string)", enabled["context"])
+        selected = next(item for item in enabled["selected"] if item["path"] == "app/helper.ts")
+        self.assertEqual(selected["resolution_basis"], "TypeScript declaration candidate")
+        self.assertIsNone(selected["dependency_distance"])
+        self.assertEqual(selected["receiver_chain"], receipt["calls"][0]["receiver_chain"])
+        self.assertEqual(enabled["receiver_context"]["diagnostics"], receipt["diagnostics"])
+        self.assertLessEqual(enabled["bytes"], 7000)
+
+    def test_receiver_context_rejects_stale_head_and_altered_reads(self):
+        receipt = self.create_receiver_case()
+        receipt["head"] = self.case["base_commit"]
+        with self.assertRaisesRegex(ValueError, "Git HEAD mismatch"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        receipt["head"] = self.case["head_commit"]
+        receipt["reads"][1]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "read hash mismatch"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        receipt["reads"][1]["sha256"] = hashlib.sha256(
+            (self.source / "app/helper.ts").read_bytes()).hexdigest()
+        (self.source / "tsconfig.json").write_text('{"compilerOptions":{"strict":false}}\n', encoding="utf-8")
+        receipt["reads"][2]["sha256"] = hashlib.sha256(
+            (self.source / "tsconfig.json").read_bytes()).hexdigest()
+        with self.assertRaisesRegex(ValueError, "differs from Git HEAD"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+
+    def test_receiver_context_rejects_unread_source_duplicate_calls_and_compiler_drift(self):
+        receipt = self.create_receiver_case()
+        original = copy.deepcopy(receipt)
+        receipt["reads"] = [entry for entry in receipt["reads"] if not entry["path"].endswith("helper.ts")]
+        with self.assertRaisesRegex(ValueError, "candidate lacks source provenance"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        receipt = original
+        receipt["calls"].append(dict(receipt["calls"][0]))
+        with self.assertRaisesRegex(ValueError, "Duplicate receiver-context call"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        receipt["calls"].pop()
+        Path(receipt["compiler"]["path"]).write_text("modified compiler", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "compiler hash mismatch"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+
+    def test_receiver_context_refusals_do_not_fall_back_to_name_resolution(self):
+        receipt = self.create_receiver_case()
+        call = receipt["calls"][0]
+        call.pop("candidate")
+        call["status"] = "unresolved"
+        call["reason"] = "unresolved-or-ambiguous-receiver"
+        unresolved = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        self.assertNotIn("create(id: string)", unresolved["context"])
+        self.assertTrue(any(item["reason"] == "receiver-context-unresolved" for item in unresolved["issues"]))
+        call["status"] = "candidate"
+        call.pop("reason")
+        call["candidate"] = {"path": "app/helper.ts", "start": 2, "end": 4,
+                             "name": "UserApiHelper.create"}
+        db = sqlite3.connect(self.source / ".codesage/index.db")
+        db.execute("DELETE FROM symbols WHERE name='create'")
+        db.commit()
+        db.close()
+        missing = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        self.assertNotIn("create(id: string)", missing["context"])
+        self.assertTrue(any(item["reason"] == "receiver-context-target-missing" for item in missing["issues"]))
+
+    def test_receiver_context_joins_utf8_byte_column_and_rejects_wrong_column(self):
+        receipt = self.create_receiver_case("/* ⚑ */ ")
+        db = sqlite3.connect(self.source / ".codesage/index.db")
+        indexed_col = db.execute("SELECT col FROM refs WHERE to_name='create'").fetchone()[0]
+        db.close()
+        self.assertEqual(indexed_col, len("  /* ⚑ */ return api."))
+        self.assertNotEqual(indexed_col, receipt["calls"][0]["col"])
+        matched = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        self.assertTrue(any(item["resolution_basis"] == "TypeScript declaration candidate"
+                            for item in matched["selected"]))
+        receipt["calls"][0]["col"] -= len("⚑".encode()) - 1
+        with self.assertRaisesRegex(ValueError, "call token mismatch"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+
+    def test_receiver_context_cli_uses_case_receipt_and_reports_missing_receipt(self):
+        receipt = self.create_receiver_case()
+        self.case["id"] = "source"
+        cases = self.root / "cases.jsonl"
+        cases.write_text(json.dumps(self.case) + "\n", encoding="utf-8")
+        receipts = self.root / "receipts"
+        receipts.mkdir()
+        script = str(Path(symbol_context.__file__).resolve())
+        args = [sys.executable, script, "--inputs", str(cases), "--reviewer-root",
+                str(self.reviewer), "--sources-root", str(self.root)]
+        default = self.root / "default.jsonl"
+        subprocess.run(args + ["--output", str(default)], check=True, capture_output=True)
+        expected = symbol_context.build_context(self.case, self.reviewer, self.source)
+        self.assertEqual(default.read_bytes(), (json.dumps(expected, ensure_ascii=False) + "\n").encode())
+        missing = self.root / "missing.jsonl"
+        subprocess.run(args + ["--output", str(missing),
+                               "--receiver-context-directory", str(receipts)], check=True, capture_output=True)
+        absent = json.loads(missing.read_text(encoding="utf-8"))
+        self.assertEqual(absent["context"], expected["context"])
+        self.assertTrue(any(item["reason"] == "receiver-context-missing" for item in absent["issues"]))
+        (receipts / "source.json").write_text(json.dumps(receipt), encoding="utf-8")
+        enabled = self.root / "enabled.jsonl"
+        subprocess.run(args + ["--output", str(enabled),
+                               "--receiver-context-directory", str(receipts)], check=True, capture_output=True)
+        opt_in = json.loads(enabled.read_text(encoding="utf-8"))
+        self.assertIn("create(id: string)", opt_in["context"])
+
+    def test_receiver_context_allows_verified_external_receiver_declaration(self):
+        receipt = self.create_receiver_case()
+        declaration = self.root / "external.d.ts"
+        declaration.write_text("declare interface External {};\n", encoding="utf-8")
+        receipt["reads"].append({"path": str(declaration),
+                                 "sha256": hashlib.sha256(declaration.read_bytes()).hexdigest(),
+                                 "role": "dependency"})
+        receipt["calls"][0]["receiver_chain"][0]["declarations"] = [
+            {"path": str(declaration), "start": 1, "end": 1, "col": 0}]
+        enabled = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        self.assertIn("create(id: string)", enabled["context"])
+        receipt["reads"].pop()
+        with self.assertRaisesRegex(ValueError, "declaration lacks read provenance"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+
+    def test_receiver_context_validates_type_declaration_reads_and_spans(self):
+        receipt = self.create_receiver_case()
+        external = self.root / "external.d.ts"
+        external.write_text("declare class UserApiHelper {}\n", encoding="utf-8")
+        receipt["reads"].append({"path": str(external), "sha256": hashlib.sha256(external.read_bytes()).hexdigest(),
+                                 "role": "dependency"})
+        receiver = receipt["calls"][0]["receiver_chain"][0]
+        receiver["type_declarations"] = [{"path": str(external), "start": 1, "end": 1, "col": 0}]
+        self.assertIn("create(id: string)", symbol_context.build_context(
+            self.case, self.reviewer, self.source, receiver_context=receipt)["context"])
+        receiver["type_declarations"][0]["end"] = 2
+        with self.assertRaisesRegex(ValueError, "declaration span"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        receiver["type_declarations"][0]["end"] = 1
+        receipt["reads"].pop()
+        with self.assertRaisesRegex(ValueError, "declaration lacks read provenance"):
+            symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+
+    def test_receiver_context_accepts_multiline_unsupported_call_without_selecting_it(self):
+        receipt = self.create_receiver_case(multiline=True)
+        receipt["calls"].append({"path": "app/main.ts", "line": 3, "col": 2,
+                                 "name": "(api\n   )", "expression": "(api\n   )",
+                                 "status": "unresolved", "reason": "unsupported-call-expression",
+                                 "receiver_chain": []})
+        result = symbol_context.build_context(self.case, self.reviewer, self.source, receiver_context=receipt)
+        self.assertIn("create(id: string)", result["context"])
+        self.assertFalse(any(item["reason"] == "receiver-context-target-missing" for item in result["issues"]))
+
+    def test_receiver_context_candidate_obeys_whole_span_budget(self):
+        receipt = self.create_receiver_case()
+        limited = symbol_context.build_context(self.case, self.reviewer, self.source,
+                                               budget=340, receiver_context=receipt)
+        self.assertNotIn("create(id: string)", limited["context"])
+        self.assertTrue(any(item["reason"] in ("budget", "budget-header") for item in limited["issues"]))
+        self.assertEqual(limited["receiver_context"]["diagnostics"], receipt["diagnostics"])
 
     def test_changed_call_reaches_defaulted_helper_through_three_dependencies(self):
         files = {"app/main.py": "from app.bridge import helper\n\ndef invoke():\n    return helper()\n",

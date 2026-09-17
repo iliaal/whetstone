@@ -92,6 +92,16 @@ The output must not exist. Each JSONL row contains a UTF-8 context packet, selec
 
 Call definitions are **name-based candidates**, not proven runtime targets. The prototype follows local import/include paths through at most three edges, with no global-name fallback; it withholds ambiguous matches and untyped receivers. Dependency reachability does not establish an import binding, and dynamic dispatch, aliases, package resolution, large symbols, and parser gaps can leave useful contracts unresolved. Inspect the recorded omissions before interpreting an empty or partial packet as adequate context. Keep labels and grading artifacts separate from reviewers.
 
+### Add TypeScript receiver context explicitly
+
+For TypeScript calls whose receiver comes from an imported type or callback fixture, you can supply a receipt from CodeSage's [experimental compiler-backed resolver](https://github.com/iliaal/codesage/tree/main/bench/receiver-context). It uses a trusted TypeScript 5.9.2 compiler and the project's applicable declaration dependencies to follow aliases and receiver types. Generate one receipt per case at the pinned head, covering the reviewed TypeScript files, and name it `<case-id>.json` in a separate directory.
+
+Add `--receiver-context-directory /absolute/receipts` to the command above. The selector verifies the compiler and input hashes, compares project reads with Git HEAD, and joins call sites by path, LF line, UTF-8 byte column, and token. A unique target must also match an indexed symbol. The same priority order and whole-span byte budget apply. Missing receipts are reported; compiler refusals do not fall back to a guessed receiver target. The default command remains unchanged.
+
+Receiver candidates are labelled **TypeScript declaration candidate**. Their metadata retains the receiver chain, compiler diagnostics, and dependency fallbacks. A declaration link does not prove runtime dispatch, and missing dependencies can leave the analysis partial.
+
+The n8n development case now retrieves `UserApiHelper.create` from `api.users.create()`, including the default surname and return value that the earlier experiments missed. This used official TypeScript 5.9.2 and Playwright 1.54.2 declarations; without Playwright types, the four calls remain unresolved. This verifies the retrieval mechanism on a known case. It does not establish improved review quality or change either experiment's recorded outcomes.
+
 ## Check the preparation and context utilities
 
 ```bash
