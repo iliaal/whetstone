@@ -63,7 +63,9 @@ The likely failure modes are label leakage into prompts, treating rejected comme
 
 ## Use with dual-review
 
-Dual-review already invokes Whetstone's `ia-code-review` and already has paired discovery canaries. Its existing fixed-candidate classifier replay measures a different task. Use these public cases as input material for a separately prepared discovery cohort, after its required independent reference and coverage pass. This directory does not implement that adapter or manufacture authenticated classifier verdicts.
+Dual-review already invokes Whetstone's `ia-code-review` and has paired discovery canaries. Its existing fixed-candidate classifier replay measures a different task. The native `dual-review-canary discovery-aacr-prepare` command imports this bundle without launching models or copying annotations into reviewer inputs. After independent native reference passes and a passing development experiment, `discovery-aacr-freeze` binds the cohort to those results. Follow [dual-review's evaluation guide](https://github.com/iliaal/dual-review/blob/main/docs/replay-evaluation.md#prepare-a-curated-aacr-holdout) for commands and prerequisites.
+
+The current five-case seed lacks an independently clean review and mostly contains single-file review scopes. It cannot satisfy the existing clean-review and feature-shard gates as selected. Keep it as diagnostic input; select additional clean and multi-file cases independently before attempting a passing confirmatory comparison. Neither adapter command manufactures classifier verdicts or relaxes those gates.
 
 If context-sensitive misses justify an experiment, compare the existing blind diff review with a frozen context bundle selected independently of the first reviewer's findings. Preserve dual-review's isolated Flow B process, snapshot binding, redaction, verification, and publication gates. Direct OCR substitution is not implied by this dataset.
 
