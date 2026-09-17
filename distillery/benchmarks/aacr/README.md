@@ -12,6 +12,8 @@ The initial selection contains five PRs, five positive defect claims, and five r
 | browser-use #1482 | Python | An accepted nullable port reaches an integer-only socket argument | 2 |
 | ComfyUI #6542 | Python | DirectML causal mask skips initialization | 0 |
 
+The [2026-09-17 frozen-context experiment](./context-experiment-2026-09-17.md) records 20 real Sol/high reviews through native discovery and OCR delegated criteria. The tested context recipe added no verified discoveries; it remains an experimental input, not a production default.
+
 The positive annotations span one diff-level, two file-level, and two repository-level cases. No PHP positive passed the source-evidence threshold. The manifest records rejected candidates and leaves Appwrite's domain-guard change unscored until its interaction with DNS and duplicate-rule checks is established.
 
 ## Prepare the inputs
