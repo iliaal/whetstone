@@ -5,6 +5,40 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.0] - 2026-09-17
+
+Minor: an opt-in Jev integration lets a hosted judge suggest one skill the keyword triggers missed, a `claude plugin eval` suite now measures `ia-code-review` against seven graded cases, and a full audit closed 17 findings across skills, agents, commands, and the new eval tree. Ten commits. Component counts are unchanged at 32 skills, 19 agents, and 22 commands.
+
+### Added
+
+- **Optional Jev skill suggestions in the subagent injection hook.** When the keyword tiers leave room under the five-skill cap, the hook can ask the shared `jev` judgment CLI whether any unmatched skill is genuinely needed, and add at most one. Disabled by default: installing the plugin does not require Jev, run Python, or send any prompt off the machine. Enable with `WHETSTONE_JEV=1`; `WHETSTONE_JEV_COMMAND` points at a non-default executable and `WHETSTONE_JEV_THRESHOLD` adjusts the 0.90 minimum score. Keyword selections keep their order and position, language and maintenance exclusions apply before any skill is offered to the judge, and suggestions are labelled separately so the subagent checks applicability instead of treating them as matched. A missing executable, missing credential, malformed reply, unexpected model, out-of-range score, or deadline miss leaves the keyword result byte-identical.
+- **A `claude plugin eval` suite for the `ia-code-review` skill** at `plugins/whetstone/evals/`: five positive cases (a PHP IDOR diff, a Python two-bug diff, a TypeScript file audit, a brief carrying reviewer questions, and a clean diff that must come back ready to merge) and two negatives that must not produce a review verdict. Graders check the behaviours the skill claims -- the skill fired or stayed silent, CR ids present, a verdict line, the specific defect found and correctly located, nits ranked below bugs, no fabricated findings.
+- `ia-code-review` gained a Composer review reference covering production requirements, platform constraints, autoloading, installation, and resolution and packaging checks, with compatible library ranges preserved and concrete deployment evidence required.
+
+### Changed
+
+- `ia-code-review` replaced generic PHP style and framework assumptions in its language profiles with evidence-conditioned coercion, null and key, by-reference iteration, array, lifecycle, and input-flow checks.
+- Four skills now name the harness question tool when they block on a user decision. `ia-document-review`, `ia-compound-docs`, and `ia-orchestrating-swarms` name `AskUserQuestion` for Claude Code and `request_user_input` for Codex, with numbered options in chat as the fallback. A bare "ask the user" degraded silently on three of the four distribution targets.
+- `ia-spec-flow-analyzer` now names `ia-document-review` as the general structural pass and itself as the flow-specific complement; `ia-database-guardian` defers Postgres query, index, and type patterns to `ia-postgresql` and scopes itself to migration-safety review. Both boundaries live on the agent side, because skills ship standalone where the agent does not exist.
+- `ia-kieran-reviewer` gained a report format binding its findings to `ia-code-review`'s severity ladder, sequential CR ids, measured `file:line` citations, and verdict vocabulary, rather than carrying a duplicate template.
+- `ia-git-worktree` rewrote its ownership rules in objective voice, and `ia-meta-prompting` scoped its `/ia-verify` mention to Claude Code and dropped a second-person line.
+- `/ia-lfg` frames the caller's feature description as data rather than instructions, and states that the verification gate `/ia-work` runs, together with `/ia-review`, satisfies this pipeline's pre-PR verification. Six commands replaced decorative status glyphs with plain labels; the triage severity legend keeps its colour coding, which carries meaning.
+- Eval prompts now enter the prompt-injection corpus. They ship inside the plugin and declare their own `allowed_tools`, so they belong behind the same release gate as skills and commands.
+
+### Fixed
+
+- The Jev helper no longer pins one exact judge model. A server-side model bump would have discarded every reply permanently and silently; it now accepts the `jev-1.` family and reports an unexpected model on stderr.
+- The injection hook no longer expands a possibly-empty array unguarded under `set -u`. On bash 4.0 through 4.3 that aborted with an unbound-variable error and surfaced a visible hook error on every subagent call, which is exactly what the hook is written to avoid.
+- The Jev helper's frontmatter reader recognises every YAML block-scalar indicator, not four of them. `>+`, `>2`, and a trailing comment previously became the judge's rubric text verbatim.
+- `/ia-triage` shipped a worked example written in Ruby on Rails whose own location line pointed at a TypeScript file. It is now TypeScript throughout.
+- `ia-document-review` had no Step 7: an earlier reference offload removed the reader test without renumbering what followed. `ia-simplifying-code` gave two different orderings of one priority list in adjacent lines, and `ia-python-services` stated its coverage target twice.
+- The eval suite's skill-fired graders asserted only that some skill ran, and the harness excluded them from scoring because no arm was declared -- so nothing verified that `ia-code-review` specifically fired. They now pin the skill name and score in both arms. The clean-diff grader was also stricter than the severity ladder it tests, which made the case unpassable unless the skill under-reported against its own rules.
+
+### For contributors
+
+- New AACR-Bench preparation under `distillery/benchmarks/aacr/`: a pinned dataset revision with checksums, a source-inspected holdout of five pull requests with five defect claims and five rejected-claim negatives, reviewer inputs separated from labels, and offline reproduction. Upstream positives were not taken as truth; fixed-at-head, unchanged, and misclassified entries were found, and only source-supported claims were retained with the original labels preserved as provenance.
+- A changed-symbol context selector with typed receiver-contract retrieval, plus two recorded frozen-context review experiments.
+
 ## [4.5.3] - 2026-09-13
 
 Patch: a repo and marketplace sync landed 28 improvements and four new reference files across 25 components, then a post-sync audit resolved the rule conflicts the sync introduced. Two commits. Component counts remained at 32 skills, 19 agents, and 22 commands.

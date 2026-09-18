@@ -1,12 +1,12 @@
 {
-  "plugin_version": "4.5.3",
+  "plugin_version": "4.6.0",
   "model_baseline_prefixes": [
     "claude-opus-4-8",
     "claude-haiku-4-5",
     "claude-fable-5",
     "claude-sonnet-5"
   ],
-  "generated_at": "2026-09-13T14:33:43.950622+00:00",
+  "generated_at": "2026-09-18T00:04:53.729392+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "141a7348273646e457c7efd1f3cb4c77566b2c2d84a580d6aa187f7faa372e8c",
@@ -27,14 +27,14 @@
       "pattern_changed": "4.5.2"
     },
     "ia-code-review": {
-      "content_hash": "4e8429fc3baa7836ecf323dbc9b7ecd1d453bf0e8b5cdfe8ccecf87a53d7aa7b",
-      "content_changed": "4.5.2",
+      "content_hash": "7b42e81f49fc42fa4efee9653d297b14ae0a6603c9ac23d16167a3d8caee2852",
+      "content_changed": "4.6.0",
       "pattern_hash": "6ed09617887f96773eb7d093acafcc1d94c813d8412cd052d77dc6ed64580d6b",
       "pattern_changed": "4.5.2"
     },
     "ia-compound-docs": {
-      "content_hash": "fbe8419bfc0fd094cb912c4b7770d88ee5ebe6286dfbf2e1f52ae19a80f71ad5",
-      "content_changed": "4.5.3",
+      "content_hash": "40dc10a6447cfe6d937aa0ab20f2dce00b8348adf992f9852bbbe7aac0ff937e",
+      "content_changed": "4.6.0",
       "pattern_hash": "6e7a72297851107df30145ec034e94752d6c1d79dc9f422870c637f93107f471",
       "pattern_changed": "4.5.2"
     },
@@ -51,8 +51,8 @@
       "pattern_changed": "4.5.2"
     },
     "ia-document-review": {
-      "content_hash": "a5ed6ffc2abb6afa1ed62d168d7d9197b9990f351bd8c8672e23452a4b797d8f",
-      "content_changed": "4.5.2",
+      "content_hash": "1763a78e5de70107bd53d256d2c27fc70cc56b423972005ef8c12e4845657579",
+      "content_changed": "4.6.0",
       "pattern_hash": "e6cd4a4e7808a2796cbc3bd8dfba3005cf11299b38ce54d5f084db70f1a8d6cf",
       "pattern_changed": "4.5.2"
     },
@@ -69,8 +69,8 @@
       "pattern_changed": "4.5.2"
     },
     "ia-git-worktree": {
-      "content_hash": "9d11243e4761e7c068f4202e6ff2b8cc1b613a89eb82a2d6cb6221c9d83f59b6",
-      "content_changed": "4.5.2",
+      "content_hash": "37a2040337f649c0c2e9fa5f64d973cb7c3f5ff1ad1b243fee38e5303852cf0a",
+      "content_changed": "4.6.0",
       "pattern_hash": "9ad9e02502d413ff043f48eac19a134fa563a282518a5c01caa232997ca2dd36",
       "pattern_changed": "4.2.0"
     },
@@ -87,8 +87,8 @@
       "pattern_changed": "4.5.2"
     },
     "ia-meta-prompting": {
-      "content_hash": "99a8a22b07903b10127db8a2581e635503f89f9baf3cb32b7d5202dfcb78d402",
-      "content_changed": "4.5.0",
+      "content_hash": "cd818b9d9e3d6339749bf85e023db4717fc81b5afc96f5d9e2d65b0ea13d9846",
+      "content_changed": "4.6.0",
       "pattern_hash": "9315258d5f52b840304c8750f0e26880973fb77d652c249f7051e0b21cea8f62",
       "pattern_changed": "4.5.2"
     },
@@ -99,8 +99,8 @@
       "pattern_changed": "4.5.0"
     },
     "ia-orchestrating-swarms": {
-      "content_hash": "5236c6f80ec558ea1a489d0e506c9e79beb90cfd13f077299bd37c1f555f35bd",
-      "content_changed": "4.5.2",
+      "content_hash": "5c9a72ce731fd9c0d6d64dc19bd2de444e80a0ff126288241bd8d30300a97436",
+      "content_changed": "4.6.0",
       "pattern_hash": "1ccd922dbcd90588af36d9281dbe445b954e072a129ee476b137e0e16db41f7d",
       "pattern_changed": "4.5.2"
     },
@@ -129,8 +129,8 @@
       "pattern_changed": "4.2.0"
     },
     "ia-python-services": {
-      "content_hash": "9dcd108498897bcb63a687c0b9a802968befda650559dc2acd8878f5f5c1bb03",
-      "content_changed": "4.5.2",
+      "content_hash": "31d6e1c626ffcf49fba1f9e0a23cc73fb01b008e3bd64f3427f8ce3804d991fc",
+      "content_changed": "4.6.0",
       "pattern_hash": "d2578404b06be2c299da3da1985c0781fe12a111c57f3d808cf5b8ab9295a6cc",
       "pattern_changed": "4.5.2"
     },
@@ -165,8 +165,8 @@
       "pattern_changed": "4.3.2"
     },
     "ia-simplifying-code": {
-      "content_hash": "5b0698bf70c81636549d93fcd9bb4b719f80e77e57e4d725a465bf73f88fe8a1",
-      "content_changed": "4.5.3",
+      "content_hash": "7d5d9a3313abfe842be116d59af40502a0576de442768da286ab547d3c399790",
+      "content_changed": "4.6.0",
       "pattern_hash": "925d1cb0c1ee961c16e48cd09d97b0d84b024f29537983980665502569f34fd9",
       "pattern_changed": "4.5.2"
     },
