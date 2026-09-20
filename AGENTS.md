@@ -53,7 +53,7 @@ whetstone/
 - **Read before claiming "new"**: Before presenting sync/improvement findings, read the target skill to verify the pattern isn't already covered. Saves round-trips.
 - **Present changes one at a time** for review decisions. Batch presentation only when explicitly asked.
 - **No off-stack content**: Skip or replace code examples, references, and patterns for languages/frameworks the team doesn't use (Ruby/Rails, Java, Swift, etc.). Use PHP, Python, or TypeScript equivalents. Generic SQL or framework-agnostic examples are fine when no specific stack fits.
-- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/whetstone/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `grep -rn '~/ai/\|/home/' plugins/` before shipping to catch stragglers.
+- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/whetstone/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `git grep -n '~/ai/\|/home/' -- plugins/` before shipping to catch stragglers. Search tracked files only: a plain `grep -rn` also walks gitignored build artifacts (`evals/results/`, `__pycache__/`) that never ship, so it reports stragglers that do not exist. The tracked hits that remain are the `SPEC.md` lines documenting this rule.
 
 ## Versioning
 
@@ -69,6 +69,8 @@ When `/release` runs, it:
 4. Runs `bash scripts/update-metadata.sh` to sync descriptions and counts
 5. Validates JSON, then runs the pre-commit gates in order with these blocking statuses:
    - `update-metadata.sh --check` — **BLOCKING** (metadata/count drift)
+   - `validate-plugin` — **BLOCKING on HIGH** findings (machine-path leaks, dead cross-refs, phantom agents, orphan references)
+   - `validate-cross-refs.sh` — **BLOCKING** (broken reference links; also rejects path-style links to a sibling skill, which resolve locally but break in the ai-skills mirror)
    - native Codex plugin regression (`test-codex-plugin.sh`) — **BLOCKING**
    - trigger regression tests (`test-triggers`) — **BLOCKING**
    - Tier-1 prompt-injection corpus scan — **BLOCKING on HIGH** findings
@@ -137,6 +139,8 @@ When adding or modifying skills, verify:
 - [ ] `name:` present and matches directory name (lowercase-with-hyphens)
 - [ ] `description:` describes **what it does and when to use it** (e.g., "Explains code with diagrams. Use when exploring how code works.")
 - [ ] `description:` describes *when* to invoke the skill (trigger conditions); never *how* the skill proceeds step-by-step. Restating the body's procedure in the description causes Claude to follow the description and skip the skill content.
+- [ ] `description:` sentence 1 names the distinctive mechanism (what a sibling skill would not produce), not a category label ("code review", "optimization loops"). Route neighbors with "Use `<sibling>` for <that job>" rather than restating their scope. Quoted-utterance or slash-name catalogs belong only in descriptions of user-invoked skills.
+- [ ] No `disable-model-invocation: true` on a skill that another skill or command invokes through an explicit `Skill()` call; the flag makes that call fail (`cannot be used with Skill tool`). Tighten the description's trigger instead.
 
 **Description-as-shortcut failure mode (documented evidence):** a skill whose description summarizes the procedure will be *followed* instead of *read*. Observed case from external test runs: a skill with a two-stage flowchart (spec-compliance review, then quality review) had its description paraphrased as "code review between tasks." Claude ran ONE review, not TWO, because the description compressed the workflow. The fix is always the same: description = trigger conditions only. Process lives in the body. If you find yourself writing "this skill does X, then Y, then Z" in the description, you are writing a procedure shortcut and the body will be skipped.
 
@@ -152,6 +156,21 @@ When adding or modifying skills, verify:
 - [ ] Imperative/infinitive form (verb-first instructions)
 - [ ] No second person ("you should") — use objective language ("To accomplish X, do Y")
 - [ ] When a skill must block on a user question, name the harness tool — `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex — and fall back to numbered options in chat only when no blocking tool exists. The plugin ships cross-harness (Codex/.agents/.kilocode), so a bare "ask the user" silently degrades to chat off-Claude
+- [ ] No bare `/ia-x` slash commands in skill bodies. Only `skills/` ships to Codex/.agents/.kilocode (`.codex-plugin/plugin.json` declares `"skills"` and no commands key), so a slash command printed there resolves to nothing on three of four distribution targets. Reference a sibling component by skill name (`ia-planning`); where a user is genuinely told to invoke something, scope it — "planning (`/ia-plan` in Claude Code)". Descriptive mentions inside a conditional ("when invoked via `/ia-lfg`") are fine
+- [ ] No model-specific workarounds. A step that cannot be justified without naming a model, a model version, or one agent's private tool name is an issue to file, not skill content. The plugin ships to four harnesses across model families, so a step written to route around one model's failure is a tax on every other reader. Describe the capability the step needs, not the mechanism one model happens to require
+- [ ] No literal `$1`-`$9` or `$ARGUMENTS` in a SKILL.md body. Substitution applies to the skill's markdown content and to bash rules in `allowed-tools` frontmatter; it does **not** apply to `references/*.md`. A Postgres placeholder or shell positional written in the body is rewritten before the model sees it — put such examples in a reference file, or use `?`-style placeholders in the body
+
+### Bundled scripts
+
+A skill referencing its own bundled files picks one of three tiers:
+
+1. **Read-time relative path** — `[init-plan.sh](./scripts/init-plan.sh)`. No variable, no shell. Default choice.
+2. **Prose pointer** — "read `scripts/init-plan.sh` from this skill's directory". Use when the reader resolves the path, not a tool.
+3. **Executed shell** — a model-filled `SKILL_DIR` variable. Two non-obvious constraints apply:
+   - The assignment line needs a **trailing `;`**. Some hosts flatten the newline into a space, and without the separator `$SKILL_DIR` expands before the assignment runs.
+   - Claude Code's permission checker evaluates **every subcommand** of a compound command, so wrapping a pinned `bash ".../foo.sh"` call in `if [ -f ... ]; then ...; fi` defeats a narrow `Bash(bash *foo.sh)` allow-rule. A model-filled path is dynamic anyway and will not match a static pin.
+
+Avoid `${CLAUDE_SKILL_DIR}`: it is empty outside Claude Code, and every skill here ships cross-harness.
 
 ### Quality Dimensions (SkillsBench arXiv:2602.12670)
 
@@ -241,8 +260,14 @@ python3 distillery/scripts/distiller.py harvest-sessions [--project <name>] [--s
 python3 distillery/scripts/distiller.py discover-signals [--top 30]
 
 # Score a skill via LLM-as-judge. Direct backend (default: claude -p, billed) OR
-# in-session sub-agents (no API cost): --emit-tasks -> dispatch judge sub-agents -> --score-from-verdicts @<file>
-python3 distillery/scripts/distiller.py dspy-eval <skill> [--max-examples 20] [--backend claude-cli|openrouter] [--emit-tasks | --score-from-verdicts @<file>]
+# in-session sub-agents (no API cost): --emit-tasks (save the manifest) -> dispatch judge sub-agents
+# -> --score-from-verdicts @<file> --manifest @<manifest>. Verdicts carry only {index, response};
+# signal/session_id/skill_version come from the manifest, never from the judge's self-report.
+python3 distillery/scripts/distiller.py dspy-eval <skill> [--max-examples 20] [--backend claude-cli|openrouter] [--emit-tasks | --score-from-verdicts @<file> --manifest @<manifest>]
+
+# Find skills whose trigger regex may be too narrow (sessions that matched a skill's
+# keywords but never fired it). Keyword overlap, so rows are candidates for review, not a miss rate.
+python3 distillery/scripts/distiller.py analyze-undertriggers [--skill <name>] [--min-examples 5] [--overlap 6] [--include-stale]
 
 # Build golden eval dataset from harvested sessions
 python3 distillery/scripts/distiller.py build-golden <skill> [--top 20] [--auto]
@@ -280,7 +305,7 @@ python3 scripts/generate-manifest.py
 These commands are integrated into the release pipeline (`/sync-from-repos` > `/audit-plugin` > `/release` > `/announce`):
 
 - `harvest-sessions` runs in `/sync-from-repos` Phase 1 (background, parallel with inventory)
-- `discover-signals` and `analyze-outcomes` run in `/sync-from-repos` Phase 6 (surfaces new patterns and project-context anomalies before audit)
+- `analyze-outcomes` runs in `/sync-from-repos` Phase 6 (surfaces project-context anomalies before audit); `discover-signals` was retired from the pipeline 2026-08-29 (8 consecutive 0-promotable runs) and remains a manual-only tool
 - `analyze-misfires`, `analyze-outcomes`, and `diagnose-negatives` run in `/audit-plugin` Phase 2 (trigger coverage checks)
 - `test-triggers` and `test-semantic` run in `/audit-plugin` Phase 7 and `/release` pre-commit gates
 
@@ -323,3 +348,39 @@ Do not add custom fields (`downloads`, `stars`, `rating`, `categories`, etc.).
 - [Plugin Documentation](https://code.claude.com/en/docs/claude-code/plugins)
 - [Plugin Marketplace Documentation](https://code.claude.com/en/docs/claude-code/plugin-marketplaces)
 - [Plugin Reference](https://code.claude.com/en/docs/claude-code/plugins-reference)
+
+<!-- BEGIN beads-managed (br v6) -->
+## Beads ledger (`br`)
+
+This repo is onboarded to the central `br` ledger. A PATH wrapper routes every
+`br` call from here into a private store under `~/ai/beads/<slug>/`; this work tree
+carries **no** `.beads` artifacts (do not create any). Full protocol lives in
+`~/ai/wiki/tools/beads-review-ledger.md`.
+
+**Allowed commands** (the wrapper denies everything else): `create update comments
+close reopen list show count stats search where info`, `doctor health`,
+`sync --import-only|--status`, `config get|list`. Never pass `--db`,
+`--no-auto-flush`, `--no-auto-import`, `--no-db`, `--allow-stale`, or `--prefix`.
+
+**JSON envelopes**: `br list --json` → `{issues, total}`; `br show ID --json` →
+a one-element array with comments under `.[0].comments`. Pipe `br` JSON to `jq`
+only as `rtk proxy br … | rtk proxy jq …` (raw, unfiltered output).
+
+**Finding schema** (review-cycle records):
+- Native status `open`/`closed` only — `in_progress` is banned (it silently
+  disappears from `--status open`). Priority is severity: P0 critical, P1
+  important, P2 minor.
+- Exactly one `type:{security|correctness|memory|perf|build|test|style}` label and
+  one `cycle:<id>` label. Open findings carry exactly one
+  `state:{proposed|disputed|fixed|needs-human}`; closed findings carry no `state:*`
+  and a `close_reason` of `fixed|false-positive|wont-fix|duplicate`.
+- Description first line is `file: <path>:<line>`, repo-relative.
+- Attribution: `br create --actor <id>`, `br comments add --author <id>`.
+- Closing is two steps (0.2.19 refuses a terminal status in `update`): first
+  `br update ID` clearing `state:*` and the assignee, then `br close ID --reason <r>`.
+- Never `--set-labels` (it erases other labels); use `--add-label`/`--remove-label`.
+
+**Human gate** — create as `state:needs-human` and get pre-change approval for: P0,
+`type:security`, `type:memory`, destructive operations, schema/data migrations, or
+public API changes.
+<!-- END beads-managed (br v6) -->

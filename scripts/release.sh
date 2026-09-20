@@ -155,6 +155,7 @@ echo "[1/9] Commit, refresh Codex & push..."
 git add -A -- \
 	.agents/plugins/marketplace.json \
 	.claude-plugin/marketplace.json \
+	AGENTS.md \
 	CHANGELOG.md \
 	README.md \
 	distillery/.skill-versions.json \
