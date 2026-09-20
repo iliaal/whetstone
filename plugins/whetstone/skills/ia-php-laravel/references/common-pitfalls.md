@@ -72,6 +72,14 @@ Widening the gate so `[]` means "clear" is a producer-side change, not just a co
 
 Tests mask it almost universally, because the natural "other tenant gets 404" test posts a *valid* payload and the controller check fires. Fix: move the ownership and type check into `FormRequest::authorize()` and override `failedAuthorization()` to `throw new NotFoundHttpException`. Regression test shape: foreign-but-existing id plus an empty body must return 404, not 422.
 
+## Authentication and sessions
+
+### AuthenticateSession baselines the password hash on first pass, not at login
+
+`Illuminate\Session\Middleware\AuthenticateSession` (`auth.session`) establishes its baseline lazily: `if (! $request->session()->has('password_hash_'.$driver)) { $this->storePasswordHashInSession($request); }`, then compares the user's current hash against that stored value and logs the session out on mismatch. The baseline is therefore whatever the hash happened to be the **first time the middleware ran for that session**, not the hash at login. If the login route is not itself covered by the middleware and the password changes before any request on the session passes through it, the middleware stores the post-change hash as the baseline and the mismatch never occurs. "Log out other devices on password change" is silently defeated: no exception, no log line, the old session keeps working.
+
+The typical shape: `auth.session` applied to the authenticated route group, login and password-reset routes outside it, and a device that logs in and then goes idle while the password is rotated elsewhere. Rule: any application relying on password-change session invalidation must confirm the login path itself passes through `AuthenticateSession`, not only the routes it protects -- read `route:list --path=login` middleware column rather than the group definition. A pending framework change stores the hash at `SessionGuard::login()` time, which closes the window; still verify coverage in the installed version rather than relying on which side of that change it sits, because the invariant is "baseline written at login", and a middleware-only setup only satisfies it when the login request is covered. Regression test: log in on session A, change the password on session B without touching A, then make one request on A and assert it is logged out.
+
 ## Collections
 
 ### Collection::unique() compares loosely

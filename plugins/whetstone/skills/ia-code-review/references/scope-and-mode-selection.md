@@ -13,7 +13,7 @@ When no specific files are given, resolve scope via this fallback chain:
 4. Untracked files (`git ls-files --others --exclude-standard`) -- often the most review-worthy
 5. **Zero files → stop.** Ask what to review (ask channel above).
 
-Exclude: lockfiles, minified/bundled output, vendored/generated code.
+Exclusions: apply the canonical list in [scope-resolution.md](./scope-resolution.md) — that file owns which categories drop out and which stay selected. Do not keep a local copy of the categories here.
 
 ### Base-branch resolution for branch reviews
 

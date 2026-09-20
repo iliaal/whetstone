@@ -53,6 +53,7 @@ You will receive:
 - SKILL INSTRUCTIONS: A rubric applied retrospectively to this historical trace
 - TASK INPUT: What the user asked the agent to do
 - AGENT OUTPUT: What the agent actually produced (may be truncated from a longer conversation)
+- TRACE SIGNALS: Deterministic counts computed from the recorded tool calls, not the agent's narration
 
 Important context: This is retrospective diagnosis, not an experiment. The supplied skill may differ from the version available during the recorded task. Do not infer that editing this rubric changed the recorded behavior. Score only applicable guidance; if the skill is irrelevant, score procedure_following as 5.
 
@@ -75,7 +76,10 @@ TASK INPUT:
 {task_input}
 
 AGENT OUTPUT (may be truncated):
-{agent_output}"""
+{agent_output}
+
+TRACE SIGNALS (computed, not self-reported):
+{trace_signals}"""
 
 # --- Session harvesting ---
 
@@ -173,6 +177,23 @@ _SECRET_PATTERNS = _re.compile(
     ]),
     _re.IGNORECASE,
 )
+
+# Personal identifiers. Harvested examples are written to disk and then sent
+# verbatim to a third-party judge (dspy-eval --backend openrouter, evolve), so
+# email addresses and the operator's home directory are scrubbed alongside
+# secrets rather than only on the egress call.
+# The lookahead spares retina asset filenames (sprite@2x.png, icon@3x.svg),
+# whose `@Nx` segment otherwise reads as a domain and takes the filename with
+# it. Scoped to image extensions so an address at a real `2x.` domain still
+# redacts.
+_EMAIL_PATTERN = _re.compile(
+    r"\b[A-Za-z0-9._%+\-]+@(?!\d+x\.(?:png|jpe?g|gif|svg|webp|avif|ico)\b)"
+    r"[A-Za-z0-9](?:[A-Za-z0-9.\-]*[A-Za-z0-9])?\.[A-Za-z]{2,}\b",
+    _re.IGNORECASE,
+)
+# /home/<user>/... and /Users/<user>/... collapse to ~/...; the lookbehind keeps
+# an embedded path (/var/home/someone) from being rewritten mid-string.
+_HOME_PATH_PATTERN = _re.compile(r"(?<![\w.\-])(?:/home|/Users)/[A-Za-z0-9._\-]+")
 
 # Negative signal patterns — user expressed dissatisfaction or retried.
 _NEGATIVE_SIGNAL_PATTERNS = _re.compile(
@@ -2610,6 +2631,17 @@ def _scrub_secrets(text):
     return _SECRET_PATTERNS.sub("[REDACTED]", text)
 
 
+def _scrub_text(text):
+    """Scrub everything that leaves this machine with an eval example: secrets
+    to [REDACTED], email addresses to [EMAIL], home directories to ~.
+
+    Secrets go first — a connection string carries an @host that would otherwise
+    read as an email address."""
+    text = _scrub_secrets(text)
+    text = _EMAIL_PATTERN.sub("[EMAIL]", text)
+    return _HOME_PATH_PATTERN.sub("~", text)
+
+
 def _extract_injected_skills(prompt_text):
     """Extract skill names and versions from a BEFORE STARTING injection header.
 
@@ -2714,6 +2746,231 @@ def _classify_signal(user_messages, typed_messages=None):
     return "positive" if positive else "ambiguous"
 
 
+# Repeated-work detection. Tool calls are grouped by (category, key) so a judge
+# receives structural evidence of repetition instead of inferring it from the
+# agent's narration. Anything outside this map has no meaningful target and is
+# not counted.
+_TOOL_CATEGORIES = {
+    "read": "read", "notebookread": "read",
+    "edit": "edit", "write": "edit", "multiedit": "edit", "notebookedit": "edit",
+    "bash": "shell",
+    "task": "dispatch", "agent": "dispatch",
+}
+
+# Call count at which a group counts as repeated work, per category.
+_REPEAT_THRESHOLDS = {"read": 3, "edit": 2, "shell": 2, "dispatch": 2}
+
+# Status and test commands are legitimately re-run (check, edit, re-check), so a
+# repeated one is not evidence of repeated work. Split into two halves because
+# only the runners establish anything: a repeated `git status` is routine, but
+# its output is not evidence behind a completion claim.
+_SHELL_COMMAND_PREFIX = r"^(?:rtk\s+|sudo\s+)*"
+
+_INSPECT_SHELL_ALTERNATION = (
+    r"git\s+(?:status|diff|log|show|branch)"
+    r"|ls|pwd|cat|head|tail|wc|find|grep|rg"
+)
+
+_VERIFY_SHELL_ALTERNATION = (
+    r"(?:python3?\s+-m\s+)?pytest|npm\s+(?:test|run\s+\S*test\S*)|yarn\s+test"
+    r"|phpunit|\S*vendor/bin/phpunit|composer\s+test|make\s+(?:test|check|lint)"
+    r"|cargo\s+test|go\s+test|tox|jest|vitest"
+)
+
+_ROUTINE_SHELL_PATTERN = _re.compile(
+    _SHELL_COMMAND_PREFIX
+    + r"(?:" + _INSPECT_SHELL_ALTERNATION + r"|" + _VERIFY_SHELL_ALTERNATION + r")\b",
+    _re.IGNORECASE,
+)
+
+# Test/build/lint runners only: the shell work whose result can substantiate a
+# completion claim.
+_VERIFY_SHELL_PATTERN = _re.compile(
+    _SHELL_COMMAND_PREFIX + r"(?:" + _VERIFY_SHELL_ALTERNATION + r")\b",
+    _re.IGNORECASE,
+)
+
+# Both patterns are prefix-anchored, so they only ever see a chain's first
+# segment. Splitting on the separators restores per-segment matching.
+_SHELL_SEPARATOR = _re.compile(r"&&|\|\||;|\|")
+
+
+def _is_routine_shell(command):
+    """True when re-running `command` is a status/test re-check rather than
+    repeated work.
+
+    A chain is never routine: `_ROUTINE_SHELL_PATTERN` is prefix-anchored, so
+    without this guard `pytest && sed -i s/a/b/ x.py` is exempted on its first
+    word and the mutating half never reaches the repeat threshold."""
+    if _SHELL_SEPARATOR.search(command):
+        return False
+    return bool(_ROUTINE_SHELL_PATTERN.match(command))
+
+
+def _is_verifying_call(tool_call):
+    """True when a tool call runs a check whose result could substantiate a
+    completion claim: a test/build/lint runner in any segment of a shell
+    command. A Read, an Edit, or a `git status` establishes nothing about
+    whether the work is done, so it is not counted as evidence."""
+    if (tool_call.get("tool") or "").lower() != "bash":
+        return False
+    command = tool_call.get("key") or ""
+    return any(_VERIFY_SHELL_PATTERN.match(segment.strip())
+               for segment in _SHELL_SEPARATOR.split(command))
+
+
+def _tool_call_key(tool, tool_input):
+    """Grouping key for repeated-call detection: the file path for read/edit
+    tools, the command text for shell tools, description plus prompt prefix for
+    subagent dispatches. Empty when the tool has no meaningful target."""
+    category = _TOOL_CATEGORIES.get((tool or "").lower())
+    if not category or not isinstance(tool_input, dict):
+        return ""
+    if category in ("read", "edit"):
+        return str(tool_input.get("file_path") or tool_input.get("notebook_path") or "")
+    if category == "shell":
+        return " ".join(str(tool_input.get("command", "")).split())
+    return f"{tool_input.get('description', '')} | {str(tool_input.get('prompt', ''))[:120]}".strip()
+
+
+def _repeated_call_groups(turns):
+    """Count assistant tool calls grouped by (category, tool, key).
+
+    Returns {"thresholds", "groups", "over_threshold"}. `groups` keeps every
+    group called at least twice with its raw count so a consumer can re-apply
+    its own threshold; `over_threshold` counts the groups that reach the
+    category threshold, excluding re-run status/test commands.
+    """
+    counts = Counter()
+    for turn in turns:
+        if turn["role"] != "assistant":
+            continue
+        for tc in turn.get("tool_calls", []):
+            category = _TOOL_CATEGORIES.get((tc.get("tool") or "").lower())
+            key = tc.get("key") or ""
+            if category and key:
+                counts[(category, tc["tool"], key)] += 1
+
+    groups = []
+    for (category, tool, key), count in counts.most_common():
+        if count < 2:
+            continue
+        routine = category == "shell" and _is_routine_shell(key)
+        groups.append({"category": category, "tool": tool, "key": _scrub_text(key)[:200],
+                       "count": count, "routine": routine,
+                       "flagged": count >= _REPEAT_THRESHOLDS[category] and not routine})
+    return {"thresholds": dict(_REPEAT_THRESHOLDS), "groups": groups[:20],
+            "over_threshold": sum(1 for g in groups if g["flagged"])}
+
+
+# Assistant phrases asserting the work is finished or verified. Deliberately
+# narrow: stated intent ("I'll fix", "let me run the tests") is not a claim.
+_COMPLETION_CLAIM_PATTERNS = _re.compile(
+    r"(?:"
+    r"\b(?:all\s+)?(?:\d+\s+)?tests?\s+(?:now\s+)?(?:pass(?:es|ing|ed)?|are\s+green)\b"
+    r"|\b(?:the\s+)?(?:build|suite|lint|type[\s-]?check)\s+(?:now\s+)?(?:passes|passed|is\s+green)\b"
+    r"|\b(?:i(?:'ve|\s+have)\s+)?verified\s+(?:it|this|that|the)\b"
+    r"|\b(?:it|this|that|everything)\s+(?:now\s+)?works\b"
+    r"|\b(?:fix|change|issue|bug|implementation|migration)\s+is\s+(?:now\s+)?"
+    r"(?:complete|done|fixed|working|verified)\b"
+    r"|\b(?:successfully|now)\s+(?:fixed|resolved|implemented|working)\b"
+    r"|\bconfirmed\s+working\b"
+    r"|^\s*(?:done|fixed|all\s+done|all\s+set)\s*[.!]?\s*$"
+    r")",
+    _re.IGNORECASE | _re.MULTILINE,
+)
+
+# Constructions that retract the claim they follow. "the test passes for a
+# reason it was not written for" is the agent disputing the test, not asserting
+# completion. A trailing caveat ("tests pass, but coverage dropped") is NOT
+# listed here: it qualifies the surrounding work, not the claim itself.
+_CLAIM_RETRACTION_PATTERN = _re.compile(
+    r"\bfor\s+(?:a|the\s+wrong|that)\s+reason\b",
+    _re.IGNORECASE,
+)
+
+
+def _first_agent_claim(text):
+    """First completion-claim match that the agent is actually making itself.
+
+    _COMPLETION_CLAIM_PATTERNS also fires on material the agent is only
+    relaying -- a quoted PR comment ('says *"This works for me"'), a cited log
+    line, a blockquoted excerpt -- and on a claim the same sentence goes on to
+    retract. Those are not completion claims, so scanning continues past them
+    rather than counting the turn.
+
+    Returns the match, or None when the turn carries no claim of its own."""
+    for match in _COMPLETION_CLAIM_PATTERNS.finditer(text):
+        line_start = text.rfind("\n", 0, match.start()) + 1
+        line_end = text.find("\n", match.end())
+        if line_end == -1:
+            line_end = len(text)
+        line = text[line_start:line_end]
+        if line.lstrip().startswith(">"):
+            continue
+        # An odd delimiter count before the match means it opened a quoted span
+        # that the match sits inside. Apostrophes are excluded: "don't" would
+        # unbalance almost every line of ordinary prose.
+        before = line[:match.start() - line_start]
+        if before.count('"') % 2 or before.count("`") % 2:
+            continue
+        rest_of_sentence = line[match.end() - line_start:].split(".")[0]
+        if _CLAIM_RETRACTION_PATTERN.search(rest_of_sentence):
+            continue
+        return match
+    return None
+
+
+def _unverified_completion_claims(turns):
+    """Flag assistant completion claims made with no verifying tool result.
+
+    Walks the trace in order: a typed user message opens a new agent turn and
+    clears the evidence counter; a result answering a test/build/lint run adds
+    evidence. A completion claim raised before any such result in that turn is
+    unverified.
+
+    Evidence is deliberately narrower than "any tool result". A Read, an Edit,
+    or a `git status` answered in the same turn establishes nothing about
+    whether the work is done, and counting it exonerated every claim in the
+    corpus -- so the judge was told the claim was backed when nothing had run.
+
+    This is a separate structural category, NOT part of the user-sentiment
+    signal. _classify_signal's positive/negative/ambiguous output is unchanged,
+    so analyze-outcomes and the eval pipeline keep reading exactly what they
+    read before.
+    """
+    claims = 0
+    unverified = 0
+    evidence = 0
+    verify_pending = False
+    examples = []
+    for turn in turns:
+        if turn["role"] != "assistant":
+            # Tool results answer the calls made before this message, so they
+            # count toward the turn that is ending, not the one a typed message
+            # starts here.
+            if verify_pending and (turn.get("tool_results") or []):
+                evidence += 1
+            verify_pending = False
+            typed = turn.get("typed_text", "")
+            if typed.strip() and not _is_harness_typed_text(typed):
+                evidence = 0
+            continue
+        match = _first_agent_claim(turn["content_text"])
+        if match:
+            claims += 1
+            if evidence == 0:
+                unverified += 1
+                if len(examples) < 3:
+                    excerpt = turn["content_text"][max(0, match.start() - 60):match.end() + 60]
+                    examples.append(_scrub_text(excerpt).strip())
+        # Checked after the claim: a runner invoked in the same message as the
+        # claim has not answered yet, so it cannot back it.
+        if any(_is_verifying_call(tc) for tc in turn.get("tool_calls", [])):
+            verify_pending = True
+    return {"claims": claims, "unverified": unverified, "examples": examples}
+
+
 def _parse_session(jsonl_path):
     """Parse a single JSONL session file into structured data.
 
@@ -2794,6 +3051,7 @@ def _parse_session(jsonl_path):
                         tool_calls.append({
                             "tool": block.get("name", ""),
                             "input_preview": json.dumps(block.get("input", {}))[:200],
+                            "key": _tool_call_key(block.get("name", ""), block.get("input")),
                         })
                     elif block.get("type") == "tool_result":
                         # Capture tool results -- these contain the real work product
@@ -2882,9 +3140,11 @@ def _parse_session(jsonl_path):
 def _build_eval_example(parsed_session):
     """Convert a parsed session into a compact eval example for a skill.
 
-    Returns dict suitable for JSONL output, with secrets scrubbed.
-    Interleaves assistant text with tool results to capture actual work product,
-    not just process narration.
+    Returns dict suitable for JSONL output, with secrets, emails, and home paths
+    scrubbed. Interleaves assistant text with tool results to capture actual work
+    product, not just process narration. Carries two structural fields the judge
+    would otherwise have to infer from narration: repeated_calls (repeated work)
+    and completion_claims (claims made without tool evidence).
     """
     output_parts = []
     tools_used = set()
@@ -2916,10 +3176,12 @@ def _build_eval_example(parsed_session):
     agent_output = "\n---\n".join(output_parts)
 
     example = {
-        "task_input": _scrub_secrets(parsed_session["task_prompt"][:5000]),
-        "agent_output": _scrub_secrets(agent_output[:max_output]),
+        "task_input": _scrub_text(parsed_session["task_prompt"][:5000]),
+        "agent_output": _scrub_text(agent_output[:max_output]),
         "signal": parsed_session["signal"],
         "tools_used": sorted(tools_used),
+        "repeated_calls": _repeated_call_groups(parsed_session["turns"]),
+        "completion_claims": _unverified_completion_claims(parsed_session["turns"]),
         "injected_skills": parsed_session["injected_skills"],
         "turn_count": len(parsed_session["turns"]),
         "project": parsed_session["project"],
@@ -3690,6 +3952,120 @@ def analyze_misfires(min_examples=30, include_stale=False):
     }
 
 
+def analyze_undertriggers(min_examples=5, include_stale=False, skill_filter=None, overlap=6):
+    """Surface skills whose trigger regex may be too narrow to fire on organic phrasing.
+
+    The mirror image of analyze_misfires: instead of scoring sessions where a
+    skill WAS injected, this scores sessions where it was NOT, and reports the
+    ones whose task text overlaps the skill's keywords heavily anyway.
+
+    Two limits are structural, not fixable here, and are restated in the report:
+    the corpus is sessions where at least one OTHER skill fired (a session where
+    nothing fired is never harvested, so a total miss is invisible), and
+    _check_skill_relevance is keyword overlap, which over-reports relevance.
+    Rows are candidates for human review, never a measured miss rate.
+
+    Returns ranked candidates; raise `overlap` to tighten, lower it to widen. The
+    default of 6 is a triage cutoff picked off the current corpus (overlap 4
+    marks 50-80% of non-firing sessions as candidates, which is noise), not a
+    validated relevance threshold.
+    """
+    if not EVAL_DATA_DIR.exists():
+        print("Error: no eval data. Run harvest-sessions first.", file=sys.stderr)
+        sys.exit(1)
+
+    manifest = _load_skill_manifest()
+
+    # Deduplicate: harvest writes one copy of a session per injected skill, and
+    # every copy carries the full injected_skills list. Key on the session plus
+    # its task text, since sibling subagent traces can share a session id.
+    corpus = {}
+    for skill_dir in sorted(EVAL_DATA_DIR.iterdir()):
+        # _unattributed holds main-session tasks; the injection hook never
+        # targets those, so a non-fire there is not a trigger miss.
+        if not skill_dir.is_dir() or skill_dir.name == "_unattributed":
+            continue
+        sessions_file = skill_dir / "sessions.jsonl"
+        if not sessions_file.exists():
+            continue
+        with open(sessions_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                ex = json.loads(line)
+                corpus.setdefault((ex.get("session_id", ""), ex.get("task_input", "")[:400]), ex)
+
+    skill_keywords_cache = {}
+    for skill_dir in sorted((PLUGIN_DIR / "skills").iterdir()):
+        if skill_filter and skill_dir.name != skill_filter:
+            continue
+        skill_file = skill_dir / "SKILL.md"
+        if skill_file.exists():
+            skill_keywords_cache[skill_dir.name] = _extract_skill_keywords(skill_file.read_text())
+
+    results = []
+    stale_count = 0
+    for skill_name, keywords in sorted(skill_keywords_cache.items()):
+        if not keywords:
+            continue
+        no_fire = 0
+        overlaps = []
+        samples = []
+        for ex in corpus.values():
+            if any(i.get("skill") == skill_name for i in ex.get("injected_skills", [])):
+                continue
+            # Staleness keys to the CANDIDATE skill: a session captured before
+            # this skill's pattern last changed says nothing about it firing now.
+            if not include_stale and manifest is not None:
+                if _is_example_stale(ex, skill_name, manifest)["pattern_stale"]:
+                    stale_count += 1
+                    continue
+            no_fire += 1
+            task_input = ex.get("task_input", "")
+            is_candidate, count = _check_skill_relevance(task_input, keywords, threshold=overlap)
+            if not is_candidate:
+                continue
+            overlaps.append(count)
+            if len(samples) < 3:
+                samples.append({
+                    "task": task_input[:150],
+                    "overlap": count,
+                    "session_id": ex.get("session_id", ""),
+                    "fired_for": [i.get("skill") for i in ex.get("injected_skills", [])],
+                })
+        if no_fire < min_examples:
+            continue
+        results.append({
+            "skill": skill_name,
+            "no_fire": no_fire,
+            "high_overlap_no_fire": len(overlaps),
+            "candidate_rate": round(len(overlaps) / no_fire, 3),
+            "mean_overlap": round(sum(overlaps) / len(overlaps), 2) if overlaps else 0,
+            "samples": samples,
+        })
+
+    if stale_count:
+        print(f"  Filtered {stale_count} stale (skill, session) pairs (use --include-stale to include)",
+              file=sys.stderr)
+
+    results.sort(key=lambda x: (-x["candidate_rate"], -x["high_overlap_no_fire"]))
+
+    return {
+        "corpus_examples": len(corpus),
+        "overlap_threshold": overlap,
+        "min_examples": min_examples,
+        "skills_analyzed": len(results),
+        "scope": "Sessions where at least one other skill fired. A session where NO skill "
+                 "fired is not harvested, so a total trigger miss is invisible here.",
+        "precision": "Keyword overlap only (_check_skill_relevance over-reports relevance). "
+                     "Rows are candidates for human review, not a measured miss rate.",
+        "rate_basis": "Cand% = HighOvl / that row's own NoFire, not of the scanned corpus. "
+                      "Staleness is keyed per candidate skill, so NoFire differs by row.",
+        "candidates": results,
+    }
+
+
 def analyze_outcomes(min_examples=5, include_stale=False):
     """Analyze skill injection outcomes by project context.
 
@@ -4382,6 +4758,41 @@ def _dspy_aggregate(skill_name, scored, backend, eval_model, dataset_path_str, t
     return result
 
 
+def _format_trace_signals(example):
+    """Render an example's deterministic structural fields for the judge prompt.
+
+    Examples harvested before these fields existed say so, rather than reading
+    as a clean trace."""
+    lines = []
+    repeated = example.get("repeated_calls")
+    if not isinstance(repeated, dict):
+        lines.append("repeated tool calls: not recorded for this example")
+    else:
+        flagged = [g for g in repeated.get("groups", []) if g.get("flagged")]
+        if flagged:
+            lines.append(f"repeated tool calls ({len(flagged)} group(s) at or over "
+                         f"{repeated.get('thresholds', _REPEAT_THRESHOLDS)}):")
+            lines.extend(f"  - {g['tool']} x{g['count']} on {g['key'][:120]}" for g in flagged[:5])
+        else:
+            lines.append("repeated tool calls: none over threshold")
+
+    claims = example.get("completion_claims")
+    if not isinstance(claims, dict):
+        lines.append("completion claims: not recorded for this example")
+    elif claims.get("unverified"):
+        lines.append(f"completion claims with no test/build/lint result earlier in the "
+                     f"same turn: {claims['unverified']} of {claims.get('claims', 0)}")
+        lines.extend(f'  - "{text[:160]}"' for text in claims.get("examples", [])[:2])
+    elif claims.get("claims"):
+        # State the check the code performed, not a stronger reading of it: the
+        # runner's result arrived first, which is not proof it covered the claim.
+        lines.append(f"completion claims: {claims['claims']}; a test/build/lint result "
+                     "preceded each one in the same turn")
+    else:
+        lines.append("completion claims: none detected")
+    return "\n".join(lines)
+
+
 def dspy_emit_tasks(skill_name, dataset="sessions", max_examples=20, skill_file=None):
     """Sub-agent path step 1: emit per-example judge prompts as JSON (no LLM call).
     Each task carries the example's index/signal/session_id/skill_version so the
@@ -4399,6 +4810,7 @@ def dspy_emit_tasks(skill_name, dataset="sessions", max_examples=20, skill_file=
             skill_text=skill_text[:8000],
             task_input=task_input[:5000],
             agent_output=agent_output[:12000],
+            trace_signals=_format_trace_signals(ex),
         )
         tasks.append({
             "index": i,
@@ -4412,24 +4824,75 @@ def dspy_emit_tasks(skill_name, dataset="sessions", max_examples=20, skill_file=
             "dataset": str(dataset_path), "count": len(tasks), "tasks": tasks}
 
 
-def dspy_score_from_verdicts(skill_name, verdicts, dataset="sessions"):
-    """Sub-agent path step 2: parse per-example judge responses and aggregate.
-    `verdicts` is a list of {index, signal, session_id, skill_version, response}."""
+def _dspy_paired_verdicts(manifest, verdicts):
+    """Bind judge verdicts to emitted tasks by index, mirroring _paired_records.
+
+    Rejects a wrong-length array, a missing/non-integer/duplicate/unknown index,
+    and a verdict that restates provenance the emitted task contradicts. Returns
+    {index: verdict}."""
+    tasks = manifest.get("tasks")
+    if not isinstance(tasks, list) or not tasks:
+        raise ValueError("manifest carries no emitted tasks")
+    if not isinstance(verdicts, list) or len(verdicts) != len(tasks):
+        raise ValueError(f"exactly one verdict per emitted task is required ({len(tasks)} expected)")
+    by_index = {}
+    for verdict in verdicts:
+        if not isinstance(verdict, dict):
+            raise ValueError("each verdict must be an object")
+        index = verdict.get("index")
+        if type(index) is not int:
+            raise ValueError(f"verdict index must be an integer, got {index!r}")
+        if index in by_index:
+            raise ValueError(f"duplicate verdict index {index}")
+        by_index[index] = verdict
+    emitted = {task["index"] for task in tasks}
+    if set(by_index) != emitted:
+        raise ValueError(f"verdict indices do not match the emitted tasks "
+                         f"(unexpected: {sorted(set(by_index) - emitted)}, "
+                         f"missing: {sorted(emitted - set(by_index))})")
+    for task in tasks:
+        verdict = by_index[task["index"]]
+        for field in ("signal", "session_id", "skill_version"):
+            if field in verdict and verdict[field] != task.get(field):
+                raise ValueError(f"verdict provenance mismatch on {field} for task {task['index']}")
+    return by_index
+
+
+def dspy_score_from_verdicts(skill_name, verdicts, dataset="sessions", manifest=None):
+    """Sub-agent path step 2: bind per-example judge responses to the emitted
+    task manifest and aggregate.
+
+    `manifest` is the dspy_emit_tasks output — the canonical record of which
+    examples were judged. `verdicts` is a list of {index, response}; a judge
+    sub-agent echoes signal/session_id/skill_version back, so those are taken
+    from the emitted task rather than the verdict (a contradicting echo is
+    rejected). Without the manifest the report's provenance, count, and
+    positive/negative buckets are whatever the judge chose to report."""
+    if not isinstance(manifest, dict) or "tasks" not in manifest:
+        raise ValueError("the --emit-tasks manifest is required to bind verdicts to tasks")
+    if manifest.get("skill") != skill_name:
+        raise ValueError("manifest belongs to another skill")
     dataset_path = _dspy_dataset_path(skill_name, dataset)
+    if manifest.get("dataset") != str(dataset_path):
+        raise ValueError(f"manifest was emitted for a different dataset ({manifest.get('dataset')})")
+    by_index = _dspy_paired_verdicts(manifest, verdicts)
     scored = []
-    for v in verdicts:
+    for task in manifest["tasks"]:
         base = {
-            "index": v.get("index"),
-            "signal": v.get("signal", ""),
-            "session_id": v.get("session_id", ""),
-            "skill_version": v.get("skill_version"),
+            "index": task["index"],
+            "signal": task.get("signal", ""),
+            "session_id": task.get("session_id", ""),
+            "skill_version": task.get("skill_version"),
         }
-        scores = _parse_judge_response(v.get("response", ""))
+        response = by_index[task["index"]].get("response", "")
+        scores = _parse_judge_response(response)
         if scores is None:
-            scored.append({**base, "error": f"parse_error: {str(v.get('response', ''))[:200]}"})
+            scored.append({**base, "error": f"parse_error: {str(response)[:200]}"})
         else:
             scored.append({**base, **scores})
-    return _dspy_aggregate(skill_name, scored, "subagent", "session-subagent", str(dataset_path), 0, 0.0)
+    report = _dspy_aggregate(skill_name, scored, "subagent", "session-subagent", str(dataset_path), 0, 0.0)
+    report["rubric_sha256"] = manifest.get("rubric_sha256")
+    return report
 
 
 def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backend="claude-cli", skill_file=None):
@@ -4486,6 +4949,7 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
             skill_text=skill_text[:8000],
             task_input=task_input[:5000],
             agent_output=agent_output[:12000],
+            trace_signals=_format_trace_signals(ex),
         )
 
         if use_cli:
@@ -5538,6 +6002,11 @@ def verify_injection_attestation(ref):
     return True, f"valid attestation for {len(files)} changed file(s)"
 
 
+def _inline_or_file(raw):
+    """Resolve a CLI argument that is either inline JSON or '@path'."""
+    return Path(raw[1:]).read_text() if raw.startswith("@") else raw
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Skill distiller helper")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -5646,6 +6115,8 @@ def build_parser():
                          help="LLM backend: 'claude-cli' (Opus 4.7 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
     eval_mode.add_argument("--emit-tasks", action="store_true", help="Sub-agent path: emit per-example judge prompts as JSON (no LLM/API call)")
     eval_mode.add_argument("--score-from-verdicts", default=None, help="Sub-agent path: aggregate per-example judge responses (inline JSON, or @path) into the eval report")
+    p_eval.add_argument("--manifest", default=None,
+                        help="The --emit-tasks output (inline JSON, or @path); required with --score-from-verdicts to bind each verdict to its emitted task")
 
     p_compare = sub.add_parser("compare-skill", help="Compare fresh baseline/candidate executions under one frozen rubric; no API calls")
     p_compare.add_argument("name")
@@ -5674,6 +6145,14 @@ def build_parser():
     p_misfire = sub.add_parser("analyze-misfires", help="Identify skills injected into tasks where they're not needed")
     p_misfire.add_argument("--min-examples", type=int, default=30, help="Minimum injections to include (default: 30)")
     p_misfire.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
+
+    # analyze-undertriggers
+    p_under = sub.add_parser("analyze-undertriggers",
+                             help="Surface skills whose trigger may be too narrow: high keyword overlap, no injection")
+    p_under.add_argument("--skill", default=None, help="Only score this skill (default: every plugin skill)")
+    p_under.add_argument("--min-examples", type=int, default=5, help="Minimum non-firing sessions to include (default: 5)")
+    p_under.add_argument("--overlap", type=int, default=6, help="Keyword overlap at which a non-firing session becomes a candidate; triage cutoff, not a validated threshold (default: 6)")
+    p_under.add_argument("--include-stale", action="store_true", help="Include examples from before the skill's pattern last changed")
 
     # analyze-outcomes
     p_outcomes = sub.add_parser("analyze-outcomes", help="Analyze skill injection outcomes by project context, surface anomalies")
@@ -5925,10 +6404,15 @@ def main():
         print(json.dumps(dspy_emit_tasks(args.name, args.dataset, args.max_examples, args.skill_file), indent=2))
 
     elif args.command == "dspy-eval" and args.score_from_verdicts is not None:
-        raw = args.score_from_verdicts
-        if raw.startswith("@"):
-            raw = Path(raw[1:]).read_text()
-        report = dspy_score_from_verdicts(args.name, json.loads(raw), args.dataset)
+        try:
+            if not args.manifest:
+                raise ValueError("--score-from-verdicts requires --manifest (the --emit-tasks output)")
+            manifest = json.loads(_inline_or_file(args.manifest))
+            verdicts = json.loads(_inline_or_file(args.score_from_verdicts))
+            report = dspy_score_from_verdicts(args.name, verdicts, args.dataset, manifest)
+        except (ValueError, OSError, TypeError, KeyError) as error:
+            print(f"Error: {error}", file=sys.stderr)
+            sys.exit(1)
         previous = _save_eval_history(report)
         for line in _format_eval_comparison(report, previous):
             print(line, file=sys.stderr)
@@ -5956,6 +6440,21 @@ def main():
         print("-" * 70, file=sys.stderr)
         for m in report["misfires"]:
             print(f"{m['skill']:35s} {m['injected']:8d} {m['relevant']:8d} {m['misfire_rate']*100:7.1f}% {m['positive_rate']*100:5.1f}%", file=sys.stderr)
+        print(json.dumps(report, indent=2))
+
+    elif args.command == "analyze-undertriggers":
+        report = analyze_undertriggers(args.min_examples, args.include_stale, args.skill, args.overlap)
+        print(f"\n  Missed-trigger CANDIDATES (overlap >= {report['overlap_threshold']}, "
+              f"{report['corpus_examples']} sessions in corpus):", file=sys.stderr)
+        print(f"  {'Skill':35s} {'NoFire':>7s} {'HighOvl':>8s} {'Cand%NoFire':>12s} {'MeanOvl':>8s}",
+              file=sys.stderr)
+        print("  " + "-" * 75, file=sys.stderr)
+        for c in report["candidates"]:
+            print(f"  {c['skill']:35s} {c['no_fire']:7d} {c['high_overlap_no_fire']:8d} "
+                  f"{c['candidate_rate']*100:11.1f}% {c['mean_overlap']:8.2f}", file=sys.stderr)
+        print(f"  {report['rate_basis']}", file=sys.stderr)
+        print(f"  {report['scope']}", file=sys.stderr)
+        print(f"  {report['precision']}", file=sys.stderr)
         print(json.dumps(report, indent=2))
 
     elif args.command == "analyze-outcomes":

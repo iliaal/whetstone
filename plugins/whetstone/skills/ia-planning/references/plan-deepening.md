@@ -18,7 +18,7 @@ Maintain one internally consistent current plan. Restructure only where needed t
 
 When research changes a section, update its active instructions and add the relevant evidence using this structure:
 
-```markdown
+````markdown
 ## [Original Section Title]
 
 [Current supported instructions, with superseded steps replaced]
@@ -41,7 +41,7 @@ When research changes a section, update its active instructions and add the rele
 
 **References:**
 - [Documentation URL]
-```
+````
 
 ## Enhancement summary block
 

@@ -33,7 +33,7 @@ Out of scope:
 Authoritative sources:
 
 - `SKILL.md` -- runtime instructions and reference routing.
-- `references/*.md` -- bundled supplementary content (6 file(s)).
+- `references/*.md` -- bundled supplementary content (12 file(s)).
 - `distillery/tests/fixtures/triggers/ia-rust-systems.jsonl` -- positive and negative trigger phrasings under regression test.
 - `plugins/whetstone/hooks/skill-patterns.sh` -- regex pattern that fires this skill.
 - `distillery/.eval-data/ia-rust-systems/` -- harvested session examples (when present).
@@ -50,7 +50,7 @@ Data that must not be stored in this skill or its references:
 |---|---|---|
 | Trigger fixtures | complete | distillery/tests/fixtures/triggers/ia-rust-systems.jsonl (>=5 should_trigger, >=5 should_not_trigger) |
 | Hook regex pattern | complete | plugins/whetstone/hooks/skill-patterns.sh (`SKILL_PATTERNS[ia-rust-systems]`) |
-| Reference architecture | complete | 6 file(s) under references/ |
+| Reference architecture | complete | 12 file(s) under references/ |
 | Real-usage signal | <!-- populated by harvest-sessions when sessions exist --> | distillery/.eval-data/ia-rust-systems/ (created by harvest-sessions) |
 
 ## Evaluation

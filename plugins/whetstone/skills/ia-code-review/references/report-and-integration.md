@@ -28,12 +28,15 @@ Profiles: [review unit -> primary skill (+ supplemental), or generic]
 
 ### Residual Risks
 - [unresolved assumptions, areas not covered, open questions]
+- Set aside as out of scope: [one line per behavior considered and consciously set aside as outside the change's scope or spec, with the reason; or "no declined scope"]
 
 ### Verdict
 Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]
 ```
 
 Number findings `CR-001`, `CR-002`... sequentially across severities for stable IDs. Cap 10 per severity; note any overflow and show the highest-impact ones.
+
+**Declined scope is not uninspected scope:** the set-aside list above records a pass that ran and declined; the budget-exhausted `uninspected` state in [severity-and-confidence.md](./severity-and-confidence.md) records a pass that did not run. Report them as separate states -- an uninspected item also blocks a complete coverage ledger, a declined one does not.
 
 **Secret redaction:** when a finding's subject is a live credential (API key, token, password, private key), cite `file:line` and describe the pattern (`AWS access key ID assigned to a constant`); never reproduce the value in `quoted code` or anywhere else in the report. Reports are posted to PRs and captured in transcripts, both of which outlive the credential's rotation.
 
@@ -45,7 +48,7 @@ Multi-agent consolidation: apply the merge algorithm in [deep-review.md](./deep-
 
 ## References
 
-References load at their point of use above. Additionally: [security-test-coverage.md](./security-test-coverage.md) — security-audit deliverable checklist; [false-positive-suppression.md](./false-positive-suppression.md) — framework-idiom and test-specific FP categories; [external-review-subprocess.md](./external-review-subprocess.md) — external-CLI reviewer protocol (heartbeat tolerance, run-until-clean, frozen-diff binding, egress consent, provider-independence labeling).
+References load at their point of use above. Additionally: [security-test-coverage.md](./security-test-coverage.md) — security-audit deliverable checklist; [false-positive-suppression.md](./false-positive-suppression.md) — framework-idiom and test-specific FP categories; [external-review-subprocess.md](./external-review-subprocess.md) — external-CLI reviewer protocol (heartbeat tolerance, run-until-clean-or-capped, frozen-diff binding, egress consent, provider-independence labeling).
 
 ## Integration
 

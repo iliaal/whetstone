@@ -541,6 +541,32 @@ return {
 **Pagination contract:** List endpoints must return `has_more`, `next_offset`, and `total_count`. Default page size 20-50 items. Never load all results into memory.
 </principle>
 
+<principle name="output-data-minimization">
+## Tool Output Carries Classification, Not Payload
+
+Tool output is model input: whatever a tool returns lands in the context window, in transcripts, and in whatever the agent writes next. Two cases leak by default.
+
+**Caught exceptions.** A caught exception's message must not be returned to the model as tool output. Raw exception text routinely carries credentials from a connection string, local filesystem paths, the request payload that triggered the failure, and upstream response bodies. Log the full detail server-side, and return a fixed, generic tool-facing failure message plus a correlation identifier the operator can use to find the log entry. The recovery hint from the Actionable Errors principle still applies; the tool author writes it, and it is never copied from the exception. The test is origin, not syntax: an exception the tool's own code raised, whose message the tool author wrote from values the tool itself computed -- a typed `ValidationError` carrying a rejected field name, a row count, a configured limit -- is already the Actionable Errors shape and may be returned as-is. Interpolation is not the line; provenance is. Anything raised outside the tool's own code (a library, driver, filesystem, or upstream response), and any message that splices in a value the tool received rather than derived -- a connection string, a resolved path, a request payload, an upstream response body -- takes the generic message plus correlation identifier.
+
+```typescript
+} catch (err) {
+  const correlationId = randomUUID();
+  logger.error({ correlationId, err }, "read_item failed");
+  return {
+    text: `read_item failed (ref ${correlationId}). Retry, or give the reference to the operator.`,
+    isError: true,
+  };
+}
+```
+
+**Detection tools.** A tool whose job is detection -- a secret scanner, a PII sweep, a credential audit -- must discard the raw matched text and every capture group at detection time and forward only classification metadata: rule identifier, rule description, path, line, confidence. A reporting tool that carries the matched secret "for context" is itself a re-leak vector, and the output schema should have no field capable of holding the raw match; a `snippet` or `match` string field is the defect regardless of what the implementation currently puts in it.
+
+```json
+{ "rule": "aws-access-key-id", "description": "AWS access key ID",
+  "path": "config/prod.env", "line": 12, "confidence": "high" }
+```
+</principle>
+
 <principle name="bounded-scan-incompleteness">
 ## Bounded Scans Report Incompleteness
 
@@ -617,6 +643,8 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`
 - [ ] Bounded or paginated lookups return `incomplete` (distinct from not-found and unique) when a cap or unreadable records cut the scan short
 - [ ] Money-spending or live-external-effect tools require an explicit opt-in separate from credentials and ship a credential-free, labelled dry-run
+- [ ] Caught exceptions raised outside the tool's own code, or splicing in a value the tool received rather than derived, return a fixed generic message plus a correlation identifier; the raw exception text goes to the server log only. The tool's own validation errors, written by the author from values the tool computed, pass through as-is
+- [ ] Detection tools (secret, PII, credential scanners) emit rule identifier, description, path, line, and confidence; the output schema has no field that can hold the raw match
 - [ ] Multi-server tool names use service prefix (`service_action_resource`)
 - [ ] 10 Q/A eval pairs defined before merge (read-only, multi-hop, closed-data); eval passes ≥ 9/10 in CI on every PR; regressions investigated before shipping. See the Evaluation principle above.
 

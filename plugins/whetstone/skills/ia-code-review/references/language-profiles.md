@@ -1,6 +1,6 @@
 # Language-Specific Review Profiles
 
-Contents: [routing](#deterministic-stack-routing) · [framework verification](#verifying-framework-idioms-before-flagging) · [TypeScript/React](#typescript--react-ts-tsx-jsx) · [Python](#python-py) · [PHP](#php-php) · [Shell](#shell-sh-bash-non-github-actions-ci-configs) · [GitHub Actions](#github-actions-githubworkflowsyml) · [Configuration](#configuration-env-yml-yaml-json-toml) · [Data](#data-formats-csv-json-ingestion-parsers) · [Security](#security-all-files) · [LLM boundaries](#llm-trust-boundaries)
+Contents: [routing](#deterministic-stack-routing) · [framework verification](#verifying-framework-idioms-before-flagging) · [TypeScript/React](#typescript--react-ts-tsx-jsx) · [Python](#python-py-pyi) · [PHP](#php-php) · [Shell](#shell-sh-bash-non-github-actions-ci-configs) · [GitHub Actions](#github-actions-githubworkflowsyml) · [Configuration](#configuration-env-yml-yaml-json-toml) · [Data](#data-formats-csv-json-ingestion-parsers) · [Security](#security-all-files) · [LLM boundaries](#llm-trust-boundaries)
 
 ## Deterministic stack routing
 
@@ -25,7 +25,7 @@ reasoning.
 | `.cc`, `.cpp`, `.cxx`, `.hpp`; or `.h` adjacent to C++ sources/build targets | `ia-cpp-systems` |
 | React/Next dependency or imports plus frontend/JSX paths | `ia-react-frontend` |
 | Server-side JS/TS dependency or imports plus API, worker, CLI, or backend paths | `ia-nodejs-backend` |
-| `.py` | `ia-python-services` |
+| `.py` or `.pyi` | `ia-python-services` |
 | `.php` plus `laravel/framework`, `artisan`, or Laravel application structure | `ia-php-laravel` |
 | `.rs`, `Cargo.toml`, or `Cargo.lock` | `ia-rust-systems` |
 | `.sh`, `.bash`, or a shell-driven CI step outside `.github/workflows/` | `ia-linux-bash-scripting` |
@@ -73,13 +73,15 @@ When the verified behavior contradicts the finding's premise, drop the finding a
 - Effects without cleanup (subscriptions, timers, event listeners)
 - `typeof x === "number"` used as a validity check -- it admits `NaN`, `Infinity`, and finite-but-unusable magnitudes. Narrow to the range the consumer accepts (`Number.isFinite`, plus an explicit bound where one exists); `new Date(1e300).toISOString()` throws `RangeError`, and a bare `z.number()` needs `.finite()`
 
-## Python (.py)
+## Python (.py, .pyi)
 
 - Mutable default arguments (`def f(items=[])`)
 - Bare `except:` -- always catch specific exceptions
 - Missing `async`/`await` (sync call in async context)
 - f-string injection in SQL/shell -- use parameterized queries
 - `type: ignore` without justification
+- In `.pyi` stub files, do not report unreferenced variables, annotation-only declarations, or unreferenced parameter names -- a stub declares an interface it never executes, so these are expected, not dead code
+- The stub exemption does not cover every import. A stub re-exports a name only through the self-alias form (`from foo import bar as bar`, `import foo as foo`) or membership in `__all__`; type checkers treat stub files as if implicit re-export is disabled, so a plain `from foo import bar` exports nothing. An unreferenced non-aliased import in a `.pyi` is therefore a legitimate finding -- usually a dropped `as` alias that silently removed `bar` from the stub's public surface, breaking every downstream `from stub import bar`. Report it against the intended surface; do not assume deletion is the fix
 
 ## PHP (.php)
 

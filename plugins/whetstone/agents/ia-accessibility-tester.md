@@ -53,6 +53,7 @@ When invoked:
 - No focus traps (except intentional modals with Escape exit)
 - Visible focus indicators on every focusable element
 - Custom keyboard shortcuts documented and non-conflicting
+- Scrollable regions (wide data tables, overflow containers) reachable by keyboard: `tabindex="0"` while the content actually overflows, `-1` otherwise so a non-overflowing viewport gets no dead tab stop; re-evaluated on resize and on any ancestor `<details>` toggle
 
 ## Screen Reader Compatibility
 

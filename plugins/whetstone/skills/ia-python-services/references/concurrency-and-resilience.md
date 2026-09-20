@@ -26,6 +26,21 @@
 
 **Key rule:** Stay fully sync or fully async within a call path.
 
+**An awaitable returned into a sync path is a silent failure, not a type error.** A synchronous dispatch registry typed loosely -- `dict[str, Callable[..., Any]]` for a tool executor, plugin table, or handler map -- accepts an `async def` without complaint, and the type checker cannot catch it because a coroutine function is a `Callable` whose return type is `Any`. The call then returns a coroutine object instead of a result, and any code that stringifies or serializes the return value emits `<coroutine object handle at 0x...>` as its output while nothing raises; the only trace is a `RuntimeWarning: coroutine 'handle' was never awaited` at garbage collection, easy to lose in logs. Guard at the registry boundary and fail loudly:
+
+```python
+import inspect
+
+result = handler(*args)
+if inspect.isawaitable(result):
+    if inspect.iscoroutine(result):
+        result.close()  # suppress the never-awaited warning and release the frame
+    logger.error("handler %s is async but registered in a sync registry", name)
+    raise TypeError(f"handler {name!r} returned an awaitable from a synchronous dispatch")
+```
+
+Where the registry is meant to accept both, dispatch explicitly (`inspect.iscoroutinefunction(handler)` at registration time, then `asyncio.run` / `await` on the matching path) rather than letting the mismatch reach a serializer.
+
 **asyncio patterns:**
 - `asyncio.gather(*tasks)` for concurrent I/O -- use `return_exceptions=True` for partial failure tolerance
 - `asyncio.TaskGroup` (3.11+) for structured concurrency -- automatic cancellation of sibling tasks on failure; prefer over `gather` when all tasks must succeed

@@ -120,9 +120,21 @@ After resolving the comparison range, freeze the original changed-file universe 
 Tests excluded from deep-review size signals are still part of the universe and
 remain selectable. Keep deletion-only changes selectable so removal regressions
 can be reviewed against the old side. Exclude only paths outside explicit user
-scope or the main skill's declared lockfile, minified/bundled, vendored, and
-generated categories. Record the concrete reason; never silently drop an
+scope, or paths in the main skill's declared lockfile, minified/bundled,
+vendored, and generated categories -- all four are review noise that an explicit
+user scope may bring back. Record the concrete reason; never silently drop an
 oversized or unreadable selected file -- mark it failed.
+
+**A credential-bearing path is not excluded here.** This ledger governs local
+review, and a tracked `.env`, key, or `.netrc` is precisely where a
+committed-secret finding lives; dropping it from `selected` would make that
+class unreviewable. Keep the path selected, review it, and report any finding
+under the secret-redaction rule in
+[report-and-integration.md](./report-and-integration.md) -- cite `file:line` and
+describe the pattern, never reproduce the value. The unconditional exclusion of
+these paths applies to *external dispatch only*; the hard-exclusion list in
+[external-review-subprocess.md](./external-review-subprocess.md) keeps them out
+of any packet that leaves the machine.
 
 Use one disposition per path:
 

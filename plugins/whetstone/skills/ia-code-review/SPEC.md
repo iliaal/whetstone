@@ -33,7 +33,7 @@ Out of scope:
 Authoritative sources:
 
 - `SKILL.md` -- runtime instructions and reference routing.
-- `references/*.md` -- bundled supplementary content (14 file(s)).
+- `references/*.md` -- bundled supplementary content (20 file(s)).
 - `distillery/tests/fixtures/triggers/ia-code-review.jsonl` -- positive and negative trigger phrasings under regression test.
 - `plugins/whetstone/hooks/skill-patterns.sh` -- regex pattern that fires this skill.
 - `distillery/.eval-data/ia-code-review/` -- harvested session examples (when present).
@@ -50,7 +50,7 @@ Data that must not be stored in this skill or its references:
 |---|---|---|
 | Trigger fixtures | complete | distillery/tests/fixtures/triggers/ia-code-review.jsonl (>=5 should_trigger, >=5 should_not_trigger) |
 | Hook regex pattern | complete | plugins/whetstone/hooks/skill-patterns.sh (`SKILL_PATTERNS[ia-code-review]`) |
-| Reference architecture | complete | 14 file(s) under references/ |
+| Reference architecture | complete | 20 file(s) under references/ |
 | File coverage contract | complete | `SKILL.md` Coverage gate + `references/scope-resolution.md` Review coverage ledger |
 | Reviewer trust boundary | complete | `references/reviewer-trust-boundary.md` + `references/deep-review.md` specialist prompts |
 | Deterministic stack routing | complete | `references/language-profiles.md` routing precedence + `references/deep-review.md` route map |

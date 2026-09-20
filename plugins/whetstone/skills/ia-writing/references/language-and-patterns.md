@@ -2,7 +2,7 @@
 
 ## Modes
 
-**Edit (default)** -- rewrite the draft to strip AI tells while preserving the writer's voice; produce corrected text plus a changelog.
+**Edit (default)** -- rewrite the draft to strip AI tells while preserving the writer's voice; produce corrected text. Add a changelog only when the caller asks for one, and keep it outside the returned text -- a line such as "Edit-mode pass applied: split two long sentences" inside a commit body, PR description, or reply is the AI tell this mode exists to remove.
 
 **Detect** -- when asked whether text reads as AI, or to audit, scan, or flag a draft without rewriting: name each pattern that appears, quote the offending line, and give the fix in a few words. Do not rewrite, do not score, do not claim whether AI wrote it -- named patterns are evidence the reader can check; an authorship verdict is a guess. Run detection per Phase 1 of [audit-workflow.md](./audit-workflow.md), stop there, and offer to edit afterward.
 

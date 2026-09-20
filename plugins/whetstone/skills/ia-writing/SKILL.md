@@ -14,7 +14,7 @@ Edit human-facing prose while preserving meaning, factual accuracy, and the writ
 
 ## Modes
 
-- **Edit** (default): produce corrected text and a proportionate changelog.
+- **Edit** (default): produce corrected text. Add a changelog only when the caller asks for one; place it outside the returned text, never inside a delivered artifact such as a commit body, PR description, or comment.
 - **Detect**: when asked to flag AI tells without rewriting, quote each observed pattern and give a brief fix. Do not rewrite, score, or infer authorship. Use Phase 1 of [audit-workflow.md](./references/audit-workflow.md), then stop and offer an edit.
 - **Machine-facing text**: tool descriptions, system prompts, skill/agent instructions, error strings, and inter-agent messages need precise specification language. Use `ia-refine-prompt` when appropriate; do not apply fragments, contractions, or invented personal voice mechanically.
 
@@ -25,7 +25,7 @@ Edit human-facing prose while preserving meaning, factual accuracy, and the writ
 3. Lead with a concrete fact or point. Use active voice, specific actors where relevant, simple words, stable terminology, and meaningful numbers. Keep related words together, one topic per paragraph, and tone appropriate to the audience.
 4. Flag formulaic structures, vague claims, passive evasions, unnecessary qualifiers, artificial contrasts, synonym cycling, mechanical formatting, and fake-profound endings. A flag is a candidate, not a verdict.
 5. Apply restraint: leave natural sentences intact, preserve useful uncertainty, and retain lists/tables that carry real structure. Match the tone problem, not a forbidden token. Do not invent opinions, feelings, facts, or actors to satisfy a stylistic pattern.
-6. Read the result aloud. Check that edits remain proportional and that the writer would recognize the voice. Return the full corrected text when editing; include only the audit/changelog detail appropriate to the request and length.
+6. Read the result aloud. Check that edits remain proportional and that the writer would recognize the voice. Return the full corrected text when editing; add audit or changelog detail only when the caller asked for it, and keep it outside the delivered artifact.
 
 ## Conditional references
 
@@ -43,4 +43,4 @@ Check factual meaning, voice preservation, grammatical relationships, and useful
 
 Before publishing, mechanically check chat citation artifacts and AI-referrer parameters. Remove the identified tracking parameter while retaining the rest of a URL's query string. Follow the citation-artifact catalog in the audit reference; do not mistake a retained capture or UI token for a source.
 
-For detect mode, return evidence of patterns without a speculative authorship verdict. For editing, deliver corrected text and concise material changes; obtain required posting authority separately.
+For detect mode, return evidence of patterns without a speculative authorship verdict. For editing, deliver corrected text, with concise material changes listed only on request and outside the artifact; obtain required posting authority separately.

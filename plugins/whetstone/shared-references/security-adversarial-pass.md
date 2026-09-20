@@ -18,6 +18,10 @@ Trace user input through the full request lifecycle. Does user-supplied data flo
 
 Look for issues that span multiple security domains simultaneously. A weak authorization check combined with a mass-assignment vulnerability becomes a privilege escalation. A permissive CORS policy combined with a CSRF gap becomes a full account takeover. Standard scans check categories in isolation — this pass looks for combinations.
 
+## Documented exclusions
+
+- When a threat model, ADR, or security document marks a component out of scope, low risk, trusted, or known-safe with a stated reason, a full-repository audit tests that reason against the current source before accepting it. A documented exclusion is a claim with a date, not proof — the code it described may have changed since. This applies to full audits only: during ordinary diff review, an owner-blessed bypass rationale is honored rather than re-raised (the `ia-code-review` review-judgment-traps rule); the full audit is the venue where the rationale itself is re-derived.
+
 ## Attacker prioritization
 
 For each finding, answer two questions:

@@ -86,10 +86,10 @@ Do not create an agent merely because a skill matches. Merge overlapping questio
 
 ### 4. Discover and Apply Learnings/Solutions
 
-Dispatch the `ia-learnings-researcher` agent with the plan content. It handles the full flow: scanning `docs/solutions/` (and fallbacks in `.claude/docs/` or `~/.claude/docs/`), reading frontmatter, filtering by tag/category/module/symptom against the plan, and returning only learnings that apply with a specific explanation of how.
+When `docs/solutions/` exists and holds more than a handful of entries (five or more), dispatch the `ia-learnings-researcher` agent with the plan content. Otherwise check inline, per step 3: list `docs/solutions/` (and the fallbacks below) and read any entry whose frontmatter tags, module, or symptom match the plan; a dispatch for one `ls` costs more than the lookup. When dispatched, the agent handles the full flow: scanning `docs/solutions/` (and fallbacks in `.claude/docs/` or `~/.claude/docs/`), reading frontmatter, filtering by tag/category/module/symptom against the plan, and returning only learnings that apply with a specific explanation of how.
 
 ```
-Task ia-learnings-researcher("Plan content:\n---\n[full plan content]\n---\n\nFind documented learnings in docs/solutions/ that apply to this plan. For each relevant learning: quote the key insight, explain how it applies, and suggest where to incorporate it. Skip non-applicable learnings with a one-line reason.")
+Task whetstone:ia-learnings-researcher("Plan content:\n---\n[full plan content]\n---\n\nFind documented learnings in docs/solutions/ that apply to this plan. For each relevant learning: quote the key insight, explain how it applies, and suggest where to incorporate it. Skip non-applicable learnings with a one-line reason.")
 ```
 
 These learnings are institutional knowledge — applying them prevents repeating past mistakes. The agent encapsulates the filter logic so this command doesn't need to restate it.
@@ -130,7 +130,7 @@ Use a specialist review only for material unresolved risk not already covered. S
 
 For each matched agent:
 ```
-Task [agent-name]: "Review this plan using your expertise. Apply all your checks and patterns. Plan content: [full plan content]"
+Task whetstone:[agent-name]: "Review this plan using your expertise. Apply all your checks and patterns. Plan content: [full plan content]"
 ```
 
 Dispatch independent units within harness limits. Reuse existing evidence and skip duplicate lenses; there is no minimum agent count or extra mandatory research panel.

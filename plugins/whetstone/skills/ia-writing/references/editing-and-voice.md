@@ -31,7 +31,7 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 ## CORRECTED TEXT
 [full corrected text]
 
-## CHANGELOG
+## CHANGELOG (only when the caller asked for one; never inside a delivered artifact such as a commit body, PR description, or comment)
 - Line/section: brief description of change
 ```
 

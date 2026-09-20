@@ -2524,20 +2524,35 @@ class TestDspyAggregation:
     -> _dspy_aggregate) drives optimization rankings. Lock the math offline so a
     refactor can't silently skew composite scores. No dataset files needed."""
 
+    def _manifest(self, *signals, skill="x"):
+        """The dspy_emit_tasks envelope, carrying the canonical per-task provenance."""
+        return {
+            "skill": skill,
+            "dataset": str(distiller._dspy_dataset_path(skill, "sessions")),
+            "rubric_sha256": "deadbeef",
+            "count": len(signals),
+            "tasks": [{"index": i, "signal": signal, "session_id": f"s{i}",
+                       "skill_version": "1", "prompt": "judge it"}
+                      for i, signal in enumerate(signals)],
+        }
+
     def _verdict(self, idx, signal, c, p, co):
         return {"index": idx, "signal": signal, "session_id": f"s{idx}", "skill_version": "1",
                 "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co})}
 
     def test_composite_math(self):
         # composite = 0.5*C/10 + 0.3*P/10 + 0.2*Co/10; C=8,P=7,Co=9 -> 0.79
-        r = distiller.dspy_score_from_verdicts("x", [self._verdict(0, "positive", 8, 7, 9)])
+        r = distiller.dspy_score_from_verdicts("x", [self._verdict(0, "positive", 8, 7, 9)],
+                                               manifest=self._manifest("positive"))
         assert r["summary"]["mean_composite"] == 0.79
         assert r["summary"]["count"] == 1
         assert r["backend"] == "subagent"
+        assert r["rubric_sha256"] == "deadbeef"
 
     def test_positive_negative_split(self):
         verdicts = [self._verdict(0, "positive", 10, 10, 10), self._verdict(1, "negative", 0, 0, 0)]
-        r = distiller.dspy_score_from_verdicts("x", verdicts)
+        r = distiller.dspy_score_from_verdicts("x", verdicts,
+                                               manifest=self._manifest("positive", "negative"))
         assert r["summary"]["positive"]["count"] == 1
         assert r["summary"]["positive"]["mean_composite"] == 1.0
         assert r["summary"]["negative"]["count"] == 1
@@ -2546,13 +2561,84 @@ class TestDspyAggregation:
     def test_unparseable_response_counts_as_error(self):
         verdicts = [self._verdict(0, "positive", 8, 7, 9),
                     {"index": 1, "signal": "negative", "response": "not json at all"}]
-        r = distiller.dspy_score_from_verdicts("x", verdicts)
+        r = distiller.dspy_score_from_verdicts("x", verdicts,
+                                               manifest=self._manifest("positive", "negative"))
         assert r["summary"]["count"] == 1
         assert r["summary"]["errors"] == 1
 
     def test_all_unparseable_returns_error(self):
-        r = distiller.dspy_score_from_verdicts("x", [{"index": 0, "signal": "positive", "response": "garbage"}])
+        r = distiller.dspy_score_from_verdicts("x", [{"index": 0, "signal": "positive", "response": "garbage"}],
+                                               manifest=self._manifest("positive"))
         assert r.get("error") == "no valid scores"
+
+
+class TestDspyVerdictBinding:
+    """A judge sub-agent echoes index/signal/session_id back; the report's buckets
+    and count must come from the emitted manifest, never the verdict's self-report."""
+
+    def _manifest(self, *signals, skill="x"):
+        return TestDspyAggregation()._manifest(*signals, skill=skill)
+
+    def _verdict(self, idx, c=8, p=7, co=9, **extra):
+        return {"index": idx, **extra,
+                "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co})}
+
+    def test_signal_taken_from_task_not_verdict(self):
+        # Judge claims "positive"; the emitted task says negative.
+        r = distiller.dspy_score_from_verdicts("x", [self._verdict(0, 10, 10, 10)],
+                                               manifest=self._manifest("negative"))
+        assert r["summary"]["negative"]["count"] == 1
+        assert "positive" not in r["summary"]
+        assert r["scores"][0]["session_id"] == "s0"
+
+    def test_missing_manifest_rejected(self):
+        with pytest.raises(ValueError, match="manifest is required"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0)])
+
+    def test_manifest_for_another_skill_rejected(self):
+        with pytest.raises(ValueError, match="another skill"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0)],
+                                               manifest=self._manifest("positive", skill="y"))
+
+    def test_manifest_for_another_dataset_rejected(self):
+        manifest = {**self._manifest("positive"), "dataset": "/tmp/somewhere-else.jsonl"}
+        with pytest.raises(ValueError, match="different dataset"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0)], manifest=manifest)
+
+    def test_short_verdict_array_rejected(self):
+        with pytest.raises(ValueError, match="one verdict per emitted task"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0)],
+                                               manifest=self._manifest("positive", "negative"))
+
+    def test_duplicate_index_rejected(self):
+        with pytest.raises(ValueError, match="duplicate verdict index"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0), self._verdict(0)],
+                                               manifest=self._manifest("positive", "negative"))
+
+    def test_out_of_range_index_rejected(self):
+        with pytest.raises(ValueError, match="do not match the emitted tasks"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0), self._verdict(7)],
+                                               manifest=self._manifest("positive", "negative"))
+
+    @pytest.mark.parametrize("index", ["0", 0.0, True, None])
+    def test_non_integer_index_rejected(self, index):
+        # The message must name the type problem: "missing or duplicate" sent
+        # the operator hunting for a duplicate that was never there.
+        with pytest.raises(ValueError, match="verdict index must be an integer"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(index)],
+                                               manifest=self._manifest("positive"))
+
+    def test_contradicting_provenance_echo_rejected(self):
+        with pytest.raises(ValueError, match="provenance mismatch on session_id"):
+            distiller.dspy_score_from_verdicts("x", [self._verdict(0, session_id="somebody-elses")],
+                                               manifest=self._manifest("positive"))
+
+    def test_manifest_arg_parsed(self):
+        parser = distiller.build_parser()
+        args = parser.parse_args(["dspy-eval", "x", "--score-from-verdicts", "@v.json",
+                                  "--manifest", "@t.json"])
+        assert args.manifest == "@t.json"
+        assert args.score_from_verdicts == "@v.json"
 
 
 class TestInjectionVerdictParser:
@@ -2948,6 +3034,143 @@ class TestAnalyzeMisfiresAttribution:
         assert counts == {"skill-x": 1}  # skill-y never counted (not the owner)
 
 
+class TestAnalyzeUndertriggers:
+    """The mirror of analyze_misfires: an over-narrow trigger that never fires on
+    organic phrasing is invisible to the injection-side analyses."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path, monkeypatch):
+        self.eval_dir = tmp_path / ".eval-data"
+        self.eval_dir.mkdir()
+        self.manifest_path = tmp_path / ".skill-versions.json"
+        self.plugin = tmp_path / "plugin"
+        (self.plugin / "skills").mkdir(parents=True)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", self.eval_dir)
+        monkeypatch.setattr(distiller, "PLUGIN_DIR", self.plugin)
+        monkeypatch.setattr(distiller, "MANIFEST_PATH", self.manifest_path)
+
+    def _skill(self, name, description):
+        d = self.plugin / "skills" / name
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "SKILL.md").write_text(f"---\nname: {name}\ndescription: {description}\n---\n\nbody\n")
+
+    def _sessions(self, owner, tasks, injected, version="2.0.0", sid_prefix=None):
+        examples = []
+        for i, task in enumerate(tasks):
+            ex = _make_injected_example("ambiguous", _inj(*injected, version=version),
+                                        task_input=task, version=version)
+            ex["session_id"] = f"{sid_prefix or owner}-{i}"
+            examples.append(ex)
+        _write_session_examples(self.eval_dir, owner, examples)
+
+    def test_high_overlap_non_firing_sessions_become_candidates(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        # skill-other fired on five widget-calibration-harness-tuning tasks.
+        self._sessions("skill-other", ["widget calibration harness tuning diagnostics profiling run"] * 5,
+                       ["skill-other"])
+        report = distiller.analyze_undertriggers(min_examples=1, include_stale=True)
+        rows = {c["skill"]: c for c in report["candidates"]}
+        assert rows["skill-widget"]["no_fire"] == 5
+        assert rows["skill-widget"]["high_overlap_no_fire"] == 5
+        assert rows["skill-widget"]["candidate_rate"] == 1.0
+        assert rows["skill-widget"]["samples"][0]["fired_for"] == ["skill-other"]
+        # skill-other fired on every one of them, so it has no non-firing sessions.
+        assert "skill-other" not in rows
+
+    def test_low_overlap_sessions_are_not_candidates(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        self._sessions("skill-other", ["rename a column in the invoices table"] * 5, ["skill-other"])
+        rows = {c["skill"]: c for c in distiller.analyze_undertriggers(
+            min_examples=1, include_stale=True)["candidates"]}
+        assert rows["skill-widget"]["no_fire"] == 5
+        assert rows["skill-widget"]["high_overlap_no_fire"] == 0
+
+    def test_overlap_threshold_is_tunable(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        self._sessions("skill-other", ["widget calibration work"] * 5, ["skill-other"])
+        strict = distiller.analyze_undertriggers(min_examples=1, include_stale=True, overlap=4)
+        loose = distiller.analyze_undertriggers(min_examples=1, include_stale=True, overlap=2)
+        assert {c["skill"]: c["high_overlap_no_fire"] for c in strict["candidates"]}["skill-widget"] == 0
+        assert {c["skill"]: c["high_overlap_no_fire"] for c in loose["candidates"]}["skill-widget"] == 5
+
+    def test_duplicate_copies_of_one_session_counted_once(self):
+        # Harvest writes one copy per injected skill; both carry the full list.
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-a", "Unrelated payroll ledger reconciliation")
+        self._skill("skill-b", "Unrelated shipping manifest routing")
+        for owner in ("skill-a", "skill-b"):
+            self._sessions(owner, ["widget calibration harness tuning diagnostics profiling run"],
+                           ["skill-a", "skill-b"], sid_prefix="shared")
+        report = distiller.analyze_undertriggers(min_examples=1, include_stale=True)
+        rows = {c["skill"]: c for c in report["candidates"]}
+        assert report["corpus_examples"] == 1
+        assert rows["skill-widget"]["no_fire"] == 1
+
+    def test_skill_filter_scopes_the_scan(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        self._sessions("skill-other", ["widget calibration harness tuning diagnostics profiling run"] * 5,
+                       ["skill-other"])
+        report = distiller.analyze_undertriggers(min_examples=1, include_stale=True,
+                                                 skill_filter="skill-widget")
+        assert [c["skill"] for c in report["candidates"]] == ["skill-widget"]
+
+    def test_min_examples_gate(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        self._sessions("skill-other", ["widget calibration harness tuning diagnostics profiling run"] * 2,
+                       ["skill-other"])
+        assert distiller.analyze_undertriggers(min_examples=5, include_stale=True)["candidates"] == []
+
+    def test_staleness_keyed_to_the_candidate_skill(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        self.manifest_path.write_text(json.dumps(
+            {"skills": {"skill-widget": {"content_changed": "9.0.0", "pattern_changed": "9.0.0"}}}))
+        self._sessions("skill-other", ["widget calibration harness tuning diagnostics profiling run"] * 5,
+                       ["skill-other"], version="2.0.0")
+        fresh = distiller.analyze_undertriggers(min_examples=1, include_stale=False)
+        # skill-other fired on every session, so it is never its own candidate;
+        # skill-widget's rows are all stale. Nothing survives.
+        assert fresh["candidates"] == []
+        stale = distiller.analyze_undertriggers(min_examples=1, include_stale=True)
+        assert "skill-widget" in {c["skill"] for c in stale["candidates"]}
+
+    def test_report_states_its_scope_and_precision(self):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._sessions("skill-widget", ["widget calibration"], ["skill-widget"])
+        report = distiller.analyze_undertriggers(min_examples=1, include_stale=True)
+        assert "not harvested" in report["scope"]
+        assert "candidates for human review" in report["precision"]
+
+    def test_report_names_the_cand_rate_denominator(self):
+        # The header counts the whole corpus; Cand% is per-row against that
+        # row's own post-staleness NoFire, which the table must not imply.
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._sessions("skill-widget", ["widget calibration"], ["skill-widget"])
+        report = distiller.analyze_undertriggers(min_examples=1, include_stale=True)
+        assert "own NoFire" in report["rate_basis"]
+        assert "not of the scanned corpus" in report["rate_basis"]
+
+    def test_cli_prints_table_and_json(self, capsys, monkeypatch):
+        self._skill("skill-widget", "Widget calibration harness tuning diagnostics profiling")
+        self._skill("skill-other", "Unrelated payroll ledger reconciliation")
+        self._sessions("skill-other", ["widget calibration harness tuning diagnostics profiling run"] * 5,
+                       ["skill-other"])
+        monkeypatch.setattr(sys, "argv", ["distiller.py", "analyze-undertriggers",
+                                          "--min-examples", "1", "--include-stale"])
+        distiller.main()
+        captured = capsys.readouterr()
+        assert "Missed-trigger CANDIDATES" in captured.err
+        assert "skill-widget" in captured.err
+        assert "Cand%NoFire" in captured.err
+        assert "own NoFire" in captured.err
+        assert json.loads(captured.out)["skills_analyzed"] >= 1
+
+
 class TestHarvestSessions:
     """CR-007: end-to-end harvest over a synthetic ~/.claude/projects tree, plus
     CR-003(c) model-stale counter."""
@@ -3155,6 +3378,361 @@ class TestScrubSecrets:
         assert not distiller._contains_secret("ordinary prose with no keys")
 
 
+class TestScrubText:
+    """Harvested examples are written to disk and then sent verbatim to a
+    third-party judge (dspy-eval --backend openrouter, evolve), so emails and
+    home paths are scrubbed at rest alongside secrets."""
+
+    def test_email_redacted(self):
+        out = distiller._scrub_text("ping ilia.alshanetsky@credentiable.com about the retry bug")
+        assert "[EMAIL]" in out
+        assert "credentiable.com" not in out
+
+    @pytest.mark.parametrize("text", [
+        "ping ilia.alshanetsky@credentiable.com about it",
+        "cc 2fa@example.com on the ticket",
+        "owner is a@b.io",
+        "asset owner: sprite@2x.com filed it",
+    ])
+    def test_real_addresses_still_redacted(self, text):
+        assert "[EMAIL]" in distiller._scrub_text(text)
+
+    @pytest.mark.parametrize("name", [
+        "sprite@2x.png", "logo@2x.PNG", "icon@3x.svg", "hero@2x.webp", "tile@10x.jpg",
+    ])
+    def test_retina_asset_filenames_survive(self, name):
+        # The @Nx segment reads as a domain, so the whole filename used to be
+        # replaced by [EMAIL] in any React/Tailwind trace.
+        assert distiller._scrub_text(f"add {name} to the sprite sheet") == \
+            f"add {name} to the sprite sheet"
+
+    def test_home_paths_normalized(self):
+        out = distiller._scrub_text("edit /home/ilia/ai/whetstone/x.py and /Users/jdoe/src/y.py")
+        assert out == "edit ~/ai/whetstone/x.py and ~/src/y.py"
+
+    def test_secret_wins_over_email_in_connection_string(self):
+        out = distiller._scrub_text("db: postgres://user:hunter2@db.local/app")
+        assert "hunter2" not in out
+        assert "[REDACTED]" in out
+        assert "[EMAIL]" not in out
+
+    def test_embedded_home_path_not_rewritten(self):
+        assert distiller._scrub_text("/var/home/someone/x") == "/var/home/someone/x"
+
+    def test_benign_text_untouched(self):
+        text = "Refactor the payment controller and add a unit test for retries."
+        assert distiller._scrub_text(text) == text
+
+    def test_relative_plugin_paths_survive_for_maintenance_detection(self):
+        # _is_maintenance_task keys off the repo-relative tail; normalizing the
+        # home prefix must not break that filter.
+        task = "update /home/ilia/ai/whetstone/plugins/whetstone/skills/ia-debugging/SKILL.md"
+        scrubbed = distiller._scrub_text(task)
+        assert scrubbed.startswith("update ~/ai/whetstone/")
+        assert distiller._is_maintenance_task(scrubbed)
+
+    def test_build_eval_example_scrubs_both(self):
+        parsed = {
+            "session_id": "s1", "project": "proj", "is_subagent": True,
+            "task_prompt": "mail ilia@example.com about /home/ilia/ai/app/main.py",
+            "signal": "ambiguous", "injected_skills": [], "claude_version": "1.0",
+            "model_id": "claude-opus-4-8",
+            "turns": [{"role": "assistant", "content_text": "wrote /home/ilia/ai/app/main.py",
+                       "tool_calls": [], "tool_results": []}],
+        }
+        ex = distiller._build_eval_example(parsed)
+        assert "[EMAIL]" in ex["task_input"]
+        assert "/home/ilia" not in ex["task_input"]
+        assert "/home/ilia" not in ex["agent_output"]
+        assert "~/ai/app/main.py" in ex["agent_output"]
+
+
+def _call(tool, **tool_input):
+    """A parsed tool_use block, keyed the way _parse_session keys it."""
+    return {"tool": tool, "input_preview": json.dumps(tool_input)[:200],
+            "key": distiller._tool_call_key(tool, tool_input)}
+
+
+def _turn(role, text="", tool_calls=(), tool_results=(), typed=None):
+    return {"role": role, "content_text": text,
+            "typed_text": text if typed is None else typed,
+            "tool_calls": list(tool_calls), "tool_results": list(tool_results)}
+
+
+def _parsed(turns, task_prompt="do the work", signal="ambiguous"):
+    return {"session_id": "s1", "project": "proj", "is_subagent": True,
+            "task_prompt": task_prompt, "signal": signal, "injected_skills": [],
+            "claude_version": "1.0", "model_id": "claude-opus-4-8", "turns": turns}
+
+
+class TestRepeatedCallGroups:
+    """Repeated work is structural evidence: tools_used collapses to distinct
+    names, so a judge could only infer repetition from the agent's narration."""
+
+    def test_reads_flagged_at_three(self):
+        turns = [_turn("assistant", tool_calls=[_call("Read", file_path="/srv/app/x.py")] * 3)]
+        out = distiller._repeated_call_groups(turns)
+        assert out["over_threshold"] == 1
+        assert out["groups"][0]["count"] == 3
+        assert out["groups"][0]["category"] == "read"
+
+    def test_two_reads_counted_but_not_flagged(self):
+        turns = [_turn("assistant", tool_calls=[_call("Read", file_path="/srv/app/x.py")] * 2)]
+        out = distiller._repeated_call_groups(turns)
+        assert out["over_threshold"] == 0
+        assert out["groups"][0]["count"] == 2  # raw count kept, threshold stays tunable
+        assert out["thresholds"]["read"] == 3
+
+    def test_edits_flagged_at_two(self):
+        turns = [_turn("assistant", tool_calls=[_call("Edit", file_path="/srv/app/x.py")] * 2)]
+        assert distiller._repeated_call_groups(turns)["over_threshold"] == 1
+
+    def test_distinct_targets_not_grouped(self):
+        turns = [_turn("assistant", tool_calls=[_call("Edit", file_path=f"/srv/app/{n}.py")
+                                                for n in ("a", "b", "c")])]
+        assert distiller._repeated_call_groups(turns)["groups"] == []
+
+    def test_repeated_test_command_is_routine(self):
+        turns = [_turn("assistant", tool_calls=[_call("Bash", command="python3 -m pytest -q")] * 4)]
+        out = distiller._repeated_call_groups(turns)
+        assert out["over_threshold"] == 0
+        assert out["groups"][0]["routine"] is True
+        assert out["groups"][0]["count"] == 4
+
+    def test_repeated_mutating_shell_flagged(self):
+        turns = [_turn("assistant", tool_calls=[_call("Bash", command="sed -i s/a/b/ x.py")] * 2)]
+        out = distiller._repeated_call_groups(turns)
+        assert out["over_threshold"] == 1
+        assert out["groups"][0]["routine"] is False
+
+    @pytest.mark.parametrize("command", [
+        "pytest && sed -i s/a/b/ x.py",
+        "make test; rm -rf build",
+        "cat x.py | tee y.py",
+        "git status || npm run build",
+    ])
+    def test_chained_command_is_not_exempted_by_its_first_word(self, command):
+        # _ROUTINE_SHELL_PATTERN is prefix-anchored, so a chain led by a routine
+        # command used to exempt the mutating half that followed it.
+        turns = [_turn("assistant", tool_calls=[_call("Bash", command=command)] * 2)]
+        out = distiller._repeated_call_groups(turns)
+        assert out["groups"][0]["routine"] is False
+        assert out["over_threshold"] == 1
+
+    def test_identical_dispatches_flagged(self):
+        call = _call("Task", description="review the parser", prompt="review it closely")
+        turns = [_turn("assistant", tool_calls=[call, call])]
+        out = distiller._repeated_call_groups(turns)
+        assert out["over_threshold"] == 1
+        assert out["groups"][0]["category"] == "dispatch"
+
+    def test_keys_are_scrubbed_and_bounded(self):
+        turns = [_turn("assistant", tool_calls=[_call("Read", file_path="/home/ilia/ai/app/x.py")] * 3)]
+        key = distiller._repeated_call_groups(turns)["groups"][0]["key"]
+        assert key == "~/ai/app/x.py"
+
+    def test_untracked_tool_ignored(self):
+        turns = [_turn("assistant", tool_calls=[_call("WebFetch", url="https://example.com")] * 5)]
+        assert distiller._repeated_call_groups(turns)["groups"] == []
+
+
+class TestUnverifiedCompletionClaims:
+    """A claim of done/fixed/tests-pass with no tool result behind it is its own
+    structural category -- it must not leak into the user-sentiment signal."""
+
+    def test_claim_without_tool_result_is_unverified(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "All tests pass now.")]
+        out = distiller._unverified_completion_claims(turns)
+        assert out == {"claims": 1, "unverified": 1, "examples": ["All tests pass now."]}
+
+    def test_claim_after_tool_result_is_verified(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "running the suite",
+                       tool_calls=[_call("Bash", command="python3 -m pytest -q")]),
+                 _turn("user", "", tool_results=["336 passed"], typed=""),
+                 _turn("assistant", "All tests pass now.")]
+        out = distiller._unverified_completion_claims(turns)
+        assert out["claims"] == 1 and out["unverified"] == 0
+
+    def test_unrelated_tool_result_is_not_evidence(self):
+        # A Read answered in the same turn establishes nothing about the claim.
+        # Counting any tool result exonerated every claim in the corpus, so the
+        # judge was told "backed by a tool result" when nothing had run.
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "checking the file",
+                       tool_calls=[_call("Read", file_path="/srv/app/x.py")]),
+                 _turn("user", "", tool_results=["1\tdef parse():"], typed=""),
+                 _turn("assistant", "All tests pass now.")]
+        out = distiller._unverified_completion_claims(turns)
+        assert out["claims"] == 1 and out["unverified"] == 1
+
+    def test_status_command_result_is_not_evidence(self):
+        # `git status` is routine-shell but it is inspection, not verification.
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "checking the tree",
+                       tool_calls=[_call("Bash", command="git status --porcelain")]),
+                 _turn("user", "", tool_results=[" M app/x.py"], typed=""),
+                 _turn("assistant", "the fix is complete")]
+        assert distiller._unverified_completion_claims(turns)["unverified"] == 1
+
+    def test_runner_inside_a_command_chain_is_evidence(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "running the suite",
+                       tool_calls=[_call("Bash", command="cd /srv/app && npm test")]),
+                 _turn("user", "", tool_results=["12 passing"], typed=""),
+                 _turn("assistant", "All tests pass now.")]
+        assert distiller._unverified_completion_claims(turns)["unverified"] == 0
+
+    def test_runner_in_the_same_message_has_not_answered_yet(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "All tests pass now.",
+                       tool_calls=[_call("Bash", command="pytest -q")])]
+        assert distiller._unverified_completion_claims(turns)["unverified"] == 1
+
+    def test_evidence_does_not_carry_across_a_new_user_message(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "running the suite",
+                       tool_calls=[_call("Bash", command="pytest -q")]),
+                 _turn("user", "", tool_results=["336 passed"], typed=""),
+                 _turn("assistant", "the fix is complete"),
+                 _turn("user", "now do the migration"),
+                 _turn("assistant", "the migration is complete")]
+        out = distiller._unverified_completion_claims(turns)
+        assert out["claims"] == 2 and out["unverified"] == 1
+
+    def test_harness_message_does_not_reset_evidence(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "running the suite",
+                       tool_calls=[_call("Bash", command="pytest -q")]),
+                 _turn("user", "", tool_results=["ok"], typed=""),
+                 _turn("user", "<task-notification>done</task-notification>"),
+                 _turn("assistant", "it works now")]
+        assert distiller._unverified_completion_claims(turns)["unverified"] == 0
+
+    @pytest.mark.parametrize("text", [
+        "I'll fix the parser next.",
+        "Let me run the tests to check.",
+        "The tests are failing on the retry path.",
+        "done, here is the result",
+    ])
+    def test_intent_and_narration_are_not_claims(self, text):
+        turns = [_turn("user", "fix the parser"), _turn("assistant", text)]
+        assert distiller._unverified_completion_claims(turns)["claims"] == 0
+
+    @pytest.mark.parametrize("text", [
+        # Relayed material, verbatim from the sampled subagent corpus.
+        'comment from `God-damnit-all` says *"This works for me, I\'d appreciate a merge"*',
+        "> All tests pass on my branch",
+        'the log line reads "the build passes" but that run predates the fix',
+        # A claim the same sentence retracts.
+        "the fallback never runs and the test passes for a reason it was not written for",
+        "without the guard the suite passes for the wrong reason",
+    ])
+    def test_relayed_and_retracted_text_is_not_a_claim(self, text):
+        turns = [_turn("user", "fix the parser"), _turn("assistant", text)]
+        assert distiller._unverified_completion_claims(turns)["claims"] == 0
+
+    def test_a_real_claim_after_a_quoted_one_still_counts(self):
+        # Scanning continues past a relayed match instead of writing the turn off.
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", 'they said *"this works for me"*\nAll tests pass now.')]
+        out = distiller._unverified_completion_claims(turns)
+        assert out["claims"] == 1 and out["unverified"] == 1
+
+    def test_inline_code_does_not_suppress_a_claim(self):
+        # Balanced backticks leave the claim outside any quoted span.
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "I ran `pytest -q` and all tests pass")]
+        assert distiller._unverified_completion_claims(turns)["claims"] == 1
+
+    def test_a_caveat_does_not_cancel_the_claim(self):
+        # "but"/"however" qualify the surrounding work, not the claim itself.
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "All tests pass, but coverage dropped two points")]
+        assert distiller._unverified_completion_claims(turns)["claims"] == 1
+
+    def test_signal_classification_untouched(self):
+        # The claim category is additive: a bare unverified claim must not turn
+        # an ambiguous session negative (or positive).
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "All tests pass. Done."),
+                 _turn("user", "ok")]
+        ex = distiller._build_eval_example(_parsed(turns))
+        assert ex["completion_claims"]["unverified"] == 1
+        assert ex["signal"] == "ambiguous"
+        # The same claim text typed by the user is still not sentiment.
+        assert distiller._classify_signal(["fix the parser", "All tests pass. Done."]) == "ambiguous"
+
+
+class TestTraceSignalsReachTheJudge:
+    """The structural fields are only useful if the judge prompt carries them."""
+
+    def test_example_carries_both_fields(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "All tests pass.",
+                       tool_calls=[_call("Edit", file_path="/srv/app/x.py")] * 2)]
+        ex = distiller._build_eval_example(_parsed(turns))
+        assert ex["repeated_calls"]["over_threshold"] == 1
+        assert ex["completion_claims"]["unverified"] == 1
+
+    def test_formatted_block_names_counts(self):
+        turns = [_turn("user", "fix the parser"),
+                 _turn("assistant", "All tests pass.",
+                       tool_calls=[_call("Edit", file_path="/srv/app/x.py")] * 2)]
+        block = distiller._format_trace_signals(distiller._build_eval_example(_parsed(turns)))
+        assert "Edit x2 on /srv/app/x.py" in block
+        assert "completion claims with no test/build/lint result earlier in the same turn" in block
+
+    def test_backed_claim_is_stated_as_the_check_actually_performed(self):
+        # The old wording ("each backed by a tool result") asserted more than the
+        # code established; the block must state only the check it ran.
+        block = distiller._format_trace_signals(
+            {"repeated_calls": {"groups": []},
+             "completion_claims": {"claims": 2, "unverified": 0, "examples": []}})
+        assert "a test/build/lint result preceded each one in the same turn" in block
+        assert "backed by" not in block
+
+    def test_zero_claims_reads_as_none(self):
+        block = distiller._format_trace_signals(
+            {"repeated_calls": {"groups": []},
+             "completion_claims": {"claims": 0, "unverified": 0, "examples": []}})
+        assert "completion claims: none detected" in block
+
+    def test_legacy_example_says_not_recorded(self):
+        block = distiller._format_trace_signals({"task_input": "t", "agent_output": "o"})
+        assert block.count("not recorded for this example") == 2
+
+    def test_emitted_judge_prompt_includes_the_block(self, tmp_path, monkeypatch):
+        eval_dir = tmp_path / ".eval-data"
+        generated = tmp_path / "generated-skills"
+        generated.mkdir()
+        (tmp_path / "plugin" / "skills").mkdir(parents=True)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", eval_dir)
+        monkeypatch.setattr(distiller, "GENERATED_DIR", generated)
+        monkeypatch.setattr(distiller, "PLUGIN_DIR", tmp_path / "plugin")
+        skill_dir = generated / "widget-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: widget-skill\n"
+            "description: Widget calibration harness tuning and diagnostics.\n---\n\nbody\n")
+        _write_session_examples(eval_dir, "widget-skill", [{
+            "task_input": "widget calibration harness needs tuning",
+            "agent_output": "adjusted it", "signal": "positive", "tools_used": ["Edit"],
+            "turn_count": 5, "project": "proj", "session_id": "s1", "skill_version": "2.0.0",
+            "model_id": "claude-opus-4-8",
+            "repeated_calls": {"thresholds": {"edit": 2}, "over_threshold": 1, "groups": [
+                {"category": "edit", "tool": "Edit", "key": "app/x.py", "count": 2,
+                 "routine": False, "flagged": True}]},
+            "completion_claims": {"claims": 1, "unverified": 1, "examples": ["All tests pass."]},
+        }])
+        emitted = distiller.dspy_emit_tasks("widget-skill", dataset="sessions", max_examples=4)
+        prompt = emitted["tasks"][0]["prompt"]
+        assert "TRACE SIGNALS" in prompt
+        assert "Edit x2 on app/x.py" in prompt
+        assert "1 of 1" in prompt
+
+
 class TestBuildAndApproveGolden:
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path, monkeypatch):
@@ -3323,6 +3901,38 @@ class TestDspyEvalSkillFileOverride:
                                   "--skill-file", "x/evolved-SKILL.md"])
         assert args.skill_file == "x/evolved-SKILL.md"
 
+    def _emit_and_write(self):
+        emitted = distiller.dspy_emit_tasks("widget-skill", dataset="sessions", max_examples=4)
+        tasks_file = self.tmp / "tasks.json"
+        tasks_file.write_text(json.dumps(emitted))
+        verdicts_file = self.tmp / "verdicts.json"
+        verdicts_file.write_text(json.dumps([
+            {"index": t["index"],
+             "response": json.dumps({"correctness": 8, "procedure_following": 7, "conciseness": 9})}
+            for t in emitted["tasks"]]))
+        return tasks_file, verdicts_file
+
+    def test_emit_then_score_round_trip_through_cli(self, capsys, monkeypatch):
+        tasks_file, verdicts_file = self._emit_and_write()
+        monkeypatch.setattr(sys, "argv", ["distiller.py", "dspy-eval", "widget-skill",
+                                          "--score-from-verdicts", f"@{verdicts_file}",
+                                          "--manifest", f"@{tasks_file}"])
+        distiller.main()
+        report = json.loads(capsys.readouterr().out)
+        assert report["summary"]["count"] == 1
+        assert report["summary"]["mean_composite"] == 0.79
+        # Provenance comes from the emitted task, not the verdict.
+        assert report["scores"][0]["session_id"] == "s1"
+        assert report["scores"][0]["signal"] == "positive"
+
+    def test_score_without_manifest_exits(self, capsys, monkeypatch):
+        _, verdicts_file = self._emit_and_write()
+        monkeypatch.setattr(sys, "argv", ["distiller.py", "dspy-eval", "widget-skill",
+                                          "--score-from-verdicts", f"@{verdicts_file}"])
+        with pytest.raises(SystemExit):
+            distiller.main()
+        assert "--manifest" in capsys.readouterr().err
+
 
 class TestBuildGoldenAmbiguousWarning:
     """build-golden --auto on ambiguous-dominated data warns (approve-golden
@@ -3423,7 +4033,8 @@ class TestSyntheticJudgeTemplates:
 
     def test_dspy_emit_tasks_prompt_detected(self):
         judge_user = distiller._JUDGE_USER_TEMPLATE.format(
-            skill_text="some skill body", task_input="a real task", agent_output="output")
+            skill_text="some skill body", task_input="a real task", agent_output="output",
+            trace_signals=distiller._format_trace_signals({}))
         task = distiller._JUDGE_SYSTEM_PROMPT + "\n\n" + judge_user
         assert distiller._is_synthetic_session("-home-ilia-ai-whetstone", task)
 

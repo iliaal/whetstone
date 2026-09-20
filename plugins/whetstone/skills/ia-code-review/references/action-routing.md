@@ -13,4 +13,6 @@ Load this reference when classifying how each finding's fix should be applied. T
 
 **Tier decision rule**: if a senior engineer would apply the fix without discussion AND the change doesn't cross a behavior/contract/permission boundary, it's `safe_auto`. When in doubt, escalate to `gated_auto`.
 
+**`.pyi` carve-out on the unused-import example**: removing an import from a `.pyi` stub is not behavior-preserving by default — a self-aliased (`from foo import bar as bar`) or `__all__`-listed import is the stub's declared public surface, and deleting it breaks every downstream import. Resolve against the stub re-export rule in [language-profiles.md](./language-profiles.md) first; route removal as `gated_auto` while that is unresolved.
+
 **Approval scope does not widen.** A `gated_auto` sign-off authorizes the fix it was shown, for the finding it was shown against — not the tier, not the file, not the rest of the batch. Approval collected while planning is not an instruction to execute, a later "yes" cannot retroactively broaden an earlier one, and a granted permission is authorization to act, never evidence that acting is correct. When several `gated_auto` findings are outstanding, either present them as one explicit batch the user can accept as a batch, or ask per finding; never infer the batch from a single answer.

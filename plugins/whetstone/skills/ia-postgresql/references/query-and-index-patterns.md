@@ -16,7 +16,7 @@
 - Expression: `ON (lower(email))` -- for function-based WHERE
 - A GIN index on an array column serves the containment operators, not `=`: `WHERE 'x' = ANY(col)` seq-scans even with `enable_seqscan = off`, because `ANY` over an array expands to equality and no GIN operator class implements it. Write the predicate as `WHERE col @> ARRAY['x']` to reach the index.
 - `fillfactor = 70-90` on write-heavy tables -- reserves space for HOT updates, reducing index bloat
-- Drop unused indexes (only after one full business cycle since last restart -- check `pg_stat_database.stats_reset` first, otherwise you may drop a primary key on a freshly restarted DB or read replica): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
+- Drop unused indexes (only after one full business cycle since last restart -- check `pg_stat_database.stats_reset` first; on a freshly restarted DB or read replica, `idx_scan = 0` reports live indexes, primary keys included, as unused): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
 
 **Detect unindexed foreign keys:**
 ```sql
@@ -68,6 +68,7 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 ## Query Optimization
 
 - Always `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` before optimizing
+- Pin the plan as a regression assertion, not only a one-time diagnostic. For a hot-path query whose performance depends on a specific access method, assert the plan in an automated test: a migration that drops an index, or a rewrite that makes a predicate non-sargable (`WHERE lower(email) = ...` against a plain index, `WHERE col + 0 = ...`), silently regresses the query from an index scan to a sequential scan while every result-correctness test still passes. Plan text is not stable across minor versions and configuration (`work_mem`, `random_page_cost`, table statistics), so never string-match the whole plan; use `EXPLAIN (FORMAT JSON)` and assert on the node type -- `Index Scan` or `Index Only Scan` on the expected index name, or the absence of `Seq Scan` on the target relation. Run it against a fixture with enough rows that the planner's choice is not dominated by table size; a planner on a 10-row table legitimately prefers a seq scan.
 - Use `pg_stat_statements` for slow-query detection and `pg_stat_user_tables` for bloat (see [operations.md](./operations.md) for the full SQL)
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping
 - High `rows removed by filter` -> index doesn't match predicate
@@ -75,6 +76,20 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 - Prefer `EXISTS` over `IN` for correlated subqueries
 - Use `LATERAL JOIN` when subquery needs outer row reference
 - Cursor pagination (`WHERE id > $last ORDER BY id LIMIT $n`) over `OFFSET`
+- Bounded per-key snapshot plus cursor tailing. For "the most recent N rows per key", one windowed query (the window function is standard SQL) beats both N+1 per-key queries and a full scan, and the maximum id it observes becomes the cursor for incremental catch-up:
+  ```sql
+  -- bootstrap: at most 50 rows per account, newest first
+  SELECT id, account_id, payload
+  FROM (
+    SELECT e.*, row_number() OVER (PARTITION BY account_id ORDER BY id DESC) AS rn
+    FROM events e
+  ) ranked
+  WHERE rn <= 50;
+  -- tail: O(new rows), never re-reads history
+  SELECT id, account_id, payload FROM events
+  WHERE id > :cursor ORDER BY id ASC LIMIT :n;
+  ```
+  Bootstrap is bounded by `keys x N`, catch-up is proportional to new rows, and unlike `OFFSET` pagination the pair neither degrades as the table grows nor skips rows under concurrent inserts. Add a `WHERE account_id IN (...)` to the inner query when the key set is known, so the window runs over an index range rather than the whole table; the cursor column must be monotonic (a sequence or identity column, not a timestamp).
 - Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` -- avoids full `count(*)` on large tables
 - Materialized views for expensive aggregations: `REFRESH MATERIALIZED VIEW CONCURRENTLY` (needs unique index). Schedule refresh, not per-query.
 - Anchor a time bucket to the domain's own boundary, not to the epoch. `date_bin(stride, ts, origin)` lays the grid down at `origin`, and `date_trunc` is calendar-anchored, so a stride that does not divide the gap between domain boundaries produces a bucket straddling one; grouping by that bucket plus a row-derived day then emits two rows per bucket and violates an `(entity, bucket_start)` primary key. Pass the domain boundary as `origin`, key on `(entity, bucket_start)`, and derive the day from the bucket rather than from the row.

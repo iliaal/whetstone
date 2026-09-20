@@ -54,8 +54,8 @@ First, I need to understand the project's conventions, existing patterns, and an
 
 Run these agents **in parallel** to gather local context:
 
-- Task ia-repo-research-analyst(feature_description)
-- Task ia-learnings-researcher(feature_description)
+- Task whetstone:ia-repo-research-analyst(feature_description)
+- Task whetstone:ia-learnings-researcher(feature_description)
 
 **What to look for:**
 - **Repo research:** existing patterns, CLAUDE.md guidance, technology familiarity, pattern consistency
@@ -85,7 +85,7 @@ Examples:
 
 Run these agents in parallel:
 
-- Task ia-best-practices-researcher(feature_description)
+- Task whetstone:ia-best-practices-researcher(feature_description)
 
 ### 1.6. Consolidate Research
 
@@ -111,7 +111,7 @@ Choose the detail level in Step 4 based on scope. The `ia-planning` skill's Plan
 
 After planning the issue structure, run SpecFlow Analyzer to validate and refine the feature specification:
 
-- Task ia-spec-flow-analyzer(feature_description, research_findings)
+- Task whetstone:ia-spec-flow-analyzer(feature_description, research_findings)
 
 **SpecFlow Analyzer Output:**
 

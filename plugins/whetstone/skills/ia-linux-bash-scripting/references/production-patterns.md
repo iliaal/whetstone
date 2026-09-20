@@ -69,6 +69,16 @@ A linear script with irreversible steps (commit, push, tag, publish) must be re-
   Bash's builtin `printf` sends the value through stdin, avoiding `jq --arg`'s process-argument exposure; `jq -Rs` escapes JSON characters. Use `mktemp` rather than a predictable path that an attacker can replace with a symlink.
 - Generate secret/token files with no trailing newline. `cmd >"$f"` keeps the `\n`, `$(cat "$f")` strips it, and CLI arguments of the `file://$f` shape transmit it verbatim -- so one generated value installed into two consumers differs by one byte while both sides *display* the same characters and every constant-time comparison on the far side just returns false. Fix at the generator (`printf %s "$(cmd)" >"$f"`), never per reader, and verify with `wc -c < "$f"`
 - Signal cleanup: use `trap 'cleanup; exit 130' INT` and `trap 'cleanup; exit 143' TERM` to report the conventional signal-specific exit status.
+- A script that shells out to a coding-agent or automation CLI with a prompt or task file whose content the script's author does not fully control (a ticket body, a generated plan, a file from another repo) must default to that CLI's most restrictive approval and execution mode. Never hardcode a full-auto or bypass flag. The task content is an indirect prompt-injection surface, so the execution mode is the last boundary the script can still enforce. Where an operator override is supported, validate the value against an explicit allowlist and reject anything unrecognized instead of passing it through:
+  ```bash
+  mode=${AGENT_MODE:-read-only}
+  case $mode in
+      read-only|ask) ;;
+      *) die "Unsupported AGENT_MODE: $mode" ;;
+  esac
+  agent_cli --approval-mode "$mode" --task-file "$task"
+  ```
+  The allowlist deliberately omits the CLI's unattended mode; adding it is a reviewed change to the script, not an environment variable.
 
 ## Logging
 

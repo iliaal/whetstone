@@ -33,7 +33,7 @@ Out of scope:
 Authoritative sources:
 
 - `SKILL.md` -- runtime instructions and reference routing.
-- `references/*.md` -- bundled supplementary content (15 file(s)).
+- `references/*.md` -- bundled supplementary content (22 file(s)).
 - `distillery/tests/fixtures/triggers/ia-orchestrating-swarms.jsonl` -- positive and negative trigger phrasings under regression test.
 - `plugins/whetstone/hooks/skill-patterns.sh` -- regex pattern that fires this skill.
 - `distillery/.eval-data/ia-orchestrating-swarms/` -- harvested session examples (when present).
@@ -50,7 +50,7 @@ Data that must not be stored in this skill or its references:
 |---|---|---|
 | Trigger fixtures | complete | distillery/tests/fixtures/triggers/ia-orchestrating-swarms.jsonl (>=5 should_trigger, >=5 should_not_trigger) |
 | Hook regex pattern | complete | plugins/whetstone/hooks/skill-patterns.sh (`SKILL_PATTERNS[ia-orchestrating-swarms]`) |
-| Reference architecture | complete | 15 file(s) under references/ |
+| Reference architecture | complete | 22 file(s) under references/ |
 | Delivery and credit discipline | complete | `SKILL.md` Dispatch Discipline and Delivery and credit discipline |
 | Real-usage signal | <!-- populated by harvest-sessions when sessions exist --> | distillery/.eval-data/ia-orchestrating-swarms/ (created by harvest-sessions) |
 

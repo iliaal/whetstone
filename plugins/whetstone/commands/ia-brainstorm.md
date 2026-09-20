@@ -31,7 +31,7 @@ Use **AskUserQuestion tool** to suggest: "Your requirements seem detailed enough
 
 **1.1 Repository Research (Lightweight)**
 
-- Task ia-repo-research-analyst("Understand existing patterns related to: <feature_description>")
+- Task whetstone:ia-repo-research-analyst("Understand existing patterns related to: <feature_description>")
 
 Focus on: similar features, established patterns, CLAUDE.md guidance.
 

@@ -162,8 +162,9 @@ git add -A -- \
 	distillery/tests/ \
 	scripts/ \
 	plugins/whetstone/
-# Also stage project-level skill changes if any
+# Also stage project-level skill and command changes if any
 git add -A -- .claude/skills/ 2>/dev/null || true
+git add -A -- .claude/commands/ 2>/dev/null || true
 git commit -m "$commit_msg"
 
 if command -v codex >/dev/null 2>&1; then

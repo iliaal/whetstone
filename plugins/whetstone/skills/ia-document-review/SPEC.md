@@ -33,7 +33,7 @@ Out of scope:
 Authoritative sources:
 
 - `SKILL.md` -- runtime instructions and reference routing.
-- `references/*.md` -- bundled supplementary content (0 file(s)).
+- `references/*.md` -- bundled supplementary content (1 file(s)).
 - `distillery/tests/fixtures/triggers/ia-document-review.jsonl` -- positive and negative trigger phrasings under regression test.
 - `plugins/whetstone/hooks/skill-patterns.sh` -- regex pattern that fires this skill.
 - `distillery/.eval-data/ia-document-review/` -- harvested session examples (when present).

@@ -74,9 +74,9 @@ Split across multiple posts when the release has two or more clearly distinct th
 
 ## Step 3: Apply writing skill
 
-Invoke the `ia-writing` skill in audit mode on the drafted post. The skill returns an AUDIT (tagged offenses), CORRECTED TEXT, and 5-dimension scores (Directness / Rhythm / Trust / Authenticity / Density, 1-10 each). Present the audit alongside the corrected draft so the reader can see what was fixed and why.
+Invoke the `ia-writing` skill in Edit mode on the drafted post. A post is long-form enough to route through the skill's two-phase audit workflow, so it returns an AUDIT (numbered, each with a quoted snippet and one or more tags) followed by CORRECTED TEXT. Present the audit alongside the corrected draft so the reader can see what was fixed and why.
 
-Expect the score to land above 40/50 before presenting. If below, run another pass focusing on the weakest dimension.
+Resolve every `+H` (high-severity) tag before presenting. A `+H` marks a strong tell or a compound of several, and those are the ones a reader notices. If any remain after the correction pass, run another pass targeting them specifically. `+S` (structural) tags may survive when the structure is deliberate — say which and why rather than silently keeping them.
 
 **Note on changelog-style false agency.** Changelog bullets routinely use concept-as-subject ("Action Routing replaces the Fix-First binary", "feature flags now require…") which the writing skill flags as FALSE-AGENCY. For announcement bullets, accept concept-as-subject when the concept IS the shipped artifact (a skill, a pattern, a rule). Rewrite to actor-first (`you`, `we`, imperative) only when doing so adds clarity — don't force it when the original is already direct.
 
@@ -88,7 +88,7 @@ Show the complete post (or thread) with character counts per post. Three checks,
 
 1. **Length**: flag any post over 3,500 chars (practical reader-engagement ceiling — warn that condensing with a changelog link will read better). Flag any post over 24,500 chars (hard Premium-limit headroom).
 2. **Feed-preview hook**: flag any post whose first 250 chars don't stand alone as a compelling marketing hook — that's what the feed shows before "Show more," and it must earn the click-through on its own.
-3. **Writing-skill score**: state the 5-dimension score from Step 3. If below 40/50, re-run before presenting.
+3. **Writing-skill audit**: state the issue count from Step 3's `— END AUDIT: [n] issues found —` line and confirm no `+H` tag is unresolved. Name any `+S` tag kept on purpose. Do not report a score — the skill returns tagged findings, not a rating.
 
 Format:
 ```

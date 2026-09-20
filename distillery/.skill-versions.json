@@ -1,12 +1,12 @@
 {
-  "plugin_version": "4.6.0",
+  "plugin_version": "4.6.1",
   "model_baseline_prefixes": [
     "claude-opus-4-8",
     "claude-haiku-4-5",
     "claude-fable-5",
     "claude-sonnet-5"
   ],
-  "generated_at": "2026-09-18T00:04:53.729392+00:00",
+  "generated_at": "2026-09-20T15:57:19.123954+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "141a7348273646e457c7efd1f3cb4c77566b2c2d84a580d6aa187f7faa372e8c",
@@ -189,8 +189,8 @@
       "pattern_changed": "4.5.2"
     },
     "ia-writing": {
-      "content_hash": "5e4ea8da9bbfdfc7891e55d6f3927e87426ac16cc415dd38709e135047f4dc8e",
-      "content_changed": "4.5.2",
+      "content_hash": "ef7066a45083f56deb9fa2a458cdfa0e66332cb83d99c20b964f1a2f8490692c",
+      "content_changed": "4.6.1",
       "pattern_hash": "d96206a1d7fc557b98df4ff5e9869922f518d129728118d88cfaa3d122ee9c94",
       "pattern_changed": "4.3.2"
     },

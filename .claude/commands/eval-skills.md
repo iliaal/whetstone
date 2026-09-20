@@ -54,15 +54,15 @@ RECOMMENDED (human-label) build, since harvest data is mostly `ambiguous` and `a
 python3 distillery/scripts/distiller.py build-golden <skill> --top 20
 # → edit candidates.jsonl labels to positive / negative / skip, then:
 python3 distillery/scripts/distiller.py approve-golden <skill>
-python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --max-examples 10 --emit-tasks
+python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --max-examples 10 --emit-tasks > /tmp/<skill>-tasks.json
 ```
 
 Fast path (only when the harvested signal is already well-graded): swap the first two commands for `build-golden <skill> --top 20 --auto`. `--auto` prints a stderr WARNING when >50% of rows are `ambiguous`; if you see it, fall back to the human-label path — an ambiguous-dominated golden set produces meaningless eval scores.
 
-The `--emit-tasks` call returns `{count, tasks:[{index, prompt, ...}]}` with no LLM call. Then:
+The `--emit-tasks` call returns `{count, tasks:[{index, prompt, ...}]}` with no LLM call. Keep that manifest — it is the canonical record of which examples were judged. Then:
 
 1. Dispatch one sub-agent (Agent tool, `general-purpose`) per task — each task's `prompt` is the full judge prompt; the sub-agent returns ONLY its judge JSON. Batch ~8 per message.
-2. Collect `[{index, signal, session_id, skill_version, response}]` and aggregate: `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --score-from-verdicts @<file>`.
+2. Collect `[{index, response}]` — one entry per emitted task — and aggregate against the saved manifest: `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset golden --score-from-verdicts @<file> --manifest @/tmp/<skill>-tasks.json`. `--manifest` is required: `signal`, `session_id`, and `skill_version` are read from the emitted task, so a judge cannot report its own provenance, and a missing, duplicate, or unknown `index` is rejected.
 
 Cap at 10 examples per skill. **Mind session rate limits:** across all eligible skills this is many sub-agents — pace the batches rather than firing every skill's tasks at once.
 
@@ -117,4 +117,4 @@ When several skills sit at exactly 5.0 procedure, say so and route them to `/ana
 - This command can take 5-15 minutes depending on how many skills have data, since each eval dispatches judge sub-agents.
 - Eval history records retrospective assessments. Changes in tasks, models, and rubrics prevent interpreting score differences as skill improvement.
 - MIN_EXAMPLES (default 30) is a triage volume cutoff, not a statistically validated threshold for skill effectiveness.
-- The orchestrator runs `build-golden`/`approve-golden` then `dspy-eval --emit-tasks` per skill (deterministic, no LLM), and the emitted judge tasks are what fan out to sub-agents. Each sub-agent judges ONE emitted task and returns its JSON verdict; the orchestrator aggregates them with `--score-from-verdicts`. A sub-agent does not run `build-golden` or `dspy-eval` itself.
+- The orchestrator runs `build-golden`/`approve-golden` then `dspy-eval --emit-tasks` per skill (deterministic, no LLM), and the emitted judge tasks are what fan out to sub-agents. Each sub-agent judges ONE emitted task and returns its JSON verdict; the orchestrator aggregates them with `--score-from-verdicts` plus the `--manifest` it emitted in step 1. A sub-agent does not run `build-golden` or `dspy-eval` itself.

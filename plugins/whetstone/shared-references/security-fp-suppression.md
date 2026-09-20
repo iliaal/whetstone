@@ -35,4 +35,6 @@ State confidence from the evidence: reproduced, supported by a traced path, or u
 
 ## Project-level overrides
 
-If the project's `CLAUDE.md`, `AGENTS.md`, or a `.claude/project-security.md` file documents explicit overrides (e.g., "we intentionally expose X because Y", "internal tool, auth not enforced"), honor them. Do not re-raise the documented issue; do not fight the convention. If the override lacks rationale, suggest documenting it.
+If the project's `CLAUDE.md`, `AGENTS.md`, a threat model or ADR, or a `.claude/project-security.md` file documents explicit overrides (e.g., "we intentionally expose X because Y", "internal tool, auth not enforced", a component marked out of scope with a reason), honor them during ordinary diff review. Do not re-raise the documented issue; do not fight the convention. If the override lacks rationale, suggest documenting it.
+
+The honoring is venue-scoped. A full-repository audit is where the rationale itself gets re-derived: test the stated reason against current source before accepting it, per the documented-exclusions rule in [security-adversarial-pass.md](./security-adversarial-pass.md) — a dated exclusion is a claim, not proof, and the code it described may have changed since.

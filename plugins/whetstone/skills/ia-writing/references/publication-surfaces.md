@@ -8,7 +8,7 @@
 
 ## PR / MR Descriptions
 
-Match length to change complexity (1 sentence for trivial, full narrative for architecturally significant). Lead with Before / After / Scope rationale; describe net end state, not iteration journey; pick Mermaid for topology, tables for grids. See [references/pr-descriptions.md](./pr-descriptions.md) for the sizing matrix, narrative frame, GitHub hazards (`#NN` auto-link trap), and self-check list.
+Match length to change complexity (1 sentence for trivial, full narrative for architecturally significant). Lead with Before / After / Scope rationale; describe net end state, not iteration journey; match the visual shape to the change (seven shapes in `pr-descriptions.md`). See [references/pr-descriptions.md](./pr-descriptions.md) for the sizing matrix, narrative frame, merge danger, placing the PR in its program, visual shapes, GitHub hazards (`#NN` auto-link trap), and self-check list.
 
 ## README Rules
 

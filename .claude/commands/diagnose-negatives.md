@@ -90,9 +90,9 @@ For each approved finding:
 
 After applying changes, re-eval via the **in-session sub-agent** path (no billed `claude -p`):
 
-1. `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --max-examples 10 --emit-tasks` → `{count, tasks:[{index, prompt, ...}]}`.
-2. Dispatch one sub-agent per task (Agent tool, parallel, batched ~8); each returns its judge JSON. Collect `[{index, signal, session_id, skill_version, response}]` into a temp file.
-3. `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --score-from-verdicts @<file>` → aggregates the scores and records the run in `eval-history.jsonl`.
+1. `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --max-examples 10 --emit-tasks > /tmp/<skill>-tasks.json` → `{count, tasks:[{index, prompt, ...}]}`. Keep the file; step 3 binds verdicts to it.
+2. Dispatch one sub-agent per task (Agent tool, parallel, batched ~8); each returns its judge JSON. Collect `[{index, response}]` — one entry per emitted task — into a temp file.
+3. `python3 distillery/scripts/distiller.py dspy-eval <skill> --dataset sessions --score-from-verdicts @<file> --manifest @/tmp/<skill>-tasks.json` → binds each verdict to its emitted task (provenance comes from the manifest, not the judge), aggregates the scores, and records the run in `eval-history.jsonl`.
 
 Compare the eval score to the last recorded score in `eval-history.jsonl`. If the score improved or held steady, the changes are validated. If it dropped significantly, review what was changed.
 

@@ -178,7 +178,7 @@ For each finding, attempt one of:
 - DUPLICATE: does the finding describe the same defect as a higher-severity finding already in the list? The test is root-cause, not signature -- two findings are duplicates if fixing one fixes the other, even when their file:line or wording differs. Mark for merge.
 
 Per finding, return one of:
-- DISPROVED — concrete counter-evidence (file:line of the upstream guard, doc URL, passing test name). Drop or demote to advisory.
+- DISPROVED — concrete counter-evidence (file:line of the upstream guard, doc URL, passing test name). Drop or demote to advisory. When the finding belongs to a protected-subject class in severity-and-confidence.md, a test result clears the bar only by naming its revision, configuration, trigger, assertion, and observed result; a bare test name or a generally passing suite is not disproof there, so return HELD instead.
 - WEAKENED — partial counter-evidence. State which premise or impact changed; reassess confidence and severity separately.
 - HELD — no counter-evidence found. Keep as-is.
 
@@ -193,7 +193,7 @@ CONSOLIDATED FINDINGS (supported by concrete evidence):
 
 ### Applying Skeptic Output
 
-- **DISPROVED with concrete citation** → drop the finding. Note in output header: `Skeptic dropped N finding(s)`. Before dropping a **Critical or Important** finding, independently re-read the cited guard/test at its `file:line`. If the specific defensive code the Skeptic cited is not actually there, the citation is phantom — flip the finding back to HELD and tag it `[skeptic-citation-unverified]` for manual review. Silently dropping a real Critical is the worst outcome of a review; one extra Read is cheap insurance against a confident-but-wrong disproof. When the disproof cites a **doc URL** rather than code, confirm the doc actually states the claimed behavior (via context7 or a fetch) before dropping a Critical/Important; if that can't be confirmed, demote to advisory rather than drop.
+- **DISPROVED with concrete citation** → drop the finding. Note in output header: `Skeptic dropped N finding(s)`. Before dropping a **Critical or Important** finding — or a finding in any protected-subject class of [severity-and-confidence.md](./severity-and-confidence.md), at any severity — independently re-read the cited guard/test at its `file:line`. If the specific defensive code the Skeptic cited is not actually there, the citation is phantom — flip the finding back to HELD and tag it `[skeptic-citation-unverified]` for manual review. Silently dropping a real Critical is the worst outcome of a review; one extra Read is cheap insurance against a confident-but-wrong disproof. When the disproof cites a **doc URL** rather than code, confirm the doc actually states the claimed behavior (via context7 or a fetch) before dropping any finding in that same re-read set; if that can't be confirmed, demote to advisory rather than drop.
 - **DISPROVED without citation, or vague handwave** → ignore the disproof. The Skeptic must produce evidence, not opinion.
 - **WEAKENED** → reassess the specific premise and impact. Move an unsupported claim to Residual Risks; change severity only when the impact evidence changes. Tag `[skeptic-weakened: <reason>]`.
 - **HELD** → keep. Tag `[skeptic-held]` only on findings the Skeptic explicitly examined; this is positive signal that the finding survived adversarial review.

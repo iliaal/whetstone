@@ -100,7 +100,7 @@ Correct tagged items in a single pass using the fix table below. Preserve everyt
 ## CORRECTED TEXT
 [full corrected text]
 
-## CHANGELOG
+## CHANGELOG (only when the caller asked for one; never inside a delivered artifact such as a commit body, PR description, or comment)
 - Line/section: brief description of change
 - Line/section: brief description of change
 ```

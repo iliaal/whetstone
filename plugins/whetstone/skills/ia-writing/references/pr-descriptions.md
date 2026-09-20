@@ -21,7 +21,7 @@ Use three sections, in order:
 
 **Before** -- what the code did / the system looked like before this change. One paragraph. Name the concrete state, not the abstract shape. "The `renderMessage` function serialized markdown synchronously in the request handler" beats "messaging was slow."
 
-**After** -- what the code does / the system looks like now. Same paragraph shape. Describe the *net end state*, not the journey. The reviewer doesn't need to know you tried three approaches; they need to know what they're merging.
+**After** -- what the code does / the system looks like now. Same paragraph shape. Describe the *net end state*, not the journey. The reviewer doesn't need to know three approaches were tried; they need to know what they're merging.
 
 **Scope rationale** -- why this PR draws the line where it does. What's intentionally NOT included and why. This is the most-skipped section and the one reviewers value most -- it prevents "why didn't you also fix X?" review comments.
 
@@ -41,6 +41,19 @@ Token parsing is centralized; the secret is read once at process start.
 - NOT adding role-based authorization -- tracked in #1301
 ```
 
+## Merge danger (optional; non-trivial and architecturally significant changes only)
+
+For the bottom two rows of the sizing matrix, add a short section stating reversibility and blast radius. It tells the reviewer how much review depth the change has earned before they read the diff. Never add it to a trivial PR; a one-sentence PR stays one sentence.
+
+- **Reversibility** -- `two-way door` (a revert restores the prior state) or `one-way door` (data migrated, external state changed, an API shipped to consumers). Name what makes it one-way.
+- **Blast radius** -- what breaks, and for whom, if the change is wrong. Name the surface and the audience concretely: "every authenticated request returns 401" beats "auth might break".
+
+```
+## Merge danger
+- Reversibility: one-way door -- the migration drops `legacy_token`; a revert needs the #1247 backfill re-run
+- Blast radius: all API consumers; a bad middleware rule rejects every authenticated request
+```
+
 ## Place the PR in its program (only when there is one)
 
 A PR that is one slice of a larger effort -- a stack, a series, a multi-unit plan -- usually still opens with its own outcome: state the local change, then follow it with a short block that supplies the program, the lead-in (what already landed), and the lead-out (what remains). Early PRs need only the lead-out, late ones only the lead-in. Fold the program into the opening's own sentence instead only when the local outcome does not stand on its own -- when the program is what gives this change its shape or its point, not just its context. Either half may lead in that case, whichever reads better, but the opening still has to name which part of the program this PR delivers; naming the arc without saying what changed fails the same test a standalone opening would.
@@ -53,7 +66,7 @@ Two hard limits. Derive the program only from what is already in hand -- the req
 
 ## Describe net end state, not iteration journey
 
-The commit log is the journey. The description is the destination. If you wrote three approaches and kept the third, the description describes the third -- not all three.
+The commit log is the journey. The description is the destination. If three approaches were written and the third kept, the description describes the third -- not all three.
 
 **Don't**: "First I tried X but it didn't work because Y. Then I tried Z, which almost worked but ran into W. Finally I settled on V which handles both."
 
@@ -61,14 +74,21 @@ The commit log is the journey. The description is the destination. If you wrote 
 
 Review drafts for "first I... then I... eventually..." phrasing -- rewrite toward the final state.
 
-## Visual choice: Mermaid vs table
+## Visual choice: match the shape to the content
 
-When the change benefits from a visual, pick the shape based on what you're showing:
+When the change benefits from a visual, pick the shape based on what the change is:
 
 - **Mermaid diagram** -- topology with edges. Components that send messages to each other, request flow across services, a state machine's transitions, a dependency graph. Anything where the *relationships* are the point.
 - **Markdown table** -- rows with parallel attributes. A before/after comparison of config values, a list of endpoints with their verbs and paths, a comparison of options with their tradeoffs. Anything where the *structure is grid-shaped*.
+- **Pseudocode** -- an algorithm change. Ten lines of the new branching beats a paragraph describing it.
+- **Call tree** -- a control-flow change: which function now calls which, as an indented tree.
+- **Component tree** -- a UI hierarchy change: the new parent/child nesting.
+- **File tree** -- a layout change or a move: where the files live now.
+- **Before/after diff excerpt** -- a focused edit where the exact lines are the point.
 
-Mermaid for topology; table for grid. Neither for content that's genuinely prose -- don't force structure where it doesn't serve understanding.
+Evidence outranks description: a screenshot or captured execution output beats prose about the behavior. When one exists, attach it and let the text point at it.
+
+None of these for content that's genuinely prose -- don't force structure where it doesn't serve understanding.
 
 ## GitHub-specific hazards
 
@@ -81,7 +101,7 @@ Mermaid for topology; table for grid. Neither for content that's genuinely prose
 
 ## Issue references: verify or omit
 
-Include issue references (`Fixes #1234`, `Closes JIRA-567`, `Related to #890`) only when the exact ID or URL is present in user input, the branch name, a commit message, or verified tracker output. If you cannot point to where the ID came from, omit the line entirely -- the PR can ship without it.
+Include issue references (`Fixes #1234`, `Closes JIRA-567`, `Related to #890`) only when the exact ID or URL is present in user input, the branch name, a commit message, or verified tracker output. If the ID's origin cannot be named, omit the line entirely -- the PR can ship without it.
 
 Never emit placeholder IDs:
 - Wrong: `Fixes #XXXXX` / `Closes <issue>` / `Related to #TBD` / `Fixes ABC-???`
@@ -120,5 +140,5 @@ Run these checks on the draft:
 1. Can a reviewer who hasn't read the linked issue still understand what this PR does? If no, add context.
 2. Is anything in the diff NOT mentioned in the description? Either describe it or question whether it belongs in this PR (scope drift).
 3. Is the description longer than the diff deserves? Cut.
-4. Did you use the word "simply" or "just"? Cut.
-5. Did you claim the PR is "ready to merge"? Delete -- that's the reviewer's call.
+4. Does the draft use the word "simply" or "just"? Cut.
+5. Does the draft claim the PR is "ready to merge"? Delete -- that's the reviewer's call.

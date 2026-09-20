@@ -30,6 +30,8 @@ Derive severity from the demonstrated consequence, exposure, likelihood under su
 
 **Grade a transient consequence at its terminal state.** "The record stays at status S" reads as latency and is true, which stops the next question: who watches S, and what do they write when they give up? Compare the recovery window against the watcher's retry budget -- when the window exceeds the budget, the record reaches the failure branch with a misleading cause, not a slow correct state. Deferrals banked against a follow-up have the same shape.
 
+**Spec silence is not a downgrade reason.** A specification states what the software must do; it does not enumerate every input. For behavior the spec is silent on, grade the finding by its effect on a reasonable user of the software, not by whether the spec mentions the triggering input. This governs the severity of a defect already found in the changed code; it does not authorize findings against deliberately deferred scope or an explicitly stated non-goal. Invoking that carve-out requires a pointer to where the deferral or non-goal is stated -- a quoted spec line, a quoted PR-description line, or a linked issue. Silence is not a stated non-goal, and an uncited "that was out of scope" does not lower severity.
+
 ## Confidence Rubric
 
 State the evidence supporting confidence:
@@ -54,6 +56,15 @@ For these easily missed classes, preserve consequential unresolved candidates in
 - Linkage and declaration consistency -- `static` vs non-`static`, declaration/definition mismatch, a missing `extern`
 - Behavioral or compatibility change -- an altered error path, a dropped field, status, or default
 - A parameter accepted and then ignored
+- Authentication and authorization -- a missing, reordered, or fail-open check
+- Injection -- SQL, command, template, header, or path
+- Secrets exposure -- a credential in source, logs, traces, or a client bundle
+- Cryptography -- a weak primitive, reused nonce, or disabled verification
+- Data loss or destructive operations -- delete, overwrite, truncate, or an irreversible migration step
+
+The bar is symmetric. A reviewer or validator may not mark a finding in one of these classes `rejected` without citing one of: a specific refuting `file:line`; version- or configuration-specific documentation; commit provenance; or a discriminating test result that names its revision, configuration, trigger, assertion, and observed result. A general passing suite is not disproof, and an assumed framework guarantee is not disproof. Absent that evidence the verdict is `unresolved`, never `rejected`. Lack of disproof is not confirmation either; an unresolved candidate stays in Residual Risks with the missing check named.
+
+A rationale-backed owner override is a third disposition, not a failure to meet this bar. When the project documents the bypass with a reason -- `CLAUDE.md`, `AGENTS.md`, a threat model or ADR marking the component out of scope, a project security file, an inline comment -- record the finding as an owner override citing where the rationale lives, rather than forcing it to `rejected` (the evidence bar is unmet) or to `unresolved` (the question is answered for this venue). That disposition holds for diff review only; a full-repository security audit re-derives the rationale against current source. See the documented-overrides entry in [review-judgment-traps.md](./review-judgment-traps.md).
 
 The subject does not override contrary evidence or review scope. Apply [false-positive-suppression.md](./false-positive-suppression.md) after tracing the relevant callers and guards.
 

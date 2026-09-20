@@ -41,7 +41,7 @@ Resolve one verification scope before classifying or scanning changes:
    - **Infrastructure** -- skip for pure frontend changes (no migrations, no env changes, no CI changes)
    - **Documentation** -- always run when user-facing files changed; skip for internal refactors with no API/behavior change
 
-Log which phases were skipped and why in the report.
+Log which phases were skipped and why in the report. A checker that failed to run (missing tool, errored invocation, unparseable output) is `ERROR`, never `SKIP` or `CLEAN`; `SKIP` is reserved for a phase deliberately not run. An `ERROR` row blocks a READY result.
 
 ## Pipeline
 
@@ -190,17 +190,17 @@ Produce a structured report:
 | Phase | Status | Details |
 |-------|--------|---------|
 | Project gates | PASS/FAIL/SKIP | [unmet gate, if any] |
-| Build | PASS/FAIL | [summary] |
+| Build | PASS/FAIL/ERROR | [summary] |
 | Types | PASS/FAIL/SKIP | [summary] |
 | Lint | PASS/FAIL/SKIP | [summary] |
-| Tests | PASS/FAIL | [N passed, M failed] |
-| Debug audit | CLEAN/[N warnings] | [summary] |
-| Security | CLEAN/[N findings] | [summary] |
+| Tests | PASS/FAIL/ERROR | [N passed, M failed] |
+| Debug audit | CLEAN/[N warnings]/ERROR | [summary] |
+| Security | CLEAN/[N findings]/ERROR | [summary] |
 | Performance | OK/[N concerns]/SKIP | [summary] |
 | Accessibility | OK/[N concerns]/SKIP | [summary] |
 | Infrastructure | OK/[N concerns]/SKIP | [summary] |
 | Documentation | OK/[N gaps]/SKIP | [summary] |
-| Diff review | OK/[N concerns] | [summary] |
+| Diff review | OK/[N concerns]/ERROR | [summary] |
 
 ### Blockers
 - [list any failures or security findings]

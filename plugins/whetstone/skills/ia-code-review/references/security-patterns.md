@@ -71,6 +71,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `sendFile(.*req`, `send_file(.*request`, `os.path.join(.*request` | Path traversal via user-controlled path | Allowlist file IDs mapped to paths, `send_from_directory`, `safe_join` |
+| A `..`-component check that splits the path on `/` only (`split('/')`, `explode('/', ...)`, `path.split('/')`) | A `..\` component passes the filter and is honored by any consumer that treats `\` as a separator -- a Windows filesystem API, a Windows-hosted CI runner, or a later normalization step | Normalize separators (`\` to `/`) *before* splitting and checking components; a filter written for `/`-only input is not a traversal guard |
 | Delete/move/overwrite on a job-payload or sibling-service path, guarded only by shape (absolute, N dirs deep) | Shape isn't authorization -- `startsWith(base)` matches `/base2` | Require: allowlisted root (post-symlink), one level below it, ownership evidence read first; log and stop on refusal, never a broader default |
 | File upload without size limit | Unrestricted upload = DoS | Set `MAX_CONTENT_LENGTH`, `express.json({ limit: '1mb' })` |
 | Upload without content validation | Malicious file type bypass (rename .php to .jpg) | Validate via magic bytes (file signature), not extension |

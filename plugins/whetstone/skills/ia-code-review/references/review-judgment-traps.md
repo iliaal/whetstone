@@ -12,7 +12,7 @@ Read when reviewing test/gate changes, classifying a disputed issue, handling a 
 
 - Recommending fix patterns without checking currency -- verify the pattern is current for the project's framework version; prefer newer built-in alternatives
 
-- Fighting documented overrides -- a rationale-backed bypass (`CLAUDE.md`, `AGENTS.md`, inline comment) is owner-blessed: honor it, don't re-raise; if the rationale is missing, suggest documenting one. Plan-mandated defects are not self-justifying — report them labeled "plan-mandated" for the human to adjudicate
+- Fighting documented overrides -- a rationale-backed bypass (`CLAUDE.md`, `AGENTS.md`, a threat model or ADR marking the component out of scope, an inline comment) is owner-blessed: in diff review, honor it and don't re-raise, recording the disposition as an owner override that cites where the rationale lives; if the rationale is missing, suggest documenting one. The honoring is venue-scoped: a full-repository security audit re-derives the stated reason against current source rather than accepting it, since a documented exclusion is a dated claim and the code it described may have changed. Plan-mandated defects are not self-justifying — report them labeled "plan-mandated" for the human to adjudicate
 
 - Calling a change a regression without a baseline read -- read the pre-change file (`git show --no-textconv --no-ext-diff <base>:<file>`), not just the hunk; cite the introducing commit when confirmed
 

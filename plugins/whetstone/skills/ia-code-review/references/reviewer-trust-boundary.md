@@ -33,6 +33,11 @@ the target introduces network access, privileged operations, destructive
 behavior, or an opaque bootstrap/download step, use an approved sandbox or stop
 for authorization.
 
+The same preflight applies to a command suggested in reviewer or operator
+feedback. Classify it for network access, privileged operations, destructive
+behavior, and opaque download steps exactly as a target-controlled command;
+feedback from a trusted party is not an exemption from classification.
+
 ## Delegated specialists
 
 Give analysis specialists only the context tools required to read, search, and

@@ -18,7 +18,7 @@ Inspect or kill only after: multiple *missed* expected heartbeats, the budget is
 exceeded, or the subprocess has obviously failed (nonzero exit, broken pipe).
 Capture stdout/stderr to a file so a quiet tail isn't mistaken for a dead process.
 
-## Closeout loop -- run until clean, then stop
+## Closeout loop -- run until clean or capped, then stop
 
 - Keep iterating (fix → re-run the external review) until it returns **no
   accepted/actionable findings** -- a structured exit 0, not a prose "looks good".
@@ -27,6 +27,27 @@ Capture stdout/stderr to a file so a quiet tail isn't mistaken for a dead proces
 - Bind the review to one frozen diff bundle (`base SHA … head SHA`) so every
   iteration reviews the same surface; don't re-derive scope mid-loop (see
   "Base-branch resolution for branch reviews" in the main skill).
+- **Cap the loop at two consecutive `unavailable` results** -- the initial run
+  plus one retry. "Clean" is not the only exit: a reviewer broken for a reason
+  unrelated to the diff (auth outage, vendor incident, tool bug) returns
+  `unavailable` forever, so stop after the second failure instead of iterating.
+  Report the external review as unavailable, naming the reviewer attempted, the
+  number of attempts, and what happened on each (exit status, elapsed time, the
+  first line of any error output). Giving up does not convert the result: an
+  `unavailable` pass is still never "clean" and never an input to a
+  merge-readiness verdict.
+
+## A failed external review is not a clean one
+
+An external reviewer's output counts as a completed pass only when it carries
+the completion markers its own contract defines -- a structured verdict, a
+severity set, or a recommendation line. Refusal, empty output, malformed output,
+a timeout, or a nonzero exit makes the pass `unavailable`: never "clean", never
+"PASS", and never an input to a merge-readiness verdict. Distinguish an
+operator's explicit `disabled` opt-out from a failure-driven `unavailable`; both
+are reported, and neither is a pass. On failure, do not silently substitute a
+different external provider -- report which reviewer was attempted and what
+happened (exit status, elapsed time, the first line of any error output).
 
 ## Egress consent -- the packet leaves this machine
 
@@ -40,6 +61,22 @@ restricted (customer data in fixtures, credentials in config, regulated content)
 name that specifically rather than describing the packet by size. Ask through the
 channel the main skill establishes (`AskUserQuestion` in Claude Code,
 `request_user_input` in Codex, numbered options in chat as the fallback).
+
+**Hard exclusion of credential-bearing paths.** Exclude known credential-bearing
+paths from any external dispatch, unconditionally. Unlike ordinary noise
+exclusions (lockfiles, vendored or generated code), a user override cannot
+re-admit them. This exclusion is specific to egress: the local coverage ledger
+in [scope-resolution.md](./scope-resolution.md) still selects these paths for
+local review. The set:
+
+- the `.env` family (`.env`, `.env.*`), except template variants
+  `.env.example`, `.env.sample`, and `.env.template`
+- SSH private keys: `**/.ssh/**`, `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`
+- `.netrc`, `.npmrc`, `.pypirc`, `.dockercfg`
+
+Decide on the path alone -- never read the file's content to make the call.
+Report each excluded path in the packet description so the operator knows it
+was withheld.
 
 ## Label independence honestly
 

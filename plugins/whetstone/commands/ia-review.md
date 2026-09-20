@@ -72,13 +72,15 @@ If no settings file exists, use applicable available review lenses for this invo
 Dispatch all configured review agents in a SINGLE assistant message containing one Task tool call per agent. Do NOT issue them across multiple messages -- that serializes what should run concurrently. For each agent in the `review_agents` list:
 
 ```
-Task {agent-name}(PR content + review context from settings body)
+Task whetstone:{agent-name}(PR content + review context from settings body)
 ```
 
 Deduplicate configured agents and exclude `ia-code-simplicity-reviewer` from this dispatch; it runs once in section 2.
 
-Additionally, always run these regardless of settings:
-- Task ia-learnings-researcher(PR content) - Search docs/solutions/ for past issues related to this PR's modules and patterns
+Additionally, regardless of settings, when `docs/solutions/` exists and holds more than a handful of entries (five or more), always run:
+- Task whetstone:ia-learnings-researcher(PR content) - Search docs/solutions/ for past issues related to this PR's modules and patterns
+
+When `docs/solutions/` is absent or holds fewer entries, check it inline (`ls docs/solutions/`, then read any entry whose name or frontmatter matches the PR's modules) instead of dispatching; the dispatch would cost more than the lookup.
 
 #### Per-agent artifact persistence
 
@@ -103,7 +105,7 @@ Skip this step on small reviews (≤ 7 agents AND ≤ 500 changed lines) -- the 
 
 **Red-team adversarial pass (runs last, after all parallel specialists return):**
 
-- Task ia-security-sentinel(PR content + consolidated findings so far + "Run the Adversarial Pass section from your agent definition. Target gaps in the other specialists' coverage -- cross-category compounds, happy-path assumptions, silent failures, trust boundary violations.")
+- Task whetstone:ia-security-sentinel(PR content + consolidated findings so far + "Run the Adversarial Pass section from your agent definition. Target gaps in the other specialists' coverage -- cross-category compounds, happy-path assumptions, silent failures, trust boundary violations.")
 
 This runs AFTER the parallel pass so it can target the gaps in the specialists' coverage rather than duplicate their work. The detailed red-team methodology lives in the `ia-security-sentinel` agent's Adversarial Pass section.
 
@@ -113,8 +115,8 @@ These agents are run ONLY when the PR matches specific criteria. Check the PR fi
 
 **MIGRATIONS: If PR contains database migrations, schema definitions, or data backfills:**
 
-- Task ia-database-guardian(PR content) - Validates ID mappings match production, checks for swapped values, verifies rollback safety
-- Task ia-deployment-verification-agent(PR content) - Creates Go/No-Go deployment checklist with SQL verification queries
+- Task whetstone:ia-database-guardian(PR content) - Validates ID mappings match production, checks for swapped values, verifies rollback safety
+- Task whetstone:ia-deployment-verification-agent(PR content) - Creates Go/No-Go deployment checklist with SQL verification queries
 
 **When to run:**
 - PR includes files matching `database/migrations/*` or schema definition files
@@ -128,7 +130,7 @@ These agents are run ONLY when the PR matches specific criteria. Check the PR fi
 
 ### 2. Simplification and minimalism review
 
-Run the Task ia-code-simplicity-reviewer() to see if we can simplify the code. Note: `ia-code-simplicity-reviewer` always runs here -- exclude it from `review_agents` in `whetstone.local.md` to avoid running it twice.
+Run the Task whetstone:ia-code-simplicity-reviewer() to see if we can simplify the code. Note: `ia-code-simplicity-reviewer` always runs here -- exclude it from `review_agents` in `whetstone.local.md` to avoid running it twice.
 
 ### 3. Findings synthesis and todo creation
 

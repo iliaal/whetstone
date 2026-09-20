@@ -5,6 +5,34 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.1] - 2026-09-20
+
+Patch: a cross-repo sync applied 35 improvements across eleven skills, and the reactive audit that followed closed 26 findings, nine of them contradictions the sync had introduced between a new rule and an untouched sibling. Component counts are unchanged at 32 skills, 19 agents, and 22 commands.
+
+### Changed
+
+- **`ia-code-review` gained a symmetric evidence bar.** The protected-subject list now covers authentication and authorization, injection, secrets exposure, cryptography, and data loss alongside the existing memory-safety and concurrency classes, and rejecting a finding in any of them requires a refuting `file:line`, version-specific documentation, commit provenance, or a discriminating test result. A generally passing suite and an assumed framework guarantee are named as insufficient. A rationale-backed owner override is recorded as its own disposition rather than being forced to `rejected` or `unresolved`, and that honoring is scoped to diff review: a full-repository audit re-derives the stated reason against current source.
+- `ia-code-review` treats a refused, empty, malformed, timed-out, or nonzero-exit external review as unavailable rather than clean, distinguishes an operator's deliberate opt-out from a failure, and caps the run-until-clean loop at two consecutive unavailable results instead of iterating forever.
+- `ia-code-review` excludes credential-bearing paths from any external dispatch unconditionally and by path alone, while keeping them under local review so a committed-secret finding stays reachable.
+- `ia-code-review` grades a defect the specification is silent on by its effect on a reasonable user, requires a quoted specification or pull-request line to invoke the deferred-scope exception, and asks a report's Residual Risks section to itemize every behavior consciously set aside.
+- `ia-verification-before-completion` now states that a checker which failed to run is an error rather than a skip or a clean result, and that a weighted score cannot redistribute a missing category into a full pass or compare a trend across two runs whose checked-category sets differ.
+- `ia-orchestrating-swarms` names two delegation stop conditions: work the caller could finish in a handful of tool calls with no independent-review, concurrency, or context-isolation value, and racing a dispatched task by also running it inline.
+- `ia-agent-native-architecture` documents that a PreToolUse hook fires once per tool call rather than once per batch, so a stateful gate cannot lock a parallel batch, and adds an output-data-minimization principle covering exception text and detection-tool output.
+- `ia-php-laravel` covers the `AuthenticateSession` middleware baselining a session's password hash on first pass rather than at login, which silently defeats logging other devices out when the login route sits outside the middleware, plus lost-connection behavior for Redis pipelines and transactions.
+- `ia-nodejs-backend` documents stream write backpressure, `ia-python-services` covers an awaitable returned into a synchronous dispatch registry, `ia-postgresql` adds plan assertions as regression tests and a bounded per-key snapshot with cursor tailing, and `ia-linux-bash-scripting` requires an agent-launching script to default to its most restrictive approval mode.
+- `ia-writing` produces an Edit-mode changelog only when the caller asks for one and keeps it outside any delivered artifact, and its pull-request guidance gained a reversibility and blast-radius section plus a wider set of visual shapes.
+
+### Fixed
+
+- **Four commands dispatched plugin agents by bare name.** `/ia-review`, `/ia-plan`, `/ia-brainstorm`, and `/ia-deepen-plan` wrote `Task ia-security-sentinel(...)` where the agent registry requires `whetstone:ia-security-sentinel`; a bare name fails at dispatch and no static check in the repository caught it. Thirteen sites corrected, including two placeholder templates that would have instantiated to a bare name.
+- `ia-code-review` accepted a bare passing test name as disproof of a finding, and required an independent re-read only for critical and important severities, so a medium-severity injection or secrets finding could be dropped without one.
+- `ia-code-review` routed only `.py` files to the Python profile, and classed an unused import as a safe automatic deletion with no prompt, which removes a re-exported symbol from a `.pyi` stub. Stub files now route correctly, and the exemption is scoped to self-aliased imports and `__all__` members rather than all unreferenced imports.
+- `scripts/validate-cross-refs.sh` stripped only column-zero backtick fences, so indented and tilde-delimited code blocks were scanned as prose. Replaced with a CommonMark fence scanner that tracks marker type, indentation, and closer length, and handles carriage returns.
+- Twenty-six `SPEC.md` files reported stale reference counts, every one an undercount.
+- `scripts/release.sh` staged project-level skills but not project-level commands, so changes under `.claude/commands/` were dropped from release commits.
+- The `/announce` command gated on a five-dimension writing score removed from `ia-writing` in July, and absent everywhere since. Replaced with the audit output the skill actually returns.
+- The distillery bound judge verdicts to self-reported provenance with no completeness or duplicate check, scrubbed secrets but not email addresses or home directory paths before third-party egress, measured over-triggering without a symmetric missed-trigger check, exempted compound shell commands from repeated-work detection on their first word, and told the judge that completion claims were backed by evidence it had never verified.
+
 ## [4.6.0] - 2026-09-17
 
 Minor: an opt-in Jev integration lets a hosted judge suggest one skill the keyword triggers missed, a `claude plugin eval` suite now measures `ia-code-review` against seven graded cases, and a full audit closed 17 findings across skills, agents, commands, and the new eval tree. Ten commits. Component counts are unchanged at 32 skills, 19 agents, and 22 commands.

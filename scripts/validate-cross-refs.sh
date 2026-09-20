@@ -14,8 +14,45 @@ errors=0
 
 # Strip fenced code blocks from a file before scanning for references.
 # This prevents false positives from example/illustrative code.
+# CommonMark fences: backtick or tilde marker, 3+ characters, up to 3 leading
+# spaces; the closer uses the same marker and is at least as long as the opener.
+# A backtick opener's info string may not itself contain a backtick.
+#
+# Per CommonMark a run of 3+ tildes opens a fence even when it was meant as a
+# prose horizontal rule, so `~~~~~~~~` in body text swallows the rest of the
+# file. That is spec-correct and deliberate; write a rule as `---` instead.
 strip_code_blocks() {
-    sed '/^```/,/^```/d' "$1"
+    awk '
+        BEGIN { in_fence = 0 }
+        {
+            # A CRLF file would otherwise never close a fence: the closer
+            # requires end-of-line after the marker and \r is not whitespace.
+            sub(/\r$/, "")
+            if (in_fence) {
+                if (match($0, /^(   |  | )?(```+|~~~+)[ \t]*$/)) {
+                    closer = $0
+                    sub(/^ +/, "", closer)
+                    sub(/[ \t]+$/, "", closer)
+                    if (substr(closer, 1, 1) == fence_char && length(closer) >= fence_len) {
+                        in_fence = 0
+                    }
+                }
+                next
+            }
+            if (match($0, /^(   |  | )?(```+|~~~+)/)) {
+                marker = substr($0, RSTART, RLENGTH)
+                sub(/^ +/, "", marker)
+                info = substr($0, RSTART + RLENGTH)
+                if (substr(marker, 1, 1) == "~" || index(info, "`") == 0) {
+                    in_fence = 1
+                    fence_char = substr(marker, 1, 1)
+                    fence_len = length(marker)
+                    next
+                }
+            }
+            print
+        }
+    ' "$1"
 }
 
 # --- Build inventories ---
