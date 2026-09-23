@@ -23,7 +23,7 @@ Read the user's frontend requirements: a component, page, application, or interf
 
 Before designing, assess the existing design environment. Count design signals in the project: design tokens/CSS variables, component library (shadcn, MUI, Ant), CSS framework config (Tailwind, styled-components), font imports, color system, animation patterns, spacing scale.
 
-- **4+ signals** = Existing system. Match it. Do not impose new aesthetics -- extend what's there.
+- **4+ signals** = Existing system. Match it. Do not impose new aesthetics; extend what's there.
 - **1-3 signals** = Partial system. Blend: respect existing choices, fill gaps with this skill's guidance.
 - **0 signals** = Greenfield. Apply the full Design Philosophy below. Product register: read [design-system-routing.md](./references/design-system-routing.md) before bespoke design.
 
@@ -34,11 +34,11 @@ When in doubt, check `package.json`, `tailwind.config.*`, global CSS files, and 
 
 For full pages, applications, or multi-component interfaces: write a **3-sentence design philosophy** before any code. This forces a coherent aesthetic direction and prevents generic output.
 
-1. **Sentence 1 -- Intent**: What emotional response should this interface provoke? (Not "clean and modern" -- that's every AI default. Be specific: "controlled tension between density and breathing room" or "the quiet confidence of a well-bound book.")
-2. **Sentence 2 -- Signature**: What single visual choice makes this unmistakable? (A typeface, a color relationship, a spatial pattern, a motion behavior.)
-3. **Sentence 3 -- Constraint**: What will this design deliberately NOT do? (The constraint shapes the identity as much as the choices.)
+1. **Sentence 1, Intent**: What emotional response should this interface provoke? (Not "clean and modern"; that's every AI default. Be specific: "controlled tension between density and breathing room" or "the quiet confidence of a well-bound book.")
+2. **Sentence 2, Signature**: What single visual choice makes this unmistakable? (A typeface, a color relationship, a spatial pattern, a motion behavior.)
+3. **Sentence 3, Constraint**: What will this design deliberately NOT do? (The constraint shapes the identity as much as the choices.)
 
-Write the philosophy as a comment or in conversation before implementation begins. The philosophy constrains implementation without being prescriptive -- it's a compass, not a blueprint.
+Write the philosophy as a comment or in conversation before implementation begins. The philosophy constrains implementation without being prescriptive: it's a compass, not a blueprint.
 
 For small components or quick additions to existing interfaces, skip the philosophy and match the surrounding design system.
 
@@ -52,9 +52,9 @@ With the philosophy written, commit to the specifics:
 - **Constraints**: Technical requirements (framework, performance, accessibility).
 - **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
 
-Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work -- the key is intentionality, not intensity.
+Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work; the key is intentionality, not intensity.
 
-**Validation gate (greenfield pages and apps, before writing code):** run the swap test on the drafted token system. Could this exact palette, type pairing, and layout be lifted onto an unrelated brief without anyone noticing? If yes, the choice is a default, not a decision -- repick the axis that reads generic (recolor the signature, swap the typeface, restructure the grid) and re-test before implementing. Distinctiveness comes from the subject's own world -- its materials, instruments, artifacts, and vernacular -- so ground a generic axis in something only this subject would use. Skip this gate for small components matched to an existing system (per Context Detection) -- there, reading consistent with that system is the goal, not distinctiveness.
+**Validation gate (greenfield pages and apps, before writing code):** run the swap test on the drafted token system. Could this exact palette, type pairing, and layout be lifted onto an unrelated brief without anyone noticing? If yes, the choice is a default, not a decision: repick the axis that reads generic (recolor the signature, swap the typeface, restructure the grid) and re-test before implementing. Distinctiveness comes from the subject's own world (its materials, instruments, artifacts, and vernacular), so ground a generic axis in something only this subject would use. Skip this gate for small components matched to an existing system (per Context Detection); there, consistency with that system is the goal, not distinctiveness.
 
 Before importing any third-party library (framer-motion, lucide-react, zustand, etc.), check `package.json`. If the package is missing, output the install command before the code. Never assume a library exists.
 
@@ -83,14 +83,14 @@ Most items below are observable only in a rendered viewport, not in the diff. Wh
 
 ## References
 
-- [Motion patterns](./references/motion-patterns.md) -- spring values, stagger recipes, hover animations, scroll entry, performance rules
-- [Creative arsenal](./references/creative-arsenal.md) -- navigation, layout, card, typography, and micro-interaction patterns
-- [Redesigning existing interfaces](./references/redesigning-existing.md) -- audit-first upgrade workflow for existing projects
-- [Redesign audit checklist](./references/redesign-audit.md) -- 60+ checks across typography, color, layout, interactivity, content, and component patterns
-- [RSC / Client Component boundaries](./references/rsc-client-boundaries.md) -- Next.js App Router rules for Server vs Client Components, continuous animations, and provider isolation
-- [Premium detail patterns](./references/premium-details.md) -- `<kbd>` keystrokes, faux-OS chrome, hero image fade, banned meta-labels, card-group baseline alignment, browser-automation safety boundary
-- [Mobile collapse + performance guardrails](./references/mobile-and-performance.md) -- single-column below `md:`, touch targets, rotations on mobile, GPU-composited animation, z-index discipline
-- [Design system routing](./references/design-system-routing.md) -- brief-to-component-system table for greenfield product-register work, before drafting bespoke tokens
+- [Motion patterns](./references/motion-patterns.md): spring values, stagger recipes, hover animations, scroll entry, performance rules
+- [Creative arsenal](./references/creative-arsenal.md): navigation, layout, card, typography, and micro-interaction patterns
+- [Redesigning existing interfaces](./references/redesigning-existing.md): audit-first upgrade workflow for existing projects
+- [Redesign audit checklist](./references/redesign-audit.md): 60+ checks across typography, color, layout, interactivity, content, and component patterns
+- [RSC / Client Component boundaries](./references/rsc-client-boundaries.md): Next.js App Router rules for Server vs Client Components, continuous animations, and provider isolation
+- [Premium detail patterns](./references/premium-details.md): `<kbd>` keystrokes, faux-OS chrome, hero image fade, banned meta-labels, card-group baseline alignment, browser-automation safety boundary
+- [Mobile collapse + performance guardrails](./references/mobile-and-performance.md): single-column below `md:`, touch targets, rotations on mobile, GPU-composited animation, z-index discipline
+- [Design system routing](./references/design-system-routing.md): brief-to-component-system table for greenfield product-register work, before drafting bespoke tokens
 - For WCAG accessibility audits, use the `ia-accessibility-tester` agent
 
 ## Task-specific references

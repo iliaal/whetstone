@@ -25,7 +25,7 @@ Captures problem solutions while context is fresh, creating structured documenta
 
 ## Execution Strategy: Two-Phase Orchestration
 
-Follow the `ia-orchestrating-swarms` skill for the parallel-dispatch contract (single-message fan-out, write-ownership, wait-for-all). The subagent roles and the no-Write constraint below are compound-specific — the generic dispatch mechanics live in that skill.
+Follow the `ia-orchestrating-swarms` skill for the parallel-dispatch contract (single-message fan-out, write-ownership, wait-for-all). The subagent roles and the no-Write constraint below are compound-specific.
 
 <critical_requirement>
 **Only ONE file gets written - the final documentation.**
@@ -37,7 +37,7 @@ Phase 1 subagents return TEXT DATA to the orchestrator. They must NOT use Write,
 
 <parallel_tasks>
 
-Dispatch these subagents per the contract above. Each returns text data to the orchestrator — no file writes.
+Dispatch these subagents per the contract above. Each returns text data to the orchestrator, with no file writes.
 
 #### 1. **Context Analyzer**
    - Extracts conversation history
@@ -90,7 +90,7 @@ The orchestrating agent (main conversation) performs these steps:
    Skill({ skill: "ia-compound-docs", args: "<assembled payload from step 1>" })
    ```
 
-   The skill owns YAML frontmatter validation, category/path resolution, directory creation, file writing, and cross-reference linking. Do NOT reimplement any of those steps here — if the write behavior needs to change, update the skill.
+   The skill owns YAML frontmatter validation, category/path resolution, directory creation, file writing, and cross-reference linking. Do NOT reimplement any of those steps here; if the write behavior needs to change, update the skill.
 
 </sequential_tasks>
 
@@ -116,7 +116,7 @@ Based on problem type, optionally invoke specialized agents to review the docume
 - **Timeline**: Chronological sequence from first symptom to resolution, with timestamps where available. Captures the debugging path, not just the outcome
 - **Investigation steps tried**: What didn't work and why
 - **Root cause analysis**: 5 Whys chain from immediate failure to systemic gap, framed as process/system deficiencies (blameless)
-- **Impact**: Concrete metrics -- duration, affected users/requests, SLA or revenue impact. Specific numbers ("~2,000 requests failed over 45 minutes") over vague descriptions ("some users were affected")
+- **Impact**: Concrete metrics: duration, affected users/requests, SLA or revenue impact. Specific numbers ("~2,000 requests failed over 45 minutes") over vague descriptions ("some users were affected")
 - **Working solution**: Step-by-step fix with code examples
 - **Prevention strategies**: How to avoid in future
 - **Action items**: Follow-up tasks with assigned owner (person or team) and deadline
@@ -175,7 +175,7 @@ This documentation will be searchable for future reference when similar
 issues occur in the Email Processing or Brief System modules.
 ```
 
-The `ia-compound-docs` skill presents the canonical Decision Menu after writing the file — defer to it. Do not reimplement or duplicate the menu here.
+The `ia-compound-docs` skill presents the canonical Decision Menu after writing the file. Defer to it; do not reimplement or duplicate the menu here.
 
 ## The Compounding Philosophy
 
@@ -200,7 +200,7 @@ Build → Test → Find Issue → Research → Improve → Document → Validate
 
 <auto_invoke> <trigger_phrases> - "that worked" - "it's fixed" - "working now" - "problem solved" </trigger_phrases>
 
-These phrases mark timing — when to consider capture — not eligibility. Apply the Preconditions counterfactual before invoking; the phrase alone does not qualify the work.
+These phrases mark timing (when to consider capture), not eligibility. Apply the Preconditions counterfactual before invoking; the phrase alone does not qualify the work.
 
 <manual_override> Use /ia-compound [context] to document immediately without waiting for auto-detection. This still requires the Preconditions counterfactual to pass. </manual_override> </auto_invoke>
 

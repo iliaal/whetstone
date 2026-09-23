@@ -11,8 +11,8 @@ Key `postgresql.conf` parameters (adjust for available RAM):
 
 ## Maintenance & Monitoring
 
-- `pg_stat_statements` extension -- find slow queries by total time, not just duration
-- `pg_stat_user_tables` -- check `n_dead_tup` for vacuum needs, `last_autovacuum` timestamps
+- `pg_stat_statements` extension: find slow queries by total time, not just duration
+- `pg_stat_user_tables`: check `n_dead_tup` for vacuum needs, `last_autovacuum` timestamps
 - Cache hit ratio (should be > 99%): `SELECT sum(heap_blks_hit) / sum(heap_blks_hit + heap_blks_read) FROM pg_statio_user_tables`
 
 **Autovacuum tuning for hot tables:**
@@ -23,7 +23,7 @@ ALTER TABLE orders SET (
 );
 ```
 
-**XID wraparound prevention** -- monitor transaction ID age (emergency shutdown at 2B):
+**XID wraparound prevention**: monitor transaction ID age (emergency shutdown at 2B):
 ```sql
 SELECT datname, age(datfrozenxid),
   round(100.0 * age(datfrozenxid) / 2147483648, 2) AS pct_to_wraparound
@@ -61,7 +61,7 @@ Changes write to `pg_wal/` before data files. Checkpoints flush dirty pages to d
 Key config:
 - `checkpoint_timeout` = 5min (default, usually fine)
 - `checkpoint_completion_target` = 0.9 (spread I/O)
-- `max_wal_size` -- increase if checkpoint warnings appear
+- `max_wal_size`: increase if checkpoint warnings appear
 
 Monitor WAL disk usage:
 ```sql
@@ -71,7 +71,7 @@ FROM pg_ls_waldir();
 
 ## Replication
 
-Streaming replication sends WAL to hot standbys (read-only). Replication slots guarantee WAL retention but can exhaust disk if standby goes offline -- use `max_slot_wal_keep_size` to cap.
+Streaming replication sends WAL to hot standbys (read-only). Replication slots guarantee WAL retention but can exhaust disk if standby goes offline; use `max_slot_wal_keep_size` to cap.
 
 Monitor lag:
 ```sql
@@ -113,4 +113,4 @@ SELECT last_archived_wal, last_archived_time, failed_count
 FROM pg_stat_archiver;
 ```
 
-For production, use pgBackRest, Barman, or WAL-G over raw `pg_basebackup`. Test recovery regularly -- backups are useless until you've successfully restored from one.
+For production, use pgBackRest, Barman, or WAL-G over raw `pg_basebackup`. Test recovery regularly; backups are useless until you've successfully restored from one.

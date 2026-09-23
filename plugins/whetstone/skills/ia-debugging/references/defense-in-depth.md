@@ -88,10 +88,10 @@ Use `console.error()` in tests (not logger, which may be suppressed). Log BEFORE
 
 When you fix a bug:
 
-1. **Trace the data flow** -- where does the bad value originate? Where is it consumed?
-2. **Map all checkpoints** -- list every function/boundary data passes through
-3. **Add validation at each layer** -- entry, business logic, environment, instrumentation
-4. **Test each layer independently** -- bypass layer 1, verify layer 2 catches it
+1. **Trace the data flow**: where does the bad value originate? Where is it consumed?
+2. **Map all checkpoints**: list every function/boundary data passes through
+3. **Add validation at each layer**: entry, business logic, environment, instrumentation
+4. **Test each layer independently**: bypass layer 1, verify layer 2 catches it
 
 ## Key Insight
 

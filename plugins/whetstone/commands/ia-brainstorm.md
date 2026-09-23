@@ -6,7 +6,7 @@ argument-hint: "[feature idea or problem to explore]"
 
 # Brainstorm a Feature or Improvement
 
-**Process knowledge:** Follow the `ia-brainstorming` skill for all process details -- clarity assessment, question techniques, approach exploration, YAGNI principles, scope decomposition, and spec review.
+**Process knowledge:** Follow the `ia-brainstorming` skill for all process details: clarity assessment, question techniques, approach exploration, YAGNI principles, scope decomposition, and spec review.
 
 ## Feature Description
 
@@ -22,7 +22,7 @@ Do not proceed until you have a feature description from the user.
 
 ### Phase 0: Assess Requirements Clarity
 
-Per the `ia-brainstorming` skill Phase 0 -- evaluate whether brainstorming is needed.
+Per the `ia-brainstorming` skill Phase 0, evaluate whether brainstorming is needed.
 
 **If requirements are already clear:**
 Use **AskUserQuestion tool** to suggest: "Your requirements seem detailed enough to proceed directly to planning. Should I run `/ia-plan` instead, or would you like to explore the idea further?"
@@ -45,17 +45,17 @@ Per `ia-brainstorming` skill Phases 2-3. Use AskUserQuestion for approach select
 
 ### Phase 4: Spec Review
 
-Per the `ia-brainstorming` skill Phase 4 -- dispatch `ia-spec-flow-analyzer` agent, iterate up to 3 times, then present to user for approval.
+Per the `ia-brainstorming` skill Phase 4, dispatch `ia-spec-flow-analyzer` agent, iterate up to 3 times, then present to user for approval.
 
 ### Phase 5: Handoff
 
 Use **AskUserQuestion tool**: "Brainstorm captured. What would you like to do next?"
 
 **Options:**
-1. **Review and refine** -- Load the `ia-document-review` skill and apply it to the brainstorm document
-2. **Proceed to planning** -- Run `/ia-plan` (will auto-detect this brainstorm)
-3. **Ask more questions** -- Return to Phase 1.2 and probe deeper
-4. **Done for now** -- Return later
+1. **Review and refine**: Load the `ia-document-review` skill and apply it to the brainstorm document
+2. **Proceed to planning**: Run `/ia-plan` (will auto-detect this brainstorm)
+3. **Ask more questions**: Return to Phase 1.2 and probe deeper
+4. **Done for now**: Return later
 
 **If "Review and refine":** After document-review completes, offer: Move to planning / Done for now.
 
@@ -75,4 +75,4 @@ Key decisions:
 Next: Run `/ia-plan` when ready to implement.
 ```
 
-The `ia-brainstorming` skill's Hard Gate prohibits code writing during this workflow — the skill enforces this, don't restate it here.
+The `ia-brainstorming` skill's Hard Gate prohibits code writing during this workflow.

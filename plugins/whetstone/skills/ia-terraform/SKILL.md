@@ -71,7 +71,7 @@ Keep modules small (single responsibility). `examples/` double as documentation 
 | Named/keyed items that may reorder | `for_each = toset(list)` or `map` |
 | Fixed identical replicas | `count = N` |
 
-Default to `for_each` -- removing a middle item from a `count` list recreates all subsequent resources. Use `count` only for boolean conditionals or truly identical replicas.
+Default to `for_each`: removing a middle item from a `count` list recreates all subsequent resources. Use `count` only for boolean conditionals or truly identical replicas.
 
 
 ## Version Pinning
@@ -84,26 +84,26 @@ Default to `for_each` -- removing a middle item from a `count` list recreates al
 | Modules (dev) | Allow patch | `version = "~> 5.1.0"` |
 
 Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
-Stacks (HCP -- check current release status): orchestrates multiple configs as a single deployment unit -- evaluate for multi-environment patterns.
+Stacks (HCP; check current release status): orchestrates multiple configs as a single deployment unit. Evaluate for multi-environment patterns.
 
 
 ## State & Security
 
-- Remote backend with locking: S3 with `use_lockfile = true` (1.10+), Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure. DynamoDB-based S3 locking (`dynamodb_table`) is deprecated and slated for removal -- prefer `use_lockfile`; both may be set at once while migrating an existing table off.
+- Remote backend with locking: S3 with `use_lockfile = true` (1.10+), Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure. DynamoDB-based S3 locking (`dynamodb_table`) is deprecated and slated for removal; prefer `use_lockfile`. Both may be set at once while migrating an existing table off.
 - OpenTofu-only: `terraform { encryption { key_provider "pbkdf2" "k" {...}  method "aes_gcm" "m" { keys = key_provider.pbkdf2.k }  state { method = method.aes_gcm.m }  plan { method = method.aes_gcm.m } } }` encrypts state and plan files client-side (or via `TF_ENCRYPTION`). Roll out with a `fallback { method = method.unencrypted.x }` so existing plaintext state still loads, and never rename a key provider or method without a `fallback` block. OpenTofu also accepts `var.*`/`local.*` in `backend {}` arguments and in module `source`/`version` (resolved at `init`; no state or provider-function references); the same HCL is a hard error in Terraform ("A backend block cannot refer to named values").
 - Encrypt state at rest. Never commit `.tfstate`, `.terraform/`, or `*.tfplan`. Always commit `.terraform.lock.hcl`.
 - `default_tags` on provider for consistent resource tagging.
-- Encryption at rest on all storage. Private networking by default -- public access is opt-in.
+- Encryption at rest on all storage. Private networking by default; public access is opt-in.
 - Least-privilege security groups. No `0.0.0.0/0` ingress without explicit justification.
-- Never hardcode credentials -- use assume_role, OIDC, or secrets managers.
-- Pre-commit: auto-format first (`terraform fmt -recursive` -- rewrites files), then verify (`terraform validate && tflint && trivy config .`)
+- Never hardcode credentials; use assume_role, OIDC, or secrets managers.
+- Pre-commit: auto-format first (`terraform fmt -recursive` rewrites files), then verify (`terraform validate && tflint && trivy config .`)
 - Use `moved` blocks with `from` and `to` addresses for refactoring resource names/modules without destroy-recreate. Retain historical moves for downstream upgrades; remove only after every affected state has migrated, or as an explicitly breaking module release.
-- `lifecycle { ignore_changes = [attr] }` suppresses **updates only**, and it substitutes the prior state value at plan time -- on the *first* plan after the config change, with no "first apply" exception. Two consequences reviewers get backwards: (1) on an already-provisioned resource the literal in the config is never written, and `ForceNew` never fires because `ignore_changes` erased the diff before replacement is evaluated -- so a change that replaces a committed value with a placeholder scrubs the repository and leaves the remote value live; (2) `ignore_changes` does not apply on create, so any later `-replace`, taint, `state rm` + re-add, or manual deletion re-seeds the placeholder over a value that was set out of band. Keep only the container resource in configuration and provision the value entirely out of band, or state the restore step in the runbook for every replace path.
+- `lifecycle { ignore_changes = [attr] }` suppresses **updates only**, and it substitutes the prior state value at plan time, on the *first* plan after the config change, with no "first apply" exception. Two consequences reviewers get backwards: (1) on an already-provisioned resource the literal in the config is never written, and `ForceNew` never fires because `ignore_changes` erased the diff before replacement is evaluated, so a change that replaces a committed value with a placeholder scrubs the repository and leaves the remote value live; (2) `ignore_changes` does not apply on create, so any later `-replace`, taint, `state rm` + re-add, or manual deletion re-seeds the placeholder over a value that was set out of band. Keep only the container resource in configuration and provision the value entirely out of band, or state the restore step in the runbook for every replace path.
 
 
 ## Troubleshooting
 
-- State lock stuck: `terraform force-unlock <ID>` -- only after confirming no other operation running
+- State lock stuck: `terraform force-unlock <ID>`, only after confirming no other operation running
 - Resource drift: `terraform plan -refresh-only` to detect, `terraform apply -refresh-only` to accept
 - Replace tainted: `terraform apply -replace=ADDR` (not deprecated `terraform taint`)
 - Import existing: `import` blocks (1.5+) for declarative import, or `terraform import ADDR ID`
@@ -119,9 +119,9 @@ locals {
 }
 ```
 
-This forces Terraform to destroy subnets before CIDR associations -- prevents deletion errors.
+This forces Terraform to destroy subnets before CIDR associations, which prevents deletion errors.
 
-- `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs -- never hardcode subnets
+- `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs; never hardcode subnets
 - Multi-region: `provider "aws" { alias = "eu_west_1" }` + `providers = { aws = aws.eu_west_1 }` in module blocks
 
 
@@ -133,7 +133,7 @@ Run before declaring done:
 terraform fmt -check && terraform validate && tflint && trivy config .
 ```
 
-All commands must pass with zero errors. Where plan-mode tests exist, add `terraform test -filter=<unit-test-file>` -- restrict this to plan-mode suites, since apply-mode tests stand up real infrastructure and do not belong in a pre-completion check.
+All commands must pass with zero errors. Where plan-mode tests exist, add `terraform test -filter=<unit-test-file>`. Restrict this to plan-mode suites, since apply-mode tests stand up real infrastructure and do not belong in a pre-completion check.
 
 ## Task-specific references
 

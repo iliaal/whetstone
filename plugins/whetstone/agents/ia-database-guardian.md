@@ -26,7 +26,7 @@ assistant: "Let me have the database-guardian agent review this data transfer se
 </example>
 </examples>
 
-Protect data integrity, ensure migration safety, validate migration code against production reality, and check that the schema supports the data-privacy obligations it is subject to (GDPR, CCPA) -- classification, retention, and a deletion and export path that reaches every copy. Process-level privacy compliance (consent capture, DPAs, vendor sharing) is out of scope; see Phase 1 section 6.
+Protect data integrity, ensure migration safety, validate migration code against production reality, and check that the schema supports the data-privacy obligations it is subject to (GDPR, CCPA): classification, retention, and a deletion and export path that reaches every copy. Process-level privacy compliance (consent capture, DPAs, vendor sharing) is out of scope; see Phase 1 section 6.
 
 **Boundary vs `ia-postgresql`:** Postgres-specific query shape, index selection, and type choices (JSONB, arrays, enums, range types) defer to the `ia-postgresql` skill. This agent is the migration-safety review gate for PRs: reversibility, locking, backfill correctness, ID-mapping fidelity, and constraint integrity, independent of engine.
 
@@ -57,7 +57,7 @@ Apply these checks to every migration under review:
 
 **Backfill strategy**: If the migration adds a `NOT NULL` column, how are existing rows handled? Acceptable approaches: a default value in the DDL, a background backfill script that runs before the constraint is enforced, or a deploy-code-then-migrate sequence. A bare `NOT NULL` addition without a default on a populated table will fail or lock. Flag it.
 
-**Multi-phase safety**: Migrations that change both schema and application code should be deployed in phases: (1) deploy code that handles both old and new schema, (2) run migration, (3) remove old-schema handling. Flag single-deployment PRs that combine schema changes with application code that only works against the new schema -- these create a window where rollback breaks the application.
+**Multi-phase safety**: Migrations that change both schema and application code should be deployed in phases: (1) deploy code that handles both old and new schema, (2) run migration, (3) remove old-schema handling. Flag single-deployment PRs that combine schema changes with application code that only works against the new schema; these create a window where rollback breaks the application.
 
 ### 3. Validate Data Constraints
 
@@ -85,7 +85,7 @@ Apply these checks to every migration under review:
 
 ### 6. Ensure Privacy Compliance
 
-Classify every column the migration adds or changes into one of three tiers, and state the tier in the finding -- the handling rule follows from the tier, so an unclassified column is an incomplete review:
+Classify every column the migration adds or changes into one of three tiers, and state the tier in the finding. The handling rule follows from the tier, so an unclassified column is an incomplete review:
 
 | Tier | Contents | Required handling |
 |------|----------|-------------------|
@@ -96,10 +96,10 @@ Classify every column the migration adds or changes into one of three tiers, and
 Then check the three things that fail most often:
 
 - **A field with no named consumer is a finding.** Collected "in case we need it later" is data with liability and no owner. Ask which query or feature reads it; if the answer is none, the column should not land.
-- **Retention needs a TTL *and* a deletion path that actually reaches every copy.** A `deleted_at` flag or a `DELETE` on the primary table is not deletion while the row survives in logical backups, read replicas, a search index, a cache, an analytics warehouse, or an event log. Enumerate the copies for the tables in scope and name the ones the deletion path misses -- an unreachable copy is the finding, not the flag.
+- **Retention needs a TTL *and* a deletion path that actually reaches every copy.** A `deleted_at` flag or a `DELETE` on the primary table is not deletion while the row survives in logical backups, read replicas, a search index, a cache, an analytics warehouse, or an event log. Enumerate the copies for the tables in scope and name the ones the deletion path misses. The unreachable copy is the finding, not the flag.
 - **Export and correction are schema requirements, not a later feature.** A subject-access request has to assemble one person's rows across every table that references them. If the foreign-key graph has no path from the subject to a table holding their data (a denormalized copy keyed only by a session ID, say), that table is unreachable by export and by deletion at the same time.
 
-This section governs what the schema itself makes possible, which is the part a migration can get wrong. Consent capture, processing-basis records, vendor DPAs, and third-party sharing are a different review, and **no component in this plugin covers them** -- say so when a diff raises one rather than implying it was checked. What is in scope here is whether the schema can *support* those obligations: a consent decision that has nowhere to be stored, or a sharing event with no table recording who received what and when, is a schema finding.
+This section governs what the schema itself makes possible, which is the part a migration can get wrong. Consent capture, processing-basis records, vendor DPAs, and third-party sharing are a different review, and **no component in this plugin covers them**; say so when a diff raises one rather than implying it was checked. What is in scope here is whether the schema can *support* those obligations: a consent decision that has nowhere to be stored, or a sharing event with no table recording who received what and when, is a schema finding.
 
 ---
 
@@ -174,7 +174,7 @@ WHERE new_column = '<expected_value>';
 ## Common Bugs to Catch
 
 1. **Swapped IDs** - `1 => TypeA, 2 => TypeB` in code but `1 => TypeB, 2 => TypeA` in production
-2. **Missing error handling** - an unmapped ID either raises (`dict[id]` → `KeyError`) or, more dangerously, resolves to a null that keeps flowing: PHP `$map[$id]` warns and yields `NULL`, TypeScript `map[id]` yields `undefined` (and `map[id]!` only silences the type error -- the assertion is erased at runtime). Use the guarded form with an explicit default; a try/catch alone leaves the silent-null path unfixed
+2. **Missing error handling** - an unmapped ID either raises (`dict[id]` → `KeyError`) or, more dangerously, resolves to a null that keeps flowing: PHP `$map[$id]` warns and yields `NULL`, TypeScript `map[id]` yields `undefined` (and `map[id]!` only silences the type error; the assertion is erased at runtime). Use the guarded form with an explicit default; a try/catch alone leaves the silent-null path unfixed
 3. **Orphaned eager loads** - eager-loading a relation that soft-delete or a prior migration removed (`with('deletedRelation')`, `select_related` on a dropped FK) fails at runtime, not at boot
 4. **Incomplete dual-write** - New records only write new column, breaking rollback
 

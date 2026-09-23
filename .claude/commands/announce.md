@@ -113,7 +113,7 @@ After user approves the thread, draft it into X for manual review and posting. C
    ```bash
    bash scripts/launch-edge.sh
    ```
-   Thin wrapper for `edge-cdp ensure compound-engineering`. The profile is bound to `@iliaa` on CDP port 9225 and was intentionally not renamed during the v4.0.0 plugin rename — browser sessions, login cookies, and per-platform composer state all live in that profile dir. First run: log in to X in the opened window; subsequent runs reuse the session. Profile registry and CDP framework details: `~/ai/wiki/tools/edge-automation.md`.
+   Thin wrapper for `edge-cdp ensure compound-engineering`. The profile is bound to `@iliaa` on CDP port 9225 and keeps the `compound-engineering` name because browser sessions, login cookies, and per-platform composer state live in that profile dir. First run: log in to X in the opened window; subsequent runs reuse the session. Profile registry and CDP framework details: `~/ai/wiki/tools/edge-automation.md`.
 3. Compose the thread (types all tweets, does NOT click Post):
    ```bash
    python3 scripts/post-thread.py ~/ai/whetstone/.announce/thread-vX.Y.Z.json

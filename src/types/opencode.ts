@@ -47,7 +47,7 @@ export type OpenCodeBundle = {
   hookSource?: { name: string; root: string }
   config: OpenCodeConfig
   agents: OpenCodeAgentFile[]
-  // Commands are written as individual .md files, not in opencode.json. See ADR-001.
+  // Written as individual .md files, not entries in opencode.json.
   commandFiles: OpenCodeCommandFile[]
   plugins: OpenCodePluginFile[]
   skillDirs: { sourceDir: string; name: string }[]

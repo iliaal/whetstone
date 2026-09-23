@@ -54,7 +54,7 @@ Track and optimize:
 
 1. **Source**: trigger on push/PR, fetch dependencies
 2. **Build**: compile/bundle, cache dependencies between runs
-3. **Test**: unit → integration → e2e (fail fast — cheapest tests first)
+3. **Test**: unit → integration → e2e (fail fast, cheapest tests first)
 4. **Security**: dependency audit, SAST scan, secret detection
 5. **Artifact**: build container image or package, tag with commit SHA
 6. **Deploy staging**: auto-deploy, run smoke tests
@@ -63,7 +63,7 @@ Track and optimize:
 
 ### Pipeline Optimization
 
-- **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs — keyed by lockfile hash
+- **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs, keyed by lockfile hash
 - **Parallel execution**: run unit tests, lint, type-check, security scan concurrently
 - **Artifact promotion**: build once, deploy the same artifact to staging → production (never rebuild)
 - **Fast feedback**: fail on lint/type errors before running expensive test suites
@@ -74,7 +74,7 @@ Track and optimize:
 ### Blue-Green
 
 Two identical environments. Deploy to inactive (green), run smoke tests, switch traffic.
-- **Rollback**: instant — switch traffic back to blue
+- **Rollback**: instant; switch traffic back to blue
 - **Database**: must be backward-compatible (both versions run briefly during switch)
 - **Best for**: low-risk, fast rollback requirement
 
@@ -115,7 +115,7 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 - **Dependency coordination**: if service A depends on service B's new API, deploy B first
 - **Database migrations**: run before code deploy, ensure backward compatibility (expand-contract pattern)
 - **Communication**: auto-notify on deploy start/finish/rollback (Slack, email)
-- **Rollback triggers**: define explicit criteria — error rate, latency, failed health checks
+- **Rollback triggers**: define explicit criteria: error rate, latency, failed health checks
 - **Post-deploy soak**: monitor for 15-30 minutes before declaring success
 
 ## Docker & Containerization
@@ -137,26 +137,26 @@ For Dockerfile, image optimization, container security, graceful shutdown, and d
 - **USE method** for resources: Utilization, Saturation, Errors
 - Track business metrics alongside technical ones (signups, orders, conversions)
 - Set SLIs (what to measure) and SLOs (target thresholds) for critical paths
-- **Error-budget gate**: track SLO error budget remaining. Above 20% remaining, ship normally. Between 0-20% remaining, allow only slow, canary-only rollouts -- no high-risk changes. At 0% (exhausted), freeze feature deploys until the budget recovers or the SLO is renegotiated.
+- **Error-budget gate**: track SLO error budget remaining. Above 20% remaining, ship normally. Between 0-20% remaining, allow only slow, canary-only rollouts with no high-risk changes. At 0% (exhausted), freeze feature deploys until the budget recovers or the SLO is renegotiated.
 
 ### Structured Logging
 
 - JSON format with consistent fields: `timestamp`, `level`, `message`, `service`, `correlationId`
 - Include request context: `userId`, `requestId`, `traceId`
 - Log at boundaries: incoming request, outgoing call, error, business event
-- Never log secrets, tokens, passwords, PII — mask or omit
-- Aggregate to central store (ELK, Loki, CloudWatch) — don't rely on container stdout alone
+- Never log secrets, tokens, passwords, PII; mask or omit
+- Aggregate to central store (ELK, Loki, CloudWatch); don't rely on container stdout alone
 
 ### Distributed Tracing
 
-- Instrument with OpenTelemetry SDK — propagate trace context across service boundaries
+- Instrument with OpenTelemetry SDK; propagate trace context across service boundaries
 - Auto-instrument HTTP clients, database drivers, queue producers/consumers
 - Add custom spans for business-critical operations
 - Trace sampling: 100% for errors, 1-10% for normal traffic in high-throughput systems
 
 ### Alerting
 
-- Alert on symptoms (error rate, latency), not causes (CPU, disk) — causes change, symptoms are stable
+- Alert on symptoms (error rate, latency), not causes (CPU, disk); causes change, symptoms are stable
 - Every alert must have a runbook link explaining what to check and how to remediate
 - Runbook minimum template, one line each: `# Runbook: <alert name>`; `**Means:**` what the alert signals; `**First check:**` the one command or dashboard that decides; `**Escalate to:**` owner or rotation
 - Grow a runbook past the template only when the first check alone cannot decide between causes
@@ -168,9 +168,9 @@ For Dockerfile, image optimization, container security, graceful shutdown, and d
 
 - **Detection**: alerts fire → on-call acknowledges within 5 minutes
 - **Triage**: assess blast radius and severity, communicate status to stakeholders
-- **Mitigation**: prioritize restoration over root cause — rollback, feature-flag off, scale up
+- **Mitigation**: prioritize restoration over root cause: rollback, feature-flag off, scale up
 - **Resolution**: fix the underlying issue once service is restored
-- **Postmortem**: follow the `ia-debugging` skill's Postmortem template — blameless, action-item focused
+- **Postmortem**: follow the `ia-debugging` skill's Postmortem template: blameless, action-item focused
 
 ## Report Format
 

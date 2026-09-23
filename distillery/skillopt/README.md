@@ -3,52 +3,48 @@
 A validation-gated optimizer for Whetstone **process** skills, built on a
 vendored, trimmed [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt)
 (MIT; see [VENDORED.md](./VENDORED.md)). It tunes a `SKILL.md` by running the
-target model **agentically** against tasks, scoring each rollout, and accepting a
-skill edit only when it improves a held-out validation split — then emitting a
-deployable `best_skill.md`.
+target model **agentically** against tasks and scoring each rollout. A skill
+edit is accepted only when it improves a held-out validation split, and the
+result is written as a deployable `best_skill.md`.
 
-This is offline tooling. It does **not** ship in the plugin, is **not** mirrored
-to ai-skills, and is **not** wired into the release pipeline. It sits alongside
-the DSPy-based `evolve` (`distillery/scripts/distiller.py evolve`); see
+This is offline tooling: it does not ship in the plugin, is not mirrored to
+ai-skills, and is not part of the release pipeline. It complements the
+DSPy-based `evolve` (`distillery/scripts/distiller.py evolve`); see
 [How this differs from `evolve`](#how-this-differs-from-evolve).
 
 ## How it works
 
-SkillOpt's trainer (`skillopt/engine/trainer.py`, vendored, untouched) runs the
-neural-training-shaped loop: epoch → rollout → reflect → aggregate → LR-clipped
-edit → **validation gate** → (optional) slow-update / meta-skill. Everything
+SkillOpt's trainer (`skillopt/engine/trainer.py`, vendored, untouched) runs a
+training-style loop: epoch → rollout → reflect → aggregate → LR-clipped edit →
+**validation gate** → (optional) slow-update / meta-skill. Everything
 task-specific lives in one pluggable *environment*; ours is
 `skillopt/envs/whetstone/`.
 
 The pilot environment optimizes **ia-debugging** against curated seeded-bug
 fixtures, with a **hybrid reward**:
 
-- **`hard` (0/1)** — deterministic. After the agent's rollout, the evaluator runs
-  the fixture's *pristine* test (restored, so a weakened test can't pass) in the
+- **`hard` (0/1)**: deterministic. After the rollout, the evaluator restores the
+  fixture's *pristine* test (so a weakened test can't pass) and runs it in the
   workspace. Bug fixed → 1.
-- **`soft` (0–1)** — a per-skill process rubric (`skillopt/envs/whetstone/rubric.py`)
-  judged by the optimizer model on the rollout trajectory, with **code-enforced
-  verbatim-evidence grounding**: `score_criteria` zeroes any criterion whose
-  evidence does not share a contiguous run with the trajectory (not just a judge
-  instruction — the score is dropped in code). The trajectory is the target's
-  tool-use transcript plus **harness-verified artifacts** (the real pre/post
-  pytest runs + a harness-computed diff of the agent's edits). The transcript is
-  the full ordered stream (Read/Bash/Edit events) only when the rollout runs
-  nested in a Claude Code session (`CLAUDE_CODE_COORDINATOR_MODE=1`); standalone,
-  `--output-format text` returns just the final message — so the harness
-  artifacts are the always-present ground truth (outcome criteria ground either
-  way; temporal criteria need the stream). The
-  transcript is captured as stream-json, so the matcher un-escapes (`\n`, `\"`)
-  before comparing — without that, even verbatim quotes miss and soft collapses
-  to 0 (a bug the pilot caught).
+- **`soft` (0–1)**: a per-skill process rubric (`skillopt/envs/whetstone/rubric.py`)
+  judged by the optimizer model on the rollout trajectory. `score_criteria`
+  zeroes, in code, any criterion whose evidence does not share a contiguous run
+  with the trajectory. The trajectory is the target's tool-use transcript plus
+  **harness-verified artifacts**: the real pre/post pytest runs and a
+  harness-computed diff of the agent's edits. The transcript is the full ordered
+  stream (Read/Bash/Edit events) only when the rollout runs nested in a Claude
+  Code session (`CLAUDE_CODE_COORDINATOR_MODE=1`); standalone,
+  `--output-format text` returns only the final message. The harness artifacts
+  are therefore the ground truth that is always present: outcome criteria ground
+  either way, temporal criteria need the stream. The matcher un-escapes
+  stream-json (`\n`, `\"`) before comparing, or verbatim quotes would miss.
 
-  > **soft does not gate.** The vendored validation gate (`evaluation/gate.py`)
-  > accepts a candidate skill purely on `hard`; `soft` is recorded and fed to the
-  > analyst's reflection, but it never decides accept/reject. Two consequences:
-  > (1) the fixtures must be calibrated so baseline `hard` < 1.0 or no edit can
-  > ever be accepted (trivial bugs the model already fixes leave the gate nothing
-  > to select on); (2) to optimize *process* rather than success-rate, the gate
-  > must be patched to blend `soft`.
+  > **soft gates only when enabled.** The vendored validation gate selects on
+  > `compute_score`, which is mean `hard` unless `SKILLOPT_SOFT_WEIGHT` is set
+  > (see the local patch in [VENDORED.md](./VENDORED.md)). With the default
+  > weight of 0, `soft` is recorded and fed to reflection but never decides
+  > accept/reject, so fixtures must keep baseline `hard` below 1.0 or no edit can
+  > be accepted. To optimize *process* rather than success rate, set the weight.
 
 ```
 trainer (vendored)
@@ -63,13 +59,13 @@ trainer (vendored)
 
 Prereqs: the `claude` CLI on PATH and authenticated; Python deps from
 [requirements.txt](./requirements.txt) (`pyyaml numpy openai httpx pytest`).
-Rollouts spend **real Claude tokens** (each is a multi-turn agentic Claude Code
-run) — keep the pilot small.
+Each rollout is a multi-turn agentic Claude Code run that spends **real Claude
+tokens**, so keep the pilot small.
 
 ```bash
 cd distillery/skillopt
 
-# (re)generate the fixture task set — each task is red on its bug, green when fixed
+# (re)generate the fixture task set; each task is red on its bug, green when fixed
 python fixtures/debugging/build_fixtures.py
 
 # optimize ia-debugging; outputs land under outputs/ (gitignored)
@@ -83,25 +79,25 @@ PYTHONPATH=. python scripts/train.py --config configs/whetstone/default.yaml \
 Output (under the run's `out_root`): `best_skill.md` (best validated skill),
 per-step skill snapshots, `history.json`, and `predictions/<task-id>/` rollout
 artifacts. **Promotion to the plugin stays manual and gated by the existing
-`test-triggers` regression** — this optimizer changes skill *content*, not skill
-*activation*.
+`test-triggers` regression.** The optimizer changes skill content, not skill
+activation.
 
 ## Layout
 
 ```
 distillery/skillopt/
-  skillopt/                     # vendored SkillOpt (trimmed) — see VENDORED.md
+  skillopt/                     # vendored SkillOpt (trimmed); see VENDORED.md
     engine/ model/ gradient/ optimizer/ evaluation/ datasets/ prompts/ ...
     envs/base.py  envs/_template/   # the env interface + reference template
-    envs/whetstone/             # OURS — the only registered env
+    envs/whetstone/             # ours: the only registered env
       adapter.py                #   EnvAdapter: wires dataloader + rollout + reflect
       dataloader.py             #   fixture tasks → train/val/test
       rollout.py                #   agentic claude_code_exec rollout + scoring
       evaluator.py              #   hybrid reward: hard (pytest) + soft (rubric)
       rubric.py                 #   per-skill process rubric + verbatim-evidence judge
       skills/initial.md         #   seed = a copy of the shipped ia-debugging SKILL.md
-  configs/whetstone/default.yaml
-  fixtures/debugging/           # OURS — seeded-bug pilot tasks + splits + builder
+  configs/whetstone/            # ours: default.yaml plus one config per onboarded skill
+  fixtures/<skill>/             # ours: seeded tasks + splits + builder per fixture set
   scripts/train.py              # vendored entry (registry trimmed to whetstone)
 ```
 
@@ -119,19 +115,20 @@ distillery/skillopt/
 `distiller.py evolve` uses DSPy GEPA/MIPROv2 and scores **single-turn** generations
 (`dspy.ChainOfThought`) against a keyword/LLM-judge fitness. This optimizer runs the
 skill **agentically** (real tools, multi-turn) and gates on a **deterministic
-outcome** plus a process rubric. They coexist intentionally: `evolve` is cheap and
-fast for prompt-shaped tuning; `skillopt` is the higher-fidelity, higher-cost path
-for process skills whose value only shows up in agentic execution.
+outcome** plus a process rubric. `evolve` is cheap and fast for prompt-shaped
+tuning; `skillopt` is the higher-fidelity, higher-cost path for process skills
+whose value only shows up in agentic execution.
 
 ## Caveats
 
 - **Cost.** One rollout per item per gate check; each is an agentic Claude Code run.
   Pilot stays at single-digit batch/epoch.
 - **Sandbox.** Rollouts run an autonomous `bypassPermissions` Claude Code agent and
-  execute its edited code (pytest) in a disposable workspace under `outputs/`. Point
-  it only at trusted, curated fixtures — never an untrusted task set.
-- **`soft` is an LLM judge.** Code-enforced verbatim-evidence grounding (ungrounded
-  quote → 0.0) and harness-verified artifacts in the trajectory blunt the obvious
-  reward-hacking paths, but editor and judge share a model family and the temporal
-  criteria are still report-derived. Inspect accepted edits in `history.json`.
+  execute its edited code (pytest) in a disposable out-of-repo tmpdir. Point it
+  only at trusted, curated fixtures, never an untrusted task set. See the Safety
+  section of [SKILLOPT-RUNBOOK.md](./SKILLOPT-RUNBOOK.md).
+- **`soft` is an LLM judge.** Verbatim-evidence grounding (ungrounded quote → 0.0)
+  and harness-verified artifacts block the obvious reward-hacking paths, but editor
+  and judge share a model family and the temporal criteria are still
+  report-derived. Inspect accepted edits in `history.json`.
 - **Vendoring drift.** Pinned in VENDORED.md; re-vendor deliberately.

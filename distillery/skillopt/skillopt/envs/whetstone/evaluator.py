@@ -146,13 +146,10 @@ def evaluate(
         hard, test_output, infra = run_detection(agent_report, detection)
     else:
         hard, test_output, infra = run_hard(work_dir, item.get("test_cmd"), timeout=test_timeout)
-    # The target transcript can be 100K-300K chars (the --output-format text
-    # capture is the full stream, not just the final message). Fed whole to the
-    # judge it overflows the judge backend and the call raises -> the except path
-    # in score_criteria silently zeroes soft (observed: every rollout whose report
-    # exceeded ~130K chars judged soft=0/grounded=None, while a 121K one scored a
-    # clean 0.85). Keep the head (early Read/repro actions, which the temporal
-    # criteria ground against) and the tail (final diff/report), drop the middle.
+    # The target transcript can reach 100K-300K chars. Past ~130K the judge
+    # backend overflows, the call raises, and score_criteria zeroes soft. Keep
+    # the head (early Read/repro actions, which temporal criteria ground
+    # against) and the tail (final diff/report); drop the middle.
     report = agent_report or "(no final report)"
     _HEAD, _TAIL = 30000, 30000
     if len(report) > _HEAD + _TAIL:

@@ -1,6 +1,6 @@
 # E2E Testing with Playwright
 
-> When to read: when authoring Playwright end-to-end tests — directory layout, fixtures, page objects, network mocking, CI integration.
+> When to read: when authoring Playwright end-to-end tests: directory layout, fixtures, page objects, network mocking, CI integration.
 
 ## Directory Structure
 
@@ -59,7 +59,7 @@ export default defineConfig({
 
 ## Page Object Model
 
-Tests never use selectors directly -- page objects encapsulate all locators and actions.
+Tests never use selectors directly; page objects encapsulate all locators and actions.
 
 ```typescript
 // e2e/pages/base.page.ts
@@ -111,7 +111,7 @@ Never use CSS selectors, XPath, or DOM structure selectors. When adding `data-te
 
 ## Filling Inputs
 
-Prefer `locator.fill(value)` to `page.keyboard.type()`. Synthesised keystrokes drop characters intermittently under a browser-attached session (CDP against an already-running browser), and the driver reports the full string as typed while the DOM holds a short value -- so the assertion that would catch it is the one nobody writes. Rich-text editors whose state lives outside the element's `value` (ProseMirror, Slate, TipTap) ignore programmatic writes and still need `type()`; there, assert `input_value()` (or the editor's own serialized content) after typing and retry on a short read.
+Prefer `locator.fill(value)` to `page.keyboard.type()`. Synthesised keystrokes drop characters intermittently under a browser-attached session (CDP against an already-running browser), and the driver reports the full string as typed while the DOM holds a short value, so the assertion that would catch it is the one nobody writes. Rich-text editors whose state lives outside the element's `value` (ProseMirror, Slate, TipTap) ignore programmatic writes and still need `type()`; there, assert `input_value()` (or the editor's own serialized content) after typing and retry on a short read.
 
 ## Wait Strategies
 
@@ -162,7 +162,7 @@ Tests receive auth state via `storageState` in config projects.
 | Animations | `animations: 'disabled'` in config |
 | Race conditions | Wait for API responses before assertions |
 
-**Quarantine workflow** -- confirm flakiness before quarantining:
+**Quarantine workflow**: confirm flakiness before quarantining:
 ```bash
 npx playwright test --repeat-each=10 path/to/test.spec.ts  # Confirm flakiness
 npx playwright test --retries=3 path/to/test.spec.ts       # Check if retries help

@@ -3,12 +3,12 @@
 ## ESLint Integration
 
 Use `eslint-plugin-better-tailwindcss` for automated class validation:
-- `no-conflicting-classes` -- catches `text-red-500 text-blue-500`
-- `no-unknown-classes` -- flags typos
-- `enforce-canonical-classes` -- normalizes shorthand
-- `no-duplicate-classes` -- removes redundant entries
-- `no-deprecated-classes` -- catches v3 classes removed in v4
-- `useSortedClasses` -- enforces canonical class order; configure `attributes: ["classList"]` and `functions: ["clsx", "cva", "cn", "tv", "tw"]` to cover JSX utility functions
+- `no-conflicting-classes`: catches `text-red-500 text-blue-500`
+- `no-unknown-classes`: flags typos
+- `enforce-canonical-classes`: normalizes shorthand
+- `no-duplicate-classes`: removes redundant entries
+- `no-deprecated-classes`: catches v3 classes removed in v4
+- `useSortedClasses`: enforces canonical class order; configure `attributes: ["classList"]` and `functions: ["clsx", "cva", "cn", "tv", "tw"]` to cover JSX utility functions
 
 
 ## Class Merging
@@ -29,7 +29,7 @@ export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 <button className={cn("rounded-lg px-4 py-2", isActive ? "bg-blue-600" : "bg-gray-700")} />
 ```
 
-**Keep class names whole in the source.** The example above works because both branches are complete literals -- Tailwind's scanner does literal string matching over source text and never evaluates JavaScript, so a class assembled by interpolation is invisible to it and the utility is simply never generated. The failure is silent: no error, no warning, just missing styles.
+**Keep class names whole in the source.** The example above works because both branches are complete literals. Tailwind's scanner does literal string matching over source text and never evaluates JavaScript, so a class assembled by interpolation is invisible to it and the utility is simply never generated. The failure is silent: no error, no warning, just missing styles.
 
 ```typescript
 // Broken: `bg-red-500` never appears in the source, so it is never generated
@@ -43,7 +43,7 @@ function Swatch({ color }: { color: keyof typeof BG }) {
 }
 ```
 
-The same applies to classes built in a non-scanned location -- a string in a database, a CMS field, or a file outside the configured `@source` paths. Confirm the source actually gets scanned before assuming a literal is enough.
+The same applies to classes built in a non-scanned location (a string in a database, a CMS field, or a file outside the configured `@source` paths). Confirm the source actually gets scanned before assuming a literal is enough.
 
 `@source` directives resolve relative to the file they appear in, so a shared token package pulling in a sibling (`@source '../../ui/src/**/*.{ts,tsx}'`) is what makes a `libs/ui`-only utility generate in every consuming app. The real generation risk is a utility with **no** prior usage anywhere, and it fails invisibly rather than loudly: an SVG whose root carries `fill="none"` and whose paths swap `fill="#355BF5"` for `className="fill-primary-500"` renders *invisible*, not mis-colored. Grep the compiled CSS of every consuming app, not one.
 

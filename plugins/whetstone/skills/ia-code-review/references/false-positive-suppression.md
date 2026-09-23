@@ -16,7 +16,7 @@ Style issues that the project's linter or formatter already enforces. Don't dupl
 
 ### 3. Intentional design
 
-Code that looks unusual but is deliberately written that way. Signals: comment explaining why, consistent pattern elsewhere in codebase, matches a documented architectural decision, performance-critical section. When uncertain, use question-based feedback ("Was this intentional?") rather than flagging it as a defect. Exception: an explanatory comment does not suppress a gate-loosening finding (skipped test, new suppression comment, lowered threshold -- the floor-guards class) -- a comment is how silent loosening is normally dressed, so those report with the comment quoted as context.
+Code that looks unusual but is deliberately written that way. Signals: comment explaining why, consistent pattern elsewhere in codebase, matches a documented architectural decision, performance-critical section. When uncertain, use question-based feedback ("Was this intentional?") rather than flagging it as a defect. Exception: an explanatory comment does not suppress a gate-loosening finding (skipped test, new suppression comment, lowered threshold: the floor-guards class). A comment is how silent loosening is normally dressed, so those report with the comment quoted as context.
 
 ### 4. Already handled elsewhere
 

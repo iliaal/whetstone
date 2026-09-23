@@ -1,5 +1,5 @@
 <overview>
-Agent execution patterns for building robust agent loops. This covers how agents signal completion, track partial progress for resume, select appropriate model tiers, and handle context limits.
+Agent execution patterns for building reliable agent loops: how agents signal completion, track partial progress for resume, select appropriate model tiers, and handle context limits.
 </overview>
 
 <completion_signals>

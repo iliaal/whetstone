@@ -61,4 +61,4 @@ At the top of the deepened plan, add a summary so reviewers can see what changed
 - [Important finding]
 ```
 
-Both blocks are owned by this skill — commands that orchestrate deepening (e.g., `/ia-deepen-plan`) delegate format decisions here rather than restating the templates.
+Both blocks are owned by this skill; commands that orchestrate deepening (e.g., `/ia-deepen-plan`) delegate format decisions here rather than restating the templates.

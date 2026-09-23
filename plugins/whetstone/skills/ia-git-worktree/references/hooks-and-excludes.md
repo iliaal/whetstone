@@ -29,14 +29,14 @@ root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 exit 0
 ```
 
-Redirect to a log file inside the tool's state dir, not `/dev/null` — silent failures produce stale state you only notice hours later.
+Redirect to a log file inside the tool's state dir, not `/dev/null`; silent failures produce stale state you only notice hours later.
 
 ## Local Excludes: .git/info/exclude vs .gitignore
 
 Tooling artifacts (local index dirs, hook helpers, per-developer scratch files) belong in `.git/info/exclude`, NOT in the tracked `.gitignore`.
 
-- `.gitignore` is content — tracked, shared with the team, reviewed in PRs. Adding a personal tooling rule there pollutes a shared file. On foreign repos (upstream projects, third-party clones) the rule either rides into a PR by accident or sits as a dirty working tree forever.
-- `.git/info/exclude` is local — untracked, lives in the common git dir, shared across every worktree of the clone. Same syntax and semantics as `.gitignore` without the leakage.
+- `.gitignore` is content: tracked, shared with the team, reviewed in PRs. Adding a personal tooling rule there pollutes a shared file. On foreign repos (upstream projects, third-party clones) the rule either rides into a PR by accident or sits as a dirty working tree forever.
+- `.git/info/exclude` is local: untracked, lives in the common git dir, shared across every worktree of the clone. Same syntax and semantics as `.gitignore` without the leakage.
 
 ### Resolving the path correctly under worktrees
 

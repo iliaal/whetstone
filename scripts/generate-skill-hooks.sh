@@ -81,7 +81,6 @@ declare -A TIER_MAP=(
   ["ia-git-worktree"]=3
 )
 
-# Ensure hooks directory exists
 mkdir -p "$(dirname "$OUTPUT")"
 
 # --- Header ---

@@ -1,6 +1,6 @@
 # Orchestration Patterns
 
-> When to read: when designing a multi-agent workflow shape — parallel specialists, sequential pipeline, hub-and-spoke, or hierarchical sub-teams.
+> When to read: when designing a multi-agent workflow shape: parallel specialists, sequential pipeline, hub-and-spoke, or hierarchical sub-teams.
 
 Claude examples below use the active `Agent`, `SendMessage`, and optional Task tools. For named teammates, first confirm an interactive session with agent teams enabled. Team setup and session cleanup are automatic; use the actual session-derived paths. Supply the full dispatch contract and fresh reviewer context with each example. Task IDs are illustrative: use IDs returned by TaskCreate. If Task tools are absent, the orchestrator tracks dependencies and dispatches ready work through messages.
 
@@ -442,11 +442,11 @@ After each wave, compare runnable units delivered with coordination, review, and
 
 ## One implementation unit per worker
 
-A worker dispatched to implement a unit gets a context carrying no prior implementation unit, and it is retired once that unit is integrated -- never retasked onto a second unit, never held as an idle pool. The same handle may continue or recover *its own* unit (the crash-relaunch path in the main skill), but a worker that has already reasoned about one unit's constraints carries them into the next as unstated assumptions.
+A worker dispatched to implement a unit gets a context carrying no prior implementation unit, and it is retired once that unit is integrated: never retasked onto a second unit, never held as an idle pool. The same handle may continue or recover *its own* unit (the crash-relaunch path in the main skill), but a worker that has already reasoned about one unit's constraints carries them into the next as unstated assumptions.
 
 This binds implementation dispatch on the subagent surface only. The persistent teammate model is deliberately long-lived and unaffected, as is the mode-to-mode carry-forward in Context Carry-Forward.
 
-Invoke an explicit close or release only where the harness exposes one and assigns that action to the caller. Clean up an isolated workspace only after confirming the unit's work was integrated -- never infer a cleanup command from the provider name.
+Invoke an explicit close or release only where the harness exposes one and assigns that action to the caller. Clean up an isolated workspace only after confirming the unit's work was integrated; never infer a cleanup command from the provider name.
 
 ## Coordination models
 

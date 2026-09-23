@@ -16,7 +16,7 @@ description: >-
 {issue_id}-{status}-{priority}-{description}.md
 ```
 
-- **issue_id**: Sequential number (001, 002, 003...) -- never reused
+- **issue_id**: Sequential number (001, 002, 003...), never reused
 - **status**: `pending` (needs triage), `ready` (approved), `complete` (done)
 - **priority**: `p1` (critical), `p2` (important), `p3` (nice-to-have). Mapping from the `ia-code-review` severity scale: Critical→p1, Important→p2, Medium→p3, Minor→p3.
 - **description**: kebab-case, brief description

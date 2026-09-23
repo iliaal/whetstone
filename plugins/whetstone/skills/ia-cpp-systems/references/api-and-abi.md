@@ -45,7 +45,7 @@ Hand out an opaque pointer to the C++ object and a matching destroy function. `s
 
 Once a shared library is released, all of the following break consumers even though they still compile. They break in three different ways, and the category decides how the break shows up.
 
-**Layout breaks** — object size or member offsets are baked into already-compiled callers:
+**Layout breaks**: object size or member offsets are baked into already-compiled callers:
 
 | Change | Why it breaks |
 |---|---|
@@ -56,7 +56,7 @@ Once a shared library is released, all of the following break consumers even tho
 | Changing an enum's underlying type | Changes size and how it is passed |
 | Changing alignment, packing, or a bitfield layout | Same as reordering |
 
-**Symbol breaks** — whether the mangled name changes decides whether the break surfaces at link time:
+**Symbol breaks**: whether the mangled name changes decides whether the break surfaces at link time:
 
 | Change | Why it breaks |
 |---|---|
@@ -64,7 +64,7 @@ Once a shared library is released, all of the following break consumers even tho
 | Changing only the return type | Itanium does not mangle an ordinary function's return type, so the symbol is unchanged and callers keep binding to it while disagreeing about what comes back. **Silent** |
 | Adding or removing `noexcept` on a released function | Also absent from an ordinary function's mangled name. Callers compiled against the old spec may have omitted unwind handling. **Silent** |
 
-**Semantic skew** — symbols and layout both survive, so nothing fails until a mixed-version deployment runs:
+**Semantic skew**: symbols and layout both survive, so nothing fails until a mixed-version deployment runs:
 
 | Change | Why it breaks |
 |---|---|
@@ -110,7 +110,7 @@ Cost: one allocation per object and one indirection per call. Pay it at a stable
 
 Do not expose `std::string`, `std::vector`, or any other standard container by value or by reference across a shared-library boundary that consumers may build differently. Their layout varies with standard library implementation, `_GLIBCXX_USE_CXX11_ABI`, libstdc++ debug mode (`_GLIBCXX_DEBUG`), MSVC's `_ITERATOR_DEBUG_LEVEL`, and standard version.
 
-How a mismatch surfaces depends on where the type appears. When it is part of a mangled signature, `_GLIBCXX_USE_CXX11_ABI` mismatches are link errors *by design* — that is the entire purpose of the `std::__cxx11` inline namespace and `abi_tag`. The silent case is the one to fear: a standard type embedded in a user struct, or crossing an opaque boundary such as a `void *` or a plugin interface, where nothing forces the mangled names to disagree and the layouts simply differ. Note also that `_GLIBCXX_ASSERTIONS` is libstdc++'s hardening macro and is documented as ABI-neutral; `_GLIBCXX_DEBUG` is the one that changes layout.
+How a mismatch surfaces depends on where the type appears. When it is part of a mangled signature, `_GLIBCXX_USE_CXX11_ABI` mismatches are link errors *by design*; that is the entire purpose of the `std::__cxx11` inline namespace and `abi_tag`. The silent case is the one to fear: a standard type embedded in a user struct, or crossing an opaque boundary such as a `void *` or a plugin interface, where nothing forces the mangled names to disagree and the layouts simply differ. `_GLIBCXX_ASSERTIONS` is libstdc++'s hardening macro and is documented as ABI-neutral; `_GLIBCXX_DEBUG` is the one that changes layout.
 
 At a hard boundary, pass `const char *` plus length, or a trivially-copyable struct the library owns. Inside one build unit, or in a header-only library the consumer compiles with their own flags, the standard types are fine.
 

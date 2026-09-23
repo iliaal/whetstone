@@ -526,10 +526,8 @@ def main() -> None:
 
     filter_kind = {"skills": "skill", "agents": "agent"}.get(args.type) if args.type else None
 
-    # Scan our plugin
     print("Scanning our plugin...", file=sys.stderr)
     our_components = scan_repo(PLUGIN_ROOT.parent.parent)
-    # Filter to only whetstone components
     our_components = [c for c in our_components if "whetstone" in c.repo]
     print(f"  Found {len(our_components)} components", file=sys.stderr)
     save_catalog(our_components, CACHE_DIR / "ours.json")
@@ -537,7 +535,6 @@ def main() -> None:
     scanned_repo_names: list[str] | None = None
 
     if args.report_only:
-        # Load from cache
         external_components = load_catalog(CACHE_DIR / "external.json")
         if not external_components:
             print("No cached external catalog. Run without --report-only first.", file=sys.stderr)
@@ -547,7 +544,6 @@ def main() -> None:
             print("Provide repo path(s) or use --report-only", file=sys.stderr)
             sys.exit(1)
 
-        # Resolve repo paths
         repo_paths: list[Path] = []
         for r in args.repos:
             p = Path(r).resolve()
@@ -556,9 +552,7 @@ def main() -> None:
                 continue
             if not p.is_dir():
                 continue
-            # Detect if this is a single repo or a directory of repos.
-            # Heuristic: if multiple subdirectories have .git/, this is a
-            # parent directory containing repos, not a repo itself.
+            # Two or more subdirectories with .git/ mean a parent directory of repos.
             git_dirs = [
                 sub for sub in p.iterdir()
                 if sub.is_dir() and (sub / ".git").exists()
@@ -574,12 +568,10 @@ def main() -> None:
             if is_repo:
                 repo_paths.append(p)
             else:
-                # Treat as parent directory containing multiple repos
                 for sub in sorted(p.iterdir()):
                     if sub.is_dir() and not sub.name.startswith("."):
                         repo_paths.append(sub)
 
-        # Scan external repos
         external_components: list[Component] = []
         for repo_path in repo_paths:
             print(f"Scanning {repo_path.name}...", file=sys.stderr)
@@ -587,14 +579,12 @@ def main() -> None:
             print(f"  Found {len(components)} components", file=sys.stderr)
             external_components.extend(components)
 
-        # Record every repo we scanned so 0-component repos still appear in the
-        # report (as "layout not recognized") instead of vanishing silently.
+        # Keeps 0-component repos in the report as "layout not recognized".
         scanned_repo_names = [p.name for p in repo_paths]
 
         save_catalog(external_components, CACHE_DIR / "external.json")
 
     if args.catalog:
-        # Just print the catalog
         for c in sorted(external_components, key=lambda x: (x.repo, x.kind, x.name)):
             kind_marker = "S" if c.kind == "skill" else "A"
             print(f"[{kind_marker}] {c.repo}/{c.name} ({c.line_count} lines)")
@@ -602,7 +592,6 @@ def main() -> None:
                 print(f"    {c.description[:100]}")
         return
 
-    # Group external by repo
     external_by_repo: dict[str, list[Component]] = {}
     if scanned_repo_names:
         for repo_name in scanned_repo_names:
@@ -611,19 +600,15 @@ def main() -> None:
         repo_key = c.repo.split("/")[0] if "/" in c.repo else c.repo
         external_by_repo.setdefault(repo_key, []).append(c)
 
-    # Find overlaps
     print("Finding overlaps...", file=sys.stderr)
     matches = find_overlaps(our_components, external_components, threshold=args.threshold)
     print(f"  Found {len(matches)} matches", file=sys.stderr)
 
-    # Find unmatched
     unmatched = find_unmatched(external_components, our_components, threshold=args.threshold)
     print(f"  Found {len(unmatched)} unmatched external components", file=sys.stderr)
 
-    # Generate report
     report = generate_report(our_components, external_by_repo, matches, unmatched, filter_kind)
 
-    # Output
     if args.output:
         out_path = Path(args.output)
     else:
@@ -635,7 +620,6 @@ def main() -> None:
     out_path.write_text(report)
     print(f"\nReport written to {out_path}", file=sys.stderr)
 
-    # Also print summary to stdout
     our_skills = len([c for c in our_components if c.kind == "skill"])
     our_agents = len([c for c in our_components if c.kind == "agent"])
     ext_skills = len([c for c in external_components if c.kind == "skill"])

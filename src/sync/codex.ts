@@ -8,11 +8,9 @@ export async function syncToCodex(
   config: ClaudeHomeConfig,
   outputRoot: string,
 ): Promise<void> {
-  // Ensure output directories exist
   const skillsDir = path.join(outputRoot, "skills")
   await fs.mkdir(skillsDir, { recursive: true })
 
-  // Symlink skills (with validation)
   for (const skill of config.skills) {
     if (!isValidSkillName(skill.name)) {
       console.warn(`Skipping skill with invalid name: ${skill.name}`)
@@ -22,12 +20,10 @@ export async function syncToCodex(
     await forceSymlink(skill.sourceDir, target)
   }
 
-  // Write MCP servers to config.toml (TOML format)
   if (Object.keys(config.mcpServers).length > 0) {
     const configPath = path.join(outputRoot, "config.toml")
     const mcpToml = convertMcpForCodex(config.mcpServers)
 
-    // Read existing config and merge idempotently
     let existingContent = ""
     try {
       existingContent = await fs.readFile(configPath, "utf-8")
@@ -37,7 +33,7 @@ export async function syncToCodex(
       }
     }
 
-    // Remove any existing Claude Code MCP section to make idempotent
+    // Drop the previously synced section so repeated syncs stay idempotent.
     const marker = "# MCP servers synced from Claude Code"
     const markerIndex = existingContent.indexOf(marker)
     if (markerIndex !== -1) {

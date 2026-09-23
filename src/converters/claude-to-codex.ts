@@ -74,7 +74,6 @@ function convertCommandSkill(command: ClaudeCommand, usedNames: Set<string>): Co
   if (command.allowedTools && command.allowedTools.length > 0) {
     sections.push(`## Allowed tools\n${command.allowedTools.map((tool) => `- ${tool}`).join("\n")}`)
   }
-  // Transform Task agent calls to Codex skill references
   const transformedBody = transformTaskCalls(command.body.trim())
   sections.push(transformedBody)
   const body = sections.filter(Boolean).join("\n\n").trim()
@@ -83,22 +82,16 @@ function convertCommandSkill(command: ClaudeCommand, usedNames: Set<string>): Co
 }
 
 /**
- * Transform Claude Code content to Codex-compatible content.
- *
- * Handles multiple syntax differences:
+ * Rewrite Claude Code invocation syntax for Codex:
  * 1. Task agent calls: Task agent-name(args) → Use the $agent-name skill to: args
  * 2. Slash commands: /command-name → /prompts:command-name
- * 3. Agent references: @agent-name → $agent-name skill
- *
- * This bridges the gap since Claude Code and Codex have different syntax
- * for invoking commands, agents, and skills.
+ * 3. .claude/ paths → .codex/
+ * 4. Agent references: @agent-name → $agent-name skill
  */
 function transformContentForCodex(body: string): string {
   let result = body
 
-  // 1. Transform Task agent calls
-  // Match: Task repo-research-analyst(feature_description)
-  // Match: - Task learnings-researcher(args)
+  // Matches "Task repo-research-analyst(args)" and "- Task learnings-researcher(args)".
   const taskPattern = /^(\s*-?\s*)Task\s+([a-z][a-z0-9-]*)\(([^)]+)\)/gm
   result = result.replace(taskPattern, (_match, prefix: string, agentName: string, args: string) => {
     const skillName = normalizeName(agentName)
@@ -106,28 +99,20 @@ function transformContentForCodex(body: string): string {
     return `${prefix}Use the $${skillName} skill to: ${trimmedArgs}`
   })
 
-  // 2. Transform slash command references
-  // Match: /command-name or /workflows:command but NOT /path/to/file or URLs
-  // Look for slash commands in contexts like "Run /command", "use /command", etc.
-  // Avoid matching file paths (contain multiple slashes) or URLs (contain ://)
+  // Matches /command-name and /ns:command; the lookbehind excludes URLs (://) and path segments.
   const slashCommandPattern = /(?<![:\w])\/([a-z][a-z0-9_:-]*?)(?=[\s,."')\]}`]|$)/gi
   result = result.replace(slashCommandPattern, (match, commandName: string) => {
-    // Skip if it looks like a file path (contains /)
     if (commandName.includes('/')) return match
-    // Skip common non-command patterns
     if (['dev', 'tmp', 'etc', 'usr', 'var', 'bin', 'home'].includes(commandName)) return match
-    // Transform to Codex prompt syntax
     const normalizedName = normalizeName(commandName)
     return `/prompts:${normalizedName}`
   })
 
-  // 3. Rewrite .claude/ paths to .codex/
   result = result
     .replace(/~\/\.claude\//g, "~/.codex/")
     .replace(/\.claude\//g, ".codex/")
 
-  // 4. Transform @agent-name references
-  // Match: @agent-name in text (not emails)
+  // The required role suffix keeps email addresses from matching.
   const agentRefPattern = /@([a-z][a-z0-9-]*-(?:agent|reviewer|researcher|analyst|specialist|oracle|sentinel|guardian|strategist))/gi
   result = result.replace(agentRefPattern, (_match, agentName: string) => {
     const skillName = normalizeName(agentName)
@@ -137,7 +122,6 @@ function transformContentForCodex(body: string): string {
   return result
 }
 
-// Alias for backward compatibility
 const transformTaskCalls = transformContentForCodex
 
 function renderPrompt(command: ClaudeCommand, skillName: string): string {
@@ -146,7 +130,6 @@ function renderPrompt(command: ClaudeCommand, skillName: string): string {
     "argument-hint": command.argumentHint,
   }
   const instructions = `Use the $${skillName} skill for this command and follow its instructions.`
-  // Transform Task calls in prompt body too (not just skill body)
   const transformedBody = transformTaskCalls(command.body)
   const body = [instructions, "", transformedBody].join("\n").trim()
   return formatFrontmatter(frontmatter, body)

@@ -113,4 +113,4 @@ Combine all evidence into a coherent narrative.
 
 This agent analyzes git history. For understanding current codebase conventions and patterns, use the `ia-repo-research-analyst` agent. For researching external best practices, use the `ia-best-practices-researcher` agent.
 
-Note: files in `docs/plans/` and `docs/solutions/` are whetstone pipeline artifacts -- do not recommend their removal.
+Files in `docs/plans/` and `docs/solutions/` are whetstone pipeline artifacts; do not recommend their removal.

@@ -13,7 +13,7 @@ Write `//!` on `lib.rs` to answer "what is this crate for and where does a calle
 
 ## Required sections
 
-Use these headings when they apply — clippy's `missing_errors_doc`, `missing_panics_doc`, and `missing_safety_doc` lints check for exactly these:
+Use these headings when they apply; clippy's `missing_errors_doc`, `missing_panics_doc`, and `missing_safety_doc` lints check for exactly these:
 
 ```rust
 /// Parses a config file into a validated `Config`.
@@ -38,10 +38,10 @@ Use these headings when they apply — clippy's `missing_errors_doc`, `missing_p
 pub fn parse(input: &str) -> Result<Config, Error> { /* ... */ }
 ```
 
-- `# Examples` — at minimum on every public entry point. Lines prefixed `#` are compiled but hidden from rendered output, which keeps imports and error plumbing out of the reader's way.
-- `# Errors` — what each error variant means, not just "returns an error".
-- `# Panics` — every reachable panic, including `unwrap` on an invariant the caller could violate.
-- `# Safety` — mandatory on every `pub unsafe fn`: the invariants the caller must uphold.
+- `# Examples`: at minimum on every public entry point. Lines prefixed `#` are compiled but hidden from rendered output, which keeps imports and error plumbing out of the reader's way.
+- `# Errors`: what each error variant means, not just "returns an error".
+- `# Panics`: every reachable panic, including `unwrap` on an invariant the caller could violate.
+- `# Safety`: mandatory on every `pub unsafe fn`: the invariants the caller must uphold.
 
 ## Enforcement
 
@@ -61,7 +61,7 @@ broken_intra_doc_links = "deny"
 private_intra_doc_links = "warn"
 ```
 
-`broken_intra_doc_links` is the one that pays for itself — `[`Config::parse`]` links silently rot on rename, and nothing else catches it.
+`broken_intra_doc_links` is the one that pays for itself: `[`Config::parse`]` links silently rot on rename, and nothing else catches it.
 
 ## Verify
 

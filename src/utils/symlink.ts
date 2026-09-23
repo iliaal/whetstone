@@ -1,27 +1,22 @@
 import fs from "fs/promises"
 
 /**
- * Create a symlink, safely replacing any existing symlink at target.
- * Only removes existing symlinks - refuses to delete real directories.
+ * Create a symlink at target, replacing an existing symlink or file but never a real directory.
  */
 export async function forceSymlink(source: string, target: string): Promise<void> {
   try {
     const stat = await fs.lstat(target)
     if (stat.isSymbolicLink()) {
-      // Safe to remove existing symlink
       await fs.unlink(target)
     } else if (stat.isDirectory()) {
-      // Refuse to delete real directories
       throw new Error(
         `Cannot create symlink at ${target}: a real directory exists there. ` +
         `Remove it manually if you want to replace it with a symlink.`
       )
     } else {
-      // Regular file - remove it
       await fs.unlink(target)
     }
   } catch (err) {
-    // ENOENT means target doesn't exist, which is fine
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
       throw err
     }
@@ -30,8 +25,7 @@ export async function forceSymlink(source: string, target: string): Promise<void
 }
 
 /**
- * Validate a skill name to prevent path traversal attacks.
- * Returns true if safe, false if potentially malicious.
+ * Reject skill names that could escape the skills directory.
  */
 export function isValidSkillName(name: string): boolean {
   if (!name || name.length === 0) return false

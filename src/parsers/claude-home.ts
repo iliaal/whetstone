@@ -25,7 +25,6 @@ async function loadPersonalSkills(skillsDir: string): Promise<ClaudeSkill[]> {
     const skills: ClaudeSkill[] = []
 
     for (const entry of entries) {
-      // Check if directory or symlink (symlinks are common for skills)
       if (!entry.isDirectory() && !entry.isSymbolicLink()) continue
 
       const entryPath = path.join(skillsDir, entry.name)
@@ -33,7 +32,6 @@ async function loadPersonalSkills(skillsDir: string): Promise<ClaudeSkill[]> {
 
       try {
         await fs.access(skillPath)
-        // Resolve symlink to get the actual source directory
         const sourceDir = entry.isSymbolicLink()
           ? await fs.realpath(entryPath)
           : entryPath

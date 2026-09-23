@@ -1,6 +1,6 @@
 # Banned AI Design Patterns
 
-Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid all of these.
+Visual patterns that signal AI-generated interfaces. Avoid all of these.
 
 ## Layout Patterns
 
@@ -20,9 +20,9 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 
 | Pattern | Problem | Alternative |
 |---------|---------|-------------|
-| Purple/violet gradients (`#6366f1`--`#8b5cf6` range) | The single most recognizable AI color signature | Pick a different palette entirely, then check the result against Composite Looks below -- the usual escapes (earth tones, monochrome, warm accents) land straight in one of them |
+| Purple/violet gradients (`#6366f1` to `#8b5cf6` range) | The single most recognizable AI color signature | Pick a different palette entirely, then check the result against Composite Looks below; the usual escapes (earth tones, monochrome, warm accents) land straight in one of them |
 | Purple-to-blue gradient hero | The default AI aesthetic | Pick a different palette entirely |
-| Evenly distributed accent colors | No visual hierarchy | One dominant accent, neutrals everywhere else -- but source the accent from the subject's own world, not the default acid-green or vermilion on near-black (Composite Looks below) |
+| Evenly distributed accent colors | No visual hierarchy | One dominant accent, neutrals everywhere else, but source the accent from the subject's own world, not the default acid-green or vermilion on near-black (Composite Looks below) |
 | Generic blue (#3B82F6) as primary | Default Tailwind blue | Choose a distinctive hue with personality |
 | Oversaturated accent colors (saturation >80%) | Visually loud, cheap feel | Desaturate accents; muted tones read as more considered |
 | Pure black (`#000000`) for text or backgrounds | Harsh, unnatural contrast | Use near-blacks (`#0a0a0a`, `#111`) or tinted darks |
@@ -33,7 +33,7 @@ Comprehensive list of visual patterns that signal AI-generated interfaces. Avoid
 
 ## Composite Looks
 
-The rows above ban individual tokens. These three ban whole *combinations* that pass every per-token rule and still arrive unprompted regardless of subject -- each one is a legitimate structure (single accent on neutrals, restrained palette, editorial typography) collapsed onto the same realization every time.
+The rows above ban individual tokens. These three ban whole *combinations* that pass every per-token rule and still arrive unprompted regardless of subject. Each one is a legitimate structure (single accent on neutrals, restrained palette, editorial typography) collapsed onto the same realization every time.
 
 | Look | Composition | Alternative |
 |------|-------------|-------------|
@@ -42,7 +42,7 @@ The rows above ban individual tokens. These three ban whole *combinations* that 
 | Broadsheet | Hairline rules + zero border-radius + dense newspaper columns | Keep the density; vary rule weight, radius, or column rhythm so all three do not co-occur |
 | SaaS-card kit | Identical rounded cards everywhere, one border-radius regardless of hierarchy, the same soft grey shadow (`rgba(0,0,0,.1)`) under each, gradient washes as decoration | Vary card treatment by hierarchy; drop the shared radius/shadow/gradient combination even where each token alone would pass a per-token check |
 
-Observed as of 2026-08. Treat as a dated list of over-used combinations, not a permanent ban -- if the brief pins one of these looks, follow the brief.
+Observed as of 2026-08. Treat as a dated list of over-used combinations, not a permanent ban; if the brief pins one of these looks, follow the brief.
 
 ## Typography Patterns
 
@@ -68,7 +68,7 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 | Custom mouse cursors (`cursor: url(...)`) | Novelty that signals template code | Use system cursors; reserve custom cursors for drawing tools or games |
 | shadcn/ui components left in generic default state | Identifiably "template starter kit" | Customize colors, spacing, and radii to match the design system |
 | Browser chrome left at defaults (`::selection`, `caret-color`, scrollbar, focus ring, `text-underline-offset`) | Unthemed chrome reads as unfinished template output | Theme each from the palette; keep the focus ring visible, only restyled |
-| Meta strings joined with middle dots (`A · B · C`) | Templated info-string formatting, appears regardless of subject | Use a separator suited to the content -- comma, pipe, or a line break |
+| Meta strings joined with middle dots (`A · B · C`) | Templated info-string formatting, appears regardless of subject | Use a separator suited to the content: comma, pipe, or a line break |
 | Trailing `→` appended to link or button text | Template chrome, not a functional affordance | Let the link text stand alone, or use a real icon component that carries intent |
 
 ## Interaction Patterns
@@ -98,8 +98,8 @@ Preserve supplied or measured metrics, prices, names, and contact details. Apply
 
 ## Falsifiable Tests
 
-The pattern tables above catch known tells one at a time. These three tests catch the whole class -- run them against finished output before shipping.
+The pattern tables above catch known tells one at a time. These three tests catch the whole class; run them against finished output before shipping.
 
-- **Template test** -- swap in completely different content (a different product, different copy, different data). If the layout still makes sense without any structural change, a template was built, not a design. Redo it. A real design carries the fingerprint of its specific content; a template tolerates any payload.
-- **AI Slop test** -- would a stranger glancing at only the first viewport immediately say "an AI made this"? If yes, the committed direction was not committed enough. Push the signature visual choice further until the answer is no.
-- **Content authenticity check** -- trace metrics, prices, identities, and contact details to supplied or measured sources. Preserve factual values even when round. Label synthetic demo content explicitly and keep it separate from production claims.
+- **Template test**: swap in completely different content (a different product, different copy, different data). If the layout still makes sense without any structural change, a template was built, not a design. Redo it. A real design carries the fingerprint of its specific content; a template tolerates any payload.
+- **AI Slop test**: would a stranger glancing at only the first viewport immediately say "an AI made this"? If yes, the committed direction was not committed enough. Push the signature visual choice further until the answer is no.
+- **Content authenticity check**: trace metrics, prices, identities, and contact details to supplied or measured sources. Preserve factual values even when round. Label synthetic demo content explicitly and keep it separate from production claims.

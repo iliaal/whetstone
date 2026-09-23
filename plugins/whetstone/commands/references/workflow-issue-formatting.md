@@ -46,7 +46,7 @@ function processUser(user: User): void {
 - [ ] Account for accelerated development with AI pair programming
 - [ ] Include prompts or instructions that worked well during research
 - [ ] Note which AI tools were used for initial exploration (Claude, Copilot, etc.)
-- [ ] Emphasize comprehensive testing given rapid implementation
+- [ ] Emphasize thorough testing given rapid implementation
 - [ ] Document any AI-generated code that needs human review
 
 ## Issue Creation

@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 # DSPy imports are deferred to evolve_skill() so distiller.py can load
-# without DSPy installed (only Phase 4 needs it).
+# without DSPy installed.
 
 
 def _split_skill(skill_text):
@@ -141,7 +141,6 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
         print("Error: DSPy not installed. Run: pip install dspy", file=sys.stderr)
         sys.exit(1)
 
-    # Load env for API key
     env_file = Path(__file__).resolve().parent.parent / ".env"
     if env_file.exists():
         for line in env_file.read_text().splitlines():
@@ -154,13 +153,11 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
         print("Error: OPENROUTER_API_KEY not set", file=sys.stderr)
         sys.exit(1)
 
-    # Load skill
     skill_text = Path(skill_path).read_text()
     frontmatter, body = _split_skill(skill_text)
     baseline_body_len = len(body)
     print(f"Loaded skill: {skill_path} ({baseline_body_len} chars body)", file=sys.stderr)
 
-    # Load eval dataset
     examples_raw = []
     with open(dataset_path) as f:
         for line in f:
@@ -176,7 +173,6 @@ def evolve_skill(skill_name, skill_path, dataset_path, iterations=5, model=None,
         print(f"Excluded {len(examples_raw) - len(eligible)} failed/ungraded traces from keyword imitation.", file=sys.stderr)
     examples_raw = eligible
 
-    # Configure DSPy LM
     model = model or "openrouter/deepseek/deepseek-v3.2"
     lm = dspy.LM(
         model,

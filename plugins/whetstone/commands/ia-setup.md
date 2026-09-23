@@ -22,7 +22,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` if available and extract
 
 Before running, display: "Compound Engineering -- checking your environment..."
 
-Run the bundled script. Do not perform manual dependency checks -- the script handles CLI probes, alt-name resolution, and install hints in one pass.
+Run the bundled script. Do not perform manual dependency checks; the script handles CLI probes, alt-name resolution, and install hints in one pass.
 
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh --version VERSION
@@ -125,7 +125,7 @@ Skip to Step 10 with these defaults:
 
 ### Step 9: Customize (if Customize)
 
-**a. Stack** -- confirm or override (only show options that differ from the detected type):
+**a. Stack**: confirm or override (only show options that differ from the detected type):
 
 ```
 question: "Which stack should we optimize for?"
@@ -141,7 +141,7 @@ options:
     description: "PHP/Laravel -- adds PHP-specific reviewer"
 ```
 
-**b. Focus areas** -- multiSelect:
+**b. Focus areas**: multiSelect:
 
 ```
 question: "Which review areas matter most?"

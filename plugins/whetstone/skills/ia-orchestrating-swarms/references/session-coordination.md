@@ -2,11 +2,11 @@
 
 ## Integration Rules
 
-**Post-integration verification** -- after all agents return: check overlapping file edits, review for conflicting approaches, run full test suite.
+**Post-integration verification**: after all agents return, check overlapping file edits, review for conflicting approaches, run full test suite.
 
-**Spawned-session behavior** -- when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry (also called headless mode in sibling skills). Focus on completing the task and report what shipped, verification evidence, and any material uncertainty without padding the response with empty sections.
+**Spawned-session behavior**: when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry (also called headless mode in sibling skills). Focus on completing the task and report what shipped, verification evidence, and any material uncertainty without padding the response with empty sections.
 
-**Decision presentation -- never silently drop options.** Use the active harness's structured question tool when available, otherwise ask in chat. If its option cap cannot represent every viable choice, split the choice into sequential rounds (`D1.1`, `D1.2`, ...) instead of truncating it. Surface cross-option dependencies in the round that introduces them. In spawned sessions, the rule above takes precedence: do not ask; choose the safe default and report it. When no safe default exists -- the ambiguity involves a destructive action, an external audience, or an approval only the user can give -- leave that item undone and record it as a finding in the completion report (evidence, the safe disposition taken instead, impact, decision needed), not as a question the run blocks on.
+**Decision presentation: never silently drop options.** Use the active harness's structured question tool when available, otherwise ask in chat. If its option cap cannot represent every viable choice, split the choice into sequential rounds (`D1.1`, `D1.2`, ...) instead of truncating it. Surface cross-option dependencies in the round that introduces them. In spawned sessions, the rule above takes precedence: do not ask; choose the safe default and report it. When no safe default exists (the ambiguity involves a destructive action, an external audience, or an approval only the user can give), leave that item undone and record it as a finding in the completion report (evidence, the safe disposition taken instead, impact, decision needed), not as a question the run blocks on.
 
 ---
 
@@ -16,7 +16,7 @@ Choose context carry-forward through capabilities the active harness exposes. Cl
 
 ## Coordination Models
 
-Choose by work pattern. **Stateless** -- the leader copies full outputs between prompts -- fits short pipelines of 2-3 agents with sequential handoffs; it fails by context growing linearly with agent count, mitigated by summarizing before passing. **Stateful** -- agents read and write shared task files and claim ownership -- fits parallel work, 4+ agents, and complex dependency graphs; it fails by concurrent modification, mitigated by worktrees or exclusive file ownership per agent. Start stateless; graduate to stateful only when parallelism buys a real speedup and either worktree isolation or every shared-tree wave condition is satisfied. Comparison table: [orchestration-patterns.md](./orchestration-patterns.md) (Coordination models).
+Choose by work pattern. **Stateless** (the leader copies full outputs between prompts) fits short pipelines of 2-3 agents with sequential handoffs; it fails by context growing linearly with agent count, mitigated by summarizing before passing. **Stateful** (agents read and write shared task files and claim ownership) fits parallel work, 4+ agents, and complex dependency graphs; it fails by concurrent modification, mitigated by worktrees or exclusive file ownership per agent. Start stateless; graduate to stateful only when parallelism buys a real speedup and either worktree isolation or every shared-tree wave condition is satisfied. Comparison table: [orchestration-patterns.md](./orchestration-patterns.md) (Coordination models).
 
 **Serialize a shared resource with a TTL lease file, not a coordination daemon.** Applies to one-shot subprocesses and short-lived subagents contending on one checkout or one test database. The four design points that decide whether the lease works: [cross-run-coordination.md](./cross-run-coordination.md) (TTL lease file section).
 

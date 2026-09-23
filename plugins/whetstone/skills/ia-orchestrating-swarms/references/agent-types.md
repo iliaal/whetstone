@@ -94,7 +94,7 @@ Agent({
 
 ## Plugin Agent Types
 
-Plugin-defined agents are addressed `<plugin>:<agent-name>` — `whetstone:ia-security-sentinel`, not `ia-security-sentinel`. Built-in types above take no prefix. A bare plugin-agent name fails at dispatch with a bad-tool-name error, and the failure is invisible to every static check in this repo, so the prefix is worth confirming against this file rather than inferring from a filename.
+Plugin-defined agents are addressed `<plugin>:<agent-name>` (`whetstone:ia-security-sentinel`, not `ia-security-sentinel`). Built-in types above take no prefix. A bare plugin-agent name fails at dispatch with a bad-tool-name error, and the failure is invisible to every static check in this repo, so confirm the prefix against this file rather than inferring it from a filename.
 
 From the `whetstone` plugin (examples):
 

@@ -12,17 +12,17 @@ description: >-
 
 ## Process
 
-Single-file architecture -- one markdown file per problem in its symptom category directory (e.g., `docs/solutions/performance-issues/n-plus-one-briefs.md`), with YAML frontmatter for metadata.
+Single-file architecture: one markdown file per problem in its symptom category directory (e.g., `docs/solutions/performance-issues/n-plus-one-briefs.md`), with YAML frontmatter for metadata.
 
 Follow the 7-step documentation capture process. For full details, see [documentation-process.md](./references/documentation-process.md).
 
-1. **Detect confirmation** -- Auto-invoke after "that worked", "it's fixed", etc. Skip trivial fixes.
-2. **Gather context** -- Extract module, symptom, investigation attempts, root cause, solution, prevention. BLOCK if critical context missing.
-3. **Check existing docs** -- Search `docs/solutions/` for similar issues. If found, offer: new doc with cross-reference, update existing, or other.
-4. **Generate filename** -- Format: `[sanitized-symptom]-[module]-[YYYYMMDD].md`
-5. **Validate YAML** -- Save the draft to a temporary Markdown file, then run [validate-frontmatter.sh](./scripts/validate-frontmatter.sh) against it. The validator requires Python 3 and PyYAML; report a missing dependency rather than claiming validation. If invalid, fix the frontmatter and re-run until it passes.
-6. **Create documentation** -- Write file to `docs/solutions/[category]/[filename].md` using [resolution-template.md](./assets/resolution-template.md).
-7. **Cross-reference** -- Link related issues. Detect critical patterns (3+ similar issues).
+1. **Detect confirmation**: Auto-invoke after "that worked", "it's fixed", etc. Skip trivial fixes.
+2. **Gather context**: Extract module, symptom, investigation attempts, root cause, solution, prevention. BLOCK if critical context missing.
+3. **Check existing docs**: Search `docs/solutions/` for similar issues. If found, offer: new doc with cross-reference, update existing, or other.
+4. **Generate filename**: Format: `[sanitized-symptom]-[module]-[YYYYMMDD].md`
+5. **Validate YAML**: Save the draft to a temporary Markdown file, then run [validate-frontmatter.sh](./scripts/validate-frontmatter.sh) against it. The validator requires Python 3 and PyYAML; report a missing dependency rather than claiming validation. If invalid, fix the frontmatter and re-run until it passes.
+6. **Create documentation**: Write file to `docs/solutions/[category]/[filename].md` using [resolution-template.md](./assets/resolution-template.md).
+7. **Cross-reference**: Link related issues. Detect critical patterns (3+ similar issues).
 
 **Capture gate (step 1):** capture only if, without this doc, a future engineer reading the final code, tests, comments, CLAUDE.md/AGENTS.md, and existing docs or skills would still repeat the mistake or redo the investigation. Skip when any of those already carries the lesson.
 
@@ -76,4 +76,4 @@ For detailed response handling, see [documentation-process.md](./references/docu
 
 ## Integration
 
-- Stale-learning review (`/ia-compound-refresh` in Claude Code) -- reviews `docs/solutions/` for entries that have aged out
+- Stale-learning review (`/ia-compound-refresh` in Claude Code): reviews `docs/solutions/` for entries that have aged out

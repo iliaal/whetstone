@@ -9,7 +9,7 @@ description: >-
 
 # Git worktree manager
 
-**GATE: If the task runs inside an existing worktree (a worktree path is given and no create/remove/switch is requested), none of the creation flow applies — work in place and skip this skill.** To check: `git rev-parse --show-toplevel` appears as a linked entry in `git worktree list`.
+**GATE: If the task runs inside an existing worktree (a worktree path is given and no create/remove/switch is requested), none of the creation flow applies: work in place and skip this skill.** To check: `git rev-parse --show-toplevel` appears as a linked entry in `git worktree list`.
 
 ## Working rules
 
@@ -20,7 +20,7 @@ description: >-
 
 ## Always use the manager script
 
-Never call `git worktree add` directly -- always use the `worktree-manager.sh` script.
+Never call `git worktree add` directly; always use the `worktree-manager.sh` script.
 
 The script handles critical setup that raw git commands don't:
 1. Copies `.env`, `.env.local`, `.env.test`, etc. from main repo
@@ -32,7 +32,7 @@ All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/wor
 
 Before creating worktrees, export a unique `WORKTREE_SESSION_ID` and retain that same value for this session's later manager calls. For example, `export WORKTREE_SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"`. The manager records ownership in each new worktree's Git metadata. Creation without a session ID remains available, but manager cleanup then refuses that tree; never adopt a previous session's ID to bypass ownership.
 
-The manager script fetches `origin/<base>` fresh and branches from it -- it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. Details: [troubleshooting.md](./references/troubleshooting.md).
+The manager script fetches `origin/<base>` fresh and branches from it; it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. Details: [troubleshooting.md](./references/troubleshooting.md).
 
 
 ## Commands
@@ -61,21 +61,21 @@ git check-ignore .worktrees || echo "WARNING: .worktrees not in .gitignore"
 
 If not ignored, add it to `.gitignore` before proceeding.
 
-After creating a worktree, run the project's test suite (or the fastest relevant subset if the full suite exceeds a few minutes) to establish a clean baseline. Pre-existing failures in the worktree should be caught before starting new work -- not discovered mid-implementation.
+After creating a worktree, run the project's test suite (or the fastest relevant subset if the full suite exceeds a few minutes) to establish a clean baseline. Catch pre-existing failures in the worktree before starting new work, not mid-implementation.
 
 
 ## Ownership
 
-- One writer per worktree. Treat every `git worktree list` entry not created **in the current session** as read-only -- a tree left from a previous round is not the current session's either. Reuse is most tempting exactly where it is most dangerous: an existing tree already has dependencies and env wired up, and another session may be running a suite in it.
+- One writer per worktree. Treat every `git worktree list` entry not created **in the current session** as read-only; a tree left from a previous round is not the current session's either. Reuse is most tempting exactly where it is most dangerous: an existing tree already has dependencies and env wired up, and another session may be running a suite in it.
 - Do not mutate a tree while the current session's suite runs there. Test runners load source files as they reach them, so a mid-run edit produces a mass-failure result that looks exactly like a real regression.
 - A failure burst that contradicts a claim is a harness **hypothesis**, not a conclusion. Do not record or report the self-inflicted attribution until a re-run on a tree just asserted clean (`git status --short` empty) has returned.
 - When a mutation is unavoidable, assert the restore (grep the token back to its original count, plus `git status --short`) rather than trusting `git checkout --`.
 - One checkout has one index, so staging explicit paths does not scope a commit: `git add <mine> && git commit` also commits whatever a peer staged, under the current session's message. The protection is a pathspec on the commit itself (`git commit -- <paths>`), which takes those paths from the working tree and ignores the index; new files still need `git add`. It constrains that commit, not a peer's, so the residual control is latency between writing and committing. Read `git show --stat HEAD` afterwards and confirm only the intended files are there.
-- `git -C <repo> push <remote> HEAD:<branch>` resolves `HEAD` in **that** repo, not in the worktree that was edited. Edits made in a linked worktree and pushed with `-C` at the main checkout publish the main checkout's commit onto the feature branch, and `--force-with-lease` does not catch it because the lease checks the branch's old value, not what `HEAD` names. Never spell `HEAD:` in a `-C` push -- resolve the SHA in the worktree and push it explicitly, then confirm with `git ls-remote`. Two branches "updated" to one SHA, or a pushed subject unrelated to the work, is the tell.
-- Linked worktrees share one stash stack. `git stash` writes to the common git directory, so a red/green cycle in one worktree can pop and drop a stash another worktree pushed in between. Never stash for red/green here: `git diff > /tmp/red.patch`, `git checkout -- <files>` (worktree-local) for the red run, `git apply /tmp/red.patch` for green. A dropped stash is still recoverable while its commit survives -- `git stash store -m <message> <sha>` re-registers the SHA that `Dropped refs/stash@{0} (<sha>)` printed.
+- `git -C <repo> push <remote> HEAD:<branch>` resolves `HEAD` in **that** repo, not in the worktree that was edited. Edits made in a linked worktree and pushed with `-C` at the main checkout publish the main checkout's commit onto the feature branch, and `--force-with-lease` does not catch it because the lease checks the branch's old value, not what `HEAD` names. Never spell `HEAD:` in a `-C` push; resolve the SHA in the worktree and push it explicitly, then confirm with `git ls-remote`. Two branches "updated" to one SHA, or a pushed subject unrelated to the work, is the tell.
+- Linked worktrees share one stash stack. `git stash` writes to the common git directory, so a red/green cycle in one worktree can pop and drop a stash another worktree pushed in between. Never stash for red/green here: `git diff > /tmp/red.patch`, `git checkout -- <files>` (worktree-local) for the red run, `git apply /tmp/red.patch` for green. A dropped stash is still recoverable while its commit survives: `git stash store -m <message> <sha>` re-registers the SHA that `Dropped refs/stash@{0} (<sha>)` printed.
 - A worktree's HEAD is shared mutable state, so answer branch questions from refs. Any other session can check something else out there, which makes `git -C <worktree> rev-parse HEAD` describe a different branch and report a correct push as a mismatch. Refs are shared across every worktree: ask any one of them about the branch by name (`rev-parse <branch>`, `rev-list --count origin/<branch>..<branch>`, `reflog <branch>`).
 
-Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persists across calls, so one `cd <repo-root>` for an unrelated reason silently relocates every later command: probe files get written into the shared main tree and run against its bytes, and the tidy-up reflex `git checkout -- <path>` becomes a **write** aimed at the wrong tree. The `git -C` habit does not generalize -- interpreters, test runners, linters, and a heredoc `cat >` all take the cwd. Have any probe print the tree it ran in.
+Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persists across calls, so one `cd <repo-root>` for an unrelated reason silently relocates every later command: probe files get written into the shared main tree and run against its bytes, and the tidy-up reflex `git checkout -- <path>` becomes a **write** aimed at the wrong tree. The `git -C` habit does not generalize: interpreters, test runners, linters, and a heredoc `cat >` all take the cwd. Have any probe print the tree it ran in.
 
 
 ## Verify

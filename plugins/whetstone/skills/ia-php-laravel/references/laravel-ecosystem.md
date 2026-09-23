@@ -1,10 +1,10 @@
 # Laravel Ecosystem Patterns
 
-> When to read: when reaching for ecosystem features — notifications, queues, broadcasting, vector search, scheduling, file storage, mail — and needing the canonical Laravel approach.
+> When to read: when reaching for ecosystem features (notifications, queues, broadcasting, vector search, scheduling, file storage, mail) and needing the canonical Laravel approach.
 
 ## Notifications
 
-Multi-channel dispatch -- mail, SMS, Slack, database -- from a single notification class.
+Multi-channel dispatch (mail, SMS, Slack, database) from a single notification class.
 
 ```php
 // Create: php artisan make:notification OrderShipped
@@ -42,8 +42,8 @@ $user->notify(new OrderShipped($order));
 Notification::send($users, new OrderShipped($order));
 ```
 
-- Always implement `ShouldQueue` -- notifications are side effects, never block the request
-- Use `toArray()` for database channel -- powers in-app notification feeds
+- Always implement `ShouldQueue`; notifications are side effects, never block the request
+- Use `toArray()` for database channel; it powers in-app notification feeds
 - Read: `$user->unreadNotifications`, mark: `$notification->markAsRead()`
 - Rate limit with `ShouldBeUnique` to prevent notification spam
 
@@ -77,16 +77,16 @@ $schedule->job(new ProcessDailyMetrics)->dailyAt('01:00');
 ```
 
 Key methods:
-- `->withoutOverlapping()` -- prevent concurrent runs (uses cache lock)
-- `->onOneServer()` -- run only on one server in multi-server setup
-- `->evenInMaintenanceMode()` -- critical tasks that must run during `php artisan down`
-- `->runInBackground()` -- don't block scheduler for long tasks
-- `->emailOutputOnFailure('ops@example.com')` -- alert on failures
+- `->withoutOverlapping()`: prevent concurrent runs (uses cache lock)
+- `->onOneServer()`: run only on one server in multi-server setup
+- `->evenInMaintenanceMode()`: critical tasks that must run during `php artisan down`
+- `->runInBackground()`: don't block scheduler for long tasks
+- `->emailOutputOnFailure('ops@example.com')`: alert on failures
 - Requires system cron: `* * * * * cd /path && php artisan schedule:run >> /dev/null 2>&1`
 
 ## Custom Casts
 
-Value objects for model attributes -- encapsulate formatting, validation, and behavior.
+Value objects for model attributes: encapsulate formatting, validation, and behavior.
 
 ```php
 class Money implements CastsAttributes
@@ -113,11 +113,11 @@ protected function casts(): array
 ```
 
 Built-in casts to prefer over manual accessors:
-- `AsEncryptedCollection::class` -- encrypt JSON columns at rest
-- `AsEnumCollection::class` -- array of enums stored as JSON
-- `AsStringable::class` -- fluent string operations on attribute
-- Enum casts: `'status' => OrderStatus::class` -- automatic PHP enum <-> DB value
-- Encrypted cast: `'api_token' => 'encrypted'` -- transparent encrypt/decrypt for sensitive fields
+- `AsEncryptedCollection::class`: encrypt JSON columns at rest
+- `AsEnumCollection::class`: array of enums stored as JSON
+- `AsStringable::class`: fluent string operations on attribute
+- Enum casts: `'status' => OrderStatus::class` gives automatic PHP enum <-> DB value
+- Encrypted cast: `'api_token' => 'encrypted'` gives transparent encrypt/decrypt for sensitive fields
 
 ## Security Hardening
 
@@ -125,7 +125,7 @@ Built-in casts to prefer over manual accessors:
 
 - `SESSION_HTTP_ONLY=true`, `SESSION_SAME_SITE=strict` in `.env`
 - Regenerate session on login: `$request->session()->regenerate()` in auth controller
-- `SESSION_LIFETIME` -- set appropriate timeout (120 min default is often too long)
+- `SESSION_LIFETIME`: set appropriate timeout (120 min default is often too long)
 
 ### Security Headers Middleware
 
@@ -165,7 +165,7 @@ Password::min(12)->letters()->mixedCase()->numbers()->symbols()
 
 ### Dependency Audit
 
-`composer audit` -- check for known CVEs in dependencies. Run in CI.
+`composer audit` checks for known CVEs in dependencies. Run in CI.
 
 ### Logging PII
 

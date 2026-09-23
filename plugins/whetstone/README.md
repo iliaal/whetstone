@@ -65,7 +65,7 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 |---------|-------------|
 | `/ia-brainstorm` | Explore requirements and approaches before planning |
 | `/ia-plan` | Create implementation plans |
-| `/ia-review` | Run comprehensive code reviews |
+| `/ia-review` | Run multi-agent code reviews |
 | `/ia-work` | Execute work items systematically |
 | `/ia-compound` | Document solved problems to compound team knowledge |
 | `/ia-document-release` | Post-ship documentation sync across README/ARCHITECTURE/CONTRIBUTING/CHANGELOG |
@@ -86,7 +86,7 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | `/ia-test-browser` | Run browser tests on PR-affected pages |
 | `/ia-feature-video` | Record video walkthroughs and add to PR description |
 | `/ia-adr` | Create Architecture Decision Records with format selection and lifecycle management |
-| `/ia-compound-refresh` | Review docs/solutions/ for stale learnings -- keep, update, replace, or archive |
+| `/ia-compound-refresh` | Review docs/solutions/ for stale learnings: keep, update, replace, or archive |
 | `/ia-ideate` | Generate ranked improvement ideas by scanning the codebase |
 | `/ia-resolve-pr` | Batch-resolve PR review comments via parallel subagents |
 | `/ia-verify` | Pre-PR verification pipeline (build, types, lint, tests, security) |
@@ -158,7 +158,7 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 
 | Skill | Description |
 |-------|-------------|
-| [`ia-orchestrating-swarms`](skills/ia-orchestrating-swarms/SKILL.md) | Comprehensive guide to multi-agent swarm orchestration |
+| [`ia-orchestrating-swarms`](skills/ia-orchestrating-swarms/SKILL.md) | Multi-agent swarm orchestration |
 
 
 ## Hooks
@@ -170,9 +170,9 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 When the main agent spawns a subagent via the Task tool, this hook analyzes the subagent's prompt and identifies matching skills based on trigger keywords. It prepends "Read these SKILL.md files" instructions to the prompt so subagents follow the same methodology as the main agent.
 
 Skills are matched using a 3-tier priority system:
-1. **Methodology** (planning, debugging, code-review, etc.) -- process skills, matched first
-2. **Domain** (php-laravel, react-frontend, terraform, etc.) -- language/framework skills
-3. **Supporting** (writing, md-docs, reflect, etc.) -- workflow skills
+1. **Methodology** (planning, debugging, code-review, etc.): process skills, matched first
+2. **Domain** (php-laravel, react-frontend, terraform, etc.): language/framework skills
+3. **Supporting** (writing, md-docs, reflect, etc.): workflow skills
 
 Up to 5 matching skills are injected per subagent call, prioritized by tier. Subagent types without file read access (e.g., Bash) are skipped.
 

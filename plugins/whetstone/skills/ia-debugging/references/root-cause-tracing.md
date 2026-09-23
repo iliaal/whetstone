@@ -71,7 +71,7 @@ async function gitInit(directory: string) {
 }
 ```
 
-Use `console.error()` in tests (not logger -- may be suppressed). Log BEFORE the operation, not after failure. Capture and filter:
+Use `console.error()` in tests (not logger, which may be suppressed). Log BEFORE the operation, not after failure. Capture and filter:
 
 ```bash
 npm test 2>&1 | grep 'DEBUG git init'

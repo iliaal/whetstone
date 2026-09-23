@@ -23,7 +23,7 @@ paths: "**/*.tsx,**/*.jsx,**/*.ts"
 
 ## Effects Decision Tree
 
-Effects are escape hatches -- most logic should NOT use effects.
+Effects are escape hatches; most logic should NOT use effects.
 
 | Need | Solution |
 |------|----------|
@@ -35,7 +35,7 @@ Effects are escape hatches -- most logic should NOT use effects.
 | Sync with external system | Effect with cleanup |
 
 **Effect rules:**
-- Never suppress the linter -- fix the code instead
+- Never suppress the linter; fix the code instead
 - Use updater functions (`setItems(prev => [...prev, item])`) to remove state dependencies
 - Move objects/functions inside effects to stabilize dependencies
 - `useEffectEvent` for non-reactive values (e.g., theme in a connection effect)
@@ -45,16 +45,16 @@ Effects are escape hatches -- most logic should NOT use effects.
 
 ## Discipline
 
-- Simplicity first -- every change as simple as possible, impact minimal code
-- Only touch what's necessary -- avoid introducing unrelated changes
-- No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- Simplicity first: every change as simple as possible, impact minimal code
+- Only touch what's necessary; avoid introducing unrelated changes
+- No hacky workarounds: if a fix feels wrong, step back and implement the clean solution
 - Before adding a new abstraction, verify it appears in 3+ places
 
 
 ## References
 
-- [testing.md](./references/testing.md) -- Component, hook, and mocking test examples
-- [e2e-testing.md](./references/e2e-testing.md) -- Playwright E2E patterns
+- [testing.md](./references/testing.md): Component, hook, and mocking test examples
+- [e2e-testing.md](./references/e2e-testing.md): Playwright E2E patterns
 
 
 ## Verify

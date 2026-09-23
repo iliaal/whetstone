@@ -24,22 +24,22 @@ Generate or refresh README.md from project metadata and structure. See [update-r
 
 ### Update CONTRIBUTING
 
-Update existing CONTRIBUTING.md only -- never auto-create. See [update-contributing.md](./update-contributing.md).
+Update existing CONTRIBUTING.md only; never auto-create. See [update-contributing.md](./update-contributing.md).
 
 When updating, detect project conventions automatically:
 - Package manager from lock files (package-lock.json → npm, yarn.lock → yarn, pnpm-lock.yaml → pnpm, bun.lockb → bun)
 - Branch conventions from git history (feature/, fix/, chore/ prefixes)
 - Test commands from package.json scripts or pyproject.toml
 
-**Merge advisory.** When CONTRIBUTING.md sits next to an AGENTS.md (repo root or any package root), surface a one-line recommendation: merge the contribution workflow section into the sibling AGENTS.md so the context file owns dev workflow, branch conventions, and review process as a single source of truth. Then suggest the user delete CONTRIBUTING.md after the merge. Never auto-merge and never auto-delete -- the user performs both. Continue the requested workflow regardless; the CONTRIBUTING file is advisory only.
+**Merge advisory.** When CONTRIBUTING.md sits next to an AGENTS.md (repo root or any package root), surface a one-line recommendation: merge the contribution workflow section into the sibling AGENTS.md so the context file owns dev workflow, branch conventions, and review process as a single source of truth. Then suggest the user delete CONTRIBUTING.md after the merge. Never auto-merge and never auto-delete; the user performs both. Continue the requested workflow regardless; the CONTRIBUTING file is advisory only.
 
 ### Update DOCS
 
-If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md -- only update existing.
+If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md; only update existing.
 
-When a doc prescribes a machine-consumed shape (a JSON artifact, config file, or request body) that code then validates, the two drift silently and each drift costs one caller a rejected write. A test that greps the doc for key names is a second copy of the doc: it goes green when both copies are wrong together, which is the only failure that matters. Have the tool report its validators' key sets as a versioned subcommand, sourced from the **same constants the validators read** — a constant only the report reads is decoration — then compare the doc against that report in both directions: a documented key no validator accepts, and a required key no example shows. Guard the guard: an example nothing can classify is a failure rather than a skip, and a validated artifact with no example is a failure.
+When a doc prescribes a machine-consumed shape (a JSON artifact, config file, or request body) that code then validates, the two drift silently and each drift costs one caller a rejected write. A test that greps the doc for key names is a second copy of the doc: it goes green when both copies are wrong together, which is the only failure that matters. Have the tool report its validators' key sets as a versioned subcommand, sourced from the **same constants the validators read** (a constant only the report reads is decoration), then compare the doc against that report in both directions: a documented key no validator accepts, and a required key no example shows. Guard the guard: an example nothing can classify is a failure rather than a skip, and a validated artifact with no example is a failure.
 
-- Assert nested rows separately -- a walk over top-level examples cannot reach a row inside an array.
+- Assert nested rows separately; a walk over top-level examples cannot reach a row inside an array.
 - Assert field order when the doc's order is how a reader learns the shape.
 - Run the comparison against the installed binary as well as the build tree.
 

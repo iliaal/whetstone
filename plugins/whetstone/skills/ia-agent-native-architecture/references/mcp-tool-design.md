@@ -62,9 +62,9 @@ The prompt tells the agent *when* to use primitives. The tool just provides *cap
 
 ### Writing the description
 
-The name is the handle; the description is the contract the model routes on. Optimize it for precision, not brevity -- the common defect is under-description, not verbosity. Write it as a man page: what the tool does, what each parameter means and what values are legal, what it does *not* return, and any caveat that changes the caller's plan (pagination, rate limits, eventual consistency, partial failure). Three or four sentences is a floor for a non-trivial tool, not a ceiling.
+The name is the handle; the description is the contract the model routes on. Optimize it for precision, not brevity; the common defect is under-description, not verbosity. Write it as a man page: what the tool does, what each parameter means and what values are legal, what it does *not* return, and any caveat that changes the caller's plan (pagination, rate limits, eventual consistency, partial failure). Three or four sentences is a floor for a non-trivial tool, not a ceiling.
 
-The "capability, not use case" rule above still holds, and the boundary is what kind of *when* is being stated. A description may draw the line against sibling tools -- what this tool covers, what it does not, which neighbour owns the adjacent case -- because that is disambiguation the model needs at routing time and cannot get anywhere else. It must not carry workflow context: which step of a process to call it in, what to do with the result, or which business condition makes it appropriate. That belongs to the prompt or skill orchestrating the tool.
+The "capability, not use case" rule above still holds, and the boundary is what kind of *when* is being stated. A description may draw the line against sibling tools (what this tool covers, what it does not, which neighbour owns the adjacent case), because that is disambiguation the model needs at routing time and cannot get anywhere else. It must not carry workflow context: which step of a process to call it in, what to do with the result, or which business condition makes it appropriate. That belongs to the prompt or skill orchestrating the tool.
 
 Three things belong somewhere else:
 
@@ -546,7 +546,7 @@ return {
 
 Tool output is model input: whatever a tool returns lands in the context window, in transcripts, and in whatever the agent writes next. Two cases leak by default.
 
-**Caught exceptions.** A caught exception's message must not be returned to the model as tool output. Raw exception text routinely carries credentials from a connection string, local filesystem paths, the request payload that triggered the failure, and upstream response bodies. Log the full detail server-side, and return a fixed, generic tool-facing failure message plus a correlation identifier the operator can use to find the log entry. The recovery hint from the Actionable Errors principle still applies; the tool author writes it, and it is never copied from the exception. The test is origin, not syntax: an exception the tool's own code raised, whose message the tool author wrote from values the tool itself computed -- a typed `ValidationError` carrying a rejected field name, a row count, a configured limit -- is already the Actionable Errors shape and may be returned as-is. Interpolation is not the line; provenance is. Anything raised outside the tool's own code (a library, driver, filesystem, or upstream response), and any message that splices in a value the tool received rather than derived -- a connection string, a resolved path, a request payload, an upstream response body -- takes the generic message plus correlation identifier.
+**Caught exceptions.** A caught exception's message must not be returned to the model as tool output. Raw exception text routinely carries credentials from a connection string, local filesystem paths, the request payload that triggered the failure, and upstream response bodies. Log the full detail server-side, and return a fixed, generic tool-facing failure message plus a correlation identifier the operator can use to find the log entry. The recovery hint from the Actionable Errors principle still applies; the tool author writes it, and it is never copied from the exception. The test is origin, not syntax: an exception the tool's own code raised, whose message the tool author wrote from values the tool itself computed (a typed `ValidationError` carrying a rejected field name, a row count, a configured limit), is already the Actionable Errors shape and may be returned as-is. Interpolation is not the line; provenance is. Anything raised outside the tool's own code (a library, driver, filesystem, or upstream response), and any message that splices in a value the tool received rather than derived (a connection string, a resolved path, a request payload, an upstream response body), takes the generic message plus correlation identifier.
 
 ```typescript
 } catch (err) {
@@ -559,7 +559,7 @@ Tool output is model input: whatever a tool returns lands in the context window,
 }
 ```
 
-**Detection tools.** A tool whose job is detection -- a secret scanner, a PII sweep, a credential audit -- must discard the raw matched text and every capture group at detection time and forward only classification metadata: rule identifier, rule description, path, line, confidence. A reporting tool that carries the matched secret "for context" is itself a re-leak vector, and the output schema should have no field capable of holding the raw match; a `snippet` or `match` string field is the defect regardless of what the implementation currently puts in it.
+**Detection tools.** A tool whose job is detection (a secret scanner, a PII sweep, a credential audit) must discard the raw matched text and every capture group at detection time and forward only classification metadata: rule identifier, rule description, path, line, confidence. A reporting tool that carries the matched secret "for context" is itself a re-leak vector, and the output schema should have no field capable of holding the raw match; a `snippet` or `match` string field is the defect regardless of what the implementation currently puts in it.
 
 ```json
 { "rule": "aws-access-key-id", "description": "AWS access key ID",
@@ -592,7 +592,7 @@ Credential presence is necessary but not sufficient authorization for a tool tha
 |-----------|------------|
 | **stdio** | Local/single-client tools, CLI integrations, same-machine only |
 | **Streamable HTTP** | Remote/multi-client, production deployments, cross-network |
-| **SSE** | Deprecated -- avoid for new servers |
+| **SSE** | Deprecated; avoid for new servers |
 
 For local HTTP servers, bind to `127.0.0.1` (not `0.0.0.0`) and validate the `Origin` header to prevent DNS rebinding attacks.
 </principle>
@@ -608,13 +608,13 @@ When multiple MCP servers coexist, prefix tool names with the service: `slack_se
 
 Do not ship an MCP server without a quality gate. Build a 10-question evaluation set before the server is merged:
 
-- **10 human-readable Q/A pairs** -- each question is a realistic user ask (`"How many commits did Alice land on the payments module in Q3 2025?"`), each answer is a single string-comparable value (`"27"`, `"2024-08-14"`, `"kieran@example.com"`).
+- **10 human-readable Q/A pairs**: each question is a realistic user ask (`"How many commits did Alice land on the payments module in Q3 2025?"`), each answer is a single string-comparable value (`"27"`, `"2024-08-14"`, `"kieran@example.com"`).
 - **Multi-hop**: each question requires calling 2-3 tools in sequence (list → filter → aggregate). Single-tool questions don't stress the capability graph.
 - **Read-only**: questions never mutate state. Every eval run must be reproducible.
 - **Closed / historical data**: answers derive from data that doesn't change over time (a closed quarter, an archived project, a committed git range). Live data makes answers drift and the eval becomes noise.
 - **Dozens of invocations per run**: the full eval should fire 20-40 tool calls. Servers that look fine on a single call often break on the 15th (rate limits, pagination edge cases, state pollution).
 
-Run the eval in CI. Scoring is binary per question: exact string match or fail. Pass threshold: 9/10. Investigate any drop from a prior run -- eval regressions usually indicate a tool schema change broke client inference.
+Run the eval in CI. Scoring is binary per question: exact string match or fail. Pass threshold: 9/10. Investigate any drop from a prior run; eval regressions usually indicate a tool schema change broke client inference.
 
 **What the eval catches that unit tests don't:**
 - Vague tool descriptions that cause the agent to call the wrong tool

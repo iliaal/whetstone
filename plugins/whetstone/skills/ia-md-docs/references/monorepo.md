@@ -17,7 +17,7 @@ git ls-files --cached --others --exclude-standard \
   -- '**/README.md' 'README.md' '**/AGENTS.md' 'AGENTS.md'
 ```
 
-**Find package roots that should get a new file (`init-*` discovery):** package roots are directories holding a language/tooling manifest -- the repo root plus the unique directories of these files:
+**Find package roots that should get a new file (`init-*` discovery):** package roots are directories holding a language/tooling manifest: the repo root plus the unique directories of these files:
 
 ```bash
 git ls-files --cached --others --exclude-standard \
@@ -26,7 +26,7 @@ git ls-files --cached --others --exclude-standard \
      '**/go.mod' 'go.mod' '**/composer.json' 'composer.json'
 ```
 
-If the repo uses workspace globs (`pnpm-workspace.yaml`, `package.json` `workspaces:`, `Cargo.toml` `[workspace]`, `go.work`), prefer those as ground truth over file enumeration — they declare the canonical package set and avoid false positives from nested vendored manifests.
+If the repo uses workspace globs (`pnpm-workspace.yaml`, `package.json` `workspaces:`, `Cargo.toml` `[workspace]`, `go.work`), prefer those as ground truth over file enumeration; they declare the canonical package set and avoid false positives from nested vendored manifests.
 
 **Always exclude during discovery:** `.git`, `node_modules`, `vendor`, `.venv`, `target`, `dist`, `build`, `out`, `.next`, `coverage`, anything ignored by git, and hidden dot-directories that lack a manifest.
 
@@ -43,10 +43,10 @@ Process deepest-first or root-first consistently, and report results grouped by 
 
 ## Context loading rules
 
-Claude Code's context-file loading in monorepos follows three rules -- understanding them determines where content belongs:
+Claude Code's context-file loading in monorepos follows three rules, and they determine where content belongs:
 
 - **Ancestors load immediately**: walking UP from the current working directory, every AGENTS.md / CLAUDE.md encountered is loaded at startup. Put shared conventions at the repo root.
 - **Descendants load lazily**: an AGENTS.md deeper in the tree loads only when Claude reads or edits a file inside that subtree. Put package-specific conventions at each package's root (`packages/api/AGENTS.md`, `apps/web/AGENTS.md`).
 - **Siblings never load**: `packages/a/AGENTS.md` will NOT auto-load when working in `packages/b/`. Do not rely on sibling-package context leaking across.
 
-Implication for monorepo layouts: duplicate any rule that must apply across sibling packages into each package's AGENTS.md (or hoist it to the repo root). The loader will not discover it laterally. Conversely, avoid putting package-specific rules at the root -- they'll load into every session regardless of relevance and burn context.
+Implication for monorepo layouts: duplicate any rule that must apply across sibling packages into each package's AGENTS.md (or hoist it to the repo root). The loader will not discover it laterally. Conversely, avoid putting package-specific rules at the root; they'll load into every session regardless of relevance and burn context.

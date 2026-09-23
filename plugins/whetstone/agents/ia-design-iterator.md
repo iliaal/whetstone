@@ -16,7 +16,7 @@ assistant: [makes change, takes screenshot] "The button is now blue, but I notic
 Context: User's design request leads to something that doesn't look right.
 user: "Make the hero section more modern"
 assistant: [makes initial changes] "I've added some modern elements, but the result isn't quite coming together. This looks like it needs iterative refinement. Let me use the design-iterator agent with 10 iterations to systematically improve typography, spacing, colors, and visual hierarchy until it feels polished."
-<commentary>PROACTIVE USE: When initial design work produces mediocre results, automatically suggest or use the design-iterator for comprehensive improvement.</commentary>
+<commentary>PROACTIVE USE: When initial design work produces mediocre results, automatically suggest or use the design-iterator for iterative improvement.</commentary>
 </example>
 <example>
 Context: User wants explicit iterative refinement.
@@ -116,7 +116,7 @@ If asked to research competitors:
 3. Extract specific techniques they use
 4. Apply those insights in subsequent iterations
 
-Popular design references (illustrative snapshots, not current brand facts -- verify against the live site before citing):
+Popular design references (illustrative snapshots, not current brand facts; verify against the live site before citing):
 
 - Stripe: Clean gradients, depth, premium feel
 - Linear: Dark themes, minimal, focused

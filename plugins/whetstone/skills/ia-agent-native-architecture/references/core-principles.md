@@ -4,7 +4,7 @@
 
 **Whatever the user can do through the UI, the agent should be able to achieve through tools.**
 
-This is the foundational principle. Without it, nothing else matters. Ensure the agent has tools (or combinations of tools) that can accomplish anything the UI can do. This isn't about 1:1 mapping of UI buttons to tools -- it's about ensuring the agent can **achieve the same outcomes**.
+This is the foundational principle. Without it, nothing else matters. Give the agent tools (or combinations of tools) that can accomplish anything the UI can do. This isn't about 1:1 mapping of UI buttons to tools; the agent must be able to **achieve the same outcomes**.
 
 | User Action | How Agent Achieves It |
 |-------------|----------------------|
@@ -66,7 +66,7 @@ When tools are atomic, parity is maintained, and prompts are composable, users w
 
 *"Cross-reference my meeting notes with my task list and tell me what I've committed to but haven't scheduled."*
 
-You didn't build a "commitment tracker" feature. But if the agent can read notes, read tasks, and reason about them -- operating in a loop until it has an answer -- it can accomplish this.
+You didn't build a "commitment tracker" feature. But if the agent can read notes, read tasks, and reason about them, operating in a loop until it has an answer, it can accomplish this.
 
 **The flywheel:**
 1. Build with atomic tools and parity

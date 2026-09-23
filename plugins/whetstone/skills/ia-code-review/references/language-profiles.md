@@ -55,33 +55,33 @@ Before filing a finding that claims a framework or library behaves a certain way
 
 If the Context7 MCP is available in the harness, use it:
 
-- `resolve-library-id` — resolve the library/framework name (e.g. `react`, `next.js`, `laravel`) to a Context7 library ID.
-- `query-docs` — fetch the relevant documentation for that library ID, scoped to a natural-language query, before quoting behavior.
+- `resolve-library-id`: resolve the library/framework name (e.g. `react`, `next.js`, `laravel`) to a Context7 library ID.
+- `query-docs`: fetch the relevant documentation for that library ID, scoped to a natural-language query, before quoting behavior.
 
 Pin the lookup to the project's actual version. Read `package.json`, `composer.json`, `requirements.txt`, `go.mod`, or `Cargo.toml` to identify the major version, then constrain queries (e.g. "Laravel 11 HasOneOrMany limit eager-load behavior").
 
-If Context7 is unavailable, fall back to the vendor's official docs URL directly via the harness's web fetch tool. **Do not skip verification** — a finding that asserts framework behavior without a citation is worse than no finding, because authors trust review output.
+If Context7 is unavailable, fall back to the vendor's official docs URL directly via the harness's web fetch tool. **Do not skip verification**: a finding that asserts framework behavior without a citation is worse than no finding, because authors trust review output.
 
 When the verified behavior contradicts the finding's premise, drop the finding and (if reviewing a real diff) add the version-correct behavior to the relevant entry in `review-traps-catalog.md` so the next review starts smarter.
 
 ## TypeScript / React (.ts, .tsx, .jsx)
 
 - Hook dependency bugs (stale closures in useEffect)
-- `any` escape hatches -- flag each with a concrete type suggestion
+- `any` escape hatches: flag each with a concrete type suggestion
 - Unchecked nullable access (`?.` chains that silently swallow nulls)
 - Missing `key` props in mapped JSX
 - Effects without cleanup (subscriptions, timers, event listeners)
-- `typeof x === "number"` used as a validity check -- it admits `NaN`, `Infinity`, and finite-but-unusable magnitudes. Narrow to the range the consumer accepts (`Number.isFinite`, plus an explicit bound where one exists); `new Date(1e300).toISOString()` throws `RangeError`, and a bare `z.number()` needs `.finite()`
+- `typeof x === "number"` used as a validity check: it admits `NaN`, `Infinity`, and finite-but-unusable magnitudes. Narrow to the range the consumer accepts (`Number.isFinite`, plus an explicit bound where one exists); `new Date(1e300).toISOString()` throws `RangeError`, and a bare `z.number()` needs `.finite()`
 
 ## Python (.py, .pyi)
 
 - Mutable default arguments (`def f(items=[])`)
-- Bare `except:` -- always catch specific exceptions
+- Bare `except:`: always catch specific exceptions
 - Missing `async`/`await` (sync call in async context)
-- f-string injection in SQL/shell -- use parameterized queries
+- f-string injection in SQL/shell: use parameterized queries
 - `type: ignore` without justification
-- In `.pyi` stub files, do not report unreferenced variables, annotation-only declarations, or unreferenced parameter names -- a stub declares an interface it never executes, so these are expected, not dead code
-- The stub exemption does not cover every import. A stub re-exports a name only through the self-alias form (`from foo import bar as bar`, `import foo as foo`) or membership in `__all__`; type checkers treat stub files as if implicit re-export is disabled, so a plain `from foo import bar` exports nothing. An unreferenced non-aliased import in a `.pyi` is therefore a legitimate finding -- usually a dropped `as` alias that silently removed `bar` from the stub's public surface, breaking every downstream `from stub import bar`. Report it against the intended surface; do not assume deletion is the fix
+- In `.pyi` stub files, do not report unreferenced variables, annotation-only declarations, or unreferenced parameter names. A stub declares an interface it never executes, so these are expected, not dead code
+- The stub exemption does not cover every import. A stub re-exports a name only through the self-alias form (`from foo import bar as bar`, `import foo as foo`) or membership in `__all__`; type checkers treat stub files as if implicit re-export is disabled, so a plain `from foo import bar` exports nothing. An unreferenced non-aliased import in a `.pyi` is therefore a legitimate finding, usually a dropped `as` alias that silently removed `bar` from the stub's public surface, breaking every downstream `from stub import bar`. Report it against the intended surface; do not assume deletion is the fix
 
 ## PHP (.php)
 
@@ -97,24 +97,24 @@ When the verified behavior contradicts the finding's premise, drop the finding a
 - Unquoted variables (`$var` vs `"$var"`)
 - Missing `set -euo pipefail`
 - Command injection via unsanitized input in `eval` or backticks
-- `cd` without error check -- use `cd dir || exit 1`
+- `cd` without error check: use `cd dir || exit 1`
 - Hardcoded paths that should be variables
 
 ## GitHub Actions (.github/workflows/*.yml)
 
 Reviews the *reviewed repository's* CI, not the harness the review runs under.
 
-- `pull_request_target` combined with a checkout of the PR head (`ref: github.event.pull_request.head.sha` or equivalent) -- runs fork-authored code with a write-scoped token and repository secrets
-- Expression interpolation straight into a `run:` block (`${{ github.event.issue.title }}`, `.head_ref`, `.body`, `.comment.body`) -- attacker-controlled text is substituted before the shell parses the script. Route the value through `env:` and reference it as a shell variable
+- `pull_request_target` combined with a checkout of the PR head (`ref: github.event.pull_request.head.sha` or equivalent): runs fork-authored code with a write-scoped token and repository secrets
+- Expression interpolation straight into a `run:` block (`${{ github.event.issue.title }}`, `.head_ref`, `.body`, `.comment.body`): attacker-controlled text is substituted before the shell parses the script. Route the value through `env:` and reference it as a shell variable
 - Third-party action pinned to a mutable ref (tag or branch) instead of a full commit SHA
 - `permissions: write-all`, or no `permissions:` key at all so the job inherits the repository default
-- Jobs with no `timeout-minutes` -- a hung job holds a runner until the 6-hour ceiling
-- Misspelled action inputs (`fetch-detph`, `fetch_depth`) -- unknown `with:` keys are **silently ignored**, not errors, so the step runs with the default and the intent is lost
-- `actions/upload-artifact` of a directory containing `.git/` ships `.git/config` with the persisted `GITHUB_TOKEN` -- `actions/checkout`'s default is `persist-credentials: true` -- and anyone who can download the artifact gets the token for its lifetime
-- `permissions: id-token: write` at workflow level lets any job on any ref, including a fork PR under `pull_request_target`, mint an OIDC token that the cloud-side trust policy may accept -- scope the permission to the deploy job alone and pin the trust policy's subject to a specific ref (e.g. `ref:refs/heads/main`)
-- `${{ github.event.* }}` interpolated inside `actions/github-script`'s `script:` is the same injection as in `run:` -- pass the value through `env:` and read it back as `process.env.X`
+- Jobs with no `timeout-minutes`: a hung job holds a runner until the 6-hour ceiling
+- Misspelled action inputs (`fetch-detph`, `fetch_depth`): unknown `with:` keys are **silently ignored**, not errors, so the step runs with the default and the intent is lost
+- `actions/upload-artifact` of a directory containing `.git/` ships `.git/config` with the persisted `GITHUB_TOKEN` (`actions/checkout`'s default is `persist-credentials: true`), and anyone who can download the artifact gets the token for its lifetime
+- `permissions: id-token: write` at workflow level lets any job on any ref, including a fork PR under `pull_request_target`, mint an OIDC token that the cloud-side trust policy may accept. Scope the permission to the deploy job alone and pin the trust policy's subject to a specific ref (e.g. `ref:refs/heads/main`)
+- `${{ github.event.* }}` interpolated inside `actions/github-script`'s `script:` is the same injection as in `run:`; pass the value through `env:` and read it back as `process.env.X`
 
-Scope the pinning check before filing it: report a mutable ref only for a **third-party** action in a **privileged** job -- one holding secrets, an OIDC token, a write-scoped `GITHUB_TOKEN`, or release/deploy/publish/signing power. First-party `actions/*` and `github/*` on a version tag, same-repo `./.github/actions/...` refs, and unprivileged read-only jobs are not findings. When ownership is unclear, treat anything outside `actions/*`, `github/*`, and local paths as third-party.
+Scope the pinning check before filing it: report a mutable ref only for a **third-party** action in a **privileged** job (one holding secrets, an OIDC token, a write-scoped `GITHUB_TOKEN`, or release/deploy/publish/signing power). First-party `actions/*` and `github/*` on a version tag, same-repo `./.github/actions/...` refs, and unprivileged read-only jobs are not findings. When ownership is unclear, treat anything outside `actions/*`, `github/*`, and local paths as third-party.
 
 ## Configuration (.env, .yml, .yaml, .json, .toml)
 

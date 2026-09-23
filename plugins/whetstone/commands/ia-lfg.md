@@ -43,8 +43,8 @@ Run applicable steps in order within the user's authorized scope. Carry explicit
     - `isDraft: true` with no checks after a grace period -> stop and report `DRAFT_PR_WITH_NO_CHECKS`. Do not mark ready for review unless asked.
     - `reviewDecision: REVIEW_REQUIRED` or any human-approval gate with no failing checks -> stop and report `BLOCKED_BY_REVIEW_GATE`. Human review is not an actionable failure.
     - No checks registered after a grace period -> stop and report `NO_CHECKS_REGISTERED`.
-    - `bucket: skipping`/`cancel`, or `bucket: pending` on non-required checks -> do not wait. Required-status-checks (configurable via `gh api repos/{owner}/{repo}/branches/{branch}/protection`) are the source of truth; common examples include test/lint/build jobs and code-review bots (Sentry, Codecov, Cursor, BugBot, etc.) — treat each by its bucket, not its name.
+    - `bucket: skipping`/`cancel`, or `bucket: pending` on non-required checks -> do not wait. Required-status-checks (configurable via `gh api repos/{owner}/{repo}/branches/{branch}/protection`) are the source of truth; common examples include test/lint/build jobs and code-review bots (Sentry, Codecov, Cursor, BugBot, etc.). Treat each by its bucket, not its name.
 9. Poll CI for the new PR. On failure: read the job log, identify the root cause, fix, push. Cap at **3 fix iterations**.
-10. Do **NOT** weaken, skip, or mock the failing assertion to make CI green -- repair the actual issue. After 3 unsuccessful fix iterations, report the unresolved failure and evidence; the iteration count does not prove flakiness. Update the PR only when authorized.
+10. Do **NOT** weaken, skip, or mock the failing assertion to make CI green; repair the actual issue. After 3 unsuccessful fix iterations, report the unresolved failure and evidence; the iteration count does not prove flakiness. Update the PR only when authorized.
 
 Start now.

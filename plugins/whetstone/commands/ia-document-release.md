@@ -28,11 +28,11 @@ Make obvious factual updates directly. Stop and ask only for risky or subjective
 - Removing entire sections
 - Security model descriptions
 - Large rewrites (more than ~10 lines in one section)
-- Ambiguous relevance -- changes that might apply but aren't certain
+- Ambiguous relevance: changes that might apply but aren't certain
 
 **Hard constraints:**
-- Never clobber CHANGELOG entries -- polish wording only, preserve all content
-- Never use `Write` on CHANGELOG.md -- always use `Edit` with exact `old_string` matches
+- Never clobber CHANGELOG entries; polish wording only, preserve all content
+- Never use `Write` on CHANGELOG.md; always use `Edit` with exact `old_string` matches
 - Never bump VERSION without asking first
 - Read the full file before editing any file
 
@@ -72,10 +72,10 @@ find . -maxdepth 3 -name "*.md" \
 ```
 
 Classify the diff into categories:
-- **New features** -- new files, commands, skills, capabilities
-- **Changed behavior** -- modified APIs, config, existing functionality
-- **Removed functionality** -- deleted files or commands
-- **Infrastructure** -- build, test, CI changes
+- **New features**: new files, commands, skills, capabilities
+- **Changed behavior**: modified APIs, config, existing functionality
+- **Removed functionality**: deleted files or commands
+- **Infrastructure**: build, test, CI changes
 
 Output: "Analyzing N files changed across M commits. Found K documentation files to review."
 
@@ -93,7 +93,7 @@ Read each documentation file and cross-reference against the diff. Classify each
 **ARCHITECTURE.md:**
 - Do component descriptions and diagrams match the current code?
 - Are design decision explanations still accurate?
-- Be conservative -- only update what the diff clearly contradicts.
+- Be conservative: only update what the diff clearly contradicts.
 
 **CONTRIBUTING.md:**
 - Walk through the setup instructions as a new contributor would.
@@ -115,7 +115,7 @@ Read each documentation file and cross-reference against the diff. Classify each
 
 Make all clear, factual updates using the Edit tool.
 
-For each file modified, output a one-line summary of **what specifically changed** -- not "Updated README.md" but "README.md: added document-release to commands table, updated count from 19 to 20."
+For each file modified, output a one-line summary of **what specifically changed**: not "Updated README.md" but "README.md: added document-release to commands table, updated count from 19 to 20."
 
 **Never auto-update:**
 - README introduction or project positioning
@@ -130,7 +130,7 @@ For each file modified, output a one-line summary of **what specifically changed
 For each risky or ambiguous update identified in Step 2, ask the user with:
 - Which file and what specific change is being considered
 - A clear recommendation with reasoning
-- Options including "Skip -- leave as-is"
+- Options including "Skip: leave as-is"
 
 Apply approved changes immediately after each answer.
 
@@ -140,7 +140,7 @@ Apply approved changes immediately after each answer.
 
 **Only run if CHANGELOG was modified on this branch.**
 
-**CRITICAL -- never clobber CHANGELOG entries.** Polish wording only. Never delete, reorder, or replace entries. The entry content is the source of truth -- you are polishing prose, not rewriting history. Use `Edit` with exact `old_string` matches; never `Write`.
+**CRITICAL: never clobber CHANGELOG entries.** Polish wording only. Never delete, reorder, or replace entries. The entry content is the source of truth; you are polishing prose, not rewriting history. Use `Edit` with exact `old_string` matches; never `Write`.
 
 Review the modified entries for voice. Apply the `ia-writing` skill's voice guidance.
 
@@ -167,7 +167,7 @@ Auto-fix clear factual inconsistencies. Ask for narrative contradictions.
 
 Skip if TODOS.md does not exist.
 
-1. **Completed items not yet marked:** Cross-reference the diff against open TODO items. If a TODO is clearly completed by changes in this branch, move it to the Completed section with `**Completed:** vX.Y.Z (YYYY-MM-DD)`. Be conservative -- clear evidence in the diff only.
+1. **Completed items not yet marked:** Cross-reference the diff against open TODO items. If a TODO is clearly completed by changes in this branch, move it to the Completed section with `**Completed:** vX.Y.Z (YYYY-MM-DD)`. Be conservative: clear evidence in the diff only.
 
 2. **New deferred work:** Check the diff for `TODO`, `FIXME`, `HACK`, and `XXX` comments. For each one representing meaningful deferred work (not trivial inline notes), ask whether it should be captured in TODOS.md.
 
@@ -184,9 +184,9 @@ git diff <base>...HEAD -- VERSION plugin.json package.json pyproject.toml 2>/dev
 ```
 
 **If not bumped:** Ask:
-- A) Bump PATCH -- if doc changes accompany code changes
-- B) Bump MINOR -- if this is a significant standalone release
-- C) Skip -- no bump needed
+   - A) Bump PATCH, if doc changes accompany code changes
+   - B) Bump MINOR, if this is a significant standalone release
+   - C) Skip, no bump needed
 - Recommend C for docs-only branches
 
 **If already bumped:** Verify the bump covers the full scope of changes on this branch. If there are significant changes not mentioned in the corresponding CHANGELOG entry, ask whether to bump again or add to the existing entry.
@@ -228,7 +228,7 @@ gh pr edit --body-file <printed-path>
 rm -f <printed-path>
 ```
 
-If no PR exists: skip with "No PR found -- documentation changes are in the commit."
+If no PR exists: skip with "No PR found; documentation changes are in the commit."
 If `gh pr edit` fails: warn and continue.
 
 **Documentation health summary (final output):**

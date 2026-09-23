@@ -47,7 +47,7 @@ These add no meaning. Delete them.
 
 ## Adverbs
 
-Cut adverbs that add nothing -- empty softeners, intensifiers, and hedges. Keep one when it carries genuine emphasis, uncertainty, contrast, or the writer's natural spoken rhythm. Match the smell, not the string (SKILL.md Restraint): a listed word that reads naturally in its actual context stays.
+Cut adverbs that add nothing: empty softeners, intensifiers, and hedges. Keep one when it carries genuine emphasis, uncertainty, contrast, or the writer's natural spoken rhythm. Match the smell, not the string (SKILL.md Restraint): a listed word that reads naturally in its actual context stays.
 
 Common offenders: really, just, literally, genuinely, honestly, simply, actually, deeply, truly, fundamentally, inherently, inevitably, interestingly, importantly, crucially
 
@@ -89,17 +89,17 @@ Sentences that announce importance without naming the specific thing. Replace wi
 
 AI defaults to "not X, it's Y" framing. State Y directly without the contrast scaffolding.
 
-- "Not because X. Because Y." -- just state Y
-- "The answer isn't X. It's Y." -- state Y
-- "It's not about X. It's about Y." -- state Y
-- "stops being X and starts being Y" -- say what it becomes
-- "less about X and more about Y" -- say what it's about
-- "X gives way to Y" -- state the current state
-- "from X to Y" (false ranges) -- name the specific thing
-- "Beyond X, there's Y" -- state Y directly
-- "X, yes. But Y." -- state both as facts
-- "It's not just X -- it's Y" -- state Y
-- "The real X isn't Y -- it's Z" -- state Z
+- "Not because X. Because Y." → just state Y
+- "The answer isn't X. It's Y." → state Y
+- "It's not about X. It's about Y." → state Y
+- "stops being X and starts being Y" → say what it becomes
+- "less about X and more about Y" → say what it's about
+- "X gives way to Y" → state the current state
+- "from X to Y" (false ranges) → name the specific thing
+- "Beyond X, there's Y" → state Y directly
+- "X, yes. But Y." → state both as facts
+- "It's not just X -- it's Y" → state Y
+- "The real X isn't Y -- it's Z" → state Z
 
 ## Lazy Extremes
 
@@ -114,16 +114,16 @@ These sound confident but say nothing. Name the specific cases, people, or frequ
 
 Listing what something is *not* before revealing what it *is*. A rhetorical striptease.
 
-- "Not a X... Not a Y... A Z." -- state Z directly
-- "It wasn't X. It wasn't Y. It was Z." -- the reader doesn't need the runway
+- "Not a X... Not a Y... A Z." → state Z directly
+- "It wasn't X. It wasn't Y. It was Z." → the reader doesn't need the runway
 
 ## Fractal Summary
 
-Restating the same point three times -- preview, state, recap -- as if the reader needs to be told what they're about to be told. Say it once.
+Restating the same point three times (preview, state, recap) as if the reader needs to be told what they're about to be told. Say it once.
 
-- "what I'll tell you / what I'm telling you / what I told you" -- the essay structure that announces itself at every level; cut the preview and the recap
-- "First, X. [section on X.] So that's X." -- the closing restatement adds nothing; delete it
-- Opening a section by summarizing it, then closing by summarizing it again -- pick the body, drop the bookends
+- "what I'll tell you / what I'm telling you / what I told you": the essay structure that announces itself at every level; cut the preview and the recap
+- "First, X. [section on X.] So that's X.": the closing restatement adds nothing; delete it
+- Opening a section by summarizing it, then closing by summarizing it again: pick the body, drop the bookends
 
 Trust the reader to hold one statement without scaffolding around it.
 
@@ -131,34 +131,34 @@ Trust the reader to hold one statement without scaffolding around it.
 
 Don't ban analogies; test them. Keep one only if it passes all three:
 
-1. **Load-bearing** -- the point lands harder with the analogy than without. If the literal sentence is already clear, the analogy is decoration; cut it.
-2. **Holds one layer deeper** -- the comparison survives a second step ("X is like Y" still works when you push on how Y behaves). If it breaks on contact, it misleads.
-3. **Gets through without explanation** -- the reader understands it cold. If it needs "what I mean by this is...", the analogy failed; state the point directly.
+1. **Carries weight**: the point lands harder with the analogy than without. If the literal sentence is already clear, the analogy is decoration; cut it.
+2. **Holds one layer deeper**: the comparison survives a second step ("X is like Y" still works when you push on how Y behaves). If it breaks on contact, it misleads.
+3. **Gets through without explanation**: the reader understands it cold. If it needs "what I mean by this is...", the analogy failed; state the point directly.
 
-Fail any one -- cut the analogy and say the thing literally.
+Fail any one and you cut the analogy and say the thing literally.
 
 ## Dramatic Fragmentation
 
 Sentence fragments for manufactured profundity. Complete sentences. Trust content over presentation.
 
-- "[Noun]. That's it. That's the [thing]." -- performative simplicity
-- "X. And Y. And Z." -- staccato drama
-- "This unlocks something. [Word]." -- artificial revelation
-- "Not always. Not perfectly." -- hedging disguised as reassurance
+- "[Noun]. That's it. That's the [thing]." (performative simplicity)
+- "X. And Y. And Z." (staccato drama)
+- "This unlocks something. [Word]." (artificial revelation)
+- "Not always. Not perfectly." (hedging disguised as reassurance)
 
 ## Formulaic Constructions
 
-- "By the time X, I was Y." -- narrative template, restructure
-- "X that isn't Y" -- say "X is broken" directly
+- "By the time X, I was Y." (narrative template) → restructure
+- "X that isn't Y" → say "X is broken" directly
 
 ## Narrator-from-a-Distance
 
 Floating above the scene instead of putting the reader in it.
 
-- "Nobody designed this." -- disembodied observation
-- "This happens because..." -- lecturer voice
-- "This is why..." -- same
-- "People tend to..." -- armchair sociologist
+- "Nobody designed this." (disembodied observation)
+- "This happens because..." (lecturer voice)
+- "This is why..." (same)
+- "People tend to..." (armchair sociologist)
 
 Put the reader in the room. "You don't sit down and decide to..." beats "Nobody designed this."
 
@@ -168,7 +168,7 @@ False intimacy or manufactured sincerity:
 
 - "creeps in"
 - "I promise" / "They exist, I promise"
-- "And that's okay." -- permission-granting closer; the reader doesn't need permission, cut it
+- "And that's okay." (permission-granting closer); the reader doesn't need permission, cut it
 
 ## Telling Instead of Showing
 
@@ -187,6 +187,6 @@ If something is hard or significant, show the specific constraint. Don't announc
 
 ## Sentence Starters to Avoid
 
-- Sentences starting with What/When/Where/Which/Who/Why/How -- restructure, lead with the subject or verb
-- Paragraphs starting with "So" -- start with content
-- Sentences starting with "Look," -- remove
+- Sentences starting with What/When/Where/Which/Who/Why/How → restructure, lead with the subject or verb
+- Paragraphs starting with "So" → start with content
+- Sentences starting with "Look," → remove

@@ -8,7 +8,7 @@ These apply when *defining* a macro. An ordinary invocation of someone else's ma
 
 - **Interpolate an `$x:expr` fragment exactly once.** Each substitution re-evaluates the caller's expression, so `my_macro!(v.pop().unwrap())` runs the side effect once per mention. Bind it first inside the expansion (`let v = $x;`) and use the binding.
 - **Reference items through `$crate`.** An exported macro expands in the *caller's* namespace, so a bare `helper()` or `Error` resolves against whatever the caller happens to have in scope. `$crate::helper()` binds to the defining crate regardless.
-- **Parenthesize re-emitted `$t:tt` fragments.** A token-tree fragment is spliced verbatim, so `$a * $b` with `$a = 1 + 2` expands to `1 + 2 * b` and silently changes precedence. This does *not* apply to `:expr`, which is already parsed as one complete expression — wrapping those adds noise without preventing anything.
+- **Parenthesize re-emitted `$t:tt` fragments.** A token-tree fragment is spliced verbatim, so `$a * $b` with `$a = 1 + 2` expands to `1 + 2 * b` and silently changes precedence. This does *not* apply to `:expr`, which is already parsed as one complete expression; wrapping those adds noise without preventing anything.
 - **Do not assume identifier hygiene covers items.** Local variables introduced by an expansion are hygienic, but items (types, functions, consts) are not: two invocations in one module collide on any item the expansion names. Derive item names from a macro parameter, or emit them inside a generated module.
 
 ## Procedural macros
@@ -18,7 +18,7 @@ These apply when *defining* a macro. An ordinary invocation of someone else's ma
 
 ## Paths and OS strings
 
-- **`Path` is not UTF-8.** On Unix a filename is arbitrary bytes; on Windows it is potentially ill-formed UTF-16. `path.to_str().unwrap()` panics on filenames that are perfectly legal on the user's disk. Use `to_string_lossy()` where the value is only ever displayed, `OsStr`/`OsString` where it is passed through, and reserve `to_str()` for cases where non-UTF-8 is a genuine error the caller should see — with a real error, not an unwrap.
+- **`Path` is not UTF-8.** On Unix a filename is arbitrary bytes; on Windows it is potentially ill-formed UTF-16. `path.to_str().unwrap()` panics on filenames that are perfectly legal on the user's disk. Use `to_string_lossy()` where the value is only ever displayed, `OsStr`/`OsString` where it is passed through, and reserve `to_str()` for cases where non-UTF-8 is a genuine error the caller should see, with a real error, not an unwrap.
 - The same applies to arguments and environment variables (`args_os()`, `var_os()`) when a value may originate outside the program.
 - **An argv ban-list that converts to `String` first is bypassable.** The reasoning "a non-UTF-8 argument is prose, never a flag" is false: `--slug=\xff` is a non-UTF-8 argument that is very much a flag, and lossy conversion mangles it into something the ban-list no longer recognises while the downstream tool, receiving the original `OsString`, still parses it as the flag. Match on `OsStr::as_bytes()`, splitting on `b'='` before comparing.
 - Subprocess output is bytes too. `String::from_utf8(output.stdout)` fails on any tool that emits non-UTF-8; decide deliberately between propagating that error and `from_utf8_lossy`.

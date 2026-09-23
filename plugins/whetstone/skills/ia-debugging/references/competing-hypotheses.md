@@ -1,6 +1,6 @@
 # Analysis of Competing Hypotheses (ACH)
 
-When the root cause is unclear -- especially across multiple components -- systematic hypothesis analysis prevents premature commitment to an incorrect explanation.
+When the root cause is unclear, especially across multiple components, systematic hypothesis analysis prevents premature commitment to an incorrect explanation.
 
 ## When to Use
 

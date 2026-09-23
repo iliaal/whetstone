@@ -9,11 +9,9 @@ export async function syncToOpenCode(
   config: ClaudeHomeConfig,
   outputRoot: string,
 ): Promise<void> {
-  // Ensure output directories exist
   const skillsDir = path.join(outputRoot, "skills")
   await fs.mkdir(skillsDir, { recursive: true })
 
-  // Symlink skills (with validation)
   for (const skill of config.skills) {
     if (!isValidSkillName(skill.name)) {
       console.warn(`Skipping skill with invalid name: ${skill.name}`)
@@ -23,7 +21,6 @@ export async function syncToOpenCode(
     await forceSymlink(skill.sourceDir, target)
   }
 
-  // Merge MCP servers into opencode.json
   if (Object.keys(config.mcpServers).length > 0) {
     const configPath = path.join(outputRoot, "opencode.json")
     const existing = await readJsonSafe(configPath)

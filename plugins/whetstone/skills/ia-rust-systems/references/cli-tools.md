@@ -66,8 +66,8 @@ enum Commands {
 
 Once flag count crosses ~10 or commands start sharing complex validation, split parsing into two stages:
 
-1. **Low stage** — `LowArgs` mirrors the raw CLI surface 1:1. Clap populates it. No cross-field validation, no domain types.
-2. **High stage** — `HiArgs` (or `Config`) is what the rest of the program consumes. Constructing `HiArgs::from(low)` runs *all* semantic validation: mutual exclusions, path existence, glob compilation, range constraints, regex validity. Fails with one clear error message.
+1. **Low stage**: `LowArgs` mirrors the raw CLI surface 1:1. Clap populates it. No cross-field validation, no domain types.
+2. **High stage**: `HiArgs` (or `Config`) is what the rest of the program consumes. Constructing `HiArgs::from(low)` runs *all* semantic validation: mutual exclusions, path existence, glob compilation, range constraints, regex validity. Fails with one clear error message.
 
 ```rust
 let low = Cli::parse();
@@ -77,7 +77,7 @@ run(hi).await
 
 Downstream code accepts `&HiArgs` (or specific typed fields from it) and never re-checks. This keeps validation in one place and makes it impossible for a handler to receive an invalid combination. Pattern comes from ripgrep; worth it as soon as flag interactions become non-trivial.
 
-For simple CLIs (one subcommand, a handful of flags), skip this — one clap-derive struct is enough.
+For simple CLIs (one subcommand, a handful of flags), skip this; one clap-derive struct is enough.
 
 ## Config Layering
 
@@ -114,9 +114,9 @@ impl Config {
 }
 ```
 
-Validation runs in `load()` — never defer it to the first call site.
+Validation runs in `load()`; never defer it to the first call site.
 
-Only `NotFound` collapses to defaults. `read_to_string(p).unwrap_or_default()` also swallows permission-denied, invalid UTF-8, and transient I/O, so a config that exists but cannot be read becomes an empty one — and the next write replaces the comments and unrelated entries the read never surfaced.
+Only `NotFound` collapses to defaults. `read_to_string(p).unwrap_or_default()` also swallows permission-denied, invalid UTF-8, and transient I/O, so a config that exists but cannot be read becomes an empty one, and the next write replaces the comments and unrelated entries the read never surfaced.
 
 ## Logging
 
@@ -137,7 +137,7 @@ fn init_logging(verbose: u8) {
 ```
 
 - Logs go to **stderr**. Only command results go to stdout. This keeps pipes clean.
-- Respect `RUST_LOG` / `MYAPP_LOG` env var if set — it overrides `-v`.
+- Respect `RUST_LOG` / `MYAPP_LOG` env var if set; it overrides `-v`.
 - Never log at `info!` inside hot loops; budget is roughly one log line per user-visible action.
 
 ## Output
@@ -152,7 +152,7 @@ if args.json {
 }
 ```
 
-- JSON output must be a single line or a valid JSON document — no mixed human + JSON in the same stream.
+- JSON output must be a single line or a valid JSON document; no mixed human + JSON in the same stream.
 - Exit with non-zero on failure even when `--json` is set; don't emit `{"error": "..."}` with exit 0.
 
 ## Progress
@@ -172,7 +172,7 @@ Commands::Completions { shell } => {
 }
 ```
 
-Ship completions via the `completions` subcommand rather than pre-generated files — keeps them in sync with the actual flag set.
+Ship completions via the `completions` subcommand rather than pre-generated files; this keeps them in sync with the actual flag set.
 
 ## Testing CLIs
 
@@ -192,10 +192,10 @@ fn search_returns_json() {
 
 - `tempfile::TempDir` for isolated project roots.
 - Snapshot stdout with `insta::assert_snapshot!` for human-readable output that changes rarely.
-- Test exit codes explicitly — they're part of the CLI contract for scripts.
+- Test exit codes explicitly; they're part of the CLI contract for scripts.
 
 ## Common Traps
 
 - Don't print to stdout from library crates. Return structured data, let the binary format it.
-- Don't swallow `SIGPIPE`. On Unix, when the reader closes a pipe early, the default is to die — let it. If you install a `tokio::signal` handler, re-raise or exit cleanly on pipe errors.
+- Don't swallow `SIGPIPE`. On Unix, when the reader closes a pipe early, the default is to die; let it. If you install a `tokio::signal` handler, re-raise or exit cleanly on pipe errors.
 - Don't ship a CLI that panics on bad input. Map every user-facing error to a clean `anyhow` chain with `.context()`.

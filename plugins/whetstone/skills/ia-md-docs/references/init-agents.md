@@ -11,7 +11,7 @@ test -f CLAUDE.md && echo "claude exists" || echo "no claude"
 
 If AGENTS.md exists: warn user, suggest update workflow instead. Allow override with `--force`.
 
-If CLAUDE.md exists but AGENTS.md doesn't: migrate -- rename to AGENTS.md, create CLAUDE.md symlink.
+If CLAUDE.md exists but AGENTS.md doesn't: migrate (rename to AGENTS.md, create CLAUDE.md symlink).
 
 ## Modes
 
@@ -22,11 +22,11 @@ If CLAUDE.md exists but AGENTS.md doesn't: migrate -- rename to AGENTS.md, creat
 ## Gather Context
 
 Read available config files (skip missing):
-- `package.json` -- stack, scripts, dependencies
-- `pyproject.toml` -- Python project config
-- `composer.json` -- PHP project config
-- `README.md` -- project overview
-- `.gitignore` -- exclusion patterns
+- `package.json`: stack, scripts, dependencies
+- `pyproject.toml`: Python project config
+- `composer.json`: PHP project config
+- `README.md`: project overview
+- `.gitignore`: exclusion patterns
 - Directory listing (2 levels deep)
 
 Determine:
@@ -106,19 +106,19 @@ Determine:
 
 Sections to include (only if relevant):
 
-- **Stack** -- languages, frameworks, tools
-- **Structure** -- key directories and files
-- **Commands** -- build, test, lint, deploy
-- **Code style** -- naming, formatting, patterns
-- **Constraints** -- security, performance, environment
+- **Stack**: languages, frameworks, tools
+- **Structure**: key directories and files
+- **Commands**: build, test, lint, deploy
+- **Code style**: naming, formatting, patterns
+- **Constraints**: security, performance, environment
 
 Style: terse, imperative, expert-to-expert. No fluff.
 
 Quality rules (SkillsBench arXiv:2602.12670):
-- Procedural over declarative -- "Run `npm test`" beats "Tests should pass"
-- Tables over prose -- agents parse structured data more reliably
+- Procedural over declarative: "Run `npm test`" beats "Tests should pass"
+- Tables over prose: agents parse structured data more reliably
 - 2K-8K chars is optimal (+18.8pp). Beyond 15K, effectiveness degrades. Split or link out.
-- Context-first ordering -- overview before commands, commands before architecture
+- Context-first ordering: overview before commands, commands before architecture
 
 ## Write
 

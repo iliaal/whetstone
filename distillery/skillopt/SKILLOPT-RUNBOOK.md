@@ -88,9 +88,9 @@ for the per-step `selection_hard` / `action` (accept / reject) and diff
 
 ## 5. Onboarding a new process skill
 
-Four pieces per skill (review skills swap the test for a detection spec). The
-wiring is the easy part; **fixture calibration is the real cost** — fixtures must
-leave the weak model headroom or the gate has nothing to optimize.
+Four pieces per skill (review skills swap the test for a detection spec).
+**Fixture calibration is the real cost:** fixtures must leave the weak model
+headroom or the gate has nothing to optimize.
 
 1. **Rubric** — add `RUBRICS["<skill>"]` in `rubric.py`. Criteria mirror the
    skill's own rules and must be POSITIVE, quotable actions: the grounding guard
@@ -157,10 +157,7 @@ obvious one-liner passes the structural check but breaks a behavior test)
 de-saturated to baseline `hard`=0.80, and the gate **accepted two edits**
 (selection 0.92 → 1.15). The learned edit — verify edge-case parity (empty /
 None / no-match / zero) before collapsing a loop to a stdlib one-liner — was
-genuine, not reward-hacking, and was promoted into the shipped skill. The run
-also surfaced and fixed a shared-env bug: the judge silently zeroed `soft`
-(`grounded=None`) on transcripts >~130K chars (see wiki
-`llm-judge-evidence-grounding` Failure 3).
+genuine, not reward-hacking, and was promoted into the shipped skill.
 
 **Cross-target finding (2026-06-01, all four onboarded skills run).** For a
 capable-enough weak model (haiku), `hard` tends to **saturate** — it reaches the
@@ -176,8 +173,8 @@ right outcome (fixes the bug, detects the defect, catches the edge) — while
 
 debugging-hard is the clearest: right answers, 0.40 process — the optimizer
 rediscovered the pilot's reproduce-first lesson independently. **verification is
-the exception that proves a rule:** its hard-grading *forces* the verification the
-skill teaches (the failing test is visible, so the weak model runs it), leaving
-neither axis room — route skills like that to Tier-2 `evolve`. Engineer `hard`
+the exception:** its hard-grading *forces* the verification the skill teaches (the
+failing test is visible, so the weak model runs it), leaving neither axis room.
+Route skills like that to Tier-2 `evolve`. Engineer `hard`
 headroom (traps) only when the skill's *outcome* is genuinely hard for the weak
 model; otherwise expect a soft-led optimization with `hard` as the floor.

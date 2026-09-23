@@ -22,21 +22,21 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 
 ## Unsafe Discipline
 
-- Default: no `unsafe`. If clippy flags it, don't `#[allow]` it — refactor. The `#[expect]` escape hatch below does not apply here; unsafe findings get fixed, not annotated.
+- Default: no `unsafe`. If clippy flags it, don't `#[allow]` it; refactor. The `#[expect]` escape hatch below does not apply here; unsafe findings get fixed, not annotated.
 - Every `unsafe` block gets a `// SAFETY:` comment above it explaining why each invariant holds. No comment = reviewer rejects.
-- Keep `unsafe` blocks minimal — wrap in a safe abstraction at module boundary, mark the module `pub(crate)`.
-- Use `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic — catches UB that optimizers mask.
+- Keep `unsafe` blocks minimal: wrap in a safe abstraction at module boundary, mark the module `pub(crate)`.
+- Use `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic; it catches UB that optimizers mask.
 - Prefer `bytemuck`, `zerocopy`, `bytes` over hand-rolled transmutes for zero-copy patterns.
-- **Env-var writes are `unsafe` in edition 2024. Write them only in `main`, before the runtime starts or any thread spawns.** Concurrent `getenv` is UB; `OnceLock` does not make it safe. Watch for lazy `LD_LIBRARY_PATH`-style writes on first use — hoist them to startup.
+- **Env-var writes are `unsafe` in edition 2024. Write them only in `main`, before the runtime starts or any thread spawns.** Concurrent `getenv` is UB; `OnceLock` does not make it safe. Watch for lazy `LD_LIBRARY_PATH`-style writes on first use; hoist them to startup.
 
 
 ## Discipline
 
-- Simplicity first — every change as simple as possible, impact minimal code.
-- Only touch what's necessary — avoid unrelated changes in a PR.
-- No `#[allow(clippy::...)]` as a shortcut — fix the underlying issue. When a suppression is genuinely warranted, write `#[expect(clippy::lint_name, reason = "...")]` instead: `expect` warns once the lint stops firing, so a suppression that has outlived its cause reports itself, where `allow` rots silently forever. (`expect` needs Rust 1.81+; edition 2024 clears that floor.)
+- Simplicity first: every change as simple as possible, impact minimal code.
+- Only touch what's necessary; avoid unrelated changes in a PR.
+- No `#[allow(clippy::...)]` as a shortcut; fix the underlying issue. When a suppression is genuinely warranted, write `#[expect(clippy::lint_name, reason = "...")]` instead: `expect` warns once the lint stops firing, so a suppression that has outlived its cause reports itself, where `allow` rots silently forever. (`expect` needs Rust 1.81+; edition 2024 clears that floor.)
 - Before adding a trait or generic, verify it's used in 3+ places. Otherwise a concrete type is clearer.
-- **`bool::then_some(x)` takes `x` by value — the argument is computed before the bool is consulted**, so a guard written as a condition plus a fixed-width slice panics on exactly the inputs the condition was checking for: `(b.len() >= 19 && b[4] == b'-').then_some(&v[..19])` panics on any shorter value, exiting 101 inside the one function written to report the case as undetermined. Use `then(|| …)`, which is lazy. Clippy does not flag the difference. Grep `then_some(` for an argument that indexes, slices, unwraps, or allocates. Related: **a fixed-width slice is not a parse** — `&v[..19]` also panics mid-character on non-ASCII, and comparing two such prefixes lexicographically drops the timezone offset, so `01:00+02:00` sorts after `00:00Z` while being an hour earlier. Parse and normalize, or reject.
+- **`bool::then_some(x)` takes `x` by value: the argument is computed before the bool is consulted**, so a guard written as a condition plus a fixed-width slice panics on exactly the inputs the condition was checking for: `(b.len() >= 19 && b[4] == b'-').then_some(&v[..19])` panics on any shorter value, exiting 101 inside the one function written to report the case as undetermined. Use `then(|| …)`, which is lazy. Clippy does not flag the difference. Grep `then_some(` for an argument that indexes, slices, unwraps, or allocates. Related: **a fixed-width slice is not a parse**. `&v[..19]` also panics mid-character on non-ASCII, and comparing two such prefixes lexicographically drops the timezone offset, so `01:00+02:00` sorts after `00:00Z` while being an hour earlier. Parse and normalize, or reject.
 
 
 ## Verify

@@ -40,7 +40,7 @@ Minor: an opt-in Jev integration lets a hosted judge suggest one skill the keywo
 ### Added
 
 - **Optional Jev skill suggestions in the subagent injection hook.** When the keyword tiers leave room under the five-skill cap, the hook can ask the shared `jev` judgment CLI whether any unmatched skill is genuinely needed, and add at most one. Disabled by default: installing the plugin does not require Jev, run Python, or send any prompt off the machine. Enable with `WHETSTONE_JEV=1`; `WHETSTONE_JEV_COMMAND` points at a non-default executable and `WHETSTONE_JEV_THRESHOLD` adjusts the 0.90 minimum score. Keyword selections keep their order and position, language and maintenance exclusions apply before any skill is offered to the judge, and suggestions are labelled separately so the subagent checks applicability instead of treating them as matched. A missing executable, missing credential, malformed reply, unexpected model, out-of-range score, or deadline miss leaves the keyword result byte-identical.
-- **A `claude plugin eval` suite for the `ia-code-review` skill** at `plugins/whetstone/evals/`: five positive cases (a PHP IDOR diff, a Python two-bug diff, a TypeScript file audit, a brief carrying reviewer questions, and a clean diff that must come back ready to merge) and two negatives that must not produce a review verdict. Graders check the behaviours the skill claims -- the skill fired or stayed silent, CR ids present, a verdict line, the specific defect found and correctly located, nits ranked below bugs, no fabricated findings.
+- **A `claude plugin eval` suite for the `ia-code-review` skill** at `plugins/whetstone/evals/`: five positive cases (a PHP IDOR diff, a Python two-bug diff, a TypeScript file audit, a brief carrying reviewer questions, and a clean diff that must come back ready to merge) and two negatives that must not produce a review verdict. Graders check the behaviours the skill claims: the skill fired or stayed silent, CR ids present, a verdict line, the specific defect found and correctly located, nits ranked below bugs, no fabricated findings.
 - `ia-code-review` gained a Composer review reference covering production requirements, platform constraints, autoloading, installation, and resolution and packaging checks, with compatible library ranges preserved and concrete deployment evidence required.
 
 ### Changed
@@ -60,7 +60,7 @@ Minor: an opt-in Jev integration lets a hosted judge suggest one skill the keywo
 - The Jev helper's frontmatter reader recognises every YAML block-scalar indicator, not four of them. `>+`, `>2`, and a trailing comment previously became the judge's rubric text verbatim.
 - `/ia-triage` shipped a worked example written in Ruby on Rails whose own location line pointed at a TypeScript file. It is now TypeScript throughout.
 - `ia-document-review` had no Step 7: an earlier reference offload removed the reader test without renumbering what followed. `ia-simplifying-code` gave two different orderings of one priority list in adjacent lines, and `ia-python-services` stated its coverage target twice.
-- The eval suite's skill-fired graders asserted only that some skill ran, and the harness excluded them from scoring because no arm was declared -- so nothing verified that `ia-code-review` specifically fired. They now pin the skill name and score in both arms. The clean-diff grader was also stricter than the severity ladder it tests, which made the case unpassable unless the skill under-reported against its own rules.
+- The eval suite's skill-fired graders asserted only that some skill ran, and the harness excluded them from scoring because no arm was declared, so nothing verified that `ia-code-review` specifically fired. They now pin the skill name and score in both arms. The clean-diff grader was also stricter than the severity ladder it tests, which made the case unpassable unless the skill under-reported against its own rules.
 
 ### For contributors
 
@@ -164,18 +164,18 @@ Patch: an 8-day delta sync across 42 reference repos (first pass over scrutineer
 
 ## [4.5.0] - 2026-08-29
 
-Minor: 130 distilled cross-repo rules landed across 18 skills, then the first full-corpus audit since 2026-08-18 put every one of them (and the other 55 components) under execution-verified review -- 40 findings fixed, including two distilled rules that were factually wrong and one bundled script that silently switched the caller's git branch. The audit's corpus-level verdict: the plugin is under-delegated, not over-populated -- zero components were worth merging or removing, but three commands carried stale inline copies of skill process that had already drifted from their source. A full Tier-2 injection judge pass over the release delta came back 57/57 clean. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+Minor: 130 distilled cross-repo rules landed across 18 skills, then the first full-corpus audit since 2026-08-18 put every one of them (and the other 55 components) under execution-verified review: 40 findings fixed, including two distilled rules that were factually wrong and one bundled script that silently switched the caller's git branch. The audit's corpus-level verdict: the plugin is under-delegated, not over-populated. Zero components were worth merging or removing, but three commands carried stale inline copies of skill process that had already drifted from their source. A full Tier-2 injection judge pass over the release delta came back 57/57 clean. Component counts unchanged at 32 skills, 19 agents, 22 commands.
 
 ### Added
 
 - 130 reviewed, provenance-stripped knowledge rules across 18 skills: Laravel validation/queue/cast/testing traps, C/C++ sanitizer and lifetime discipline, test-methodology anti-patterns, verification gates (zero-executed suites, binary identity, rebase survival), React Query/test-runner rules, Rust test isolation, Node/Python resilience, git worktree ownership, PostgreSQL migration locks, bash secret/exit-status discipline
 - Four reference files extracted from oversized skill bodies: writing-tests isolation/sandbox traps and false-pass oracle traps, orchestrating-swarms cross-run coordination (TTL leases, identifier minting), agent-native durability and attestation
-- Four-status worker vocabulary (DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT) now actually defined in orchestrating-swarms -- two files pointed at owners that never defined it
+- Four-status worker vocabulary (DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT) now actually defined in orchestrating-swarms: two files pointed at owners that never defined it
 - 27 trigger-regression fixture cases covering the recall gaps below
 
 ### Changed
 
-- `/ia-review`, `/ia-work`, and `/ia-compound` now delegate to their skills via explicit Skill calls instead of inlining process copies -- the copies had drifted (merge-algorithm rules missing, verification gates dropped, category list 9-vs-13)
+- `/ia-review`, `/ia-work`, and `/ia-compound` now delegate to their skills via explicit Skill calls instead of inlining process copies: the copies had drifted (merge-algorithm rules missing, verification gates dropped, category list 9-vs-13)
 - `paths:` frontmatter unlocked on five language skills that were auto-load-gated out of their own advertised scope: tailwind-css gains .tsx/.jsx/.html/.vue/.blade.php, cpp-systems gains .h and CMake files, python-services gains pyproject.toml/ruff.toml/uv.lock, react-frontend gains .ts, postgresql drops its .sql-only gate
 - Four trigger regexes widened from measured F1 0.0-0.57 to 1.0: meta-prompting (11 of 14 modifiers had no route in), nodejs-backend (NestJS/Hono/Koa/tRPC/Bun), orchestrating-swarms ("subagent", "fan out"), file-todos (every activation route was closed)
 - Oversized skill bodies trimmed to references: php-laravel 43.2KB to 33.9KB, writing-tests 6,449 to 4,979 tokens, react-frontend and agent-native-architecture now under the 4K flag
@@ -188,10 +188,10 @@ Minor: 130 distilled cross-repo rules landed across 18 skills, then the first fu
 ### Fixed
 
 - Two false distilled rules, both execution-disproven: `cargo install --path .` always rebuilds (the silent no-op is registry/git installs only), and single-arg `z.record()` fails at type-check and first parse, not at JSON-Schema generation
-- `worktree-manager.sh create` no longer checks out and pulls in the caller's tree -- fetch-only with an offline fallback, so the active branch survives worktree creation
-- compound-docs validation: the blocking gate pointed at a phantom `schema.yaml`, and `validate-frontmatter.sh` passed `symptoms: []` -- both fixture-tested
+- `worktree-manager.sh create` no longer checks out and pulls in the caller's tree: fetch-only with an offline fallback, so the active branch survives worktree creation
+- compound-docs validation: the blocking gate pointed at a phantom `schema.yaml`, and `validate-frontmatter.sh` passed `symptoms: []`; both fixture-tested
 - Stale `/resolve-pr-parallel` command name (two sites), a fabricated `linear issue create` CLI (replaced with the Linear MCP route), and a dead CLAUDE.md protocol pointer
-- `/ia-resolve-todo-parallel` no longer instructs deleting todo content -- completion is the documented rename-to-complete workflow
+- `/ia-resolve-todo-parallel` no longer instructs deleting todo content: completion is the documented rename-to-complete workflow
 - md-docs emoji rule aligned with ia-writing's README carve-out (the two skills gave opposite instructions on the same files)
 - PHPUnit `--processes` corrected to ParaTest; Laravel route-closure serialization claim narrowed to reproduced behavior
 - `/ia-setup` Comprehensive tier no longer promises agent-native checks it never ran; `/ia-verify` now dispatches the accessibility-tester agent instead of a weaker inline copy
@@ -199,27 +199,27 @@ Minor: 130 distilled cross-repo rules landed across 18 skills, then the first fu
 
 ## [4.4.3] - 2026-08-29
 
-Patch: an 11-day delta sync across 43 reference repos plus a marketplace scan, then a reactive audit over the sync's own output. The sync applied 23 findings; the audit found 13 defects in them and fixed all 13. Two of this release's fixes correct rules the plugin itself had wrong: the PostgreSQL composite-index advice ("most selective column first" — replaced with equality-then-range, confirmed by a live EXPLAIN where the eq-first index ran ~17x cheaper) and the Pine Script line-wrap rule (an indent of exactly 4 satisfied the old rule and errors; the real rule is non-multiple-of-4 outside parentheses, verified against TradingView's docs). The audit's recurring shape this round: a correct rule inserted where its own trigger path can't reach it — a standards-file disclosure check that doc-only routing skipped, a comment-authorization guard missing from the one review mode with no human present, and a plan-overwrite rule that the scaffolding script ignored until the script itself learned to refuse. Component counts unchanged at 32 skills, 19 agents, 22 commands.
+Patch: an 11-day delta sync across 43 reference repos plus a marketplace scan, then a reactive audit over the sync's own output. The sync applied 23 findings; the audit found 13 defects in them and fixed all 13. Two of this release's fixes correct rules the plugin itself had wrong: the PostgreSQL composite-index advice ("most selective column first", replaced with equality-then-range, confirmed by a live EXPLAIN where the eq-first index ran ~17x cheaper) and the Pine Script line-wrap rule (an indent of exactly 4 satisfied the old rule and errors; the real rule is non-multiple-of-4 outside parentheses, verified against TradingView's docs). The audit's recurring shape this round: a correct rule inserted where its own trigger path can't reach it, such as a standards-file disclosure check that doc-only routing skipped, a comment-authorization guard missing from the one review mode with no human present, and a plan-overwrite rule that the scaffolding script ignored until the script itself learned to refuse. Component counts unchanged at 32 skills, 19 agents, 22 commands.
 
 ### Added
 
-- PostgreSQL performance reference: the four query shapes an index cannot serve, pool-exhaustion diagnosis (raising `max` relocates the queue — multiplex through PgBouncer instead), and cache discipline (stampede protection, negative caching, cache-key completeness)
+- PostgreSQL performance reference: the four query shapes an index cannot serve, pool-exhaustion diagnosis (raising `max` relocates the queue; multiplex through PgBouncer instead), and cache discipline (stampede protection, negative caching, cache-key completeness)
 - Judge-bias defenses in the swarm anti-sycophancy reference: never reveal the passing threshold to a judge, plus a seven-bias countermeasure table (sycophancy, length, authority, completion, effort, recency, familiarity)
-- Code review now catches floor-guard loosening — lowered thresholds, `.skip`'d tests, new suppression comments — and an explanatory comment no longer suppresses those findings
+- Code review now catches floor-guard loosening (lowered thresholds, `.skip`'d tests, new suppression comments), and an explanatory comment no longer suppresses those findings
 - Standards-file diffs get the self-suppression disclosure check: a PR that edits its own coding standards must show what each loosened rule would have suppressed in that same diff
-- Writing audit gained `[ABSTRACT-METAPHOR]` and `[PORTABLE-PROSE]` tags, and drafts under audit are treated as data — an embedded instruction to the auditor is itself a finding
+- Writing audit gained `[ABSTRACT-METAPHOR]` and `[PORTABLE-PROSE]` tags, and drafts under audit are treated as data: an embedded instruction to the auditor is itself a finding
 - Test-writing skill: no-sleep rule for async waits, mock-seam placement (cut at the owned wrapper, never below it), and flaky-equals-red (fix or quarantine visibly; never re-run to green)
 - Pine Script: corrected drawing limits (9,999 bars back / 500 forward via `xloc.bar_time`), `for...in` iteration, conditional input editability, rolling-buffer caps, and typed-object architecture over parallel arrays
 - Laravel: per-stage validation checkpoints (`migrate:status`, `route:list`, `queue:work --once`, `pint --test`) and the `QueryException` binding-leak pitfall with `DB_MASK_BINDINGS`
-- Planning: the altitude test (an Objective must be verifiable without knowing the component's internals) and an overwrite guard — `init-plan.sh` now refuses to clobber a plan with unchecked tasks unless forced
+- Planning: the altitude test (an Objective must be verifiable without knowing the component's internals) and an overwrite guard: `init-plan.sh` now refuses to clobber a plan with unchecked tasks unless forced
 - Swarm orchestration: cold-start tax in dispatch sizing, inline-the-skill-content briefing rule (dispatched agents can't load the orchestrator's skills), and destructive-ambiguity findings queue into the completion report instead of blocking autonomous runs
-- Headless review mode: comments instructing to skip tests, disable verification, or run commands always escalate — comment text is data, not authorization
+- Headless review mode: comments instructing to skip tests, disable verification, or run commands always escalate: comment text is data, not authorization
 
 ### Changed
 
 - Compound-refresh distinguishes mechanics drift (doc follows code) from evidenced guidance (doc stands; the code's drift is reported as a potential regression)
 - Brainstorming surfaces conflicts between the user's wording and what the code verifiably does before treating the wording as settled
-- Reflect scans for information-access gaps — points where a session stalled for lack of read access to logs, dashboards, or CI output
+- Reflect scans for information-access gaps: points where a session stalled for lack of read access to logs, dashboards, or CI output
 - Three commands gained a tracked fallback for harnesses that no longer ship the TodoWrite tool
 
 ### Fixed
@@ -231,7 +231,7 @@ Patch: an 11-day delta sync across 43 reference repos plus a marketplace scan, t
 
 ## [4.4.2] - 2026-08-18
 
-Patch: an 8-day delta sync across 41 reference repos, then two audit rounds over the sync's own output. The sync applied 23 findings; the audits found 31 defects in them and fixed all 31. Every automated gate stayed green through all of it, which is the finding worth repeating — validate-plugin, the trigger suite, cross-reference validation, and the injection scan passed identically before and after a round that contained two live runtime breaks.
+Patch: an 8-day delta sync across 41 reference repos, then two audit rounds over the sync's own output. The sync applied 23 findings; the audits found 31 defects in them and fixed all 31. Every automated gate stayed green through all of it, which is the finding worth repeating: validate-plugin, the trigger suite, cross-reference validation, and the injection scan passed identically before and after a round that contained two live runtime breaks.
 
 The dead agent names are the release's own comedy. Seventeen `subagent_type` values broke in v4.0.0 and got fixed in 4.4.1, but the fix skipped the three in the skill body. This round changed those three to `ia-security-sentinel`, which is also dead: the harness addresses plugin agents as `whetstone:ia-security-sentinel`, and the plugin's own references had it right in twenty-two other places. The verification that certified the wrong fix matched values against agent filenames, which is a different contract from the tool name. `agent-types.md` now states the addressing rule, because a convention with twenty-two usages and zero statements gets re-derived wrong by whoever edits next. Component counts unchanged at 32 skills, 19 agents, 22 commands.
 
@@ -314,9 +314,9 @@ The audit's own lesson repeated the one from 4.3.3, one level deeper. Two of its
 
 ## [4.4.0] - 2026-08-04
 
-Minor: C and C++ get first-class skills, closing the plugin's largest stack gap. Until now the plugin covered Rust, Pine Script, and Terraform but had nothing for C at all: no skill, no path trigger, not a single pattern in the hook. Both new skills open by deferring to the repository they find themselves in, so tabs, `goto cleanup`, and macros that return survive untouched in codebases that sanction them, and no rule here will ever justify changing a frozen signature.
+Minor: C and C++ get dedicated skills, closing the plugin's largest stack gap. Until now the plugin covered Rust, Pine Script, and Terraform but had nothing for C at all: no skill, no path trigger, not a single pattern in the hook. Both new skills open by deferring to the repository they find themselves in, so tabs, `goto cleanup`, and macros that return survive untouched in codebases that sanction them, and no rule here will ever justify changing a frozen signature.
 
-The legibility half adapts 7etsuo/write-legible-c (MIT). Its citations all check out, which moved the audit from "does this source exist" to "does each rule survive contact with real C" — and measuring first is what produced the repo-conventions-outrank gate, because four of the source's rules are simply wrong for PHP extension code. Two independent reviewers then read the result and found genuine defects in it, including a worked example whose depth check rejected a flat tree after one node. The reviewers disagreed with each other once, and testing the disputed claim settled it against the reviewer who had labelled it verified. 32 skills now, 19 agents, 22 commands.
+The legibility half adapts 7etsuo/write-legible-c (MIT). Its citations all check out, which moved the audit from "does this source exist" to "does each rule survive contact with real C", and measuring first is what produced the repo-conventions-outrank gate, because four of the source's rules are simply wrong for PHP extension code. Two independent reviewers then read the result and found genuine defects in it, including a worked example whose depth check rejected a flat tree after one node. The reviewers disagreed with each other once, and testing the disputed claim settled it against the reviewer who had labelled it verified. 32 skills now, 19 agents, 22 commands.
 
 ### Added
 
@@ -448,8 +448,8 @@ Patch: a 14-day delta sync borrowing patterns from six external repos into the b
 
 ### Changed
 
-- `ia-brainstorming` gained a blindspot pass for territory the user can't evaluate. When someone signals they can't weigh a domain ("I know nothing about auth, you decide"), the interview stops extracting guesses and maps the decision surface instead — three to seven decisions and hazards, each with options and a recommended default — so the user chooses against real alternatives rather than the agent deciding silently.
-- `ia-code-review` gained three checks. A referee re-read: before dropping a Critical finding because the Skeptic disproved it, re-read the cited guard at its line (or confirm the cited doc), because a phantom citation is how a real Critical gets silently dropped. A silent-pass lens: a change that is itself a verification mechanism — a CI gate, a merge-block check, a masking mock — gets the "can this go green while the thing it guards is red?" question even at five lines, where the size triggers would otherwise wave it through. And a sentinel-overload check: reusing an existing null or empty value for a new state, where "it type-checks" hides that consumers can no longer tell two states apart.
+- `ia-brainstorming` gained a blindspot pass for territory the user can't evaluate. When someone signals they can't weigh a domain ("I know nothing about auth, you decide"), the interview stops extracting guesses and maps the decision surface instead (three to seven decisions and hazards, each with options and a recommended default) so the user chooses against real alternatives rather than the agent deciding silently.
+- `ia-code-review` gained three checks. A referee re-read: before dropping a Critical finding because the Skeptic disproved it, re-read the cited guard at its line (or confirm the cited doc), because a phantom citation is how a real Critical gets silently dropped. A silent-pass lens: a change that is itself a verification mechanism (a CI gate, a merge-block check, a masking mock) gets the "can this go green while the thing it guards is red?" question even at five lines, where the size triggers would otherwise wave it through. And a sentinel-overload check: reusing an existing null or empty value for a new state, where "it type-checks" hides that consumers can no longer tell two states apart.
 - `ia-compound-docs` now grounds behavioral claims in source before writing them to permanent docs: read the defining line and cite it, cite PR numbers rather than bare SHAs that a rebase rewrites, and attribute what can't be verified instead of asserting it as fact.
 - `ia-reflect` checks existing memory for duplicates and contradictions before writing a new entry, including through the high-confidence `remember:` path, and excludes harness-level noise from its operational-learnings scan.
 - `ia-react-frontend` gained two server-component rules: never hold request-scoped data in module-level state, since server renders share one process and it leaks across requests, and pass only the fields a client component actually uses across the boundary, since every prop is serialized into the payload.
@@ -494,7 +494,7 @@ Patch: a 7-day delta sync borrowing three upstream patterns into the writing, co
 
 ### Changed
 
-- `ia-writing`: added a `[METADISCOURSE]` audit tag for interpretive labeling -- stepping outside the scene or argument to name its meaning ("that's the lesson", "this is the point") when the concrete details already carry it. Distinct from `[META-COMMENTARY]` (announces structure) and `[VAGUE-DECLARATIVE]` (announces importance).
+- `ia-writing`: added a `[METADISCOURSE]` audit tag for interpretive labeling: stepping outside the scene or argument to name its meaning ("that's the lesson", "this is the point") when the concrete details already carry it. Distinct from `[META-COMMENTARY]` (announces structure) and `[VAGUE-DECLARATIVE]` (announces importance).
 - `ia-code-review`: when flagging a structural problem, name the move that fixes it rather than just the smell, and test whether the proposed refactor reduces the concepts a reader holds or merely relocates complexity. Added total file size as an inspection signal separate from diff size.
 - `ia-planning`: anchor the `init-plan.sh` invocation to the skill directory so it resolves from a subdirectory and under non-Claude harnesses, instead of a bare relative path that resolves against the caller's working directory.
 - `ia-php-laravel`: scoped the description to framework applications so the skill stops competing for plain-PHP triggers.
@@ -511,12 +511,12 @@ Patch: a week of borrows from the CE, agent-skills, google, mattpocock, superpow
 
 ### Changed
 
-- `ia-agent-native-architecture`: hardened the prompt-injection guidance -- a static content marker is forgeable, so an attacker who writes the literal closing marker inside retrieved content escapes the frame. Generate a per-injection nonce on both delimiters and strip lookalikes before wrapping; honor a closing marker only when it carries the matching nonce.
-- `ia-code-review`: a plan does not grade its own work. When a plan or brief mandates something the rubric calls a defect (a test that asserts nothing, verbatim duplication), report it as a "plan-mandated" finding for the human to adjudicate rather than approving it as spec-required -- distinct from honoring a rationale-backed code override.
+- `ia-agent-native-architecture`: hardened the prompt-injection guidance. A static content marker is forgeable, so an attacker who writes the literal closing marker inside retrieved content escapes the frame. Generate a per-injection nonce on both delimiters and strip lookalikes before wrapping; honor a closing marker only when it carries the matching nonce.
+- `ia-code-review`: a plan does not grade its own work. When a plan or brief mandates something the rubric calls a defect (a test that asserts nothing, verbatim duplication), report it as a "plan-mandated" finding for the human to adjudicate rather than approving it as spec-required: distinct from honoring a rationale-backed code override.
 - `ia-planning`: a Global Constraints section in the plan template that carries spec-wide version floors, naming rules, and platform limits verbatim, so every phase inherits them.
 - `ia-nodejs-backend` and `ia-python-services`: initialize tracing before the instrumented imports (or auto-instrumentation silently no-ops), and confirm telemetry actually fires under forced errors and test traffic before relying on it.
 - `ia-simplifying-code`: named speculative configurability and flexibility the request did not ask for as an explicit YAGNI smell.
-- `write-skill`: two authoring methods -- hunt no-ops sentence by sentence (delete the whole sentence rather than trim words), and anchor a behavior in a single strong token instead of restating it three ways.
+- `write-skill`: two authoring methods. Hunt no-ops sentence by sentence (delete the whole sentence rather than trim words), and anchor a behavior in a single strong token instead of restating it three ways.
 
 ### Fixed
 
@@ -529,15 +529,15 @@ Patch: the release and audit pipelines gain a two-tier prompt-injection scanner,
 ### Added
 
 - Two-tier prompt-injection scanner: a deterministic Tier-1 corpus scan (bidi unicode, fetch-then-execute, encoded payloads) plus a Tier-2 LLM judge run as in-session sub-agents, with a content-bound attestation the release gate verifies before shipping. Wired into `/release` Phase 3.5 and `/audit-plugin`.
-- `ia-nodejs-backend` and `ia-python-services`: observability guidance -- define the on-call questions before instrumenting, pick the signal by the question it answers (logs/metrics/traces), and alert on user-visible symptoms rather than causes. Node gains a full section (it had none); Python gains the methodology on top of its existing tool list.
+- `ia-nodejs-backend` and `ia-python-services`: observability guidance. Define the on-call questions before instrumenting, pick the signal by the question it answers (logs/metrics/traces), and alert on user-visible symptoms rather than causes. Node gains a full section (it had none); Python gains the methodology on top of its existing tool list.
 - `ia-code-review`: an optional thematic triage-grouping lens in deep review that clusters coupled findings by shared root cause and preferred fix order, layered above the severity tables without renumbering or merging findings.
-- `ia-frontend-design`: a pre-code validation gate -- run the swap test on the drafted token system (could this palette, type, and layout be lifted onto an unrelated brief unnoticed?) and repick any axis that reads generic, scoped to greenfield pages.
+- `ia-frontend-design`: a pre-code validation gate. Run the swap test on the drafted token system (could this palette, type, and layout be lifted onto an unrelated brief unnoticed?) and repick any axis that reads generic, scoped to greenfield pages.
 - `check-trigger-overlap.py`: advisory Jaccard report over trigger-regex vocabulary, surfacing skill pairs competing for the same phrases.
 
 ### Changed
 
 - Release and eval pipelines: eliminated the billed `claude -p` backend; sub-agent scoring, the injection judge, and negative-signal diagnosis now run in-session at no API cost.
-- `ia-performance-oracle`: a metric-honesty rule -- static source analysis cannot measure real LCP/INP/CLS, so tag code-derived findings as potential impact and name the band they risk, never a fabricated number.
+- `ia-performance-oracle`: a metric-honesty rule. Static source analysis cannot measure real LCP/INP/CLS, so tag code-derived findings as potential impact and name the band they risk, never a fabricated number.
 - Borrowed validators and skill techniques from the Waza upstream across several skills and the distillery validator.
 - Distillery model baseline bumped to Claude Opus 4.8 so staleness filtering tracks the current runtime.
 - Repo self-references point at `master` ahead of the default-branch rename.
@@ -548,13 +548,13 @@ Patch: the release and audit pipelines gain a two-tier prompt-injection scanner,
 
 ## [4.1.2] - 2026-06-07
 
-Patch: a PR-comment script fix and three skill hardenings harvested from the EveryInc CE and agent-skills upstreams plus a dropped-in Rust reference, alongside two distillery eval-data fixes already landed since 4.1.1. The recurring theme this round is `set -e` discipline -- the same bare-assignment footgun surfaced in a shipped script and is now documented as a rule.
+Patch: a PR-comment script fix and three skill hardenings harvested from the EveryInc CE and agent-skills upstreams plus a dropped-in Rust reference, alongside two distillery eval-data fixes already landed since 4.1.1. The recurring theme this round is `set -e` discipline: the same bare-assignment pitfall surfaced in a shipped script and is now documented as a rule.
 
 ### Changed
 
-- `ia-verification-before-completion`: new Pre-Commit Hook Failures rule -- `git commit --no-verify` is permitted only for failures on pre-existing or unrelated changes (surfaced to the user first, under the same base-branch evidence bar as a failing verification command), never for the session's own changes, and never silently; a bypass the user never saw is a defeated check, the same failure mode as claiming completion without evidence.
+- `ia-verification-before-completion`: new Pre-Commit Hook Failures rule. `git commit --no-verify` is permitted only for failures on pre-existing or unrelated changes (surfaced to the user first, under the same base-branch evidence bar as a failing verification command), never for the session's own changes, and never silently; a bypass the user never saw is a defeated check, the same failure mode as claiming completion without evidence.
 - `ia-rust-systems`: added the type-state pattern (encode a mandatory call order as distinct `Client<State>` types carrying `PhantomData` so an out-of-order call fails to compile instead of panicking at runtime) and vectored writes (`write_vectored` + `IoSlice` to coalesce a message batch into a single syscall, carrying the file's profile-first caveat).
-- `ia-linux-bash-scripting`: new footgun -- under `set -e` a failed `$()` in a bare assignment aborts the script at that line, so a following `[[ -z $x ]]` fallback check never runs; guard with `x=$(cmd) || true`. This is the inverse of the `local x=$(cmd)` case, which masks the failure rather than propagating it.
+- `ia-linux-bash-scripting`: new pitfall: under `set -e` a failed `$()` in a bare assignment aborts the script at that line, so a following `[[ -z $x ]]` fallback check never runs; guard with `x=$(cmd) || true`. This is the inverse of the `local x=$(cmd)` case, which masks the failure rather than propagating it.
 
 ### Fixed
 
@@ -567,19 +567,19 @@ Patch: defensive-rule hardening across nine skills, harvested from Anthropic's d
 
 ### Changed
 
-- `ia-debugging`: a fix that masks the symptom (swallowing the error, disabling the assertion, special-casing the reproduction input) is not a fix even when it passes the bypass self-check, because a global swallow stops anything from reaching the bad state; the fix must change behavior at the root cause. Added a minimal-diff trim pass (a fresh-context "simplify to the smallest change that fixes the root cause" after the fix verifies) and a stale-build-artifact rule: a test failure on a provably-correct, untouched source path is the tell for stale gitignored `.o`/`.lo`/`.so` from a prior session -- baseline by a clean rebuild, not by an old commit (`git status` clean is not build clean).
-- `ia-code-review`: new review-trap anti-patterns -- prove a symbol/handler/path absence directly (read the region, or grep the exact symbol expecting zero lines) before a finding rests on it; read the pre-change file at the base before calling a behavioral change a regression; re-check the opposite defect when a fix widens or narrows a key or guard (mirror bug); enumerate every response field that surfaces a hidden entity, not just the primary list (sibling-projection leak); prefer the platform's authoritative base SHA over a local merge-base on stacked branches; don't pre-classify your own findings as weak ("INFO only", "optional"). Sharpened the Skeptic dedup criterion to root-cause ("two findings are duplicates if fixing one fixes the other") and added a regression-evidence pointer (cite the introducing commit via blame/bisect).
-- `ia-receiving-code-review`: treat a fix as fresh code and re-review it adversarially, not just "does it address the finding" -- three shapes recur and the suite usually misses all three (a shared-helper default that violates an invariant set elsewhere in the batch, a loosened guard now admitting bad input, a tightened matcher now dropping good values); name one concrete bad/missed case per shape before claiming done.
-- `ia-planning`: anchor subagent task prompts portably -- repo/package names, public symbols, command names, config keys, branch and PR/issue references, and relative file paths (not absolute, which vary across working directories) -- so a fresh agent in a different working directory resolves every reference.
+- `ia-debugging`: a fix that masks the symptom (swallowing the error, disabling the assertion, special-casing the reproduction input) is not a fix even when it passes the bypass self-check, because a global swallow stops anything from reaching the bad state; the fix must change behavior at the root cause. Added a minimal-diff trim pass (a fresh-context "simplify to the smallest change that fixes the root cause" after the fix verifies) and a stale-build-artifact rule: a test failure on a provably-correct, untouched source path is the tell for stale gitignored `.o`/`.lo`/`.so` from a prior session: baseline by a clean rebuild, not by an old commit (`git status` clean is not build clean).
+- `ia-code-review`: new review-trap anti-patterns. Prove a symbol/handler/path absence directly (read the region, or grep the exact symbol expecting zero lines) before a finding rests on it; read the pre-change file at the base before calling a behavioral change a regression; re-check the opposite defect when a fix widens or narrows a key or guard (mirror bug); enumerate every response field that surfaces a hidden entity, not just the primary list (sibling-projection leak); prefer the platform's authoritative base SHA over a local merge-base on stacked branches; don't pre-classify your own findings as weak ("INFO only", "optional"). Sharpened the Skeptic dedup criterion to root-cause ("two findings are duplicates if fixing one fixes the other") and added a regression-evidence pointer (cite the introducing commit via blame/bisect).
+- `ia-receiving-code-review`: treat a fix as fresh code and re-review it adversarially, not just "does it address the finding": three shapes recur and the suite usually misses all three (a shared-helper default that violates an invariant set elsewhere in the batch, a loosened guard now admitting bad input, a tightened matcher now dropping good values); name one concrete bad/missed case per shape before claiming done.
+- `ia-planning`: anchor subagent task prompts portably with repo/package names, public symbols, command names, config keys, branch and PR/issue references, and relative file paths (absolute paths vary across working directories), so a fresh agent in a different working directory resolves every reference.
 - `ia-orchestrating-swarms`: when surfacing a user-facing choice via AskUserQuestion with more than four viable options (the tool's per-question cap), split into sequential rounds rather than truncating to the first four, which silently narrows the user's decision space. Paired with the existing spawned-session AUQ-suppression rule.
-- `ia-php-laravel`: an observer's direct `update()` on a parent the caller also holds in memory desyncs, because Eloquent dirty-tracking compares in-memory current against in-memory original (not the database) and the caller's later `save()` only writes its own dirty columns; `DB::transaction` does not fix it (the bug is in-memory state). `BelongsToMany::attach`/`updateExistingPivot` are query-builder mass-writes that bypass Eloquent events -- audit them via a custom `Pivot implements Auditable` with `->using()`.
+- `ia-php-laravel`: an observer's direct `update()` on a parent the caller also holds in memory desyncs, because Eloquent dirty-tracking compares in-memory current against in-memory original (not the database) and the caller's later `save()` only writes its own dirty columns; `DB::transaction` does not fix it (the bug is in-memory state). `BelongsToMany::attach`/`updateExistingPivot` are query-builder mass-writes that bypass Eloquent events: audit them via a custom `Pivot implements Auditable` with `->using()`.
 - `ia-postgresql`: `SELECT ... FOR UPDATE` locks nothing when the row does not exist, so the idempotent-upsert race needs `INSERT ... ON CONFLICT` rather than lock-then-insert; a `23505` unique-violation inside a transaction aborts the whole transaction (every later statement errors until rollback), so catch it at the savepoint, not after.
-- `ia-python-services`: `uv` rejects a yanked exact pin where `pip` only warns -- an exact `==` pin to a yanked release fails resolution under `uv`, so a lockfile that installs under pip can break under uv.
+- `ia-python-services`: `uv` rejects a yanked exact pin where `pip` only warns. An exact `==` pin to a yanked release fails resolution under `uv`, so a lockfile that installs under pip can break under uv.
 - `ia-writing-tests`: vacuous-forall (a property test whose generator filters out every input asserts nothing), leaf-constructor bypass (constructing the object under test directly skips the factory invariants the code relies on), and sync-vs-async assertion mismatches.
 
 ## [4.1.0] - 2026-06-01
 
-Minor: ships the SkillOpt agentic process-skill optimizer (the distillery's Tier-3 rung) and migrates the bundled MCP server from docfork to Context7. SkillOpt runs the target model agentically against curated fixtures with a hybrid reward -- a deterministic `hard` signal plus a per-skill process `soft` rubric with code-enforced verbatim-evidence grounding. This release onboards four process skills across two evaluator modes (pytest red->green for skills that edit code, and a new detection-match grader for `ia-code-review`, which reports rather than edits), and promotes three optimizer-learned edits into the shipped skills after gating. `ia-code-review` was also trimmed 17.4K->14.7K via reference offload, and a full audit landed a round of trigger-differentiation sharpening.
+Minor: ships the SkillOpt agentic process-skill optimizer (the distillery's Tier-3 rung) and migrates the bundled MCP server from docfork to Context7. SkillOpt runs the target model agentically against curated fixtures with a hybrid reward: a deterministic `hard` signal plus a per-skill process `soft` rubric with code-enforced verbatim-evidence grounding. This release onboards four process skills across two evaluator modes (pytest red->green for skills that edit code, and a new detection-match grader for `ia-code-review`, which reports rather than edits), and promotes three optimizer-learned edits into the shipped skills after gating. `ia-code-review` was also trimmed 17.4K->14.7K via reference offload, and a full audit landed a round of trigger-differentiation sharpening.
 
 ### Added
 
@@ -593,7 +593,7 @@ Minor: ships the SkillOpt agentic process-skill optimizer (the distillery's Tier
 - `ia-code-review`: trimmed the body from 17.4K to 14.7K chars by moving base-branch resolution, the prior-discussion commands, and PR-sizing strategy into `references/`. Added a finding-level evidence rule (each `CR-XXX` entry must carry its `[file:line]` and quoted code, not just the surrounding prose) and the external-reviewer-subprocess discipline.
 - `ia-simplifying-code`: before collapsing a manual loop to a stdlib one-liner, verify edge-case parity first (empty input, None guard, no-match default, zero-value path); a structurally cleaner version that changes behavior on an edge case is not a simplification. Added a boolean-collapse Smell-to-Fix row. Promoted from a SkillOpt run.
 - `ia-debugging`: when a test or repro command is already provided, run it before reading source or forming hypotheses, and record the RED output before any source edit. Promoted from a SkillOpt run.
-- `/ia-review`: scope resolution and the two-stage review gate now defer to the `ia-code-review` skill as canonical, keeping the load-bearing Stage-1-before-Stage-2 directive inline.
+- `/ia-review`: scope resolution and the two-stage review gate now defer to the `ia-code-review` skill as canonical, keeping the Stage-1-before-Stage-2 directive inline.
 - Trigger-differentiation sharpening from a full `/audit-plugin` pass: `ia-cloud-architect` ("planning cloud architecture" rather than the overly broad "planning infrastructure"), `ia-repo-research-analyst` (points documented-solution lookups at `ia-learnings-researcher`), and `ia-bug-reproduction-validator` (carves the boundary against `/ia-reproduce-bug`).
 
 ### Fixed
@@ -625,7 +625,7 @@ Patch: 10-day delta sync plus reactive audit. `ia-planning` now runs a goal-qual
 
 ## [4.0.3] - 2026-05-16
 
-Patch: 7-day delta sync + reactive audit + wiki-derived footgun additions to 6 language skills. Restructures `ia-brainstorming` Phase 2.5 around a two-stage shape (internal three-bucket draft, user-facing four-section synthesis with Path A/B routing and per-section keep tests) so the user sees scope confirmation rather than a comprehensive audit. Adds a `standards` specialist to deep-review's parallel agents so documented coding standards and spec compliance are reported as orthogonal axes rather than getting collapsed into the correctness pass. Tightens the distillery's canonical-trigger validator so passive descriptions like "Used for X" stop sneaking through the gate. Lands wiki-sourced production footguns across PHP/Laravel, PostgreSQL, Python, Rust, test discipline, and README writing, then fixes three correctness errors caught by the post-add audit.
+Patch: 7-day delta sync + reactive audit + wiki-derived pitfall additions to 6 language skills. Restructures `ia-brainstorming` Phase 2.5 around a two-stage shape (internal three-bucket draft, user-facing four-section synthesis with Path A/B routing and per-section keep tests) so the user sees scope confirmation rather than a full audit. Adds a `standards` specialist to deep-review's parallel agents so documented coding standards and spec compliance are reported as orthogonal axes rather than getting collapsed into the correctness pass. Tightens the distillery's canonical-trigger validator so passive descriptions like "Used for X" stop sneaking through the gate. Lands wiki-sourced production footguns across PHP/Laravel, PostgreSQL, Python, Rust, test discipline, and README writing, then fixes three correctness errors caught by the post-add audit.
 
 ### Changed
 
@@ -635,11 +635,11 @@ Patch: 7-day delta sync + reactive audit + wiki-derived footgun additions to 6 l
 - `ia-code-review` Scope Resolution adds a base-branch resolution subsection for branch reviews. Fallback chain: `gh pr view --json baseRefName` for PRs, then `git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, then `gh repo view --json defaultBranchRef`, then a literal try-list of `main`/`master`/`develop`/`trunk`. The merge-base from `HEAD` against the resolved base is the review range; if `git merge-base` returns nothing on a shallow clone, `git fetch --unshallow origin` retries. Never falls back to `git diff HEAD`, which hides every committed branch commit. A leading bridge sentence calls out that this governs comparison range only and is distinct from the file-selection chain above (which still uses `git diff HEAD` for working-tree-only deltas).
 - `ia-code-review/references/deep-review.md` adds a `standards` specialist row to the parallel-agent table. The agent reads the repo's documented standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under `docs/adr/`, STYLE.md, STANDARDS.md, `.editorconfig`, lint configs) and reports every diff hunk that violates a documented standard with citation. Skips what tooling already enforces. The lens is deliberately orthogonal to `correctness` (which covers spec/intent alignment), so the merge algorithm's `path:line:issue_class` fingerprint keeps them separate by default; one axis failing doesn't mask the other.
 - `ia-writing/references/pr-descriptions.md` adds an "Issue references: verify or omit" rule under GitHub-specific hazards. Include issue refs (`Fixes #1234`, `Closes JIRA-567`) only when the exact ID or URL is present in user input, branch name, commits, or verified tracker output. If you cannot point to where the ID came from, omit the line. Placeholder forms (`Fixes #XXXXX`, `Closes <issue>`, `Fixes ABC-???`) are anti-signal: hallucinated refs degrade the tracker and noise up review threads.
-- `ia-php-laravel` Common Pitfalls adds two production footguns. (a) Nested-array validation accepts scalar elements when only `*.field` rules are set; rules like `'items.*.name' => 'string'` do not enforce that each `items.*` is itself an array, and scalar elements then crash the handler with `TypeError` or write blank rows. Always pair per-key rules with an explicit `'items.*' => 'array'` constraint. (b) `DB::afterCommit` closes the rollback half but not the post-commit-failure half. The closure runs once on commit; if it throws, the external mutation drops and the DB row advertises a state the external system doesn't reflect. Closing patterns: queued job with retries and a `failed(Throwable $e)` handler that reverts the DB precondition, external-op-first when the op is idempotent on the destination key, or a reconciler scheduled command that walks rows with stuck in-flight flags.
+- `ia-php-laravel` Common Pitfalls adds two production pitfalls. (a) Nested-array validation accepts scalar elements when only `*.field` rules are set; rules like `'items.*.name' => 'string'` do not enforce that each `items.*` is itself an array, and scalar elements then crash the handler with `TypeError` or write blank rows. Always pair per-key rules with an explicit `'items.*' => 'array'` constraint. (b) `DB::afterCommit` closes the rollback half but not the post-commit-failure half. The closure runs once on commit; if it throws, the external mutation drops and the DB row advertises a state the external system doesn't reflect. Closing patterns: queued job with retries and a `failed(Throwable $e)` handler that reverts the DB precondition, external-op-first when the op is idempotent on the destination key, or a reconciler scheduled command that walks rows with stuck in-flight flags.
 - `ia-postgresql` Migration Safety adds a section on full-replace clobber in read-modify-write loops. A migration that loops `SELECT col`, mutates in app, then `UPDATE SET col = new_full_value WHERE id = ?` silently drops any concurrent write that landed between SELECT and UPDATE. Mitigations, in preference order: in-place atomic update when SQL can express the edit (`UPDATE t SET col = jsonb_set(col, '{path}', :value)`, `array_append`); row-level lock during the loop (`SELECT ... WHERE id = ? FOR UPDATE` per iteration); compare-and-swap retry (include the original snapshot in `WHERE` and check the affected-row count).
 - `ia-postgresql` JSONB Patterns adds a delete-operators table covering `-` text, `-` text[], `-` integer, and `#-` text[], with three common-mistake bullets. `col - 'a,b'` treats `'a,b'` as a single key name. `col - 'a' - 'b'` removes the entire `a` subtree first. `jsonb_set` with a JSON null sets the value to null rather than deleting the key; with a bare SQL `NULL`, the STRICT function returns SQL `NULL` and clobbers the column on UPDATE. For nested deletes, `#-` with a text-array path is the canonical answer.
-- `ia-python-services` adds a footgun for logging `Formatter` subclasses: never mutate `LogRecord` attributes from inside `format()`. `Logger.callHandlers` passes the same `LogRecord` object to every handler attached to the logger; the first formatter to mutate wins, and downstream handlers and pytest `caplog` see the modified state. Filters running `record.name == "src.services.foo"` then silently miss, and routing handlers fall through to defaults. Use a `logging.Filter` that adds a non-mutating attribute (`record.short_name`) and reference it in the format string, or override `formatMessage` instead of `format`.
-- `ia-rust-systems` adds a footgun for `std::env::set_var` and `remove_var` under edition 2024: both are now `unsafe`. Concurrent `getenv` from another thread is UB at the libc level, and the unsafety cannot be wrapped by `OnceLock::call_once` or `std::sync::Once`; those guarantee the closure runs once, not that it runs while no other thread is reading the environment. Pin every env-var write to single-threaded startup before `tokio::main` or any `std::thread::spawn`. Common offender: native-library discovery paths (`LD_LIBRARY_PATH`, `ORT_DYLIB_PATH`, `LIBTORCH`, plugin loader paths) set lazily on first use.
+- `ia-python-services` adds a pitfall for logging `Formatter` subclasses: never mutate `LogRecord` attributes from inside `format()`. `Logger.callHandlers` passes the same `LogRecord` object to every handler attached to the logger; the first formatter to mutate wins, and downstream handlers and pytest `caplog` see the modified state. Filters running `record.name == "src.services.foo"` then silently miss, and routing handlers fall through to defaults. Use a `logging.Filter` that adds a non-mutating attribute (`record.short_name`) and reference it in the format string, or override `formatMessage` instead of `format`.
+- `ia-rust-systems` adds a pitfall for `std::env::set_var` and `remove_var` under edition 2024: both are now `unsafe`. Concurrent `getenv` from another thread is UB at the libc level, and the unsafety cannot be wrapped by `OnceLock::call_once` or `std::sync::Once`; those guarantee the closure runs once, not that it runs while no other thread is reading the environment. Pin every env-var write to single-threaded startup before `tokio::main` or any `std::thread::spawn`. Common offender: native-library discovery paths (`LD_LIBRARY_PATH`, `ORT_DYLIB_PATH`, `LIBTORCH`, plugin loader paths) set lazily on first use.
 - `ia-writing-tests` adds a "Persistent test infrastructure state contamination" subsection. When integration tests fail with clean integer multipliers on row counts or dispatched jobs (expected 2 rows, got 8; expected 3 jobs, got 12) and the same test passes on a fresh CI container, suspect state contamination before suspecting a logic bug. Real logic bugs rarely produce uniform multipliers across unrelated assertions. Fix order: ephemeral containers per test session (`testcontainers`, `pytest-postgresql`, or `docker compose run --rm <service>` for one-shot runs); fixture-driven `TRUNCATE`/`DROP DATABASE`; volume teardown (`docker compose down -v`) between local iterations.
 - `ia-writing` adds a "README Rules" section that scopes em-dash discipline as a per-surface mandate: `grep -c "—" README.md` before commit must return 0, with five role-specific replacements (bold lead-in becomes `**Term**: explanation`, inline parenthetical becomes parentheses, hard breaks become two sentences or a semicolon, bullet attribution becomes `- **foo**: bar`, list/license style becomes a colon). Emoji headers are explicit-carve-out: `## 🚀 Features`, `## ⚡ Performance` and similar are normal open-source idiom, not AI styling; the humanizer ban on emoji applies to social posts and PR descriptions, not README section headers (line 47's kill-on-sight rule now carries a parenthetical pointer to this carve-out). Plain-text star asks (`If this saves you a debugging cycle, ⭐ star it!`) read as human; marketing-chrome variants (`[⭐ Star on GitHub](https://...)`) do not. The hybrid-merge rule for README rewrites classifies existing sections into PRESERVE / ADD / REJECT / FIX and resists the default-instinct wholesale replacement.
 - `distillery/scripts/distiller.py` adds `_CANONICAL_TRIGGER_PATTERN` for description-quality validation. Matches `(should be )used? when/after/before/whenever`, `use (this skill )?for`, `use proactively`, `triggers when/on`, `auto-loads when/on`. Replaces the loose `"use when" in desc.lower()` skill check and the equally loose `"use " in desc.lower()` agent check. The pattern deliberately rejects passive-purpose noun phrases (`Tool used for X`, `Skill used for Y`) while accepting imperative forms (`Use for accessibility review`) and the compound passive (`Should be used when X`).
@@ -659,7 +659,7 @@ Patch: 2-day delta sync + reactive audit. Tightens `ia-debugging` hypothesis dis
 
 ### Changed
 
-- `ia-debugging` Step 2 (Form initial hypotheses) now requires each hypothesis to cite at least one concrete observation -- a runtime variable value, log line, instrumented boundary capture, behavior delta against a working comparison case, or specific code reference. "X seems off" is not evidence; "X equals null at line 42 because Y was never initialized in the path that runs under condition Z" is. Hypotheses without grounding observations route back to instrument (extend the Step 1 loop, or add Step 4 boundary captures) before proceeding.
+- `ia-debugging` Step 2 (Form initial hypotheses) now requires each hypothesis to cite at least one concrete observation: a runtime variable value, log line, instrumented boundary capture, behavior delta against a working comparison case, or specific code reference. "X seems off" is not evidence; "X equals null at line 42 because Y was never initialized in the path that runs under condition Z" is. Hypotheses without grounding observations route back to instrument (extend the Step 1 loop, or add Step 4 boundary captures) before proceeding.
 - `ia-debugging` Step 6 (Fix and verify) adds an explicit-invalidation rule for failed fixes. Return to Step 5, state what evidence ruled out the prior hypothesis, then form a new hypothesis with its own grounding observation. Names the rationalization spiral ("maybe it was the other branch", "let me also catch this case") as the failure mode rather than iteration. The Three-Fix Threshold counts hypothesis cycles, not retries within a single broken theory.
 - `ia-resolve-pr` Phase 2 cluster table extends to 8 categories: adds Type safety (type guards, narrowing, generics, `unknown`/`any` removal, exhaustiveness) and Performance (N+1 queries, missed memoization, unnecessary re-renders, hot-path allocation). Both have distinct fix patterns from the existing Validation and Architecture rows.
 - `ia-resolve-pr` Phase 2 gains a cross-round-evidence gate. Two stages must both pass before clustering: `cross_invocation.signal == true` (resolved and unresolved threads coexist on the PR), and a spatial-overlap precheck (at least one unresolved thread shares an exact file path or directory subtree with a resolved thread). Either stage failing dispatches comments individually. Single-round same-theme groupings are deliberately not clustered; the false-positive rate is too high without cross-round evidence.
@@ -707,23 +707,23 @@ If you used the env var `COMPOUND_PLUGIN_GITHUB_SOURCE` or the Bun bin `compound
 
 ### Changed
 
-- **Rename**: every reference to `compound-engineering` as the plugin or repo identity is now `whetstone`. The old GitHub repo (`iliaal/compound-engineering-plugin`) was renamed to `iliaal/whetstone`; a squat repo at the old slug holds a redirect README. ClawHub slugs (`compound-eng-<skill>`) are intentionally frozen — preserves existing `npx skills add` and `clawhub install` URLs. Edge profile name (`compound-engineering`, port 9225) frozen for the same reason — existing browser sessions stay valid.
-- **`scripts/publish-clawhub.sh`** — change-detection via `distillery/.skill-versions.json`. Skips skills whose `content_changed` is older than the version being released, so unchanged skills don't get a no-op republish on every release. Default behavior at v3.0.5 baseline: 4-7 skills publish per release instead of all 30. New `--force` flag bypasses the check (escape hatch for references-only edits, since the manifest hashes only `SKILL.md`). New `--skill <name>` mode also bypasses for one-off republishes. Pre-existing rate-limit handling and slug-prefix logic unchanged.
-- **`ia-simplifying-code`** Verify section — added a 5th bullet that anchors test scope to the importer count surfaced in step 1 (Surface assumptions). Replaces the prior vague guidance with a measurable signal: zero external importers means scoped tests; one or more or shared/utility code means tests covering each importer; full suite only when the runner has no path-scoping mechanism.
-- **`ia-brainstorming`** Phase 2.5 anti-patterns — tightened the "synthesis as proposal pitch" bullet with explicit position-independence. Plan-body content is banned regardless of where it appears, including nested inside a bucket bullet's commentary or sub-bullets. A structurally-legal placement does not legitimize plan-body content. (Position-independence is a defensive clarification; the original content-typed rule was already substantively correct.)
-- **`ia-planning`** description — scoped to implementation tasks only. Added explicit "research/scanning/audit work that produces reports rather than code" exclusion. Prior description was over-broad and 4/4 negative cases on codesage were research-task misfires that added file-based scaffolding to non-coding work. Source: diagnose-negatives.
-- **`hooks/skill-patterns.sh`** `SKILL_MAINT_SUPPRESS` — added `ia-debugging`. 4/4 negative cases were plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfiring as debugging because words "errors", "broken", "fix" appear in those prompts. Same pattern as the 10 skills already in the suppress list; analyze-outcomes showed 36% negative rate on `-home-ilia-ai-php` pre-rename data.
-- **`commands/ia-compound.md`** line 88 — fixed stale skill name in the pseudo-Skill code block (`compound-docs` → `ia-compound-docs`). Surrounding prose at line 87 was already correct; the code block was a post-rename leftover.
-- **`distillery/scripts/distiller.py`** `_NEGATIVE_SIGNAL_PATTERNS` — extended the existing `\bwrong\s+(?:file|approach|direction)\b` pattern with 10 additional nouns (place/spot/level/date/time/number/line/tag/column/reason). Added `\bwas\s+wrong\b` (corrective framing — "framing it…was wrong", ~5 hits) and `\bdoing\s+\S+\s+wrong\b` (process correction — "you doing %s wrong"). Conservative narrow patterns over bare `\bwrong\b` to preserve precision. Source: discover-signals (18 unique `wrong` hits).
-- **`distillery/scripts/test_distiller.py`** — added two `TestNegativeSignalPatterns` methods (4 TP + 4 TN, 16 assertions total) regression-testing the new wrong-extensions. Pytest now runs 4 methods in this class, all green.
-- **`README.md`** — install instructions corrected to qualified marketplace form (`/plugin install whetstone@iliaal-marketplace`) and `/reload-plugins` step added. Aligns with what `/plugin install` actually outputs.
+- **Rename**: every reference to `compound-engineering` as the plugin or repo identity is now `whetstone`. The old GitHub repo (`iliaal/compound-engineering-plugin`) was renamed to `iliaal/whetstone`; a squat repo at the old slug holds a redirect README. ClawHub slugs (`compound-eng-<skill>`) are intentionally frozen: preserves existing `npx skills add` and `clawhub install` URLs. Edge profile name (`compound-engineering`, port 9225) frozen for the same reason: existing browser sessions stay valid.
+- **`scripts/publish-clawhub.sh`**: change-detection via `distillery/.skill-versions.json`. Skips skills whose `content_changed` is older than the version being released, so unchanged skills don't get a no-op republish on every release. Default behavior at v3.0.5 baseline: 4-7 skills publish per release instead of all 30. New `--force` flag bypasses the check (escape hatch for references-only edits, since the manifest hashes only `SKILL.md`). New `--skill <name>` mode also bypasses for one-off republishes. Pre-existing rate-limit handling and slug-prefix logic unchanged.
+- **`ia-simplifying-code`** Verify section: added a 5th bullet that anchors test scope to the importer count surfaced in step 1 (Surface assumptions). Replaces the prior vague guidance with a measurable signal: zero external importers means scoped tests; one or more or shared/utility code means tests covering each importer; full suite only when the runner has no path-scoping mechanism.
+- **`ia-brainstorming`** Phase 2.5 anti-patterns: tightened the "synthesis as proposal pitch" bullet with explicit position-independence. Plan-body content is banned regardless of where it appears, including nested inside a bucket bullet's commentary or sub-bullets. A structurally-legal placement does not legitimize plan-body content. (Position-independence is a defensive clarification; the original content-typed rule was already substantively correct.)
+- **`ia-planning`** description: scoped to implementation tasks only. Added explicit "research/scanning/audit work that produces reports rather than code" exclusion. Prior description was over-broad and 4/4 negative cases on codesage were research-task misfires that added file-based scaffolding to non-coding work. Source: diagnose-negatives.
+- **`hooks/skill-patterns.sh`** `SKILL_MAINT_SUPPRESS`: added `ia-debugging`. 4/4 negative cases were plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfiring as debugging because words "errors", "broken", "fix" appear in those prompts. Same pattern as the 10 skills already in the suppress list; analyze-outcomes showed 36% negative rate on `-home-ilia-ai-php` pre-rename data.
+- **`commands/ia-compound.md`** line 88: fixed stale skill name in the pseudo-Skill code block (`compound-docs` → `ia-compound-docs`). Surrounding prose at line 87 was already correct; the code block was a post-rename leftover.
+- **`distillery/scripts/distiller.py`** `_NEGATIVE_SIGNAL_PATTERNS`: extended the existing `\bwrong\s+(?:file|approach|direction)\b` pattern with 10 additional nouns (place/spot/level/date/time/number/line/tag/column/reason). Added `\bwas\s+wrong\b` (corrective framing, "framing it…was wrong", ~5 hits) and `\bdoing\s+\S+\s+wrong\b` (process correction, "you doing %s wrong"). Conservative narrow patterns over bare `\bwrong\b` to preserve precision. Source: discover-signals (18 unique `wrong` hits).
+- **`distillery/scripts/test_distiller.py`**: added two `TestNegativeSignalPatterns` methods (4 TP + 4 TN, 16 assertions total) regression-testing the new wrong-extensions. Pytest now runs 4 methods in this class, all green.
+- **`README.md`**: install instructions corrected to qualified marketplace form (`/plugin install whetstone@iliaal-marketplace`) and `/reload-plugins` step added. Aligns with what `/plugin install` actually outputs.
 
 ### Removed
 
-- **Repo identity `compound-engineering-plugin`** — gone (now redirects to `whetstone`).
-- **Plugin name `compound-engineering`** — gone (now `whetstone`).
-- **Env var `COMPOUND_PLUGIN_GITHUB_SOURCE`** — gone (now `WHETSTONE_GITHUB_SOURCE`).
-- **Bun bin `compound-plugin`** — gone (now `whetstone`).
+- **Repo identity `compound-engineering-plugin`**: gone (now redirects to `whetstone`).
+- **Plugin name `compound-engineering`**: gone (now `whetstone`).
+- **Env var `COMPOUND_PLUGIN_GITHUB_SOURCE`**: gone (now `WHETSTONE_GITHUB_SOURCE`).
+- **Bun bin `compound-plugin`**: gone (now `whetstone`).
 
 ## [3.0.5] - 2026-04-29
 
@@ -731,57 +731,57 @@ Sync from upstream CE plus reactive audit. Seven patterns adopted from EveryInc'
 
 ### Changed
 
-- **`ia-brainstorming`** — new Phase 2.5 Pre-Write Scope Synthesis between approach selection and doc capture. Three-bucket structure (Stated / Inferred / Out-of-scope) plus a 1-3 line prose gloss; granularity rule keeps file paths and schema specifics out of bullets; revisions force re-presentation; floating questions get batched and resolved before presenting. Headless mode (`/ia-lfg`, `disable-model-invocation`) routes Inferred bets to a `## Assumptions` section in the Phase 3 doc instead of into Key Decisions, with the same headless carve-out extended to Phase 4 user approval.
-- **`ia-orchestrating-swarms`** — bounded-parallelism rule for harness subagent caps. When fan-out exceeds the active-subagent limit, queue the overflow, treat capacity-related spawn errors as backpressure (described as a category, not a magic-string list), and re-dispatch as slots free. Records an agent as failed only on non-capacity errors.
-- **`ia-code-review`** — gates the `gh api comments` fetch behind a `hasPriorComments` projection from `gh pr view --json reviews,comments --jq '...'`. Approval-only review clicks excluded from the gate; null-defensive on PRs with no review array. Skips the prior-comments pass entirely when nothing is there to verify.
-- **`ia-git-worktree`** — documents the fresh-base branch creation logic the manager script implements: `git fetch --no-tags origin <base>`, then prompt the user to distinguish stale-base contamination from forgot-to-branch when unpushed commits exist on local `<base>`. Default fallback is branch from `origin/<base>` and surface the unpushed commits in the change summary.
-- **`/ia-compound-refresh`** — Step 4b inbound-link check before Archive: searches both basename and the path-relative-to-`docs/solutions/` to catch path-qualified citations and avoid cross-subdir false matches; classifies each citation as decorative / substantive / mixed, downgrading Archive to Replace when substantive references exist. Step 4c surfaces every non-`docs/solutions/` file the apply pass will touch in a Cross-file edits table; Step 5 confirms them explicitly.
-- **`hooks/skill-patterns.sh`** — three additions to `SKILL_MAINT_SUPPRESS` from session anomalies: `ia-compound-docs` (n=11, 36.4% neg, +11pp over global), `ia-terraform` (n=7, 28.6% neg, +10pp), `ia-python-services` (n=14, 21.4% neg, +10pp). All three fire on plugin-maintenance prompts where their names appear as references rather than user requests. Corrected the misleading rationale on the existing `ia-react-frontend` entry — the `js` project-type guard does exist; MAINT backstops misfires the guard can't cover.
-- **`distillery/scripts/distiller.py`** — added `^\s*i asked\s+(?:you|claude|the agent|already)\b` to `_NEGATIVE_SIGNAL_PATTERNS`. Catches the user reminding the agent of explicit prior instruction at message start, distinct from the existing `\bi already asked\b`. The 2nd-person-target requirement prevents matching benign narration like "I asked the API to return JSON" or "I asked for a review of the code." Discovered via `discover-signals` (6 unique hits).
-- **`distillery/scripts/test_distiller.py`** — new `TestNegativeSignalPatterns` class with 8 cases (4 positive matches, 4 narration false-positives) regression-testing the new pattern. Pytest now runs 149 tests.
+- **`ia-brainstorming`**: new Phase 2.5 Pre-Write Scope Synthesis between approach selection and doc capture. Three-bucket structure (Stated / Inferred / Out-of-scope) plus a 1-3 line prose gloss; granularity rule keeps file paths and schema specifics out of bullets; revisions force re-presentation; floating questions get batched and resolved before presenting. Headless mode (`/ia-lfg`, `disable-model-invocation`) routes Inferred bets to a `## Assumptions` section in the Phase 3 doc instead of into Key Decisions, with the same headless carve-out extended to Phase 4 user approval.
+- **`ia-orchestrating-swarms`**: bounded-parallelism rule for harness subagent caps. When fan-out exceeds the active-subagent limit, queue the overflow, treat capacity-related spawn errors as backpressure (described as a category, not a magic-string list), and re-dispatch as slots free. Records an agent as failed only on non-capacity errors.
+- **`ia-code-review`**: gates the `gh api comments` fetch behind a `hasPriorComments` projection from `gh pr view --json reviews,comments --jq '...'`. Approval-only review clicks excluded from the gate; null-defensive on PRs with no review array. Skips the prior-comments pass entirely when nothing is there to verify.
+- **`ia-git-worktree`**: documents the fresh-base branch creation logic the manager script implements: `git fetch --no-tags origin <base>`, then prompt the user to distinguish stale-base contamination from forgot-to-branch when unpushed commits exist on local `<base>`. Default fallback is branch from `origin/<base>` and surface the unpushed commits in the change summary.
+- **`/ia-compound-refresh`**: Step 4b inbound-link check before Archive: searches both basename and the path-relative-to-`docs/solutions/` to catch path-qualified citations and avoid cross-subdir false matches; classifies each citation as decorative / substantive / mixed, downgrading Archive to Replace when substantive references exist. Step 4c surfaces every non-`docs/solutions/` file the apply pass will touch in a Cross-file edits table; Step 5 confirms them explicitly.
+- **`hooks/skill-patterns.sh`**: three additions to `SKILL_MAINT_SUPPRESS` from session anomalies: `ia-compound-docs` (n=11, 36.4% neg, +11pp over global), `ia-terraform` (n=7, 28.6% neg, +10pp), `ia-python-services` (n=14, 21.4% neg, +10pp). All three fire on plugin-maintenance prompts where their names appear as references rather than user requests. Corrected the misleading rationale on the existing `ia-react-frontend` entry: the `js` project-type guard does exist; MAINT backstops misfires the guard can't cover.
+- **`distillery/scripts/distiller.py`**: added `^\s*i asked\s+(?:you|claude|the agent|already)\b` to `_NEGATIVE_SIGNAL_PATTERNS`. Catches the user reminding the agent of explicit prior instruction at message start, distinct from the existing `\bi already asked\b`. The 2nd-person-target requirement prevents matching benign narration like "I asked the API to return JSON" or "I asked for a review of the code." Discovered via `discover-signals` (6 unique hits).
+- **`distillery/scripts/test_distiller.py`**: new `TestNegativeSignalPatterns` class with 8 cases (4 positive matches, 4 narration false-positives) regression-testing the new pattern. Pytest now runs 149 tests.
 
 ## [3.0.4] - 2026-04-27
 
-Audit-driven hardening pass and Tier 1+2 validator/contract upgrades. No new components — all changes tighten existing skills, agents, and commands. Cost-of-runtime drops via four opus → sonnet agent downgrades (architecture, cloud, database, performance, plus the dishonestly-labeled pr-comment-resolver). Stale `/feature-video`, `/test-browser`, `/triage`, and `/resolve-todo-parallel` invocations from the v4 rename sweep finally caught and fixed across seven command files. Validator gains coverage-matrix rules, fixture floors, and SPEC.md MACHINE_PATH_LEAK enforcement.
+Audit-driven hardening pass and Tier 1+2 validator/contract upgrades. No new components: all changes tighten existing skills, agents, and commands. Cost-of-runtime drops via four opus → sonnet agent downgrades (architecture, cloud, database, performance, plus the dishonestly-labeled pr-comment-resolver). Stale `/feature-video`, `/test-browser`, `/triage`, and `/resolve-todo-parallel` invocations from the v4 rename sweep finally caught and fixed across seven command files. Validator gains coverage-matrix rules, fixture floors, and SPEC.md MACHINE_PATH_LEAK enforcement.
 
 ### Added
 
 - **`class:` frontmatter taxonomy** on every skill (`language` / `discipline` / `workflow` / `meta` / `tool`). Validator rejects unknown values; `/write-skill` asks for the class up front. Helps disambiguate routing and surfaces scope mismatches.
 - **Per-skill `SPEC.md` maintenance contract** for all 30 skills. Seven required headings define lookup-need, scope, success criteria, and references. New `scripts/generate-spec.py` scaffolds these from the SKILL.md + fixtures.
-- **`/write-skill` command** (project-local) — author a new skill from scratch with paired trigger fixtures and full validation, including Skill Independence rule, SOURCES.md ledger, and SPEC.md scaffolding.
+- **`/write-skill` command** (project-local): author a new skill from scratch with paired trigger fixtures and full validation, including Skill Independence rule, SOURCES.md ledger, and SPEC.md scaffolding.
 - **Validator tier 1 gates**: fixture coverage floors (5 positive + 5 negative cases minimum per skill), MACHINE_PATH_LEAK gate extended from SKILL.md to SPEC.md, coverage-matrix `partial → actionable` rule.
-- **`v3-to-v4-migration.md`** reference under `ia-tailwind-css/` — extracted breaking-change table out of the SKILL body to keep current v4 patterns front and center.
-- **`/diagnose-negatives` smallest-failing-decision rubric** — diagnose runs now include an `EX-NNN` evidence schema (kind/origin/source/status/expected/observed/skill_delta/anonymization).
+- **`v3-to-v4-migration.md`** reference under `ia-tailwind-css/`: extracted breaking-change table out of the SKILL body to keep current v4 patterns front and center.
+- **`/diagnose-negatives` smallest-failing-decision rubric**: diagnose runs now include an `EX-NNN` evidence schema (kind/origin/source/status/expected/observed/skill_delta/anonymization).
 
 ### Changed
 
 - **Four agents downgraded opus → sonnet**: `ia-architecture-strategist`, `ia-cloud-architect`, `ia-database-guardian`, `ia-performance-oracle`. Read-only review work; opus reserved for adversarial reasoning (`ia-security-sentinel`) and persona judgment (`ia-kieran-reviewer`).
-- **`ia-pr-comment-resolver`** demoted opus → sonnet, gained a `tools:` allowlist, and had its description and body rewritten to drop the "mechanical" framing — the agent does side-effect tracing, pattern compliance, and push-back judgment, not pure typo work. Now also threads resolution replies inline via `gh api ... in_reply_to=`.
+- **`ia-pr-comment-resolver`** demoted opus → sonnet, gained a `tools:` allowlist, and had its description and body rewritten to drop the "mechanical" framing: the agent does side-effect tracing, pattern compliance, and push-back judgment, not pure typo work. Now also threads resolution replies inline via `gh api ... in_reply_to=`.
 - **Three agents** (`ia-best-practices-researcher`, `ia-bug-reproduction-validator`, `ia-code-simplicity-reviewer`) added explicit `model: sonnet` instead of inheriting the default.
 - **Three agents** (`ia-infrastructure-engineer`, `ia-figma-design-sync`, `ia-design-iterator`) added explicit `tools:` allowlists for auditable capability surfaces.
 - **Three agent descriptions** tightened for trigger differentiation: architecture-strategist now triggers on multi-module refactors, simplicity-reviewer on YAGNI suspicion, kieran-reviewer on line-level Py/TS quality.
-- **Stale slash-command refs eliminated** across `ia-review`, `ia-feature-video`, `ia-test-browser`, `ia-triage`, `ia-work` — `/feature-video` → `/ia-feature-video` (×4), `/test-browser` → `/ia-test-browser` (×6), `/resolve-todo-parallel` → `/ia-resolve-todo-parallel` (×4), `/triage` removed (no such command), and a corrupted mid-sentence injection at `ia-review.md:35` rewritten cleanly.
-- **STATUS enum deduplicated** — DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT now defined once in `ia-verification-before-completion`; `ia-debugging` and `ia-orchestrating-swarms` link instead of redefining.
+- **Stale slash-command refs eliminated** across `ia-review`, `ia-feature-video`, `ia-test-browser`, `ia-triage`, `ia-work`: `/feature-video` → `/ia-feature-video` (×4), `/test-browser` → `/ia-test-browser` (×6), `/resolve-todo-parallel` → `/ia-resolve-todo-parallel` (×4), `/triage` removed (no such command), and a corrupted mid-sentence injection at `ia-review.md:35` rewritten cleanly.
+- **STATUS enum deduplicated**: DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT now defined once in `ia-verification-before-completion`; `ia-debugging` and `ia-orchestrating-swarms` link instead of redefining.
 - **`ia-meta-prompting`**: `/ia-verify` pattern renamed to `/verify-think` to resolve collision with the `/ia-verify` slash command. `/flip` directive rewritten with concrete trigger ("identify the default approach, then propose an alternative using a different mechanism").
 - **`ia-react-frontend`**: removed two restated AbortController/ignore-flag cancellation lists in race-class items 2 and 4; canonical hierarchy lives in Effect rules only.
 - **`ia-frontend-design`**: dropped overly broad `paths` trigger (was firing on every TSX/JSX edit, not just visual design work). Banned-AI-patterns body collapsed to one-line summary; reference owns the explanations.
 - **`ia-debugging`**: process steps renumbered from `0/1/1b/1c/2/3/4` to flat `0–6`. Description triggers expanded to include "broken" and "not working as expected".
 - **`ia-orchestrating-swarms`**: file-overlap detection now ships as a runnable bash one-liner, not just prose.
 - **`ia-document-review`**: hard ceiling at 4 refinement passes ("converged — further changes require new direction"). Was previously unbounded on user "continue".
-- **`ia-postgresql`**: "drop unused indexes" rule gained the uptime caveat (`pg_stat_database.stats_reset` check) — prevents dropping a primary key on a freshly restarted DB or read replica.
+- **`ia-postgresql`**: "drop unused indexes" rule gained the uptime caveat (`pg_stat_database.stats_reset` check): prevents dropping a primary key on a freshly restarted DB or read replica.
 - **`ia-rust-systems` and `ia-nodejs-backend`**: removed "2-3x faster" benchmark claims (date-pinned and unverified).
 - **`ia-nodejs-backend`** description: appended trigger keywords (REST endpoints, middleware, Koa, tRPC, Bun).
 - **`ia-md-docs`** report format: replaced Unicode `✓` / `⊘` with `[OK]` / `[--]` to keep AI-tells out of generated output.
 - **`ia-reflect`**: 10-item cap consolidated to single source with rationale (drop noise rather than batch/split).
 - **`ia-resolve-todo-parallel`**: subagent contract spelled out (todo path, verification command, structured STATUS return); references `ia-orchestrating-swarms` for the dispatch contract.
 - **`ia-review` and `ia-verify`** now state their boundary explicitly: verify is the pre-PR static gate, review is the multi-agent design-level analysis.
-- **README rewrite** — hero/before-after images, tightened structure, emoji section headers, plain-text star CTA.
+- **README rewrite**: hero/before-after images, tightened structure, emoji section headers, plain-text star CTA.
 - **9 trigger-pattern blind spots** tightened in `skill-patterns.sh` based on Tier 1 backfill evidence.
-- **`ia-agent-native-architecture/references/mobile-patterns.md`** split by lookup need into `mobile-cost.md`, `mobile-execution.md`, `mobile-storage.md` — easier to load just the relevant slice.
+- **`ia-agent-native-architecture/references/mobile-patterns.md`** split by lookup need into `mobile-cost.md`, `mobile-execution.md`, `mobile-storage.md`: easier to load just the relevant slice.
 
 ### Fixed
 
-- **`distillery/scripts/test_distiller.py::test_perfect_fixture_passes`** — pre-existing unit test that predated the coverage-floor gate; updated fixture from 1+1 to 5+5 cases to match the contract that's now enforced.
+- **`distillery/scripts/test_distiller.py::test_perfect_fixture_passes`**: pre-existing unit test that predated the coverage-floor gate; updated fixture from 1+1 to 5+5 cases to match the contract that's now enforced.
 - **Trigger fixtures** for 22 skills bumped to meet the new 5+5 coverage floor.
 
 
@@ -790,17 +790,17 @@ Fixes a meta-task injection misfire surfaced by session-based audit: plugin-main
 
 ### Changed
 
-- **`hooks/inject-skills.sh`** — added maintenance-context detection. The hook now inspects the prompt for plugin-internal markers (`plugins/compound-engineering/{skills,agents,commands}/`, `distiller.py`, `skill-patterns.sh`, `/sync-from-repos`, `/audit-plugin`, `/analyze-misfires`, `/diagnose-negatives`, `/evolve-skill`, `/eval-skills`). When any match, skills listed in the new `SKILL_MAINT_SUPPRESS` array are skipped.
-- **`hooks/skill-patterns.sh`** — new `SKILL_MAINT_SUPPRESS` associative array listing `ia-brainstorming`, `ia-writing-tests`, `ia-planning`. Complements the existing `SKILL_PROJECT_TYPES` negative filter. Additions go here when future audits surface skills whose names over-match in maintenance contexts.
-- **AGENTS.md** — directory tree updated to reflect the flat `agents/` layout (the straggler from v3.0.2 that release.sh's staging list didn't pick up).
+- **`hooks/inject-skills.sh`**: added maintenance-context detection. The hook now inspects the prompt for plugin-internal markers (`plugins/compound-engineering/{skills,agents,commands}/`, `distiller.py`, `skill-patterns.sh`, `/sync-from-repos`, `/audit-plugin`, `/analyze-misfires`, `/diagnose-negatives`, `/evolve-skill`, `/eval-skills`). When any match, skills listed in the new `SKILL_MAINT_SUPPRESS` array are skipped.
+- **`hooks/skill-patterns.sh`**: new `SKILL_MAINT_SUPPRESS` associative array listing `ia-brainstorming`, `ia-writing-tests`, `ia-planning`. Complements the existing `SKILL_PROJECT_TYPES` negative filter. Additions go here when future audits surface skills whose names over-match in maintenance contexts.
+- **AGENTS.md**: directory tree updated to reflect the flat `agents/` layout (the straggler from v3.0.2 that release.sh's staging list didn't pick up).
 
 ### Fixed
 
-- **Injection misfires on plugin-maintenance tasks** — three skills that used to fire whenever their name was mentioned in a sync/audit/distiller prompt now correctly stay out of the way. Expected impact: brainstorming's global negative rate drops from 38.2% toward ~5%; writing-tests 22.7% → near-zero; planning 50% → near-zero.
+- **Injection misfires on plugin-maintenance tasks**: three skills that used to fire whenever their name was mentioned in a sync/audit/distiller prompt now correctly stay out of the way. Expected impact: brainstorming's global negative rate drops from 38.2% toward ~5%; writing-tests 22.7% → near-zero; planning 50% → near-zero.
 
 ### Added
 
-- **`distillery/tests/fixtures/semantic-triggers.jsonl`** — three regression cases locking in the maint-context suppression. Each exercises a distinct maintenance marker (skill path reference, distiller command, repo comparison) and asserts the three suppressed skills stay out.
+- **`distillery/tests/fixtures/semantic-triggers.jsonl`**: three regression cases locking in the maint-context suppression. Each exercises a distinct maintenance marker (skill path reference, distiller command, repo comparison) and asserts the three suppressed skills stay out.
 
 ## [3.0.2] - 2026-04-24
 
@@ -808,9 +808,9 @@ Flattens the agents directory. All 19 agents move from `agents/<category>/ia-X.m
 
 ### Changed
 
-- **Agent layout flattened** — the `review/`, `workflow/`, `research/`, `design/` subdirectories are gone; all agents live directly under `plugins/compound-engineering/agents/`. This matches the existing flat `skills/` convention.
+- **Agent layout flattened**: the `review/`, `workflow/`, `research/`, `design/` subdirectories are gone; all agents live directly under `plugins/compound-engineering/agents/`. This matches the existing flat `skills/` convention.
 - **Link paths in agents** updated from `../../shared-references/X.md` → `../shared-references/X.md` and `../../skills/Y/references/Z.md` → `../skills/Y/references/Z.md` in the four agents that load cross-tree references (ia-security-sentinel, ia-database-guardian, ia-infrastructure-engineer, ia-learnings-researcher).
-- **README.md agent tables** keep the Review/Research/Design/Workflow grouping manually — the categories remain useful for human navigation even though the filesystem no longer reflects them. Agent link paths updated from `agents/<category>/<name>.md` → `agents/ia-<name>.md`, also fixing pre-existing broken links that were missing the `ia-` prefix.
+- **README.md agent tables** keep the Review/Research/Design/Workflow grouping manually: the categories remain useful for human navigation even though the filesystem no longer reflects them. Agent link paths updated from `agents/<category>/<name>.md` → `agents/ia-<name>.md`, also fixing pre-existing broken links that were missing the `ia-` prefix.
 - **AGENTS.md / CLAUDE.md** directory tree and naming rules updated to reflect the flat layout.
 
 ### Notes
@@ -823,9 +823,9 @@ Patch release bundling v3.0.0 migration stragglers with plugin-hygiene cleanup. 
 
 ### Added
 
-- **`plugins/compound-engineering/scripts/check-health.sh`** — declarative deps array (git, gh, jq, python3, claude recommended; node, npm, codex, playwright, edge-cdp optional) with traffic-light diagnostic output. Platform-aware (apt vs brew) and supports `--version` for plugin version display.
+- **`plugins/compound-engineering/scripts/check-health.sh`**: declarative deps array (git, gh, jq, python3, claude recommended; node, npm, codex, playwright, edge-cdp optional) with traffic-light diagnostic output. Platform-aware (apt vs brew) and supports `--version` for plugin version display.
 - **Validator checks** (`distillery/scripts/distiller.py validate-plugin`): `PHANTOM_AGENT` (HIGH) flags `.md` files under `agents/*/references/` that get auto-registered by Claude Code as phantom subagents; description-length check on agents mirrors the existing skill check at >80 tokens (HIGH).
-- **`plugins/compound-engineering/shared-references/`** — new plugin-root directory for cross-agent reference content that shouldn't be scanned as invokable agents. Six files relocated from `agents/*/references/`.
+- **`plugins/compound-engineering/shared-references/`**: new plugin-root directory for cross-agent reference content that shouldn't be scanned as invokable agents. Six files relocated from `agents/*/references/`.
 - **v3.0.0 migration stragglers** finally landing in git: `src/commands/cleanup.ts` Bun CLI subcommand for stale Codex/OpenCode installs, AGENTS.md ia- naming convention section with the "No personal-machine paths" and "description-as-shortcut" rules, and `.claude/commands/*.md` reference updates from `workflows:` → `ia-` and wiki paths → `docs/audit/`.
 
 ### Changed
@@ -841,11 +841,11 @@ Patch release bundling v3.0.0 migration stragglers with plugin-hygiene cleanup. 
 
 ### Fixed
 
-- **Phantom subagents** — Claude Code's plugin loader recursively registers every `.md` under `agents/` as an invokable subagent. Six reference files under `agents/review/references/` and `agents/workflow/references/` were polluting `/context` and the agent tool list as `compound-engineering:*:references:*` entries with no frontmatter. Moved to `shared-references/` outside the agents tree; link paths in three parent agents updated from `./references/X.md` to `../../shared-references/X.md`. ~260 tokens freed per session.
+- **Phantom subagents**: Claude Code's plugin loader recursively registers every `.md` under `agents/` as an invokable subagent. Six reference files under `agents/review/references/` and `agents/workflow/references/` were polluting `/context` and the agent tool list as `compound-engineering:*:references:*` entries with no frontmatter. Moved to `shared-references/` outside the agents tree; link paths in three parent agents updated from `./references/X.md` to `../../shared-references/X.md`. ~260 tokens freed per session.
 
 ## [3.0.0] - 2026-04-23
 
-**Breaking**: every skill, agent, and command now carries an `ia-` prefix. The `workflows:` command namespace is gone — `/workflows:plan` is now `/ia-plan`. Any project referencing `compound-engineering:code-review` or similar must update to `compound-engineering:ia-code-review`. See migration note below.
+**Breaking**: every skill, agent, and command now carries an `ia-` prefix. The `workflows:` command namespace is gone: `/workflows:plan` is now `/ia-plan`. Any project referencing `compound-engineering:code-review` or similar must update to `compound-engineering:ia-code-review`. See migration note below.
 
 The release bundles the prefix rename with a heavy sync + audit pass: 19 new reference files across 10 skills and 3 agents, walker fixes in the validator, a new Bun CLI `cleanup` subcommand for stale Codex/OpenCode installs, and substantial content additions sourced from EveryInc's compound-engineering-plugin and openai/claude-code-security-review.
 
@@ -853,15 +853,15 @@ The release bundles the prefix rename with a heavy sync + audit pass: 19 new ref
 
 - Replace every `/workflows:<name>` with `/ia-<name>`.
 - Replace every `compound-engineering:<name>` plugin-namespaced reference with `compound-engineering:ia-<name>`.
-- ClawHub slugs (`compound-eng-<name>`) and the `ai-skills` mirror (`npx skills add iliaal/ai-skills -s <name>`) are unchanged — existing installs keep working. The `ia-` prefix lives only inside the plugin directory.
+- ClawHub slugs (`compound-eng-<name>`) and the `ai-skills` mirror (`npx skills add iliaal/ai-skills -s <name>`) are unchanged: existing installs keep working. The `ia-` prefix lives only inside the plugin directory.
 - External-project refs already updated for known sites: `~/.claude/commands/dual-review.md`, `~/ai/codesage/.claude/commands/release.md`, `~/ai/php/.claude/commands/{php-improve,php-respond}.md`, `~/ai/php/.claude/skills/php-bug-fixer/SKILL.md`, `~/ai/last30days-skill/REFACTOR_TODO.md`.
-- Historical artifacts (`docs/brainstorms/*`, `.claude-cycles/*`) left as-is — frozen records.
+- Historical artifacts (`docs/brainstorms/*`, `.claude-cycles/*`) left as-is: frozen records.
 
 ### Added
 
 - **Bun CLI `cleanup` subcommand** (`src/commands/cleanup.ts`): moves stale installs to a timestamped backup under `~/.cache/compound-engineering/legacy-backup/`. Supports `--target codex|opencode|kilocode|agents` and `--dry-run`.
 - **README install sections**: per-target Codex and OpenCode headings with copy-paste commands and cleanup instructions. Acknowledgements section crediting EveryInc/compound-engineering-plugin and ComposioHQ/awesome-claude-skills.
-- **code-review/references/review-traps-catalog.md**: 15 portable review-trap patterns with Trap / Reality / Fix — reachability-before-severity, docs-idiom smoke test, convention-from-3-files, speculative future-design, paired-enum drift, cross-repo contract staleness, PHP 8 null-property-access semantics, Laravel 11+ UUID-v7 chronological sort.
+- **code-review/references/review-traps-catalog.md**: 15 portable review-trap patterns with Trap / Reality / Fix: reachability-before-severity, docs-idiom smoke test, convention-from-3-files, speculative future-design, paired-enum drift, cross-repo contract staleness, PHP 8 null-property-access semantics, Laravel 11+ UUID-v7 chronological sort.
 - **code-review/references/{check-categories,action-routing,severity-and-confidence}.md**: What-to-Check lists, 4-tier fix-application taxonomy, 5-band confidence rubric extracted for load-on-demand.
 - **security-sentinel references**: `security-fp-suppression.md` (hard exclusions, confidence floor, severity gates, project-level overrides), `security-threat-modeling.md` (STRIDE process + output format), `security-adversarial-pass.md` (happy-path hunt, silent failures, trust-boundary tracing), `security-requirements-checklist.md` (13-item pre-report pass).
 - **rust-systems references**: `build-profiles.md` (release/release-dbg/release-min + mold linker), `ci-pipeline.md` (rustsec audit, cargo-llvm-cov, rust-cache, matrix strategy), `production-resilience.md` (fail-fast config, health endpoints, graceful shutdown, retries, timeouts), `observability.md` (tracing init recipe, correlation IDs, metrics, distributed tracing).
@@ -878,7 +878,7 @@ The release bundles the prefix rename with a heavy sync + audit pass: 19 new ref
 - **All skill / agent / command names renamed with `ia-` prefix**. 30 skills + 19 agents + 22 commands. The `workflows:` command namespace is dropped; those 6 commands now live directly under `commands/`. See migration.
 - **`hooks/skill-patterns.sh`**: all array keys prefixed with `ia-`; regex strings unchanged (they match user speech, not skill names).
 - **30 trigger regression fixture files** renamed to match (`distillery/tests/fixtures/triggers/ia-<name>.jsonl`).
-- **security-sentinel**: three-phase methodology (Phase 0 project baseline, Phase 1 comparative analysis, Phase 2 category scans) replaces generic OWASP-style scanning. FP suppression is now a structured framework with hard exclusions, confidence floor (≥0.8), language-gated exclusions, and project-level override honoring — explicitly stricter than `code-review`'s general rubric for a deliberate precision trade-off. Exploit Scenario is now a required field for Critical/High findings.
+- **security-sentinel**: three-phase methodology (Phase 0 project baseline, Phase 1 comparative analysis, Phase 2 category scans) replaces generic OWASP-style scanning. FP suppression is now a structured framework with hard exclusions, confidence floor (≥0.8), language-gated exclusions, and project-level override honoring: explicitly stricter than `code-review`'s general rubric for a deliberate precision trade-off. Exploit Scenario is now a required field for Critical/High findings.
 - **verification-before-completion**: Verification Strategies by Change Type table (Frontend / Backend / CLI / Infra / DB migration / Refactoring). Mandatory adversarial probe for production-logic changes (boundary value, concurrency, idempotency, or orphan op).
 - **orchestrating-swarms**: four named dispatch anti-patterns (router persona, persona calls persona, sequential paraphraser, deep persona trees) with why-it-fails for each.
 - **code-review**: AI-generated code lens (over-engineering, defensive noise, cost bloat, scope drift) in the Adversarial pass with pointer to `code-simplicity-reviewer` for the 6-trap taxonomy. Project-level override discipline in Anti-Patterns in Reviews.
@@ -890,7 +890,7 @@ The release bundles the prefix rename with a heavy sync + audit pass: 19 new ref
 - **frontend-design**: Premium Detail Patterns and Browser-Assisted Verification boundary folded in (both extracted to references for body-size discipline).
 - **code-simplicity-reviewer**: six named over-production traps (while-I'm-here, for-future-flexibility, defensive-coding, modernization, consistency, cleanup) with scope self-check template.
 - **reflect**: `remember:` high-confidence capture marker convention; optional UserPromptSubmit hook pattern documented.
-- **document-review**: Step 7 Reader Test strengthened with concrete methodology — predict 5-10 questions, dispatch fresh subagent, interpret confident-correct / confident-wrong / hedged / ambiguity-flagged outcomes.
+- **document-review**: Step 7 Reader Test strengthened with concrete methodology. Predict 5-10 questions, dispatch fresh subagent, interpret confident-correct / confident-wrong / hedged / ambiguity-flagged outcomes.
 - **Review and research agents**: `tools: Read, Grep, Glob, Bash` restriction added to accessibility-tester, architecture-strategist, cloud-architect, database-guardian, kieran-reviewer, performance-oracle, security-sentinel, git-history-analyzer. `tools: Read, Grep, Glob` (no Bash) on learnings-researcher.
 - **CLAUDE.md working agreement**: added "no personal-machine paths in plugin files" rule (grep -rn '~/ai/' plugins/ pre-flight). Skill compliance checklist now documents the description-as-shortcut failure mode with concrete evidence.
 - **Scripts**: `update-metadata.sh` walker excludes `*/references/*` (count fix). `publish-clawhub.sh` strips `ia-` before composing slug (existing URLs preserved). `mirror-to-ai-skills.sh` strips `ia-` on mirror write and rewrites SKILL.md frontmatter (existing `npx skills add` commands preserved). `generate-skill-hooks.sh` TIER_MAP and PROJECT_TYPE_MAP keys prefixed.
@@ -899,9 +899,9 @@ The release bundles the prefix rename with a heavy sync + audit pass: 19 new ref
 ### Fixed
 
 - **`commands/verify.md`**: YAML parse error from unquoted colon in description; frontmatter is now double-quoted.
-- **security-sentinel Reporting Protocol** no longer conflicts with Audit Deliverable Format — bridge sentence clarifies the outer-envelope vs SS-NNN finding relationship.
+- **security-sentinel Reporting Protocol** no longer conflicts with Audit Deliverable Format: bridge sentence clarifies the outer-envelope vs SS-NNN finding relationship.
 - **`hooks/skill-patterns.sh`**: stale `Total skills: 29` annotation corrected to 30.
-- **Body-size discipline**: 10 components brought at-or-near budget through reference extraction — `security-sentinel` 4793 → 3017 tokens; `orchestrating-swarms` 5818 → under 4K; `code-review` 5572 → 4021; `rust-systems` 5282 → 4179; `frontend-design` 5110 → 4183; `planning` 4481 → 4051; `writing-tests` 4254 → under 4K; `php-laravel` 4007 → under 4K; `database-guardian` 3671 → under 3K; `infrastructure-engineer` 3249 → under 3K.
+- **Body-size discipline**: 10 components brought at-or-near budget through reference extraction: `security-sentinel` 4793 → 3017 tokens; `orchestrating-swarms` 5818 → under 4K; `code-review` 5572 → 4021; `rust-systems` 5282 → 4179; `frontend-design` 5110 → 4183; `planning` 4481 → 4051; `writing-tests` 4254 → under 4K; `php-laravel` 4007 → under 4K; `database-guardian` 3671 → under 3K; `infrastructure-engineer` 3249 → under 3K.
 - **Mechanical false positives** eliminated from validate-plugin output (4 reference-file EMPTY_DESCRIPTION walker bugs, 2 TBD-in-forbidding-rule placeholder bugs).
 - Edge CDP framework migration (Edge launcher + `post-thread.py` now use the shared `edge-cdp` package).
 - Announce tooling: marketing-hook pattern, top-N condensing, `.announce/` thread persistence instead of `/tmp`.
@@ -920,26 +920,26 @@ Broad hardening pass. Sync + audit cycle applied ~56 refinements across 10 skill
 
 ### Added
 
-- **orchestrating-swarms/references/context-carry-forward.md**: decision table for long orchestrated sessions — Continue / Rewind / `/compact` / Subagent / `/clear`+brief. Rewind beats "correcting in place" because it drops the failed path from context instead of leaving it as a negative anchor.
+- **orchestrating-swarms/references/context-carry-forward.md**: decision table for long orchestrated sessions: Continue / Rewind / `/compact` / Subagent / `/clear`+brief. Rewind beats "correcting in place" because it drops the failed path from context instead of leaving it as a negative anchor.
 - **writing/references/pr-descriptions.md**: PR/MR description style guide. Sizing matrix (1 sentence for trivial, full narrative for architecturally significant), Before / After / Scope-rationale frame, Mermaid-for-topology / table-for-grid rule, GitHub `#NN` auto-link trap, self-check list.
-- **agent-native-architecture/references/dynamic-context-injection.md**: new Trust Levels principle. Three-tier model (trusted / semi-trusted / untrusted) with a concrete prompt-injection defense test — inject "ignore all prior rules" into a retrieved document and confirm the agent refuses.
+- **agent-native-architecture/references/dynamic-context-injection.md**: new Trust Levels principle. Three-tier model (trusted / semi-trusted / untrusted) with a concrete prompt-injection defense test: inject "ignore all prior rules" into a retrieved document and confirm the agent refuses.
 
 ### Changed
 
-- **react-frontend**: 5-class race taxonomy — lifecycle cleanup gaps, remount-timing mistakes, boolean-as-state when UI has more than two modes, stale promises / timers without cancel, per-element handlers where delegation is safer. Each class framed around its production signal, not the rule. Data-fetching cancellation unified: `AbortController` for fetch, `ignore`-flag for non-cancellable promises, React Query covers both.
+- **react-frontend**: 5-class race taxonomy. Lifecycle cleanup gaps, remount-timing mistakes, boolean-as-state when UI has more than two modes, stale promises / timers without cancel, per-element handlers where delegation is safer. Each class framed around its production signal, not the rule. Data-fetching cancellation unified: `AbortController` for fetch, `ignore`-flag for non-cancellable promises, React Query covers both.
 - **code-review**: Fix-First Classification renamed to Action Routing with a 4-tier split (`safe_auto` / `gated_auto` / `manual` / `advisory`) plus a conservative-route merge rule so a loose classification never promotes a boundary-crossing change to auto-fix. Integration section maps these to `receiving-code-review`'s AUTO-FIX / ESCALATE vocabulary. Configuration profile in `language-profiles.md` promoted from 4 prose bullets to numbered CFG-001 through CFG-006 checks (magnitude-change, timeout hierarchy inversion, pool mismatch, env drift, rollback gap, observability gap).
-- **code-review/references/deep-review.md**: reviewer prompt gains DO / DON'T preamble — read the actual code, don't take the PR description at face value, don't rubber-stamp sections you didn't open. Merge algorithm gains a fingerprint-first preamble; two-agent overlap now tags `MULTI-SPECIALIST CONFIRMED (s1 + s2)` with +0.05 confidence, three-agent with +0.10 (applied once per group). Output header reports K-at-3+ / M-at-2 counts so reviewers can scan for convergent signal without reading every finding.
+- **code-review/references/deep-review.md**: reviewer prompt gains DO / DON'T preamble. Read the actual code, don't take the PR description at face value, don't rubber-stamp sections you didn't open. Merge algorithm gains a fingerprint-first preamble; two-agent overlap now tags `MULTI-SPECIALIST CONFIRMED (s1 + s2)` with +0.05 confidence, three-agent with +0.10 (applied once per group). Output header reports K-at-3+ / M-at-2 counts so reviewers can scan for convergent signal without reading every finding.
 - **code-review/references/reliability-patterns.md**: double-retry stacked anti-pattern. Application `@retry` on an auto-retrying SDK multiplies attempts (3×3 = 9) and the backoff compounds; audit the client's default retry policy before wrapping it, and retry at exactly one layer.
-- **orchestrating-swarms**: BLOCKED triage decision tree — missing context re-dispatches same agent, reasoning ceiling escalates model, task-too-large splits, spec-wrong escalates to human. Pre-dispatch file-intersection check as a runnable safety gate with a "no git / no test suite in parallel" constraint embedded in dispatch prompts. Fresh-agent rule on every reviewer re-dispatch across rounds — reviewers carrying memory from a prior round anchor on their earlier verdicts and miss regressions from fixes. NEEDS_CONTEXT aligned to "start or continue" across orchestrating-swarms / verification-before-completion / debugging.
+- **orchestrating-swarms**: BLOCKED triage decision tree. Missing context re-dispatches same agent, reasoning ceiling escalates model, task-too-large splits, spec-wrong escalates to human. Pre-dispatch file-intersection check as a runnable safety gate with a "no git / no test suite in parallel" constraint embedded in dispatch prompts. Fresh-agent rule on every reviewer re-dispatch across rounds: reviewers carrying memory from a prior round anchor on their earlier verdicts and miss regressions from fixes. NEEDS_CONTEXT aligned to "start or continue" across orchestrating-swarms / verification-before-completion / debugging.
 - **deployment-verification-agent**: Rollout Decision Thresholds table with quantified advance / hold / rollback bands for error-rate delta, p95 latency delta, client JS errors, and business metric delta. Stages protocol with SEV-level calibration note. Feature-Flag Lifecycle requirements: owner, expiration date, 2-week cleanup after 100% rollout, no nested flags, both states exercised by CI.
 - **performance-oracle**: Core Web Vitals thresholds section. LCP (≤2.5s / ≤4.0s / >4.0s), INP (≤200ms / ≤500ms / >), CLS (≤0.1 / ≤0.25 / >) with Poor-band classification as Critical and Needs-improvement as Important.
-- **verification-before-completion**: Scope Confirmation pre-Edit gate for ambiguous-scope imperatives ("migrate my project", "refactor everywhere", "update across the app"). Surface concrete blast radius with `rg` breakdown before any Write or Edit — imperative phrasing is not the same as defined scope.
-- **agent-native-architecture**: Context Injection checklist gains a trust-levels bullet pointing at the new Trust Levels principle. Tool Design checklist adds Eval Gate — 10 Q/A pairs, 9/10 CI threshold, closed-data multi-hop tests — surfaced into the body from the MCP tool-design reference.
-- **receiving-code-review**: 4-tag false-positive taxonomy for dismissed suggestions — FP-ASSUMPTION / FP-CONVENTION / FP-ALREADY-HANDLED / FP-OUT-OF-SCOPE — with a push-back mapping column so dismissals cite structured reasoning. Integration section cross-maps to code-review action-routing tiers.
+- **verification-before-completion**: Scope Confirmation pre-Edit gate for ambiguous-scope imperatives ("migrate my project", "refactor everywhere", "update across the app"). Surface concrete blast radius with `rg` breakdown before any Write or Edit: imperative phrasing is not the same as defined scope.
+- **agent-native-architecture**: Context Injection checklist gains a trust-levels bullet pointing at the new Trust Levels principle. Tool Design checklist adds Eval Gate (10 Q/A pairs, 9/10 CI threshold, closed-data multi-hop tests) surfaced into the body from the MCP tool-design reference.
+- **receiving-code-review**: 4-tag false-positive taxonomy for dismissed suggestions (FP-ASSUMPTION / FP-CONVENTION / FP-ALREADY-HANDLED / FP-OUT-OF-SCOPE) with a push-back mapping column so dismissals cite structured reasoning. Integration section cross-maps to code-review action-routing tiers.
 - **workflows:review**: per-agent `.review/NN-<agent>.md` artifact persistence for large reviews (8+ agents OR diff with more than 500 changed lines per `git diff --shortstat`). Missing-file recovery rule so a crashed specialist doesn't silently lose coverage at synthesis. `.review/` is transient scratch (gitignored), NOT a Protected Artifact.
 - **repo-research-analyst**: iterative retrieval pattern. Cycle 1 uses broad terms to discover the repo's own vocabulary ("throttle" not "rate-limit"); cycle 2 refines with learned terminology; stop at 3+ relevant hits or 3 cycles.
-- **frontend-design**: H1 2-3 line iron rule (ultra-wide containers like `max-w-5xl`, `clamp(3rem, 5vw, 5.5rem)` for fonts that scale down instead of wrapping). Mobile Collapse Mandate — asymmetric layouts above `md:` must collapse to `w-full px-4` below 768px, 44×44px minimum touch targets, no rotations or negative-margin overlaps on mobile. Bento-grid `grid-flow-dense` rule and hero scroll-filler ban added to `banned-ai-patterns.md`. Cross-card baseline alignment check added to `redesign-audit.md`.
-- **md-docs**: Monorepo Context Loading section. Ancestors load at startup walking up, descendants lazy-load on subtree access, siblings never load — put shared conventions at the root, package-specific at each package root.
+- **frontend-design**: H1 2-3 line iron rule (ultra-wide containers like `max-w-5xl`, `clamp(3rem, 5vw, 5.5rem)` for fonts that scale down instead of wrapping). Mobile Collapse Mandate: asymmetric layouts above `md:` must collapse to `w-full px-4` below 768px, 44×44px minimum touch targets, no rotations or negative-margin overlaps on mobile. Bento-grid `grid-flow-dense` rule and hero scroll-filler ban added to `banned-ai-patterns.md`. Cross-card baseline alignment check added to `redesign-audit.md`.
+- **md-docs**: Monorepo Context Loading section. Ancestors load at startup walking up, descendants lazy-load on subtree access, siblings never load: put shared conventions at the root, package-specific at each package root.
 - **simplifying-code**: Step 6 pre-submit scope audit. Walk every changed line and ask "does the task explicitly require this?" If no, revert and list as a follow-up.
 - **writing**: PR / MR Descriptions section cross-references the new reference file.
 - **CLAUDE.md / AGENTS.md**: description must describe *when* to invoke the skill (trigger conditions), never *how* the skill proceeds step-by-step. Restating the body's procedure in the description causes Claude to follow the description and skip the skill content.
@@ -949,10 +949,10 @@ Broad hardening pass. Sync + audit cycle applied ~56 refinements across 10 skill
 
 ### Fixed
 
-- `deployment-verification-agent`: Rollout Decision Thresholds and Feature-Flag Lifecycle promoted from H3 inside the Go/No-Go checklist template to H2 peers after it. Restored "Sample console verification" as the tail of section 6 Post-Deploy Monitoring — the earlier insertion had orphaned it.
+- `deployment-verification-agent`: Rollout Decision Thresholds and Feature-Flag Lifecycle promoted from H3 inside the Go/No-Go checklist template to H2 peers after it. Restored "Sample console verification" as the tail of section 6 Post-Deploy Monitoring: the earlier insertion had orphaned it.
 - `workflows:review`: heading renamed "Per-phase artifact persistence" to "Per-agent artifact persistence" (files are per-agent; "phase" already means the command's numbered sections). "500 lines" threshold made measurable as "500 changed lines per `git diff --shortstat`".
 - `code-review/references/deep-review.md`: merge-algorithm preamble clarifies that fingerprinting runs before the numbered rules, so the single-agent rule has a defined basis to operate on. Confidence boost applied once per group, not stacked across rules 6 and 7.
-- `code-review/references/language-profiles.md`: dropped the false "same way as TS-003 or PY-002" precedent claim — sibling profiles have no numbered IDs, so the comparison didn't hold.
+- `code-review/references/language-profiles.md`: dropped the false "same way as TS-003 or PY-002" precedent claim: sibling profiles have no numbered IDs, so the comparison didn't hold.
 - `frontend-design/references/redesign-audit.md`: check #16 reformatted from 3-sentence declarative to single-question interrogative matching siblings 1 through 15.
 - `announce` (internal): Edge profile moved to the Windows path. `post-thread.py` now defaults to draft-only.
 - `README`: `rust-systems` row added to the skills table; `release.sh` now stages the README so documentation ships with each release.
@@ -970,7 +970,7 @@ New `rust-systems` skill brings the language-skill roster to four (Python, Node,
 
 ### Changed
 
-- **code-review**: merged Maintainability and Readability subsections under "What to Check" — three of five Maintainability items (naming, function length, nesting depth) duplicated the Readability list. Consolidated section preserves Readability's measurable thresholds ("3 levels of indentation", "forces scrolling") and keeps Maintainability-unique items (God classes / SRP, leaky abstractions).
+- **code-review**: merged Maintainability and Readability subsections under "What to Check". Three of five Maintainability items (naming, function length, nesting depth) duplicated the Readability list. Consolidated section preserves Readability's measurable thresholds ("3 levels of indentation", "forces scrolling") and keeps Maintainability-unique items (God classes / SRP, leaky abstractions).
 - **code-review**: test-file exclusion added to Review Mode Selection signals. Lines/files/directory counts now exclude `tests/`, `__tests__/`, `*.test.*`, `*.spec.*`, `*_test.*` paths so boilerplate-heavy test expansions don't falsely trigger deep review. Both totals reported for transparency.
 - **code-review/references/false-positive-suppression.md**: clarified the vague "already addressed in the diff" example under Readability-aiding redundancy. Now explicit: author fixed it in a later commit within the same diff, flagged it in their own PR comments, or a prior reviewer resolved it.
 
@@ -985,20 +985,20 @@ Model tier review and full plugin audit. Haiku was assigned to review tasks that
 - **accessibility-tester**: haiku → sonnet, description updated to WCAG 2.1/2.2 (2.2 current since Oct 2023).
 - **infrastructure-engineer**: added `model: sonnet` (CI/CD, Docker, tracing, incident triage).
 - **deployment-verification-agent**: added `model: sonnet` (runbooks with SQL queries and rollback procedures).
-- **php-laravel**: replaced ambiguous "Fat models, thin controllers" with clear boundary -- models own domain behavior, services own orchestration.
+- **php-laravel**: replaced ambiguous "Fat models, thin controllers" with clear boundary. Models own domain behavior, services own orchestration.
 - **react-frontend**: React Compiler install instruction updated to framework-first config path (Next.js `reactCompiler: true`).
-- **python-services**: added `uv run ty check .` to Verify section -- ty was listed as a tool but never enforced.
+- **python-services**: added `uv run ty check .` to Verify section; `ty` was listed as a tool but never enforced.
 - **repo-research-analyst**: replaced off-stack Ruby ast-grep example with PHP.
 - **code-simplicity-reviewer**: removed "Great!" filler from invocation example.
 - **orchestrating-swarms**: trimmed redundant "Best Practices" section (3 items already covered by Dispatch Discipline and QA retry loop) down to 2 unique "Integration Rules" (post-integration verification, spawned-session behavior).
-- **verification-before-completion**: collapsed 6-row Rationalization Prevention table into a 2-sentence paragraph -- the Gate Function already covers these rules.
+- **verification-before-completion**: collapsed 6-row Rationalization Prevention table into a 2-sentence paragraph: the Gate Function already covers these rules.
 - **workflows:review**: removed ~90 lines of generic "Ultra-Thinking" checklists (stakeholder perspectives, scenario exploration, multi-angle reviews) that duplicated specialist agent coverage. Sections renumbered 1-4.
 - **update-plugin.sh**: modernized to use `claude` CLI commands.
 
 ### Fixed
 
 - 5 dead references to `agent-native-reviewer` (removed in v2.55.0) cleaned up across `workflows/review.md`, `setup.md`, `README.md`, and `orchestrating-swarms/agent-types.md`. The dispatch at review.md:92 would error at runtime.
-- Brainstorming skill: dangling "see Question Clustering below" forward reference -- no such section existed. Rule folded inline.
+- Brainstorming skill: dangling "see Question Clustering below" forward reference. No such section existed. Rule folded inline.
 
 ## [2.55.0] - 2026-04-10
 
@@ -1006,43 +1006,43 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **tools** restriction added to 5 analysis-only agents (`bug-reproduction-validator`, `spec-flow-analyzer`, `repo-research-analyst`, `best-practices-researcher`, `code-simplicity-reviewer`) — all are explicitly read-only but previously inherited full write access.
-- **model: sonnet** declared on `design-iterator`, `figma-design-sync`, `repo-research-analyst`, `spec-flow-analyzer` — mechanical or low-judgment work where sonnet is sufficient and cheaper than opus.
+- **tools** restriction added to 5 analysis-only agents (`bug-reproduction-validator`, `spec-flow-analyzer`, `repo-research-analyst`, `best-practices-researcher`, `code-simplicity-reviewer`): all are explicitly read-only but previously inherited full write access.
+- **model: sonnet** declared on `design-iterator`, `figma-design-sync`, `repo-research-analyst`, `spec-flow-analyzer`: mechanical or low-judgment work where sonnet is sufficient and cheaper than opus.
 - **Agent model tier policy**: `model: opus` declared on `architecture-strategist`, `kieran-reviewer`, `database-guardian`, `cloud-architect`, `performance-oracle`, and `security-sentinel` to guarantee high-judgment agents use Opus regardless of the calling session's default model.
 - **Postgresql trigger regression fixtures** (5 new cases) covering the actual misfire samples from session harvesting (letter-review, plugin-audit, PHP-extension-upgrade contexts).
 
-### Changed — skills
+### Changed (skills)
 
-- **writing**: Named-tag lookup table with severity suffixes (`+H`, `+S`) — `[STACCATO]`, `[FALSE-AGENCY]`, `[BINARY-CONTRAST]`, `[ELEGANT-VAR]`, `[EM-DASH]`, `[META-COMMENTARY]`, `[INFLATED]`, `[VAGUE-DECLARATIVE]`. Per-tag fix action table and structured AUDIT/CORRECTED TEXT/CHANGELOG output format. Cross-referenced the "Kill on Sight" and "Long-form audit workflow" vocabulary sections (short-form vs long-form use). Sourced from `ai-writing-audit` and `stop-slop`.
+- **writing**: Named-tag lookup table with severity suffixes (`+H`, `+S`). `[STACCATO]`, `[FALSE-AGENCY]`, `[BINARY-CONTRAST]`, `[ELEGANT-VAR]`, `[EM-DASH]`, `[META-COMMENTARY]`, `[INFLATED]`, `[VAGUE-DECLARATIVE]`. Per-tag fix action table and structured AUDIT/CORRECTED TEXT/CHANGELOG output format. Cross-referenced the "Kill on Sight" and "Long-form audit workflow" vocabulary sections (short-form vs long-form use). Sourced from `ai-writing-audit` and `stop-slop`.
 - **orchestrating-swarms**: Preset Team Compositions table extracted to `references/team-compositions.md` (Review, Debug, Feature, Fullstack, Migration, Security, Research). Cardinal `subagent_type` rule added calling out read-only agents silently failing on writes. Sourced from agents repo.
 - **frontend-design**: Mandatory Interactive States section (loading/empty/error/tactile press), Performance Guardrails (grain filter on scrolling containers, `transform`/`opacity` only, z-index restraint, perpetual animation isolation), and RSC/Client Component boundaries extracted to `references/rsc-client-boundaries.md` (`useMotionValue` vs `useState`, `'use client'` leaf isolation, `staggerChildren` parent-child colocation). Typography and Backgrounds bullets split from ~200-word run-on paragraphs into sub-bulleted rules. Sourced from `taste-skill`.
 - **brainstorming**: Phase 3b inline spec self-review checklist (placeholder scan, internal consistency, scope containment, ambiguity sweep, assumption validation, non-goals) before handing off to planning. Sourced from `superpowers`.
-- **code-review**: Merge algorithm for multi-agent output moved to `references/deep-review.md` (same-line-same-issue = merge higher severity, same-line-different-issue = co-located, conflicting severity = take higher, conflicting recommendations = `NEEDS DECISION`, convergence = boost confidence). Findings use `CR-001` IDs (previously the output template used `**1.**` which contradicted the CR-numbering instruction — fixed). Review Process step 1 (Context) split from a dense 5-sentence paragraph into sub-bulleted actions (Scope Drift Check, intent read, existing-discussion fetch, automated gates). Sourced from gstack, agents repo.
+- **code-review**: Merge algorithm for multi-agent output moved to `references/deep-review.md` (same-line-same-issue = merge higher severity, same-line-different-issue = co-located, conflicting severity = take higher, conflicting recommendations = `NEEDS DECISION`, convergence = boost confidence). Findings use `CR-001` IDs (previously the output template used `**1.**` which contradicted the CR-numbering instruction: fixed). Review Process step 1 (Context) split from a dense 5-sentence paragraph into sub-bulleted actions (Scope Drift Check, intent read, existing-discussion fetch, automated gates). Sourced from gstack, agents repo.
 - **verification-before-completion**: Structured Completion Report Format with `DONE/DONE_WITH_CONCERNS/BLOCKED/NEEDS_CONTEXT` status, mandatory `Things I didn't touch (intentionally)` section for visible scope discipline, and verification evidence block. Rationalization table collapsed from 14 rows to 6 by consolidating near-identical entries. Sourced from gstack, google-agent-skills.
 - **simplifying-code**: Orchestrator Mode section with canonical `Resolved scope` fenced block passed verbatim to every chained sub-skill, preventing scope drift and double work. Sourced from `agent-skills/code-polish`.
 - **receiving-code-review**: Batched clarification pattern for ambiguous critical-path findings (up to 4 items in one `AskUserQuestion` call with `Valid / False positive / Defer` options); documents fallback behavior when `AskUserQuestion` tool isn't available. Sourced from `agent-skills/coderabbit`.
 - **debugging**: STATUS line gained `NEEDS_CONTEXT` option to match the canonical 4-status taxonomy used by `orchestrating-swarms` and `verification-before-completion`. Verify section corrected from "all five fields" to "all seven fields" (Debug Report has 7 fields: SYMPTOM, ROOT CAUSE, FIX, EVIDENCE, REGRESSION, RELATED, STATUS). Anti-patterns table collapsed from 12 rows to 6 by merging duplicate "guessing / shotgun / fixing symptoms" rationalizations.
-- **planning**: Execution Posture Signals clarified — **tests-after is the default**, test-first/characterization-first/external-delegate are opt-in annotations. Added the per-section enhancement format and Enhancement Summary block to Plan Deepening (content moved from the `/deepen-plan` command). Removed redundant Anti-Patterns table — content was already enforced by Plan Quality Rules and Phase Sizing Rules.
-- **postgresql**: Removed duplicated slow-query and table-bloat SQL from Query Optimization section (the full versions already exist in Detection Queries below). Trigger pattern tightened to require SQL/database context anchors — previously matched bare keywords like `trigger`, `function`, `extension`, causing **90% misfire rate** (9/10 injections) on letter-review and plugin-audit sessions.
+- **planning**: Execution Posture Signals clarified. **tests-after is the default**, test-first/characterization-first/external-delegate are opt-in annotations. Added the per-section enhancement format and Enhancement Summary block to Plan Deepening (content moved from the `/deepen-plan` command). Removed redundant Anti-Patterns table: content was already enforced by Plan Quality Rules and Phase Sizing Rules.
+- **postgresql**: Removed duplicated slow-query and table-bloat SQL from Query Optimization section (the full versions already exist in Detection Queries below). Trigger pattern tightened to require SQL/database context anchors: previously matched bare keywords like `trigger`, `function`, `extension`, causing **90% misfire rate** (9/10 injections) on letter-review and plugin-audit sessions.
 - **debugging**: Trigger pattern tightened to require the word "debug" within 30 chars of a failure indicator (error/bug/fail/crash/issue/broken/problem/trace/stack/regression), avoiding matches on "debug mode" or "debug output" in non-bug contexts.
 - **reflect**: Memory path placeholder `~/.claude/projects/.../memory/` replaced with concrete `<project-slug>` placeholder explanation.
 - **refine-prompt**: Removed duplicate "Never invent" rule (was stated in both Rules and Constraints sections).
-- **md-docs**: Writing Style section rewritten — replaced vague meta-instructions ("terse", "accurate") with measurable criteria (lead-with-answer, verify-every-command, no-passive-voice in directives, headings every ~20 lines).
+- **md-docs**: Writing Style section rewritten. Replaced vague meta-instructions ("terse", "accurate") with measurable criteria (lead-with-answer, verify-every-command, no-passive-voice in directives, headings every ~20 lines).
 - **php-laravel**: Converted cross-skill markdown link `[writing-tests](../writing-tests/SKILL.md)` to prose reference matching the plugin's cross-skill convention.
 
-### Changed — agents
+### Changed (agents)
 
-- **Merged `deployment-engineer` + `devops-engineer` → `infrastructure-engineer`**. The split between CI/CD and containerization/observability created routing ambiguity — both agents were called in similar contexts and contained cross-reference preambles pointing at the other. Merged agent covers CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker and containerization, observability (metrics/logs/traces), and incident management. Scope boundary defers database-migration verification to `deployment-verification-agent`, cloud architecture to `cloud-architect`, and IaC to the `terraform` skill.
-- **security-sentinel**: Security Test Coverage Checklist extracted to `references/security-test-coverage.md` as an explicit audit deliverable — auth edge cases (`alg=none`, wrong issuer), IDOR, mass assignment, TOCTOU, file upload magic-byte validation, session cookie flags, business-logic bypass. Each finding requires CVSS 3.1, exploit proof, and copy-paste-ready remediation. Promoted to `model: opus`. Sourced from `agency-agents`.
+- **Merged `deployment-engineer` + `devops-engineer` → `infrastructure-engineer`**. The split between CI/CD and containerization/observability created routing ambiguity: both agents were called in similar contexts and contained cross-reference preambles pointing at the other. Merged agent covers CI/CD pipelines, deployment strategies (blue-green, canary, rolling, feature flags), Docker and containerization, observability (metrics/logs/traces), and incident management. Scope boundary defers database-migration verification to `deployment-verification-agent`, cloud architecture to `cloud-architect`, and IaC to the `terraform` skill.
+- **security-sentinel**: Security Test Coverage Checklist extracted to `references/security-test-coverage.md` as an explicit audit deliverable: auth edge cases (`alg=none`, wrong issuer), IDOR, mass assignment, TOCTOU, file upload magic-byte validation, session cookie flags, business-logic bypass. Each finding requires CVSS 3.1, exploit proof, and copy-paste-ready remediation. Promoted to `model: opus`. Sourced from `agency-agents`.
 - **bug-reproduction-validator**: Description clarified as "reproduce-first stage" with explicit handoff to `debugging` skill for fixing.
-- **deployment-verification-agent**: Description sharpened to distinguish from `database-guardian` — this agent builds the deploy *runbook*; database-guardian reviews the migration *code*. Run database-guardian first.
+- **deployment-verification-agent**: Description sharpened to distinguish from `database-guardian`: this agent builds the deploy *runbook*; database-guardian reviews the migration *code*. Run database-guardian first.
 - **best-practices-researcher** and **repo-research-analyst**: Descriptions trimmed to remove bloated cross-reference preambles.
 
-### Changed — commands
+### Changed (commands)
 
-- **workflows:review**: Always-on red-team adversarial pass after parallel specialists return, targeting cross-category compound vulnerabilities, happy-path assumptions, silent failures in auth/payment code, and trust boundary violations. Severity taxonomy aligned with `code-review` skill's 4-level scale (Critical / Important / Medium / Minor) — previously used a P1/P2/P3 scale with "Nice-to-Have" that didn't match the skill's merge algorithm. Sourced from gstack.
+- **workflows:review**: Always-on red-team adversarial pass after parallel specialists return, targeting cross-category compound vulnerabilities, happy-path assumptions, silent failures in auth/payment code, and trust boundary violations. Severity taxonomy aligned with `code-review` skill's 4-level scale (Critical / Important / Medium / Minor): previously used a P1/P2/P3 scale with "Nice-to-Have" that didn't match the skill's merge algorithm. Sourced from gstack.
 - **workflows:work**: Subagent Execution Discipline section replaced with a one-line delegation to `orchestrating-swarms` skill (which owns the fresh-agent-per-task rule, two-stage review gate, model-selection-by-complexity table, and four-status reporting protocol). Phase 2 Test Continuously explicitly sets tests-after as the default for new features; test-first is opt-in via the `planning` skill's posture signal. Command drops from ~4300 to 3774 tokens.
-- **workflows:plan**: Idea Refinement (Phase 0) trimmed by ~65 lines — delegation to `brainstorming` skill for the interview protocol. Step 2 (Plan Structure & Naming) consolidated from three checklists to the orchestration essentials. Command drops from ~4100 to 3234 tokens.
+- **workflows:plan**: Idea Refinement (Phase 0) trimmed by ~65 lines. Delegation to `brainstorming` skill for the interview protocol. Step 2 (Plan Structure & Naming) consolidated from three checklists to the orchestration essentials. Command drops from ~4100 to 3234 tokens.
 - **workflows:brainstorm**: Further thinned to defer Phase 2-3 details to `brainstorming` skill; removed duplicated "NEVER CODE" line (the skill's Hard Gate owns this).
 - **workflows:compound**: Phase 2 changed from prose instruction ("Invoke the compound-docs skill") to an explicit `Skill({ skill: "compound-docs", args: ... })` tool call, making the delegation actionable rather than advisory.
 - **deepen-plan**: Step 4 learnings-discovery replaced with a single `learnings-researcher` agent dispatch (removed ~90 lines of inline filesystem traversal, frontmatter filtering, and example prompts). Step 8 enhancement format replaced with a pointer to `planning` skill's Plan Deepening section. Command drops from ~3900 to 3006 tokens.
@@ -1051,7 +1051,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Removed
 
-- **deployment-engineer** agent and **devops-engineer** agent — consolidated into `infrastructure-engineer`.
+- **deployment-engineer** agent and **devops-engineer** agent: consolidated into `infrastructure-engineer`.
 
 ## [2.53.2] - 2026-04-08
 
@@ -1088,7 +1088,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **code-review**: Three new deep-review specialists -- api-contract (breaking changes, versioning, error consistency), data-migration (reversibility, lock duration, backfill strategy), red-team (adversarial second pass finding integration gaps). Change sizing guidance with 4 splitting strategies. Readability as explicit review dimension.
+- **code-review**: Three new deep-review specialists: api-contract (breaking changes, versioning, error consistency), data-migration (reversibility, lock duration, backfill strategy), red-team (adversarial second pass finding integration gaps). Change sizing guidance with 4 splitting strategies. Readability as explicit review dimension.
 - **writing**: Two-phase audit workflow (detect all tells first, then rewrite) with citation auditing tags ([OAICITE], [LINK-ROT], [ISBN-DOI-FAIL], [REF-BUG]). New `references/audit-workflow.md`.
 - **frontend-design**: Expanded AI slop detection to 6 prioritized patterns plus 15 additional tells. Motion patterns extracted to `references/motion-patterns.md` with spring physics values, stagger recipes, and GPU-safe animation rules.
 - **orchestrating-swarms**: Cold-start agent isolation, label randomization for judge panels, convergence detection. Two-stage review gate for subagent outputs. Resilience patterns (cascade prevention, recovery strategy, post-failure synthesis).
@@ -1117,7 +1117,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Changed
 
-- **code-review**: Removed Fix-First Heuristic and auto-fix instructions -- skill is diagnostic only, identifies and reports issues without fixing.
+- **code-review**: Removed Fix-First Heuristic and auto-fix instructions. Skill is diagnostic only, identifies and reports issues without fixing.
 - **frontend-design**: Condensed motion bullet in SKILL.md, moved detailed rules to references/motion-patterns.md. Replaced inline "Additional tells" with reference link.
 - **orchestrating-swarms**: Removed duplicate "fresh agent" and "provide full context" directives that appeared in both Dispatch Discipline and later sections.
 - **verification-before-completion**: Removed duplicate "zero issues found" row from rationalization table (already covered in Rules section).
@@ -1134,9 +1134,9 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 ### Changed
 
 - **planning**: Vertical slicing principle in anti-patterns table and verify checklist. Task duration heuristic (>2h = split) in phase sizing rules.
-- **frontend-design**: Four new banned AI patterns -- colored icon circles, left-border accent cards, cookie-cutter section rhythm, bubbly rounded containers. Fixed stock imagery alternative.
+- **frontend-design**: Four new banned AI patterns. Colored icon circles, left-border accent cards, cookie-cutter section rhythm, bubbly rounded containers. Fixed stock imagery alternative.
 - **writing-tests**: DAMP over DRY principle and test pyramid ratios (~80/15/5) as separate subsections. DAMP caveat added to "When Stuck" table.
-- **debugging**: Reduce step (1c) with stopping criterion -- strip to minimal failing case before investigating.
+- **debugging**: Reduce step (1c) with stopping criterion. Strip to minimal failing case before investigating.
 - **nodejs-backend**: Contract-first principle with named artifact (route schemas). Reconciled with existing OpenAPI generation guidance.
 - **verification-before-completion**: Removed duplicate empty Integration heading.
 
@@ -1144,17 +1144,17 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **debugging**: Three new reference docs -- `defense-in-depth.md` (4-layer validation pattern), `competing-hypotheses.md` (full ACH methodology with 6 failure categories and evidence scoring), `root-cause-tracing.md` (backward call-chain tracing with test pollution detection).
-- **code-review**: `reliability-patterns.md` reference -- error handling, timeouts, retries, circuit breakers, resource cleanup, queue resilience. New reliability agent in deep-review specialist roster.
-- **code-review**: `false-positive-suppression.md` reference -- 8 suppression categories with override rules.
-- **frontend-design**: `redesign-audit.md` reference -- 60+ checks across typography, color, layout, interactivity, content, and component patterns for existing UI improvement.
+- **debugging**: Three new reference docs. `defense-in-depth.md` (4-layer validation pattern), `competing-hypotheses.md` (full ACH methodology with 6 failure categories and evidence scoring), `root-cause-tracing.md` (backward call-chain tracing with test pollution detection).
+- **code-review**: `reliability-patterns.md` reference. Error handling, timeouts, retries, circuit breakers, resource cleanup, queue resilience. New reliability agent in deep-review specialist roster.
+- **code-review**: `false-positive-suppression.md` reference. 8 suppression categories with override rules.
+- **frontend-design**: `redesign-audit.md` reference. 60+ checks across typography, color, layout, interactivity, content, and component patterns for existing UI improvement.
 - **writing**: Quality Gate section with 5-dimension scoring rubric (Directness, Rhythm, Trust, Authenticity, Density) and 8-item quick audit checklist.
 - **writing/phrases.md**: Three structural anti-pattern categories (Dramatic Fragmentation, Formulaic Constructions, Narrator-from-a-Distance).
 - **writing-tests**: Four new rationalization table entries (hard-to-test code, understanding-first delay, prototype excuse, deadline pressure).
 - **postgresql**: Expanded anti-patterns table (7 patterns) with 3 detection queries (slow queries, table bloat, unused indexes).
 - **simplifying-code**: Two AI slop patterns (redundant error wrapping, verbose stdlib reimplementations).
-- **verification-before-completion**: `system-wide-test-check.md` reference -- blast-radius verification for task completion.
-- **resolve-pr** command -- merged `resolve-pr-parallel` + `resolve-pr-feedback` into single smart command with cluster analysis (3+ comments) and parallel agent dispatch.
+- **verification-before-completion**: `system-wide-test-check.md` reference. Blast-radius verification for task completion.
+- **resolve-pr** command: merged `resolve-pr-parallel` + `resolve-pr-feedback` into single smart command with cluster analysis (3+ comments) and parallel agent dispatch.
 - **deep-review**: `cloud-infra` specialist agent dispatched conditionally when diff touches infrastructure files.
 - **receiving-code-review**: Headless mode extracted to `references/headless-mode.md`.
 - **commands/references**: Shared `adr-templates.md` (extracted from adr command) and `agent-browser-cli.md` (shared between test-browser and feature-video).
@@ -1185,40 +1185,40 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Removed
 
-- **agent-native-reviewer** agent -- absorbed into agent-native-audit command.
-- **resolve-pr-parallel** command -- merged into resolve-pr.
-- **resolve-pr-feedback** command -- merged into resolve-pr.
+- **agent-native-reviewer** agent: absorbed into agent-native-audit command.
+- **resolve-pr-parallel** command: merged into resolve-pr.
+- **resolve-pr-feedback** command: merged into resolve-pr.
 
 ## [2.51.0] - 2026-03-31
 
 ### Added
 
-- **distiller**: `validate-plugin` command -- deterministic validation of all plugin components (frontmatter gates, anti-pattern detection, reference integrity, README/hook count accuracy). Replaces manual AI checks in `/audit-plugin` Phase 1.
-- **distiller**: `test-triggers` command -- regex trigger regression suite with JSONL fixture files per skill (29 skills, 179 test cases). Release gate in `release.sh`.
-- **distiller**: `test-semantic` command -- Claude-cli injection tests (Sonnet) that verify skills trigger organically from natural language prompts via `TEST_INJECTION_LOG` env var.
-- **distiller**: Skill change manifest (`distillery/.skill-versions.json`) -- tracks SHA256 hashes of SKILL.md content and trigger patterns per skill. Enables staleness filtering in analysis commands.
+- **distiller**: `validate-plugin` command. Deterministic validation of all plugin components (frontmatter gates, anti-pattern detection, reference integrity, README/hook count accuracy). Replaces manual AI checks in `/audit-plugin` Phase 1.
+- **distiller**: `test-triggers` command. Regex trigger regression suite with JSONL fixture files per skill (29 skills, 179 test cases). Release gate in `release.sh`.
+- **distiller**: `test-semantic` command. Claude-cli injection tests (Sonnet) that verify skills trigger organically from natural language prompts via `TEST_INJECTION_LOG` env var.
+- **distiller**: Skill change manifest (`distillery/.skill-versions.json`). Tracks SHA256 hashes of SKILL.md content and trigger patterns per skill. Enables staleness filtering in analysis commands.
 - **planning**: Execution posture signals (test-first, characterization-first, external-delegate) for phase-level implementation sequencing.
 - **planning**: Plan deepening section for targeted strengthening of existing plans.
 - **frontend-design**: Design variance parameters (DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY) to prevent aesthetic convergence.
-- **frontend-design**: `references/banned-ai-patterns.md` -- comprehensive banned AI design patterns (layout, color, typography, decoration, interaction, content).
+- **frontend-design**: `references/banned-ai-patterns.md`: banned AI design patterns (layout, color, typography, decoration, interaction, content).
 - **hooks**: `TEST_INJECTION_LOG` env var in `inject-skills.sh` for test observability (zero overhead in normal operation).
 
 ### Changed
 
 - **audit-plugin**: Phase 1 now runs `validate-plugin` + `test-triggers` deterministically before AI analysis. Phase 2 adds `analyze-misfires` and `diagnose-negatives` as trigger coverage checks. Phase 7 runs full test suite (pytest + triggers + semantic).
 - **sync-from-repos**: Phase 1 launches `harvest-sessions` in background. Phase 6 runs `discover-signals` for negative pattern discovery. Body budget threshold raised to 4K tokens for skills.
-- **release.sh**: Pre-commit gates added -- `test-triggers` (blocking), `test-semantic` (warning), `generate-manifest.py` (auto-updates manifest).
+- **release.sh**: Pre-commit gates added. `test-triggers` (blocking), `test-semantic` (warning), `generate-manifest.py` (auto-updates manifest).
 - **harvest-sessions/analyze-misfires/diagnose-negatives**: Stale data filtering by default (exclude examples from before skill/pattern was last changed). `--include-stale` flag to override.
 
 ### Removed
 
-- **distiller**: `ab_eval()`, `test_skill()`, `DEFAULT_TEST_MODELS` -- stale OpenRouter-dependent A/B testing code, CLI commands, and tests.
+- **distiller**: `ab_eval()`, `test_skill()`, `DEFAULT_TEST_MODELS`. Stale OpenRouter-dependent A/B testing code, CLI commands, and tests.
 
 ## [2.50.0] - 2026-03-29
 
 ### Added
 
-- **code-review**: Deep multi-agent review mode -- auto-detects complex diffs (3+ signals) and dispatches parallel specialist agents (correctness, security, testing, maintainability, performance). New `references/deep-review.md` with agent prompt templates, merge algorithm, and model selection.
+- **code-review**: Deep multi-agent review mode. Auto-detects complex diffs (3+ signals) and dispatches parallel specialist agents (correctness, security, testing, maintainability, performance). New `references/deep-review.md` with agent prompt templates, merge algorithm, and model selection.
 - **code-review**: Confidence rubric (0.0-1.0 scoring) with false-positive suppression categories. Intent verification in review process.
 - **receiving-code-review**: Headless mode for programmatic triage (AUTO-FIX / AUTO-DECLINE / ESCALATE classification). Prior-feedback check on re-reviews.
 - **document-review**: 5 conditional review lenses (Product, Design, Security, Scope guardian, Adversarial) activated by document signals.
@@ -1306,7 +1306,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Changed
 
-- **Migrated `resolve-pr-parallel` from skill to command** -- was already `disable-model-invocation: true` with `argument-hint`, now properly lives in `commands/` with `$ARGUMENTS` interpolation and `receiving-code-review` skill delegation
+- **Migrated `resolve-pr-parallel` from skill to command**: was already `disable-model-invocation: true` with `argument-hint`, now properly lives in `commands/` with `$ARGUMENTS` interpolation and `receiving-code-review` skill delegation
 - Scripts moved to `commands/scripts/`; cross-references updated in code-review, pr-comment-resolver, file-todos
 
 ## [2.49.0] - 2026-03-27
@@ -1321,7 +1321,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 ### Changed
 
 - **Cross-repo sync improvements** across 30 skills, 12 agents, 8 commands:
-  - Skill descriptions: removed workflow leaks from 5 skills (CSO pattern from superpowers) -- descriptions now contain only trigger conditions
+  - Skill descriptions: removed workflow leaks from 5 skills (CSO pattern from superpowers). Descriptions now contain only trigger conditions
   - Research verification triggers added to react-frontend, tailwind-css, nodejs-backend, pinescript (search current docs before implementing version-sensitive patterns)
   - Writing skill: 5 new anti-slop sections (lazy extremes, negative listing, performative emphasis, telling-instead-of-showing, rhythm rules)
   - Code review: findings now require `quoted code` for Critical/Important severity
@@ -1342,39 +1342,39 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **Deep interview protocol** in brainstorming, planning, and deepen-plan -- probes assumptions, second-order effects, research-backed challenges with citations, contradiction tracking, completeness assessment
-- **User context calibration** in brainstorming -- reads vocabulary/framing signals to adapt question style
-- **Decision authority principle** in planning -- Claude decides technical implementation, user decides experience-affecting tradeoffs
-- **Experiential progress framing** in workflows:work -- milestones reported as user-visible changes, not technical diffs
-- **Post-research interview** in deepen-plan (Step 6.5) -- surfaces agent contradictions with cited evidence before enhancing the plan
-- **Skills.sh marketplace scan** in sync-from-repos (Phase 2b) -- cross-references existing skills against marketplace for improvements
-- **Post-sync audit recommendation** in sync-from-repos (Phase 6) -- suggests running audit after applying external changes
+- **Deep interview protocol** in brainstorming, planning, and deepen-plan: probes assumptions, second-order effects, research-backed challenges with citations, contradiction tracking, completeness assessment
+- **User context calibration** in brainstorming: reads vocabulary/framing signals to adapt question style
+- **Decision authority principle** in planning: Claude decides technical implementation, user decides experience-affecting tradeoffs
+- **Experiential progress framing** in workflows:work. Milestones reported as user-visible changes, not technical diffs
+- **Post-research interview** in deepen-plan (Step 6.5): surfaces agent contradictions with cited evidence before enhancing the plan
+- **Skills.sh marketplace scan** in sync-from-repos (Phase 2b): cross-references existing skills against marketplace for improvements
+- **Post-sync audit recommendation** in sync-from-repos (Phase 6): suggests running audit after applying external changes
 - **Three audit checks** from distiller: temporal accuracy (stale version pins), description keyword gaps, trigger pattern accuracy
-- **Language review profiles** for code-review -- TypeScript, Python, PHP, Shell, Config, Data Formats, Security, LLM Trust Boundaries in references/language-profiles.md
-- **Four-level severity** in code-review -- added Medium between Important and Minor for maintainability issues
-- **Orchestration best practices** #9-13 -- two-stage per-task review, implementer status signals (DONE/BLOCKED/NEEDS_CONTEXT), worktree-based parallel dispatch, post-integration verification, context provision
-- **File structure table** in planning template -- map all files before defining tasks
-- **pytest patterns** in python-services -- flags, fixtures, conftest, autospec, markers, Protocol typing, context managers, project layout
-- **Routing + migrations** sections in php-laravel -- scoped model binding, anonymous migrations, JSON response envelope
-- **Security hardening** in php-laravel ecosystem reference -- session hardening, security headers middleware, encrypted casts, signed URLs, composer audit
-- **ESLint integration** in tailwind-css -- eslint-plugin-better-tailwindcss rules
-- **CSS Modules + animate patterns** in tailwind-css -- @reference "#tailwind", z-index tokens, tw-animate-css
-- **Circuit breaker** in nodejs-backend -- opossum for outbound service calls, Clean Architecture dependency rule
-- **Double-bezel depth technique** in frontend-design -- nested container pattern, blur scroll entry, staggered --index reveals, IntersectionObserver mandate
+- **Language review profiles** for code-review: TypeScript, Python, PHP, Shell, Config, Data Formats, Security, LLM Trust Boundaries in references/language-profiles.md
+- **Four-level severity** in code-review: added Medium between Important and Minor for maintainability issues
+- **Orchestration best practices** #9-13: two-stage per-task review, implementer status signals (DONE/BLOCKED/NEEDS_CONTEXT), worktree-based parallel dispatch, post-integration verification, context provision
+- **File structure table** in planning template: map all files before defining tasks
+- **pytest patterns** in python-services: flags, fixtures, conftest, autospec, markers, Protocol typing, context managers, project layout
+- **Routing + migrations** sections in php-laravel: scoped model binding, anonymous migrations, JSON response envelope
+- **Security hardening** in php-laravel ecosystem reference: session hardening, security headers middleware, encrypted casts, signed URLs, composer audit
+- **ESLint integration** in tailwind-css: eslint-plugin-better-tailwindcss rules
+- **CSS Modules + animate patterns** in tailwind-css: @reference "#tailwind", z-index tokens, tw-animate-css
+- **Circuit breaker** in nodejs-backend: opossum for outbound service calls, Clean Architecture dependency rule
+- **Double-bezel depth technique** in frontend-design: nested container pattern, blur scroll entry, staggered --index reveals, IntersectionObserver mandate
 - **Button-in-button CTA pattern** + hero construction + content register + eyebrow tags in frontend-design
-- **Five anti-slop checks** in writing -- cut quotables, Wh-word openers, meta-joiners, same-length sentence detection, one-liner variation
+- **Five anti-slop checks** in writing: cut quotables, Wh-word openers, meta-joiners, same-length sentence detection, one-liner variation
 - **Common mistakes table** + approved response templates in receiving-code-review
-- **Output contract** in simplifying-code -- scope, key changes, verification, residual risks
+- **Output contract** in simplifying-code: scope, key changes, verification, residual risks
 
 ### Improved
 
-- **brainstorming** -- explore project context before questions, isolation/clarity design principles in Phase 3, collapsed redundant YAGNI/Incremental Validation/Integration sections
-- **debugging** -- under-pressure inoculation in Iron Law, trimmed Common Patterns to 3 non-obvious entries, removed duplicate anti-pattern row
-- **verification-before-completion** -- "I'm tired" and spirit-over-letter rationalization rows
-- **receiving-code-review** -- deleted redundant Forbidden Responses (covered by Common Mistakes table)
-- **planning** -- zero-context engineer framing for tasks, merged Relationship + Integration sections
-- **postgresql** -- pg_stat_statements slow-query detection, table bloat check
-- **php-laravel** -- DatabaseTransactions/DatabaseMigrations distinction, Http::fake(), Gate::forUser(), coverage target, dropped stale "since Laravel 9" pin, fixed Kernel.php framing for Laravel 11+
+- **brainstorming**: explore project context before questions, isolation/clarity design principles in Phase 3, collapsed redundant YAGNI/Incremental Validation/Integration sections
+- **debugging**: under-pressure inoculation in Iron Law, trimmed Common Patterns to 3 non-obvious entries, removed duplicate anti-pattern row
+- **verification-before-completion**: "I'm tired" and spirit-over-letter rationalization rows
+- **receiving-code-review**: deleted redundant Forbidden Responses (covered by Common Mistakes table)
+- **planning**: zero-context engineer framing for tasks, merged Relationship + Integration sections
+- **postgresql**: pg_stat_statements slow-query detection, table bloat check
+- **php-laravel**: DatabaseTransactions/DatabaseMigrations distinction, Http::fake(), Gate::forUser(), coverage target, dropped stale "since Laravel 9" pin, fixed Kernel.php framing for Laravel 11+
 
 ### Fixed
 
@@ -1389,17 +1389,17 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Improved
 
-- **code-review** — scope drift check integrated into review process step 1, search-before-recommending anti-pattern
-- **debugging** — sanitize-before-search rule, scope lock on hypothesis, structured debug report format, recurring fix site detection
-- **writing** — changelog voice section (sell test, contributor subsection, verb tense)
-- **verification-before-completion** — review staleness check, merged Red Flags into Rationalization Prevention
-- **planning** — scope challenge trigger (8+ files or 2+ new classes)
-- **nodejs-backend** — new `references/api-design.md` (cursor pagination, filtering, sorting, deprecation)
-- **react-frontend** — flaky test quarantine workflow in e2e-testing reference
-- **simplifying-code** — placeholder stub bans in AI Slop Removal
-- **frontend-design** — extracted Creative Arsenal and Redesigning to references
-- **agent-native-architecture** — extracted quick-start template to references, flattened reference index
-- **linux-bash-scripting** — added output format definition
+- **code-review**: scope drift check integrated into review process step 1, search-before-recommending anti-pattern
+- **debugging**: sanitize-before-search rule, scope lock on hypothesis, structured debug report format, recurring fix site detection
+- **writing**: changelog voice section (sell test, contributor subsection, verb tense)
+- **verification-before-completion**: review staleness check, merged Red Flags into Rationalization Prevention
+- **planning**: scope challenge trigger (8+ files or 2+ new classes)
+- **nodejs-backend**: new `references/api-design.md` (cursor pagination, filtering, sorting, deprecation)
+- **react-frontend**: flaky test quarantine workflow in e2e-testing reference
+- **simplifying-code**: placeholder stub bans in AI Slop Removal
+- **frontend-design**: extracted Creative Arsenal and Redesigning to references
+- **agent-native-architecture**: extracted quick-start template to references, flattened reference index
+- **linux-bash-scripting**: added output format definition
 
 ### Fixed
 
@@ -1425,7 +1425,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 ### Fixed
 
 - README component counts (23 agents, 18 commands, 30 skills), Review heading (10 not 11), added missing `/workflows:document-release` to commands table
-- Stale "LFG/SLFG" references in `workflows:plan` -- replaced with "LFG"
+- Stale "LFG/SLFG" references in `workflows:plan`. Replaced with "LFG"
 - Added Before/After Screenshots table to `workflows:work` PR template
 - Updated `skill-patterns.sh` total count comment
 
@@ -1434,71 +1434,71 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 ### Changed
 
 - **Merged `/lfg` + `/slfg`** into single `/lfg` command with `--swarm` flag for parallel execution
-- **Absorbed `finishing-branch` skill** into `workflows:work` Phase 4 -- PR template, safety rules, and ship options now inline. Saves 1542 tokens per session.
-- **Moved `setup` from skill to command** -- invoked explicitly via `/setup`, no longer in trigger-matching pool. Saves 1257 tokens per session.
-- **`reproduce-bug` command** -- added Playwright MCP availability guard
+- **Absorbed `finishing-branch` skill** into `workflows:work` Phase 4. PR template, safety rules, and ship options now inline. Saves 1542 tokens per session.
+- **Moved `setup` from skill to command**: invoked explicitly via `/setup`, no longer in trigger-matching pool. Saves 1257 tokens per session.
+- **`reproduce-bug` command**: added Playwright MCP availability guard
 
 ### Removed
 
-- **`/slfg` command** -- merged into `/lfg --swarm`
-- **`/generate_command` command** -- generic scaffold with project-specific refs, Claude handles this natively
-- **`/heal-skill` command** -- reactive skill fixing absorbed into `/audit-plugin`
-- **`finishing-branch` skill** -- absorbed into `workflows:work`
-- **`setup` skill** -- moved to `/setup` command (still available, just not a skill)
+- **`/slfg` command**: merged into `/lfg --swarm`
+- **`/generate_command` command**: generic scaffold with project-specific refs, Claude handles this natively
+- **`/heal-skill` command**: reactive skill fixing absorbed into `/audit-plugin`
+- **`finishing-branch` skill**: absorbed into `workflows:work`
+- **`setup` skill**: moved to `/setup` command (still available, just not a skill)
 
 ## [2.46.0] - 2026-03-18
 
 ### Changed
 
-- **Merged `kieran-python-reviewer` + `kieran-typescript-reviewer`** into single `kieran-reviewer` agent -- ~1400 tokens saved, 50% shared content deduplicated
-- **Disambiguated trigger descriptions** -- pr-comment-resolver vs resolve-pr-parallel, code-simplicity-reviewer vs simplifying-code, architecture-strategist vs code-review, bug-reproduction-validator vs debugging now have clearly distinct descriptions
-- **design-iterator agent** -- removed false "skill auto-loaded" claims, collapsed duplicate screenshot sections
-- **agent-native-reviewer agent** -- replaced inline anti-pattern examples with skill reference, ~40% token reduction
-- **learnings-researcher agent** -- moved schema to external reference, removed duplicate efficiency guidelines
-- **pr-comment-resolver agent** -- aligned description and body to "pre-triaged mechanical" scope
-- **agent-native-architecture skill** -- removed "Why Now" filler block, fixed second-person heading
-- **frontend-design skill** -- added Verify section, removed preamble restating frontmatter
+- **Merged `kieran-python-reviewer` + `kieran-typescript-reviewer`** into single `kieran-reviewer` agent: ~1400 tokens saved, 50% shared content deduplicated
+- **Disambiguated trigger descriptions**: pr-comment-resolver vs resolve-pr-parallel, code-simplicity-reviewer vs simplifying-code, architecture-strategist vs code-review, bug-reproduction-validator vs debugging now have clearly distinct descriptions
+- **design-iterator agent**: removed false "skill auto-loaded" claims, collapsed duplicate screenshot sections
+- **agent-native-reviewer agent**: replaced inline anti-pattern examples with skill reference, ~40% token reduction
+- **learnings-researcher agent**: moved schema to external reference, removed duplicate efficiency guidelines
+- **pr-comment-resolver agent**: aligned description and body to "pre-triaged mechanical" scope
+- **agent-native-architecture skill**: removed "Why Now" filler block, fixed second-person heading
+- **frontend-design skill**: added Verify section, removed preamble restating frontmatter
 - **Trimmed filler** across compound-docs, file-todos, git-worktree, orchestrating-swarms (removed preambles restating frontmatter, redundant prose, stale timestamps)
-- **php-laravel skill** -- added missing verify command to Discipline section
+- **php-laravel skill**: added missing verify command to Discipline section
 
 ## [2.45.9] - 2026-03-18
 
 ### Changed
 
-- **reproduce-bug command** — made generic (removed project-specific rails/appsignal agent refs, uses debugging skill methodology)
-- **workflows:brainstorm command** — trimmed to thin orchestration wrapper, delegates process knowledge to brainstorming skill
-- **changelog command** — replaced stale EVERY_WRITE_STYLE.md reference with writing skill, documented intentional emoji override
-- **agent-native-audit command** — added cross-reference to agent-native-reviewer agent
-- **brainstorming skill** — trimmed verbose preamble
-- **agent-native-architecture skill** — removed second person ("you should")
-- **setup skill** — removed dead `plan_review_agents` config field
-- **skill-distiller** — added triage-before-fetch step and manual npx fallback for fetch failures
+- **reproduce-bug command**: made generic (removed project-specific rails/appsignal agent refs, uses debugging skill methodology)
+- **workflows:brainstorm command**: trimmed to thin orchestration wrapper, delegates process knowledge to brainstorming skill
+- **changelog command**: replaced stale EVERY_WRITE_STYLE.md reference with writing skill, documented intentional emoji override
+- **agent-native-audit command**: added cross-reference to agent-native-reviewer agent
+- **brainstorming skill**: trimmed verbose preamble
+- **agent-native-architecture skill**: removed second person ("you should")
+- **setup skill**: removed dead `plan_review_agents` config field
+- **skill-distiller**: added triage-before-fetch step and manual npx fallback for fetch failures
 
 ## [2.45.8] - 2026-03-18
 
 ### Changed
 
-- **code-review skill** — Fix-First Heuristic: classify findings as AUTO-FIX (mechanical) or ASK (judgment), batch-apply safe fixes. Added suppression list (things NOT to flag), LLM trust boundary checks, enum/value completeness tracing, evidence confidence levels, doc staleness detection
-- **debugging skill** — formalized multi-component boundary instrumentation (enter/exit/verify at each layer), defined "attempt" for three-fix threshold, deepened root cause evidence requirement (two levels deep)
-- **planning skill** — task granularity to 2-5 minutes with exact commands/code, subagent-based plan review loop (max 3 iterations), completeness rule (don't defer tests/edge cases)
-- **brainstorming skill** — scope decomposition gate for multi-subsystem requests, spec review loop with subagent before user approval
-- **writing-tests skill** — complete mock data structure rule, test pollution bisection technique, user journey-driven test case derivation
-- **verification-before-completion skill** — ordered verification chain (build->types->lint->test->security, stop on first failure), periodic checkpoints during long sessions
-- **simplifying-code skill** — explicit async/sync conversion prohibition, domain-step preservation rule, impact prioritization (control flow->naming->duplication->types)
-- **receiving-code-review skill** — prescriptive YAGNI grep-before-implementing workflow
-- **finishing-branch skill** — post-merge test failure recovery (revert merge, keep branch, diagnose)
-- **writing skill** — person rules clarified (you/we/I usage, avoid third-person passive)
+- **code-review skill**: Fix-First Heuristic: classify findings as AUTO-FIX (mechanical) or ASK (judgment), batch-apply safe fixes. Added suppression list (things NOT to flag), LLM trust boundary checks, enum/value completeness tracing, evidence confidence levels, doc staleness detection
+- **debugging skill**: formalized multi-component boundary instrumentation (enter/exit/verify at each layer), defined "attempt" for three-fix threshold, deepened root cause evidence requirement (two levels deep)
+- **planning skill**: task granularity to 2-5 minutes with exact commands/code, subagent-based plan review loop (max 3 iterations), completeness rule (don't defer tests/edge cases)
+- **brainstorming skill**: scope decomposition gate for multi-subsystem requests, spec review loop with subagent before user approval
+- **writing-tests skill**: complete mock data structure rule, test pollution bisection technique, user journey-driven test case derivation
+- **verification-before-completion skill**: ordered verification chain (build->types->lint->test->security, stop on first failure), periodic checkpoints during long sessions
+- **simplifying-code skill**: explicit async/sync conversion prohibition, domain-step preservation rule, impact prioritization (control flow->naming->duplication->types)
+- **receiving-code-review skill**: prescriptive YAGNI grep-before-implementing workflow
+- **finishing-branch skill**: post-merge test failure recovery (revert merge, keep branch, diagnose)
+- **writing skill**: person rules clarified (you/we/I usage, avoid third-person passive)
 
 ### Fixed
 
-- **brainstorming/planning conflict** — explicit handoff: brainstorm outputs approved spec to `docs/brainstorms/`, planning takes it as input
-- **code-review** — prior comments instruction bolded and repositioned for visibility
-- **planning skill** — clarified `.plan/` (ephemeral working state) vs `docs/plans/` (committed formal plans) distinction
-- **debugging skill** — added `bug-reproduction-validator` agent and `reproduce-bug` command to integration section
+- **brainstorming/planning conflict**: explicit handoff: brainstorm outputs approved spec to `docs/brainstorms/`, planning takes it as input
+- **code-review**: prior comments instruction bolded and repositioned for visibility
+- **planning skill**: clarified `.plan/` (ephemeral working state) vs `docs/plans/` (committed formal plans) distinction
+- **debugging skill**: added `bug-reproduction-validator` agent and `reproduce-bug` command to integration section
 
 ### Removed
 
-- **`/resolve_parallel` command** — merged into `/resolve_todo_parallel` (was a near-duplicate)
+- **`/resolve_parallel` command**: merged into `/resolve_todo_parallel` (was a near-duplicate)
 - Stale references: `/technical_review` -> `/workflows:review` in deepen-plan and workflows:plan commands
 - Stale references: `cora-test-reviewer` agent removed from workflows:compound (agent doesn't exist)
 - Stale reference: `/compound command` -> `/workflows:compound` in compound-docs skill
@@ -1507,253 +1507,253 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **`/workflows:document-release` command** — post-ship documentation sync. After code ships and a PR exists, cross-references every doc file against the diff and brings README, ARCHITECTURE, CONTRIBUTING, CLAUDE.md/AGENTS.md up to date. Polishes CHANGELOG voice, cleans up completed TODOs, and asks about version bumps. Auto-applies factual updates; stops to ask only for narrative or risky changes. Commits modified docs as a single `docs:` commit and updates the PR body with a per-file change summary.
+- **`/workflows:document-release` command**: post-ship documentation sync. After code ships and a PR exists, cross-references every doc file against the diff and brings README, ARCHITECTURE, CONTRIBUTING, CLAUDE.md/AGENTS.md up to date. Polishes CHANGELOG voice, cleans up completed TODOs, and asks about version bumps. Auto-applies factual updates; stops to ask only for narrative or risky changes. Commits modified docs as a single `docs:` commit and updates the PR body with a per-file change summary.
 
 ## [2.45.6] - 2026-03-18
 
 ### Changed
 
-- **writing skill** — added False Agency section (inanimate actors → name the person), narrator-from-a-distance principle, throat-clearing openers and emphasis crutches to banned phrases, scoring rubric (Directness/Rhythm/Trust/Authenticity/Density, target 35/50) to self-check
-- **writing skill** — added `references/phrases.md` (extended jargon table, adverb list, meta-commentary, sentence starters to avoid) and `references/examples.md` (7 before/after transformations)
-- **frontend-design skill** — added dependency check policy (verify package.json before any import), explicit no-emoji rule, form layout rule (label above, error below), GSAP/Framer Motion separation guidance, Creative Arsenal section (navigation, layout, card, typography, micro-interaction patterns)
+- **writing skill**: added False Agency section (inanimate actors → name the person), narrator-from-a-distance principle, throat-clearing openers and emphasis crutches to banned phrases, scoring rubric (Directness/Rhythm/Trust/Authenticity/Density, target 35/50) to self-check
+- **writing skill**: added `references/phrases.md` (extended jargon table, adverb list, meta-commentary, sentence starters to avoid) and `references/examples.md` (7 before/after transformations)
+- **frontend-design skill**: added dependency check policy (verify package.json before any import), explicit no-emoji rule, form layout rule (label above, error below), GSAP/Framer Motion separation guidance, Creative Arsenal section (navigation, layout, card, typography, micro-interaction patterns)
 
 ## [2.45.5] - 2026-03-17
 
 ### Changed
 
-- **code-review skill** — fetch MR/PR discussions before writing findings to avoid re-raising resolved issues
-- **code-review skill** — use diff content directly for added files instead of reading from working tree on remote branches
+- **code-review skill**: fetch MR/PR discussions before writing findings to avoid re-raising resolved issues
+- **code-review skill**: use diff content directly for added files instead of reading from working tree on remote branches
 
 ## [2.45.4] - 2026-03-14
 
 ### Changed
 
-- **meta-prompting skill** — added output format awareness to intro line (pattern results now marked inline)
-- **writing skill** — converted Self-Check from prose to 4-step procedural checklist with done definition
-- **pinescript skill** — added Workflow section with 4-step development cycle and overfit detection
-- **linux-bash-scripting skill** — added Verify section (shellcheck + shfmt + edge case testing)
-- **nodejs-backend skill** — added verify line to Discipline section (tsc + npm test)
-- **postgresql skill** — added Verify section (EXPLAIN ANALYZE + unindexed FK check)
-- **python-services skill** — added verify line to Discipline section (pytest + ruff)
+- **meta-prompting skill**: added output format awareness to intro line (pattern results now marked inline)
+- **writing skill**: converted Self-Check from prose to 4-step procedural checklist with done definition
+- **pinescript skill**: added Workflow section with 4-step development cycle and overfit detection
+- **linux-bash-scripting skill**: added Verify section (shellcheck + shfmt + edge case testing)
+- **nodejs-backend skill**: added verify line to Discipline section (tsc + npm test)
+- **postgresql skill**: added Verify section (EXPLAIN ANALYZE + unindexed FK check)
+- **python-services skill**: added verify line to Discipline section (pytest + ruff)
 
 ### Added
 
-- **CLAUDE.md** — added SkillsBench Quality Dimensions checklist (output format, success criteria, constraints, procedural content, optimal length)
-- **md-docs init-agents.md** — added SkillsBench quality rules for generated AGENTS.md files
-- **distiller.py** — added `token-budget` command with SkillsBench effectiveness rating (OPTIMAL/VERBOSE/OVER_BUDGET)
+- **CLAUDE.md**: added SkillsBench Quality Dimensions checklist (output format, success criteria, constraints, procedural content, optimal length)
+- **md-docs init-agents.md**: added SkillsBench quality rules for generated AGENTS.md files
+- **distiller.py**: added `token-budget` command with SkillsBench effectiveness rating (OPTIMAL/VERBOSE/OVER_BUDGET)
 
 ## [2.45.3] - 2026-03-14
 
 ### Changed
 
-- **code-review skill** — added untracked files to scope resolution fallback chain (new files were invisible to review)
-- **receiving-code-review skill** — added `gh api` reply command for inline PR thread replies
-- **brainstorming skill** — added trivially-scoped escape hatch and multi-subsystem decomposition signal
-- **planning skill** — added execution handoff line pointing to `workflows:work`
-- **simplifying-code skill** — added dense transform chain pattern to Smell-to-Fix table
-- **frontend-design skill** — added Motion library performance guardrails (useMotionValue, leaf client components), strengthened Tailwind version check in redesign section
-- **tailwind-css skill** — expanded border radius v3-to-v4 rename table (5 explicit mappings replacing 1 vague row)
-- **refine-prompt skill** — added missing-context sub-checklist to Context assessment row
-- **verification-before-completion skill** — added verification phase order (build, typecheck, lint, test, diff)
-- **react-frontend skill** — added RSC safety rules to App Router decision section
+- **code-review skill**: added untracked files to scope resolution fallback chain (new files were invisible to review)
+- **receiving-code-review skill**: added `gh api` reply command for inline PR thread replies
+- **brainstorming skill**: added trivially-scoped escape hatch and multi-subsystem decomposition signal
+- **planning skill**: added execution handoff line pointing to `workflows:work`
+- **simplifying-code skill**: added dense transform chain pattern to Smell-to-Fix table
+- **frontend-design skill**: added Motion library performance guardrails (useMotionValue, leaf client components), strengthened Tailwind version check in redesign section
+- **tailwind-css skill**: expanded border radius v3-to-v4 rename table (5 explicit mappings replacing 1 vague row)
+- **refine-prompt skill**: added missing-context sub-checklist to Context assessment row
+- **verification-before-completion skill**: added verification phase order (build, typecheck, lint, test, diff)
+- **react-frontend skill**: added RSC safety rules to App Router decision section
 
 ## [2.45.2] - 2026-03-10
 
 ### Fixed
 
-- **php-laravel skill** — tightened trigger pattern to stop false positives on bare "PHP" mentions (php-src, prose about PHP). Removed standalone `\bphp\b` match; now requires Laravel/framework context (eloquent, blade, artisan, phpunit, phpstan, "php controller", etc.). Updated skill description to exclude PHP internals.
+- **php-laravel skill**: tightened trigger pattern to stop false positives on bare "PHP" mentions (php-src, prose about PHP). Removed standalone `\bphp\b` match; now requires Laravel/framework context (eloquent, blade, artisan, phpunit, phpstan, "php controller", etc.). Updated skill description to exclude PHP internals.
 
 ## [2.45.1] - 2026-03-08
 
 ### Changed
 
-- **frontend-design skill** — enriched with anti-slop rules from taste-skill research: forbidden AI patterns (no pure black, no Inter, no 3-card rows, no AI purple), content realism rules (organic data, no generic names/brands/cliches), performance guardrails (transform/opacity only, z-index discipline), interactivity requirements (skeleton loaders, empty states, tactile feedback), and a prioritized 7-step redesign audit checklist for upgrading existing interfaces
+- **frontend-design skill**: enriched with anti-slop rules from taste-skill research: forbidden AI patterns (no pure black, no Inter, no 3-card rows, no AI purple), content realism rules (organic data, no generic names/brands/cliches), performance guardrails (transform/opacity only, z-index discipline), interactivity requirements (skeleton loaders, empty states, tactile feedback), and a prioritized 7-step redesign audit checklist for upgrading existing interfaces
 
 ## [2.45.0] - 2026-03-07
 
 ### Added
 
-- **`/verify` command** — pre-PR verification pipeline with 4 modes (quick, full, pre-commit, pre-pr). Runs build, types, lint, tests, security scan, and diff review. Produces structured READY/NOT READY report.
-- **`scripts/validate-cross-refs.sh`** — CI validation script that checks agents, commands, skills, and README for broken cross-references to nonexistent components. Strips code blocks to avoid false positives.
+- **`/verify` command**: pre-PR verification pipeline with 4 modes (quick, full, pre-commit, pre-pr). Runs build, types, lint, tests, security scan, and diff review. Produces structured READY/NOT READY report.
+- **`scripts/validate-cross-refs.sh`**: CI validation script that checks agents, commands, skills, and README for broken cross-references to nonexistent components. Strips code blocks to avoid false positives.
 
 ### Changed
 
-- **writing skill** — added explicit banned phrases list ("In today's rapidly evolving landscape", "game-changer", "Moreover" as sentence starter, etc.) with "delete and rewrite on sight" instruction
-- **best-practices-researcher agent** — merged `framework-docs-researcher` into this agent. Now covers best practices, framework docs, source code analysis, and deprecation checks in one agent.
-- **architecture-strategist agent** — merged `pattern-recognition-specialist` into this agent. Now covers architecture, design patterns, naming conventions, and structural integrity.
-- **design-iterator agent** — removed verbatim `frontend-design` skill aesthetics block; now references the skill instead of duplicating it
-- **figma-design-sync agent** — removed 80+ lines of Tailwind CSS patterns and Rails ERB examples; now references the `tailwind-css` skill
-- **design-implementation-reviewer agent** — removed persona filler, added `tailwind-css` skill reference
-- **performance-oracle agent** — removed hardcoded benchmarks (200ms API, 5KB bundle), removed persona filler, added `postgresql` and `react-frontend` skill references
-- **pr-comment-resolver agent** — added references to `receiving-code-review` and `verification-before-completion` skills, removed generic professional conduct filler
-- **bug-reproduction-validator agent** — stripped persona filler ("meticulous Bug Reproduction Specialist"), now opens with mission statement
-- **spec-flow-analyzer agent** — stripped persona filler ("elite User Experience Flow Analyst"), kept scope/mission
-- **security-sentinel agent** — stripped persona opener and motivational closer, replaced with direct instructions
-- **data-integrity-guardian agent** — stripped persona filler, kept mission statement
+- **writing skill**: added explicit banned phrases list ("In today's rapidly evolving landscape", "game-changer", "Moreover" as sentence starter, etc.) with "delete and rewrite on sight" instruction
+- **best-practices-researcher agent**: merged `framework-docs-researcher` into this agent. Now covers best practices, framework docs, source code analysis, and deprecation checks in one agent.
+- **architecture-strategist agent**: merged `pattern-recognition-specialist` into this agent. Now covers architecture, design patterns, naming conventions, and structural integrity.
+- **design-iterator agent**: removed verbatim `frontend-design` skill aesthetics block; now references the skill instead of duplicating it
+- **figma-design-sync agent**: removed 80+ lines of Tailwind CSS patterns and Rails ERB examples; now references the `tailwind-css` skill
+- **design-implementation-reviewer agent**: removed persona filler, added `tailwind-css` skill reference
+- **performance-oracle agent**: removed hardcoded benchmarks (200ms API, 5KB bundle), removed persona filler, added `postgresql` and `react-frontend` skill references
+- **pr-comment-resolver agent**: added references to `receiving-code-review` and `verification-before-completion` skills, removed generic professional conduct filler
+- **bug-reproduction-validator agent**: stripped persona filler ("meticulous Bug Reproduction Specialist"), now opens with mission statement
+- **spec-flow-analyzer agent**: stripped persona filler ("elite User Experience Flow Analyst"), kept scope/mission
+- **security-sentinel agent**: stripped persona opener and motivational closer, replaced with direct instructions
+- **data-integrity-guardian agent**: stripped persona filler, kept mission statement
 
 ### Fixed
 
-- **kieran-python-reviewer agent** — fixed malformed example block (two assistant responses in one example)
-- **kieran-typescript-reviewer agent** — fixed malformed example block (same issue)
-- **bug-reproduction-validator agent** — fixed duplicate section numbering (two sections numbered "6.")
-- **git-history-analyzer agent** — rewritten with concrete step-by-step methodology, explicit Bash tool usage, structured output template, and scope boundaries
-- **All 21 read-only agents** — added `autoApprove: read` for frictionless file access during reviews and research
-- **4 agents** (`deployment-engineer`, `devops-engineer`, `cloud-architect`, `accessibility-tester`) — added missing `<examples>` blocks for better routing
+- **kieran-python-reviewer agent**: fixed malformed example block (two assistant responses in one example)
+- **kieran-typescript-reviewer agent**: fixed malformed example block (same issue)
+- **bug-reproduction-validator agent**: fixed duplicate section numbering (two sections numbered "6.")
+- **git-history-analyzer agent**: rewritten with concrete step-by-step methodology, explicit Bash tool usage, structured output template, and scope boundaries
+- **All 21 read-only agents**: added `autoApprove: read` for frictionless file access during reviews and research
+- **4 agents** (`deployment-engineer`, `devops-engineer`, `cloud-architect`, `accessibility-tester`): added missing `<examples>` blocks for better routing
 
 ### Removed
 
-- **framework-docs-researcher agent** — merged into `best-practices-researcher`
-- **pattern-recognition-specialist agent** — merged into `architecture-strategist`
+- **framework-docs-researcher agent**: merged into `best-practices-researcher`
+- **pattern-recognition-specialist agent**: merged into `architecture-strategist`
 
 ## [2.44.0] - 2026-03-07
 
 ### Changed
 
-- **code-review skill** — added SOLID smell patterns (God classes, leaky abstractions), next-steps action menu, behavior-vs-implementation test check
-- **brainstorming skill** — added non-goals topic, solution-first detection, 3-5 bullet summary gate before Phase 2, convergence loop cap
-- **git-worktree skill** — auto-detect and install dependencies after worktree creation, `git worktree prune` guidance
-- **python-services skill** — added `asyncio.TaskGroup` for structured concurrency, `lru_cache`/`cache` memoization, connection pooling mandate
-- **md-docs skill** — actionable heading style, collapsible `<details>` depth pattern, README anti-patterns section
-- **react-frontend skill** — Server Action auth/authz security warning, `<Activity>` component, `template.tsx`/`default.tsx` conventions, metadata templates, `after()` API, module-level I/O hoisting, `content-visibility: auto`, defer state reads
-- **nodejs-backend skill** — Piscina for worker threads, new Production Resilience section (Redis caching, load shedding, response schema serialization)
-- **php-laravel skill** — query scopes, `withCount`/`withExists`, `when()` conditional queries, `DB::transaction()`, `upsert()`, model pruning, Form Request `toDto()`, conditional validation rules
-- **postgresql skill** — safe schema evolution, `NULLS NOT DISTINCT`, `jsonb_path_ops`, materialized views, `fillfactor`, approximate counts, `pg_try_advisory_lock`
-- **meta-prompting skill** — steelmanning in `/adversarial`, new `/premortem` pattern, synthesis requirement for combos
-- **agent-native-architecture skill** — governance checklist (approval gates, audit trail, scope boundaries), VBR pattern, context durability/WAL pattern
-- **linux-bash-scripting skill** — `main()` + source guard, `PS4` debug tracing, named exit codes, `PIPESTATUS`, input validation, `umask 077`, signal traps
-- **terraform skill** — `moved` blocks, troubleshooting section (force-unlock, refresh-only, replace, import), `state_key` for parallel tests, Stacks awareness, `cidrsubnet()`, multi-region provider aliases
-- **resolve-pr-parallel skill** — severity classification, bot-comment filtering, batch commit strategy
+- **code-review skill**: added SOLID smell patterns (God classes, leaky abstractions), next-steps action menu, behavior-vs-implementation test check
+- **brainstorming skill**: added non-goals topic, solution-first detection, 3-5 bullet summary gate before Phase 2, convergence loop cap
+- **git-worktree skill**: auto-detect and install dependencies after worktree creation, `git worktree prune` guidance
+- **python-services skill**: added `asyncio.TaskGroup` for structured concurrency, `lru_cache`/`cache` memoization, connection pooling mandate
+- **md-docs skill**: actionable heading style, collapsible `<details>` depth pattern, README anti-patterns section
+- **react-frontend skill**: Server Action auth/authz security warning, `<Activity>` component, `template.tsx`/`default.tsx` conventions, metadata templates, `after()` API, module-level I/O hoisting, `content-visibility: auto`, defer state reads
+- **nodejs-backend skill**: Piscina for worker threads, new Production Resilience section (Redis caching, load shedding, response schema serialization)
+- **php-laravel skill**: query scopes, `withCount`/`withExists`, `when()` conditional queries, `DB::transaction()`, `upsert()`, model pruning, Form Request `toDto()`, conditional validation rules
+- **postgresql skill**: safe schema evolution, `NULLS NOT DISTINCT`, `jsonb_path_ops`, materialized views, `fillfactor`, approximate counts, `pg_try_advisory_lock`
+- **meta-prompting skill**: steelmanning in `/adversarial`, new `/premortem` pattern, synthesis requirement for combos
+- **agent-native-architecture skill**: governance checklist (approval gates, audit trail, scope boundaries), VBR pattern, context durability/WAL pattern
+- **linux-bash-scripting skill**: `main()` + source guard, `PS4` debug tracing, named exit codes, `PIPESTATUS`, input validation, `umask 077`, signal traps
+- **terraform skill**: `moved` blocks, troubleshooting section (force-unlock, refresh-only, replace, import), `state_key` for parallel tests, Stacks awareness, `cidrsubnet()`, multi-region provider aliases
+- **resolve-pr-parallel skill**: severity classification, bot-comment filtering, batch commit strategy
 
 ## [2.43.0] - 2026-03-07
 
 ### Added
 
-- **tailwind-css skill** — new skill for Tailwind CSS v4: CSS-first configuration (`@theme`, `@utility`, `@custom-variant`), v3→v4 breaking changes, coding rules, class merging with `cn()`, component variants (`tailwind-variants`/CVA), common errors, dark mode patterns. Includes reference files for component patterns and layout patterns. Distilled from 8 skills.sh sources.
+- **tailwind-css skill**: new skill for Tailwind CSS v4: CSS-first configuration (`@theme`, `@utility`, `@custom-variant`), v3→v4 breaking changes, coding rules, class merging with `cn()`, component variants (`tailwind-variants`/CVA), common errors, dark mode patterns. Includes reference files for component patterns and layout patterns. Distilled from 8 skills.sh sources.
 
 ### Changed
 
-- **code-review skill** — added scope resolution fallback chain, language-specific checks (TypeScript, Python, PHP, security), verification step, confidence levels, merge-readiness verdict
-- **verification-before-completion skill** — added "letter vs spirit" clause, broader trigger conditions, rationalization prevention table
-- **debugging skill** — added architectural problem indicators, expanded pattern comparison, 2 new anti-patterns
-- **receiving-code-review skill** — added "can't verify" escape hatch, 3 concrete good/bad examples
-- **writing-tests skill** — explicit verify steps for bug-fix-first testing, "test passes immediately" heuristic
-- **brainstorming skill** — hard gate blocking implementation until design approval, git commit for design docs
-- **simplifying-code skill** — stop conditions, 2 new constraints against scope creep
-- **git-worktree skill** — safety verification with `git check-ignore`, baseline test verification
-- **refine-prompt skill** — persistence section for saving prompts to `.ai/PROMPT.md`
-- **finishing-branch skill** — concise options, inline worktree cleanup
-- **md-docs skill** — CONTRIBUTING.md auto-detection, DOCS.md awareness
+- **code-review skill**: added scope resolution fallback chain, language-specific checks (TypeScript, Python, PHP, security), verification step, confidence levels, merge-readiness verdict
+- **verification-before-completion skill**: added "letter vs spirit" clause, broader trigger conditions, rationalization prevention table
+- **debugging skill**: added architectural problem indicators, expanded pattern comparison, 2 new anti-patterns
+- **receiving-code-review skill**: added "can't verify" escape hatch, 3 concrete good/bad examples
+- **writing-tests skill**: explicit verify steps for bug-fix-first testing, "test passes immediately" heuristic
+- **brainstorming skill**: hard gate blocking implementation until design approval, git commit for design docs
+- **simplifying-code skill**: stop conditions, 2 new constraints against scope creep
+- **git-worktree skill**: safety verification with `git check-ignore`, baseline test verification
+- **refine-prompt skill**: persistence section for saving prompts to `.ai/PROMPT.md`
+- **finishing-branch skill**: concise options, inline worktree cleanup
+- **md-docs skill**: CONTRIBUTING.md auto-detection, DOCS.md awareness
 
 ## [2.42.2] - 2026-02-28
 
 ### Fixed
 
-- **postgresql skill** — pgvector dimensions now model-agnostic instead of hardcoding OpenAI ada-002's 1536
-- **php-laravel, react-frontend skills** — removed duplicated "tests expose bugs" directive, added cross-reference to `writing-tests` skill
-- **code-review skill** — description clarified for performing reviews (vs receiving feedback)
-- **receiving-code-review skill** — description clarified for responding to review comments
-- **devops-engineer, cloud-architect agents** — "Use for" → "Use when" for consistent trigger phrasing
-- **agent-native-reviewer agent** — added cross-reference to `agent-native-architecture` skill
-- **bug-reproduction-validator agent** — added cross-references to `writing-tests` and `debugging` skills
-- **4 research agents** — removed hardcoded "2026" year note (redundant with system context)
+- **postgresql skill**: pgvector dimensions now model-agnostic instead of hardcoding OpenAI ada-002's 1536
+- **php-laravel, react-frontend skills**: removed duplicated "tests expose bugs" directive, added cross-reference to `writing-tests` skill
+- **code-review skill**: description clarified for performing reviews (vs receiving feedback)
+- **receiving-code-review skill**: description clarified for responding to review comments
+- **devops-engineer, cloud-architect agents**: "Use for" → "Use when" for consistent trigger phrasing
+- **agent-native-reviewer agent**: added cross-reference to `agent-native-architecture` skill
+- **bug-reproduction-validator agent**: added cross-references to `writing-tests` and `debugging` skills
+- **4 research agents**: removed hardcoded "2026" year note (redundant with system context)
 
 ## [2.42.1] - 2026-02-27
 
 ### Changed
 
-- **postgresql skill** — re-distilled from upstream sources (Supabase, PlanetScale, postgres-patterns). Added RLS, concurrency patterns (UPSERT, deadlock prevention, N+1, queue processing), connection pooling, unindexed FK detection. Split operations and full-text search into `references/` for progressive disclosure.
-- **code-review skill** — added test coverage and resource cleanup review steps, expanded security terms (CSRF, SSRF, path traversal, unsafe deserialization), large diff handling guidance, clean review output.
-- **planning skill** — added flat-list planning tier for medium tasks, session recovery with `git diff --stat` reconciliation.
-- **debugging skill** — added stale state pattern, pattern comparison technique, explicit "no root cause found" escape hatch.
+- **postgresql skill**: re-distilled from upstream sources (Supabase, PlanetScale, postgres-patterns). Added RLS, concurrency patterns (UPSERT, deadlock prevention, N+1, queue processing), connection pooling, unindexed FK detection. Split operations and full-text search into `references/` for progressive disclosure.
+- **code-review skill**: added test coverage and resource cleanup review steps, expanded security terms (CSRF, SSRF, path traversal, unsafe deserialization), large diff handling guidance, clean review output.
+- **planning skill**: added flat-list planning tier for medium tasks, session recovery with `git diff --stat` reconciliation.
+- **debugging skill**: added stale state pattern, pattern comparison technique, explicit "no root cause found" escape hatch.
 
 ## [2.42.0] - 2026-02-27
 
 ### Added
 
-- **Skill distillery** — absorbed `~/ai/skills` repo into `distillery/`. Skills are now generated, validated, and A/B tested directly in the plugin repo. Eliminates the 3-repo pipeline.
-- **mirror-to-ai-skills.sh** — new script to mirror plugin skills to the `ai-skills` public repo (reverse of old bundle-skills.sh direction)
-- **skill-distiller skill** — project-level skill (`.claude/skills/skill-distiller/`) for distillery workflow
+- **Skill distillery**: absorbed `~/ai/skills` repo into `distillery/`. Skills are now generated, validated, and A/B tested directly in the plugin repo. Eliminates the 3-repo pipeline.
+- **mirror-to-ai-skills.sh**: new script to mirror plugin skills to the `ai-skills` public repo (reverse of old bundle-skills.sh direction)
+- **skill-distiller skill**: project-level skill (`.claude/skills/skill-distiller/`) for distillery workflow
 
 ### Removed
 
-- **bundle-skills.sh** — replaced by direct skill editing + mirror-to-ai-skills.sh
-- **.bundle-manifest.json** — all skills are now native; no native/bundled distinction
+- **bundle-skills.sh**: replaced by direct skill editing + mirror-to-ai-skills.sh
+- **.bundle-manifest.json**: all skills are now native; no native/bundled distinction
 
 ## [2.41.0] - 2026-02-27
 
 ### Added
 
-- **planning skill** — bundled `scripts/init-plan.sh` to scaffold `.plan/` directory with pre-populated template files (task_plan.md, findings.md, progress.md) and auto-gitignore. Replaces inline bash snippets with a deterministic script.
-- **debugging skill** — bundled `scripts/collect-diagnostics.sh` to gather environment diagnostics (system info, language versions, git state, project files, environment variables). Supports differential analysis of working vs broken environments.
-- **compound-docs skill** — bundled `scripts/validate-frontmatter.sh` to validate solution doc YAML frontmatter against the schema (required fields, enum values, date format, array constraints). Replaces LLM-based validation with deterministic checking.
+- **planning skill**: bundled `scripts/init-plan.sh` to scaffold `.plan/` directory with pre-populated template files (task_plan.md, findings.md, progress.md) and auto-gitignore. Replaces inline bash snippets with a deterministic script.
+- **debugging skill**: bundled `scripts/collect-diagnostics.sh` to gather environment diagnostics (system info, language versions, git state, project files, environment variables). Supports differential analysis of working vs broken environments.
+- **compound-docs skill**: bundled `scripts/validate-frontmatter.sh` to validate solution doc YAML frontmatter against the schema (required fields, enum values, date format, array constraints). Replaces LLM-based validation with deterministic checking.
 
 ### Changed
 
-- **frontend-design skill** — added "Design Philosophy (Write First, Code Second)" section requiring a 3-sentence design philosophy (Intent, Signature, Constraint) before implementation for full pages/apps. Small components skip the philosophy and match surrounding design. Inspired by Anthropic's philosophy-first pattern in algorithmic-art/canvas-design skills.
+- **frontend-design skill**: added "Design Philosophy (Write First, Code Second)" section requiring a 3-sentence design philosophy (Intent, Signature, Constraint) before implementation for full pages/apps. Small components skip the philosophy and match surrounding design. Inspired by Anthropic's philosophy-first pattern in algorithmic-art/canvas-design skills.
 
 ## [2.40.0] - 2026-02-24
 
 ### Changed
 
-- **Skill consolidation (33 → 31 skills)** — absorbed `testing-laravel` into `php-laravel` and `testing-react` into `react-frontend`. Testing content moved to `references/` for progressive disclosure. Hook trigger patterns merged into parent skills.
-- **Description trimming (23 skills)** — reduced system prompt overhead by trimming skill descriptions across 23 skills. Collapsed redundant quoted trigger phrases into concise keyword lists. Removed filler phrasing ("This skill should be used when"). Preserved all meaningful trigger keywords and behavioral anchors.
-- **MR/merge request triggers** — added MR trigger coverage to `code-review` and `receiving-code-review` for GitLab workflows
-- **planning skill** — added cross-references to `brainstorming` (for ambiguous requirements) and `writing` (for humanizing plan prose)
-- **writing-tests skill** — updated cross-references from deleted `testing-laravel`/`testing-react` to `php-laravel`/`react-frontend`
+- **Skill consolidation (33 → 31 skills)**: absorbed `testing-laravel` into `php-laravel` and `testing-react` into `react-frontend`. Testing content moved to `references/` for progressive disclosure. Hook trigger patterns merged into parent skills.
+- **Description trimming (23 skills)**: reduced system prompt overhead by trimming skill descriptions across 23 skills. Collapsed redundant quoted trigger phrases into concise keyword lists. Removed filler phrasing ("This skill should be used when"). Preserved all meaningful trigger keywords and behavioral anchors.
+- **MR/merge request triggers**: added MR trigger coverage to `code-review` and `receiving-code-review` for GitLab workflows
+- **planning skill**: added cross-references to `brainstorming` (for ambiguous requirements) and `writing` (for humanizing plan prose)
+- **writing-tests skill**: updated cross-references from deleted `testing-laravel`/`testing-react` to `php-laravel`/`react-frontend`
 
 ### Fixed
 
-- **update-metadata.sh** — fixed broken jq query for hook counting after hooks.json restructure (`[.[] | .[].hooks | length]` → `[.hooks[][] | .hooks | length]`)
+- **update-metadata.sh**: fixed broken jq query for hook counting after hooks.json restructure (`[.[] | .[].hooks | length]` → `[.hooks[][] | .hooks | length]`)
 
 ### Removed
 
-- **`testing-laravel` skill** — absorbed into `php-laravel` with testing content as references
-- **`testing-react` skill** — absorbed into `react-frontend` with testing content as references
+- **`testing-laravel` skill**: absorbed into `php-laravel` with testing content as references
+- **`testing-react` skill**: absorbed into `react-frontend` with testing content as references
 
 ## [2.39.3] - 2026-02-24
 
 ### Fixed
 
-- **inject-skills hook** — preserve all original `tool_input` fields in `updatedInput` response. `updatedInput` is a full replacement, not a merge; returning only `{prompt}` dropped `subagent_type`, `description`, and other Task fields, causing "Agent type 'undefined' not found" errors whenever skill patterns matched a subagent prompt.
+- **inject-skills hook**: preserve all original `tool_input` fields in `updatedInput` response. `updatedInput` is a full replacement, not a merge; returning only `{prompt}` dropped `subagent_type`, `description`, and other Task fields, causing "Agent type 'undefined' not found" errors whenever skill patterns matched a subagent prompt.
 
 ## [2.39.2] - 2026-02-23
 
 ### Fixed
 
-- **inject-skills hook** — added missing `hookEventName: "PreToolUse"` discriminator to hook JSON output, fixing schema validation failure that silently prevented skill injection into subagents
+- **inject-skills hook**: added missing `hookEventName: "PreToolUse"` discriminator to hook JSON output, fixing schema validation failure that silently prevented skill injection into subagents
 
 ## [2.39.1] - 2026-02-22
 
 ### Fixed
 
-- **hooks.json** — added missing top-level `hooks` wrapper key, fixing plugin hook loading error
+- **hooks.json**: added missing top-level `hooks` wrapper key, fixing plugin hook loading error
 
 ## [2.39.0] - 2026-02-22
 
 ### Added
 
-- **`verification-before-completion` skill** (native) — enforces fresh verification evidence before any completion claim, commit, or PR. 5-step gate function, red flags list, agent delegation rules. Prevents the most common AI failure mode: asserting success without proof.
-- **`receiving-code-review` skill** (native) — process code review feedback critically: verify before implementing, push back on incorrect suggestions, no performative agreement. Source-specific handling for user, agents, and external reviewers.
-- **`finishing-branch` skill** (native) — workflow closer presenting 4 options (merge locally, push+PR, keep, discard) with safety checks. Handles worktree cleanup. Explicit final step in the workflow chain.
-- **`writing-tests` skill** (native) — generic test writing discipline: test quality, real assertions over mocks, anti-patterns, rationalization table. Complements tech-specific testing-laravel and testing-react skills.
+- **`verification-before-completion` skill** (native): enforces fresh verification evidence before any completion claim, commit, or PR. 5-step gate function, red flags list, agent delegation rules. Prevents the most common AI failure mode: asserting success without proof.
+- **`receiving-code-review` skill** (native): process code review feedback critically: verify before implementing, push back on incorrect suggestions, no performative agreement. Source-specific handling for user, agents, and external reviewers.
+- **`finishing-branch` skill** (native): workflow closer presenting 4 options (merge locally, push+PR, keep, discard) with safety checks. Handles worktree cleanup. Explicit final step in the workflow chain.
+- **`writing-tests` skill** (native): generic test writing discipline: test quality, real assertions over mocks, anti-patterns, rationalization table. Complements tech-specific testing-laravel and testing-react skills.
 
 ### Changed
 
-- **`debugging` skill** — added anti-rationalization framework (merged anti-patterns + red flags into single table), "signals you're off track" section, trivially obvious bug escape with cause-vs-symptom criteria, Integration section
-- **`brainstorming` skill** — added workflow chain diagram (canonical source), mkdir instruction for output dir, standardized Integration header
-- **`planning` skill** — moved planning files from project root to `.plan/` directory (auto-gitignored), replaced duplicate workflow chain with Integration section
-- **`workflows:work` command** — replaced TodoWrite with TaskCreate/TaskUpdate/TaskList, added Phase 2.5 verification gate, delegated Phase 4 shipping to `finishing-branch`, removed stale references (linting-agent, agent-browser skill, imgup skill), removed Co-Authored-By per global rules
-- **`code-review` skill** — added Integration section cross-referencing `receiving-code-review`, `workflows:review`, and `resolve-pr-parallel`
-- **`verification-before-completion` skill** — softened "exit code 0" to handle pre-existing failures, added `writing-tests` to Integration
+- **`debugging` skill**: added anti-rationalization framework (merged anti-patterns + red flags into single table), "signals you're off track" section, trivially obvious bug escape with cause-vs-symptom criteria, Integration section
+- **`brainstorming` skill**: added workflow chain diagram (canonical source), mkdir instruction for output dir, standardized Integration header
+- **`planning` skill**: moved planning files from project root to `.plan/` directory (auto-gitignored), replaced duplicate workflow chain with Integration section
+- **`workflows:work` command**: replaced TodoWrite with TaskCreate/TaskUpdate/TaskList, added Phase 2.5 verification gate, delegated Phase 4 shipping to `finishing-branch`, removed stale references (linting-agent, agent-browser skill, imgup skill), removed Co-Authored-By per global rules
+- **`code-review` skill**: added Integration section cross-referencing `receiving-code-review`, `workflows:review`, and `resolve-pr-parallel`
+- **`verification-before-completion` skill**: softened "exit code 0" to handle pre-existing failures, added `writing-tests` to Integration
 
 ### Fixed
 
-- **`finishing-branch` skill** — added guard against default branch invocation, added no-remote guard (disables push/PR when no remote), aligned prerequisites with verification-before-completion for test-free projects, added commit step before options, expanded PR template, delegated worktree cleanup to `git-worktree` skill
-- **`receiving-code-review` skill** — added scope table distinguishing from `pr-comment-resolver` agent, fixed triage-then-implement ordering
-- **`verification-before-completion` skill** — fixed "in this message" ambiguity to "immediately before the claim", added "When No Verification Command Exists" and "When Verification Fails" sections
-- **`writing-tests` skill** — added framework test-double exception (Laravel facade fakes, React providers), added "Tests expose bugs, not the reverse" principle, added Integration section
-- **`resolve-pr-parallel` skill** — fixed frontmatter name from underscores to hyphens per naming convention
-- **Trigger patterns** — tightened `verification-before-completion` (removed overly broad `before.*(commit|push)`), deduplicated review skill triple-match, fixed `finishing-branch` merge collision, moved `finishing-branch` to Tier 1
+- **`finishing-branch` skill**: added guard against default branch invocation, added no-remote guard (disables push/PR when no remote), aligned prerequisites with verification-before-completion for test-free projects, added commit step before options, expanded PR template, delegated worktree cleanup to `git-worktree` skill
+- **`receiving-code-review` skill**: added scope table distinguishing from `pr-comment-resolver` agent, fixed triage-then-implement ordering
+- **`verification-before-completion` skill**: fixed "in this message" ambiguity to "immediately before the claim", added "When No Verification Command Exists" and "When Verification Fails" sections
+- **`writing-tests` skill**: added framework test-double exception (Laravel facade fakes, React providers), added "Tests expose bugs, not the reverse" principle, added Integration section
+- **`resolve-pr-parallel` skill**: fixed frontmatter name from underscores to hyphens per naming convention
+- **Trigger patterns**: tightened `verification-before-completion` (removed overly broad `before.*(commit|push)`), deduplicated review skill triple-match, fixed `finishing-branch` merge collision, moved `finishing-branch` to Tier 1
 
 ---
 
@@ -1761,9 +1761,9 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **`inject-skills` hook** — PreToolUse hook that intercepts Task tool calls and injects relevant SKILL.md file paths into subagent prompts via `updatedInput`, ensuring subagents follow skill methodology instead of working manually
-- **Skill pattern matching** — 29 skills mapped to regex trigger patterns with 3-tier priority system (methodology > domain > supporting), capped at 5 skills per injection
-- **`scripts/generate-skill-hooks.sh`** — generation script that extracts trigger keywords from SKILL.md frontmatter to produce `hooks/skill-patterns.sh` as a draft for hand-tuning
+- **`inject-skills` hook**: PreToolUse hook that intercepts Task tool calls and injects relevant SKILL.md file paths into subagent prompts via `updatedInput`, ensuring subagents follow skill methodology instead of working manually
+- **Skill pattern matching**: 29 skills mapped to regex trigger patterns with 3-tier priority system (methodology > domain > supporting), capped at 5 skills per injection
+- **`scripts/generate-skill-hooks.sh`**: generation script that extracts trigger keywords from SKILL.md frontmatter to produce `hooks/skill-patterns.sh` as a draft for hand-tuning
 
 ---
 
@@ -1771,46 +1771,46 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Fixed
 
-- **MCP server** — removed legacy `.mcp.json` that was installing Context7 MCP alongside Docfork; Docfork is now the sole MCP server, declared in `plugin.json` only
-- **Docfork** — no API key required by default (1,000 free requests/month); API keys only needed for team Cabinets and shared indexes
+- **MCP server**: removed legacy `.mcp.json` that was installing Context7 MCP alongside Docfork; Docfork is now the sole MCP server, declared in `plugin.json` only
+- **Docfork**: no API key required by default (1,000 free requests/month); API keys only needed for team Cabinets and shared indexes
 
 ## [2.37.2] - 2026-02-22
 
 ### Changed
 
-- **MCP server** — replace Context7 with Docfork (9,000+ libraries, 1,000 free req/month, daily updates)
-- **testing-laravel**, **testing-react** — add "review tests" and "check tests" trigger keywords
+- **MCP server**: replace Context7 with Docfork (9,000+ libraries, 1,000 free req/month, daily updates)
+- **testing-laravel**, **testing-react**: add "review tests" and "check tests" trigger keywords
 
 ## [2.37.1] - 2026-02-22
 
 ### Fixed
 
-- **H1: Review agent → skill scope clarity** — Added scope notes to security-sentinel, performance-oracle, pattern-recognition-specialist, architecture-strategist clarifying they provide deep specialized analysis while code-review skill handles general review workflows
-- **H2: Data agent disambiguation** — Added mutual scope boundaries to data-integrity-guardian (schema/constraints), data-migration-expert (migration code validation), and deployment-verification-agent (deployment checklists) to prevent overlap confusion
-- **H3: design-iterator boilerplate** — Replaced verbose generic boilerplate with one-line design-specific instruction
-- **H4: php-laravel testing framework** — Changed from Pest to PHPUnit syntax (`test()`/`it()` → `TestCase` extends) to match project conventions
-- **H5: Phantom skill reference** — Removed nonexistent `swiss-design` skill reference from design-iterator
+- **H1: Review agent → skill scope clarity**: Added scope notes to security-sentinel, performance-oracle, pattern-recognition-specialist, architecture-strategist clarifying they provide deep specialized analysis while code-review skill handles general review workflows
+- **H2: Data agent disambiguation**: Added mutual scope boundaries to data-integrity-guardian (schema/constraints), data-migration-expert (migration code validation), and deployment-verification-agent (deployment checklists) to prevent overlap confusion
+- **H3: design-iterator boilerplate**: Replaced verbose generic boilerplate with one-line design-specific instruction
+- **H4: php-laravel testing framework**: Changed from Pest to PHPUnit syntax (`test()`/`it()` → `TestCase` extends) to match project conventions
+- **H5: Phantom skill reference**: Removed nonexistent `swiss-design` skill reference from design-iterator
 
 ## [2.37.0] - 2026-02-22
 
 ### Added
 
-- **Bundle infrastructure** — `scripts/bundle-skills.sh` and `.bundle-manifest.json` for syncing generic skills from ai-skills repo into the plugin for distribution
-- **19 bundled skills** — code-review, debugging, linux-bash-scripting, md-docs, meta-prompting, nodejs-backend, php-laravel, pinescript, planning, postgresql, python-services, react-frontend, refine-prompt, reflect, simplifying-code, terraform, testing-laravel, testing-react, writing
-- **`accessibility-tester` agent** — WCAG 2.1 audit: keyboard navigation, screen reader, contrast, ARIA, forms, cognitive accessibility
-- **`cloud-architect` agent** — Cloud infrastructure design: Well-Architected Framework, cost optimization, DR, migration strategies, secrets management
-- **`deployment-engineer` agent** — CI/CD pipeline design, deployment strategies (blue-green, canary, rolling, feature flags), GitOps workflows
-- **`devops-engineer` agent** — Docker containerization, monitoring/observability (RED/USE methods, OpenTelemetry), incident management
-- **External agents analysis** — `docs/external-agents-analysis.md` documenting evaluation of 14 external agents (4 imported, 10 skipped with rationale)
+- **Bundle infrastructure**: `scripts/bundle-skills.sh` and `.bundle-manifest.json` for syncing generic skills from ai-skills repo into the plugin for distribution
+- **19 bundled skills**: code-review, debugging, linux-bash-scripting, md-docs, meta-prompting, nodejs-backend, php-laravel, pinescript, planning, postgresql, python-services, react-frontend, refine-prompt, reflect, simplifying-code, terraform, testing-laravel, testing-react, writing
+- **`accessibility-tester` agent**: WCAG 2.1 audit: keyboard navigation, screen reader, contrast, ARIA, forms, cognitive accessibility
+- **`cloud-architect` agent**: Cloud infrastructure design: Well-Architected Framework, cost optimization, DR, migration strategies, secrets management
+- **`deployment-engineer` agent**: CI/CD pipeline design, deployment strategies (blue-green, canary, rolling, feature flags), GitOps workflows
+- **`devops-engineer` agent**: Docker containerization, monitoring/observability (RED/USE methods, OpenTelemetry), incident management
+- **External agents analysis**: `docs/external-agents-analysis.md` documenting evaluation of 14 external agents (4 imported, 10 skipped with rationale)
 
 ### Changed
 
-- **Agent/skill overlap resolution** — Resolved 6 overlap pairs between agents and skills with clear delegation boundaries (code-simplicity-reviewer→simplifying-code, kieran-typescript-reviewer→domain skills, bug-reproduction-validator→debugging, security-sentinel→nodejs-backend, and more)
-- **`php-laravel` skill** — Updated to PHP 8.4 (property hooks, asymmetric visibility, array_find/any/all), added PHPStan level 8+, production performance section (OPcache, JIT, preloading), new `references/laravel-ecosystem.md` (Notifications, Task Scheduling, Custom Casts)
-- **`debugging` skill** — Expanded concurrency coverage (deadlocks, async race conditions, pool exhaustion), added Postmortem template
-- **`compound-docs` skill** — Generalized all Rails/CORA-specific schema enums, field names, and examples to be stack-agnostic
-- **`orchestrating-swarms` skill** — Removed Rails-specific examples from prompts
-- **`file-todos` skill** — Generalized Rails Todo model reference
+- **Agent/skill overlap resolution**: Resolved 6 overlap pairs between agents and skills with clear delegation boundaries (code-simplicity-reviewer→simplifying-code, kieran-typescript-reviewer→domain skills, bug-reproduction-validator→debugging, security-sentinel→nodejs-backend, and more)
+- **`php-laravel` skill**: Updated to PHP 8.4 (property hooks, asymmetric visibility, array_find/any/all), added PHPStan level 8+, production performance section (OPcache, JIT, preloading), new `references/laravel-ecosystem.md` (Notifications, Task Scheduling, Custom Casts)
+- **`debugging` skill**: Expanded concurrency coverage (deadlocks, async race conditions, pool exhaustion), added Postmortem template
+- **`compound-docs` skill**: Generalized all Rails/CORA-specific schema enums, field names, and examples to be stack-agnostic
+- **`orchestrating-swarms` skill**: Removed Rails-specific examples from prompts
+- **`file-todos` skill**: Generalized Rails Todo model reference
 
 ---
 
@@ -1818,14 +1818,14 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Removed
 
-- **Ruby/Rails agents** — Removed `dhh-rails-reviewer`, `kieran-rails-reviewer`, `schema-drift-detector`, `lint`, and `ankane-readme-writer` agents
-- **Ruby/Rails skills** — Removed `dhh-rails-style`, `dspy-ruby`, and `andrew-kane-gem-writer` skills
-- **Skill creation** — Removed `create-agent-skills` and `skill-creator` skills, and `/create-agent-skill` command
-- **Xcode** — Removed `/xcode-test` command
-- **Utility skills** — Removed `rclone`, `agent-browser`, and `gemini-imagegen` skills
-- **Company-specific** — Removed `every-style-editor` agent and skill
-- **Rails-specific** — Removed `julik-frontend-races-reviewer` agent (Hotwire/Turbo/Stimulus focused)
-- **Keywords** — Removed `rails`, `ruby`, `image-generation`, `agent-browser`, `browser-automation` from plugin keywords
+- **Ruby/Rails agents**: Removed `dhh-rails-reviewer`, `kieran-rails-reviewer`, `schema-drift-detector`, `lint`, and `ankane-readme-writer` agents
+- **Ruby/Rails skills**: Removed `dhh-rails-style`, `dspy-ruby`, and `andrew-kane-gem-writer` skills
+- **Skill creation**: Removed `create-agent-skills` and `skill-creator` skills, and `/create-agent-skill` command
+- **Xcode**: Removed `/xcode-test` command
+- **Utility skills**: Removed `rclone`, `agent-browser`, and `gemini-imagegen` skills
+- **Company-specific**: Removed `every-style-editor` agent and skill
+- **Rails-specific**: Removed `julik-frontend-races-reviewer` agent (Hotwire/Turbo/Stimulus focused)
+- **Keywords**: Removed `rails`, `ruby`, `image-generation`, `agent-browser`, `browser-automation` from plugin keywords
 
 ---
 
@@ -1833,7 +1833,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Changed
 
-- **`/workflows:plan` brainstorm integration** — When plan finds a brainstorm document, it now heavily references it throughout. Added `origin:` frontmatter field to plan templates, brainstorm cross-check in final review, and "Sources" section at the bottom of all three plan templates (MINIMAL, MORE, A LOT). Brainstorm decisions are carried forward with explicit references (`see brainstorm: <path>`) and a mandatory scan before finalizing ensures nothing is dropped.
+- **`/workflows:plan` brainstorm integration**: When plan finds a brainstorm document, it now heavily references it throughout. Added `origin:` frontmatter field to plan templates, brainstorm cross-check in final review, and "Sources" section at the bottom of all three plan templates (MINIMAL, MORE, A LOT). Brainstorm decisions are carried forward with explicit references (`see brainstorm: <path>`) and a mandatory scan before finalizing ensures nothing is dropped.
 
 ---
 
@@ -1841,8 +1841,8 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Changed
 
-- **`/workflows:work` system-wide test check** — Added "System-Wide Test Check" to the task execution loop. Before marking a task done, forces five questions: what callbacks/middleware fire when this runs? Do tests exercise the real chain or just mocked isolation? Can failure leave orphaned state? What other interfaces need the same change? Do error strategies align across layers? Includes skip criteria for leaf-node changes. Also added integration test guidance to the "Test Continuously" section.
-- **`/workflows:plan` system-wide impact templates** — Added "System-Wide Impact" section to MORE and A LOT plan templates (interaction graph, error propagation, state lifecycle, API surface parity, integration test scenarios) as lightweight prompts to flag risks during planning.
+- **`/workflows:work` system-wide test check**: Added "System-Wide Test Check" to the task execution loop. Before marking a task done, forces five questions: what callbacks/middleware fire when this runs? Do tests exercise the real chain or just mocked isolation? Can failure leave orphaned state? What other interfaces need the same change? Do error strategies align across layers? Includes skip criteria for leaf-node changes. Also added integration test guidance to the "Test Continuously" section.
+- **`/workflows:plan` system-wide impact templates**: Added "System-Wide Impact" section to MORE and A LOT plan templates (interaction graph, error propagation, state lifecycle, API surface parity, integration test scenarios) as lightweight prompts to flag risks during planning.
 
 ---
 
@@ -1850,9 +1850,9 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Fixed
 
-- **`/lfg` and `/slfg` first-run failures** — Made ralph-loop step optional with graceful fallback when `ralph-wiggum` skill is not installed (#154). Added explicit "do not stop" instruction across all steps (#134).
-- **`/workflows:plan` not writing file in pipeline** — Added mandatory "Write Plan File" step with explicit Write tool instructions before Post-Generation Options. The file is now always written to disk before any interactive prompts (#155). Also adds pipeline-mode note to skip AskUserQuestion calls when invoked from LFG/SLFG (#134).
-- **Agent namespace typo in `/workflows:plan`** — `Task spec-flow-analyzer(...)` now uses the full qualified name `Task compound-engineering:workflow:spec-flow-analyzer(...)` to prevent Claude from prepending the wrong `workflows:` prefix (#193).
+- **`/lfg` and `/slfg` first-run failures**: Made ralph-loop step optional with graceful fallback when `ralph-wiggum` skill is not installed (#154). Added explicit "do not stop" instruction across all steps (#134).
+- **`/workflows:plan` not writing file in pipeline**: Added mandatory "Write Plan File" step with explicit Write tool instructions before Post-Generation Options. The file is now always written to disk before any interactive prompts (#155). Also adds pipeline-mode note to skip AskUserQuestion calls when invoked from LFG/SLFG (#134).
+- **Agent namespace typo in `/workflows:plan`**: `Task spec-flow-analyzer(...)` now uses the full qualified name `Task compound-engineering:workflow:spec-flow-analyzer(...)` to prevent Claude from prepending the wrong `workflows:` prefix (#193).
 
 ---
 
@@ -1860,7 +1860,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **Gemini CLI target** — New converter target for [Gemini CLI](https://github.com/google-gemini/gemini-cli). Install with `--to gemini` to convert agents to `.gemini/skills/*/SKILL.md`, commands to `.gemini/commands/*.toml` (TOML format with `description` + `prompt`), and MCP servers to `.gemini/settings.json`. Skills pass through unchanged (identical SKILL.md standard). Namespaced commands create directory structure (`workflows:plan` → `commands/workflows/plan.toml`). 29 new tests. ([#190](https://github.com/EveryInc/compound-engineering-plugin/pull/190))
+- **Gemini CLI target**: New converter target for [Gemini CLI](https://github.com/google-gemini/gemini-cli). Install with `--to gemini` to convert agents to `.gemini/skills/*/SKILL.md`, commands to `.gemini/commands/*.toml` (TOML format with `description` + `prompt`), and MCP servers to `.gemini/settings.json`. Skills pass through unchanged (identical SKILL.md standard). Namespaced commands create directory structure (`workflows:plan` → `commands/workflows/plan.toml`). 29 new tests. ([#190](https://github.com/EveryInc/compound-engineering-plugin/pull/190))
 
 ---
 
@@ -1868,8 +1868,8 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Changed
 
-- **`/workflows:plan` command** - All plan templates now include `status: active` in YAML frontmatter. Plans are created with `status: active` and marked `status: completed` when work finishes.
-- **`/workflows:work` command** - Phase 4 now updates plan frontmatter from `status: active` to `status: completed` after shipping. Agents can grep for status to distinguish current vs historical plans.
+- **`/workflows:plan` command**: All plan templates now include `status: active` in YAML frontmatter. Plans are created with `status: active` and marked `status: completed` when work finishes.
+- **`/workflows:work` command**: Phase 4 now updates plan frontmatter from `status: active` to `status: completed` after shipping. Agents can grep for status to distinguish current vs historical plans.
 
 ---
 
@@ -1877,23 +1877,23 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **`setup` skill** — Interactive configurator for review agents
+- **`setup` skill**: Interactive configurator for review agents
   - Auto-detects project type (Rails, Python, TypeScript, etc.)
   - Two paths: "Auto-configure" (one click) or "Customize" (pick stack, focus areas, depth)
-  - Writes `compound-engineering.local.md` in project root (tool-agnostic — works for Claude, Codex, OpenCode)
+  - Writes `compound-engineering.local.md` in project root (tool-agnostic: works for Claude, Codex, OpenCode)
   - Invoked automatically by `/workflows:review` when no settings file exists
-- **`learnings-researcher` in `/workflows:review`** — Always-run agent that searches `docs/solutions/` for past issues related to the PR
-- **`schema-drift-detector` wired into `/workflows:review`** — Conditional agent for PRs with migrations
+- **`learnings-researcher` in `/workflows:review`**: Always-run agent that searches `docs/solutions/` for past issues related to the PR
+- **`schema-drift-detector` wired into `/workflows:review`**: Conditional agent for PRs with migrations
 
 ### Changed
 
-- **`/workflows:review`** — Now reads review agents from `compound-engineering.local.md` settings file. Falls back to invoking setup skill if no file exists.
-- **`/workflows:work`** — Review agents now configurable via settings file
-- **`/release-docs` command** — Moved from plugin to local `.claude/commands/` (repo maintenance, not distributed)
+- **`/workflows:review`**: Now reads review agents from `compound-engineering.local.md` settings file. Falls back to invoking setup skill if no file exists.
+- **`/workflows:work`**: Review agents now configurable via settings file
+- **`/release-docs` command**: Moved from plugin to local `.claude/commands/` (repo maintenance, not distributed)
 
 ### Removed
 
-- **`/technical_review` command** — Superseded by configurable review agents
+- **`/technical_review` command**: Superseded by configurable review agents
 
 ---
 
@@ -1901,7 +1901,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **Factory Droid target** — New converter target for [Factory Droid](https://docs.factory.ai). Install with `--to droid` to output agents, commands, and skills to `~/.factory/`. Includes tool name mapping (Claude → Factory), namespace prefix stripping, Task syntax conversion, and agent reference rewriting. 13 new tests (9 converter + 4 writer). ([#174](https://github.com/EveryInc/compound-engineering-plugin/pull/174))
+- **Factory Droid target**: New converter target for [Factory Droid](https://docs.factory.ai). Install with `--to droid` to output agents, commands, and skills to `~/.factory/`. Includes tool name mapping (Claude → Factory), namespace prefix stripping, Task syntax conversion, and agent reference rewriting. 13 new tests (9 converter + 4 writer). ([#174](https://github.com/EveryInc/compound-engineering-plugin/pull/174))
 
 ---
 
@@ -1909,18 +1909,18 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Changed
 
-- **`dspy-ruby` skill** — Complete rewrite to DSPy.rb v0.34.3 API: `.call()` / `result.field` patterns, `T::Enum` classes, `DSPy::Tools::Base` / `Toolset`. Added events system, lifecycle callbacks, fiber-local LM context, GEPA optimization, evaluation framework, typed context pattern, BAML/TOON schema formats, storage system, score reporting, RubyLLM adapter. 5 reference files (2 new: toolsets, observability), 3 asset templates rewritten.
+- **`dspy-ruby` skill**: Complete rewrite to DSPy.rb v0.34.3 API: `.call()` / `result.field` patterns, `T::Enum` classes, `DSPy::Tools::Base` / `Toolset`. Added events system, lifecycle callbacks, fiber-local LM context, GEPA optimization, evaluation framework, typed context pattern, BAML/TOON schema formats, storage system, score reporting, RubyLLM adapter. 5 reference files (2 new: toolsets, observability), 3 asset templates rewritten.
 
 ## [2.31.0] - 2026-02-08
 
 ### Added
 
-- **`document-review` skill** — Brainstorm and plan refinement through structured review ([@Trevin Chow](https://github.com/trevin))
-- **`/sync` command** — Sync Claude Code personal config across machines ([@Terry Li](https://github.com/terryli))
+- **`document-review` skill**: Brainstorm and plan refinement through structured review ([@Trevin Chow](https://github.com/trevin))
+- **`/sync` command**: Sync Claude Code personal config across machines ([@Terry Li](https://github.com/terryli))
 
 ### Changed
 
-- **Context token optimization (79% reduction)** — Plugin was consuming 316% of the context description budget, causing Claude Code to silently exclude components. Now at 65% with room to grow:
+- **Context token optimization (79% reduction)**: Plugin was consuming 316% of the context description budget, causing Claude Code to silently exclude components. Now at 65% with room to grow:
   - All 29 agent descriptions trimmed from ~1,400 to ~180 chars avg (examples moved to agent body)
   - 18 manual commands marked `disable-model-invocation: true` (side-effect commands like `/lfg`, `/deploy-docs`, `/triage`, etc.)
   - 6 manual skills marked `disable-model-invocation: true` (`orchestrating-swarms`, `git-worktree`, `skill-creator`, `compound-docs`, `file-todos`, `resolve-pr-parallel`)
@@ -1941,18 +1941,18 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **`orchestrating-swarms` skill** - Comprehensive guide to multi-agent orchestration
+- **`orchestrating-swarms` skill**: guide to multi-agent orchestration
   - Covers primitives: Agent, Team, Teammate, Leader, Task, Inbox, Message, Backend
   - Documents two spawning methods: subagents vs teammates
   - Explains all 13 TeammateTool operations
   - Includes orchestration patterns: Parallel Specialists, Pipeline, Self-Organizing Swarm
   - Details spawn backends: in-process, tmux, iterm2
   - Provides complete workflow examples
-- **`/slfg` command** - Swarm-enabled variant of `/lfg` that uses swarm mode for parallel execution
+- **`/slfg` command**: Swarm-enabled variant of `/lfg` that uses swarm mode for parallel execution
 
 ### Changed
 
-- **`/workflows:work` command** - Added optional Swarm Mode section for parallel execution with coordinated agents
+- **`/workflows:work` command**: Added optional Swarm Mode section for parallel execution with coordinated agents
 
 ---
 
@@ -1960,7 +1960,7 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **`schema-drift-detector` agent** - Detects unrelated schema.rb changes in PRs
+- **`schema-drift-detector` agent**: Detects unrelated schema.rb changes in PRs
   - Compares schema.rb diff against migrations in the PR
   - Catches columns, indexes, and tables from other branches
   - Prevents accidental inclusion of local database state
@@ -1973,14 +1973,14 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 ### Added
 
-- **`/workflows:brainstorm` command** - Guided ideation flow to expand options quickly (#101)
+- **`/workflows:brainstorm` command**: Guided ideation flow to expand options quickly (#101)
 
 ### Changed
 
-- **`/workflows:plan` command** - Smarter research decision logic before deep dives (#100)
-- **Research checks** - Mandatory API deprecation validation in research flows (#102)
-- **Docs** - Call out experimental OpenCode/Codex providers and install defaults
-- **CLI defaults** - `install` pulls from GitHub by default and writes OpenCode/Codex output to global locations
+- **`/workflows:plan` command**: Smarter research decision logic before deep dives (#100)
+- **Research checks**: Mandatory API deprecation validation in research flows (#102)
+- **Docs**: Call out experimental OpenCode/Codex providers and install defaults
+- **CLI defaults**: `install` pulls from GitHub by default and writes OpenCode/Codex output to global locations
 
 ### Merged PRs
 
@@ -1992,8 +1992,8 @@ Cross-repo sync (14 external references) + full plugin audit + command delegatio
 
 Huge thanks to the community contributors who made this release possible! 🙌
 
-- **[@tmchow](https://github.com/tmchow)** - Brainstorm workflow, research decision logic (2 PRs)
-- **[@jaredmorgenstern](https://github.com/jaredmorgenstern)** - API deprecation validation
+- **[@tmchow](https://github.com/tmchow)**: Brainstorm workflow, research decision logic (2 PRs)
+- **[@jaredmorgenstern](https://github.com/jaredmorgenstern)**: API deprecation validation
 
 ---
 
@@ -2001,30 +2001,30 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Added
 
-- **`/workflows:plan` command** - Interactive Q&A refinement phase (#88)
+- **`/workflows:plan` command**: Interactive Q&A refinement phase (#88)
   - After generating initial plan, now offers to refine with targeted questions
   - Asks up to 5 questions about ambiguous requirements, edge cases, or technical decisions
   - Incorporates answers to strengthen the plan before finalization
 
 ### Changed
 
-- **`/workflows:work` command** - Incremental commits and branch safety (#93)
+- **`/workflows:work` command**: Incremental commits and branch safety (#93)
   - Now commits after each completed task instead of batching at end
   - Added branch protection checks before starting work
   - Better progress tracking with per-task commits
 
 ### Fixed
 
-- **`dhh-rails-style` skill** - Fixed broken markdown table formatting (#96)
-- **Documentation** - Updated hardcoded year references from 2025 to 2026 (#86, #91)
+- **`dhh-rails-style` skill**: Fixed broken markdown table formatting (#96)
+- **Documentation**: Updated hardcoded year references from 2025 to 2026 (#86, #91)
 
 ### Contributors
 
 Huge thanks to the community contributors who made this release possible! 🙌
 
-- **[@tmchow](https://github.com/tmchow)** - Interactive Q&A for plans, incremental commits, year updates (3 PRs!)
-- **[@ashwin47](https://github.com/ashwin47)** - Markdown table fix
-- **[@rbouschery](https://github.com/rbouschery)** - Documentation year update
+- **[@tmchow](https://github.com/tmchow)**: Interactive Q&A for plans, incremental commits, year updates (3 PRs!)
+- **[@ashwin47](https://github.com/ashwin47)**: Markdown table fix
+- **[@rbouschery](https://github.com/rbouschery)**: Documentation year update
 
 ### Summary
 
@@ -2036,7 +2036,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **`/workflows:work` command** - Now marks off checkboxes in plan document as tasks complete
+- **`/workflows:work` command**: Now marks off checkboxes in plan document as tasks complete
   - Added step to update original plan file (`[ ]` → `[x]`) after each task
   - Ensures no checkboxes are left unchecked when work is done
   - Keeps plan as living document showing progress
@@ -2047,7 +2047,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **`/workflows:work` command** - PRs now include Compound Engineered badge
+- **`/workflows:work` command**: PRs now include Compound Engineered badge
   - Updated PR template to include badge at bottom linking to plugin repo
   - Added badge requirement to quality checklist
   - Badge provides attribution and link to the plugin that created the PR
@@ -2058,7 +2058,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **`design-iterator` agent** - Now auto-loads design skills at start of iterations
+- **`design-iterator` agent**: Now auto-loads design skills at start of iterations
   - Added "Step 0: Discover and Load Design Skills (MANDATORY)" section
   - Discovers skills from ~/.claude/skills/, .claude/skills/, and plugin cache
   - Maps user context to relevant skills (Swiss design → swiss-design skill, etc.)
@@ -2072,7 +2072,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **`/test-browser` command** - Clarified to use agent-browser CLI exclusively
+- **`/test-browser` command**: Clarified to use agent-browser CLI exclusively
   - Added explicit "CRITICAL: Use agent-browser CLI Only" section
   - Added warning: "DO NOT use Chrome MCP tools (mcp__claude-in-chrome__*)"
   - Added Step 0: Verify agent-browser installation before testing
@@ -2085,7 +2085,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **`best-practices-researcher` agent** - Now checks skills before going online
+- **`best-practices-researcher` agent**: Now checks skills before going online
   - Phase 1: Discovers and reads relevant SKILL.md files from plugin, global, and project directories
   - Phase 2: Only goes online for additional best practices if skills don't provide enough coverage
   - Phase 3: Synthesizes all findings with clear source attribution (skill-based > official docs > community)
@@ -2098,7 +2098,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Added
 
-- **`/lfg` command** - Full autonomous engineering workflow
+- **`/lfg` command**: Full autonomous engineering workflow
   - Orchestrates complete feature development from plan to PR
   - Runs: plan → deepen-plan → work → review → resolve todos → test-browser → feature-video
   - Uses ralph-loop for autonomous completion
@@ -2114,14 +2114,14 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Added
 
-- **`agent-browser` skill** - Browser automation using Vercel's agent-browser CLI
+- **`agent-browser` skill**: Browser automation using Vercel's agent-browser CLI
   - Navigate, click, fill forms, take screenshots
   - Uses ref-based element selection (simpler than Playwright)
   - Works in headed or headless mode
 
 ### Changed
 
-- **Replaced Playwright MCP with agent-browser** - Simpler browser automation across all browser-related features:
+- **Replaced Playwright MCP with agent-browser**: Simpler browser automation across all browser-related features:
   - `/test-browser` command - Now uses agent-browser CLI with headed/headless mode option
   - `/feature-video` command - Uses agent-browser for screenshots
   - `design-iterator` agent - Browser automation via agent-browser
@@ -2131,12 +2131,12 @@ Huge thanks to the community contributors who made this release possible! 🙌
   - `/review` workflow - Screenshot capabilities
   - `/work` workflow - Browser testing
 
-- **`/test-browser` command** - Added "Step 0" to ask user if they want headed (visible) or headless browser mode
+- **`/test-browser` command**: Added "Step 0" to ask user if they want headed (visible) or headless browser mode
 
 ### Removed
 
-- **Playwright MCP server** - Replaced by agent-browser CLI (simpler, no MCP overhead)
-- **`/playwright-test` command** - Renamed to `/test-browser`
+- **Playwright MCP server**: Replaced by agent-browser CLI (simpler, no MCP overhead)
+- **`/playwright-test` command**: Renamed to `/test-browser`
 
 ### Summary
 
@@ -2148,7 +2148,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **`/reproduce-bug` command** - Enhanced with Playwright visual reproduction:
+- **`/reproduce-bug` command**: Enhanced with Playwright visual reproduction:
   - Added Phase 2 for visual bug reproduction using browser automation
   - Step-by-step guide for navigating to affected areas
   - Screenshot capture at each reproduction step
@@ -2166,7 +2166,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Changed
 
-- **Agent model inheritance** - All 26 agents now use `model: inherit` so they match the user's configured model. Only `lint` keeps `model: haiku` for cost efficiency. (fixes #69)
+- **Agent model inheritance**: All 26 agents now use `model: inherit` so they match the user's configured model. Only `lint` keeps `model: haiku` for cost efficiency. (fixes #69)
 
 ### Summary
 
@@ -2178,7 +2178,7 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Added
 
-- **`/agent-native-audit` command** - Comprehensive agent-native architecture review
+- **`/agent-native-audit` command**: agent-native architecture review
   - Launches 8 parallel sub-agents, one per core principle
   - Principles: Action Parity, Tools as Primitives, Context Injection, Shared Workspace, CRUD Completeness, UI Integration, Capability Discovery, Prompt-Native Features
   - Each agent produces specific score (X/Y format with percentage)
@@ -2195,11 +2195,11 @@ Huge thanks to the community contributors who made this release possible! 🙌
 
 ### Added
 
-- **`rclone` skill** - Upload files to S3, Cloudflare R2, Backblaze B2, and other cloud storage providers
+- **`rclone` skill**: Upload files to S3, Cloudflare R2, Backblaze B2, and other cloud storage providers
 
 ### Changed
 
-- **`/feature-video` command** - Enhanced with:
+- **`/feature-video` command**: Enhanced with:
   - Better ffmpeg commands for video/GIF creation (proper scaling, framerate control)
   - rclone integration for cloud uploads
   - Screenshot copying to project folder
@@ -2233,15 +2233,15 @@ This release consolidates all recent work:
 
 ### Added
 
-- **`/feature-video` command** - Record video walkthroughs of features using Playwright
+- **`/feature-video` command**: Record video walkthroughs of features using Playwright
 
 ### Changed
 
-- **`create-agent-skills` skill** - Complete rewrite to match Anthropic's official skill specification
+- **`create-agent-skills` skill**: Complete rewrite to match Anthropic's official skill specification
 
 ### Removed
 
-- **`dhh-ruby-style` skill** - Merged into `dhh-rails-style` skill
+- **`dhh-ruby-style` skill**: Merged into `dhh-rails-style` skill
 
 ---
 
@@ -2249,7 +2249,7 @@ This release consolidates all recent work:
 
 ### Added
 
-- **`/deepen-plan` command** - Power enhancement for plans. Takes an existing plan and runs parallel research sub-agents for each major section to add:
+- **`/deepen-plan` command**: Power enhancement for plans. Takes an existing plan and runs parallel research sub-agents for each major section to add:
   - Best practices and industry patterns
   - Performance optimizations
   - UI/UX improvements (if applicable)
@@ -2260,26 +2260,26 @@ This release consolidates all recent work:
 
 ### Changed
 
-- **`/workflows:plan` command** - Added `/deepen-plan` as option 2 in post-generation menu. Added note: if running with ultrathink enabled, automatically run deepen-plan for maximum depth.
+- **`/workflows:plan` command**: Added `/deepen-plan` as option 2 in post-generation menu. Added note: if running with ultrathink enabled, automatically run deepen-plan for maximum depth.
 
 ## [2.18.0] - 2025-12-25
 
 ### Added
 
-- **`agent-native-architecture` skill** - Added **Dynamic Capability Discovery** pattern and **Architecture Review Checklist**:
+- **`agent-native-architecture` skill**: Added **Dynamic Capability Discovery** pattern and **Architecture Review Checklist**:
 
   **New Patterns in mcp-tool-design.md:**
-  - **Dynamic Capability Discovery** - For external APIs (HealthKit, HomeKit, GraphQL), build a discovery tool (`list_*`) that returns available capabilities at runtime, plus a generic access tool that takes strings (not enums). The API validates, not your code. This means agents can use new API capabilities without code changes.
-  - **CRUD Completeness** - Every entity the agent can create must also be readable, updatable, and deletable. Incomplete CRUD = broken action parity.
+  - **Dynamic Capability Discovery**: For external APIs (HealthKit, HomeKit, GraphQL), build a discovery tool (`list_*`) that returns available capabilities at runtime, plus a generic access tool that takes strings (not enums). The API validates, not your code. This means agents can use new API capabilities without code changes.
+  - **CRUD Completeness**: Every entity the agent can create must also be readable, updatable, and deletable. Incomplete CRUD = broken action parity.
 
   **New in SKILL.md:**
-  - **Architecture Review Checklist** - Pushes reviewer findings earlier into the design phase. Covers tool design (dynamic vs static, CRUD completeness), action parity (capability map, edit/delete), UI integration (agent → UI communication), and context injection.
-  - **Option 11: API Integration** - New intake option for connecting to external APIs like HealthKit, HomeKit, GraphQL
+  - **Architecture Review Checklist**: Pushes reviewer findings earlier into the design phase. Covers tool design (dynamic vs static, CRUD completeness), action parity (capability map, edit/delete), UI integration (agent → UI communication), and context injection.
+  - **Option 11: API Integration**: New intake option for connecting to external APIs like HealthKit, HomeKit, GraphQL
   - **New anti-patterns:** Static Tool Mapping (building individual tools for each API endpoint), Incomplete CRUD (create-only tools)
   - **Tool Design Criteria** section added to success criteria checklist
 
   **New in shared-workspace-architecture.md:**
-  - **iCloud File Storage for Multi-Device Sync** - Use iCloud Documents for your shared workspace to get free, automatic multi-device sync without building a sync layer. Includes implementation pattern, conflict handling, entitlements, and when NOT to use it.
+  - **iCloud File Storage for Multi-Device Sync**: Use iCloud Documents for your shared workspace to get free, automatic multi-device sync without building a sync layer. Includes implementation pattern, conflict handling, entitlements, and when NOT to use it.
 
 ### Philosophy
 
@@ -2293,37 +2293,37 @@ Note: This pattern is specifically for agent-native apps following the "whatever
 
 ### Enhanced
 
-- **`agent-native-architecture` skill** - Major expansion based on real-world learnings from building the Every Reader iOS app. Added 5 new reference documents and expanded existing ones:
+- **`agent-native-architecture` skill**: Major expansion based on real-world learnings from building the Every Reader iOS app. Added 5 new reference documents and expanded existing ones:
 
   **New References:**
-  - **dynamic-context-injection.md** - How to inject runtime app state into agent system prompts. Covers context injection patterns, what context to inject (resources, activity, capabilities, vocabulary), implementation patterns for Swift/iOS and TypeScript, and context freshness.
-  - **action-parity-discipline.md** - Workflow for ensuring agents can do everything users can do. Includes capability mapping templates, parity audit process, PR checklists, tool design for parity, and context parity guidelines.
-  - **shared-workspace-architecture.md** - Patterns for agents and users working in the same data space. Covers directory structure, file tools, UI integration (file watching, shared stores), agent-user collaboration patterns, and security considerations.
-  - **agent-native-testing.md** - Testing patterns for agent-native apps. Includes "Can Agent Do It?" tests, the Surprise Test, automated parity testing, integration testing, and CI/CD integration.
-  - **mobile-patterns.md** - Mobile-specific patterns for iOS/Android. Covers background execution (checkpoint/resume), permission handling, cost-aware design (model tiers, token budgets, network awareness), offline handling, and battery awareness.
+  - **dynamic-context-injection.md**: How to inject runtime app state into agent system prompts. Covers context injection patterns, what context to inject (resources, activity, capabilities, vocabulary), implementation patterns for Swift/iOS and TypeScript, and context freshness.
+  - **action-parity-discipline.md**: Workflow for ensuring agents can do everything users can do. Includes capability mapping templates, parity audit process, PR checklists, tool design for parity, and context parity guidelines.
+  - **shared-workspace-architecture.md**: Patterns for agents and users working in the same data space. Covers directory structure, file tools, UI integration (file watching, shared stores), agent-user collaboration patterns, and security considerations.
+  - **agent-native-testing.md**: Testing patterns for agent-native apps. Includes "Can Agent Do It?" tests, the Surprise Test, automated parity testing, integration testing, and CI/CD integration.
+  - **mobile-patterns.md**: Mobile-specific patterns for iOS/Android. Covers background execution (checkpoint/resume), permission handling, cost-aware design (model tiers, token budgets, network awareness), offline handling, and battery awareness.
 
   **Updated References:**
-  - **architecture-patterns.md** - Added 3 new patterns: Unified Agent Architecture (one orchestrator, many agent types), Agent-to-UI Communication (shared data store, file watching, event bus), and Model Tier Selection (fast/balanced/powerful).
+  - **architecture-patterns.md**: Added 3 new patterns: Unified Agent Architecture (one orchestrator, many agent types), Agent-to-UI Communication (shared data store, file watching, event bus), and Model Tier Selection (fast/balanced/powerful).
 
   **Updated Skill Root:**
-  - **SKILL.md** - Expanded intake menu (now 10 options including context injection, action parity, shared workspace, testing, mobile patterns). Added 5 new agent-native anti-patterns (Context Starvation, Orphan Features, Sandbox Isolation, Silent Actions, Capability Hiding). Expanded success criteria with agent-native and mobile-specific checklists.
+  - **SKILL.md**: Expanded intake menu (now 10 options including context injection, action parity, shared workspace, testing, mobile patterns). Added 5 new agent-native anti-patterns (Context Starvation, Orphan Features, Sandbox Isolation, Silent Actions, Capability Hiding). Expanded success criteria with agent-native and mobile-specific checklists.
 
-- **`agent-native-reviewer` agent** - Significantly enhanced with comprehensive review process covering all new patterns. Now checks for action parity, context parity, shared workspace, tool design (primitives vs workflows), dynamic context injection, and mobile-specific concerns. Includes detailed anti-patterns, output format template, quick checks ("Write to Location" test, Surprise test), and mobile-specific verification.
+- **`agent-native-reviewer` agent**: Expanded review process covering all new patterns. Now checks for action parity, context parity, shared workspace, tool design (primitives vs workflows), dynamic context injection, and mobile-specific concerns. Includes detailed anti-patterns, output format template, quick checks ("Write to Location" test, Surprise test), and mobile-specific verification.
 
 ### Philosophy
 
-These updates operationalize a key insight from building agent-native mobile apps: **"The agent should be able to do anything the user can do, through tools that mirror UI capabilities, with full context about the app state."** The failure case that prompted these changes: an agent asked "what reading feed?" when a user said "write something in my reading feed"—because it had no `publish_to_feed` tool and no context about what "feed" meant.
+These updates operationalize a key insight from building agent-native mobile apps: **"The agent should be able to do anything the user can do, through tools that mirror UI capabilities, with full context about the app state."** The failure case that prompted these changes: an agent asked "what reading feed?" when a user said "write something in my reading feed", because it had no `publish_to_feed` tool and no context about what "feed" meant.
 
 ## [2.16.0] - 2025-12-21
 
 ### Enhanced
 
-- **`dhh-rails-style` skill** - Massively expanded reference documentation incorporating patterns from Marc Köhlbrugge's Unofficial 37signals Coding Style Guide:
-  - **controllers.md** - Added authorization patterns, rate limiting, Sec-Fetch-Site CSRF protection, request context concerns
-  - **models.md** - Added validation philosophy, let it crash philosophy (bang methods), default values with lambdas, Rails 7.1+ patterns (normalizes, delegated types, store accessor), concern guidelines with touch chains
-  - **frontend.md** - Added Turbo morphing best practices, Turbo frames patterns, 6 new Stimulus controllers (auto-submit, dialog, local-time, etc.), Stimulus best practices, view helpers, caching with personalization, broadcasting patterns
-  - **architecture.md** - Added path-based multi-tenancy, database patterns (UUIDs, state as records, hard deletes, counter caches), background job patterns (transaction safety, error handling, batch processing), email patterns, security patterns (XSS, SSRF, CSP), Active Storage patterns
-  - **gems.md** - Added expanded what-they-avoid section (service objects, form objects, decorators, CSS preprocessors, React/Vue), testing philosophy with Minitest/fixtures patterns
+- **`dhh-rails-style` skill**: Massively expanded reference documentation incorporating patterns from Marc Köhlbrugge's Unofficial 37signals Coding Style Guide:
+  - **controllers.md**: Added authorization patterns, rate limiting, Sec-Fetch-Site CSRF protection, request context concerns
+  - **models.md**: Added validation philosophy, let it crash philosophy (bang methods), default values with lambdas, Rails 7.1+ patterns (normalizes, delegated types, store accessor), concern guidelines with touch chains
+  - **frontend.md**: Added Turbo morphing best practices, Turbo frames patterns, 6 new Stimulus controllers (auto-submit, dialog, local-time, etc.), Stimulus best practices, view helpers, caching with personalization, broadcasting patterns
+  - **architecture.md**: Added path-based multi-tenancy, database patterns (UUIDs, state as records, hard deletes, counter caches), background job patterns (transaction safety, error handling, batch processing), email patterns, security patterns (XSS, SSRF, CSP), Active Storage patterns
+  - **gems.md**: Added expanded what-they-avoid section (service objects, form objects, decorators, CSS preprocessors, React/Vue), testing philosophy with Minitest/fixtures patterns
 
 ### Credits
 
@@ -2333,25 +2333,25 @@ These updates operationalize a key insight from building agent-native mobile app
 
 ### Fixed
 
-- **All skills** - Fixed spec compliance issues across 12 skills:
+- **All skills**: Fixed spec compliance issues across 12 skills:
   - Reference files now use proper markdown links (`[file.md](./references/file.md)`) instead of backtick text
   - Descriptions now use third person ("This skill should be used when...") per skill-creator spec
   - Affected skills: agent-native-architecture, andrew-kane-gem-writer, compound-docs, create-agent-skills, dhh-rails-style, dspy-ruby, every-style-editor, file-todos, frontend-design, gemini-imagegen
 
 ### Added
 
-- **CLAUDE.md** - Added Skill Compliance Checklist with validation commands for ensuring new skills meet spec requirements
+- **CLAUDE.md**: Added Skill Compliance Checklist with validation commands for ensuring new skills meet spec requirements
 
 ## [2.15.1] - 2025-12-18
 
 ### Changed
 
-- **`/workflows:review` command** - Section 7 now detects project type (Web, iOS, or Hybrid) and offers appropriate testing. Web projects get `/playwright-test`, iOS projects get `/xcode-test`, hybrid projects can run both.
+- **`/workflows:review` command**: Section 7 now detects project type (Web, iOS, or Hybrid) and offers appropriate testing. Web projects get `/playwright-test`, iOS projects get `/xcode-test`, hybrid projects can run both.
 
 ## [2.15.0] - 2025-12-18
 
 ### Added
 
-- **`/xcode-test` command** - Build and test iOS apps on simulator using XcodeBuildMCP. Automatically detects Xcode project, builds app, launches simulator, and runs test suite. Includes retries for flaky tests.
+- **`/xcode-test` command**: Build and test iOS apps on simulator using XcodeBuildMCP. Automatically detects Xcode project, builds app, launches simulator, and runs test suite. Includes retries for flaky tests.
 
-- **`/playwright-test` command** - Run Playwright browser tests on pages affected by current PR or branch. Detects changed files, maps to affected routes, generates/runs targeted tests, and reports results with screenshots.
+- **`/playwright-test` command**: Run Playwright browser tests on pages affected by current PR or branch. Detects changed files, maps to affected routes, generates/runs targeted tests, and reports results with screenshots.

@@ -2,7 +2,7 @@
 
 ## Dependency Provenance
 
-Never satisfy a worktree's gitignored dependency directory with a symlink to another checkout's. Generated autoloaders and module resolvers compute the application base directory from the *real* location of their own files, so the link resolves back into the donor tree and every first-party class or module loads from there -- your worktree's edits never execute, new files appear as "not found", and config comes from the other tree's `.env`. Give the worktree a real directory: `cp -al <donor>/vendor "$WT/vendor"` (hard links: same inodes, near-zero disk, correct base dir) for a read-only harness, or a full dereferencing copy / real install whenever anything will write into it -- hard links mean a package-manager write edits the donor too. Assert it once rather than assuming: print the resolved file path of one first-party symbol and confirm it names the worktree.
+Never satisfy a worktree's gitignored dependency directory with a symlink to another checkout's. Generated autoloaders and module resolvers compute the application base directory from the *real* location of their own files, so the link resolves back into the donor tree and every first-party class or module loads from there: your worktree's edits never execute, new files appear as "not found", and config comes from the other tree's `.env`. Give the worktree a real directory: `cp -al <donor>/vendor "$WT/vendor"` (hard links: same inodes, near-zero disk, correct base dir) for a read-only harness, or a full dereferencing copy / real install whenever anything will write into it, because with hard links a package-manager write edits the donor too. Assert it once rather than assuming: print the resolved file path of one first-party symbol and confirm it names the worktree.
 
 
 ## Environment Detection
@@ -34,9 +34,9 @@ Always offer choice:
 
 When work in a worktree is done, verify tests pass, then present exactly 3 options. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat.
 
-1. **Merge locally** -- merge into base branch, delete worktree branch, clean up worktree
-2. **Push + PR** -- push branch, create PR with `gh pr create`, keep worktree until merged
-3. **Keep as-is** -- leave branch and worktree for later
+1. **Merge locally**: merge into base branch, delete worktree branch, clean up worktree
+2. **Push + PR**: push branch, create PR with `gh pr create`, keep worktree until merged
+3. **Keep as-is**: leave branch and worktree for later
 Discarding is never offered as an option. Delete the branch and worktree only when the user asks for it explicitly, and require typing "discard" to confirm first. No silent discards.
 
 
@@ -60,6 +60,6 @@ The "DIDN'T TOUCH" section prevents reviewers from wondering whether adjacent is
 
 ## Hooks and Local Excludes
 
-Before writing any git hook, check `git config core.hooksPath` — Husky repos ignore `.git/hooks/` entirely. Personal tooling excludes go in `$(git rev-parse --git-path info/exclude)`, never the tracked `.gitignore`. Details: [hooks-and-excludes.md](./hooks-and-excludes.md)
+Before writing any git hook, check `git config core.hooksPath`; Husky repos ignore `.git/hooks/` entirely. Personal tooling excludes go in `$(git rev-parse --git-path info/exclude)`, never the tracked `.gitignore`. Details: [hooks-and-excludes.md](./hooks-and-excludes.md)
 
-In a linked worktree `.git` is a file, so every `.git/<state-file>` test is wrong: `test -f .git/MERGE_HEAD` reports "no merge in progress" in the middle of a conflict, because per-worktree state lives in the common dir under `worktrees/<name>/`. Ask the plumbing instead -- `git rev-parse -q --verify MERGE_HEAD` for the state, `git rev-parse --git-path <file>` for the path. Same for `REBASE_HEAD`, `CHERRY_PICK_HEAD`, and hook paths.
+In a linked worktree `.git` is a file, so every `.git/<state-file>` test is wrong: `test -f .git/MERGE_HEAD` reports "no merge in progress" in the middle of a conflict, because per-worktree state lives in the common dir under `worktrees/<name>/`. Ask the plumbing instead: `git rev-parse -q --verify MERGE_HEAD` for the state, `git rev-parse --git-path <file>` for the path. Same for `REBASE_HEAD`, `CHERRY_PICK_HEAD`, and hook paths.

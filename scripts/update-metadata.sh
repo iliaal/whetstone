@@ -2,8 +2,7 @@
 set -Eeuo pipefail
 
 # Update plugin.json and marketplace.json descriptions with current component counts.
-# Called by bundle-skills.sh automatically, but can also be run standalone after
-# adding/removing agents, commands, skills, hooks, or MCP servers.
+# Run during /release or after adding/removing agents, commands, skills, hooks, or MCP servers.
 #
 # Usage:
 #   bash scripts/update-metadata.sh             # rewrite descriptions in place
@@ -13,9 +12,8 @@ set -Eeuo pipefail
 #                                               # or if the two version fields diverge.
 #
 # --check is a /release pre-commit gate: it re-renders the count-derived
-# descriptions and byte-compares them against what is committed, so a hand-edit
-# to either JSON (or a component added without re-running this script) is caught
-# loudly instead of shipping stale counts.
+# descriptions and byte-compares them against the committed JSON, catching
+# hand-edits and components added without re-running this script.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

@@ -5,7 +5,7 @@ Load this reference when you catch yourself arguing against writing a test. Each
 | Rationalization | Reality |
 |----------------|---------|
 | "This is too simple to need tests" | Simple code still breaks. Tests document expected behavior. |
-| "I manually tested it" | Manual testing is ephemeral — it can't be re-run, it proves nothing to the next person |
+| "I manually tested it" | Manual testing is ephemeral: it can't be re-run, it proves nothing to the next person |
 | "Tests will slow me down" | Debugging without tests slows you down more. Tests catch bugs at write time instead of production. |
 | "I'll add tests later" | Later never comes. The context you have now is gone later. |
 | "The tests would just test the framework" | Then you're not testing your logic. Find the logic and test that. |

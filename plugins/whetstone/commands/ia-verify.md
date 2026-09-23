@@ -1,6 +1,6 @@
 ---
 name: ia-verify
-description: Run pre-PR verification chain -- build, types, lint, tests, security scan, diff review
+description: "Run pre-PR verification chain: build, types, lint, tests, security scan, diff review"
 argument-hint: "[mode: quick|full|pre-commit|pre-pr]"
 ---
 
@@ -12,7 +12,7 @@ Run a structured verification pipeline and produce a single READY / NOT READY re
 
 ## Mode
 
-`$ARGUMENTS` -- defaults to `full` if omitted.
+`$ARGUMENTS`: defaults to `full` if omitted.
 
 | Mode | What runs |
 |------|-----------|
@@ -30,16 +30,16 @@ Resolve one verification scope before classifying or scanning changes:
 1. In `pre-pr` mode, resolve the PR base (`gh pr view --json baseRefName -q .baseRefName`) or the repository's verified default branch, and freeze the current HEAD SHA. Resolve the merge-base against the available base ref, then use `git diff --no-textconv --no-ext-diff <merge-base-sha> <head-sha>` for content and its `--name-only` form for file lists in every diff-based phase below (metadata-only forms such as `--name-only` and `--stat` render no content and need no such flags). If the base cannot be resolved, report NOT READY with that missing input; do not silently substitute an empty working-tree diff. For a dirty checkout, either verify the committed head in isolation or explicitly include and identify local changes; do not claim tests of a different tree verify the frozen PR head.
 2. In `pre-commit` mode, use the staged diff (`git diff --no-textconv --no-ext-diff --cached`) and state that scope. In `quick`/`full` mode, use the caller's selected scope, defaulting to tracked staged and unstaged changes (`git diff --no-textconv --no-ext-diff HEAD`) plus explicitly enumerated untracked files. Record the selected scope and tested tree in the report. An empty selected diff is not evidence that a feature branch is unchanged.
 3. Classify the selected files:
-   - **frontend** -- files under `src/components/`, `src/pages/`, `app/`, `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, templates
-   - **backend** -- files under `src/api/`, `routes/`, `controllers/`, `services/`, `*.php`, `*.py` (non-frontend), `*.go`, server-side TS
-   - **infrastructure** -- migration files, Dockerfiles, terraform/ansible, CI configs, env templates, k8s manifests
-   - **docs-only** -- passive prose only; agent instructions, executable snippets, and configuration embedded in Markdown must be classified by the behavior they drive
+   - **frontend**: files under `src/components/`, `src/pages/`, `app/`, `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, templates
+   - **backend**: files under `src/api/`, `routes/`, `controllers/`, `services/`, `*.php`, `*.py` (non-frontend), `*.go`, server-side TS
+   - **infrastructure**: migration files, Dockerfiles, terraform/ansible, CI configs, env templates, k8s manifests
+   - **docs-only**: passive prose only; agent instructions, executable snippets, and configuration embedded in Markdown must be classified by the behavior they drive
 
 4. Apply phase filters (pre-pr mode only):
-   - **Performance** -- skip for docs-only changes
-   - **Accessibility** -- skip for backend-only or docs-only changes
-   - **Infrastructure** -- skip for pure frontend changes (no migrations, no env changes, no CI changes)
-   - **Documentation** -- always run when user-facing files changed; skip for internal refactors with no API/behavior change
+   - **Performance**: skip for docs-only changes
+   - **Accessibility**: skip for backend-only or docs-only changes
+   - **Infrastructure**: skip for pure frontend changes (no migrations, no env changes, no CI changes)
+   - **Documentation**: always run when user-facing files changed; skip for internal refactors with no API/behavior change
 
 Log which phases were skipped and why in the report. A checker that failed to run (missing tool, errored invocation, unparseable output) is `ERROR`, never `SKIP` or `CLEAN`; `SKIP` is reserved for a phase deliberately not run. An `ERROR` row blocks a READY result.
 
@@ -102,7 +102,7 @@ Report: file:line for each occurrence. These are warnings, not blockers.
 
 ### 6. Security Scan (pre-pr only)
 
-**6a. Dependency audit** -- run the project's dependency auditor:
+**6a. Dependency audit**: run the project's dependency auditor:
 - `npm audit` / `pnpm audit` / `yarn audit` (JS/TS)
 - `pip-audit` or `safety check` (Python)
 - `composer audit` (PHP)
@@ -110,12 +110,12 @@ Report: file:line for each occurrence. These are warnings, not blockers.
 
 Flag critical/high vulnerabilities as blockers. Moderate/low are warnings.
 
-**6b. Secrets in diff** -- search changed files for:
+**6b. Secrets in diff**: search changed files for:
 - Hardcoded secrets (API keys, tokens, passwords in string literals)
 - `.env` files staged for commit
 - `dangerouslySetInnerHTML`, `eval()`, raw SQL string concatenation
 
-**6c. Auth/authz review** -- if the diff touches authentication or authorization code (middleware, guards, policies, permission checks, token handling, session management), flag for manual review. Check that:
+**6c. Auth/authz review**: if the diff touches authentication or authorization code (middleware, guards, policies, permission checks, token handling, session management), flag for manual review. Check that:
 - No auth bypass paths introduced (missing middleware on new routes)
 - Permission checks not weakened or removed
 - Token/session expiry not extended without justification
@@ -126,10 +126,10 @@ Report: file:line for each finding. Secrets and critical dependency vulnerabilit
 
 Scan the diff for common performance regressions:
 
-- **N+1 queries** -- loops containing database calls where a batch/join/eager-load would work. Look for ORM calls inside `foreach`/`for`/`map`/`array_map` or equivalent.
-- **Unbounded queries** -- `SELECT` without `LIMIT`, `findAll()` without pagination, collection fetches with no ceiling. Flag when the table could grow large.
-- **Bundle size** (frontend changes) -- check if new dependencies were added (`package.json` diff). For large additions (>50KB gzipped), flag for justification. Run `npm run build` and compare output size if a build-stats script exists.
-- **Missing indexes** -- if new queries filter or join on columns, check that indexes exist (or are added in accompanying migrations).
+- **N+1 queries**: loops containing database calls where a batch/join/eager-load would work. Look for ORM calls inside `foreach`/`for`/`map`/`array_map` or equivalent.
+- **Unbounded queries**: `SELECT` without `LIMIT`, `findAll()` without pagination, collection fetches with no ceiling. Flag when the table could grow large.
+- **Bundle size** (frontend changes): check if new dependencies were added (`package.json` diff). For large additions (>50KB gzipped), flag for justification. Run `npm run build` and compare output size if a build-stats script exists.
+- **Missing indexes**: if new queries filter or join on columns, check that indexes exist (or are added in accompanying migrations).
 
 Report: file:line for each concern. These are warnings, not blockers, unless an unbounded query hits a table known to be large.
 
@@ -139,10 +139,10 @@ If the diff touches frontend markup, templates, or components, dispatch the `ia-
 
 Fall back to the inline checks below only for a tiny diff where a full agent dispatch isn't warranted, or when the agent is unavailable:
 
-- **Keyboard navigation** -- interactive elements (`button`, `a`, custom clickable divs) must be focusable and operable via keyboard. Flag `onClick` on non-interactive elements without `role`, `tabIndex`, and `onKeyDown`.
-- **ARIA attributes** -- custom interactive elements (dropdowns, modals, tabs, accordions) need appropriate `role`, `aria-label`/`aria-labelledby`, and state attributes (`aria-expanded`, `aria-selected`).
-- **Contrast** -- if color values changed in the diff (CSS/Tailwind custom colors), flag for contrast ratio verification (4.5:1 text, 3:1 large text).
-- **Image alt text** -- new `<img>` tags or `Image` components must have non-empty `alt` (or explicit `alt=""` for decorative images with `aria-hidden`).
+- **Keyboard navigation**: interactive elements (`button`, `a`, custom clickable divs) must be focusable and operable via keyboard. Flag `onClick` on non-interactive elements without `role`, `tabIndex`, and `onKeyDown`.
+- **ARIA attributes**: custom interactive elements (dropdowns, modals, tabs, accordions) need appropriate `role`, `aria-label`/`aria-labelledby`, and state attributes (`aria-expanded`, `aria-selected`).
+- **Contrast**: if color values changed in the diff (CSS/Tailwind custom colors), flag for contrast ratio verification (4.5:1 text, 3:1 large text).
+- **Image alt text**: new `<img>` tags or `Image` components must have non-empty `alt` (or explicit `alt=""` for decorative images with `aria-hidden`).
 
 Report: file:line for each finding. These are warnings. Skip this phase entirely if no frontend markup was changed.
 
@@ -150,10 +150,10 @@ Report: file:line for each finding. These are warnings. Skip this phase entirely
 
 Check for operational readiness when the diff touches backend, config, or deployment files:
 
-- **Environment variables** -- if new env vars are referenced in code, verify they are documented (`.env.example`, README, or deployment docs). Flag undocumented vars.
-- **Migrations** -- if database migration files are present, check that they are reversible (have a `down`/`rollback` method). Flag destructive migrations (dropping columns/tables) without a data preservation strategy.
-- **Rollback plan** -- for risky changes (new service dependencies, major schema changes, feature flag removals), flag the need for a rollback plan. Not a blocker, but the report should note it.
-- **CI/CD config** -- if CI files changed (`.github/workflows/`, `Jenkinsfile`, `.gitlab-ci.yml`), verify the changes don't break existing pipeline stages.
+- **Environment variables**: if new env vars are referenced in code, verify they are documented (`.env.example`, README, or deployment docs). Flag undocumented vars.
+- **Migrations**: if database migration files are present, check that they are reversible (have a `down`/`rollback` method). Flag destructive migrations (dropping columns/tables) without a data preservation strategy.
+- **Rollback plan**: for risky changes (new service dependencies, major schema changes, feature flag removals), flag the need for a rollback plan. Not a blocker, but the report should note it.
+- **CI/CD config**: if CI files changed (`.github/workflows/`, `Jenkinsfile`, `.gitlab-ci.yml`), verify the changes don't break existing pipeline stages.
 
 Report: file:line for each concern. Undocumented env vars are warnings. Irreversible destructive migrations are blockers.
 
@@ -161,9 +161,9 @@ Report: file:line for each concern. Undocumented env vars are warnings. Irrevers
 
 Check that documentation keeps pace with code changes:
 
-- **README / CHANGELOG** -- if user-facing behavior changed (new features, changed CLI flags, config options), verify README and/or CHANGELOG are updated in the diff. Flag missing updates.
-- **API docs** -- if endpoints were added, changed, or removed, check that API documentation (OpenAPI/Swagger specs, doc comments, or dedicated API docs) reflects the change.
-- **Breaking changes** -- if the diff introduces breaking changes (removed endpoints, changed response shapes, renamed config keys), verify they are documented and flagged in CHANGELOG.
+- **README / CHANGELOG**: if user-facing behavior changed (new features, changed CLI flags, config options), verify README and/or CHANGELOG are updated in the diff. Flag missing updates.
+- **API docs**: if endpoints were added, changed, or removed, check that API documentation (OpenAPI/Swagger specs, doc comments, or dedicated API docs) reflects the change.
+- **Breaking changes**: if the diff introduces breaking changes (removed endpoints, changed response shapes, renamed config keys), verify they are documented and flagged in CHANGELOG.
 
 Report: list of missing documentation. These are warnings, not blockers, but the report should make them visible.
 

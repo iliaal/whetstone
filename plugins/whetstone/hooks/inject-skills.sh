@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# PreToolUse hook for Task tool — injects relevant skill file paths into subagent prompts.
+# PreToolUse hook for the Task tool: injects relevant skill file paths into subagent prompts.
 # Fires before every Task tool call. Matches the subagent prompt against skill trigger
 # patterns and prepends "Read these SKILL.md files" instructions via updatedInput.
 
@@ -18,11 +18,9 @@ printf '%s' "$INPUT" | jq -e '
   ((.tool_input.subagent_type // "") | type == "string")
 ' >/dev/null || exit 0
 
-# Extract prompt and subagent type
 PROMPT=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // empty')
 AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // empty')
 
-# Nothing to match against
 if [[ -z "$PROMPT" ]]; then
   exit 0
 fi
@@ -32,7 +30,6 @@ case "$AGENT_TYPE" in
   Bash | statusline-setup) exit 0 ;;
 esac
 
-# Resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PATTERNS_FILE="$SCRIPT_DIR/skill-patterns.sh"
@@ -103,7 +100,6 @@ for skill_name in "${SKILL_NAMES[@]}"; do
   fi
 done
 
-# Combine in priority order
 ALL_MATCHES=()
 [[ ${#TIER1[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER1[@]}")
 [[ ${#TIER2[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER2[@]}")
@@ -157,7 +153,6 @@ if [[ -n "${TEST_INJECTION_LOG:-}" ]]; then
   done
 fi
 
-# Build injection text
 INJECTION="BEFORE STARTING: Read and follow these skill files for methodology and patterns relevant to this task:"
 if [[ $REGEX_MATCH_COUNT -eq 0 ]]; then
   INJECTION="BEFORE STARTING: Jev suggests these skill files; check applicability before following their instructions:"
@@ -174,7 +169,7 @@ done
 INJECTION="$INJECTION
 If you cannot read the files, proceed with your best judgment."
 
-# Output updatedInput — must include ALL original tool_input fields since
+# updatedInput must include ALL original tool_input fields since
 # updatedInput is a full replacement, not a merge. Only the prompt changes.
 printf '%s' "$INPUT" | jq --arg injection "$INJECTION" '{
   "hookSpecificOutput": {

@@ -1,6 +1,6 @@
-# Orchestrating Swarms — Quick Reference
+# Orchestrating Swarms: Quick Reference
 
-Code snippets for the common spawn/message/task/shutdown operations. Load when setting up a specific coordination pattern — the decision logic lives in the main SKILL.md. These are Claude Code examples: inspect active schemas and use [teammate-operations.md](./teammate-operations.md) for prerequisites and lifecycle details. No explicit team creation or deletion is needed.
+Code snippets for the common spawn/message/task/shutdown operations. Load when setting up a specific coordination pattern; the decision logic lives in the main SKILL.md. These are Claude Code examples: inspect active schemas and use [teammate-operations.md](./teammate-operations.md) for prerequisites and lifecycle details. No explicit team creation or deletion is needed.
 
 ## Spawn a Subagent (short-lived, returns a result)
 

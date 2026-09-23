@@ -37,7 +37,7 @@ Target 8 per function, hard cap 15, measured by the Sonar rules that charge each
 
 Run against the final diff. This is a gate, not a substitute for reading each section.
 
-Two standing exemptions, because a metric must never drive an interface change. The numeric items below are tripwires for new or substantially rewritten *internal* code; they do not license restructuring untouched legacy code that a scoped fix merely passes through. And no item here justifies altering a frozen public signature — a released API, an ABI-stable export, a wire contract, or generated code. Where a rule and a frozen boundary collide, the boundary wins and the deviation gets a comment at the declaration.
+Two standing exemptions, because a metric must never drive an interface change. The numeric items below are tripwires for new or substantially rewritten *internal* code; they do not license restructuring untouched legacy code that a scoped fix merely passes through. And no item here justifies altering a frozen public signature: a released API, an ABI-stable export, a wire contract, or generated code. Where a rule and a frozen boundary collide, the boundary wins and the deviation gets a comment at the declaration.
 
 1. Any literal that is not 0 or 1? Name it.
 2. Any function over 40 lines, or nested past depth 2? Split it.

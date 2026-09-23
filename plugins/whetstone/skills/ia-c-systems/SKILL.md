@@ -27,7 +27,7 @@ Covers C11 and later for libraries, systems code, and native extensions. For C++
 
 Read the repo's `AGENTS.md`/`CLAUDE.md`, its public headers, and two adjacent `.c` files before writing anything. Where they conflict with the rules below, they win, and the diff carries no note about it.
 
-This gate is load-bearing. Established C codebases sanction idioms these rules would otherwise flag:
+Do not skip this gate. Established C codebases sanction idioms these rules would otherwise flag:
 
 | Local idiom | Where it is correct |
 |---|---|

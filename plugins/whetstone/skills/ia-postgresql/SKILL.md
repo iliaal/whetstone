@@ -30,9 +30,9 @@ description: >-
 | UUID | `gen_random_uuid()` (PG13+) | `uuid-ossp` extension |
 | IP addresses | `INET` / `CIDR` | text |
 | Ranges | `TSTZRANGE`, `INT4RANGE`, etc. | pair of columns |
-| Raw bytes (verbatim payload) | `BYTEA` | `JSONB`, `TEXT` -- both re-encode |
+| Raw bytes (verbatim payload) | `BYTEA` | `JSONB`, `TEXT` (both re-encode) |
 
-A spec that says "log the raw response" is asking for byte fidelity, and no text type provides it. `JSONB` reparses: it drops insignificant whitespace, sorts object keys, keeps only the last of duplicate keys, and rewrites numbers out of exponent notation (`1e0` -> `1`; trailing zeros in `1.00` do survive, so "all numeric forms collapse" overstates it). A non-JSON body cannot be stored at all and usually lands as `NULL`. `TEXT` rejects a NUL byte and any sequence invalid in the database encoding, so a binary or mis-encoded body errors instead of storing. Persist the bytes in `BYTEA` with the content type beside them, and add a parsed `JSONB` column separately when queries need one -- reading the column type as proof the body is kept is the review error.
+A spec that says "log the raw response" is asking for byte fidelity, and no text type provides it. `JSONB` reparses: it drops insignificant whitespace, sorts object keys, keeps only the last of duplicate keys, and rewrites numbers out of exponent notation (`1e0` -> `1`; trailing zeros in `1.00` do survive, so "all numeric forms collapse" overstates it). A non-JSON body cannot be stored at all and usually lands as `NULL`. `TEXT` rejects a NUL byte and any sequence invalid in the database encoding, so a binary or mis-encoded body errors instead of storing. Persist the bytes in `BYTEA` with the content type beside them, and add a parsed `JSONB` column separately when queries need one. Reading the column type as proof the body is kept is the review error.
 
 
 ## Verify

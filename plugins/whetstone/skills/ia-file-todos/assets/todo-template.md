@@ -15,7 +15,7 @@ Replace with a concise title describing what needs to be done.
 What is broken, missing, or needs improvement? Provide clear context about why this matters.
 
 **Example:**
-- Template system lacks comprehensive test coverage for edge cases discovered during PR review
+- Template system lacks test coverage for edge cases discovered during PR review
 - Email service is missing proper error handling for rate-limit scenarios
 - Documentation doesn't cover the new authentication flow
 
@@ -150,6 +150,6 @@ Chronological record of work sessions, actions taken, and learnings.
 
 Additional context, decisions, or reminders.
 
-- Decision: Include both unit and integration tests for comprehensive coverage
+- Decision: Include both unit and integration tests for full coverage
 - Blocker: Depends on completion of issue #001
 - Timeline: Priority for sprint due to blocking other work

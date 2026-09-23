@@ -50,7 +50,7 @@ C++ adds a second failure mode the C original does not have: a helper extracted 
 
 ## Full pre-delivery checklist
 
-Two standing exemptions, because a metric must never drive an interface change. The numeric items are tripwires for new or substantially rewritten *internal* code, not a licence to restructure untouched legacy a scoped fix passes through. And none of them justifies altering a released signature or anything ABI-stable — where a rule and a frozen boundary collide, the boundary wins and the deviation gets a comment at the declaration.
+Two standing exemptions, because a metric must never drive an interface change. The numeric items are tripwires for new or substantially rewritten *internal* code, not a licence to restructure untouched legacy a scoped fix passes through. And none of them justifies altering a released signature or anything ABI-stable: where a rule and a frozen boundary collide, the boundary wins and the deviation gets a comment at the declaration.
 
 1. Any literal that is not 0 or 1? Name it (`constexpr`, not `#define`).
 2. Any function over 40 lines, or nested past depth 2? Split it.

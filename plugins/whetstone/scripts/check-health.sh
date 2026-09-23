@@ -17,18 +17,18 @@ set -o pipefail
 # To add a dependency: append one line. No other changes needed.
 
 deps=(
-  # Core -- required for the release pipeline and core workflows
+  # Core: required for the release pipeline and core workflows
   "git||recommended|sudo apt install -y git|brew install git|https://git-scm.com/downloads"
   "gh||recommended|https://github.com/cli/cli/blob/trunk/docs/install_linux.md|brew install gh|https://cli.github.com"
   "jq||recommended|sudo apt install -y jq|brew install jq|https://jqlang.github.io/jq/"
   "python3|python|recommended|sudo apt install -y python3|brew install python@3|https://www.python.org/downloads/"
   "claude||recommended|npm install -g @anthropic-ai/claude-code|npm install -g @anthropic-ai/claude-code|https://claude.com/claude-code"
-  # Optional -- Node toolchain (needed to install claude CLI and run skills CLI)
+  # Optional: Node toolchain (needed to install claude CLI and run skills CLI)
   "node||optional|sudo apt install -y nodejs|brew install node|https://nodejs.org"
   "npm||optional|sudo apt install -y npm|brew install node|https://nodejs.org"
-  # Optional -- Codex cycle workflow
+  # Optional: Codex cycle workflow
   "codex||optional|npm install -g @openai/codex|npm install -g @openai/codex|https://github.com/openai/codex"
-  # Optional -- /announce + post-thread.py
+  # Optional: /announce + post-thread.py
   "playwright||optional|pip install playwright && playwright install|pip install playwright && playwright install|https://playwright.dev/python"
   "edge-cdp||optional|pip install edge-cdp|pip install edge-cdp|https://pypi.org/project/edge-cdp"
 )

@@ -10,7 +10,7 @@ description: "Researches this codebase's source structure, conventions, and proj
 Context: User wants to understand a new repository's structure and conventions before contributing.
 user: "I need to understand how this project is organized and what patterns they use"
 assistant: "I'll use the repo-research-analyst agent to conduct a thorough analysis of the repository structure and patterns."
-<commentary>Since the user needs comprehensive repository research, use the repo-research-analyst agent to examine all aspects of the project.</commentary>
+<commentary>Since the user needs broad repository research, use the repo-research-analyst agent to examine all aspects of the project.</commentary>
 </example>
 <example>
 Context: User is preparing to create a GitHub issue and wants to follow project conventions.
@@ -72,11 +72,11 @@ You are an expert repository research analyst specializing in understanding code
 
 Projects use their own vocabulary that rarely matches generic search terms ("throttle" not "rate-limit", "deck" not "slide"). Search in cycles, not in one shot:
 
-1. **Cycle 1 -- discovery**: use broad, generic terms (e.g., `rate limit`, `retry`, `queue`). Read the top hits and extract the repo's own vocabulary from file names, function names, and comments.
-2. **Cycle 2 -- refinement**: re-search with the learned terminology. Results are usually 2-3x more relevant.
-3. **Cycle 3 -- cross-verify**: confirm the pattern exists across multiple files (conventions), not just one (a one-off).
+1. **Cycle 1, discovery**: use broad, generic terms (e.g., `rate limit`, `retry`, `queue`). Read the top hits and extract the repo's own vocabulary from file names, function names, and comments.
+2. **Cycle 2, refinement**: re-search with the learned terminology. Results are usually 2-3x more relevant.
+3. **Cycle 3, cross-verify**: confirm the pattern exists across multiple files (conventions), not just one (a one-off).
 
-Stop conditions: at least 3 high-relevance hits and no critical gaps surface, OR 3 cycles completed. Never keep searching after convergence -- additional cycles burn tokens without adding signal.
+Stop conditions: at least 3 high-relevance hits and no critical gaps surface, OR 3 cycles completed. Never keep searching after convergence; additional cycles burn tokens without adding signal.
 
 **Output Format:**
 
@@ -127,7 +127,7 @@ Structure your findings as:
 **Search Strategies:**
 
 Use the built-in tools for efficient searching:
-- **Grep tool**: For text/code pattern searches with regex support (uses ripgrep under the hood)
+- **Grep tool**: For text/code pattern searches with regex support (uses ripgrep)
 - **Glob tool**: For file discovery by pattern (e.g., `**/*.md`, `**/CLAUDE.md`)
 - **Read tool**: For reading file contents once located
 - For AST-based code patterns: `ast-grep --lang php -p 'pattern'` or `ast-grep --lang typescript -p 'pattern'`

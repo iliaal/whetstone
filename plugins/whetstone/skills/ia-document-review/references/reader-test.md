@@ -2,11 +2,11 @@
 
 ## Step 7: Reader Test (Optional)
 
-For standalone documents that must be self-contained (onboarding guides, ADRs, external-facing docs), dispatch a zero-context sub-agent to simulate a first-time reader. The sub-agent has no conversation history — it sees only what a future reader would see.
+For standalone documents that must be self-contained (onboarding guides, ADRs, external-facing docs), dispatch a zero-context sub-agent to simulate a first-time reader. The sub-agent has no conversation history; it sees only what a future reader would see.
 
 **How to run the test:**
 
-1. **Predict 5-10 reader questions** from the document's stated goals — one per major section or decision. Mix three kinds:
+1. **Predict 5-10 reader questions** from the document's stated goals, one per major section or decision. Mix three kinds:
    - Concrete retrieval: "What command sets up the dev environment?"
    - Decision rationale: "Why did we pick X over Y?"
    - Ambiguity probe: "Could a reader interpret <specific phrase> in more than one way?"

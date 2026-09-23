@@ -1,6 +1,6 @@
 # Anti-Sycophancy Patterns
 
-Load this reference when dispatching judge panels, running parallel reviewers, or iterating on subjective evaluations. Multi-agent swarms can converge on wrong answers through groupthink — these patterns prevent agents from anchoring on each other's outputs.
+Load this reference when dispatching judge panels, running parallel reviewers, or iterating on subjective evaluations. Multi-agent swarms can converge on wrong answers through groupthink; these patterns prevent agents from anchoring on each other's outputs.
 
 ## Cold-start agent isolation
 
@@ -8,21 +8,21 @@ Each independent reviewer or evaluator receives the full task, target artifact, 
 
 ## Fresh instances on every re-dispatch round
 
-When re-running reviewers across iterations (QA retry loop, re-review after fixes, multi-round evaluation), spawn a completely fresh agent each round — never reuse the same instance. Reviewers carrying memory from a prior round anchor on their earlier verdicts and miss regressions introduced by the fix. A reviewer who said "this is fine" in round 1 will rationalize back toward that verdict in round 2 even when a bad change has landed. Cold-start applies to every round, not just the first.
+When re-running reviewers across iterations (QA retry loop, re-review after fixes, multi-round evaluation), spawn a completely fresh agent each round; never reuse the same instance. Reviewers carrying memory from a prior round anchor on their earlier verdicts and miss regressions introduced by the fix. A reviewer who said "this is fine" in round 1 will rationalize back toward that verdict in round 2 even when a bad change has landed. Cold-start applies to every round, not just the first.
 
 ## Label randomization for judge panels
 
-When multiple candidates are evaluated (e.g., parallel implementations, competing approaches), judges see randomized labels — X/Y/Z, not A/B or "original"/"improved." Re-shuffle labels each evaluation round. This prevents anchoring on position ("A is always the baseline") or naming ("the synthesis must be better").
+When multiple candidates are evaluated (e.g., parallel implementations, competing approaches), judges see randomized labels: X/Y/Z, not A/B or "original"/"improved." Re-shuffle labels each evaluation round. This prevents anchoring on position ("A is always the baseline") or naming ("the synthesis must be better").
 
 ## Never reveal the passing threshold to a judge
 
-A judge told "3.5 passes" anchors on the boundary and drifts scores toward it. The judge prompt carries the rubric and the scale; the orchestrator holds the threshold and applies it to the returned score. The same applies to consequences — "if this fails, the run aborts" is pressure toward leniency, not context.
+A judge told "3.5 passes" anchors on the boundary and drifts scores toward it. The judge prompt carries the rubric and the scale; the orchestrator holds the threshold and applies it to the returned score. The same applies to consequences: "if this fails, the run aborts" is pressure toward leniency, not context.
 
-The expected verdict is the same anchor. Briefing an evaluator with the outcome you anticipate — "we expect nothing here", "this probably duplicates ours" — produces confirmation: the reader string-matches against the expectation and stops, missing gaps one abstraction level up. State the question and the comparison basis; hold the prior.
+The expected verdict is the same anchor. Briefing an evaluator with the outcome you anticipate ("we expect nothing here", "this probably duplicates ours") produces confirmation: the reader string-matches against the expectation and stops, missing gaps one abstraction level up. State the question and the comparison basis; hold the prior.
 
 ## Keep the judge out of the producer's lineage
 
-A second opinion is independent only while the evaluating model is neither the producer nor a sibling from the same lineage. A validator chain written as an ordered model list falls back on a transient error to the next entry, which is usually the producer's sibling — the fallback silently converts an independent review into a self-review. Order the chain by provider lineage, and drop whichever model produced the artifact under review.
+A second opinion is independent only while the evaluating model is neither the producer nor a sibling from the same lineage. A validator chain written as an ordered model list falls back on a transient error to the next entry, which is usually the producer's sibling, so the fallback silently converts an independent review into a self-review. Order the chain by provider lineage, and drop whichever model produced the artifact under review.
 
 ## Judge biases and countermeasures
 
@@ -40,4 +40,4 @@ Structural isolation (the patterns above) does not remove per-judgment biases. N
 
 ## Convergence detection
 
-Track an incumbent (current best candidate). If the same candidate wins N consecutive evaluation rounds (default: 3), stop iterating — the swarm has converged. This prevents infinite iteration on subjective tasks where no clear winner emerges and additional rounds just burn tokens.
+Track an incumbent (current best candidate). If the same candidate wins N consecutive evaluation rounds (default: 3), stop iterating: the swarm has converged. This prevents infinite iteration on subjective tasks where no clear winner emerges and additional rounds just burn tokens.

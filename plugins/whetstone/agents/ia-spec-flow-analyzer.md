@@ -34,7 +34,7 @@ Mission:
 1. Map out ALL possible user flows and permutations
 2. Identify gaps, ambiguities, and missing specifications
 3. Ask clarifying questions about unclear elements
-4. Present a comprehensive overview of user journeys
+4. Present a complete overview of user journeys
 5. Highlight areas that need further definition
 
 When given a specification, plan, or feature description:
@@ -63,20 +63,20 @@ Remaining risk dimensions: see the Phase 3 sweep.
 
 After mapping flows and permutations, systematically probe each dimension for unspecified behavior. Unspecified behavior is risk.
 
-1. **Happy path** — Verify the intended flow when everything works correctly is fully specified from trigger to completion.
-2. **Error path** — Enumerate expected failures (validation, auth, quota, dependency) and confirm the spec defines how the system responds to each.
-3. **Edge cases** — Test boundary values: empty inputs, single-element collections, maximum limits, off-by-one, zero-quantity operations.
-4. **Abuse/misuse** — Assume adversarial users. Check for injection vectors, parameter tampering, replay attacks, intentional misuse of exposed endpoints.
-5. **Scale** — Ask what happens at 10x and 100x current load. Identify unbounded queries, fan-out writes, and missing pagination.
-6. **Concurrency** — Look for race conditions, parallel access to shared resources, lock contention, and double-submit scenarios.
-7. **Temporal** — Surface timing dependencies: timeouts, clock skew between services, retry storms, TTL mismatches, scheduled-job overlap.
-8. **Data variation** — Consider different input types, character encodings, unicode edge cases (ZWJ, RTL, emoji), malformed payloads, and content-type mismatches.
-9. **Permissions** — Trace access control at every operation. Flag missing authorization checks, privilege escalation paths, and unclear role boundaries.
-10. **Integration** — Map every external dependency. For each: what happens on timeout, error response, schema change, or total outage?
-11. **Recovery** — Define behavior after crash, restart, or partial failure. Check for incomplete writes, orphaned resources, and stale caches.
-12. **State transitions** — List all lifecycle states and valid transitions. Flag illegal transitions the spec does not explicitly prevent.
+1. **Happy path**: Verify the intended flow when everything works correctly is fully specified from trigger to completion.
+2. **Error path**: Enumerate expected failures (validation, auth, quota, dependency) and confirm the spec defines how the system responds to each.
+3. **Edge cases**: Test boundary values: empty inputs, single-element collections, maximum limits, off-by-one, zero-quantity operations.
+4. **Abuse/misuse**: Assume adversarial users. Check for injection vectors, parameter tampering, replay attacks, intentional misuse of exposed endpoints.
+5. **Scale**: Ask what happens at 10x and 100x current load. Identify unbounded queries, fan-out writes, and missing pagination.
+6. **Concurrency**: Look for race conditions, parallel access to shared resources, lock contention, and double-submit scenarios.
+7. **Temporal**: Surface timing dependencies: timeouts, clock skew between services, retry storms, TTL mismatches, scheduled-job overlap.
+8. **Data variation**: Consider different input types, character encodings, unicode edge cases (ZWJ, RTL, emoji), malformed payloads, and content-type mismatches.
+9. **Permissions**: Trace access control at every operation. Flag missing authorization checks, privilege escalation paths, and unclear role boundaries.
+10. **Integration**: Map every external dependency. For each: what happens on timeout, error response, schema change, or total outage?
+11. **Recovery**: Define behavior after crash, restart, or partial failure. Check for incomplete writes, orphaned resources, and stale caches.
+12. **State transitions**: List all lifecycle states and valid transitions. Flag illegal transitions the spec does not explicitly prevent.
 
-For each dimension, flag gaps where the spec is silent. Deduplicate scenarios that overlap across dimensions (e.g., a concurrency issue that is also a state-transition issue — report it once, note both dimensions). Classify each gap by severity: **critical** (blocks safe implementation), **important** (degrades reliability or UX), **minor** (reasonable default exists).
+For each dimension, flag gaps where the spec is silent. Deduplicate scenarios that overlap across dimensions (e.g., a concurrency issue that is also a state-transition issue: report it once, note both dimensions). Classify each gap by severity: **critical** (blocks safe implementation), **important** (degrades reliability or UX), **minor** (reasonable default exists).
 
 ## Phase 4: Gap Identification
 

@@ -90,8 +90,7 @@ function convertAgent(agent: ClaudeAgent, options: ClaudeToOpenCodeOptions) {
   }
 }
 
-// Commands are written as individual .md files rather than entries in opencode.json.
-// Chosen over JSON map because opencode resolves commands by filename at runtime (ADR-001).
+// Commands are written as individual .md files because opencode resolves commands by filename at runtime.
 function convertCommands(commands: ClaudeCommand[]): OpenCodeCommandFile[] {
   const files: OpenCodeCommandFile[] = []
   for (const command of commands) {

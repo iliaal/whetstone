@@ -92,7 +92,7 @@ When `docs/solutions/` exists and holds more than a handful of entries (five or 
 Task whetstone:ia-learnings-researcher("Plan content:\n---\n[full plan content]\n---\n\nFind documented learnings in docs/solutions/ that apply to this plan. For each relevant learning: quote the key insight, explain how it applies, and suggest where to incorporate it. Skip non-applicable learnings with a one-line reason.")
 ```
 
-These learnings are institutional knowledge — applying them prevents repeating past mistakes. The agent encapsulates the filter logic so this command doesn't need to restate it.
+These learnings are institutional knowledge; applying them prevents repeating past mistakes. The agent encapsulates the filter logic.
 
 ### 5. Launch Per-Section Research Agents
 
@@ -138,7 +138,7 @@ Dispatch independent units within harness limits. Reuse existing evidence and sk
 ### 7. Wait for ALL Agents and Synthesize Everything
 
 <thinking>
-Wait for ALL parallel agents to complete - skills, research agents, review agents, everything. Then synthesize all findings into a comprehensive enhancement.
+Wait for ALL parallel agents to complete: skills, research agents, review agents, everything. Then synthesize all findings into one enhancement pass.
 </thinking>
 
 **Collect outputs from ALL sources:**
@@ -179,7 +179,7 @@ For each case where agent findings contradict a plan decision, use **AskUserQues
 
 **Confirm research-backed decisions:**
 
-Briefly note where research supports the plan: "Research confirms [decision] is the right call -- [brief reason]." Don't turn this into a list of validations; just mention the significant ones.
+Briefly note where research supports the plan: "Research confirms [decision] is the right call: [brief reason]." Don't turn this into a list of validations; just mention the significant ones.
 
 **Probe unresolved tensions:**
 
@@ -213,7 +213,7 @@ Apply the `ia-planning` skill's Plan Deepening format. Preserve supported decisi
 
 ## Output Format
 
-Update the plan file in place (or if user requests a separate file, append `-deepened` after `-plan`, e.g., `2026-01-15-feat-auth-plan-deepened.md`). The per-section enhancement format and top-level Enhancement Summary template are owned by the `ia-planning` skill's Plan Deepening section — apply them as-is.
+Update the plan file in place (or if user requests a separate file, append `-deepened` after `-plan`, e.g., `2026-01-15-feat-auth-plan-deepened.md`). The per-section enhancement format and top-level Enhancement Summary template are owned by the `ia-planning` skill's Plan Deepening section; apply them as-is.
 
 ## Quality Checks
 

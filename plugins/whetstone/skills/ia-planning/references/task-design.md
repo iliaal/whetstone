@@ -13,7 +13,7 @@ Every phase must be **context-safe**:
 
 ## Task Decomposition
 
-Decompose by user-visible capability (vertical slices), not by technical layer, so each phase is independently demonstrable. Checkpoint where components first integrate, before an irreversible transition, and before phase closure. Full guidance -- vertical slicing and the checkpoint system -- in [execution-and-methodology.md](./execution-and-methodology.md).
+Decompose by user-visible capability (vertical slices), not by technical layer, so each phase is independently demonstrable. Checkpoint where components first integrate, before an irreversible transition, and before phase closure. Full guidance (vertical slicing and the checkpoint system) is in [execution-and-methodology.md](./execution-and-methodology.md).
 
 ## Decision Authority
 
@@ -33,7 +33,7 @@ Ask only about decisions that fall in the "user decides" category above. Batch t
 
 ## Task Rules
 
-Write every task as if the implementer has zero context and questionable taste -- they cannot infer intent from conversation history, so everything must be in the plan.
+Write every task as if the implementer has zero context and questionable taste: they cannot infer intent from conversation history, so everything must be in the plan.
 
 - **Atomic**: one independently verifiable action. Internal steps may separate test setup from implementation, but they do not become separately closable work items.
 - **Verb-first**: "Add...", "Create...", "Refactor...", "Verify..."

@@ -25,7 +25,7 @@ tests/
 Rules mirror the layered architecture from `ia-nodejs-backend`:
 - Routes parse + call services + format response. No business logic.
 - Services never import from `axum` or `http`. No HTTP status codes leak in.
-- Repos never construct `AppError` variants that map to HTTP — they return typed storage errors that services convert.
+- Repos never construct `AppError` variants that map to HTTP; they return typed storage errors that services convert.
 
 ## AppState
 
@@ -38,7 +38,7 @@ pub struct AppState {
 }
 ```
 
-`Clone` is cheap because the expensive members are `Arc` inside. Inject with `State<AppState>` extractor — don't use globals or `OnceCell`.
+`Clone` is cheap because the expensive members are `Arc` inside. Inject with `State<AppState>` extractor; don't use globals or `OnceCell`.
 
 ## Error Type
 
@@ -87,7 +87,7 @@ impl IntoResponse for AppError {
 
 - One error envelope shape across every handler. Callers parse `.error.code` once.
 - Log the full error with `?self` for `INTERNAL_SERVER_ERROR` paths; never leak internal messages to the client.
-- Use `?` in handlers freely — `From` impls convert `sqlx::Error`, `anyhow::Error` into `AppError`.
+- Use `?` in handlers freely; `From` impls convert `sqlx::Error`, `anyhow::Error` into `AppError`.
 
 ## Handlers
 
@@ -105,7 +105,7 @@ pub async fn get_user(
 
 - Handlers take extractors first, body last. Extractors run in order; the body extractor must be last (it consumes the request).
 - Return `Result<Json<T>, AppError>` for JSON endpoints, `Result<impl IntoResponse, AppError>` for flexible responses.
-- Use `#[tracing::instrument(skip(state))]` on every handler — skip the state so secrets don't land in logs.
+- Use `#[tracing::instrument(skip(state))]` on every handler; skip the state so secrets don't land in logs.
 
 ## Validation
 
@@ -207,7 +207,7 @@ async fn get_user_returns_404_for_unknown_id() {
 }
 ```
 
-- Exercise the router directly with `tower::ServiceExt::oneshot` — no TCP bind needed, fast and deterministic.
+- Exercise the router directly with `tower::ServiceExt::oneshot`: no TCP bind needed, fast and deterministic.
 - `sqlx::test` macro gives each test an isolated database via transactions or template DBs.
 - For full end-to-end, use `reqwest` against a real bound port with `TcpListener::bind("127.0.0.1:0")` to pick a free port.
 
@@ -227,7 +227,7 @@ let user = sqlx::query_as!(
 ```
 
 - `sqlx::query_as!` / `sqlx::query!` verify SQL against the real database schema at compile time. Requires `DATABASE_URL` in the environment or a checked-in `.sqlx/` offline query cache (`cargo sqlx prepare`).
-- Use `.fetch_optional()` for "by id" lookups — returns `Option<T>`, maps cleanly to `AppError::NotFound`.
+- Use `.fetch_optional()` for "by id" lookups; it returns `Option<T>`, which maps cleanly to `AppError::NotFound`.
 - `.fetch_all()` only when you've bounded the result set with `LIMIT`. No unbounded selects from request handlers.
 - Transactions: `let mut tx = state.db.begin().await?;` → do work → `tx.commit().await?;`. Dropping without commit rolls back.
 - Prefer `query_as!` + explicit struct over `FromRow` derive when the struct and SQL columns are 1:1; derive when you want reuse across multiple queries.
@@ -249,6 +249,6 @@ Serve the spec at `/openapi.json` and Swagger UI at `/docs` in non-prod environm
 ## Common Traps
 
 - Don't put an `Arc<Mutex<T>>` in `AppState` for things that should be behind a DB. Shared mutable state across requests is almost always a design smell.
-- Don't use `tokio::sync::RwLock` where `arc-swap::ArcSwap` fits — config reloads, rarely-changing snapshots.
+- Don't use `tokio::sync::RwLock` where `arc-swap::ArcSwap` fits: config reloads, rarely-changing snapshots.
 - Don't forget `with_state` at the end of router assembly. The compiler error is confusing (`method not found on Router<AppState>`).
 - Don't bind to `0.0.0.0` in local dev unless you mean it. Use `127.0.0.1` by default; make the bind address configurable.

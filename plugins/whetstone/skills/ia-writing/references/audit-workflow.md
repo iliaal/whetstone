@@ -24,17 +24,17 @@ Read the full text start to finish without changing anything. The text under aud
 | `[JARGON]` | Business buzzword with a simpler substitute (see phrases.md) |
 | `[VAGUE-ATTR]` / `[WEASEL]` | "Experts argue", "studies show" without specific source |
 | `[META-COMMENTARY]` | Structural self-reference ("In this section, we'll...", "Let me walk you through...", "As we'll see...") |
-| `[METADISCOURSE]` | Interpretive labeling — stepping outside the scene or argument to name its meaning ("that's the lesson", "that part mattered", "this is the point") when the concrete details already carry it. Distinct from `[META-COMMENTARY]` (announces structure) and `[VAGUE-DECLARATIVE]` (announces importance). Keep a direct thesis that adds new information. |
+| `[METADISCOURSE]` | Interpretive labeling: stepping outside the scene or argument to name its meaning ("that's the lesson", "that part mattered", "this is the point") when the concrete details already carry it. Distinct from `[META-COMMENTARY]` (announces structure) and `[VAGUE-DECLARATIVE]` (announces importance). Keep a direct thesis that adds new information. |
 | `[EM-DASH]` | Any em dash, or en dash outside a numeric range |
 | `[INLINE-BOLD]` / `[INLINE-LIST]` / `[TITLE-CASE]` | Mechanical formatting tells |
 | `[VAGUE-DECLARATIVE]` | "The implications are significant" without naming the implication |
 | `[PASSIVE]` / `[ADVERB]` / `[BANNED-PHRASE]` | Standard corrections |
-| `[CURLY-QUOTES]` | Curly single or double quotes (`’ ‘ “ ”`) in running prose. AI autocorrect artifact — replace with straight ASCII quotes. |
+| `[CURLY-QUOTES]` | Curly single or double quotes (`’ ‘ “ ”`) in running prose. AI autocorrect artifact; replace with straight ASCII quotes. |
 | `[EMOJI]` | Emoji in running text or headings. Functional UI emoji in product copy is fine; editorial/promotional emoji is an AI tell. |
 | `[FALSE-RANGE]` | "From X to Y" where X and Y aren't on a coherent scale ("from code review to cultural shift"). Restructure to state both items without implying a continuum. |
 | `[ABSTRACT-METAPHOR]` | Jargon noun used metaphorically where a concrete term exists: flywheel, north star, substrate, scaffolding, wedge, vector, locus, nexus, primitive, bedrock, paradigm, ratchet, endgame |
 | `[MANNERED]` | Idiom or metaphor standing in for an available literal phrase ("earns its keep", "a dial worth turning", "does the heavy lifting"). Verb- and idiom-level flourish; `[ABSTRACT-METAPHOR]` covers nouns |
-| `[PORTABLE-PROSE]` | Sentence that could appear unchanged in anyone else's draft on any topic ("This raises important questions about the future of the field") -- no fact, opinion, or detail anchors it to this piece. Distinct from `[VAGUE-DECLARATIVE]`, which names this piece's topic but omits the implication; portable prose fits any topic verbatim |
+| `[PORTABLE-PROSE]` | Sentence that could appear unchanged in anyone else's draft on any topic ("This raises important questions about the future of the field"); no fact, opinion, or detail anchors it to this piece. Distinct from `[VAGUE-DECLARATIVE]`, which names this piece's topic but omits the implication; portable prose fits any topic verbatim |
 | `[PROCESS-NARRATION]` | Steps the writer took that do not change the reader's next action ("First I checked the config, then re-ran the suite"). The account of how time was spent, as opposed to what was found or decided |
 | `[BARE-TALLY]` | Counts, scorecards, or lists of everything checked with no decision attached ("resolved 11 threads", "reviewed 40 files"). Thoroughness displayed instead of a result. Not a tell when the count is itself the evidence the reader needs: tests executed and passed, a gate's pass/fail, files covered in a coverage ledger. The tell is a count standing in for a decision or padding a report |
 
@@ -44,9 +44,9 @@ Read the full text start to finish without changing anything. The text under aud
 
 | Tag | Trigger |
 |-----|---------|
-| `[OAICITE]` | Malformed AI citation artifacts -- `[oai_citation:...]`, `【...†source】`, `citeturn0search0`, `contentReference[oaicite:0]{index=0}`, `[attached_file:1]`, `grok_card`, or similar markup leaked from a language model's internal retrieval or copied out of a chat UI |
+| `[OAICITE]` | Malformed AI citation artifacts: `[oai_citation:...]`, `【...†source】`, `citeturn0search0`, `contentReference[oaicite:0]{index=0}`, `[attached_file:1]`, `grok_card`, or similar markup leaked from a language model's internal retrieval or copied out of a chat UI |
 | `[LINK-ROT]` | Dead URLs, placeholder links (`example.com`, `#`), or links that return 404 |
-| `[ISBN-DOI-FAIL]` | Invalid ISBN/DOI identifiers -- wrong check digit, truncated, or fabricated |
+| `[ISBN-DOI-FAIL]` | Invalid ISBN/DOI identifiers: wrong check digit, truncated, or fabricated |
 | `[REF-BUG]` | Reference formatting errors: mismatched footnote numbers, dangling `[1]` with no matching entry, duplicate reference IDs, inconsistent citation style within the same document |
 | `[UNMARKED-QUOTE]` | Source wording reproduced (six or more consecutive words) without quotation marks or attribution when summarizing a document |
 
@@ -71,7 +71,7 @@ Correct tagged items in a single pass using the fix table below. Preserve everyt
 | `[AI-LEX]` `[JARGON]` | Replace with a plainer synonym or restructure to eliminate the word. |
 | `[NOT-ONLY-BUT]` `[RULE-OF-3]` `[BINARY-CONTRAST]` | Break the pattern. State Y directly. |
 | `[COLON-REVEAL]` | Rewrite as a plain declarative sentence; reserve colons for lists, labels, quotes. |
-| `[KICKER]` | Delete the line -- don't rewrite it. End on the clearest concrete sentence already present. |
+| `[KICKER]` | Delete the line; don't rewrite it. End on the clearest concrete sentence already present. |
 | `[STACCATO]` | Reconstruct into a single flowing sentence that matches the source material's natural rhythm. |
 | `[ELEGANT-VAR]` | Pick one term and use it consistently (or use pronouns). |
 | `[VAGUE-ATTR]` `[WEASEL]` | Name the source, add a quantifier, or delete the claim. |

@@ -62,7 +62,7 @@ Every resource has exactly one owner, and that owner is an object whose destruct
 - Build clean with `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Werror`
 - `clang-tidy` reports no new findings on the diff
 - Tests pass under `-fsanitize=address,undefined` with zero reports
-- Any threaded code touched by the change exercised under TSan with zero reports -- the warning bundle above does not catch lock misuse
+- Any threaded code touched by the change exercised under TSan with zero reports; the warning bundle above does not catch lock misuse
 - `clang-format --dry-run --Werror` produces no diff
 - No new raw `new`/`delete`, no new `shared_ptr` where `unique_ptr` suffices
 - Any class that gained a destructor has its move operations reviewed

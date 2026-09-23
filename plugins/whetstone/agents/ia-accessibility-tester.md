@@ -10,12 +10,12 @@ description: "WCAG 2.1/2.2 accessibility audit: keyboard navigation, screen read
 Context: The user has built a new form component.
 user: "I've finished the checkout form. Can you check it for accessibility?"
 assistant: "I'll use the accessibility-tester agent to run a WCAG 2.1 audit on the checkout form."
-<commentary>New UI components should be checked for accessibility compliance -- keyboard navigation, screen reader support, contrast ratios, and ARIA attributes.</commentary>
+<commentary>New UI components should be checked for accessibility compliance: keyboard navigation, screen reader support, contrast ratios, and ARIA attributes.</commentary>
 </example>
 <example>
 Context: The user wants a full accessibility audit.
 user: "We need to make our app WCAG compliant before launch"
-assistant: "Let me use the accessibility-tester agent to perform a comprehensive accessibility audit."
+assistant: "Let me use the accessibility-tester agent to perform a full accessibility audit."
 <commentary>Pre-launch WCAG compliance review is a core accessibility-tester use case.</commentary>
 </example>
 </examples>
@@ -36,7 +36,7 @@ When invoked:
 - Color contrast ratios passing (4.5:1 normal text, 3:1 large text)
 - Focus indicators visible
 - Error messages accessible
-- Alternative text comprehensive
+- Alternative text complete and descriptive
 
 ## WCAG Compliance (POUR)
 
@@ -66,7 +66,7 @@ When invoked:
 
 ## ARIA Implementation
 
-- Use native HTML elements first -- ARIA is a last resort
+- Use native HTML elements first; ARIA is a last resort
 - Roles match behavior (don't put `role="button"` on a div when `<button>` works)
 - States and properties updated dynamically (`aria-expanded`, `aria-selected`, etc.)
 - Landmark regions defined (`main`, `nav`, `aside`, `footer`)
@@ -78,7 +78,7 @@ When invoked:
 - Text resizable to 200% without loss of content
 - Animations respect `prefers-reduced-motion`
 - Sufficient contrast in both light and dark themes
-- Layout stable -- no unexpected shifts on interaction
+- Layout stable: no unexpected shifts on interaction
 
 ## Cognitive Accessibility
 

@@ -99,7 +99,7 @@ This command takes a work document (plan, specification, or todo file) and execu
      - Evaluate for incremental commit (see below)
    ```
 
-   **System-Wide Test Check** -- Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
+   **System-Wide Test Check**: Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
 
    **IMPORTANT**: Always update the original plan document by checking off completed items. Use the Edit tool to change `- [ ]` to `- [x]` for each task you finish. This keeps the plan as a living document showing progress and ensures no checkboxes are left unchecked.
 
@@ -146,7 +146,7 @@ This command takes a work document (plan, specification, or todo file) and execu
    - **Opt into tests-first** per phase by adding `[test-first]` to the phase header (see `ia-planning` skill, Execution Posture Signals). Use test-first when behavior is well-defined upfront (bug fixes always; new features when the contract is clear before implementation).
    - Run relevant tests after each significant change. Don't wait until the end.
    - Fix failures immediately.
-   - **Unit tests with mocks prove logic in isolation. Integration tests with real objects prove the layers work together.** If your change touches callbacks, middleware, or error handling — you need both.
+   - **Unit tests with mocks prove logic in isolation. Integration tests with real objects prove the layers work together.** If your change touches callbacks, middleware, or error handling, you need both.
 
 5. **Figma Design Sync** (if applicable)
 
@@ -169,7 +169,7 @@ This command takes a work document (plan, specification, or todo file) and execu
 
 7. **Subagent Execution Discipline**
 
-   When dispatching subagents to implement tasks, follow the `ia-orchestrating-swarms` skill — it owns the full protocol: fresh-agent-per-task (no context reuse), two-stage review gate (spec compliance first, then quality), model-selection-by-complexity table, and the four-status reporting protocol (DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT). Do NOT restate those rules here. The skill is the source of truth — changes land there, not in this command.
+   When dispatching subagents to implement tasks, follow the `ia-orchestrating-swarms` skill. It owns the full protocol: fresh-agent-per-task (no context reuse), two-stage review gate (spec compliance first, then quality), model-selection-by-complexity table, and the four-status reporting protocol (DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT). Do NOT restate those rules here.
 
 ### Phase 2.5: Verify Before Proceeding
 
@@ -194,7 +194,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
    This step is not optional. It closes one of two ways, and both the PR template's Testing section and the Phase 4 Notify User summary have to say which:
 
-   - **Reviewed** -- agents ran, findings presented, criticals addressed or explicitly accepted with a reason.
+   - **Reviewed**: agents ran, findings presented, criticals addressed or explicitly accepted with a reason.
    - **Skipped**, with one of these stated verbatim plus a one-line reason: `Code review: skipped (mechanical diff)` for a rename, formatting sweep, lockfile bump, or generated-file refresh with no behavior change; `Code review: skipped (unavailable)` when no independent review capability is available.
 
    A self-assessment does not close this gate. "I already reviewed it as I wrote it" and "the findings were applied during implementation" are the implementer judging their own work, which is what the review exists to avoid. If the diff is large enough to want a worktree and multiple lenses, hand it to `/ia-review` and record that as the receipt.
@@ -235,7 +235,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    agent-browser snapshot -i
    agent-browser screenshot output.png
    ```
-   Resolve the port rather than assuming 3000 -- Vite and SvelteKit default to 5173, and `PORT=` in `.env` overrides either.
+   Resolve the port rather than assuming 3000: Vite and SvelteKit default to 5173, and `PORT=` in `.env` overrides either.
    Run `agent-browser --help` for full CLI usage.
 
    **Step 3: Upload screenshots only when authorized**
@@ -317,7 +317,7 @@ Before creating PR, verify:
 - [ ] Tests pass (run project's test command)
 - [ ] Linting passes (run project's lint command)
 - [ ] Code follows existing patterns
-- [ ] Code review closed -- reviewed, or skipped with the verbatim phrase and reason from Phase 3
+- [ ] Code review closed: reviewed, or skipped with the verbatim phrase and reason from Phase 3
 - [ ] Project-declared pre-push/review-ready gates from CLAUDE.md/AGENTS.md/CONTRIBUTING.md run and passing (Phase 4)
 - [ ] Figma designs match implementation (if applicable)
 - [ ] Meaningful UI screenshots captured; any upload used an authorized destination

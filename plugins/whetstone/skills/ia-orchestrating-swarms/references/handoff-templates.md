@@ -67,7 +67,7 @@ Review this implementation for code quality. Spec compliance already verified.
 
 ## Escalation Report
 
-Use at the round-5 cap, or earlier on non-convergence -- a finding that oscillates rather than narrows after its second attempt. Rounds 1-3 resume the same implementer; rounds 4-5 hand the task to a fresh implementer on a stronger model. Round mechanics: [wave-contract.md](./wave-contract.md).
+Use at the round-5 cap, or earlier on non-convergence: a finding that oscillates rather than narrows after its second attempt. Rounds 1-3 resume the same implementer; rounds 4-5 hand the task to a fresh implementer on a stronger model. Round mechanics: [wave-contract.md](./wave-contract.md).
 
 ```
 **Escalation: Task [N] blocked after [N] rounds** ([cap reached | non-convergence after round 2])

@@ -25,12 +25,12 @@ destroys uncommitted work.
 Moving untracked work "out of the way" is the same interference, not a
 safeguard: do **not** copy or move the user's WIP to `/tmp`, a backup dir, or any
 location outside the checkout to "protect" it. Relocating someone's uncommitted
-work is the same class of harm as stashing it -- it leaves the tree in a state
+work is the same class of harm as stashing it: it leaves the tree in a state
 the user did not create and cannot predict.
 
 If the target diff genuinely requires a different branch or a clean tree, stop
 and ask before switching, stashing, resetting, or cleaning. Reviewing a branch
-does not require checking it out -- resolve the comparison range and read the
+does not require checking it out. Resolve the comparison range and read the
 diff range directly (see "Base-branch resolution for branch reviews" below); a
 remote branch reads via `git diff --no-textconv --no-ext-diff <base>...<branch>`
 without touching the working tree.
@@ -49,7 +49,7 @@ report rather than committing or pushing on top of an unknown state.
 
 ## Base-branch resolution for branch reviews
 
-This governs the *comparison range* for a branch review — distinct from the
+This governs the *comparison range* for a branch review, distinct from the
 file-selection chain in the main skill. When the review target is a branch (not a
 working-tree diff), run base-branch resolution first; the file-selection
 fallbacks are for in-progress local work, where `git diff HEAD` is the correct
@@ -59,13 +59,13 @@ working-tree delta.
 When reviewing a branch (no specific files, no PR), derive the comparison base
 via this fallback chain:
 
-1. **If a PR exists for the branch** -- use its base: `gh pr view --json baseRefName --jq .baseRefName`. Authoritative; no further detection needed.
+1. **If a PR exists for the branch**, use its base: `gh pr view --json baseRefName --jq .baseRefName`. Authoritative; no further detection needed.
 2. **Else infer the default branch**: try `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` (parses to `origin/<name>`). If unset, try `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
 3. **Else fallback list**: try `origin/main`, `origin/master`, `origin/develop`, `origin/trunk` in order; pick the first that resolves via `git rev-parse --verify`. Bare-local names are a last resort if no `origin/*` remote ref exists.
 4. **Compute the diff base**: `git merge-base HEAD <resolved-base>`. Review the range `<merge-base>..HEAD`, not `HEAD` against the working tree.
 5. **Shallow-clone retry**: if `git merge-base` returns nothing and `git rev-parse --is-shallow-repository` is `true`, run `git fetch --unshallow origin` and retry. Document this in the review output so the reviewer knows the comparison range only became available after unshallowing.
 
-**Never fall back to `git diff HEAD`** when base resolution fails -- that hides
+**Never fall back to `git diff HEAD`** when base resolution fails; that hides
 all committed work on the branch and reviews only the uncommitted delta. Stop and
 ask which base to use instead.
 
@@ -76,14 +76,14 @@ reviewer's environment, so without the flags the branch author chooses which
 program rewrites the diff the review reads.
 
 **The working tree is not the review head.** Unless the branch is checked out,
-every filesystem-backed tool -- file reads, greps, delegated sweeps, any test
-runner mounting the repository -- executes the *base*. The asymmetry is usable:
+every filesystem-backed tool (file reads, greps, delegated sweeps, any test
+runner mounting the repository) executes the *base*. The asymmetry is usable:
 findings on files the change touched are unreliable (already-fixed call sites
 report as broken), while findings on untouched files are sound. Partition
 delegated-sweep output by `git diff --name-only <base> <head>` and re-verify only
 the changed-file half against `git show --no-textconv --no-ext-diff <head>:<file>`. Anchoring reads to the
 head SHA does not cover execution: running the suite needs the full head
-materialized, so use a dedicated worktree rather than the changed files alone --
+materialized, so use a dedicated worktree rather than the changed files alone:
 the diff's runtime closure includes dependencies absent on a stale base, and the
 resulting setup error looks like a defect in the change. Never switch, stash, or
 clean the user's checkout to get there; see working-tree safety above.
@@ -103,7 +103,7 @@ markers.
 ### Stacked branches
 
 When a branch is stacked on another unmerged branch, `git merge-base HEAD
-<default-branch>` over-covers -- it sweeps in the sibling branch's commits,
+<default-branch>` over-covers: it sweeps in the sibling branch's commits,
 fabricating findings on files this change doesn't touch. Prefer the hosting
 platform's authoritative base SHA (PR/MR `base_sha`, or `gh pr diff`) over a
 locally computed merge-base. After the run, intersect every finding's path with
@@ -121,16 +121,16 @@ Tests excluded from deep-review size signals are still part of the universe and
 remain selectable. Keep deletion-only changes selectable so removal regressions
 can be reviewed against the old side. Exclude only paths outside explicit user
 scope, or paths in the main skill's declared lockfile, minified/bundled,
-vendored, and generated categories -- all four are review noise that an explicit
+vendored, and generated categories; all four are review noise that an explicit
 user scope may bring back. Record the concrete reason; never silently drop an
-oversized or unreadable selected file -- mark it failed.
+oversized or unreadable selected file; mark it failed.
 
 **A credential-bearing path is not excluded here.** This ledger governs local
 review, and a tracked `.env`, key, or `.netrc` is precisely where a
 committed-secret finding lives; dropping it from `selected` would make that
 class unreviewable. Keep the path selected, review it, and report any finding
 under the secret-redaction rule in
-[report-and-integration.md](./report-and-integration.md) -- cite `file:line` and
+[report-and-integration.md](./report-and-integration.md): cite `file:line` and
 describe the pattern, never reproduce the value. The unconditional exclusion of
 these paths applies to *external dispatch only*; the hard-exclusion list in
 [external-review-subprocess.md](./external-review-subprocess.md) keeps them out
@@ -162,10 +162,10 @@ paths as pending.
 
 Derive terminal coverage mechanically:
 
-- **complete** -- `selected = covered`, with no failed or pending paths.
-- **partial** -- at least one selected path is covered and at least one is failed or pending.
-- **failed** -- selected paths exist but none received usable coverage, or scope identity became untrustworthy.
-- **skipped** -- no files were selected; report that no review verdict was produced.
+- **complete**: `selected = covered`, with no failed or pending paths.
+- **partial**: at least one selected path is covered and at least one is failed or pending.
+- **failed**: selected paths exist but none received usable coverage, or scope identity became untrustworthy.
+- **skipped**: no files were selected; report that no review verdict was produced.
 
 Only complete coverage may produce `Ready to merge` or `Ready with fixes`.
 Partial or failed coverage forces `Not ready`, independently of finding count.
@@ -186,5 +186,5 @@ Returns `true` only when at least one substantive review or issue comment exists
 (approval-only clicks excluded; null-defensive on PRs with no review array). On
 `false`, skip the prior-comments pass entirely. On `true`, fetch the bodies via
 `gh api repos/{owner}/{repo}/pulls/{pr}/comments` and reconcile before raising
-findings -- prior reviewers may have already resolved issues you'd otherwise
+findings; prior reviewers may have already resolved issues you'd otherwise
 re-raise.

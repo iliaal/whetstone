@@ -41,4 +41,4 @@ Can it figure out how to accomplish it, operating in a loop until it succeeds?
 
 If yes, you've built something agent-native.
 
-If it says "I don't have a feature for that" -- your architecture is still too constrained.
+If it says "I don't have a feature for that", your architecture is still too constrained.

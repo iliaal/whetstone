@@ -97,22 +97,17 @@ _PRE_RENAME_PROJECT_PATHS = {
 
 import re as _re
 
-# Synthetic / self-play eval sources to exclude from harvested data.
-# SkillOpt rollouts drive the model agentically against planted-bug fixtures in
-# /tmp/skillopt-* workspaces; those trajectories AND the optimizer's soft-rubric
-# judge calls get the target skill "injected", but none of it is organic usage.
-# Counting them poisons golden datasets with degenerate self-play (a verification
-# golden built from this drew 16/20 candidates from SkillOpt fixtures plus a judge
-# prompt). The project-path substring catches every SkillOpt workspace; the
-# harness-prompt pattern catches judge/grader calls that leak into real projects.
+# Synthetic / self-play sources excluded from harvested data. SkillOpt rollouts
+# (in /tmp/skillopt-* workspaces) and their soft-rubric judge calls get the target
+# skill injected, but none of it is organic usage; one verification golden drew
+# 16/20 candidates from them. The project-path substring catches SkillOpt
+# workspaces; the harness-prompt pattern catches judge/grader calls under real
+# project paths.
 _SYNTHETIC_PROJECT_SUBSTRINGS = ("skillopt",)
-# The last two alternatives are the distiller's OWN emit-tasks templates
-# (_JUDGE_SYSTEM_PROMPT and _diagnose_build_prompt). Dispatching judge/diagnose
-# sub-agents via `dspy-eval --emit-tasks` / `diagnose-negatives --emit-prompt`
-# lands those prompts as a sub-agent session's task_input; without these markers
-# a later harvest would re-poison eval data with the distiller's self-play
-# (same class as the fixed SkillOpt contamination). Keep in sync with those
-# template strings.
+# The last two alternatives match the distiller's own emit-tasks templates
+# (_JUDGE_SYSTEM_PROMPT and _diagnose_build_prompt), which land as a sub-agent
+# session's task_input when dispatched via `dspy-eval --emit-tasks` or
+# `diagnose-negatives --emit-prompt`. Keep in sync with those template strings.
 _HARNESS_PROMPT_PATTERNS = _re.compile(
     r"(?:Score this agent trajectory"
     r"|Return ONLY minified JSON\b"
@@ -139,11 +134,9 @@ def _is_synthetic_session(project, task_input=""):
 
 
 # Plugin-maintenance context. A skill injected into a sync/audit/distillery task
-# is a misfire, not usage: the task is meta-work on the plugin, not the skill's
-# domain. Such sessions dominate the whetstone repo's harvested data (Ilia's main
-# use of this repo IS maintaining the plugin) and poison process-skill eval data
-# with misfires + truncated multi-turn output. MIRRORS the injection hook's
-# detector at plugins/whetstone/hooks/inject-skills.sh:50 -- keep the two in sync.
+# is a misfire, not usage, and such sessions dominate this repo's harvested data.
+# Mirrors the IS_MAINT_CONTEXT detector in plugins/whetstone/hooks/inject-skills.sh;
+# keep the two in sync.
 _MAINTENANCE_TASK_PATTERN = _re.compile(
     r"plugins/whetstone/(?:skills|agents|commands)/"
     r"|distiller\.py"
@@ -370,7 +363,6 @@ def search_skills(queries):
         print(f"Error: all {len(failed_queries)} search queries failed", file=sys.stderr)
         sys.exit(1)
 
-    # Sort by installs descending
     ranked = sorted(all_skills.values(), key=lambda s: s["installs"], reverse=True)
 
     # Filter: installs >= 100, top 10
@@ -506,14 +498,12 @@ def fetch_skills(skills_list):
     # `.agents/skills/` of its own, so the tool must never run in the caller's cwd.
     work_dir = Path(tempfile.mkdtemp(prefix="whetstone-fetch-"))
 
-    # Group by source
     by_source = defaultdict(list)
     for skill in skills_list:
         by_source[skill["source"]].append(skill)
 
     fetch_failures = []
 
-    # Fetch each source group
     for source, group in by_source.items():
         skill_ids = [s["skillId"] for s in group]
         # npx skills add requires full GitHub URL
@@ -552,7 +542,6 @@ def fetch_skills(skills_list):
     if fetch_failures and len(fetch_failures) == len(skills_list):
         print(f"Error: all {len(fetch_failures)} skill fetches failed", file=sys.stderr)
 
-    # Compute checksums and build result
     results = []
     for skill in skills_list:
         sid = skill["skillId"]
@@ -577,7 +566,6 @@ def fetch_skills(skills_list):
                     "error": f"SKILL.md not found at {skill_md}",
                 })
 
-    # Append fetch failures as explicit entries
     for failure in fetch_failures:
         results.append({
             "id": failure["id"],
@@ -623,7 +611,6 @@ def check_updates(name):
     old_sources = {s["id"]: s for s in manifest.get("sources", [])}
     instructions = manifest.get("instructions", None)
 
-    # Re-search
     fresh_skills = search_skills(search_queries)
     fresh_ids = {s["id"] for s in fresh_skills}
     old_ids = set(old_sources.keys())
@@ -634,7 +621,6 @@ def check_updates(name):
     fetched_ok = {f["id"]: f for f in fetched if "sha1" in f}
     fetched_failed = [f for f in fetched if f.get("status") in ("fetch_failed", "missing")]
 
-    # Categorize
     unchanged = []
     changed = []
     new_sources = []
@@ -664,7 +650,6 @@ def check_updates(name):
         if oid not in fetched_ok and oid not in fresh_ids:
             removed.append({"id": oid})
 
-    # Early exit check
     if not changed and not new_sources and not removed:
         cleanup()
         return {"status": "no_updates"}
@@ -944,7 +929,6 @@ def backfill_sha1(name):
     fetched = fetch_skills(skills_for_fetch)
     fetched_by_id = {f["id"]: f for f in fetched if "sha1" in f}
 
-    # Update sources with sha1
     updated_sources = []
     for source in sources:
         sid = source["id"]
@@ -1230,13 +1214,10 @@ def _openrouter_request(api_key, model_id, provider_slug, messages, max_tokens, 
 
 DEFAULT_CLI_MODEL = "opus"
 
-# Abstract/aspirational phrases that Opus 4.7 under-fires on. Flag when they
-# appear in a component description (not body). These are puff words that
-# don't convey operational meaning -- 4.7 matches descriptions literally,
-# so a description of "Enhanced reasoning" won't trigger on user queries
-# that actually need it. Keep conservative: only phrases where the anti-pattern
-# is strong; legitimate qualifiers like "modern PHP 8.4" or "advanced React"
-# are excluded.
+# Puff phrases flagged in component descriptions (not bodies). Opus 4.7 matches
+# descriptions literally, so "Enhanced reasoning" won't trigger on queries that
+# need it. Kept conservative: qualifiers like "modern PHP 8.4" or "advanced
+# React" are excluded.
 _VAGUE_DESCRIPTION_PHRASES = (
     "first-class", "first class",
     "enhanced",
@@ -1280,9 +1261,8 @@ _MACHINE_PATH_PATTERNS = (
     _re.compile(r"/private/var/folders/[^\s`\"'<>)]+"),
 )
 
-# AI authorship attribution that must not appear in published plugin files. The
-# user is the author of everything shipped; co-authorship trailers and tool emails
-# are an attribution leak (see global rule + anti-patterns "Attribution leak").
+# AI authorship attribution (co-author trailers, tool emails) must not appear in
+# published plugin files.
 _ATTRIBUTION_PATTERNS = (
     _re.compile(r"co-?authored-?by:\s*(?:claude|cursor|codex|gpt|copilot|openai|ai\b)", _re.IGNORECASE),
     _re.compile(r"noreply@anthropic\.com"),
@@ -2089,7 +2069,6 @@ def validate_plugin(component_filter=None):
                         f"AI attribution in agent: {', '.join(agent_attr_hits[:3])}",
                         "HIGH")
 
-        # Cross-reference check
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
         for ref in skill_refs:
             if ref not in known_skills:
@@ -2138,7 +2117,6 @@ def validate_plugin(component_filter=None):
                         f"AI attribution in command: {', '.join(cmd_attr_hits[:3])}",
                         "HIGH")
 
-        # Cross-reference check
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
         for ref in skill_refs:
             if ref not in known_skills:
@@ -3028,7 +3006,6 @@ def _parse_session(jsonl_path):
                 if turn_model:
                     models.append(turn_model)
 
-            # Extract text content
             content = msg.get("content", "")
             content_text = ""
             tool_calls = []
@@ -3213,7 +3190,6 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
     synthetic_count = 0
     maintenance_count = 0
 
-    # Discover all JSONL files
     session_files = []
     subagent_files = []
 
@@ -3223,7 +3199,6 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
         if project_filter and project_dir.name != project_filter:
             continue
 
-        # Main session files
         for f in project_dir.glob("*.jsonl"):
             session_files.append(f)
 
@@ -3234,7 +3209,6 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
     all_files = session_files + subagent_files
     print(f"Found {len(session_files)} sessions, {len(subagent_files)} subagent traces", file=sys.stderr)
 
-    # Parse all files and group by skill
     skill_examples = defaultdict(list)
     stats = {
         "files_parsed": 0,
@@ -3307,7 +3281,6 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
             example = _build_eval_example(parsed)
             skill_examples["_unattributed"].append(example)
 
-    # Write per-skill JSONL files
     EVAL_DATA_DIR.mkdir(parents=True, exist_ok=True)
     written = {}
 
@@ -3624,7 +3597,6 @@ def build_golden(skill_name, top_n=20, auto=False):
 
     Returns summary dict.
     """
-    # Load skill for keyword extraction
     skill_path = _find_skill_path(skill_name)
     if not skill_path:
         print(f"Error: skill '{skill_name}' not found", file=sys.stderr)
@@ -3632,7 +3604,6 @@ def build_golden(skill_name, top_n=20, auto=False):
     skill_text = skill_path.read_text()
     skill_keywords = _extract_skill_keywords(skill_text)
 
-    # Load harvested sessions
     sessions_path = EVAL_DATA_DIR / skill_name / "sessions.jsonl"
     if not sessions_path.exists():
         print(f"Error: {sessions_path} not found. Run harvest-sessions first.", file=sys.stderr)
@@ -3670,7 +3641,6 @@ def build_golden(skill_name, top_n=20, auto=False):
         print(f"Error: no relevant examples. Keywords: {sorted(skill_keywords)}", file=sys.stderr)
         sys.exit(1)
 
-    # Score and rank
     scored = []
     for ex in relevant:
         quality = _score_candidate(ex, skill_keywords)
@@ -3692,7 +3662,6 @@ def build_golden(skill_name, top_n=20, auto=False):
         selected.extend(extras[:remaining])
     selected = selected[:top_n]
 
-    # Build candidate records
     candidates = []
     for quality, ex in selected:
         candidate = {
@@ -3710,7 +3679,6 @@ def build_golden(skill_name, top_n=20, auto=False):
         }
         candidates.append(candidate)
 
-    # Write output
     skill_eval_dir = EVAL_DATA_DIR / skill_name
     skill_eval_dir.mkdir(parents=True, exist_ok=True)
 
@@ -4923,7 +4891,6 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
 
     skill_text, sampled, dataset_path = _dspy_load_and_sample(skill_name, dataset, max_examples, skill_file)
 
-    # Configure model and backend
     if use_cli:
         eval_model = model or DEFAULT_CLI_MODEL
         print(f"Backend: claude-cli (model: {eval_model})", file=sys.stderr)
@@ -4932,7 +4899,6 @@ def dspy_eval(skill_name, dataset="sessions", max_examples=20, model=None, backe
         model_id, provider_slug = _parse_model_spec(eval_model)
         print(f"Backend: openrouter (model: {eval_model})", file=sys.stderr)
 
-    # Score each example
     scored = []
     total_tokens = 0
     total_cost = 0.0
@@ -5339,7 +5305,6 @@ def _format_eval_comparison(report, previous):
     if neg:
         lines.append(f"  Negative:   {neg.get('mean_composite', 0):.3f} ({neg.get('count', 0)} examples)")
 
-    # Threshold flag
     if composite < 0.5:
         lines.append(f"  ** BELOW THRESHOLD (0.5) -- skill may need attention **")
 
@@ -6109,7 +6074,6 @@ def build_parser():
                         help="Use this retrospective rubric instead of the live skill; does not re-execute the historical task")
     # Mutually exclusive run modes: direct-LLM (--backend), emit sub-agent tasks
     # (--emit-tasks), or aggregate sub-agent verdicts (--score-from-verdicts).
-    # Combining them silently ran a wrong mode and ignored the others.
     eval_mode = p_eval.add_mutually_exclusive_group()
     eval_mode.add_argument("--backend", default="claude-cli", choices=["openrouter", "claude-cli"],
                          help="LLM backend: 'claude-cli' (Opus 4.7 via claude -p, default) or 'openrouter' (DeepSeek V3.2)")
@@ -6247,7 +6211,6 @@ def main():
 
     elif args.command == "test-triggers":
         report = test_triggers(args.skill, args.fixtures_dir)
-        # Print summary table
         print(f"\n{'Skill':35s} {'TP':>4s} {'FP':>4s} {'FN':>4s} {'TN':>4s} {'F1':>6s} {'Result':>8s}", file=sys.stderr)
         print("-" * 70, file=sys.stderr)
         for r in report["results"]:
@@ -6435,7 +6398,6 @@ def main():
 
     elif args.command == "analyze-misfires":
         report = analyze_misfires(args.min_examples, args.include_stale)
-        # Print summary table to stderr
         print(f"\n{'Skill':35s} {'Injected':>8s} {'Relevant':>8s} {'Misfire%':>8s} {'Pos%':>6s}", file=sys.stderr)
         print("-" * 70, file=sys.stderr)
         for m in report["misfires"]:

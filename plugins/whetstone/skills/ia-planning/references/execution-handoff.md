@@ -10,7 +10,7 @@ Phases can carry optional metadata that shapes how `/ia-work` sequences implemen
 
 ## Plan Deepening
 
-When asked to "deepen" or "strengthen" an existing plan, load [plan-deepening.md](./plan-deepening.md) — targeted research workflow (additive, not restructuring), per-section enhancement format, and Enhancement Summary block at the plan head. Orchestrated by the `/ia-deepen-plan` command.
+When asked to "deepen" or "strengthen" an existing plan, load [plan-deepening.md](./plan-deepening.md): targeted research workflow (additive, not restructuring), per-section enhancement format, and Enhancement Summary block at the plan head. Orchestrated by the `/ia-deepen-plan` command.
 
 ## Execution Handoff
 
@@ -22,15 +22,15 @@ When the user requested a plan only, stop after delivering the plan. When the re
 - All tasks are verb-first and independently verifiable
 - File structure and ownership are explicit where they affect integration
 - Phase boundaries follow runnable capability and context safety rather than file or task counts
-- No placeholder tasks ("implement feature", "add tests") -- every task names specific files and patterns
+- No placeholder tasks ("implement feature", "add tests"); every task names specific files and patterns
 - Each phase delivers end-to-end functionality (not a single horizontal layer)
 - Every process item names the capability or observed defect class it gates
 - Open questions contain only genuinely blocking unknowns
 
 ## Integration
 
-- **Predecessor:** `ia-brainstorming` when requirements are ambiguous -- use an existing brainstorm spec (`docs/brainstorms/`) as input and skip idea refinement.
+- **Predecessor:** `ia-brainstorming` when requirements are ambiguous; use an existing brainstorm spec (`docs/brainstorms/`) as input and skip idea refinement.
 - **Architecture decisions:** record significant trade-offs (chosen approach, what was given up) as an ADR (`/ia-adr` in Claude Code); ADRs outlive the plan.
-- **Threat modeling:** dispatch `ia-security-sentinel` in threat-model mode before implementation when the plan adds auth flows, payment handling, external API surfaces, or new trust boundaries -- architectural gaps are cheaper to fix in the plan than the code.
+- **Threat modeling:** dispatch `ia-security-sentinel` in threat-model mode before implementation when the plan adds auth flows, payment handling, external API surfaces, or new trust boundaries; architectural gaps are cheaper to fix in the plan than the code.
 - **Prose quality:** `ia-writing` to humanize plan language and strip AI slop.
 - **Execution handoff:** continue authorized work or ask only when the execution-mode choice is material, per *Execution Handoff* above.

@@ -9,11 +9,11 @@ SKILL_DIR="<absolute path of the directory containing this SKILL.md>"
 bash "$SKILL_DIR/scripts/init-plan.sh" "Feature Name"
 ```
 
-Substitute the real absolute path before running; never execute the command with the angle-bracket placeholder. The script refuses to overwrite a `task_plan.md` that still has unchecked tasks -- that is the never-overwrite gate below; pass `--force` only after deciding which plan wins. Anchor the call to `SKILL_DIR` rather than a bare `init-plan.sh` — a relative path resolves against the caller's working directory, not the skill, and breaks from a subdirectory or under a non-Claude harness.
+Substitute the real absolute path before running; never execute the command with the angle-bracket placeholder. The script refuses to overwrite a `task_plan.md` that still has unchecked tasks (the never-overwrite gate below); pass `--force` only after deciding which plan wins. Anchor the call to `SKILL_DIR` rather than a bare `init-plan.sh`: a relative path resolves against the caller's working directory, not the skill, and breaks from a subdirectory or under a non-Claude harness.
 
 This creates `.plan/task_plan.md` and adds `.plan/` to `.gitignore`.
 
-`.plan/` files are ephemeral working state -- do not commit them; old files are overwritten when starting a new feature. Before overwriting, check the existing `task_plan.md` for unchecked tasks: same work continuing means update in place, different work over an incomplete plan means stop and ask which plan wins -- never bulk-close or silently discard another plan's open items (the same rule applies to items mirrored into an external tracker). Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; `.plan/` supports the work session.
+`.plan/` files are ephemeral working state; do not commit them. Old files are overwritten when starting a new feature. Before overwriting, check the existing `task_plan.md` for unchecked tasks: same work continuing means update in place, different work over an incomplete plan means stop and ask which plan wins. Never bulk-close or silently discard another plan's open items (the same rule applies to items mirrored into an external tracker). Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; `.plan/` supports the work session.
 
 | File | Purpose | Update When |
 |------|---------|-------------|
@@ -23,7 +23,7 @@ Do not create secondary findings or progress logs solely to prove activity. Add 
 
 ## Test Discovery (Existing Projects)
 
-For existing code, discover the test landscape before planning: find related test/spec files (`Glob("**/*test*")`, `Grep`), read the canonical test command from config (`package.json` scripts, `pytest.ini`, `phpunit.xml`, CI), and note coverage gaps -- the plan should extend existing test patterns, not introduce new frameworks. Skip for greenfield projects with no tests yet.
+For existing code, discover the test landscape before planning: find related test/spec files (`Glob("**/*test*")`, `Grep`), read the canonical test command from config (`package.json` scripts, `pytest.ini`, `phpunit.xml`, CI), and note coverage gaps. The plan should extend existing test patterns, not introduce new frameworks. Skip for greenfield projects with no tests yet.
 
 ## Reference Implementations
 
@@ -81,13 +81,13 @@ When an authorized reference implementation embodies target behavior, cite the s
 
 ### Plan Quality Rules
 
-**Keep phase state current.** Changing a phase's `Status` also refreshes `## Next Step`. That one line is what the resume protocol reads after a compaction or a new session, so a stale `Next Step` is worse than none -- it resumes work that already happened.
+**Keep phase state current.** Changing a phase's `Status` also refreshes `## Next Step`. That one line is what the resume protocol reads after a compaction or a new session, so a stale `Next Step` is worse than none: it resumes work that already happened.
 
-**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Tasks may be read out of order -- repeat the spec, code pattern, or file path in every task that needs it. A step that cannot be specified concretely needs further breakdown before it belongs in a plan.
+**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Tasks may be read out of order; repeat the spec, code pattern, or file path in every task that needs it. A step that cannot be specified concretely needs further breakdown before it belongs in a plan.
 
 **Type-consistency check.** After writing all tasks, scan for naming drift. If Task 3 says `clearLayers()` but Task 7 says `clearFullLayers()`, that's a bug in the plan. Function names, variable names, and file paths must be consistent across all tasks.
 
-**No gold-plating.** Build exactly what the spec requires -- no features or "nice-to-haves" beyond it. Quote the exact spec requirements in the plan and flag any additions explicitly as scope expansion needing approval.
+**No gold-plating.** Build exactly what the spec requires, with no features or "nice-to-haves" beyond it. Quote the exact spec requirements in the plan and flag any additions explicitly as scope expansion needing approval.
 
 **Keep the deliverable ahead of the apparatus.** Every process or operations item names the capability or observed defect class it gates. Stop adding checks, matrices, or plan structure when the existing machinery is sufficient to keep implementation honest. Record deferred rigor as debt rather than building it speculatively.
 
@@ -95,4 +95,4 @@ When an authorized reference implementation embodies target behavior, cite the s
 
 **Keep closures vertical.** Internal plan steps may isolate one action, but a closable phase or external work item includes its implementation and tests and ends in runnable behavior. Do not turn types, implementation, tests, and documentation for one capability into separate completion credits.
 
-**Front-load high-variance decisions.** Order the plan document by how likely each part is to change on review, not by execution order -- the template's *Key Decisions* bracket defines what goes there; execution order still governs the phases themselves.
+**Front-load high-variance decisions.** Order the plan document by how likely each part is to change on review, not by execution order; the template's *Key Decisions* bracket defines what goes there. Execution order still governs the phases themselves.

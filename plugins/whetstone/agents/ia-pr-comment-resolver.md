@@ -2,7 +2,7 @@
 name: ia-pr-comment-resolver
 model: sonnet
 tools: Read, Grep, Glob, Edit, Write, Bash
-description: "Implements a single pre-agreed PR review comment: side-effect tracing, pattern compliance, and verification. Use when a comment's action is decided -- not for judgment calls (use receiving-code-review skill) or bulk resolution (use /ia-resolve-pr command)."
+description: "Implements a single pre-agreed PR review comment: side-effect tracing, pattern compliance, and verification. Use when a comment's action is decided; not for judgment calls (use receiving-code-review skill) or bulk resolution (use /ia-resolve-pr command)."
 ---
 
 <examples>
@@ -16,11 +16,11 @@ assistant: "I'll use the pr-comment-resolver agent to address this comment by im
 Context: A reviewer has left a specific comment about a naming issue.
 user: "The reviewer says to rename processData to transformUserRecord for clarity"
 assistant: "I'll use the pr-comment-resolver agent to implement that rename and mark the comment resolved"
-<commentary>This is a single, clear-action comment -- exactly what pr-comment-resolver handles. For multiple comments at once, use the /ia-resolve-pr command instead.</commentary>
+<commentary>This is a single, clear-action comment, exactly what pr-comment-resolver handles. For multiple comments at once, use the /ia-resolve-pr command instead.</commentary>
 </example>
 </examples>
 
-Implement pre-agreed PR review comments with side-effect tracing, pattern compliance, and verification. This agent handles comments where the action is decided -- not judgment calls about whether to accept feedback (that's the `ia-receiving-code-review` skill's job).
+Implement pre-agreed PR review comments with side-effect tracing, pattern compliance, and verification. This agent handles comments where the action is decided, not judgment calls about whether to accept feedback (that's the `ia-receiving-code-review` skill's job).
 
 After implementing fixes, verify using the `ia-verification-before-completion` skill.
 
@@ -55,7 +55,7 @@ When receiving a comment or review feedback:
    - Any additional considerations or notes for the reviewer
    - A confirmation that the issue has been resolved
 
-Draft the reply for the channel the item came from -- the dispatch prompt states which. Send only when explicitly authorized and not delegated to the parent:
+Draft the reply for the channel the item came from; the dispatch prompt states which. Send only when explicitly authorized and not delegated to the parent:
 
 - **Review thread** (file + line): use the GraphQL thread ID from `get-pr-comments` at `unresolved[].node.id`. Set `THREAD_ID` to that item's thread ID and `REPLY_FILE` to the file containing the exact approved reply. The nested `comments.nodes[].id` identifies a comment, not its thread. Send with:
 
@@ -71,7 +71,7 @@ Draft the reply for the channel the item came from -- the dispatch prompt states
   ```
 
   Require a successful exit, no GraphQL errors, and a returned comment ID and URL before reporting the reply as posted. Replying does not resolve the thread. If the result is uncertain, re-fetch the thread before retrying to avoid duplicate replies.
-- **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply -- these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
+- **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply: these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
 
 Your response format should be:
 
@@ -90,7 +90,7 @@ Resolution Summary:
 Status: Resolved | Referent not found | Needs decision
 ```
 
-Use **Referent not found** when the item named no file or line and the described code could not be located -- report what was searched rather than guessing at a target, since an untargeted conversation item is the one case where the referent is genuinely ambiguous. Use **Needs decision** when the fix is clear but the choice belongs to the author.
+Use **Referent not found** when the item named no file or line and the described code could not be located. Report what was searched rather than guessing at a target, since an untargeted conversation item is the one case where the referent is genuinely ambiguous. Use **Needs decision** when the fix is clear but the choice belongs to the author.
 
 Key principles:
 

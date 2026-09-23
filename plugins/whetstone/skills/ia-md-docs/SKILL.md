@@ -10,7 +10,7 @@ paths: "**/*.md"
 
 # Markdown Documentation
 
-Manage project documentation by verifying against actual codebase state -- analyze structure, files, and patterns before writing; never generate blind.
+Manage project documentation by verifying against actual codebase state: analyze structure, files, and patterns before writing; never generate blind.
 
 ## Working rules
 

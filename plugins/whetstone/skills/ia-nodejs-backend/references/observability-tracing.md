@@ -6,18 +6,18 @@ Read this when adding or reviewing OpenTelemetry spans, choosing where sampling 
 
 Pick the kind by the relationship to the remote side, not by the layer of the code:
 
-- **SERVER** -- handling an inbound request while the caller waits (HTTP handler, gRPC method).
-- **CLIENT** -- an outbound call where this process waits for the answer (HTTP fetch, DB query, cache lookup).
-- **PRODUCER** -- enqueuing or scheduling work whose outcome this span does not wait for (publish to SQS/Kafka, `queue.add()`).
-- **CONSUMER** -- processing work a producer handed off (job handler, message listener).
-- **INTERNAL** -- in-process work with no remote parent or child (default). Service-layer methods are INTERNAL; do not mark them SERVER because they run "inside the server".
+- **SERVER**: handling an inbound request while the caller waits (HTTP handler, gRPC method).
+- **CLIENT**: an outbound call where this process waits for the answer (HTTP fetch, DB query, cache lookup).
+- **PRODUCER**: enqueuing or scheduling work whose outcome this span does not wait for (publish to SQS/Kafka, `queue.add()`).
+- **CONSUMER**: processing work a producer handed off (job handler, message listener).
+- **INTERNAL**: in-process work with no remote parent or child (default). Service-layer methods are INTERNAL; do not mark them SERVER because they run "inside the server".
 
 ## HTTP status to span status
 
 The rule is asymmetric by span kind, and the common mistake is marking every 4xx as an error:
 
 - 1xx/2xx/3xx: leave span status UNSET on both kinds. Set ERROR only when a transport or protocol failure occurred (connection reset, redirect limit exceeded).
-- 4xx: on a **SERVER** span, leave status UNSET -- the server behaved correctly by rejecting the request. On the matching **CLIENT** span, set ERROR -- this process sent a request the remote refused.
+- 4xx: on a **SERVER** span, leave status UNSET; the server behaved correctly by rejecting the request. On the matching **CLIENT** span, set ERROR; this process sent a request the remote refused.
 - 5xx (and any status the client cannot interpret): set ERROR on both kinds.
 - Omit the status description when `http.response.status_code` already says why; put the status code number (as a string) in `error.type`.
 - A request the caller cancelled on purpose (`AbortSignal`) is not an error: leave status UNSET and do not set `error.type`.

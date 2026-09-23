@@ -13,14 +13,14 @@ Create, list, or update ADRs in the repository's ADR directory (auto-detected; d
 ## Argument handling
 
 - **Empty** (no argument): scan the detected ADR directory and present existing ADRs as a numbered list with status, title, and date. Then ask: "Create a new ADR? Provide a title."
-- **`list`**: same as empty — scan and list existing ADRs. Do not create anything.
+- **`list`**: same as empty: scan and list existing ADRs. Do not create anything.
 - **A short title** (≤8 words): create a new ADR with that title. Ask the user to pick a format (Y-statement, Lightweight, Full MADR, RFC, Deprecation) using the **AskUserQuestion tool** before generating.
 - **A longer topic or question** (>8 words): treat as context for a Full MADR or RFC. Extract the decision subject from the input, confirm the extracted title with the user, then proceed.
 - **`deprecate <NNNN>`**: create a Deprecation ADR superseding the referenced ADR number. Read the superseded ADR first to capture its context.
 
 ## Process
 
-**Detect the repository's ADR convention before listing or creating anything.** Inspect for an established scheme — existing ADR files (common locations: `docs/decisions/`, `docs/adr/`, `doc/adr/`, `adr/`), an `.adr-dir` marker or `adr-tools` config, and project instructions (`CLAUDE.md`/`AGENTS.md`/`CONTRIBUTING.md`). Match the detected location, filename/numbering scheme, and section headings. Keep detection repository-local — do not reach into `.github/` or open PRs. If two schemes conflict, surface the conflict and ask which to follow rather than silently adding a third. Absent any convention, default to `docs/decisions/` with the formats below.
+**Detect the repository's ADR convention before listing or creating anything.** Inspect for an established scheme: existing ADR files (common locations: `docs/decisions/`, `docs/adr/`, `doc/adr/`, `adr/`), an `.adr-dir` marker or `adr-tools` config, and project instructions (`CLAUDE.md`/`AGENTS.md`/`CONTRIBUTING.md`). Match the detected location, filename/numbering scheme, and section headings. Keep detection repository-local; do not reach into `.github/` or open PRs. If two schemes conflict, surface the conflict and ask which to follow rather than silently adding a third. Absent any convention, default to `docs/decisions/` with the formats below.
 
 ### 1. Determine action
 
@@ -63,13 +63,13 @@ Use the template for the chosen format from [adr-templates.md](references/adr-te
 ### 5. Review checklist
 
 Before saving:
-- [ ] Context is complete -- a reader unfamiliar with the discussion can understand why
+- [ ] Context is complete: a reader unfamiliar with the discussion can understand why
 - [ ] Alternatives were genuinely considered (not just the chosen option)
 - [ ] Consequences state real trade-offs, not just benefits
 - [ ] Status is correct (proposed if needs review, accepted if decided)
 
 ## Constraints
 
-- Never modify existing accepted ADRs without asking -- create a deprecation ADR instead
+- Never modify existing accepted ADRs without asking; create a deprecation ADR instead
 - Keep ADRs focused on one decision each
 - Link related ADRs to each other when relevant

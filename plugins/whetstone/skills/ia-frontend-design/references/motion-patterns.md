@@ -20,7 +20,7 @@ Use spring physics over linear easing. Starting point: `type: "spring", stiffnes
 
 ## Animate Only Transform and Opacity
 
-Animate exclusively via `transform` and `opacity`. Never animate `top`, `left`, `width`, `height` -- these trigger layout recalculation instead of GPU compositing, causing jank on lower-end devices.
+Animate exclusively via `transform` and `opacity`. Never animate `top`, `left`, `width`, `height`; these trigger layout recalculation instead of GPU compositing, causing jank on lower-end devices.
 
 ## Scroll Entry Recipe
 
@@ -34,11 +34,11 @@ translate-y-0 blur-0 opacity-100
 
 ## IntersectionObserver Mandate
 
-Use `IntersectionObserver` for scroll reveals. Never use `window.addEventListener('scroll')` -- scroll listeners fire continuously and cause reflows. IntersectionObserver is declarative and only fires when elements cross thresholds.
+Use `IntersectionObserver` for scroll reveals. Never use `window.addEventListener('scroll')`; scroll listeners fire continuously and cause reflows. IntersectionObserver is declarative and only fires when elements cross thresholds.
 
 ## Hover Animations (React)
 
-Never use `useState` for continuous or magnetic hover animations. `useState` triggers re-renders on every frame, destroying performance. Use `useMotionValue` + `useTransform` exclusively for frame-rate-sensitive motion -- these update outside the React render cycle.
+Never use `useState` for continuous or magnetic hover animations. `useState` triggers re-renders on every frame, destroying performance. Use `useMotionValue` + `useTransform` exclusively for frame-rate-sensitive motion; these update outside the React render cycle.
 
 ## Perpetual Motion Components
 
@@ -46,4 +46,4 @@ Memoize perpetual motion components with `React.memo` and isolate them as leaf `
 
 ## Grain and Noise Filters
 
-Apply grain/noise filters only to fixed, `pointer-events-none` pseudo-elements. Never apply them to scrolling containers -- the filter recalculates on every scroll frame, causing severe performance degradation.
+Apply grain/noise filters only to fixed, `pointer-events-none` pseudo-elements. Never apply them to scrolling containers: the filter recalculates on every scroll frame, causing severe performance degradation.

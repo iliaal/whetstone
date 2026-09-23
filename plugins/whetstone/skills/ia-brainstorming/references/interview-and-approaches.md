@@ -11,9 +11,9 @@ Read signals from the user's first message to calibrate communication register:
 - **Framing**: Are they describing a solution ("build a dashboard") or a problem ("I can't see what's happening")?
 - **References**: Are they pointing to code, files, and patterns, or to analogies and comparisons ("something like Notion")?
 
-Adjust question style accordingly. Technical users get architecture-level probing. Non-technical users get experience-level probing. Don't ask about this calibration -- just do it. If signals are ambiguous, default to the vocabulary the user is already using.
+Adjust question style accordingly. Technical users get architecture-level probing. Non-technical users get experience-level probing. Don't ask about this calibration; just do it. If signals are ambiguous, default to the vocabulary the user is already using.
 
-**Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality. When the user's wording conflicts with what the code verifiably does ("the retry queue" when nothing retries; a table or endpoint named that doesn't exist), surface the conflict before treating the wording as settled -- silently adopting either side buries a requirements error.
+**Explore project context first:** Before asking questions, read existing files, docs, and recent commits related to the idea. Understanding what exists prevents asking questions the codebase already answers and grounds the conversation in reality. When the user's wording conflicts with what the code verifiably does ("the retry queue" when nothing retries; a table or endpoint named that doesn't exist), surface the conflict before treating the wording as settled. Silently adopting either side buries a requirements error.
 
 Ask questions **one at a time** by default. When probing a single dimension (e.g., data model, auth flow), clustering 2-3 related questions together is acceptable.
 
@@ -40,7 +40,7 @@ Answer whichever you know; leave blanks for the rest.
 
 1. **Prefer multiple choice when natural options exist.** Good: "Notification: (a) email, (b) in-app, (c) both?" Avoid: "How should users be notified?"
 2. **Start broad, then narrow.** Core purpose → users → constraints.
-3. **Validate assumptions and probe success early.** "I'm assuming users are logged in — correct?" / "How will you know this is working?"
+3. **Validate assumptions and probe success early.** "I'm assuming users are logged in. Correct?" / "How will you know this is working?"
 
 **Key Topics to Explore:**
 
@@ -96,4 +96,4 @@ After understanding the idea, propose 2-3 concrete approaches.
 
 **"Not Doing" list:** Include an explicit list of what the chosen approach will NOT do. Focus is about saying no to good ideas. Make the trade-offs visible so they're a deliberate choice, not an oversight.
 
-**Assumptions with validation:** For each key assumption in the chosen approach, state how to test it. Not just "we assume X" but "we assume X -- we'll know by [validation method]."
+**Assumptions with validation:** For each key assumption in the chosen approach, state how to test it. Not just "we assume X" but "we assume X; we'll know by [validation method]."

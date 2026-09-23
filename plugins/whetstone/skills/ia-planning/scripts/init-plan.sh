@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# init-plan.sh — Scaffold a durable task plan
+# init-plan.sh: scaffold a durable task plan
 # Usage: bash init-plan.sh [task-name] [--force]
 #
 # Creates .plan/task_plan.md
@@ -27,17 +27,14 @@ if [ "$FORCE" -ne 1 ] && [ -f "$PLAN_DIR/task_plan.md" ] && grep -q '^\s*- \[ \]
     exit 1
 fi
 
-# Create directory
 mkdir -p "$PLAN_DIR"
 
-# Add to .gitignore if not present
 if [ -f .gitignore ]; then
     grep -qxF '.plan/' .gitignore 2>/dev/null || echo '.plan/' >> .gitignore
 else
     echo '.plan/' > .gitignore
 fi
 
-# task_plan.md
 cat > "$PLAN_DIR/task_plan.md" << EOF
 # Plan: ${TASK_NAME}
 

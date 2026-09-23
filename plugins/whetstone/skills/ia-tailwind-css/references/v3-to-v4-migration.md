@@ -17,6 +17,6 @@ Reference for migrating an existing Tailwind v3 project to v4. For greenfield v4
 | `space-x-4` | `gap-4` | Gap handles flex/grid wrapping correctly |
 | `text-base leading-7` | `text-base/7` | Inline line-height modifier |
 | `require("tailwindcss-animate")` | `tw-animate-css` | CSS-only animations |
-| display utility beats `[hidden]` | `[hidden]` beats display utilities | Preflight adds `[hidden]:where(:not([hidden="until-found"])) { display: none !important }` -- remove the attribute instead of overriding it |
+| display utility beats `[hidden]` | `[hidden]` beats display utilities | Preflight adds `[hidden]:where(:not([hidden="until-found"])) { display: none !important }`; remove the attribute instead of overriding it |
 
-Run `@tailwindcss/upgrade` codemod before hand-editing -- it handles the mechanical class renames. Hand-fix `@theme` migration, custom variants, and any project-specific config patterns the codemod cannot infer.
+Run `@tailwindcss/upgrade` codemod before hand-editing; it handles the mechanical class renames. Hand-fix `@theme` migration, custom variants, and any project-specific config patterns the codemod cannot infer.

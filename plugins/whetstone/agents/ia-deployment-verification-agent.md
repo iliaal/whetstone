@@ -43,7 +43,7 @@ Classify each deployment by expected blast radius before producing the checklist
 | SEV3 (minor impact) | <30 min | Every 2 hours | Owning engineer |
 | SEV4 (cosmetic/low risk) | <1 hour | Daily | Backlog |
 
-Include the assigned severity level at the top of every Go/No-Go checklist. Adjust monitoring duration and alert thresholds accordingly -- SEV1/SEV2 deployments warrant tighter post-deploy windows and lower alert thresholds than SEV3/SEV4.
+Include the assigned severity level at the top of every Go/No-Go checklist. Adjust monitoring duration and alert thresholds accordingly: SEV1/SEV2 deployments warrant tighter post-deploy windows and lower alert thresholds than SEV3/SEV4.
 
 ## Go/No-Go Checklist Template
 
@@ -123,18 +123,18 @@ SELECT status, COUNT(*) FROM records GROUP BY status;
 
 ### Rollback Runbook Template
 
-Produce a rollback runbook for each deployment. Fill in every section with deployment-specific details -- no placeholders or "TBD" entries.
+Produce a rollback runbook for each deployment. Fill in every section with deployment-specific details, with no placeholders or "TBD" entries.
 
-1. **Diagnosis** -- List concrete symptoms that indicate rollback is needed: error rate thresholds, failed verification queries, user-facing symptoms, alert triggers.
-2. **Rollback steps** -- Exact commands to revert: deploy previous version tag/SHA, revert migration if safe (specify conditions), restore configuration values.
-3. **Verification** -- Confirm rollback succeeded: re-run post-deploy health checks, execute key verification queries from the pre-deploy baseline, run smoke tests against critical user flows.
-4. **Communication** -- Identify who to notify (mapped to severity level above), draft a status message template, specify channels (incident channel, status page, stakeholder email).
+1. **Diagnosis**: List concrete symptoms that indicate rollback is needed: error rate thresholds, failed verification queries, user-facing symptoms, alert triggers.
+2. **Rollback steps**: Exact commands to revert: deploy previous version tag/SHA, revert migration if safe (specify conditions), restore configuration values.
+3. **Verification**: Confirm rollback succeeded: re-run post-deploy health checks, execute key verification queries from the pre-deploy baseline, run smoke tests against critical user flows.
+4. **Communication**: Identify who to notify (mapped to severity level above), draft a status message template, specify channels (incident channel, status page, stakeholder email).
 
 Attach the completed runbook to the deployment checklist so it is available without searching during an incident.
 
 ### 6. Post-Deploy Monitoring (First 24 Hours)
 
-Post-100% monitoring thresholds (after the staged rollout completes — for rollout-phase bands see "Rollout Decision Thresholds" below):
+Post-100% monitoring thresholds (after the staged rollout completes; for rollout-phase bands see "Rollout Decision Thresholds" below):
 
 | Metric/Log | Alert Condition | Dashboard Link |
 |------------|-----------------|----------------|
@@ -157,7 +157,7 @@ ORDER BY RANDOM() LIMIT 10;
 
 ## Rollout Decision Thresholds (Canary / Staged Deploys)
 
-For any canary, percentage rollout, or feature-flag ramp, define quantified advance / hold / rollback bands per metric so the deploy has concrete go/no-go signals during the ramp. These bands govern the staged rollout; post-100%, the Post-Deploy Monitoring table inside the checklist template applies instead. Fill with deployment-specific values — defaults below are starting points.
+For any canary, percentage rollout, or feature-flag ramp, define quantified advance / hold / rollback bands per metric so the deploy has concrete go/no-go signals during the ramp. These bands govern the staged rollout; post-100%, the Post-Deploy Monitoring table inside the checklist template applies instead. Fill with deployment-specific values; the defaults below are starting points.
 
 | Metric | Advance | Hold | Rollback |
 |--------|---------|------|----------|
@@ -169,7 +169,7 @@ For any canary, percentage rollout, or feature-flag ramp, define quantified adva
 
 **Decision protocol**: advance to the next stage only if ALL metrics are in the Advance band over the stage's observation window. If ANY metric enters Hold, pause and investigate before advancing (do not rollback yet). If ANY metric enters Rollback, revert immediately per the Rollback Plan above.
 
-**Example stages (calibrate per SEV level — see Severity Matrix)**: `1% for 30 min → 10% for 1h → 50% for 2h → 100%`. SEV1/SEV2 deploys warrant longer observation windows and tighter Advance bands than SEV3/SEV4. Do not ramp faster than the observation window — you lose the ability to detect a regression before the blast radius grows.
+**Example stages (calibrate per SEV level; see Severity Matrix)**: `1% for 30 min → 10% for 1h → 50% for 2h → 100%`. SEV1/SEV2 deploys warrant longer observation windows and tighter Advance bands than SEV3/SEV4. Do not ramp faster than the observation window, or you lose the ability to detect a regression before the blast radius grows.
 
 ## Feature-Flag Lifecycle
 
@@ -232,7 +232,7 @@ Be thorough. Be specific. Produce executable checklists, not vague recommendatio
 
 ## Scope Boundaries
 
-- **This agent**: creates *deployment checklists* -- Go/No-Go procedures, SQL verification queries, rollback plans, monitoring
+- **This agent**: creates *deployment checklists*: Go/No-Go procedures, SQL verification queries, rollback plans, monitoring
 - **database-guardian**: reviews schema design, constraints, transaction boundaries, privacy, AND validates migration code against production reality (ID mappings, enum conversions, swapped values)
 
-Use findings from database-guardian as inputs to your checklist. Don't re-analyze migration code -- focus on the deployment procedure.
+Use findings from database-guardian as inputs to your checklist. Don't re-analyze migration code; focus on the deployment procedure.

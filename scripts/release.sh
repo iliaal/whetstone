@@ -113,12 +113,10 @@ else
 fi
 
 echo "[Pre-commit] Generating skill change manifest..."
-# Reset the manifest baseline to the last released state before regenerating.
-# generate-manifest.py preserves content_changed when the working-tree manifest
-# already records the new content hash; a mid-work regen thus freezes changed
-# skills at the OLD version and publish-clawhub.sh false-skips them (shipped
-# broken in v4.1.4). Baselining off the last release tag guarantees any skill
-# changed since that tag stamps the current version.
+# Regenerate from the last release tag's manifest. generate-manifest.py keeps
+# content_changed when the working-tree manifest already has the new hash, so a
+# mid-work regen would freeze changed skills at the old version and
+# publish-clawhub.sh would skip them.
 last_release_tag="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
 if [[ -n "$last_release_tag" ]]; then
 	git show "$last_release_tag:distillery/.skill-versions.json" >distillery/.skill-versions.json 2>/dev/null || true
@@ -126,7 +124,6 @@ fi
 python3 "$SCRIPT_DIR/generate-manifest.py"
 echo "  Manifest updated"
 
-# Check for staged/unstaged changes
 if [[ -z "$(git status --porcelain)" ]]; then
 	echo "ERROR: Nothing to commit"
 	exit 1
@@ -136,10 +133,8 @@ fi
 if [[ -n "${1:-}" ]]; then
 	commit_msg="$1"
 else
-	# Extract first content line after the version header in CHANGELOG
 	changelog_headline=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;/^$/d;/^###/{ s/^### //; p; q; }}" CHANGELOG.md 2>/dev/null)
 	if [[ -n "$changelog_headline" ]]; then
-		# Use changelog section name as summary
 		commit_msg="bump: v${version} — $(echo "$changelog_headline" | tr '[:upper:]' '[:lower:]')"
 	else
 		commit_msg="bump: v${version}"
@@ -190,7 +185,6 @@ gh repo edit --description "$repo_desc" 2>/dev/null && echo "  Updated repo desc
 
 # --- 3. Create GitHub release on plugin repo ---
 echo "[3/9] Create GitHub release..."
-# Extract changelog entry for this version
 release_notes=$(sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;p;}" CHANGELOG.md)
 if gh release view "v${version}" &>/dev/null; then
 	echo "  Release v${version} already exists, skipping"
@@ -212,21 +206,18 @@ echo "  Syncing changelog..."
 skill_names=$(find "$ROOT_DIR/plugins/whetstone/skills" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | awk '{print length, $0}' | sort -rn | awk '{print $2}' | tr '\n' '|' | sed 's/|$//')
 # Keep ### headers and bullets that name a known skill anywhere in the line:
 # backticked or bare, with or without the ia- prefix, hyphenated (orchestrating-swarms)
-# or spaced (orchestrating swarms). Changelog bullets are prose since 4.4.3, so a
-# start-of-line match misses most of them. A format change that stops matching still
-# trips the WARNING below.
+# or spaced (orchestrating swarms). Bullets are prose, so a start-of-line match
+# misses most of them. A format change that stops matching trips the WARNING below.
 skill_names_spaced=$(printf '%s\n' "$skill_names" | tr '|' '\n' | sed 's/-/ /g' | paste -sd'|')
 skill_notes=$(printf '%s\n' "$release_notes" | grep -iE "^### |^- .*(\b(ia-)?(${skill_names})\b|\b(${skill_names_spaced})\b)" || true)
 # Strip orphan ### headers (headers with no entries after them)
 skill_notes=$(printf '%s\n' "$skill_notes" | awk '/^### /{header=$0; next} /^- /{if(header){print header; header=""} print}')
 if [[ -n "$skill_notes" ]]; then
 	ai_skills_changelog="$AI_SKILLS_DIR/CHANGELOG.md"
-	# Build new entry
 	new_entry="## [${version}] - $(date +%Y-%m-%d)
 
 ${skill_notes}"
-	# Insert after the header block (after the line matching "## [")
-	# Find the line number of the first existing version entry
+	# Insert before the first existing version entry.
 	first_version_line=$(grep -n '^## \[' "$ai_skills_changelog" | head -1 | cut -d: -f1)
 	if [[ -n "$first_version_line" ]]; then
 		head -n $((first_version_line - 1)) "$ai_skills_changelog" >"${ai_skills_changelog}.tmp"
@@ -297,9 +288,8 @@ echo "[7/9] Update local plugin..."
 bash "$SCRIPT_DIR/update-plugin.sh"
 
 # --- 8. Sync tags ---
-# `gh release create --target master` above creates the tag on the remote. Pull
-# it back locally so `git tag` / `git log v<ver>..HEAD` stay consistent. Without
-# this, local tags drift further behind origin with every release.
+# `gh release create` created the tag on the remote only; fetch it so local
+# `git tag` and `git log v<ver>..HEAD` match origin.
 echo "[8/9] Sync tags from origin..."
 git fetch --tags --quiet
 echo "  Tags synced"

@@ -6,9 +6,9 @@ Read when writing or reviewing a durable design. The entry point’s authority b
 
 Summarize key decisions in a structured format. For each major component, verify isolation and clarity: it must answer "what does it do, how do you use it, what does it depend on?" and be independently understandable and testable. If working in an existing codebase, note which existing patterns to follow and where targeted improvements fit naturally.
 
-**Design Doc:** Save to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`. Required sections: What We're Building, Why This Approach, Key Decisions (with rationale), Open Questions, Next Steps. Collapse the Q&A interview log in a `<details>` block. Include YAML frontmatter with `date` and `topic`. Commit to git -- design decisions are project history.
+**Design Doc:** Save to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`. Required sections: What We're Building, Why This Approach, Key Decisions (with rationale), Open Questions, Next Steps. Collapse the Q&A interview log in a `<details>` block. Include YAML frontmatter with `date` and `topic`. Commit to git; design decisions are project history.
 
-**Settled vs. directive — don't re-litigate.** A decision the user made with the alternative and its trade-off in view is **settled**: record it in Key Decisions with its rationale and carry it forward — do not re-ask it in Phase 3b, at planning, or during work. A cold **directive** (a choice asserted without anyone weighing it — "build it with X") earns exactly **one** in-pipeline challenge (one pass of the Phase 2 ideation lenses against that specific choice), then it too is recorded and not re-challenged at every downstream stage. A settled label never suppresses defect evidence — a real bug or infeasibility found *inside* a settled approach keeps full severity and is surfaced.
+**Settled vs. directive: don't re-litigate.** A decision the user made with the alternative and its trade-off in view is **settled**: record it in Key Decisions with its rationale and carry it forward. Do not re-ask it in Phase 3b, at planning, or during work. A cold **directive** (a choice asserted without anyone weighing it, e.g. "build it with X") earns exactly **one** in-pipeline challenge (one pass of the Phase 2 ideation lenses against that specific choice), then it too is recorded and not re-challenged at every downstream stage. A settled label never suppresses defect evidence: a real bug or infeasibility found *inside* a settled approach keeps full severity and is surfaced.
 
 ### Phase 3b: Spec Self-Review
 
@@ -18,8 +18,8 @@ Run this checklist before presenting the design doc. Any failure returns to Phas
 - **Internal consistency**: names, types, and verbs match across sections (no `createOrder()` in one place and `placeOrder()` in another).
 - **Scope containment**: every decision traces back to a stated goal; otherwise cut or surface as explicit scope expansion.
 - **Ambiguity sweep**: each Key Decision survives "could a reasonable implementer interpret this two ways?"
-- **Assumption validation**: every assumption names its validation method ("we assume X — we'll confirm by Y").
-- **Value sourcing**: enumerate every value the work must produce, compute, or display, and confirm the spec names each one's source (an input param, a stored field, a derivation from a named value, or a prior decision). A produced value with no named source is an owed design decision — surface it, don't invent it. Judge by positive enumeration, not introspection: "show the user's local day" that never says where the timezone comes from passes every other check yet hides an undecided source.
+- **Assumption validation**: every assumption names its validation method ("we assume X; we'll confirm by Y").
+- **Value sourcing**: enumerate every value the work must produce, compute, or display, and confirm the spec names each one's source (an input param, a stored field, a derivation from a named value, or a prior decision). A produced value with no named source is an owed design decision; surface it, don't invent it. Judge by positive enumeration, not introspection: "show the user's local day" that never says where the timezone comes from passes every other check yet hides an undecided source.
 - **Non-goals present**: the explicit "Not Doing" list exists and is specific.
 
 Silent pass is valid. Clean draft → move to Phase 4.

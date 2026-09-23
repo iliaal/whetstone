@@ -34,7 +34,7 @@ ls -la docs/brainstorms/*.md 2>/dev/null | head -10
 
 A brainstorm is relevant if its topic matches the feature description, created within the last 14 days, and (if multiple match) prefer the most recent.
 
-**If a relevant brainstorm exists:** Read it thoroughly, announce "Found brainstorm from [date]: [topic]. Using as foundation." and carry forward all decisions, constraints, success criteria, and technical choices into the plan. Skip baseline idea refinement and run a gap-analysis interview focused only on implementation concerns the brainstorm didn't cover (deployment/rollback, monitoring, data migration, performance, security at the implementation level). The brainstorm is the origin document — reference it with `(see brainstorm: docs/brainstorms/<filename>)` throughout the plan and scan each brainstorm section before finalizing to verify nothing was dropped.
+**If a relevant brainstorm exists:** Read it thoroughly, announce "Found brainstorm from [date]: [topic]. Using as foundation." and carry forward all decisions, constraints, success criteria, and technical choices into the plan. Skip baseline idea refinement and run a gap-analysis interview focused only on implementation concerns the brainstorm didn't cover (deployment/rollback, monitoring, data migration, performance, security at the implementation level). The brainstorm is the origin document: reference it with `(see brainstorm: docs/brainstorms/<filename>)` throughout the plan and scan each brainstorm section before finalizing to verify nothing was dropped.
 
 If multiple brainstorms could match, use `AskUserQuestion` to ask which to use.
 
@@ -105,7 +105,7 @@ Draft a clear, searchable title using conventional format (`feat:`, `fix:`, `ref
 
 Example: `feat: Add User Authentication` → `2026-01-21-feat-add-user-authentication-plan.md`
 
-Choose the detail level in Step 4 based on scope. The `ia-planning` skill's Plan Template owns the section structure — do not restate sections here.
+Choose the detail level in Step 4 based on scope. The `ia-planning` skill's Plan Template owns the section structure; do not restate sections here.
 
 ### 3. SpecFlow Analysis
 
@@ -121,7 +121,7 @@ After planning the issue structure, run SpecFlow Analyzer to validate and refine
 
 ### 4. Choose Implementation Detail Level
 
-Select how comprehensive the plan should be. Simpler is mostly better.
+Select the plan's level of detail. Simpler is mostly better.
 
 | Level | Best for | Includes |
 |-------|----------|----------|
@@ -165,7 +165,7 @@ Before finalizing, re-read the brainstorm document and verify:
 mkdir -p docs/plans/
 ```
 
-Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md`. This step is mandatory and cannot be skipped -- even when running as part of LFG or other automated pipelines.
+Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md`. This step is mandatory and cannot be skipped, even when running as part of LFG or other automated pipelines.
 
 Confirm: "Plan written to docs/plans/[filename]"
 

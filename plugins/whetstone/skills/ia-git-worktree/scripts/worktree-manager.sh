@@ -2,18 +2,15 @@
 
 # Git Worktree Manager
 # Handles creating, listing, switching, and cleaning up Git worktrees
-# KISS principle: Simple, interactive, opinionated
 
 set -e
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Get repo root
 CURRENT_ROOT=$(git rev-parse --show-toplevel)
 COMMON_DIR=$(realpath -- "$(git rev-parse --git-common-dir)")
 CURRENT_GIT_DIR=$(realpath -- "$(git rev-parse --git-dir)")
@@ -53,26 +50,22 @@ resolve_worktree() {
   return 1
 }
 
-# Ensure .worktrees is in .gitignore
 ensure_gitignore() {
   if ! grep -q "^\.worktrees$" "$GIT_ROOT/.gitignore" 2>/dev/null; then
     echo ".worktrees" >> "$GIT_ROOT/.gitignore"
   fi
 }
 
-# Copy .env files from main repo to worktree
 copy_env_files() {
   local worktree_path="$1"
 
   echo -e "${BLUE}Copying environment files...${NC}"
 
-  # Find all .env* files in root (excluding .env.example which should be in git)
   local env_files=()
   for f in "$GIT_ROOT"/.env*; do
     if [[ -f "$f" ]]; then
       local basename
       basename=$(basename "$f")
-      # Skip .env.example (that's typically committed to git)
       if [[ "$basename" != ".env.example" ]]; then
         env_files+=("$basename")
       fi
@@ -102,7 +95,6 @@ copy_env_files() {
   echo -e "  ${GREEN}✓ Copied $copied environment file(s)${NC}"
 }
 
-# Create a new worktree
 create_worktree() {
   local branch_name="$1"
   local from_branch="${2:-main}"
@@ -124,7 +116,6 @@ create_worktree() {
     return 1
   fi
 
-  # Check if worktree already exists
   if [[ -d "$worktree_path" ]]; then
     echo -e "${YELLOW}Worktree already exists at: $worktree_path${NC}"
     echo -e "Switch to it instead? (y/n)"
@@ -151,7 +142,6 @@ create_worktree() {
     base_ref="$from_branch"
   fi
 
-  # Create worktree
   mkdir -p "$WORKTREE_DIR"
   ensure_gitignore
   printf '%s\n' "$GIT_ROOT" > "$COMMON_DIR/whetstone-main-root"
@@ -165,7 +155,6 @@ create_worktree() {
     echo "Set WORKTREE_SESSION_ID before create to enable session-owned cleanup." >&2
   fi
 
-  # Copy environment files
   copy_env_files "$worktree_path"
 
   echo -e "${GREEN}✓ Worktree created successfully!${NC}"
@@ -175,12 +164,10 @@ create_worktree() {
   echo ""
 }
 
-# List all worktrees
 list_worktrees() {
   git worktree list
 }
 
-# Switch to a worktree
 switch_worktree() {
   local worktree_name="$1"
 
@@ -196,13 +183,11 @@ switch_worktree() {
   }
 }
 
-# Copy env files to an existing worktree (or current directory if in a worktree)
 copy_env_to_worktree() {
   local worktree_name="$1"
   local worktree_path
 
   if [[ -z "$worktree_name" ]]; then
-    # Check if we're currently in a worktree
     local current_dir="$CURRENT_ROOT"
     if [[ "$current_dir" == "$WORKTREE_DIR"/* ]]; then
       worktree_path="$current_dir"
@@ -226,7 +211,6 @@ copy_env_to_worktree() {
   echo ""
 }
 
-# Clean up completed worktrees
 cleanup_worktrees() {
   if [[ $# -eq 0 || -z "${WORKTREE_SESSION_ID:-}" ]]; then
     echo "Usage: set WORKTREE_SESSION_ID before create; cleanup <owned-name> [owned-name...]" >&2
@@ -259,7 +243,6 @@ cleanup_worktrees() {
   done
 }
 
-# Main command handler
 main() {
   local command="${1:-list}"
 
@@ -326,5 +309,4 @@ Examples:
 EOF
 }
 
-# Run
 main "$@"

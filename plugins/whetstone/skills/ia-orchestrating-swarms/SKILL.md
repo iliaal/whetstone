@@ -27,7 +27,7 @@ Never retry an unchanged prompt after a blocker. Supply missing context, change 
 
 Use `DONE` only for verified completion. `DONE_WITH_CONCERNS` names residual risks or verified partial delivery and its gap; `BLOCKED` names the blocker; `NEEDS_CONTEXT` names missing information. No status converts partial work into completion.
 
-Limit QA to five fix rounds per task: 1–3 continue the implementer, 4–5 use a fresh implementer with stronger reasoning where supported and full history. Stop and escalate after the second nonconverging attempt. At the cap explicitly disposition every open finding. Continue independent safe work.
+Limit QA to five fix rounds per task: rounds 1-3 continue the implementer, rounds 4-5 use a fresh implementer with stronger reasoning where supported and full history. Stop and escalate after the second nonconverging attempt. At the cap explicitly disposition every open finding. Continue independent safe work.
 
 In spawned/noninteractive contexts choose only authorized safe defaults. Leave destructive, external, or approval-dependent actions undone when authority is missing; report evidence, impact, and the needed decision. In interactive contexts use the harness question tool (`AskUserQuestion` in Claude Code, loaded with ToolSearch `select:AskUserQuestion` if needed; `request_user_input` in Codex; numbered options in chat as the fallback); split choices across rounds rather than dropping viable options.
 

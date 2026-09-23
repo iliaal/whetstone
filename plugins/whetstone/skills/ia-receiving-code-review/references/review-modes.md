@@ -14,30 +14,30 @@ This skill and the `ia-pr-comment-resolver` agent handle different situations:
 |---|---|---|---|
 | **When** | Interactive review requiring judgment | Programmatic triage by another skill/command | Implementing a single pre-triaged comment |
 | **Approach** | Verify, evaluate, potentially push back | Auto-classify and return triage results | Implement a single pre-classified change |
-| **Skepticism** | High -- check correctness first | High -- same rules, automated classification | Low -- comments are pre-triaged |
+| **Skepticism** | High: check correctness first | High: same rules, automated classification | Low: comments are pre-triaged |
 | **Use for** | Unclear suggestions, architectural feedback | Batch triage before dispatching resolvers | Clear-cut fixes, style nits, typos |
 
 When the `ia-pr-comment-resolver` agent encounters feedback that requires judgment (architectural decisions, debatable trade-offs), it should escalate rather than implement.
 
 ## Examples
 
-**Bad -- performative agreement:**
+**Bad: performative agreement:**
 > Reviewer: "This should use a Map instead of an object for better performance."
 > Response: "Great catch! Switching to Map now."
 
-**Good -- verify first:**
+**Good: verify first:**
 > Reviewer: "This should use a Map instead of an object for better performance."
-> Response: "Checked this -- the object has at most 5 keys (bounded by the enum). Map overhead isn't justified here. Keeping as-is."
+> Response: "Checked this. The object has at most 5 keys (bounded by the enum). Map overhead isn't justified here. Keeping as-is."
 
-**Bad -- blind implementation:**
+**Bad: blind implementation:**
 > Reviewer: "Add null checks for the user parameter."
 > Response: "Done, added null checks."
 
-**Good -- verify the premise:**
+**Good: verify the premise:**
 > Reviewer: "Add null checks for the user parameter."
-> Response: "Traced the call chain -- `user` comes from the auth middleware which guarantees non-null (throws 401 otherwise). Adding a null check here would be dead code. Should I add it anyway for defense-in-depth?"
+> Response: "Traced the call chain. `user` comes from the auth middleware which guarantees non-null (throws 401 otherwise). Adding a null check here would be dead code. Should I add it anyway for defense-in-depth?"
 
-**Good -- unclear item:**
+**Good: unclear item:**
 > Reviewer: "This logic seems off."
 > Response: "Can you clarify which part? The filter predicate, the sort order, or the pagination logic?"
 
@@ -51,6 +51,6 @@ When the `ia-pr-comment-resolver` agent encounters feedback that requires judgme
 ## Integration
 
 This skill pairs with:
-- `ia-code-review` -- the outbound side (requesting reviews). Their action-routing tiers (`safe_auto`/`gated_auto`/`manual`/`advisory`) roughly map to this skill's AUTO-FIX / ESCALATE-for-approval / ESCALATE / FYI.
-- `ia-pr-comment-resolver` agent -- for mechanical PR comment resolution (see scope table above)
-- `ia-verification-before-completion` -- verify each fix before marking resolved
+- `ia-code-review`: the outbound side (requesting reviews). Their action-routing tiers (`safe_auto`/`gated_auto`/`manual`/`advisory`) roughly map to this skill's AUTO-FIX / ESCALATE-for-approval / ESCALATE / FYI.
+- `ia-pr-comment-resolver` agent: for mechanical PR comment resolution (see scope table above)
+- `ia-verification-before-completion`: verify each fix before marking resolved

@@ -21,7 +21,7 @@
 | Superseded drafts, once the current version is written | The file currently being edited |
 | Exploratory reads that produced nothing | Decisions, with their reasons |
 
-Place task-critical content last in a brief or handoff. Models attend most reliably to the start and end of a context window and least to the middle (Liu et al., 2023, "Lost in the Middle") -- keep stable rules and specs early, the active task material last.
+Place task-critical content last in a brief or handoff. Models attend most reliably to the start and end of a context window and least to the middle (Liu et al., 2023, "Lost in the Middle"), so keep stable rules and specs early and the active task material last.
 
 ## Error Protocol
 

@@ -7,7 +7,7 @@ v4 eliminates `tailwind.config.ts`. All configuration lives in CSS.
 | Directive | Purpose |
 |-----------|---------|
 | `@import "tailwindcss"` | Entry point (replaces `@tailwind base/components/utilities`) |
-| `@theme { }` | Define/extend design tokens -- auto-generates utility classes |
+| `@theme { }` | Define/extend design tokens; auto-generates utility classes |
 | `@theme inline { }` | Map CSS variables to Tailwind utilities without generating new vars |
 | `@theme static { }` | Emit all theme variables, including unused ones; utility generation still applies |
 | `@utility name { }` | Create custom utilities (replaces `@layer components` + `@apply`) |
@@ -33,7 +33,7 @@ Tokens defined with `@theme` become utilities automatically: `--color-brand` pro
 
 For custom properties that should not define Tailwind utilities, declare them in ordinary CSS such as `:root`, outside `@theme`.
 
-**`@theme` tokens are tree-shaken.** v4 emits only the variables it can see used, so a token existing in a shared file says nothing about whether it reaches a given app's bundle -- measured on one shared token file feeding two apps: 20 of 59 `--color-*` emitted into one, 19 of 59 into the other. `@theme static` is the opt-out. A `var(--color-x)` reference inside your own hand-written CSS **counts as a use**, so pointing a custom property at a token (`--app-checkbox-border: var(--color-border-400)`) is self-sustaining, not fragile -- Tailwind sees your CSS, not just your class names. Never rate a "this indirection depends on some unrelated utility still existing" concern on tree-shaking alone: delete the last utility usage in that app's scan set, rebuild, and read the compiled CSS. Assert the utility actually vanished as the applied control, or a build that silently no-opped (wrong package filter, stale `dist`) reads identically, producing the same false conclusion from nothing.
+**`@theme` tokens are tree-shaken.** v4 emits only the variables it can see used, so a token existing in a shared file says nothing about whether it reaches a given app's bundle. Measured on one shared token file feeding two apps: 20 of 59 `--color-*` emitted into one, 19 of 59 into the other. `@theme static` is the opt-out. A `var(--color-x)` reference inside your own hand-written CSS **counts as a use**, so pointing a custom property at a token (`--app-checkbox-border: var(--color-border-400)`) is self-sustaining, not fragile: Tailwind sees your CSS, not just your class names. Never rate a "this indirection depends on some unrelated utility still existing" concern on tree-shaking alone: delete the last utility usage in that app's scan set, rebuild, and read the compiled CSS. Assert the utility actually vanished as the applied control, or a build that silently no-opped (wrong package filter, stale `dist`) reads identically, producing the same false conclusion from nothing.
 
 **CSS Modules**: when using `.module.css` with Tailwind v4, add `@reference "#tailwind";` at the top of the module file to enable theme token access inside the module.
 
@@ -50,11 +50,11 @@ For projects upgrading from v3 to v4, see [v3-to-v4-migration.md](./v3-to-v4-mig
 | Symptom | Fix |
 |---------|-----|
 | `bg-primary` doesn't work | Add `@theme inline { --color-primary: var(--primary); }` |
-| Colors all black/white | Double `hsl()` wrapping -- use `var(--color)` not `hsl(var(--color))` |
+| Colors all black/white | Double `hsl()` wrapping; use `var(--color)` not `hsl(var(--color))` |
 | `@apply` fails on custom class | Use `@utility` instead of `@layer components` |
 | Build fails after migration | Delete `tailwind.config.ts` |
 | Animations broken | Replace `tailwindcss-animate` with `tw-animate-css` |
-| `.dark { @theme { } }` fails | v4 does not support nested `@theme` -- use `:root`/`.dark` CSS vars mapped via `@theme inline` |
+| `.dark { @theme { } }` fails | v4 does not support nested `@theme`; use `:root`/`.dark` CSS vars mapped via `@theme inline` |
 
 
 ## Dark Mode (v4 Pattern)
@@ -65,4 +65,4 @@ For projects upgrading from v3 to v4, see [v3-to-v4-migration.md](./v3-to-v4-mig
 @theme inline { --color-background: var(--background); --color-foreground: var(--foreground); }
 ```
 
-Semantic classes (`bg-background`, `text-foreground`) auto-switch -- no `dark:` variants needed for themed colors.
+Semantic classes (`bg-background`, `text-foreground`) auto-switch; no `dark:` variants needed for themed colors.

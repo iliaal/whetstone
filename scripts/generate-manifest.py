@@ -77,13 +77,11 @@ def generate() -> dict:
     """
     version = _read_current_version()
 
-    # Load existing manifest for comparison
     prior = {}
     if MANIFEST_PATH.exists():
         with open(MANIFEST_PATH) as f:
             prior = json.load(f).get("skills", {})
 
-    # Read patterns file once
     patterns_content = ""
     if PATTERNS_FILE.exists():
         patterns_content = PATTERNS_FILE.read_text()
@@ -98,18 +96,14 @@ def generate() -> dict:
         if not skill_file.exists():
             continue
 
-        # Content hash. Covers SKILL.md only, not references/ or scripts/.
-        # Limitation: a references-only change won't bump content_changed and
-        # publish-clawhub.sh will false-skip the republish. Editing references
-        # usually accompanies SKILL.md edits, so the gap is rare in practice.
-        # If it bites, run publish-clawhub.sh --force or --skill <name>.
+        # Hashes SKILL.md only: a references-only change does not bump
+        # content_changed, so publish-clawhub.sh skips it unless run with
+        # --force or --skill <name>.
         content_hash = _sha256_file(skill_file)
 
-        # Pattern hash
         pattern_text = _extract_pattern_block(skill_name, patterns_content)
         pattern_hash = _sha256_string(pattern_text) if pattern_text else None
 
-        # Compare against prior manifest
         prev = prior.get(skill_name, {})
         prev_content_hash = prev.get("content_hash")
         prev_pattern_hash = prev.get("pattern_hash")

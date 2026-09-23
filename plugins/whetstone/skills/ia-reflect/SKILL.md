@@ -43,42 +43,42 @@ If the session included PR or MR review activity in either direction, run this s
 - Did I push back? If I was right and the reviewer was wrong, nothing to capture. If I was wrong and had to retract mid-thread, capture what I learned.
 
 **Outbound (I reviewed someone else's code):** For each comment I authored:
-- Was it accepted? Nothing to capture -- good call.
+- Was it accepted? Nothing to capture; good call.
 - Was it rejected with a valid counter? That's a review trap. Capture the pattern: what heuristic did I apply that produced a wrong comment?
 
-"No harvestable items" is a valid outcome -- say so explicitly. Don't let the step quietly drop off.
+"No harvestable items" is a valid outcome; say so explicitly. Don't let the step quietly drop off.
 
 ### 3. Operational Learnings
 
 Before listing improvements, scan the session for operational insights worth preserving. Apply the 5-minute filter: would knowing this save 5+ minutes in a future session? If yes, include it. Examples: a project-specific quirk, a project command that failed for a project-specific reason, an approach that worked better than expected.
 
-Exclude harness-level noise — "File has not been read yet", token-limit truncations, bash-quoting slips, and other tooling artifacts. Those aren't project learnings; capture the *project's* behavior, not the agent's mechanics.
+Exclude harness-level noise ("File has not been read yet", token-limit truncations, bash-quoting slips, and other tooling artifacts). Those aren't project learnings; capture the *project's* behavior, not the agent's mechanics.
 
-Also scan for **information-access gaps**: points where the session stalled or guessed because the agent lacked read access to something a human would have checked — dev-server logs, a third-party dashboard, a staging database, CI output. Distinct from the harness noise excluded above: a one-off tooling hiccup isn't reusable, but a standing access gap is, since granting access pays off in every future session. Each gap is an improvement candidate ("grant readonly access to X" or "pipe X into a file the agent can read"), often higher-leverage than a prompt tweak.
+Also scan for **information-access gaps**: points where the session stalled or guessed because the agent lacked read access to something a human would have checked (dev-server logs, a third-party dashboard, a staging database, CI output). Distinct from the harness noise excluded above: a one-off tooling hiccup isn't reusable, but a standing access gap is, since granting access pays off in every future session. Each gap is an improvement candidate ("grant readonly access to X" or "pipe X into a file the agent can read"), often worth more than a prompt tweak.
 
 ### 4. Improvements
 
-Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10 items: if more surface, the bottom items are noise -- drop them rather than batching or splitting.
+Numbered list of **concrete improvements**, ranked by impact. Each item: one sentence, imperative, actionable. Cap at 10 items: if more surface, the bottom items are noise; drop them rather than batching or splitting.
 
 For items not already authorized for persistence, present the concrete candidates and ask which to remember. Use the active harness's supported approval interface, or ask directly in chat. Do not ask again for items the user already authorized.
 
 Save authorized items in the project's configured memory location using the active harness's file-editing tool and memory format. In Claude Code, inspect `~/.claude/projects/<project-slug>/memory/` and its MEMORY.md index; use the configured project slug rather than inventing one.
 
-Before writing, grep the existing memory directory for the item's key terms. On a near-duplicate, update that file instead of adding a second. On a direct contradiction with an entry already on file ("use tabs" when "use spaces" is recorded), do not blind-append — surface both and let the user choose merge, replace, or keep-both. Silent duplicate and contradiction accumulation is the main way a curated memory index rots.
+Before writing, grep the existing memory directory for the item's key terms. On a near-duplicate, update that file instead of adding a second. On a direct contradiction with an entry already on file ("use tabs" when "use spaces" is recorded), do not blind-append; surface both and let the user choose merge, replace, or keep-both. Silent duplicate and contradiction accumulation is the main way a curated memory index rots.
 
 ### 5. Skill Audit (if skills were used)
 
 For each skill invoked during the session:
 
-**A. Self-check gate** -- If the skill lacks success criteria + verification loop:
+**A. Self-check gate**: If the skill lacks success criteria + verification loop:
 - Propose `## Success Criteria` at top (3-5 measurable checks)
 - Propose `## Self-Check` at bottom: "Verify all success criteria are met before presenting output. If not, iterate (max 5 times)."
 
-**B. Token efficiency** -- Flag: redundant phrasing, mergeable sections, oversized examples, "Claude already knows this" content, inert frontmatter metadata.
+**B. Token efficiency**: Flag: redundant phrasing, mergeable sections, oversized examples, "Claude already knows this" content, inert frontmatter metadata.
 
-**C. Other** -- Missing edge cases, vague directives (rewrite as measurable criteria or remove), naked negations (add "do Y instead" or remove).
+**C. Other**: Missing edge cases, vague directives (rewrite as measurable criteria or remove), naked negations (add "do Y instead" or remove).
 
-**D. Guidance mismatch** -- fires when a skill was invoked and its advice turned out wrong, stale, or inapplicable *here*. A, B, and C all judge a skill standing alone; this one anchors the finding to the line that actually misfired. Record four fields, all required:
+**D. Guidance mismatch**: fires when a skill was invoked and its advice turned out wrong, stale, or inapplicable *here*. A, B, and C all judge a skill standing alone; this one anchors the finding to the line that actually misfired. Record four fields, all required:
 - the **verbatim excerpt** from SKILL.md or its reference that produced the wrong behavior
 - the **project context** that made it not apply (language, runner, framework version, house convention)
 - **what happened** when it was followed
@@ -90,7 +90,7 @@ Present proposed changes as diffs. Apply changes within existing editing authori
 
 ### 6. Capture Markers
 
-**The `remember:` prefix** is the highest-confidence capture signal. When the user writes a message beginning with `remember:`, treat everything after the colon as a memory candidate — no interpretation required. Save directly to the appropriate memory file with a one-line summary and the user's exact phrasing. "Directly" waives interpretation, not the step-4 pre-write check: still grep existing memory for duplicates and contradictions before writing (a `remember:` that contradicts a recorded entry gets the same merge/replace/keep-both handling). Example: `remember: we never use Pest, always PHPUnit` → save to `feedback_phpunit_over_pest.md`.
+**The `remember:` prefix** is the highest-confidence capture signal. When the user writes a message beginning with `remember:`, treat everything after the colon as a memory candidate; no interpretation required. Save directly to the appropriate memory file with a one-line summary and the user's exact phrasing. "Directly" waives interpretation, not the step-4 pre-write check: still grep existing memory for duplicates and contradictions before writing (a `remember:` that contradicts a recorded entry gets the same merge/replace/keep-both handling). Example: `remember: we never use Pest, always PHPUnit` → save to `feedback_phpunit_over_pest.md`.
 
 **Correction patterns to watch for** (lower-confidence, batch these for review at `/ia-reflect` time):
 - "no, use X" / "actually, X" / "don't use Y, use X"
@@ -104,7 +104,7 @@ Present proposed changes as diffs. Apply changes within existing editing authori
 
 If 2+ similar tasks appear that no existing skill covers, suggest a new skill (1-2 sentence description). Create only after confirmation.
 
-**Proactive trigger:** When the user corrects you, clarifies the same thing twice, or shows frustration, offer a retrospective when they're ready -- "I'll review what we can improve." Name the invocation the active harness actually supports (`/ia-reflect` in Claude Code, this skill by name elsewhere); never print a slash command on a harness that has none.
+**Proactive trigger:** When the user corrects you, clarifies the same thing twice, or shows frustration, offer a retrospective when they're ready ("I'll review what we can improve."). Name the invocation the active harness actually supports (`/ia-reflect` in Claude Code, this skill by name elsewhere); never print a slash command on a harness that has none.
 
 ## Self-Check
 

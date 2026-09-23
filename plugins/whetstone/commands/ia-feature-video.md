@@ -71,7 +71,7 @@ gh pr view [number] --json title,body,files,headRefName -q '.'
 gh pr view [number] --json files -q '.files[].path'
 ```
 
-**Map files to testable routes** (same mapping used by `/ia-test-browser` — see [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full file-to-route table).
+**Map files to testable routes** (same mapping used by `/ia-test-browser`; see [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full file-to-route table).
 
 </gather_context>
 

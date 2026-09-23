@@ -1,6 +1,6 @@
 # Observability for Rust Services
 
-Load this reference when adding logging, tracing, metrics, or distributed tracing to a Rust service. `println!` and `log::` are forbidden in new code — use `tracing` + `tracing-subscriber`.
+Load this reference when adding logging, tracing, metrics, or distributed tracing to a Rust service. `println!` and `log::` are forbidden in new code; use `tracing` + `tracing-subscriber`.
 
 ## Logging
 
@@ -23,7 +23,7 @@ Load this reference when adding logging, tracing, metrics, or distributed tracin
 
 ## Structured Spans
 
-- `#[tracing::instrument(skip(large_arg), fields(user_id = %user.id))]` on service methods — automatic span creation, structured fields.
+- `#[tracing::instrument(skip(large_arg), fields(user_id = %user.id))]` on service methods: automatic span creation, structured fields.
 - Skip large args to keep spans lightweight; prefer named fields over stringified args.
 
 ## Correlation IDs
@@ -32,7 +32,7 @@ Extract or generate at ingress middleware, attach to the root span, propagate vi
 
 ## Metrics
 
-`metrics` crate with `metrics-exporter-prometheus`. Counter for traffic/errors, Histogram for latency, Gauge for saturation. Label cardinality bounded — no user IDs, no unbounded dimensions.
+`metrics` crate with `metrics-exporter-prometheus`. Counter for traffic/errors, Histogram for latency, Gauge for saturation. Label cardinality bounded: no user IDs, no unbounded dimensions.
 
 ## Distributed Tracing
 
@@ -40,4 +40,4 @@ Extract or generate at ingress middleware, attach to the root span, propagate vi
 
 ## Live Task Introspection (tokio-console)
 
-Distinct from log/metric/trace export: `tokio-console` attaches to a running process and shows every Tokio task's state, poll count, busy/scheduled/idle durations with a poll-time histogram, and wakeup counts, and warns on self-wakes, lost wakers, and tasks that never yield -- the tool for a stuck or spinning task that emits no log line. Add the `console-subscriber` crate as a `tracing-subscriber` layer (`console_subscriber::init()` or `ConsoleLayer::builder()` alongside the fmt layer) and build with `RUSTFLAGS="--cfg tokio_unstable"` (or `rustflags = ["--cfg", "tokio_unstable"]` in `.cargo/config.toml`); without that cfg Tokio emits no task instrumentation. Keep it behind a feature flag like the OTel layer: it is a debugging aid, not production telemetry.
+Distinct from log/metric/trace export: `tokio-console` attaches to a running process and shows every Tokio task's state, poll count, busy/scheduled/idle durations with a poll-time histogram, and wakeup counts, and warns on self-wakes, lost wakers, and tasks that never yield. It is the tool for a stuck or spinning task that emits no log line. Add the `console-subscriber` crate as a `tracing-subscriber` layer (`console_subscriber::init()` or `ConsoleLayer::builder()` alongside the fmt layer) and build with `RUSTFLAGS="--cfg tokio_unstable"` (or `rustflags = ["--cfg", "tokio_unstable"]` in `.cargo/config.toml`); without that cfg Tokio emits no task instrumentation. Keep it behind a feature flag like the OTel layer: it is a debugging aid, not production telemetry.

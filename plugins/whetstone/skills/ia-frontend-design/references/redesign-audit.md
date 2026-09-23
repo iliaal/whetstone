@@ -1,6 +1,6 @@
 # Redesign Audit Framework
 
-Use when the user explicitly asks to redesign, audit, or improve an existing interface. This audit does NOT apply when building new features within an existing design system -- in that case, match the existing system per the Context Detection rules in the parent skill.
+Use when the user explicitly asks to redesign, audit, or improve an existing interface. This audit does NOT apply when building new features within an existing design system; in that case, match the existing system per the Context Detection rules in the parent skill.
 
 Walk through each section, note violations, then prioritize fixes by ROI.
 

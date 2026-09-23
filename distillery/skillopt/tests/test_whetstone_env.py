@@ -23,7 +23,7 @@ def _const_complete(payload: dict):
     return lambda system, user: json.dumps(payload)
 
 
-# --- CR-001: code-enforced verbatim-evidence grounding -----------------------
+# --- code-enforced verbatim-evidence grounding ------------------------------
 
 def test_ungrounded_evidence_scores_zero():
     rubric = {"reproduced_first": (1.0, "a reproduction step is executed")}
@@ -59,9 +59,9 @@ def test_shipped_rubric_weights_sum_to_one():
 
 
 def test_json_escaped_trajectory_grounds():
-    # The pilot's root cause: the transcript is JSON-escaped stream-json, so a
-    # verbatim quote spanning a `\n`/`\"` failed to match until normalization
-    # un-escapes it. The quote below spans an escaped newline.
+    # The transcript is JSON-escaped stream-json, so a verbatim quote spanning
+    # `\n`/`\"` matches only after normalization. The quote below spans an
+    # escaped newline.
     traj = r'{"text": "1 passed, 1 failed\nAssertionError: assert [1, 2] == [2, 4]\n"}'
     ev = "1 passed, 1 failed AssertionError: assert [1, 2] == [2, 4]"
     assert _grounded(ev, traj) is True
@@ -84,7 +84,7 @@ def test_fabricated_evidence_rejected():
     assert _grounded(fake, traj) is False
 
 
-# --- CR-006: pytest infra exits are distinct from a genuine failure ----------
+# --- pytest infra exits are distinct from a genuine failure -----------------
 
 def test_run_hard_no_tests_collected_is_infra(tmp_path):
     # Empty workspace -> pytest exit 5 (no tests collected) -> infra, not a fix failure.
@@ -110,10 +110,8 @@ def test_run_hard_failing_test_is_not_infra(tmp_path):
 # --- trajectory bounding: an oversized transcript must not crash the judge -----
 
 def test_oversized_agent_report_is_bounded_before_judge(tmp_path):
-    # Regression: the target transcript reaches the judge via agent_report. A
-    # ~280K-char report fed whole overflowed the judge backend and the call
-    # raised, silently zeroing soft (grounded=None) for every large rollout while
-    # a 121K one scored fine. evaluate() must trim it to a judge-safe size.
+    # The transcript reaches the judge via agent_report. A ~280K-char report
+    # overflows the judge backend and zeroes soft, so evaluate() must trim it.
     (tmp_path / "test_ok.py").write_text("def test_ok():\n    assert 1 == 1\n")
     seen = {}
 
@@ -154,7 +152,7 @@ def test_evaluate_routes_detection_without_pytest(tmp_path):
     assert ev["infra_error"] is False
 
 
-# --- CR-004 / CR-010: fixture path resolution is contained -------------------
+# --- fixture path resolution is contained -----------------------------------
 
 def test_fixture_resolves_legit(tmp_path):
     (tmp_path / "tasks" / "dbg-001").mkdir(parents=True)

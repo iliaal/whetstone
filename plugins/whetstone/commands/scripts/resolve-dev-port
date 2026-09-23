@@ -14,7 +14,7 @@ if [ $# -ge 1 ] && [ -n "${1:-}" ]; then
 fi
 
 # 2. A --port/-p flag in a package.json dev/start/serve script. Scoped to those script
-# values, not the whole file -- an unrelated field mentioning "-p 5000" is not a port.
+# values, not the whole file; an unrelated field mentioning "-p 5000" is not a port.
 if [ -z "$port" ] && [ -f package.json ]; then
     scripts=$(jq -r '(.scripts // {}) | to_entries[] | select(.key | test("^(dev|start|serve)")) | .value | select(type == "string")' package.json 2>/dev/null) || scripts=""
     if [ -n "$scripts" ]; then

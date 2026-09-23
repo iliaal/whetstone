@@ -1,6 +1,6 @@
 # Factory Patterns
 
-> When to read: when writing or refactoring Laravel model factories — basic shapes, states, sequences, relationships, and seed-vs-test boundaries.
+> When to read: when writing or refactoring Laravel model factories: basic shapes, states, sequences, relationships, and seed-vs-test boundaries.
 
 ## Basic Factory
 
@@ -23,7 +23,7 @@ class PostFactory extends Factory
 
 ## States
 
-Name states as adjectives or past participles -- they describe what the model IS:
+Name states as adjectives or past participles; they describe what the model IS:
 
 ```php
 public function unpublished(): static

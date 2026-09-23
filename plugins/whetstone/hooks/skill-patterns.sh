@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-# skill-patterns.sh — trigger regexes for skill injection (SKILL_PATTERNS).
+# skill-patterns.sh: trigger regexes for skill injection (SKILL_PATTERNS).
 #
-# HAND-MAINTAINED. Generated ONCE from SKILL.md frontmatter (2026-02-22); the
-# regexes below have been hand-tuned since — do NOT overwrite this file wholesale.
-# scripts/generate-skill-hooks.sh now writes a DRAFT (skill-patterns.draft.sh) for
-# NEW skills only; hand-merge new SKILL_PATTERNS entries from that draft into here.
-# (--force regenerates in place from raw text and discards tuning — avoid it.)
+# HAND-MAINTAINED. The regexes below are hand-tuned; do NOT overwrite this file
+# wholesale. scripts/generate-skill-hooks.sh writes a DRAFT (skill-patterns.draft.sh)
+# for NEW skills only; hand-merge new SKILL_PATTERNS entries from that draft into here.
+# (--force regenerates in place from raw text and discards tuning; avoid it.)
 
 declare -A SKILL_PATTERNS
 declare -A SKILL_TIERS
 
-# SKILL_NEGATIVE — suppression, checked only after SKILL_PATTERNS matches. A skill
+# SKILL_NEGATIVE: suppression, checked only after SKILL_PATTERNS matches. A skill
 # fires when the positive matches AND the negative does not. Optional; almost every
 # skill should have no entry.
 #
@@ -19,12 +18,12 @@ declare -A SKILL_TIERS
 # NEIGHBOURING language. ERE has no lookahead and the hook runs one grep per skill,
 # so "X unless Y" is not expressible in the positive pattern.
 #
-# It is NOT the tool for a positive pattern that is merely too loose. Every misfire
-# fixed in this file so far — `AuditControllerTest`, `Avatar.tsx`, `b-UI-lt-in`,
-# "PostgreSQL repo", worktree location mentions — was cured by tightening the
-# positive (word anchors, bounded gaps, a required intent verb), and each of those
-# is a better fix than an exclusion list that has to enumerate the world. Reach for
-# a negative only when the excluded thing has an unambiguous name.
+# It is NOT the tool for a positive pattern that is merely too loose. Misfires such
+# as `AuditControllerTest`, `Avatar.tsx`, `b-UI-lt-in`, "PostgreSQL repo", and
+# worktree location mentions are cured by tightening the positive (word anchors,
+# bounded gaps, a required intent verb), which beats an exclusion list that has to
+# enumerate the world. Reach for a negative only when the excluded thing has an
+# unambiguous name.
 declare -A SKILL_NEGATIVE
 
 # --- Tier 1: Methodology (process/approach skills) ---
@@ -32,19 +31,19 @@ declare -A SKILL_NEGATIVE
 SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice|\b(record|plan|identify).{0,20}\barchitecture decisions.{0,20}\bbefore coding\b'
 SKILL_TIERS[ia-planning]=1
 
-# Intent-anchored symptoms (2026-07-07 audit-misfire): bare `crash(es)`, unbounded
-# `why.*fail`, and `regression.?(test|fix)` fired on security-audit prose ("parser
-# crashes"), review rubrics ("why it's wrong (concrete failure)"), and test-coverage
-# reviews ("missing regression test") — 35/93 harvested negatives. Fixes: `debug\s`
-# (kills `debugging/foo-crash.md` wiki path lists); `why\s+<aux>` question form (rubric
-# "why it's/why-real" lacks the aux); crash needs a subject/temporal anchor; regression
-# needs a break-symptom not "test/fix". Also replaced PCRE `(?:...)` with plain groups.
+# Intent-anchored symptoms: bare `crash(es)`, unbounded `why.*fail`, and
+# `regression.?(test|fix)` fire on security-audit prose ("parser crashes"), review
+# rubrics ("why it's wrong (concrete failure)"), and test-coverage reviews ("missing
+# regression test"). Hence `debug\s` (skips `debugging/foo-crash.md` path lists);
+# `why\s+<aux>` question form (rubric "why it's/why-real" lacks the aux); crash needs
+# a subject/temporal anchor; regression needs a break-symptom, not "test/fix". Plain
+# groups only: PCRE `(?:...)` is not ERE.
 SKILL_PATTERNS[ia-debugging]='debug(ging)?\s.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+((the|this)\s+)?bug|why\s+(is|are|was|were|does|did|do|isn.t|doesn.t|won.t|can.t|would|might).{0,30}(fail|crash|broke|error|hang|wrong|null|undefined|throw|freeze|not.?work)|(server|service|app|process|function|test|page|binary|worker|browser|daemon|program|script|query|request|keeps?|still|randomly|intermittent|production|prod|deploy).{0,15}crash(ed|ing|es)?|crash(ed|ing|es).{0,25}(after|when|on.?start|in.?prod|randomly|intermittent|during|deploy|repeatedly|every)|troubleshoot|(analyz|read|paste|inspect|got|this|following).{0,15}stack.?trace|broken.?test|test.{0,10}broken|flaky.?test|regression.{0,15}(bug|broke|broken|fail|introduced|caused)|unexpected.?behav|\b(diagnos|investigat)[a-z]*.{0,30}\b(failure|regression|crash|error|bug)\b'
 SKILL_TIERS[ia-debugging]=1
 
-# Bounded gaps + word anchors (2026-07-07): unbounded `review.*code` / `audit.*code`
-# spanned multi-KB prompts and fired on codebases whose domain noun is "audit"
-# (AuditControllerTest, audit.enabled) — 16/27 harvested negatives were this misfire.
+# Bounded gaps + word anchors: unbounded `review.*code` / `audit.*code` spans
+# multi-KB prompts and fires on codebases whose domain noun is "audit"
+# (AuditControllerTest, audit.enabled).
 SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu|\breview.{0,30}\bpull request\b'
 SKILL_TIERS[ia-code-review]=1
 
@@ -66,17 +65,16 @@ SKILL_TIERS[ia-writing-tests]=1
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
-# Bounded gaps + \.php\b (2026-07-07): unbounded `test.*(...).*\.php` spanned
-# multi-KB prompts and `\.php` matched inside `.phpt`, injecting into php-src /
-# extension C tasks the description explicitly excludes (~10/50 harvested negatives).
+# Bounded gaps + \.php\b: unbounded `test.*(...).*\.php` spans multi-KB prompts and
+# `\.php` matches inside `.phpt`, injecting into php-src / extension C tasks the
+# description explicitly excludes.
 SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.{0,60}\.php\b|unit.?test.{0,60}\.php\b|test.{0,40}(controller|model|service|action|job|command|endpoint).{0,60}\.php\b|\bformrequest\b.{0,20}\b(authorization|validation|rule)\b'
 SKILL_TIERS[ia-php-laravel]=2
 
-# React-intent required near .tsx/.jsx (2026-07-07 audit-misfire): bare `\bjsx\b|\btsx\b`
-# fired on any .tsx path mention — 53/95 harvested negatives were codesage/MR reviews of
-# files like `Avatar.tsx` (paths also contain "components", so a noun anchor doesn't help).
-# Replaced with `\b[jt]sx\b` + a runtime SYMPTOM (rendering/broken/error/crash), which path
-# noise lacks; bounded the unbounded `react.*test` / `hook.*component` spans.
+# React-intent required near .tsx/.jsx: bare `\bjsx\b|\btsx\b` fires on any .tsx path
+# mention, e.g. reviews of `Avatar.tsx` (paths also contain "components", so a noun
+# anchor doesn't help). `\b[jt]sx\b` needs a runtime SYMPTOM (rendering/broken/error/
+# crash), which path noise lacks; `react.*test` / `hook.*component` spans are bounded.
 SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
 SKILL_TIERS[ia-react-frontend]=2
 
@@ -94,13 +92,13 @@ SKILL_TIERS[ia-rust-systems]=2
 # non-word char. So every bare-`c` alternative below carries BOTH guards: a leading
 # class excluding `-` (kills `objective-c code`) and a required following element that
 # `+`/`#` cannot satisfy (kills `c++ code` and `c# code`). Do not simplify either guard
-# to a plain `\bc\b` — all three negatives return immediately.
+# to a plain `\bc\b`; all three negatives return immediately.
 #
 # Both patterns must parse under grep -E (the hook) AND Python re (test-triggers).
 # POSIX classes like [[:space:]] work only in the former and silently fail the
 # Python test. `\s` parses in both but does NOT agree in both: Python's `\s` spans
 # newlines while grep is line-oriented, so `c\nfunction` matches in the test and
-# not in the hook — the dangerous direction. Separators here are literal spaces.
+# not in the hook, the dangerous direction. Separators here are literal spaces.
 #
 # The leading-class guard only protects the bare-`c` branches. Language-neutral
 # alternatives (`\.h\b`, `segfault`, `gdb`, `valgrind`) would still fire on
@@ -115,10 +113,9 @@ SKILL_NEGATIVE[ia-c-systems]='\bc#|\bc sharp\b|\bcsharp\b|objective-?c\b|\bdotne
 SKILL_PATTERNS[ia-cpp-systems]='c\+\+|\bcpp\b|\bcxx\b|\.cpp\b|\.hpp\b|\.cc\b|\.cxx\b|\.hh\b|std::|unique_ptr|shared_ptr|weak_ptr|make_unique|make_shared|\bconstexpr\b|\bnoexcept\b|\bnullptr\b|template *<|\braii\b|move semantics|move constructor|copy constructor|rvalue|rule of (zero|five|three)|virtual (destructor|function)|\bdestructor\b|\bvtable\b|explicit constructor|constructor[^.]{0,25}\bexplicit\b|extern +"?c"? |\bgtest\b|google ?test|\bcatch2\b|clang-tidy|clang-format|\bcmake\b|cmakelists|\bpimpl\b|\bstl\b|string_view|boost::|boost/|\bboost\.(asio|beast|filesystem|program_options|thread|system)\b'
 SKILL_TIERS[ia-cpp-systems]=2
 
-# DB-op required near the token (2026-07-07 audit-misfire): bare `postgres`, `jsonb`, and
-# `upsert` fired on any prompt naming the stack — 18/44 harvested negatives were Rust
-# fix-agent tasks, wiki audits, and reviews mentioning "PostgreSQL repo" as context.
-# Each now requires a DB-work word (query/column/migrate/index/...) within a bounded gap.
+# DB-op required near the token: bare `postgres`, `jsonb`, and `upsert` fire on any
+# prompt naming the stack, such as tasks mentioning "PostgreSQL repo" as context.
+# Each requires a DB-work word (query/column/migrate/index/...) within a bounded gap.
 SKILL_PATTERNS[ia-postgresql]='postgres(ql)?.{0,30}(quer|index|schema|table|column|migrat|partition|tune|optimi|connect|pool|vacuum|explain|perf|slow|lock|tenant|rls|jsonb|constraint|dump|replica)|(quer|schema|migrat|optimi|index|tune|slow|partition|vacuum|explain|connect|pool|deadlock).{0,30}postgres(ql)?|\bpgbouncer\b|jsonb.{0,25}(column|field|index|quer|operator|path|gin|migrat|store|nest|set|->|@>)|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b.{0,25}(row|record|table|quer|conflict|batch|column|postgres|sql)|tsvector|pg_stat_|pg_class'
 SKILL_TIERS[ia-postgresql]=2
 
@@ -131,12 +128,11 @@ SKILL_TIERS[ia-linux-bash-scripting]=2
 SKILL_PATTERNS[ia-pinescript]='pine.?script|pinescript|tradingview.{0,30}\b(pine|indicators?|strateg(y|ies)|charts?|scripts?)\b|\bindicator\b.{0,20}(pine|trading.?view)|\bstrategy\b.{0,20}(pine|trading.?view)|\.pine\b|\btradingview\b.{0,20}\brepainting\b'
 SKILL_TIERS[ia-pinescript]=2
 
-# Word-bounded UI + spaced build verb (2026-07-07 audit-misfire): `ui.*(build|create)`
-# matched "b-UI-lt-in", "fast-UU-ID", "b-UI-lder" and any later build/create — 22/36
-# harvested negatives were backend code-review prompts (co-injected with php-laravel 21x).
-# Fixes: `\bui\b` word-bounds the token; `(design|build)\s` requires a space so CamelCase
-# file names like `BuildDashboardProviders.ts` no longer fire; bounded the `frontend.*`
-# and `ai.?generated.*` spans.
+# Word-bounded UI + spaced build verb: `ui.*(build|create)` matches "b-UI-lt-in",
+# "fast-UU-ID", "b-UI-lder" and any later build/create in backend review prompts.
+# `\bui\b` word-bounds the token; `(design|build)\s` requires a space so CamelCase
+# file names like `BuildDashboardProviders.ts` do not fire; the `frontend.*` and
+# `ai.?generated.*` spans are bounded.
 SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build)\s.{0,20}(web.?component|web.?page|landing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|color.?palette|visual.?identity|\bredesign.{0,30}\bpage layout\b'
 SKILL_TIERS[ia-frontend-design]=2
 
@@ -151,9 +147,9 @@ SKILL_TIERS[ia-agent-native-architecture]=2
 SKILL_PATTERNS[ia-writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?slop|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
 SKILL_TIERS[ia-writing]=3
 
-# Intent-anchored (2026-07-07): bare `claude\.md` fired on any prompt citing
-# CLAUDE.md as reference material (6/6 harvested negatives); unbounded `update.*`
-# alternates spanned multi-KB prompts. Verbs required near the doc noun.
+# Intent-anchored: bare `claude\.md` fires on any prompt citing CLAUDE.md as
+# reference material; unbounded `update.*` alternates span multi-KB prompts. Verbs
+# required near the doc noun.
 SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md|\b(create|write|refresh|regenerate)\b.{0,30}\b(readme|contributing)(\.md)?\b'
 SKILL_TIERS[ia-md-docs]=3
 
@@ -175,17 +171,16 @@ SKILL_TIERS[ia-document-review]=3
 SKILL_PATTERNS[ia-file-todos]='todo.?directory|file.?based.?todo|\btodos?\b.{0,24}(file|list|add|creat|track|status|backlog)|(add|create|list|track|triage|manage).{0,24}\btodos?\b|\bbacklog\b|\btodos directory\b|\bconvert.{0,25}\bpr comments.{0,20}\btracked tasks\b'
 SKILL_TIERS[ia-file-todos]=3
 
-# Dispatch-intent only (2026-09-06): bare `fan.?out` and bare `\bsub.?agents?\b`
-# matched a reviewed system's own vocabulary ("Phase 1 specialist fan-out",
-# "the driver dispatches ONE post-planner subagent", `bmpm_prefix_fanout_budget`)
-# and fired on 30/30 harvested executor briefs. Both now require an agent-shaped
-# object, and the subagent form requires imperative dispatch framing.
+# Dispatch-intent only: bare `fan.?out` and bare `\bsub.?agents?\b` match a reviewed
+# system's own vocabulary ("Phase 1 specialist fan-out", "the driver dispatches ONE
+# post-planner subagent", `bmpm_prefix_fanout_budget`) in executor briefs. Both
+# require an agent-shaped object, and the subagent form requires imperative dispatch
+# framing.
 SKILL_PATTERNS[ia-orchestrating-swarms]='multi.?agent|swarm|parallel [a-z ]{0,20}(agents?|reviewers?|workers?)\b|(several|multiple|three|four|five) (agents?|subagents?|reviewers?|workers?)\b|divide.?and.?conquer|\bin (a|another|its own|one) sub.?agent\b|spawn.{0,24}agents?|fan.?out\b[^.]{0,40}\b(agents?|workers?|reviewers?)\b|orchestrat[a-z]*.{0,24}agents?|agents?.{0,16}in parallel|(^|[.;:] *|\band |\bthen )(dispatch|launch|delegate to|hand off to) (a|an|one|two|three|four|five|multiple|several) ?[a-z-]{0,14} ?sub.?agents?\b|(^|[.;:] *|\band |\bthen )(please )?coordinate\b.{0,20}\b(team of )?agents\b|(^|[.;:] *|\band |\bthen )(please )?run.{0,20}\breviewers concurrently\b|(^|[.;:] *|\band |\bthen )(please )?(build|create).{0,20}\bpipeline.{0,30}\bagent output.{0,20}\b(feeds|passes)\b'
 SKILL_TIERS[ia-orchestrating-swarms]=3
 
-# Management-intent only (2026-07-07): bare `worktree` matched location mentions
-# ("the worktree at /path/to/checkout") — 22/22 harvested negatives AND all 44
-# "positives" were such mentions. A management verb near the noun is required.
+# Management-intent only: bare `worktree` matches location mentions ("the worktree
+# at /path/to/checkout"). A management verb near the noun is required.
 SKILL_PATTERNS[ia-git-worktree]='\b(create|add|new|set.?up|make|remove|clean|prune|switch|list)\b.{0,30}worktrees?|worktrees?.{0,25}(add|create|remove|prune|cleanup|list|switch)\b|parallel.?development'
 SKILL_TIERS[ia-git-worktree]=3
 
@@ -194,25 +189,19 @@ SKILL_TIERS[ia-git-worktree]=3
 # Skills listed here fire on any prompt mentioning their name (e.g., "the brainstorming
 # skill" or "skills/ia-writing-tests/SKILL.md"), which causes high false-positive rates
 # during plugin-maintenance tasks (/sync-from-repos, /audit-plugin, distiller runs).
-# These skills are suppressed when the prompt is recognized as plugin-maintenance context.
-# Evidence: 2026-04-24 audit — brainstorming 85%, writing-tests 100%, planning 100% of
-# negative-signal sessions were plugin-maintenance prompts where skill names appeared as
-# references rather than user requests.
+# These skills are suppressed when the prompt is recognized as plugin-maintenance context,
+# where skill names appear as references rather than user requests.
 declare -A SKILL_MAINT_SUPPRESS
 SKILL_MAINT_SUPPRESS[ia-brainstorming]=1
 SKILL_MAINT_SUPPRESS[ia-writing-tests]=1
 SKILL_MAINT_SUPPRESS[ia-planning]=1
-# Added 2026-04-27 from analyze-outcomes anomalies (sync run):
-# all five fire on plugin-maintenance prompts (audit/sync/release commands name them as references).
-SKILL_MAINT_SUPPRESS[ia-verification-before-completion]=1  # 24 sessions, 45.8% neg, +19pp -- "verification" appears in /audit-plugin, /release pre-commit gates
-SKILL_MAINT_SUPPRESS[ia-postgresql]=1                       # 10 sessions, 70% neg, +52pp -- "postgresql" mentioned in distiller/audit prompts
-SKILL_MAINT_SUPPRESS[ia-react-frontend]=1                   # 6 sessions, 33% neg, +24pp -- skill name appears in plugin-doc/audit prompts
-SKILL_MAINT_SUPPRESS[ia-writing]=1                          # 10 sessions, 20% neg, +12pp -- fires on plugin-doc work
-# Added 2026-04-29 from analyze-outcomes anomalies (sync run):
-SKILL_MAINT_SUPPRESS[ia-compound-docs]=1                    # 11 sessions, 36.4% neg, +11pp -- "compound" mentioned in /sync-from-repos and /audit-plugin
-SKILL_MAINT_SUPPRESS[ia-terraform]=1                        # 7 sessions, 28.6% neg, +10pp -- plugin doesn't use terraform; misfire on audit/sync prompts
-SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # 14 sessions, 21.4% neg, +10pp -- fires on distiller.py work in plugin maintenance
-# Added 2026-05-02 from diagnose-negatives ia-debugging (post-rename signal verified against pre-rename data):
-SKILL_MAINT_SUPPRESS[ia-debugging]=1                        # 4/4 negative cases were plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfiring as debugging; analyze-outcomes 36% neg on -home-ilia-ai-php
+SKILL_MAINT_SUPPRESS[ia-verification-before-completion]=1  # "verification" appears in /audit-plugin, /release pre-commit gates
+SKILL_MAINT_SUPPRESS[ia-postgresql]=1                       # "postgresql" mentioned in distiller/audit prompts
+SKILL_MAINT_SUPPRESS[ia-react-frontend]=1                   # skill name appears in plugin-doc/audit prompts
+SKILL_MAINT_SUPPRESS[ia-writing]=1                          # fires on plugin-doc work
+SKILL_MAINT_SUPPRESS[ia-compound-docs]=1                    # "compound" mentioned in /sync-from-repos and /audit-plugin
+SKILL_MAINT_SUPPRESS[ia-terraform]=1                        # plugin doesn't use terraform; misfire on audit/sync prompts
+SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # fires on distiller.py work in plugin maintenance
+SKILL_MAINT_SUPPRESS[ia-debugging]=1                        # plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfire as debugging
 
 # Total skills: 32

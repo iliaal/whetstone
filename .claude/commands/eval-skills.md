@@ -31,7 +31,7 @@ Capture the JSON output. Extract the `skills` dict to know which skills have dat
 
 From the harvest output, list skills with `count >= MIN_EXAMPLES`. Exclude `_unattributed`. Sort by example count descending.
 
-Present a table (include the `ambiguous` count — it is the dominant class post-2026-07-07 and the split is meaningless without it):
+Present a table (include the `ambiguous` count — it is the dominant class and the split is meaningless without it):
 ```
 | Skill                          | Examples | Positive | Negative | Ambiguous |
 |--------------------------------|----------|----------|----------|-----------|

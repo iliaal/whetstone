@@ -4,9 +4,7 @@ set -Eeuo pipefail
 # Symlink plugin skills to shared non-Claude tool directories.
 # Claude Code and Codex get skills through their native plugins.
 #
-# Shared-dir destination names match plugin source names (ia-<name>) — keeps
-# invocations short. Slug rebranding to whetstone-<name> would double the
-# typed length for no functional gain in shared dirs.
+# Destination names match plugin source names (ia-<name>).
 #
 # Usage: bash scripts/sync-to-tools.sh [--dry-run]
 

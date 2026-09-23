@@ -36,25 +36,25 @@ src/
 - Services never import Request/Response
 - Repositories never throw HTTP errors
 - Dependencies point inward only (Clean Architecture rule): routes -> services -> repositories. Never the reverse.
-- For scripts/prototypes: single file is fine -- ask "will this grow?"
+- For scripts/prototypes: single file is fine; ask "will this grow?"
 
 
 ## TypeScript Rules
 
-- Use `import type { }` for type-only imports -- eliminates runtime overhead
+- Use `import type { }` for type-only imports; eliminates runtime overhead
 - Prefer `interface` for object shapes (2-5x faster type resolution than intersections)
-- Prefer `unknown` over `any` -- forces explicit narrowing
-- Use `z.infer<typeof Schema>` as single source of truth -- never duplicate types and schemas
-- Minimize `as` assertions -- use type guards instead
+- Prefer `unknown` over `any`; forces explicit narrowing
+- Use `z.infer<typeof Schema>` as single source of truth; never duplicate types and schemas
+- Minimize `as` assertions; use type guards instead
 - Add explicit return types to exported functions (faster declaration emit)
 - Untyped package? `declare module 'pkg' { const v: unknown; export default v; }` in `types/ambient.d.ts`
 
 
 ## Discipline
 
-- Simplicity first -- every change as simple as possible, impact minimal code
-- Only touch what's necessary -- avoid introducing unrelated changes
-- No hacky workarounds -- if a fix feels wrong, step back and implement the clean solution
+- Simplicity first: every change as simple as possible, impact minimal code
+- Only touch what's necessary; avoid introducing unrelated changes
+- No hacky workarounds: if a fix feels wrong, step back and implement the clean solution
 - Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
 - If a fix requires bypassing TypeScript (`as any`, non-null assertions on untrusted data, `// @ts-ignore`), treat it as a design smell and find the typed solution
 
@@ -68,10 +68,10 @@ src/
 
 ## References
 
-- [TypeScript config](./references/typescript-config.md) -- tsconfig, ESM, branded types, compiler performance
-- [Security](./references/security.md) -- JWT, password hashing, rate limiting, OWASP
-- [API design patterns](./references/api-design.md) -- pagination, filtering, sorting, deprecation, idempotency-key claim and retention
-- [Database & production](./references/database-production.md) -- connection pooling, transactions, Docker, logging
+- [TypeScript config](./references/typescript-config.md): tsconfig, ESM, branded types, compiler performance
+- [Security](./references/security.md): JWT, password hashing, rate limiting, OWASP
+- [API design patterns](./references/api-design.md): pagination, filtering, sorting, deprecation, idempotency-key claim and retention
+- [Database & production](./references/database-production.md): connection pooling, transactions, Docker, logging
 
 ## Task-specific references
 

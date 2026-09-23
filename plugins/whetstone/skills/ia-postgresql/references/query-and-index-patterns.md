@@ -10,13 +10,13 @@
 | BRIN | Large tables with natural ordering (timestamps, serial IDs) |
 
 **Index rules:**
-- Composite: equality-predicate columns first, then the range/sort column, max 3-4 columns -- a leading range column stops the B-tree from navigating on anything after it. "Most selective first" is the myth version; selectivity only breaks ties among equality columns
-- Partial: `WHERE status = 'active'` -- smaller, faster, and it constrains *only* the rows matching the predicate. A plain unique index likewise constrains only rows whose key columns are all non-NULL, since NULLs compare as distinct unless the index is `NULLS NOT DISTINCT`. So a "prevent duplicates" index validated against the new write path enforces nothing against an existing writer that leaves a key column NULL or writes rows the predicate excludes, and the dedup the migration promises is leaky for exactly those rows. Audit every writer of the table, not the one in the diff
-- Covering: `INCLUDE (col)` -- avoids heap lookup
-- Expression: `ON (lower(email))` -- for function-based WHERE
+- Composite: equality-predicate columns first, then the range/sort column, max 3-4 columns. A leading range column stops the B-tree from navigating on anything after it. "Most selective first" is the myth version; selectivity only breaks ties among equality columns
+- Partial: `WHERE status = 'active'` is smaller, faster, and constrains *only* the rows matching the predicate. A plain unique index likewise constrains only rows whose key columns are all non-NULL, since NULLs compare as distinct unless the index is `NULLS NOT DISTINCT`. So a "prevent duplicates" index validated against the new write path enforces nothing against an existing writer that leaves a key column NULL or writes rows the predicate excludes, and the dedup the migration promises is leaky for exactly those rows. Audit every writer of the table, not the one in the diff
+- Covering: `INCLUDE (col)` avoids heap lookup
+- Expression: `ON (lower(email))` for function-based WHERE
 - A GIN index on an array column serves the containment operators, not `=`: `WHERE 'x' = ANY(col)` seq-scans even with `enable_seqscan = off`, because `ANY` over an array expands to equality and no GIN operator class implements it. Write the predicate as `WHERE col @> ARRAY['x']` to reach the index.
-- `fillfactor = 70-90` on write-heavy tables -- reserves space for HOT updates, reducing index bloat
-- Drop unused indexes (only after one full business cycle since last restart -- check `pg_stat_database.stats_reset` first; on a freshly restarted DB or read replica, `idx_scan = 0` reports live indexes, primary keys included, as unused): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
+- `fillfactor = 70-90` on write-heavy tables reserves space for HOT updates, reducing index bloat
+- Drop unused indexes (only after one full business cycle since last restart; check `pg_stat_database.stats_reset` first; on a freshly restarted DB or read replica, `idx_scan = 0` reports live indexes, primary keys included, as unused): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
 
 **Detect unindexed foreign keys:**
 ```sql
@@ -45,7 +45,7 @@ SELECT * FROM items WHERE metadata->>'category' = 'electronics';
 
 Prefer typed columns over JSONB for frequently queried, well-structured data. Use JSONB for truly dynamic/variable attributes.
 
-Use `jsonb_path_ops` operator class for containment-only (`@>`) queries -- 2-3x smaller index. Use default `jsonb_ops` when key-existence (`?`, `?|`) is needed.
+Use `jsonb_path_ops` operator class for containment-only (`@>`) queries: 2-3x smaller index. Use default `jsonb_ops` when key-existence (`?`, `?|`) is needed.
 
 **Delete operators:**
 
@@ -58,9 +58,9 @@ Use `jsonb_path_ops` operator class for containment-only (`@>`) queries -- 2-3x 
 
 Common mistakes:
 
-- `col - 'a,b'` treats `'a,b'` as a single key name (no-op against a normally-structured document — the comma isn't a path separator).
+- `col - 'a,b'` treats `'a,b'` as a single key name (no-op against a normally-structured document; the comma isn't a path separator).
 - `col - 'a' - 'b'` first removes the entire `a` subtree before attempting `- 'b'` on the result (data loss of `a.*`, then a no-op).
-- `jsonb_set(col, '{a,b}', 'null'::jsonb)` sets the value to JSON `null` rather than removing the key — strict "key absent" checks downstream then fail. Worse: `jsonb_set(col, '{a,b}', NULL)` with a bare SQL `NULL` makes the STRICT function return SQL `NULL`, clobbering the entire column on update. To delete the key, use `#-`; to set it explicitly to JSON null, use `'null'::jsonb` (and know that's distinct from absence).
+- `jsonb_set(col, '{a,b}', 'null'::jsonb)` sets the value to JSON `null` rather than removing the key, so strict "key absent" checks downstream then fail. Worse: `jsonb_set(col, '{a,b}', NULL)` with a bare SQL `NULL` makes the STRICT function return SQL `NULL`, clobbering the entire column on update. To delete the key, use `#-`; to set it explicitly to JSON null, use `'null'::jsonb` (and know that's distinct from absence).
 
 For nested deletes, use `#-` with a text-array path. Verify with one round-tripped row of the worst-case shape before committing the migration: `SELECT col #- '{a,b}' FROM t WHERE id = ? LIMIT 1`, then confirm the key is gone (not present-as-null, no sibling data loss).
 
@@ -68,7 +68,7 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 ## Query Optimization
 
 - Always `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` before optimizing
-- Pin the plan as a regression assertion, not only a one-time diagnostic. For a hot-path query whose performance depends on a specific access method, assert the plan in an automated test: a migration that drops an index, or a rewrite that makes a predicate non-sargable (`WHERE lower(email) = ...` against a plain index, `WHERE col + 0 = ...`), silently regresses the query from an index scan to a sequential scan while every result-correctness test still passes. Plan text is not stable across minor versions and configuration (`work_mem`, `random_page_cost`, table statistics), so never string-match the whole plan; use `EXPLAIN (FORMAT JSON)` and assert on the node type -- `Index Scan` or `Index Only Scan` on the expected index name, or the absence of `Seq Scan` on the target relation. Run it against a fixture with enough rows that the planner's choice is not dominated by table size; a planner on a 10-row table legitimately prefers a seq scan.
+- Pin the plan as a regression assertion, not only a one-time diagnostic. For a hot-path query whose performance depends on a specific access method, assert the plan in an automated test: a migration that drops an index, or a rewrite that makes a predicate non-sargable (`WHERE lower(email) = ...` against a plain index, `WHERE col + 0 = ...`), silently regresses the query from an index scan to a sequential scan while every result-correctness test still passes. Plan text is not stable across minor versions and configuration (`work_mem`, `random_page_cost`, table statistics), so never string-match the whole plan; use `EXPLAIN (FORMAT JSON)` and assert on the node type: `Index Scan` or `Index Only Scan` on the expected index name, or the absence of `Seq Scan` on the target relation. Run it against a fixture with enough rows that the planner's choice is not dominated by table size; a planner on a 10-row table legitimately prefers a seq scan.
 - Use `pg_stat_statements` for slow-query detection and `pg_stat_user_tables` for bloat (see [operations.md](./operations.md) for the full SQL)
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping
 - High `rows removed by filter` -> index doesn't match predicate
@@ -90,7 +90,7 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
   WHERE id > :cursor ORDER BY id ASC LIMIT :n;
   ```
   Bootstrap is bounded by `keys x N`, catch-up is proportional to new rows, and unlike `OFFSET` pagination the pair neither degrades as the table grows nor skips rows under concurrent inserts. Add a `WHERE account_id IN (...)` to the inner query when the key set is known, so the window runs over an index range rather than the whole table; the cursor column must be monotonic (a sequence or identity column, not a timestamp).
-- Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` -- avoids full `count(*)` on large tables
+- Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` avoids full `count(*)` on large tables
 - Materialized views for expensive aggregations: `REFRESH MATERIALIZED VIEW CONCURRENTLY` (needs unique index). Schedule refresh, not per-query.
 - Anchor a time bucket to the domain's own boundary, not to the epoch. `date_bin(stride, ts, origin)` lays the grid down at `origin`, and `date_trunc` is calendar-anchored, so a stride that does not divide the gap between domain boundaries produces a bucket straddling one; grouping by that bucket plus a row-derived day then emits two rows per bucket and violates an `(entity, bucket_start)` primary key. Pass the domain boundary as `origin`, key on `(entity, bucket_start)`, and derive the day from the bucket rather than from the row.
 
@@ -103,7 +103,7 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 | N+1 queries in application loop | Use `JOIN`, `IN`, or batch fetch |
 | `OFFSET` for pagination on large tables | Cursor pagination: `WHERE id > $last ORDER BY id LIMIT $n` |
 | `count(*)` on large tables | Approximate: `SELECT reltuples FROM pg_class WHERE relname = 'table'` |
-| Nullable booleans | `NOT NULL DEFAULT false` -- three-valued logic causes subtle bugs |
+| Nullable booleans | `NOT NULL DEFAULT false`; three-valued logic causes subtle bugs |
 | Missing FK indexes | See detection query in Index Strategy above |
 | `ORDER BY RANDOM()` | Use `TABLESAMPLE` or application-side shuffle |
 

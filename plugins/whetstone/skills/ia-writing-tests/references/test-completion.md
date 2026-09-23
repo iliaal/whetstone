@@ -6,7 +6,7 @@
 |-------------|---------|
 | Don't know how to test | Write the assertion first (desired outcome), then build the test around it |
 | Test too complicated | Simplify the interface being tested |
-| Must mock everything | Code is too coupled -- use dependency injection |
+| Must mock everything | Code is too coupled; use dependency injection |
 | Test setup too large | Extract helpers that reduce noise without hiding test intent (see DAMP). Still complex? Simplify the design |
 
 ## Rationalization Table
@@ -22,10 +22,10 @@ Before considering tests complete:
 - [ ] Tests use real objects where possible (mocks only at system boundaries)
 - [ ] Edge cases covered (empty, null, boundary, error paths)
 - [ ] Each acceptance criterion has a discriminating case a naive wrong implementation would fail
-- [ ] Every absence or isolation assertion was proven able to fail -- the forbidden violation was planted with a run-unique value and that specific assertion failed
+- [ ] Every absence or isolation assertion was proven able to fail: the forbidden violation was planted with a run-unique value and that specific assertion failed
 - [ ] Tests assert on outcomes, not implementation details
 - [ ] Snapshot, golden, fixture, and generated-expectation changes were reviewed semantically rather than regenerated to obtain green
-- [ ] Tests are independent -- no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
+- [ ] Tests are independent: no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
 - [ ] Tests run fast enough to run frequently (< 30 seconds for unit suite)
 - [ ] Bug fix tests reproduce the original bug
 - [ ] Mutation check run: mentally mutate the code (wrong constant, flipped branch, dropped side effect, empty/default return) and confirm some test fails for each

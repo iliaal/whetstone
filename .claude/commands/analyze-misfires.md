@@ -90,4 +90,4 @@ Compare before/after misfire rates for the changed skills.
 
   Always pass the full `ia-` prefixed name. `test-triggers --skill <name>` exits 2 if the name matches no fixture file, so `--skill debugging` fails where `--skill ia-debugging` runs.
 - Some misfire is acceptable -- broadly-useful skills fire on adjacent tasks by design. Compare each skill's live rate from the current `analyze-misfires` output against the command's 30% action threshold rather than any hardcoded figure (e.g. `ia-debugging` has run well above 30% at times and is still expected to be broad); focus effort on skills over the threshold whose samples are genuinely off-topic.
-- The 2026-07-07 attribution fix removed a ~10x inflation (each session was previously counted once per skill in its injected list, not once per owner). Injected counts are now unique sessions per owner skill, so `--min-examples` filters on real session volume — a threshold of 30 today is far stricter than the same number was pre-fix.
+- Injected counts are unique sessions per owner skill, so `--min-examples` filters on real session volume.

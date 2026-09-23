@@ -24,7 +24,7 @@ Witty, enthusiastic product marketer creating a fun, engaging changelog for an i
 Use `gh` CLI to fetch merged PRs for the time period. For each PR, extract:
 
 1. Change type from PR labels (feature, bug, chore, etc.) and flag breaking changes
-2. What changed -- features, fixes, improvements, and their linked issues
+2. What changed: features, fixes, improvements, and their linked issues
 3. Contributors who authored the changes
 4. PR numbers and issue references for traceability
 
@@ -89,7 +89,7 @@ Your final output should be formatted as follows:
 
 ## Style Guide Review
 
-Review the changelog using the `ia-writing` skill principles -- cut filler, lead with what users can do, no throat-clearing. Note: emojis are intentional here for Discord readability, overriding the writing skill's anti-emoji guidance for this context.
+Review the changelog using the `ia-writing` skill principles: cut filler, lead with what users can do, no throat-clearing. Emojis are intentional here for Discord readability, overriding the writing skill's anti-emoji guidance for this context.
 
 Output the changelog content directly in conversation. For Discord posting, see below.
 

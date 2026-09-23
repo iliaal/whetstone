@@ -1,12 +1,12 @@
 <overview>
-Mobile is a first-class platform for agent-native apps. This file covers why mobile matters, permission handling, offline graceful degradation, and the mobile agent-native checklist. For deeper sections see the linked references below.
+Mobile is a full platform for agent-native apps. This file covers why mobile matters, permission handling, offline graceful degradation, and the mobile agent-native checklist. For deeper sections see the linked references below.
 </overview>
 
 ## See also
 
-- [mobile-storage.md](./mobile-storage.md) — iCloud Documents, file states, entitlements
-- [mobile-execution.md](./mobile-execution.md) — background tasks, battery, on-device vs cloud
-- [mobile-cost.md](./mobile-cost.md) — model tiers, token budgets, batching, caching
+- [mobile-storage.md](./mobile-storage.md): iCloud Documents, file states, entitlements
+- [mobile-execution.md](./mobile-execution.md): background tasks, battery, on-device vs cloud
+- [mobile-cost.md](./mobile-cost.md): model tiers, token budgets, batching, caching
 
 <why_mobile>
 ## Why Mobile Matters
@@ -32,10 +32,10 @@ If you use the file system with iCloud, all devices share the same file system. 
 An agent might need 30 seconds, 5 minutes, or an hour to complete a task. But iOS will background your app after seconds of inactivity, and may kill it entirely to reclaim memory. The user might switch apps, take a call, or lock their phone mid-task.
 
 This means mobile agent apps need:
-- **Checkpointing** -- Saving state so work isn't lost
-- **Resuming** -- Picking up where you left off after interruption
-- **Background execution** -- Using the limited time iOS gives you wisely
-- **On-device vs. cloud decisions** -- What runs locally vs. what needs a server
+- **Checkpointing**: Saving state so work isn't lost
+- **Resuming**: Picking up where you left off after interruption
+- **Background execution**: Using the limited time iOS gives you wisely
+- **On-device vs. cloud decisions**: What runs locally vs. what needs a server
 </why_mobile>
 
 <permissions>

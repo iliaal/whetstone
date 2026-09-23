@@ -3,42 +3,36 @@ import { fileURLToPath } from "url"
 import { backupFile, copyDir, ensureDir, pathExists, readJson, readText, writeJson, writeText } from "../utils/files"
 import type { OpenCodeBundle, OpenCodeConfig } from "../types/opencode"
 
-// Merges plugin config into existing opencode.json. User keys win on conflict. See ADR-002.
+// User keys win on conflict.
 async function mergeOpenCodeConfig(
   configPath: string,
   incoming: OpenCodeConfig,
 ): Promise<OpenCodeConfig> {
-  // If no existing config, write plugin config as-is
   if (!(await pathExists(configPath))) return incoming
 
   let existing: OpenCodeConfig
   try {
     existing = await readJson<OpenCodeConfig>(configPath)
   } catch {
-    // Safety first per AGENTS.md -- do not destroy user data even if their config is malformed.
-    // Warn and fall back to plugin-only config rather than crashing.
+    // writeOpenCodeBundle backs up the original first, so skipping the merge loses no user data.
     console.warn(
       `Warning: existing ${configPath} is not valid JSON. Writing plugin config without merging.`
     )
     return incoming
   }
 
-  // User config wins on conflict -- see ADR-002
-  // MCP servers: add plugin entry, skip keys already in user config.
   const mergedMcp = {
     ...(incoming.mcp ?? {}),
-    ...(existing.mcp ?? {}), // existing takes precedence (overwrites same-named plugin entry)
+    ...(existing.mcp ?? {}),
   }
 
-  // Permission: add plugin entry, skip keys already in user config.
   const mergedPermission = incoming.permission
     ? {
         ...(incoming.permission),
-        ...(existing.permission ?? {}), // existing takes precedence
+        ...(existing.permission ?? {}),
       }
     : existing.permission
 
-  // Tools: same pattern
   const mergedTools = incoming.tools
     ? {
         ...(incoming.tools),
@@ -107,8 +101,7 @@ export async function writeOpenCodeBundle(outputRoot: string, bundle: OpenCodeBu
 
 export function resolveOpenCodePaths(outputRoot: string) {
   const base = path.basename(outputRoot)
-  // Global install: ~/.config/opencode (basename is "opencode")
-  // Project install: .opencode (basename is ".opencode")
+  // Global install is ~/.config/opencode; project install is .opencode.
   if (base === ".opencode" || (base === "opencode" && path.basename(path.dirname(outputRoot)) === ".config")) {
     return {
       root: outputRoot,
@@ -117,12 +110,11 @@ export function resolveOpenCodePaths(outputRoot: string) {
       agentsDir: path.join(outputRoot, "agents"),
       pluginsDir: path.join(outputRoot, "plugins"),
       skillsDir: path.join(outputRoot, "skills"),
-      // .md command files; alternative to the command key in opencode.json
       commandDir: path.join(outputRoot, "commands"),
     }
   }
 
-  // Custom output directory - nest under .opencode subdirectory
+  // Custom output directories nest under .opencode.
   return {
     root: outputRoot,
     supportDir: path.join(outputRoot, ".opencode", ".whetstone"),
@@ -130,7 +122,6 @@ export function resolveOpenCodePaths(outputRoot: string) {
     agentsDir: path.join(outputRoot, ".opencode", "agents"),
     pluginsDir: path.join(outputRoot, ".opencode", "plugins"),
     skillsDir: path.join(outputRoot, ".opencode", "skills"),
-    // .md command files; alternative to the command key in opencode.json
     commandDir: path.join(outputRoot, ".opencode", "commands"),
   }
 }

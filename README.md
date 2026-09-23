@@ -13,15 +13,15 @@ Bundles agents, skills, workflow commands, and a skill distillery for PHP, Pytho
 
 ## Who this is for
 
-**Teams using Claude Code for real work.** You're building with PHP, Python, TypeScript, or React. You want the agent to plan before building, verify before shipping, and debug by reasoning instead of guessing. This plugin provides that structure.
+**Teams using Claude Code for real work.** You build with PHP, Python, TypeScript, or React and want the agent to plan before building, verify before shipping, and debug from evidence.
 
 **Solo developers who want consistency.** Bash tasks receive guidance on strict mode and ShellCheck; Laravel tasks receive strict-type and thin-controller patterns. Skills guide the agent; only checks actually run can establish compliance.
 
 **Anyone building with AI agents.** Includes skills for multi-agent orchestration, agent-native architecture design, and a distillery that generates new skills from top-rated community sources.
 
-## The Problem
+## The problem
 
-AI coding agents skip planning, claim "done" without verifying, patch symptoms over root causes, and forget what they learned when context resets. The output looks polished. The behavior underneath is undisciplined.
+AI coding agents skip planning, claim "done" without verifying, patch symptoms over root causes, and forget what they learned when context resets. The output looks polished even when the process behind it is missing.
 
 The long-form argument is at [AI Agents Don't Lack Capability. They Lack Process.](https://ilia.ws/blog/ai-agents-dont-lack-capability-they-lack-process). This plugin supplies that process as instructions and supporting tools.
 
@@ -76,7 +76,7 @@ In this checkout, Codex also discovers the 12 repository commands and `skill-dis
 
 ### OpenCode
 
-Same converter, different target. OpenCode reads skills from its per-project config. The converter translates the plugin's `SKILL.md` format into OpenCode's expected shape and writes output into the current project (override with `--output <dir>`).
+OpenCode reads skills from its per-project config. The converter translates the plugin's `SKILL.md` format into OpenCode's expected shape and writes output into the current project (override with `--output <dir>`).
 
 Command-based `PreToolUse` and `PostToolUse` hooks use a bundled adapter; unsupported hook events and types cause conversion to fail. Whetstone's injection hook requires Bash and `jq` on PATH. The installed bundle includes its scripts and skill files, so it does not depend on the source checkout.
 
@@ -120,7 +120,7 @@ Five commands form a loop: explore the problem, plan the solution, build it, rev
 | `/ia-review` | Multi-agent code review: scope-drift detection, spec compliance, code quality, security, performance. Auto-escalates to deep mode on complex diffs. |
 | `/ia-compound` | Captures what you just solved as searchable documentation in `docs/solutions/` so the next person (or the agent) doesn't re-debug it. |
 
-You don't have to use all five. `/ia-review` on its own is a solid pre-merge check. `/ia-plan` works standalone for scoping. Mix and match.
+Each command also works on its own: `/ia-review` as a pre-merge check, `/ia-plan` for scoping.
 
 ![Without the plugin vs with the plugin](images/compound-before-after.png)
 
@@ -141,7 +141,7 @@ Skills are instructions selected for the task. They guide procedures and identif
 | Skill | Description |
 |-------|------------|
 | [ia-react-frontend](plugins/whetstone/skills/ia-react-frontend/SKILL.md) | Decision tree routing most "should I use an effect?" questions to non-effect solutions. Separates state tools by purpose (Zustand for client, React Query for server, nuqs for URL). Enforces React 19 patterns, App Router server/client boundaries, and flags that Server Actions are public endpoints. For React, Next.js, and Vitest/RTL testing. |
-| [ia-nodejs-backend](plugins/whetstone/skills/ia-nodejs-backend/SKILL.md) | Strict layered architecture (routes > services > repos) with no cross-layer HTTP imports. Contract-first API design using Zod schemas as the single source of truth. Production patterns like circuit breaker and load shedding as requirements, not suggestions. For Express, Fastify, Hono, or NestJS backends. |
+| [ia-nodejs-backend](plugins/whetstone/skills/ia-nodejs-backend/SKILL.md) | Strict layered architecture (routes > services > repos) with no cross-layer HTTP imports. Contract-first API design using Zod schemas as the single source of truth. Requires production patterns such as circuit breakers and load shedding. For Express, Fastify, Hono, or NestJS backends. |
 | [ia-python-services](plugins/whetstone/skills/ia-python-services/SKILL.md) | Mandates modern tooling (uv, ruff, ty) over legacy equivalents. Structured concurrency via `asyncio.TaskGroup`, idempotent background jobs, and structured JSON logging with correlation IDs via `contextvars`. For Python CLI tools, FastAPI services, async workers, or new project setup. |
 | [ia-php-laravel](plugins/whetstone/skills/ia-php-laravel/SKILL.md) | `declare(strict_types=1)` everywhere, PHPStan level 8+, fat models / thin controllers, Form Requests with `toDto()`, event-driven side effects. Prevents N+1 by disabling lazy loading in dev. Defaults to feature tests through the full HTTP stack. For Laravel codebases. |
 | [ia-rust-systems](plugins/whetstone/skills/ia-rust-systems/SKILL.md) | Edition 2024, workspace layout with inward-only deps, `thiserror` in libraries / `anyhow` in binaries, no `unwrap`/`expect` outside `main` and tests, every `unsafe` block needs a `// SAFETY:` comment. Tokio patterns (JoinSet, CancellationToken, bounded mpsc) and axum service layout. For Rust CLIs, axum services, or cargo workspaces. |
@@ -240,7 +240,7 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 
 ## ⚡ Commands
 
-All commands carry the `ia-` prefix to avoid collisions with Claude Code built-ins and sibling plugins. The full list:
+All commands carry the `ia-` prefix to avoid collisions with Claude Code built-ins and sibling plugins.
 
 ### Workflow commands
 
@@ -276,13 +276,13 @@ All commands carry the `ia-` prefix to avoid collisions with Claude Code built-i
 
 ## Design
 
-Skills eat context. Every token a skill spends is one the agent can't use on your code. So these are built tight:
+Every token a skill spends is one the agent can't use on your code, so the skills are kept short:
 
 - **Aim below 1K body tokens; 2K hard cap.** Generated and shipped skill validators use the same budget estimator (`cl100k_base`, or characters/4 when unavailable). Keep operative scope and verification rules inline; move detailed topic guidance to conditionally loaded `references/` files.
-- **Front-loaded.** Critical rules first. Model attention drops off, so the important stuff leads.
+- **Front-loaded.** Critical rules come first because model attention drops off with length.
 - **Actions, not explanations.** Tell the agent what to do, not what things are. Skip anything the model already knows.
 - **Every "don't" has a "do instead."** Bare prohibitions leave the agent guessing. Alternatives give it a clear path.
-- **Keyword-rich descriptions.** The description is the only part loaded at startup across all installed skills. The agent uses it to decide whether to activate a skill, so it's packed with the exact phrases developers type. The body only loads when triggered.
+- **Keyword-rich descriptions.** Only the description loads at startup. The agent uses it to decide whether to activate a skill, so it carries the phrases developers type. The body loads when the skill triggers.
 
 ## Skill distillery
 
@@ -317,7 +317,7 @@ whetstone/
 
 ## Acknowledgements
 
-Two projects informed the shape of this plugin. Worth reading their sources directly if you're building something similar.
+Two projects informed the shape of this plugin:
 
 - **[EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)**: the original "compound engineering" framing (each unit of engineering work should make the next one easier), the brainstorm > plan > work > review > compound loop, and the multi-target install model for Codex / OpenCode / Copilot / Gemini / Kiro / Pi.
 - **[ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills)**: curated catalog of Claude skills the distillery mines for source material, alongside skills.sh.

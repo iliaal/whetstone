@@ -1,6 +1,6 @@
 # Python CLI Tools
 
-> When to read: when packaging a Python CLI — entry points, argparse vs typer vs click, structured logging, distribution.
+> When to read: when packaging a Python CLI: entry points, argparse vs typer vs click, structured logging, distribution.
 
 ## CLI Tools
 
@@ -29,6 +29,6 @@ def main():
     cli()
 ```
 
-**argparse** for simple CLIs -- subparsers for subcommands, `parser.add_argument("--output", "-o")`.
+**argparse** for simple CLIs: subparsers for subcommands, `parser.add_argument("--output", "-o")`.
 
 Use `src/` layout. Include `py.typed` for type hints. `importlib.resources.files()` for package data access.

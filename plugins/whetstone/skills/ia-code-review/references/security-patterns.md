@@ -22,7 +22,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `.env` tracked in git | Secrets committed to VCS | Add `.env`, `.env.local`, `.env.*.local` to `.gitignore` |
 | `JSON.stringify.*user`, `__INITIAL_STATE__.*token` | Sensitive data serialized into SSR HTML | Sanitize server-side state before client hydration |
 
-**Per-parameter secret redaction covers only the frame that declares the parameter.** The same secret sitting in an unannotated caller's parameter is still in the caller's frame, and a whole-trace scrubber hooked to one exception class is not equivalent -- changing the thrown type is then not redaction-neutral. Verify by triggering through a wrapper whose own parameter carries no annotation, and assert the secret is absent from the whole trace.
+**Per-parameter secret redaction covers only the frame that declares the parameter.** The same secret sitting in an unannotated caller's parameter is still in the caller's frame, and a whole-trace scrubber hooked to one exception class is not equivalent: changing the thrown type is then not redaction-neutral. Verify by triggering through a wrapper whose own parameter carries no annotation, and assert the secret is absent from the whole trace.
 
 ## Auth / AuthZ
 
@@ -31,13 +31,13 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `?token=`, `?password=`, `?api_key=` | Secrets in URL query strings (logged, cached, referer-leaked) | Authorization headers, POST bodies, or HttpOnly cookies |
 | `plaintext.*password`, `md5(`, `sha1(`, `hashlib.sha` | Weak password hashing | bcrypt, argon2id, or scrypt |
 | `jwt.decode.*verify.*False`, `alg.*none` | JWT validation disabled or algorithm confusion | Enforce `verify_signature=True`, allowlist algorithms |
-| `kid`, `jku`, `x5u`, embedded `jwk` selecting the key | Attacker-controlled until pinned -- key-confusion accepts an RS256 public key as an HS256 secret | Resolve `kid` against a fixed JWKS only; never fetch `jku`/`x5u` or import `jwk` (version preconditions: Version-Gated False Positives below) |
+| `kid`, `jku`, `x5u`, embedded `jwk` selecting the key | Attacker-controlled until pinned; key-confusion accepts an RS256 public key as an HS256 secret | Resolve `kid` against a fixed JWKS only; never fetch `jku`/`x5u` or import `jwk` (version preconditions: Version-Gated False Positives below) |
 | Route without `Depends(get_current_user)` or auth middleware | Missing per-request authorization | Every state-changing endpoint must verify auth server-side |
 | Frontend-only route guards (no server check) | Client-side auth bypass | Server-side authorization on every request; client guards are UX only |
 | `===`, `!=`, `==`, `.equals(` comparing a bearer token, API key, webhook signature, or reset token | Byte-by-byte timing leak from early-exit comparison (CWE-208) | Compare length first (length is not secret), then `crypto.timingSafeEqual` (Node), `hash_equals` (PHP), `hmac.compare_digest` (Python), `subtle::ConstantTimeEq` (Rust). Guard the absent-header case before comparing |
-| `fill($request->all())`, `$guarded = []`, spreading `req.body` into a write | Mass assignment as an authz bug -- body maps onto owner/role/tenant/price | Explicit `$fillable`/DTO allowlist; never `fill()`/spread a raw body onto a privileged model |
-| List/index handler scopes by owner; sibling export/share/detail handler omits the check | IDOR/BOLA -- one route's guard doesn't cover its siblings | Diff every handler for the resource; each needs its own ownership check |
-| Unknown role reaching `allow`; `Gate::before` returning `true`; authz middleware after the route, or an in-check exception hitting `next()` | Fail-open authz -- default-allow or ordering grants access | Default denies; `Gate::before` reserved for a documented bypass; middleware before the route, reject not `next()` |
+| `fill($request->all())`, `$guarded = []`, spreading `req.body` into a write | Mass assignment as an authz bug: body maps onto owner/role/tenant/price | Explicit `$fillable`/DTO allowlist; never `fill()`/spread a raw body onto a privileged model |
+| List/index handler scopes by owner; sibling export/share/detail handler omits the check | IDOR/BOLA: one route's guard doesn't cover its siblings | Diff every handler for the resource; each needs its own ownership check |
+| Unknown role reaching `allow`; `Gate::before` returning `true`; authz middleware after the route, or an in-check exception hitting `next()` | Fail-open authz: default-allow or ordering grants access | Default denies; `Gate::before` reserved for a documented bypass; middleware before the route, reject not `next()` |
 
 ## CSRF
 
@@ -52,7 +52,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `innerHTML =`, `insertAdjacentHTML`, `dangerouslySetInnerHTML`, `v-html=` | Untrusted HTML injected into DOM | `.textContent`, DOMPurify, or framework auto-escaping |
-| A helper containing both `textContent =` and `.innerHTML` (the round-trip escaper) | Text-node serialization escapes only `&`, `<`, `>` and U+00A0 -- quotes pass through, so the result still breaks out of `attr="${escaped}"` | Escape `"` and `'` explicitly, or set the attribute via `setAttribute`/`dataset` instead of building HTML |
+| A helper containing both `textContent =` and `.innerHTML` (the round-trip escaper) | Text-node serialization escapes only `&`, `<`, `>` and U+00A0; quotes pass through, so the result still breaks out of `attr="${escaped}"` | Escape `"` and `'` explicitly, or set the attribute via `setAttribute`/`dataset` instead of building HTML |
 | `mark_safe(`, `Markup(`, `\|safe` in templates | Marking untrusted content as safe | Remove unsafe marking; auto-escape by default |
 | `render_template_string(`, `Template(.*render`, `from_string(` | Server-side template injection (SSTI) | Static templates only; never render user input as template |
 | `document.write(`, `eval(`, `new Function(`, `setTimeout(.*string` | String-to-code execution | Static imports, no dynamic code eval |
@@ -71,15 +71,15 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `sendFile(.*req`, `send_file(.*request`, `os.path.join(.*request` | Path traversal via user-controlled path | Allowlist file IDs mapped to paths, `send_from_directory`, `safe_join` |
-| A `..`-component check that splits the path on `/` only (`split('/')`, `explode('/', ...)`, `path.split('/')`) | A `..\` component passes the filter and is honored by any consumer that treats `\` as a separator -- a Windows filesystem API, a Windows-hosted CI runner, or a later normalization step | Normalize separators (`\` to `/`) *before* splitting and checking components; a filter written for `/`-only input is not a traversal guard |
-| Delete/move/overwrite on a job-payload or sibling-service path, guarded only by shape (absolute, N dirs deep) | Shape isn't authorization -- `startsWith(base)` matches `/base2` | Require: allowlisted root (post-symlink), one level below it, ownership evidence read first; log and stop on refusal, never a broader default |
+| A `..`-component check that splits the path on `/` only (`split('/')`, `explode('/', ...)`, `path.split('/')`) | A `..\` component passes the filter and is honored by any consumer that treats `\` as a separator: a Windows filesystem API, a Windows-hosted CI runner, or a later normalization step | Normalize separators (`\` to `/`) *before* splitting and checking components; a filter written for `/`-only input is not a traversal guard |
+| Delete/move/overwrite on a job-payload or sibling-service path, guarded only by shape (absolute, N dirs deep) | Shape isn't authorization: `startsWith(base)` matches `/base2` | Require: allowlisted root (post-symlink), one level below it, ownership evidence read first; log and stop on refusal, never a broader default |
 | File upload without size limit | Unrestricted upload = DoS | Set `MAX_CONTENT_LENGTH`, `express.json({ limit: '1mb' })` |
 | Upload without content validation | Malicious file type bypass (rename .php to .jpg) | Validate via magic bytes (file signature), not extension |
 | Serving uploaded files with `Content-Disposition: inline` | Uploaded HTML/JS executes in browser | Force `Content-Disposition: attachment`, serve from separate domain |
 | `file.name` or `original_name` used for storage path | User-controlled filename = path traversal | Generate server-side UUID, store with randomized path |
-| A no-follow open or `lstat` guard on a path whose parent directories come from untrusted content | Both apply to the last component only -- one symlinked parent redirects every fixed-name file below it, and `exists()` follows links, so a dangling symlink reads as absent | Validate the untrusted root before any leaf access, through one shared helper; use link-aware metadata rather than `exists()`; generate temp names freshly |
+| A no-follow open or `lstat` guard on a path whose parent directories come from untrusted content | Both apply to the last component only: one symlinked parent redirects every fixed-name file below it, and `exists()` follows links, so a dangling symlink reads as absent | Validate the untrusted root before any leaf access, through one shared helper; use link-aware metadata rather than `exists()`; generate temp names freshly |
 | Read-whole-file under an untrusted root, guarded only against symlink writes | A symlink to an endless character device returns valid UTF-8 forever and the process exhausts memory | Require a regular file via `fstat` on the open descriptor, and cap the read by size |
-| `stat`/`lstat` on a path, then `open`/`unlink`/`chmod` on the same path | Link-following race (CWE-59/367) -- the path can be swapped for a symlink between the check and the operation, so a check on the path never covers the operation | Open with `O_NOFOLLOW`, then verify identity via `fstat` on the *descriptor* against a fresh `lstat` of the path (compare `dev`+`ino`), and reject `nlink != 1` to catch hardlink aliasing. A pre-open `lstat` check alone is still exploitable |
+| `stat`/`lstat` on a path, then `open`/`unlink`/`chmod` on the same path | Link-following race (CWE-59/367): the path can be swapped for a symlink between the check and the operation, so a check on the path never covers the operation | Open with `O_NOFOLLOW`, then verify identity via `fstat` on the *descriptor* against a fresh `lstat` of the path (compare `dev`+`ino`), and reject `nlink != 1` to catch hardlink aliasing. A pre-open `lstat` check alone is still exploitable |
 
 ## SQL / NoSQL Injection
 
@@ -111,7 +111,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
-| `setHeader(`, `header(`, `Response.headers[...] =`, `add_header` with a request-derived or externally-sourced value | `\r`/`\n` in the value splits the header block -- injects extra headers, or a whole second response (response splitting) | Reject any byte below `0x20` (except tab) and `0x7f` *before* trimming whitespace; reject multi-line values outright. Prefer the framework's header API over string-built raw responses |
+| `setHeader(`, `header(`, `Response.headers[...] =`, `add_header` with a request-derived or externally-sourced value | `\r`/`\n` in the value splits the header block, injecting extra headers or a whole second response (response splitting) | Reject any byte below `0x20` (except tab) and `0x7f` *before* trimming whitespace; reject multi-line values outright. Prefer the framework's header API over string-built raw responses |
 | `Location:`, `Set-Cookie:`, `Content-Disposition: ...filename=` built by interpolation | Cookie or redirect forged via a smuggled newline; `filename=` also carries a quote-escape | Allowlist or percent-encode the interpolated part; for `filename` use RFC 5987 `filename*=UTF-8''...` |
 | A secret or config value fetched at runtime (env, file, `credential_process`-style subprocess) used verbatim as an `Authorization` header | An opaque header-validation error at best; a control byte in the fetched value is a header-injection primitive | Validate the fetched value for control bytes at the point it is read, not at the point it is sent |
 
@@ -130,14 +130,14 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 |-----------|-------------------|-----|
 | `pickle.loads(`, `marshal.loads(`, `yaml.load(` without `Loader=SafeLoader` | Arbitrary object/code execution on untrusted input | `json.loads`, `yaml.safe_load`, or a signed/allowlisted schema |
 | `unserialize($` on user input (PHP) | Object injection / POP-chain gadget execution | `json_decode`, or `unserialize($x, ['allowed_classes' => false])` |
-| `etree.parse(`/`lxml` without `resolve_entities=False`; `DocumentBuilderFactory` without `disallow-doctype-decl` | XXE — external entity expansion reads files or triggers SSRF | Disable DTD/external entities on the parser |
+| `etree.parse(`/`lxml` without `resolve_entities=False`; `DocumentBuilderFactory` without `disallow-doctype-decl` | XXE: external entity expansion reads files or triggers SSRF | Disable DTD/external entities on the parser |
 
 ## Weak Randomness / TLS Verification
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `Math.random(`, `random.random(`, `mt_rand(` for tokens/secrets/IDs | Predictable value used as a security control | `crypto.randomBytes`, `secrets.token_urlsafe`, `random_bytes` |
-| `verify=False` (requests), `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true` | TLS certificate validation disabled — MITM | Remove the flag; trust/pin the proper CA in the client |
+| `verify=False` (requests), `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true` | TLS certificate validation disabled (MITM) | Remove the flag; trust/pin the proper CA in the client |
 | ECB mode, static/reused IV or nonce, home-rolled crypto, MD5/SHA1 for integrity | Deterministic ciphertext, reused nonce, forgeable integrity checks | AES-GCM/ChaCha20-Poly1305 with a fresh nonce, audited libraries, HMAC-SHA256+ |
 
 ## Version-Gated False Positives
@@ -147,5 +147,5 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | PHP `assert("...")` string-eval; `preg_replace(...)` with `/e` | PHP < 8.0 (assert removed); PHP < 7.0 (`/e` removed) |
 | `yaml.load(...)` without `Loader=SafeLoader` | PyYAML < 5.4 (`FullLoader` exploitable before); use `safe_load` regardless |
 | XXE via default entity expansion | libxml2 < 2.9.0 (disabled by default since); PHP `libxml_disable_entity_loader()` is dead code from 8.0 |
-| `jsonwebtoken`/`PyJWT` key-confusion via `kid`/`jku`/`x5u`/`jwk` | `jsonwebtoken` < 9.0.0 (CVE-2022-23540/23539) -- finding only when all of: `jwt.verify` called with no explicit `algorithms` option and a falsy/empty verification key, or an RSA key accepted for an HS-family algorithm. `PyJWT` < 2.4.0 (CVE-2022-29217) -- finding only when all of: the app allows both asymmetric and HMAC algorithms and the supplied public key is in a PEM/SSH format the pre-2.4.0 blocklist missed |
-| Next.js Server Actions SSRF | Next.js < 14.1.1, CVE-2024-34351 -- finding only when all of: self-hosted (not Vercel), the `Host` header reaching the app is attacker-controllable, Server Actions are in use, and a Server Action redirects to a relative path |
+| `jsonwebtoken`/`PyJWT` key-confusion via `kid`/`jku`/`x5u`/`jwk` | `jsonwebtoken` < 9.0.0 (CVE-2022-23540/23539): finding only when all of: `jwt.verify` called with no explicit `algorithms` option and a falsy/empty verification key, or an RSA key accepted for an HS-family algorithm. `PyJWT` < 2.4.0 (CVE-2022-29217): finding only when all of: the app allows both asymmetric and HMAC algorithms and the supplied public key is in a PEM/SSH format the pre-2.4.0 blocklist missed |
+| Next.js Server Actions SSRF | Next.js < 14.1.1, CVE-2024-34351: finding only when all of: self-hosted (not Vercel), the `Host` header reaching the app is attacker-controllable, Server Actions are in use, and a Server Action redirects to a relative path |

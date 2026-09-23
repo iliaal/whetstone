@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# collect-diagnostics.sh — Gather environment diagnostics for debugging
+# collect-diagnostics.sh: gather environment diagnostics for debugging
 # Usage: bash collect-diagnostics.sh [output-file]
 #
 # Collects system info, language versions, git state, and project metadata.
@@ -15,7 +15,6 @@ collect() {
     buf+="# Diagnostic Report"$'\n'
     buf+="**Collected:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n\n'
 
-    # --- System ---
     buf+="## System"$'\n\n'
     buf+="| Property | Value |"$'\n'
     buf+="|----------|-------|"$'\n'
@@ -29,7 +28,6 @@ collect() {
     buf+="| PWD | $(pwd) |"$'\n'
     buf+=$'\n'
 
-    # --- Disk / Memory ---
     buf+="## Resources"$'\n\n'
     buf+='```'$'\n'
     buf+="Disk (pwd): $(df -h . 2>/dev/null | tail -1 | awk '{print $4 " available of " $2}')"$'\n'
@@ -38,7 +36,6 @@ collect() {
     fi
     buf+='```'$'\n\n'
 
-    # --- Git ---
     if git rev-parse --is-inside-work-tree &>/dev/null; then
         buf+="## Git"$'\n\n'
         buf+="| Property | Value |"$'\n'
@@ -50,7 +47,6 @@ collect() {
         buf+=$'\n'
     fi
 
-    # --- Language Versions ---
     buf+="## Languages & Runtimes"$'\n\n'
     buf+="| Tool | Version |"$'\n'
     buf+="|------|---------|"$'\n'
@@ -72,7 +68,6 @@ collect() {
     done
     buf+=$'\n'
 
-    # --- Package Managers ---
     buf+="## Package Managers"$'\n\n'
     buf+="| Tool | Version |"$'\n'
     buf+="|------|---------|"$'\n'
@@ -85,7 +80,6 @@ collect() {
     done
     buf+=$'\n'
 
-    # --- Project Detection ---
     buf+="## Project Files Detected"$'\n\n'
     for f in package.json composer.json pyproject.toml Cargo.toml Gemfile go.mod build.gradle pom.xml Makefile Dockerfile docker-compose.yml .env.example; do
         if [ -f "$f" ]; then
@@ -94,7 +88,6 @@ collect() {
     done
     buf+=$'\n'
 
-    # --- Environment Variables (safe subset) ---
     buf+="## Environment (safe subset)"$'\n\n'
     buf+="| Variable | Value |"$'\n'
     buf+="|----------|-------|"$'\n'

@@ -48,7 +48,7 @@ whetstone/
 
 - Do not delete or overwrite user data. Avoid destructive commands.
 - Hyphens for all file naming (agents, skills, commands).
-- `model: inherit` removed from agents — only declare when overriding (e.g., `model: haiku`).
+- Agents omit `model:` unless overriding (e.g., `model: haiku`).
 - Agents reference skills (one-directional); skills stay generic and portable.
 - **Read before claiming "new"**: Before presenting sync/improvement findings, read the target skill to verify the pattern isn't already covered. Saves round-trips.
 - **Present changes one at a time** for review decisions. Batch presentation only when explicitly asked.
@@ -59,7 +59,7 @@ whetstone/
 
 **Version bumps, CHANGELOG entries, and README count updates happen during `/release`, not per-change.** Editing a skill, agent, or command does not trigger any version ceremony. Make the change, commit it with a descriptive message, move on. Let work accumulate across multiple commits until a release is cut.
 
-Why this rule exists: per-change ceremony fragmented CHANGELOG.md into dozens of micro-entries and made "what actually shipped in v2.55" hard to reconstruct. Consolidating the bump into `/release` produces one clean summary per ship and makes individual edits cheap.
+One CHANGELOG entry per release keeps what shipped reconstructable; per-change entries fragment it.
 
 When `/release` runs, it:
 
@@ -91,13 +91,11 @@ Enforcement:
 
 ## Naming convention
 
-All skills, agents, and commands in the plugin carry an `ia-` prefix (introduced in v4.0.0). The prefix:
+All skills, agents, and commands in the plugin carry an `ia-` prefix. The prefix:
 
 - Prevents collisions with Claude Code built-ins (`/plan`, `/review`) and with sibling plugins (EveryInc's `ce-` family).
 - Groups plugin artifacts visibly in shared tool directories (`~/.codex/skills/`, `~/.agents/skills/`).
 - Keeps command invocations short and consistent: `/ia-plan`, `/ia-review`, `/ia-brainstorm`, `/ia-work`, `/ia-compound`.
-
-The old `workflows:` command namespace was dropped as part of the rename — previous `/workflows:plan` is now `/ia-plan`. See CHANGELOG 4.0.0 migration note.
 
 Rules:
 - Every directory under `plugins/whetstone/skills/` starts with `ia-`.
@@ -142,7 +140,7 @@ When adding or modifying skills, verify:
 - [ ] `description:` sentence 1 names the distinctive mechanism (what a sibling skill would not produce), not a category label ("code review", "optimization loops"). Route neighbors with "Use `<sibling>` for <that job>" rather than restating their scope. Quoted-utterance or slash-name catalogs belong only in descriptions of user-invoked skills.
 - [ ] No `disable-model-invocation: true` on a skill that another skill or command invokes through an explicit `Skill()` call; the flag makes that call fail (`cannot be used with Skill tool`). Tighten the description's trigger instead.
 
-**Description-as-shortcut failure mode (documented evidence):** a skill whose description summarizes the procedure will be *followed* instead of *read*. Observed case from external test runs: a skill with a two-stage flowchart (spec-compliance review, then quality review) had its description paraphrased as "code review between tasks." Claude ran ONE review, not TWO, because the description compressed the workflow. The fix is always the same: description = trigger conditions only. Process lives in the body. If you find yourself writing "this skill does X, then Y, then Z" in the description, you are writing a procedure shortcut and the body will be skipped.
+**Description-as-shortcut failure mode:** a description that summarizes the procedure gets *followed* instead of the body being *read*. Observed case: a skill with a two-stage flowchart (spec-compliance review, then quality review) described as "code review between tasks" ran one review, not two. A description of the form "does X, then Y, then Z" is a procedure shortcut; keep process in the body.
 
 ### Reference Links (Required if references/ exists)
 
@@ -249,7 +247,7 @@ bash scripts/mirror-to-ai-skills.sh
 
 ## Session harvesting and eval
 
-The distillery includes tools for mining Claude Code session logs to build skill evaluation datasets, score skill effectiveness, and build golden eval datasets.
+The distillery mines Claude Code session logs to build skill evaluation and golden datasets and to score skill effectiveness.
 
 ```bash
 # Harvest per-skill eval datasets from ~/.claude/projects/
@@ -305,7 +303,7 @@ python3 scripts/generate-manifest.py
 These commands are integrated into the release pipeline (`/sync-from-repos` > `/audit-plugin` > `/release` > `/announce`):
 
 - `harvest-sessions` runs in `/sync-from-repos` Phase 1 (background, parallel with inventory)
-- `analyze-outcomes` runs in `/sync-from-repos` Phase 6 (surfaces project-context anomalies before audit); `discover-signals` was retired from the pipeline 2026-08-29 (8 consecutive 0-promotable runs) and remains a manual-only tool
+- `analyze-outcomes` runs in `/sync-from-repos` Phase 6 (surfaces project-context anomalies before audit); `discover-signals` is manual-only and not in the pipeline
 - `analyze-misfires`, `analyze-outcomes`, and `diagnose-negatives` run in `/audit-plugin` Phase 2 (trigger coverage checks)
 - `test-triggers` and `test-semantic` run in `/audit-plugin` Phase 7 and `/release` pre-commit gates
 

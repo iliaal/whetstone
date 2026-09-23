@@ -4,9 +4,9 @@ Load when writing or reviewing code that allocates, parses untrusted input, does
 
 ## Auditing scope
 
-Every hit from a grep for a dangerous primitive (`strcpy`, `sprintf`, `alloca`, unchecked `malloc` size arithmetic) gets exactly one disposition -- safe by construction, mitigated upstream, finding, or needs-trace -- never a sample from a large result set.
+Every hit from a grep for a dangerous primitive (`strcpy`, `sprintf`, `alloca`, unchecked `malloc` size arithmetic) gets exactly one disposition (safe by construction, mitigated upstream, finding, or needs-trace), never a sample from a large result set.
 
-A vendored or submodule directory name does not establish ownership. Code modified in-tree is first-party and gets the full audit above; unmodified third-party code is traced only at the host-library bridge (the wrapper, the size conversion, the ownership handoff), never at its internal primitives. File no finding whose location exists only behind a gitlink -- that defect belongs to the submodule's own repository.
+A vendored or submodule directory name does not establish ownership. Code modified in-tree is first-party and gets the full audit above; unmodified third-party code is traced only at the host-library bridge (the wrapper, the size conversion, the ownership handoff), never at its internal primitives. File no finding whose location exists only behind a gitlink; that defect belongs to the submodule's own repository.
 
 ## Sanitizers
 

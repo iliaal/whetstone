@@ -19,7 +19,7 @@ lockfiles, snapshots). PRs beyond this range have slower review cycles and highe
 defect rates. When a PR exceeds this, suggest splitting using one of these
 strategies:
 
-- **Stack** -- sequential PRs where each builds on the previous, merged in order.
-- **By file group** -- group related files (e.g., model + migration + tests) into separate PRs.
-- **Horizontal** -- split by layer (frontend, API, database).
-- **Vertical** -- split by feature slice (each PR delivers one user-visible behavior end-to-end).
+- **Stack**: sequential PRs where each builds on the previous, merged in order.
+- **By file group**: group related files (e.g., model + migration + tests) into separate PRs.
+- **Horizontal**: split by layer (frontend, API, database).
+- **Vertical**: split by feature slice (each PR delivers one user-visible behavior end-to-end).

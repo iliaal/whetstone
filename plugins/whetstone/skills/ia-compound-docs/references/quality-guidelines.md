@@ -15,9 +15,9 @@
 
 **Ground behavioral claims in source, not session memory:**
 
-- Before asserting how code behaves (enum values, status semantics, limits, defaults), Read the defining line at the current tree and cite `file:line`. A knowledge doc that captures wrong semantics from memory is worse than no doc -- it becomes an authoritative lie future sessions trust.
+- Before asserting how code behaves (enum values, status semantics, limits, defaults), Read the defining line at the current tree and cite `file:line`. A knowledge doc that captures wrong semantics from memory is worse than no doc: it becomes an authoritative lie future sessions trust.
 - Attribute unverifiable claims to their basis ("per this session's conclusion...") instead of stating them as established fact.
-- Cite **PR numbers, not bare commit SHAs** -- squash and rebase merges rewrite SHAs, so a bare SHA won't resolve on another checkout. Phrase not-yet-merged fixes as pending.
+- Cite **PR numbers, not bare commit SHAs**: squash and rebase merges rewrite SHAs, so a bare SHA won't resolve on another checkout. Phrase not-yet-merged fixes as pending.
 
 **Avoid:**
 

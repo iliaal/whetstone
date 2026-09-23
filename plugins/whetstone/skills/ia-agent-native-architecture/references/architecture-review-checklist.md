@@ -16,7 +16,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Primitives over Workflows:** Tools expose atomic capabilities; compose workflows in prompts
 - [ ] **API as Validator:** Use `z.string()` inputs when the API validates, not `z.enum()`
 - [ ] **Eval Gate:** 10 Q/A pairs in CI (read-only, multi-hop, closed-data), 9/10 pass threshold. See [mcp-tool-design.md](./mcp-tool-design.md) Evaluation section.
-- [ ] **Per-session state cost:** a stdio MCP server is a child of the client -- one process per session and per subagent -- so every expensive resource it holds (model weights, GPU context, index handles) is duplicated that many times. Keep the registration stdio and make the command a thin proxy to a user-private socket served by a shared daemon started on first use. Key the socket on the binary's version so a rebuilt binary cannot talk to a stale daemon, and have the new daemon reap the orphan.
+- [ ] **Per-session state cost:** a stdio MCP server is a child of the client (one process per session and per subagent), so every expensive resource it holds (model weights, GPU context, index handles) is duplicated that many times. Keep the registration stdio and make the command a thin proxy to a user-private socket served by a shared daemon started on first use. Key the socket on the binary's version so a rebuilt binary cannot talk to a stale daemon, and have the new daemon reap the orphan.
 
 ### Files & Workspace
 - [ ] **Shared Workspace:** Agent and user work in same data space
