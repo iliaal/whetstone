@@ -95,7 +95,7 @@ All skills, agents, and commands in the plugin carry an `ia-` prefix. The prefix
 
 - Prevents collisions with Claude Code built-ins (`/plan`, `/review`) and with sibling plugins (EveryInc's `ce-` family).
 - Groups plugin artifacts visibly in shared tool directories (`~/.codex/skills/`, `~/.agents/skills/`).
-- Keeps command invocations short and consistent: `/ia-plan`, `/ia-review`, `/ia-brainstorm`, `/ia-work`, `/ia-compound`.
+- Keeps command invocations short and consistent: `/ia-plan`, `/ia-review`, `/ia-brainstorm`, `/ia-work`.
 
 Rules:
 - Every directory under `plugins/whetstone/skills/` starts with `ia-`.
@@ -111,11 +111,11 @@ Every shipped skill declares a `class:` field in frontmatter. Five values, chose
 
 | Class | What lives here | Examples |
 |---|---|---|
-| `language` | Stack-specific patterns: a language, framework, or service the skill wraps. | `ia-php-laravel`, `ia-react-frontend`, `ia-postgresql`, `ia-tailwind-css` |
+| `language` | Stack-specific patterns: a language, framework, or service the skill wraps. | `ia-php-laravel`, `ia-react-frontend`, `ia-postgresql`, `ia-terraform` |
 | `discipline` | Engineering practices not tied to one stack: how to do X well in any project. | `ia-debugging`, `ia-code-review`, `ia-writing-tests`, `ia-simplifying-code` |
 | `workflow` | Multi-step processes with phases and outputs. | `ia-planning`, `ia-brainstorming`, `ia-md-docs`, `ia-orchestrating-swarms` |
-| `meta` | About prompts, agents, design itself. The skill's subject is AI-native work. | `ia-meta-prompting`, `ia-refine-prompt`, `ia-agent-native-architecture`, `ia-frontend-design` |
-| `tool` | Niche utilities — narrow, scoped to a single capability. | `ia-git-worktree`, `ia-file-todos`, `ia-reflect` |
+| `meta` | About prompts, agents, design itself. The skill's subject is AI-native work. | `ia-meta-prompting`, `ia-agent-native-architecture`, `ia-frontend-design` |
+| `tool` | Niche utilities — narrow, scoped to a single capability. | `ia-git-worktree`, `ia-reflect` |
 
 Picking a class:
 - If the skill content reads like a stack reference (install, config, idioms, migrations), it's `language`.

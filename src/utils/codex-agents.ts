@@ -20,7 +20,7 @@ Tool mapping:
 - WebFetch/WebSearch: use curl or Context7 for library docs
 - AskUserQuestion/Question: ask the user in chat
 - Task/Subagent/Parallel: run sequentially in main thread; use multi_tool_use.parallel for tool calls
-- TodoWrite/TodoRead: use file-based todos in todos/ with file-todos skill
+- TodoWrite/TodoRead: track the task list in chat
 - Skill: open the referenced SKILL.md and follow it
 - ExitPlanMode: ignore
 `

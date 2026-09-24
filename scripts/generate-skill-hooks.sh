@@ -66,17 +66,13 @@ declare -A TIER_MAP=(
   ["ia-linux-bash-scripting"]=2
   ["ia-pinescript"]=2
   ["ia-frontend-design"]=2
-  ["ia-tailwind-css"]=2
   ["ia-agent-native-architecture"]=2
   # Tier 3: Supporting/Workflow
   ["ia-writing"]=3
   ["ia-md-docs"]=3
-  ["ia-refine-prompt"]=3
   ["ia-meta-prompting"]=3
   ["ia-reflect"]=3
-  ["ia-compound-docs"]=3
   ["ia-document-review"]=3
-  ["ia-file-todos"]=3
   ["ia-orchestrating-swarms"]=3
   ["ia-git-worktree"]=3
 )

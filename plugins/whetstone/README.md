@@ -36,7 +36,6 @@ All agent files live flat under `agents/`. Categories below are editorial: group
 |-------|-------------|
 | [`ia-best-practices-researcher`](agents/ia-best-practices-researcher.md) | Best practices, framework docs, and implementation patterns |
 | [`ia-git-history-analyzer`](agents/ia-git-history-analyzer.md) | Analyze git history and code evolution |
-| [`ia-learnings-researcher`](agents/ia-learnings-researcher.md) | Search institutional learnings for relevant past solutions |
 | [`ia-repo-research-analyst`](agents/ia-repo-research-analyst.md) | Research repository structure and conventions |
 
 ### Design (2)
@@ -67,7 +66,6 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | `/ia-plan` | Create implementation plans |
 | `/ia-review` | Run multi-agent code reviews |
 | `/ia-work` | Execute work items systematically |
-| `/ia-compound` | Document solved problems to compound team knowledge |
 | `/ia-document-release` | Post-ship documentation sync across README/ARCHITECTURE/CONTRIBUTING/CHANGELOG |
 
 ### Utility Commands
@@ -80,13 +78,11 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | `/ia-changelog` | Create engaging changelogs for recent merges |
 | `/ia-report-bug` | Report a bug in the plugin |
 | `/ia-reproduce-bug` | Reproduce bugs using logs and console |
-| `/ia-resolve-todo-parallel` | Resolve todos from /todos/ directory in parallel |
 | `/ia-setup` | Configure which review agents run for your project (auto-detects stack) |
-| `/ia-triage` | Triage and prioritize issues |
 | `/ia-test-browser` | Run browser tests on PR-affected pages |
 | `/ia-feature-video` | Record video walkthroughs and add to PR description |
 | `/ia-adr` | Create Architecture Decision Records with format selection and lifecycle management |
-| `/ia-compound-refresh` | Review docs/solutions/ for stale learnings: keep, update, replace, or archive |
+| `/ia-refine-prompt` | Transform vague prompts into precise instructions |
 | `/ia-ideate` | Generate ranked improvement ideas by scanning the codebase |
 | `/ia-resolve-pr` | Batch-resolve PR review comments via parallel subagents |
 | `/ia-verify` | Pre-PR verification pipeline (build, types, lint, tests, security) |
@@ -100,7 +96,6 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | [`ia-agent-native-architecture`](skills/ia-agent-native-architecture/SKILL.md) | Build AI agents using prompt-native architecture |
 | [`ia-frontend-design`](skills/ia-frontend-design/SKILL.md) | Create production-grade frontend interfaces |
 | [`ia-react-frontend`](skills/ia-react-frontend/SKILL.md) | React, TypeScript, Next.js patterns, Vitest/RTL testing |
-| [`ia-tailwind-css`](skills/ia-tailwind-css/SKILL.md) | Tailwind CSS v4 patterns, component variants, v3 migration |
 | [`ia-simplifying-code`](skills/ia-simplifying-code/SKILL.md) | Simplify, polish, and declutter code |
 
 ### Language & Framework
@@ -139,9 +134,7 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | Skill | Description |
 |-------|-------------|
 | [`ia-brainstorming`](skills/ia-brainstorming/SKILL.md) | Explore requirements and approaches through dialogue |
-| [`ia-compound-docs`](skills/ia-compound-docs/SKILL.md) | Capture solved problems as categorized documentation |
 | [`ia-document-review`](skills/ia-document-review/SKILL.md) | Improve documents through structured self-review |
-| [`ia-file-todos`](skills/ia-file-todos/SKILL.md) | File-based todo tracking system |
 | [`ia-git-worktree`](skills/ia-git-worktree/SKILL.md) | Manage Git worktrees for parallel development |
 | [`ia-md-docs`](skills/ia-md-docs/SKILL.md) | Manages project documentation: AGENTS.md, README.md |
 | [`ia-writing`](skills/ia-writing/SKILL.md) | Prose editing, rewriting, and humanizing text |
@@ -151,7 +144,6 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | Skill | Description |
 |-------|-------------|
 | [`ia-meta-prompting`](skills/ia-meta-prompting/SKILL.md) | Enhanced reasoning patterns via slash commands |
-| [`ia-refine-prompt`](skills/ia-refine-prompt/SKILL.md) | Transform vague prompts into precise instructions |
 | [`ia-reflect`](skills/ia-reflect/SKILL.md) | Session retrospective and skill audit |
 
 ### Multi-Agent Orchestration

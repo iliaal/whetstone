@@ -1,6 +1,6 @@
 # v3 to v4 Breaking Changes
 
-Reference for migrating an existing Tailwind v3 project to v4. For greenfield v4 work, the SKILL body covers current patterns directly.
+Reference for migrating an existing Tailwind v3 project to v4. For greenfield v4 work, [tailwind.md](./tailwind.md) covers current patterns directly.
 
 | v3 | v4 | Notes |
 |----|-----|-------|

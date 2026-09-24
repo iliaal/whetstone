@@ -165,7 +165,6 @@ Agent({
 **All research agents:**
 - `ia-best-practices-researcher` - Best practices, framework docs, and implementation patterns
 - `ia-git-history-analyzer` - Code archaeology
-- `ia-learnings-researcher` - Search docs/solutions/
 - `ia-repo-research-analyst` - Repository patterns
 
 ### Design Agents

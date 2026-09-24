@@ -16,7 +16,7 @@ Edit human-facing prose while preserving meaning, factual accuracy, and the writ
 
 - **Edit** (default): produce corrected text. Add a changelog only when the caller asks for one; place it outside the returned text, never inside a delivered artifact such as a commit body, PR description, or comment.
 - **Detect**: when asked to flag AI tells without rewriting, quote each observed pattern and give a brief fix. Do not rewrite, score, or infer authorship. Use Phase 1 of [audit-workflow.md](./references/audit-workflow.md), then stop and offer an edit.
-- **Machine-facing text**: tool descriptions, system prompts, skill/agent instructions, error strings, and inter-agent messages need precise specification language. Use `ia-refine-prompt` when appropriate; do not apply fragments, contractions, or invented personal voice mechanically.
+- **Machine-facing text**: tool descriptions, system prompts, skill/agent instructions, error strings, and inter-agent messages need precise specification language. Apply [machine-parsed-text.md](./references/machine-parsed-text.md); do not apply fragments, contractions, or invented personal voice mechanically.
 
 ## Procedure
 

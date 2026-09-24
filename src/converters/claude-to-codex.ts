@@ -91,7 +91,7 @@ function convertCommandSkill(command: ClaudeCommand, usedNames: Set<string>): Co
 function transformContentForCodex(body: string): string {
   let result = body
 
-  // Matches "Task repo-research-analyst(args)" and "- Task learnings-researcher(args)".
+  // Matches "Task repo-research-analyst(args)" and "- Task best-practices-researcher(args)".
   const taskPattern = /^(\s*-?\s*)Task\s+([a-z][a-z0-9-]*)\(([^)]+)\)/gm
   result = result.replace(taskPattern, (_match, prefix: string, agentName: string, args: string) => {
     const skillName = normalizeName(agentName)

@@ -27,7 +27,7 @@ Before designing, assess the existing design environment. Count design signals i
 - **1-3 signals** = Partial system. Blend: respect existing choices, fill gaps with this skill's guidance.
 - **0 signals** = Greenfield. Apply the full Design Philosophy below. Product register: read [design-system-routing.md](./references/design-system-routing.md) before bespoke design.
 
-When in doubt, check `package.json`, `tailwind.config.*`, global CSS files, and existing components before deciding.
+When in doubt, check `package.json`, `tailwind.config.*`, global CSS files, and existing components before deciding. For Tailwind implementation rules (tokens, variants, v4 config), load `ia-react-frontend` and read its Tailwind reference.
 
 
 ## Design Philosophy (Write First, Code Second)

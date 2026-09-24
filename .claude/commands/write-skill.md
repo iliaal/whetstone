@@ -170,7 +170,7 @@ SKILL_PATTERNS[<name>]='<regex>'
 SKILL_TIERS[<name>]=<1|2|3>
 ```
 
-Tier guide: 1 = high precision / always-relevant (`debugging`, `code-review`); 2 = stack-specific (`tailwind`, `pinescript`); 3 = niche or workflow (`compound-docs`, `file-todos`).
+Tier guide: 1 = high precision / always-relevant (`debugging`, `code-review`); 2 = stack-specific (`tailwind`, `pinescript`); 3 = niche or workflow (`git-worktree`, `reflect`).
 
 Build the regex from the trigger vocabulary in question 3. Test it locally first:
 

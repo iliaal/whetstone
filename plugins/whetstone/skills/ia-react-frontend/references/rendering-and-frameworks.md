@@ -79,6 +79,6 @@
 
 ## Tailwind Integration
 
-For Tailwind v4 configuration, utility patterns, dark mode, and component variants, see the `ia-tailwind-css` skill.
+For Tailwind v4 configuration, utility patterns, dark mode, and component variants, see [tailwind.md](./tailwind.md).
 
 **Class sorting in JSX**: keep Tailwind classes in canonical order (enforce via `eslint-plugin-better-tailwindcss`).

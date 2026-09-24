@@ -13,7 +13,6 @@ import pytest
 
 SKILLS = Path(__file__).resolve().parents[2] / "plugins/whetstone/skills"
 MANAGER = SKILLS / "ia-git-worktree/scripts/worktree-manager.sh"
-VALIDATOR = SKILLS / "ia-compound-docs/scripts/validate-frontmatter.sh"
 
 
 def run(args, cwd, **kwargs):
@@ -135,65 +134,6 @@ def test_separate_git_directory_and_redirected_create(repo, tmp_path):
     (repo / ".worktrees/redirect").symlink_to(outside, target_is_directory=True)
     result = manager(repo, "create", "redirect/topic")
     assert result.returncode != 0 and not (outside / "topic").exists()
-
-
-FRONTMATTER = """module: Example
-date: 2026-09-07
-problem_type: runtime_error
-component: model
-root_cause: logic_error
-resolution_type: code_fix
-severity: high
-"""
-
-
-@pytest.mark.parametrize("symptoms", [
-    'symptoms: ["one, two, three, four, five, six"]\n',
-    'symptoms:\n  - "quoted: punctuation, and brackets []"\n',
-    'symptoms:\n- one\n- two\n- three\n- four\n- five\n',
-    'symptoms: ["escaped \\"quote\\" text"]\n'.replace('\\\\', '\\'),
-])
-def test_valid_yaml_arrays_pass(tmp_path, symptoms):
-    doc = tmp_path / "solution.md"
-    doc.write_text("---\n" + FRONTMATTER + symptoms + "tags:\n  - example\n---\n# Solution\n")
-    result = run(["bash", str(VALIDATOR), str(doc)], tmp_path)
-    assert result.returncode == 0, result.stdout + result.stderr
-
-
-@pytest.mark.parametrize("fields", [
-    "tags:\n  - unrelated\n",
-    "symptoms: []\n",
-    "symptoms: text\n",
-    "symptoms: [a,b,c,d,e,f]\n",
-    "symptoms: [null]\n",
-    "symptoms: [true]\n",
-    "symptoms: ['']\n",
-    "symptoms: [valid]\nsymptoms: [duplicate]\n",
-    "symptoms: [unterminated\n",
-])
-def test_invalid_yaml_arrays_fail(tmp_path, fields):
-    doc = tmp_path / "solution.md"
-    doc.write_text("---\n" + FRONTMATTER + fields + "---\n")
-    assert run(["bash", str(VALIDATOR), str(doc)], tmp_path).returncode != 0
-
-
-@pytest.mark.parametrize("content", [
-    "prefix\n---\n" + FRONTMATTER + "symptoms: [valid]\n---\n",
-    "---\n" + FRONTMATTER + "symptoms: [valid]\n",
-    "---\n- not-a-mapping\n---\n",
-])
-def test_frontmatter_delimiters_and_mapping_are_required(tmp_path, content):
-    doc = tmp_path / "solution.md"
-    doc.write_text(content)
-    assert run(["bash", str(VALIDATOR), str(doc)], tmp_path).returncode != 0
-
-
-def test_yaml_merge_and_optional_version_warning(tmp_path):
-    doc = tmp_path / "solution.md"
-    doc.write_text("---\n" + FRONTMATTER + "defaults: &defaults\n  symptoms: [valid]\n<<: *defaults\nframework_version: preview\n---\n")
-    result = run(["bash", str(VALIDATOR), str(doc)], tmp_path)
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert "WARNINGS" in result.stdout and "framework_version" in result.stdout
 
 
 def test_documented_debugging_guard_checks_path_components(tmp_path, monkeypatch):

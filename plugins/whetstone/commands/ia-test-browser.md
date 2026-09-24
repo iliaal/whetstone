@@ -26,7 +26,7 @@ This command tests affected pages in a real browser, catching issues that unit t
 - User workflow breakages
 - Console errors
 
-**Pipeline context:** Only an explicit caller delegation enables non-interactive mode. Use headless mode, test the supplied revision/scope, return exact todo paths created by this invocation, and report human-only checks or failures to the parent. Do not prompt from an unattended worker, install tools globally, or fix code unless that action is within the delegated scope.
+**Pipeline context:** Only an explicit caller delegation enables non-interactive mode. Use headless mode, test the supplied revision/scope, return failures as findings with severity, and report human-only checks or failures to the parent. Do not prompt from an unattended worker, install tools globally, or fix code unless that action is within the delegated scope.
 
 ## Prerequisites
 
@@ -215,7 +215,7 @@ When a test fails:
    - Screenshot the error state: `agent-browser screenshot error.png`
    - Note the exact reproduction steps
 
-2. **Interactive mode: ask how to proceed.** In a read-only pipeline run, return the failure and any current-run todo paths; implementation remains with the parent:
+2. **Interactive mode: ask how to proceed.** In a read-only pipeline run, return the failure as a finding; implementation remains with the parent:
    ```markdown
    **Test Failed: [route]**
 
@@ -224,7 +224,7 @@ When a test fails:
 
    How to proceed?
    1. Fix now - I'll help debug and fix
-   2. Create todo - Add to todos/ for later
+   2. Record finding - Add to the report for later
    3. Skip - Continue testing other pages
    ```
 
@@ -234,8 +234,8 @@ When a test fails:
    - Apply fix
    - Re-run the failing test
 
-4. **If "Create todo":**
-   - Create `{id}-pending-p1-browser-test-{description}.md`
+4. **If "Record finding":**
+   - Add the failure to the final report with route, reproduction steps, and an evidenced severity
    - Continue testing
 
 5. **If "Skip":**

@@ -25,15 +25,15 @@ Run applicable steps in order within the user's authorized scope. Carry explicit
 
 ## Verify (parallel in swarm mode)
 
-4. `/ia-review` on the current change. Capture the exact todo paths returned by this review as `current_review_todos`; pre-existing todos are outside this pipeline's scope. If step 3 already completed the same review protocol on the same revision, reuse that receipt and review only subsequent changes.
-5. Run `/ia-test-browser` only when the change affects browser-visible routes or interactions and a usable local server exists. Pass explicit non-interactive context and use headless mode. Record missing browser coverage as a gap; a skipped stage is not a pass. Add only this invocation's returned todo paths to `current_review_todos`.
+4. `/ia-review` on the current change. Capture the finding IDs returned by this review as `current_review_findings`; pre-existing backlog is outside this pipeline's scope. If step 3 already completed the same review protocol on the same revision, reuse that receipt and review only subsequent changes.
+5. Run `/ia-test-browser` only when the change affects browser-visible routes or interactions and a usable local server exists. Pass explicit non-interactive context and use headless mode. Record missing browser coverage as a gap; a skipped stage is not a pass. Add only this invocation's returned findings to `current_review_findings`.
 
 **Swarm mode:** Review and browser verification may run in parallel when both are read-only against the same revision and isolated from writers. Wait for both to complete.
 **Normal mode:** Run sequentially.
 
 ## Finalize
 
-6. Triage `current_review_todos`: accept only fixes supported by evidence and the user's existing implementation authority, mark those `ready`, and retain judgment/approval-dependent items as `pending`. Call `/ia-resolve-todo-parallel` with the exact accepted paths and defer publication. Do not enumerate or act on unrelated backlog. Verify integrated fixes before closing them; unresolved blockers prevent a ready-to-ship claim.
+6. Triage `current_review_findings`: accept only fixes supported by evidence and the user's existing implementation authority, and report judgment/approval-dependent items as open. Fix the accepted findings (in swarm mode, one worker per independent finding with non-overlapping files) and defer publication. Do not enumerate or act on unrelated backlog. Verify integrated fixes before closing them; unresolved blockers prevent a ready-to-ship claim.
 7. Run final project gates, then finish the branch according to the user's publication authority. If a PR is opened, record its number. Run `/ia-feature-video <pr-number>` only for a browser-visible feature with a useful walkthrough and authorized upload destination; otherwise omit it. A video is documentation, not a verification gate.
 
 ## CI watch (after PR opens)

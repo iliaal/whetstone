@@ -637,7 +637,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Error states clearly communicated via `isError`
 - [ ] Descriptions state capability and the boundary against sibling tools, never workflow context (see Writing the description)
 - [ ] Descriptions carry no worked examples, numbered protocols, `CRITICAL:`-style boosters, or cross-tool `ALWAYS`/`NEVER` scolding
-- [ ] Descriptions pass the machine-parsed-text rules in `ia-refine-prompt`: one directive per sentence, simple tenses, noun stacks capped at three, no dropped referents
+- [ ] Descriptions pass the machine-parsed-text rules: one directive per sentence, simple tenses, noun stacks capped at three, no dropped referents
 - [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
 - [ ] Error messages include recovery suggestions, not just failure descriptions
 - [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`

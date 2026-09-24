@@ -75,7 +75,7 @@ SKILL_TIERS[ia-php-laravel]=2
 # mention, e.g. reviews of `Avatar.tsx` (paths also contain "components", so a noun
 # anchor doesn't help). `\b[jt]sx\b` needs a runtime SYMPTOM (rendering/broken/error/
 # crash), which path noise lacks; `react.*test` / `hook.*component` spans are bounded.
-SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test'
+SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test|tailwind|@theme.*token|@utility.*css|class.?variance|\bcva\b|utility.?class|dark.?mode.*css'
 SKILL_TIERS[ia-react-frontend]=2
 
 SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,24}(auth|route|server|express)'
@@ -136,8 +136,6 @@ SKILL_TIERS[ia-pinescript]=2
 SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build)\s.{0,20}(web.?component|web.?page|landing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|color.?palette|visual.?identity|\bredesign.{0,30}\bpage layout\b'
 SKILL_TIERS[ia-frontend-design]=2
 
-SKILL_PATTERNS[ia-tailwind-css]='tailwind|@theme.*token|@utility.*css|tailwind.?variant|class.?variance|\bcva\b|\btv\(\b|utility.?class.*css|style.{0,30}utility.?class|dark.?mode.*css'
-SKILL_TIERS[ia-tailwind-css]=2
 
 SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?(tool|server)|self.?modif|agent.?(native|loop|hook)|prompt.?native|pretooluse|posttooluse|\bdesign.{0,20}\bsystem prompt.{0,30}\bfile-editing agent\b'
 SKILL_TIERS[ia-agent-native-architecture]=2
@@ -153,8 +151,6 @@ SKILL_TIERS[ia-writing]=3
 SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md|\b(create|write|refresh|regenerate)\b.{0,30}\b(readme|contributing)(\.md)?\b'
 SKILL_TIERS[ia-md-docs]=3
 
-SKILL_PATTERNS[ia-refine-prompt]='refine.{0,15}prompt|improve.{0,15}prompt|promptify|optimize.{0,15}prompt|rewrite.{0,15}prompt|enhance.{0,15}prompt|sharpen.{0,15}instruction|prompt.?engineer|tight.{0,10}system.?prompt|tool.?description|mis-?(pars|interpret|read)|\bsharpen.{0,20}\b(system )?prompt\b|\b(turn|convert|refine).{0,25}\b(vague request|prompt).{0,30}\bagent instructions\b'
-SKILL_TIERS[ia-refine-prompt]=3
 
 SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|steelman|devil.?s.?advocate|\bstrongest counterargument\b|\b(analy[sz]e|examine).{0,20}\bassumptions.{0,25}\b(overturn|invalidate|undermine).{0,20}\bconclusion\b'
 SKILL_TIERS[ia-meta-prompting]=3
@@ -162,14 +158,10 @@ SKILL_TIERS[ia-meta-prompting]=3
 SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong|\breflect on.{0,20}\bsession\b'
 SKILL_TIERS[ia-reflect]=3
 
-SKILL_PATTERNS[ia-compound-docs]='document.{0,40}(solution|problem|workaround)|capture.{0,40}(knowledge|solved|solution|debug)|compound.{0,30}(doc|knowledge)|post.?mortem|\bdocument.{0,25}\b(resolved|fixed) incident\b|\bcapture.{0,20}\blessons learned.{0,25}\b(fix|debug|resolv)|\bwrite up.{0,30}\b(debugging )?solution\b'
-SKILL_TIERS[ia-compound-docs]=3
 
 SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|spec)|\bcheck.{0,20}\b(adr|document|spec|plan).{0,20}\b(clarity|completeness)\b'
 SKILL_TIERS[ia-document-review]=3
 
-SKILL_PATTERNS[ia-file-todos]='todo.?directory|file.?based.?todo|\btodos?\b.{0,24}(file|list|add|creat|track|status|backlog)|(add|create|list|track|triage|manage).{0,24}\btodos?\b|\bbacklog\b|\btodos directory\b|\bconvert.{0,25}\bpr comments.{0,20}\btracked tasks\b'
-SKILL_TIERS[ia-file-todos]=3
 
 # Dispatch-intent only: bare `fan.?out` and bare `\bsub.?agents?\b` match a reviewed
 # system's own vocabulary ("Phase 1 specialist fan-out", "the driver dispatches ONE
@@ -199,9 +191,8 @@ SKILL_MAINT_SUPPRESS[ia-verification-before-completion]=1  # "verification" appe
 SKILL_MAINT_SUPPRESS[ia-postgresql]=1                       # "postgresql" mentioned in distiller/audit prompts
 SKILL_MAINT_SUPPRESS[ia-react-frontend]=1                   # skill name appears in plugin-doc/audit prompts
 SKILL_MAINT_SUPPRESS[ia-writing]=1                          # fires on plugin-doc work
-SKILL_MAINT_SUPPRESS[ia-compound-docs]=1                    # "compound" mentioned in /sync-from-repos and /audit-plugin
 SKILL_MAINT_SUPPRESS[ia-terraform]=1                        # plugin doesn't use terraform; misfire on audit/sync prompts
 SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # fires on distiller.py work in plugin maintenance
 SKILL_MAINT_SUPPRESS[ia-debugging]=1                        # plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfire as debugging
 
-# Total skills: 32
+# Total skills: 28

@@ -31,8 +31,8 @@ test_manifest_parity() {
 
 	# Commands invoke skills through explicit Skill() tool calls; the harness treats
 	# those as model invocation, so a skill carrying disable-model-invocation (or its
-	# Codex twin allow_implicit_invocation: false) is unreachable from ia-compound,
-	# ia-triage, ia-review, and ia-resolve-todo-parallel. Keep the set empty.
+	# Codex twin allow_implicit_invocation: false) is unreachable from the commands
+	# that call it. Keep the set empty.
 	explicit_only_actual=$(grep -rl '^disable-model-invocation: true$' "$REPO_ROOT/plugins/whetstone/skills" --include=SKILL.md | sort || true)
 	if [[ -n "$explicit_only_actual" ]]; then
 		printf 'FAIL: a skill SKILL.md sets disable-model-invocation; commands invoke skills via Skill() calls:\n%s\n' "$explicit_only_actual" >&2

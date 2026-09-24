@@ -150,7 +150,7 @@ Use the Phase 1 comparison results as input. For each discrepancy found, impleme
 - Components should be full width (`w-full`); width constraints and horizontal padding belong on wrapper elements in the parent template
 - Use mobile-first responsive patterns (e.g., `flex-col lg:flex-row`)
 - Prefer Tailwind default spacing values over arbitrary values when within 2-4px of the design spec
-- For detailed Tailwind patterns, follow the `ia-tailwind-css` skill
+- For detailed Tailwind patterns, follow the Tailwind reference in the `ia-react-frontend` skill
 
 ## Quality Standards
 

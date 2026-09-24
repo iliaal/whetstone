@@ -118,7 +118,6 @@ Five commands form a loop: explore the problem, plan the solution, build it, rev
 | `/ia-plan` | Turns a brainstorm or feature idea into a file-based plan with atomic tasks, specific file paths, and phased delivery in vertical slices. |
 | `/ia-work` | Executes a plan with task tracking, worktree isolation, and verification gates. Each task runs through build/test before marking complete. |
 | `/ia-review` | Multi-agent code review: scope-drift detection, spec compliance, code quality, security, performance. Auto-escalates to deep mode on complex diffs. |
-| `/ia-compound` | Captures what you just solved as searchable documentation in `docs/solutions/` so the next person (or the agent) doesn't re-debug it. |
 
 Each command also works on its own: `/ia-review` as a pre-merge check, `/ia-plan` for scoping.
 
@@ -148,7 +147,6 @@ Skills are instructions selected for the task. They guide procedures and identif
 | [ia-c-systems](plugins/whetstone/skills/ia-c-systems/SKILL.md) | Repo conventions outrank the skill, so it defers on tabs, `goto cleanup`, and macros that return rather than fighting established C. Function altitudes (orchestrator / leaf / adapter) gated behind a name test that stops over-decomposition, status enums with one producer per error value, public-validates / internal-asserts boundaries. Separate references for memory safety (sanitizers, overflow-checked allocation, recursion to bounded worklists) and PHP extension C. For C11 and later, native extensions, and systems code. |
 | [ia-cpp-systems](plugins/whetstone/skills/ia-cpp-systems/SKILL.md) | Rule of zero by default and rule of five once a destructor appears, since a user-declared destructor silently suppresses moves. `unique_ptr` first and `shared_ptr` third. API rules that break callers when ignored: decide `explicit` at introduction, keep the narrow overload, delete rather than silently ignore. Separate references for ABI boundaries (exceptions must not cross `extern "C"`, PIMPL, visibility) and CMake tooling. For C++17 and later libraries and services. |
 | [ia-pinescript](plugins/whetstone/skills/ia-pinescript/SKILL.md) | Guides Pine Script v6 syntax, platform limits, signal stability checks, and walk-forward validation. Distinguishes historical indexing from future outcomes and chart-bar confirmation from requested-timeframe confirmation. |
-| [ia-tailwind-css](plugins/whetstone/skills/ia-tailwind-css/SKILL.md) | Enforces v4's CSS-first config model (`@theme`, `@utility`, `@custom-variant` directives). Provides a v3-to-v4 breaking changes table. Prohibits dynamic class construction, mandates `gap` over `space-x`, `size-*` over paired `w-*/h-*`. For Tailwind v4 or v3 migrations. |
 
 ### Infrastructure
 
@@ -174,19 +172,16 @@ Skills are instructions selected for the task. They guide procedures and identif
 | Skill | Description |
 |-------|------------|
 | [ia-brainstorming](plugins/whetstone/skills/ia-brainstorming/SKILL.md) | Hard gate: no code until a design doc is approved. Reads the codebase first, interviews one question at a time, proposes 2-3 named approaches with trade-offs, saves a structured doc to `docs/brainstorms/`. For vague requirements or multiple valid interpretations. |
-| [ia-compound-docs](plugins/whetstone/skills/ia-compound-docs/SKILL.md) | Explicitly invoked workflow for documenting solved problems. Captures lessons not already recoverable from code and existing documentation, validates YAML frontmatter, checks for duplicates, and detects recurring patterns when 3+ similar issues appear. |
 | [ia-document-review](plugins/whetstone/skills/ia-document-review/SKILL.md) | Activates specialized lenses (Product, Design, Security, Scope Guardian, Adversarial) based on document signals. Scores on four criteria, identifies one critical improvement, and can dispatch a fresh-eyes sub-agent. For polishing specs or brainstorms before handing them to planning. |
 | [ia-writing](plugins/whetstone/skills/ia-writing/SKILL.md) | Edits prose while preserving meaning, facts, and voice. Treats vocabulary and structural tells as contextual signals, with separate edit and detect-only modes and guidance for publication surfaces. For blog posts, PR descriptions, docs, and changelogs. |
 | [ia-git-worktree](plugins/whetstone/skills/ia-git-worktree/SKILL.md) | Routes all operations through a manager script handling `.env` copying, `.gitignore` updates, and dependency installation. Detects execution context and adapts. For parallel feature development or isolated reviews. |
 | [ia-md-docs](plugins/whetstone/skills/ia-md-docs/SKILL.md) | Treats AGENTS.md as the canonical context file. Verifies every factual claim against the actual codebase before writing. For project documentation that's stale, missing, or needs initialization. |
-| [ia-file-todos](plugins/whetstone/skills/ia-file-todos/SKILL.md) | File-based task tracking with structured YAML frontmatter and naming conventions. Distinct from in-session memory and application-level models. For persistent, human-and-agent-readable todo files with dependency tracking. |
 
 ### AI & prompting
 
 | Skill | Description |
 |-------|------------|
 | [ia-meta-prompting](plugins/whetstone/skills/ia-meta-prompting/SKILL.md) | Decision modifiers through natural language or prompt markers: `/verify-think` challenges an answer, `/adversarial` ranks counterarguments, `/edge` explores failure scenarios, and `/confidence` scores claims. Distinct from the `/ia-verify` command's pre-PR checks. |
-| [ia-refine-prompt](plugins/whetstone/skills/ia-refine-prompt/SKILL.md) | Assesses against a six-element checklist (task, constraints, format, context, examples, edge cases), rewrites in specification language, validates all gaps addressed. Enforces 0.75x-1.5x length ratio and won't invent missing info. For prompts that produce inconsistent results. |
 | [ia-reflect](plugins/whetstone/skills/ia-reflect/SKILL.md) | Scans the full conversation for mistakes, friction, and wins, citing specific exchanges. Proposes ranked improvements and audits skills used in the session for token efficiency. For end-of-session lessons learned. |
 
 ### Multi-agent orchestration
@@ -219,7 +214,6 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 |-------|------------|
 | [ia-best-practices-researcher](plugins/whetstone/agents/ia-best-practices-researcher.md) | Gathers official framework docs, version-specific best practices, and industry standards for any technology. |
 | [ia-git-history-analyzer](plugins/whetstone/agents/ia-git-history-analyzer.md) | Excavates git history to explain code evolution: traces commits, authors, and context around decisions. |
-| [ia-learnings-researcher](plugins/whetstone/agents/ia-learnings-researcher.md) | Mines `docs/solutions/` for documented solutions and patterns relevant to the current task. Prevents repeating past mistakes. |
 | [ia-repo-research-analyst](plugins/whetstone/agents/ia-repo-research-analyst.md) | Analyzes repository architecture, naming conventions, and implementation patterns. For onboarding or understanding project conventions. |
 
 ### Design
@@ -250,7 +244,6 @@ All commands carry the `ia-` prefix to avoid collisions with Claude Code built-i
 | `/ia-plan` | Turn feature ideas into file-based implementation plans with atomic tasks and vertical slices. |
 | `/ia-work` | Execute plans with task tracking, worktree isolation, and verification gates. |
 | `/ia-review` | Multi-agent code review: scope-drift detection, spec compliance, code quality, security, performance. |
-| `/ia-compound` | Capture solved problems as searchable documentation in `docs/solutions/`. |
 | `/ia-document-release` | Post-ship documentation sync across README, ARCHITECTURE, CONTRIBUTING, and CHANGELOG. |
 
 ### Utility commands
@@ -264,14 +257,12 @@ All commands carry the `ia-` prefix to avoid collisions with Claude Code built-i
 | `/ia-ideate` | Generate ranked improvement ideas by scanning the codebase, then divergent ideation and adversarial critique. |
 | `/ia-setup` | Auto-detect project stack and configure which review agents run. |
 | `/ia-adr` | Create Architecture Decision Records with format selection and lifecycle management. |
+| `/ia-refine-prompt` | Rewrite a vague prompt into specification language against a six-element checklist, within 0.75x-1.5x of the original length. |
 | `/ia-test-browser` | Run browser tests on pages affected by the current PR or branch. |
 | `/ia-feature-video` | Record a video walkthrough of a feature and add it to the PR description. |
-| `/ia-compound-refresh` | Review `docs/solutions/` for stale learnings: keep, update, replace, or archive. |
 | `/ia-changelog` | Build changelogs from recent merges. |
 | `/ia-reproduce-bug` | Reproduce bugs using logs and console output. |
 | `/ia-report-bug` | Report a bug in the plugin. |
-| `/ia-triage` | Triage and prioritize issues. |
-| `/ia-resolve-todo-parallel` | Resolve all pending todos from the `todos/` directory in parallel. |
 | `/ia-agent-native-audit` | Run agent-native architecture review with scored principles. |
 
 ## Design

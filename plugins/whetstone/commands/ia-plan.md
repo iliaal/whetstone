@@ -52,14 +52,13 @@ If multiple brainstorms could match, use `AskUserQuestion` to ask which to use.
 First, I need to understand the project's conventions, existing patterns, and any documented learnings. This is fast and local - it informs whether external research is needed.
 </thinking>
 
-Run these agents **in parallel** to gather local context:
+Run this agent to gather local context, and check documented learnings inline (`AGENTS.md`/`CLAUDE.md`, `docs/decisions/`, solution notes under `docs/`) while it runs:
 
 - Task whetstone:ia-repo-research-analyst(feature_description)
-- Task whetstone:ia-learnings-researcher(feature_description)
 
 **What to look for:**
 - **Repo research:** existing patterns, CLAUDE.md guidance, technology familiarity, pattern consistency
-- **Learnings:** documented solutions in `docs/solutions/` that might apply (gotchas, patterns, lessons learned)
+- **Learnings:** documented gotchas, prior decisions, and solution notes that might apply (gotchas, patterns, lessons learned)
 
 These findings inform the next step.
 
@@ -92,7 +91,7 @@ Run these agents in parallel:
 After all research steps complete, consolidate findings:
 
 - Document relevant file paths from repo research (e.g., `src/services/ExampleService.ts:42`)
-- **Include relevant institutional learnings** from `docs/solutions/` (key insights, gotchas to avoid)
+- **Include relevant institutional learnings** from project docs (key insights, gotchas to avoid)
 - Note external documentation URLs and best practices (if external research was done)
 - List related issues or PRs discovered
 - Capture CLAUDE.md conventions

@@ -25,7 +25,7 @@ The controller reads all tasks from the plan upfront and provides full task text
 
 **Standardize implementer outcome signals.** Require every implementer to distinguish completed and verified behavior from partial work, stubs, mocks, refusal-only paths, and blockers. Do not require empty report sections. Route blockers through the decision tree below.
 
-**Worker status vocabulary:** `DONE` (task verified complete) | `DONE_WITH_CONCERNS` (complete, residual risk named) | `BLOCKED` (blocker stated, no partial claim) | `NEEDS_CONTEXT` (missing information named). Callers that require a structured return (`/ia-resolve-todo-parallel`, `/ia-work`) use this vocabulary; free-form reports elsewhere still distinguish the same states in prose.
+**Worker status vocabulary:** `DONE` (task verified complete) | `DONE_WITH_CONCERNS` (complete, residual risk named) | `BLOCKED` (blocker stated, no partial claim) | `NEEDS_CONTEXT` (missing information named). Callers that require a structured return (`/ia-work`) use this vocabulary; free-form reports elsewhere still distinguish the same states in prose.
 
 Partial work, a stub, a mock, a refusal-only path, or an unverifiable deliverable maps onto that vocabulary as `DONE_WITH_CONCERNS` when the delivered part is itself verified and the gap is named in the report, and `BLOCKED` otherwise; never `DONE`.
 

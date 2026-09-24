@@ -42,7 +42,7 @@ For custom properties that should not define Tailwind utilities, declare them in
 
 ## v3 to v4 Migration
 
-For projects upgrading from v3 to v4, see [v3-to-v4-migration.md](./v3-to-v4-migration.md) for the full breaking-change table and codemod guidance. For greenfield v4 work, current patterns are above.
+For projects upgrading from v3 to v4, see [tailwind-v3-to-v4.md](./tailwind-v3-to-v4.md) for the full breaking-change table and codemod guidance. For greenfield v4 work, current patterns are above.
 
 
 ## Common Errors

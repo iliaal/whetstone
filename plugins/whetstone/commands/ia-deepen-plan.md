@@ -84,15 +84,9 @@ Return evidence, recommendation, remaining uncertainty, and relevant sources."
 
 Do not create an agent merely because a skill matches. Merge overlapping questions and follow `ia-orchestrating-swarms` for bounded dispatch.
 
-### 4. Discover and Apply Learnings/Solutions
+### 4. Check Documented Project Learnings
 
-When `docs/solutions/` exists and holds more than a handful of entries (five or more), dispatch the `ia-learnings-researcher` agent with the plan content. Otherwise check inline, per step 3: list `docs/solutions/` (and the fallbacks below) and read any entry whose frontmatter tags, module, or symptom match the plan; a dispatch for one `ls` costs more than the lookup. When dispatched, the agent handles the full flow: scanning `docs/solutions/` (and fallbacks in `.claude/docs/` or `~/.claude/docs/`), reading frontmatter, filtering by tag/category/module/symptom against the plan, and returning only learnings that apply with a specific explanation of how.
-
-```
-Task whetstone:ia-learnings-researcher("Plan content:\n---\n[full plan content]\n---\n\nFind documented learnings in docs/solutions/ that apply to this plan. For each relevant learning: quote the key insight, explain how it applies, and suggest where to incorporate it. Skip non-applicable learnings with a one-line reason.")
-```
-
-These learnings are institutional knowledge; applying them prevents repeating past mistakes. The agent encapsulates the filter logic.
+Check documented project learnings inline: read the project instruction files (`AGENTS.md`, `CLAUDE.md`), ADRs (`docs/decisions/`), and any solution notes under `docs/` whose names or frontmatter match the plan's modules. Record each gotcha or prior decision that applies, with where the plan should incorporate it. A dedicated agent costs more than these lookups.
 
 ### 5. Launch Per-Section Research Agents
 
@@ -144,7 +138,7 @@ Wait for ALL parallel agents to complete: skills, research agents, review agents
 **Collect outputs from ALL sources:**
 
 1. **Skill-based sub-agents** - Each skill's full output (code examples, patterns, recommendations)
-2. **Learnings/Solutions sub-agents** - Relevant documented learnings from /ia-compound
+2. **Project learnings** - Applicable gotchas and prior decisions from step 4
 3. **Research agents** - Best practices, documentation, real-world examples
 4. **Review agents** - All feedback from every reviewer (architecture, security, performance, simplicity, etc.)
 5. **Context7 queries** - Framework documentation and patterns

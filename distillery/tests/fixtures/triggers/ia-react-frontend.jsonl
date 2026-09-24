@@ -14,3 +14,13 @@
 {"prompt": "review codesage feature feat_x (libs/ui/src/components/composites/avatar/avatar.tsx) severity medium categories bug security", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "senior react/typescript reviewer doing a deep code review of gitlab frontend mr, files include contactrender.tsx", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "verify whether specific code claims still hold in the frontend monorepo at cred/frontend", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt": "add tailwind dark mode support to the settings page", "expect": true, "added_in": "2.51.0", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "create a reusable button component using cva variants", "expect": true, "added_in": "2.51.0", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "write a bash script to rotate log files", "expect": false, "added_in": "2.51.0", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "add a new GraphQL resolver for products", "expect": false, "added_in": "2.51.0", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "set up Tailwind v4 in this Next.js project", "expect": true, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "migrate this Tailwind v3 config to v4 @theme", "expect": true, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "style this card with utility classes", "expect": true, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "write CSS modules for the layout", "expect": false, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "set up styled-components", "expect": false, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
+{"prompt": "convert this to vanilla CSS", "expect": false, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}

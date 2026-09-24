@@ -66,4 +66,4 @@ const button = tv({
 });
 ```
 
-See [tailwind-variants patterns](./component-patterns.md) for slots, composition, and responsive variants.
+See [tailwind-variants patterns](./tailwind-component-patterns.md) for slots, composition, and responsive variants.
