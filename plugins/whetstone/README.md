@@ -118,6 +118,7 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | Skill | Description |
 |-------|-------------|
 | [`ia-writing-tests`](skills/ia-writing-tests/SKILL.md) | Generic test discipline: quality, anti-patterns, rationalization resistance |
+| [`ia-test-audit`](skills/ia-test-audit/SKILL.md) | Audit whether existing tests catch regressions in the behavior they claim to protect |
 
 ### Code Quality & Review
 

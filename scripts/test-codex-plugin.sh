@@ -280,6 +280,7 @@ write_fixture_files() {
 		'{"name":"whetstone","interface":{"displayName":"Before"},"plugins":[{"name":"whetstone","source":{"source":"local","path":"./plugins/whetstone"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Productivity"}]}' \
 		>.agents/plugins/marketplace.json
 	printf '# Fixture\n' >README.md
+	printf '# Agents\n' >AGENTS.md
 	printf '%s\n' '# Changelog' '' '## [4.2.1] - 2026-07-12' '' '### Changed' '' "- \`ia-debugging\`: Fixture release." >CHANGELOG.md
 }
 

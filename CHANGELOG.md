@@ -5,6 +5,46 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-09-26
+
+Major: four skills, one agent, and four commands with little organic use were removed or folded into neighbors, the new `ia-test-audit` skill audits whether tests actually catch regressions, and a cross-repo sync plus two audits corrected rule conflicts and several claims that failed when tested. Six commits. Component counts go from 32 skills, 19 agents, and 22 commands to 29 skills, 18 agents, and 19 commands.
+
+### Added
+
+- **`ia-test-audit` skill.** Audits whether existing tests fail when the behavior they claim to protect breaks: mocked-away subjects, weak or circular assertions, fixtures that cannot tell a right answer from a wrong one, swallowed failures, and tests missing from a blocking gate. Each finding names the surviving regression and an evidence status (source-confirmed, inferred, or execution-confirmed), with an optional scratch-copy mutation probe to confirm it. Ships five standard-library detector scripts as discovery aids; their output never bounds the review. Adapted from the OpenClaw test-audit skill (MIT).
+- `ia-code-review` has a new eval case that measures whether the skill fires on a pasted diff when the prompt never names it; every earlier positive case named the skill, so natural routing was never measured.
+
+### Removed
+
+- **`ia-file-todos` skill and the `/ia-triage` and `/ia-resolve-todo-parallel` commands.** `/ia-review` now reports findings in its summary as `CR-NNN` IDs instead of writing todo files, and `/ia-lfg` fixes accepted findings directly.
+- **`ia-compound-docs` skill, the `/ia-compound` and `/ia-compound-refresh` commands, and the `ia-learnings-researcher` agent.** `/ia-plan`, `/ia-deepen-plan`, and `/ia-review` check AGENTS.md, ADRs, and solution notes inline instead.
+- **`ia-tailwind-css` skill**, folded into `ia-react-frontend` as `references/tailwind*.md` with its trigger terms, fixtures, and file globs.
+- **`ia-refine-prompt` skill**, now a user-invoked `/ia-refine-prompt` command. Its machine-parsed-text rules moved to `ia-writing/references/machine-parsed-text.md` so they still apply on every harness.
+
+### Changed
+
+- **`ia-code-review` no longer lets a diff approve its own exception.** A documented override (CLAUDE.md, AGENTS.md, a threat model or ADR, an inline "we allow X because Y" comment) counts only if it exists at the review's base revision; one the diff adds or widens is reported as a finding labeled "override proposed in this diff". A standards-file change that loosens a rule suppresses nothing in the same diff.
+- `ia-code-review` decides "pre-existing" by whether the change takes part in the failing path, not by whether the buggy line is new, and anchors such a finding at the changed line so path and hunk filters keep it. Genuinely older flaws go to a single "predates change" list.
+- `ia-code-review` gained command and argument injection patterns for PHP, Python, and Node, archive extraction traversal, credentials forwarded across redirects, and integrity checks that fail open. A reviewer's own `python3 -c` calls inside the reviewed tree now run with `-I`, since a repository file that shadows a standard-library module otherwise executes.
+- `ia-postgresql` replaces its row-level security example: a session-level `SET` leaks the user ID across tenants under the transaction-mode pooling the same file recommends, so the example now sets the value transaction-locally. `SECURITY DEFINER` helpers gained the required hardening, and the PgBouncer compatibility list was corrected against current documentation.
+- `ia-php-laravel` covers a queue `retry_after` shorter than the job timeout, which runs the job twice concurrently. `ia-nodejs-backend` covers Nest skipping transient-scoped middleware, which before v12.1.0 also skipped every middleware listed after it.
+- `ia-md-docs` treats the CLAUDE.md symlink as optional, since Claude Code v2.1.277 and later reads AGENTS.md natively, and prefers an `@AGENTS.md` import where a CLAUDE.md is still needed.
+- `ia-git-worktree` builds a pull-request review worktree from the fetched PR head and checks it against the PR's head SHA; the previous recipe built it from main.
+- `ia-verification-before-completion` checks which database and services a suite or migration connects to before running it, and treats the developer's own dev database as off limits. Upgrade proof must be measured on the same tests before and after.
+- `ia-planning` records decisions (signatures, assertions, spec values) rather than code bodies, and the `/ia-plan` and `/ia-deepen-plan` templates follow. `ia-debugging` requires the root cause to explain every observed symptom and sweeps for the same defect shape. `ia-document-review` checks a document's claims against the code it references.
+- `ia-writing-tests` agrees with `ia-test-audit` on circular oracles, no-throw contracts, spies, and exact snapshots, and points to it for auditing existing tests.
+- `ia-agent-native-architecture` scopes text-level permission gates as best-effort for Bash commands, while a tool-level deny is the enforcement for built-in file tools and MCP.
+- Punctuation sweep across about 300 plugin, distillery, and script files.
+- AGENTS.md is tracked again after months of local-only edits, and `release.sh` stages it.
+
+### Fixed
+
+- `/ia-verify` missed a build that rewrote an already-modified tracked file, and reported that failure while continuing to later phases; it now fingerprints file content and stops.
+- `/ia-document-release` guessed `main` when the base branch was unknown, and its fetch exited cleanly in a single-branch clone without creating the ref it then diffed against.
+- Four claims added during the sync were wrong when tested: `git log -- "$ref"` was listed as injectable (it is the safe form), `--` was prescribed for `find` operands (it does not protect them), `(SELECT helper(col))` was said to run once (it runs per row), and a status-only snapshot was said to catch generator rewrites.
+- `/ia-work` and `/ia-test-browser` still referenced the removed todo pipeline.
+- The mirror and ClawHub publish scripts could ship `__pycache__` from local script runs.
+
 ## [4.6.1] - 2026-09-20
 
 Patch: a cross-repo sync applied 35 improvements across eleven skills, and the reactive audit that followed closed 26 findings, nine of them contradictions the sync had introduced between a new rule and an untouched sibling. Component counts are unchanged at 32 skills, 19 agents, and 22 commands.

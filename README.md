@@ -161,6 +161,7 @@ Skills are instructions selected for the task. They guide procedures and identif
 | Skill | Description |
 |-------|------------|
 | [ia-writing-tests](plugins/whetstone/skills/ia-writing-tests/SKILL.md) | DAMP over DRY, test cases from user journeys not implementation details, real objects over mocks (mocks only at system boundaries). Requires red-green cycles for bug fix tests. Includes a 13-excuse Rationalization Table for when you're tempted to skip tests. Works with any language. |
+| [ia-test-audit](plugins/whetstone/skills/ia-test-audit/SKILL.md) | Audits whether existing tests fail when the behavior they claim to protect breaks: mocked-away subjects, weak or circular assertions, undiscriminating fixtures, swallowed failures, and tests missing from a blocking gate. Each finding names the surviving regression and its evidence status, with optional scratch-copy mutation probes. Ships stdlib-only detector scripts as discovery aids. |
 | [ia-code-review](plugins/whetstone/skills/ia-code-review/SKILL.md) | Checks specification compliance before code quality, tracks selected-file coverage, and ranks findings by severity and evidence. Selects deep review when 3+ risk signals apply. Reports suggested action routes without editing during review-only work. For PR reviews and code audits. |
 | [ia-receiving-code-review](plugins/whetstone/skills/ia-receiving-code-review/SKILL.md) | Verify-before-implement for every comment. Different skepticism levels by source: maximum for automated agents, trusted-but-verified for project owners. Requires evidence when pushing back. Prohibits performative agreement. For processing review feedback on your code. |
 | [ia-debugging](plugins/whetstone/skills/ia-debugging/SKILL.md) | Reproduces the reported symptom, tests evidence-backed hypotheses, and verifies permanent repairs with regressions. Distinguishes authorized incident mitigation from root-cause repair and preserves diagnosis-only scope. Reassesses after 3 failed cycles without imposing a fixed tracing depth. |
@@ -296,7 +297,7 @@ whetstone/
 ├── plugins/whetstone/   # The plugin
 │   ├── agents/                     # 19 specialized subagents
 │   ├── commands/                   # 22 slash commands
-│   ├── skills/                     # 32 skills
+│   ├── skills/                     # 29 skills
 │   ├── hooks/                      # Skill injection into subagents
 │   └── README.md                   # Full component reference
 ├── distillery/                     # Skill generation, eval, and evolution
