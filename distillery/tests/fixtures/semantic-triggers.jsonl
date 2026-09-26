@@ -13,3 +13,5 @@
 {"prompt": "Fix the bug in distiller.py Python CLI service", "project_files": ["package.json"], "should_trigger": ["ia-debugging", "ia-python-services"], "should_not_trigger": []}
 {"prompt": "Fix the bug in distiller.py analyze-misfires Python CLI service", "project_files": ["package.json"], "should_trigger": ["ia-debugging", "ia-python-services"], "should_not_trigger": []}
 {"prompt": "Build a React component with loading and error states", "project_files": ["composer.json"], "permission_mode": "bypassPermissions", "tool_input": {"model": "sonnet", "run_in_background": true}, "should_trigger": ["ia-react-frontend"], "should_not_trigger": ["ia-php-laravel"]}
+{"prompt": "audit plugins/whetstone/skills/ia-test-audit/SKILL.md for compliance", "should_trigger": [], "should_not_trigger": ["ia-test-audit"]}
+{"prompt": "audit the tests in the billing module for false confidence", "should_trigger": ["ia-test-audit"], "should_not_trigger": ["ia-writing-tests"]}

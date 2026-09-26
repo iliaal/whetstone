@@ -62,6 +62,14 @@ SKILL_TIERS[ia-receiving-code-review]=1
 SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b'
 SKILL_TIERS[ia-writing-tests]=1
 
+# Audit intent over existing tests, not authoring: bare `test.?quality` stays with
+# ia-writing-tests. Anchored on audit/review verbs or on the regression-sensitivity
+# question ("would still pass", "stay green", "actually catch"). The audit-verb branch
+# allows only determiners and test-kind modifiers before the noun, so load tests,
+# a/b tests, spec documents, and "whether the tests pass" stay out.
+SKILL_PATTERNS[ia-test-audit]='\b(audit|assess|evaluate)\w* (of )?(the |our |these |those |this |all |my |its |their |any )?((\w+ )?(module|package|service|component|controller|class|parser|handler) )?((new|existing|generated|added|unit|integration|e2e|end-to-end|feature|functional|api|regression|phpunit|pytest|jest|vitest|pest|[a-z0-9_]+[^a-z0-9_ ]s) ){0,2}(tests?|test suites?|test specs?|(phpunit|pytest|jest|vitest|pest) suites?)\b|\btest.?audit|\btests?\b.{0,40}\b(false confidence|actually (test|catch|detect|verify)|(would|still|always) (still )?pass|stay green)|(weak|circular|tautolog\w*|vacuous) assertions?|\bmocked.?away\b|\bmutation (test|probe|check)|\breview\w* (the |these |those |our |all |any )?((new|added|generated|changed|updated|existing|unit|integration|e2e) )?(tests|test suites?|test files?)\b|\breview\w* (the |these |this |our )?(new|added|generated|changed|updated) test\b|\b(mutmut|stryker|cargo.?mutants|infection/infection)\b|\b(run|use|using|with|via|try|add|set.?up|configure)\w* (php )?infection\b|\binfection (run|report|score|msi|config)|\b(duplicate|duplicated|redundant|overlapping) tests\b|\btests? (are|is|look|seem)\w* (\w+ )?(redundant|duplicated?)\b|\btests? (is|are|was|were|looks?|seems?) (\w+ )?tautolog\w*|\btautological (tests?|checks?|oracles?)\b|\b(would|will|do|does|did|could) (the |these |our |any )?(existing |current |new |generated )?tests? (\w+ ){0,2}(catch|detect|notice|flag) (it|this|that|regressions?|bugs?|breakage|the (bug|regression|breakage|change)|a (bug|regression|breakage|change))\b|\bmock\w* (out |away )?(the )?(thing|code|function|class|method|subject|module|unit|service) (under test|being tested|(that )?(they|it|we)[^a-z ]?\w* (are |is )?(testing|supposed to test))|\bmocked (subject|sut|unit under test)\b|\b(tests|test files|test suites?|test cases)\b.{0,30}\b(missing from|not in|excluded from|skipped in|never run\w* in|not run\w* (in|by)|not enforced (in|by)) (the )?(ci|gate|pipeline|build)\b|\bskipped tests\b.{0,30}\bci\b|\btests (that |which )?(ci|the pipeline|the gate) never runs?\b|\btests? (are |is )?not enforced\b|\bassertions? (are|is|look|seem)\w* (\w+ )?(weak|vacuous|circular|tautolog\w*|meaningless|trivial)\b'
+SKILL_TIERS[ia-test-audit]=1
+
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
@@ -194,5 +202,6 @@ SKILL_MAINT_SUPPRESS[ia-writing]=1                          # fires on plugin-do
 SKILL_MAINT_SUPPRESS[ia-terraform]=1                        # plugin doesn't use terraform; misfire on audit/sync prompts
 SKILL_MAINT_SUPPRESS[ia-python-services]=1                  # fires on distiller.py work in plugin maintenance
 SKILL_MAINT_SUPPRESS[ia-debugging]=1                        # plugin-maintenance tasks (auditing, skill restructuring, repo scanning) misfire as debugging
+SKILL_MAINT_SUPPRESS[ia-test-audit]=1                       # own name matches \btest.?audit; "audit ... tests" matches audit-plugin prose
 
-# Total skills: 28
+# Total skills: 29

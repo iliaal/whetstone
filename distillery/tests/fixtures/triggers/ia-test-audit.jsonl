@@ -1,0 +1,64 @@
+{"prompt": "audit the tests in the billing module for false confidence", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "do these tests actually catch a regression in the discount logic?", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "assess the test suite for mocked-away subjects", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "these generated tests would still pass if the filter broke", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "find weak assertions and circular oracles in tests/api", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "run a mutation probe on the parser tests", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "review test quality: are the new tests vacuous assertions or real checks", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "test audit for the payments package", "expect": true, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "write tests for the user service", "expect": false, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "add test coverage for the auth module", "expect": false, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "the test quality is poor, improve it", "expect": false, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "audit the auth controller for security issues", "expect": false, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "fix the failing test in checkout", "expect": false, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "run the test suite and tell me what fails", "expect": false, "added_in": "4.6.1", "source": "initial"}
+{"prompt": "review the new tests in this PR", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "review the test suite for the checkout flow", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "review the tests added in this PR for real assertions", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "run mutmut on the pricing module", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "run infection on the billing service", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "add stryker to the frontend repo to check test strength", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "try cargo-mutants on the parser crate", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "find duplicate tests in tests/unit", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "which tests are redundant or duplicated", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "audit our phpunit suite", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "audit our pytest suite", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "assess our jest tests for mocked-away subjects", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "evaluate the vitest suite", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "audit the parser's tests for weak checks", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "audit the billing module tests", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "assess the test specs in the cart package", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "review this PR", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "review the PR diff for correctness bugs", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "review test quality", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "review the test results from ci", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the infection rate chart on the dashboard is wrong", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "deduplicate test data in the seeders", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the test fails with a duplicate key error", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "audit our phpunit config for deprecated options", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "assess the specs in docs/specs for completeness", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "evaluate the api spec for consistency", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "evaluate the load test results", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "assess the a/b test outcome", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "evaluate whether the tests pass after my change", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "check whether the tests pass", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "this test is tautological", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "flag tautological tests in the cart module", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "would the tests catch it if I broke the parser?", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "would the existing tests even detect this change", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the tests are mocking the thing they're testing", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "this spec mocks the function under test", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "find tests with a mocked subject", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "are there skipped tests that CI never runs", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "find tests missing from the CI gate", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the integration tests are not enforced by the gate", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "these assertions are weak", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the assertions look pretty vacuous", "expect": true, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "that argument is tautological", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "does the test catch the exception from the gateway", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "mock the payment gateway in the checkout test", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "mocking the function that sends email", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the test job is skipped in ci because the runner is down", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "add a lint step to the ci gate", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "the saml assertion signature check is weak", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}
+{"prompt": "weak password assertions in the login form validator", "expect": false, "added_in": "4.6.1", "source": "audit-2026-09-26"}

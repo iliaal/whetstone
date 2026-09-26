@@ -26,7 +26,7 @@ Produce tests that prove the requested behavior and fail when that behavior brea
 
 - When choosing cases, fixture shape, mock boundaries, or unit/integration/E2E balance, read [test-design.md](./references/test-design.md).
 - For bug reproducers, mutation controls, or assertions that something must not happen, read [regression-proof.md](./references/regression-proof.md).
-- When reviewing generated tests, changing snapshots, testing async timing, or seeing mocks substitute for behavior, read [test-smells.md](./references/test-smells.md) and the applicable fix ladder in [anti-patterns-extended.md](./references/anti-patterns-extended.md).
+- When reviewing generated tests, changing snapshots, testing async timing, or seeing mocks substitute for behavior, read [test-smells.md](./references/test-smells.md) and the applicable fix ladder in [anti-patterns-extended.md](./references/anti-patterns-extended.md). To audit whether existing tests detect regressions, use ia-test-audit.
 - For weak aggregates, vacuous assertions, race reproduction, or controls that may never reach their subject, read [oracle-smells.md](./references/oracle-smells.md). It routes to the longer catalogs when those failure shapes apply.
 - For container state, sandboxing, timeouts, environment relocation, or process/stream isolation, read [isolation-and-sandbox-traps.md](./references/isolation-and-sandbox-traps.md).
 - For wrappers, filters, conformance oracles, skip conditions, or misleading green summaries, read [false-pass-oracle-traps.md](./references/false-pass-oracle-traps.md).

@@ -2,6 +2,8 @@
 
 Read when reviewing test/gate changes, classifying a disputed issue, handling a prior fix, or prescribing remediation. These checks preserve the distinction between evidence, convention, and opinion.
 
+To audit whether existing tests detect regressions, use ia-test-audit.
+
 - Nitpicking style when linters exist: defer to automated tools
 
 - "While you're at it..." scope creep: open a separate issue

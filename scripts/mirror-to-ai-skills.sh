@@ -57,6 +57,8 @@ for skill_dir in "$SOURCE_DIR"/*/; do
     if [[ "$DRY_RUN" == false ]]; then
         rm -rf "$target_dir"
         cp -r "$skill_dir" "$target_dir"
+        # Bytecode from local script runs is gitignored in the source but would ship here.
+        find "$target_dir" -type d -name __pycache__ -prune -exec rm -rf {} +
         # Rewrite the mirrored SKILL.md frontmatter name: back to the un-prefixed form
         if [[ -f "$target_dir/SKILL.md" ]]; then
             sed -i -E "0,/^name: *ia-$skill_name$/s//name: $skill_name/" "$target_dir/SKILL.md"

@@ -56,7 +56,7 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Symptom:** the test fails only when an intentional decision changes (a constant's value, exact wording, private structure), so it fires on every redesign and sleeps through real bugs.
 
-**Fix:** assert the consumer-visible outcome the decision drives, not the decision's literal value (same fix as Implementation-echo assertions).
+**Fix:** assert the consumer-visible outcome the decision drives, not the decision's literal value (same fix as Implementation-echo assertions). Where exact bytes are the contract (wire format, packaging, a published schema), pinning them is the outcome.
 
 ### Regenerating expected output to obtain green
 
@@ -85,8 +85,8 @@ Before mocking any method, ask: (1) What side effects does the real method have?
 LLM-written tests (including self-written) fail in predictable ways. **Before committing, scan every test for these six smells:**
 
 - **Mock of the system under test**: mocking the very function being tested, so the test asserts what the mock returned. Always a mistake. Delete the mock; call the real function.
-- **Circular assertion**: computing the expected value the same way the code computes the actual value (`expect(sum(a,b)).toBe(a+b)`). The test passes even when both are wrong. Replace with a hand-computed expected value or a known fixture.
+- **Circular assertion**: computing the expected value by calling or copying the code under test (`expect(total(cart)).toBe(cart.lines.reduce(lineTotal, 0))`, where `lineTotal` is the implementation's own helper). The test passes even when both are wrong. Replace with a hand-computed expected value, a known fixture, or an independent reference computation; an independently derived expression is not circular.
 - **Snapshot of unreviewed output**: first-run snapshot committed without reading it. The snapshot enshrines whatever the code happened to emit, bugs included. Hand-write the first snapshot or diff it line by line before accepting.
-- **Assertion-free exercise**: test calls the function, checks nothing, passes because nothing threw. Every test needs at least one `expect(...)` / `assert ...` tied to the behavior under test.
+- **Assertion-free exercise**: test calls the function, checks nothing, passes because nothing threw. Every test needs at least one `expect(...)` / `assert ...` tied to the behavior under test, unless not throwing on a documented input is itself the contract: then name it so (`test_parses_valid_config_without_error`) and let exceptions propagate to the runner.
 - **Over-broad matchers**: `expect(result).toBeTruthy()` on a function that returns an object. Passes for `{}`, `true`, `"anything"`, all equally. Pin to the specific shape.
-- **Implementation-echo assertions**: `expect(repo.save).toHaveBeenCalledTimes(1)` when the real contract is "the user exists in the database afterward." Assert on outcomes (row exists, response body contains expected fields), not call counts or internal method invocations.
+- **Implementation-echo assertions**: `expect(repo.save).toHaveBeenCalledTimes(1)` when the real contract is "the user exists in the database afterward." Assert on outcomes (row exists, response body contains expected fields), not call counts or internal method invocations. A spy is the right oracle when delegation itself is the documented contract (a callback invoked once per item, a hook called in order).

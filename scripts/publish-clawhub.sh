@@ -112,6 +112,9 @@ publish_skill() {
         fi
     fi
 
+    # Bytecode from local script runs is gitignored but would otherwise be uploaded.
+    find "$skill_dir" -type d -name __pycache__ -prune -exec rm -rf {} +
+
     local retries=0
     while true; do
         printf "  %-12s %s → %s ... " "publishing" "$skill_name" "$slug"
