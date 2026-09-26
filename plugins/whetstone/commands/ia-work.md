@@ -1,7 +1,7 @@
 ---
 name: ia-work
 description: Execute work plans efficiently while maintaining quality and finishing features
-argument-hint: "[plan file, specification, or todo file path]"
+argument-hint: "[plan file or specification path]"
 ---
 
 # Work Plan Execution Command
@@ -10,7 +10,7 @@ Execute a work plan efficiently while maintaining quality and finishing features
 
 ## Introduction
 
-This command takes a work document (plan, specification, or todo file) and executes it systematically. The focus is on **shipping complete features** by understanding requirements quickly, following existing patterns, and maintaining quality throughout.
+This command takes a work document (plan or specification) and executes it systematically. The focus is on **shipping complete features** by understanding requirements quickly, following existing patterns, and maintaining quality throughout.
 
 ## Input Document
 
@@ -190,7 +190,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
 2. **Code Review** (gate, not a judgement call)
 
-   Read agents from `whetstone.local.md` frontmatter (`review_agents`). If absent, select applicable available reviewers for this invocation without opening the setup wizard. Deduplicate the list. Run independent reviewers in parallel, present findings, and address authorized critical fixes. Record the reviewed revision, protocol, and exact created todo paths for a parent pipeline; an unchanged diff need not repeat an identical review.
+   Read agents from `whetstone.local.md` frontmatter (`review_agents`). If absent, select applicable available reviewers for this invocation without opening the setup wizard. Deduplicate the list. Run independent reviewers in parallel, present the merged findings under sequential `CR-001`, `CR-002`... IDs (the `/ia-review` scheme), and address authorized critical fixes. Record the reviewed revision, protocol, and those exact IDs (`current_review_findings`) for a parent pipeline, or the IDs `/ia-review` returns when handed off below; an unchanged diff need not repeat an identical review.
 
    This step is not optional. It closes one of two ways, and both the PR template's Testing section and the Phase 4 Notify User summary have to say which:
 

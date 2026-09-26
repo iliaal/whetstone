@@ -1,6 +1,6 @@
 # Update Context Files Workflow
 
-Verify and fix AGENTS.md (and CLAUDE.md symlink) against actual codebase state.
+Verify and fix AGENTS.md (and CLAUDE.md, if present as a symlink or `@AGENTS.md` import) against actual codebase state.
 
 ## Step 1: Extract Verifiable Claims
 

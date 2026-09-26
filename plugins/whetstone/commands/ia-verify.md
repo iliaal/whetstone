@@ -61,6 +61,8 @@ Detect and run the project's build command:
 - `go.mod` → `go build ./...`
 - `composer.json` → `composer install`
 
+After the build, run any generation command the project itself declares (a CLAUDE.md/AGENTS.md instruction, Makefile target, or `package.json`/`composer.json` script for codegen, arginfo or OpenAPI client regeneration, autoload maps, or lockfile refresh); do not invent one. Snapshot the tree's content, not just its status, before the build and compare after this phase: `{ git status --porcelain --untracked-files=all; git diff --no-textconv --no-ext-diff --binary HEAD; } | git hash-object --stdin`. Status codes alone miss a rewrite of an already-modified file. A changed hash means the build or generator rewrote tracked files, so the tree is stale against its own generator: mark Build `FAIL (stale generated files: <paths from git status --porcelain>)` and stop, like any other failure.
+
 Record: pass/fail + error output.
 
 ### 2. Type Check (skip for dynamically typed projects without type tooling)
@@ -84,6 +86,8 @@ Compare warning counts against the same explicit base SHA in an isolated checkou
 Record: pass/fail + warning/error counts + new warnings introduced (if measurable).
 
 ### 4. Tests
+
+Before running a suite, migration, or seeder, resolve its database and service targets per the Pre-Verification Check of the `ia-verification-before-completion` skill; if any target is not local or disposable, stop and report NOT READY pending the user's choice of environment.
 
 Run the project's test suite:
 - `npm test`, `pytest`, `go test ./...`, `php artisan test`, `mix test`, etc.

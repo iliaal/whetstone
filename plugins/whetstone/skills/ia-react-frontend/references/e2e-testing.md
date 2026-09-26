@@ -68,17 +68,20 @@ import { type Page, type Locator } from '@playwright/test';
 export abstract class BasePage {
   constructor(protected readonly page: Page) {}
   abstract goto(): Promise<void>;
-  async waitForLoad() { await this.page.waitForLoadState('networkidle'); }
+  abstract readonly ready: Locator;
+  async waitForLoad() { await this.ready.waitFor(); }
   get toast(): Locator { return this.page.getByRole('alert'); }
 }
 
 // e2e/pages/users.page.ts
 export class UsersPage extends BasePage {
+  readonly ready: Locator;
   readonly createButton: Locator;
   readonly searchInput: Locator;
 
   constructor(page: Page) {
     super(page);
+    this.ready = page.getByRole('heading', { name: /users/i });
     this.createButton = page.getByRole('button', { name: /create/i });
     this.searchInput = page.getByRole('searchbox', { name: /search/i });
   }
@@ -89,8 +92,9 @@ export class UsersPage extends BasePage {
   }
 
   async searchFor(query: string) {
+    const resp = this.page.waitForResponse('**/api/users?*');
     await this.searchInput.fill(query);
-    await this.page.waitForResponse('**/api/users?*');
+    await resp;
   }
 }
 ```
@@ -115,14 +119,16 @@ Prefer `locator.fill(value)` to `page.keyboard.type()`. Synthesised keystrokes d
 
 ## Wait Strategies
 
-Never use `waitForTimeout` or `setTimeout`. Use explicit conditions:
+Never use `waitForTimeout` or `setTimeout`. Do not use `waitForLoadState('networkidle')` as a readiness signal; Playwright's API docs mark it discouraged for testing and point to web assertions instead. Start a `waitForResponse` before the action that triggers the request, or a fast response is missed. Use explicit conditions:
 
 ```typescript
 await page.getByRole('heading', { name: 'Dashboard' }).waitFor();
 await page.waitForURL('/dashboard');
-await page.waitForResponse(
+const resp = page.waitForResponse(
   (r) => r.url().includes('/api/users') && r.status() === 200,
 );
+await page.getByRole('button', { name: /load/i }).click();
+await resp;
 await page.getByTestId('spinner').waitFor({ state: 'hidden' });
 ```
 
@@ -151,7 +157,6 @@ Tests receive auth state via `storageState` in config projects.
 - Tests create own data via API helpers (faster than UI), clean up in `finally` blocks
 - Mock responses with `page.route('**/api/path', route => route.fulfill({ ... }))`
 - Simulate errors with `route.abort('failed')`
-- Wait for responses: `const resp = page.waitForResponse('**/api/users'); await click; await resp;`
 
 ## Flaky Test Fixes
 

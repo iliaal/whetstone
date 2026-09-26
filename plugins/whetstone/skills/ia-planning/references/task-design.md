@@ -33,7 +33,7 @@ Ask only about decisions that fall in the "user decides" category above. Batch t
 
 ## Task Rules
 
-Write every task as if the implementer has zero context and questionable taste: they cannot infer intent from conversation history, so everything must be in the plan.
+Write every task for a capable implementer with zero context. Given the exact interface and the proving test, they write idiomatic code; what they cannot infer from conversation history is what was decided (files, names, signatures, the spec's values, the tests that prove it), so every decision must be in the plan. Plans record decisions, not code bodies; [plan-format.md](./plan-format.md) *Plan Quality Rules* defines what each step contains.
 
 - **Atomic**: one independently verifiable action. Internal steps may separate test setup from implementation, but they do not become separately closable work items.
 - **Verb-first**: "Add...", "Create...", "Refactor...", "Verify..."

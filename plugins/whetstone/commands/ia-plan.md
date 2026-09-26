@@ -153,7 +153,7 @@ Before finalizing, re-read the brainstorm document and verify:
 - [ ] All template sections are complete
 - [ ] Links and references are working
 - [ ] Acceptance criteria are measurable
-- [ ] Add names of files in pseudo code examples and todo lists
+- [ ] Name the file in every signature and checklist item
 - [ ] Add an ERD mermaid diagram if applicable for new model changes
 
 ## Write Plan File

@@ -6,13 +6,18 @@
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders FORCE ROW LEVEL SECURITY;  -- applies to table owner too
 
--- Set session context (generic, no extensions needed)
-SET app.current_user_id = '123';
-
 CREATE POLICY orders_user_policy ON orders
   FOR ALL
-  USING (user_id = current_setting('app.current_user_id')::bigint);
+  USING (user_id = (SELECT nullif(current_setting('app.current_user_id', true), '')::bigint));
+
+-- Per request: transaction-scoped context, first statement inside the request's transaction
+BEGIN;
+SELECT set_config('app.current_user_id', '123', true);  -- is_local = true, same as SET LOCAL
+-- ... request queries ...
+COMMIT;
 ```
+
+**Scope the identity to the transaction, never the session.** A plain `SET app.current_user_id` persists on the server connection; under transaction-mode pooling that connection is handed to the next client, and RLS then evaluates against the previous user's ID. `SET LOCAL` / `set_config(..., true)` reverts at `COMMIT`/`ROLLBACK`. Read it with `missing_ok = true` and `nullif(..., '')`: a never-set setting returns NULL, but once a connection has set it locally, later transactions on that connection read `''`, which errors on the `::bigint` cast instead of matching no rows.
 
 **Performance:** Policy expressions evaluate per row. Wrap function calls in a scalar subquery so PG evaluates once and caches:
 
@@ -23,7 +28,12 @@ USING (get_current_user() = user_id)
 USING ((SELECT get_current_user()) = user_id)
 ```
 
-Always index columns referenced in RLS policies. For complex multi-table checks, use `SECURITY DEFINER` helper functions.
+Always index columns referenced in RLS policies. For complex multi-table checks, use `SECURITY DEFINER` helper functions, hardened, because they run with the owner's privileges:
+
+- Pin `search_path` on the function itself (`SET search_path = app_private, pg_temp`, or `SET search_path = ''`) and schema-qualify every object in the body. Otherwise a caller who can create objects in a schema on the path, can shadow a table, function, or operator the body uses; the always-writable temp schema, searched first by default for tables and views (never implicitly for functions or operators), can shadow a table or view. `pg_temp` goes last.
+- Functions are executable by `PUBLIC` by default. `REVOKE ALL ON FUNCTION ... FROM PUBLIC`, then `GRANT EXECUTE` only to the roles the policies apply to, in the same transaction as the `CREATE FUNCTION` so there is no window where it is callable by everyone.
+- Create it in a schema untrusted roles cannot write to or reach through an API layer, and make the owner a dedicated role with only the privileges the check needs, not a superuser.
+- Wrap it as `(SELECT helper(...))` so it evaluates once only when its arguments do not reference the row (constants, session settings); a helper taking a row column (`is_member(org_id)`) becomes a correlated subplan that runs per row regardless, so keep it cheap and index what it probes.
 
 
 ## Concurrency Patterns
@@ -47,8 +57,8 @@ Foreign keys *from* a partitioned table need PG11+; foreign keys *referencing* a
 
 - Keep transactions short; long txns block vacuum and bloat tables
 - Advisory locks for application-level mutual exclusion: `pg_advisory_xact_lock(key)`
-- Non-blocking alternative: `pg_try_advisory_lock(key)` returns false instead of waiting
-- **`pg_advisory_xact_lock()` called outside an open transaction is released immediately.** Under autocommit the call is its own transaction, so the lock is taken and dropped before the protected code runs, and every test still passes because nothing contends. Assert the nesting depth the lock was taken at, not that the call happened; a transaction-wrapping test harness already holds one, so depth 1 means the caller opened none. Reserve session-scoped `pg_advisory_lock()` for paths where the release sits on an unconditional cleanup.
+- Non-blocking alternative: `pg_try_advisory_xact_lock(key)` returns false instead of waiting
+- **`pg_advisory_xact_lock()` called outside an open transaction is released immediately.** Under autocommit the call is its own transaction, so the lock is taken and dropped before the protected code runs, and every test still passes because nothing contends. Assert the nesting depth the lock was taken at, not that the call happened; a transaction-wrapping test harness already holds one, so depth 1 means the caller opened none. Reserve session-scoped `pg_advisory_lock()` / `pg_try_advisory_lock()` for paths where the release sits on an unconditional cleanup, and only on a direct or session-mode connection (see Connection Pooling).
 - Check blocked queries: `SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock'`
 - Monitor deadlocks: `SELECT deadlocks FROM pg_stat_database WHERE datname = current_database()`
 - **`SELECT ... FOR UPDATE` only locks rows that already exist**; it does not prevent a phantom insert of a missing row. Two transactions can both query a key, both see no row, both proceed to insert; the second fails the unique constraint (or both succeed if none existed). For a get-or-create / insert-if-missing race, `FOR UPDATE` is the wrong tool: use a partial unique index + `INSERT ... ON CONFLICT DO NOTHING/UPDATE`, or serialize the key with `pg_advisory_xact_lock(hashtext(:key))` before the existence check.
@@ -67,9 +77,14 @@ See [full-text-search.md](./full-text-search.md) for weighted tsvector setup, qu
 
 Always pool in production. Direct connections cost ~10MB each.
 - PgBouncer in `transaction` mode for most workloads
-- `statement` mode if no session-level features (prepared statements, temp tables, advisory locks)
+- `session` mode when the app depends on session state
+- `statement` mode additionally forbids multi-statement transactions (forced autocommit); rarely the right choice for an application
 
-**Prepared statement caveat:** Named prepared statements are bound to a specific connection. In transaction-mode pooling, the next request may hit a different connection. Use unnamed/extended-query-protocol statements (most ORMs default to this), or deallocate immediately after use.
+**Transaction mode breaks session state.** PgBouncer's compatibility table marks these as never supported in transaction pooling: `SET`/`RESET` (use `SET LOCAL` / `set_config(..., true)`), session-level advisory locks (use `pg_advisory_xact_lock`), `LISTEN`, `WITH HOLD` cursors, SQL-level `PREPARE`/`DEALLOCATE`, temp tables with `PRESERVE ROWS`/`DELETE ROWS` (`ON COMMIT DROP` works), and `LOAD`. `NOTIFY` works. Symptoms rarely mention pooling: a `SET search_path` that stops applying (`relation does not exist`) or leaks into another client (PgBouncer 1.26+ on PostgreSQL 18+ tracks `search_path` by default), or state inherited from another client.
+
+**Prepared statement caveat:** Named prepared statements are bound to a specific connection. In transaction-mode pooling, the next request may hit a different connection. PgBouncer 1.21.0+ tracks protocol-level named prepared statements across server connections when `max_prepared_statements` is non-zero; SQL-level `PREPARE` is still unsupported. On older PgBouncer, or with that setting at 0, use unnamed/extended-query-protocol statements (most ORMs default to this), or deallocate immediately after use.
+
+**Give session-bound work a direct connection.** Schema migrations, `pg_dump`/`pg_restore`, logical replication, and `LISTEN` consumers connect to Postgres directly or through a session-mode pool. Point the migration tool's own connection setting at that URL instead of un-pooling the app.
 
 See [performance-patterns.md](./performance-patterns.md) for the query shapes an index cannot serve, pool-exhaustion diagnosis (raising `max` relocates the queue), and cache discipline (stampede, negative caching, key completeness).
 

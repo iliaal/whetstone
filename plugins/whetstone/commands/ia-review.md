@@ -33,7 +33,7 @@ First, determine the review target type and set up the code for analysis.
 
 - [ ] Determine review type: PR number (numeric), GitHub URL, file path (.md), or empty (current branch)
 - [ ] Check current git branch
-- [ ] If ALREADY on the target branch (PR branch, requested branch name, or the branch already checked out for review) → proceed with analysis on current branch
+- [ ] If ALREADY on the target branch (PR branch, requested branch name, or the branch already checked out for review) → proceed with analysis on current branch; for a PR target, first confirm `git rev-parse HEAD` equals `gh pr view <pr> --json headRefOid -q .headRefOid` (the `ia-code-review` scope-resolution head-identity check), and on a mismatch refetch or review `gh pr diff <pr>` instead
 - [ ] If DIFFERENT branch than the review target → offer to use the `ia-git-worktree` skill for an isolated worktree of the review branch
 - [ ] Fetch PR metadata using `gh pr view --json` for title, body, files, linked issues
 - [ ] Resolve and record each review unit's deterministic stack route using the `ia-code-review` language profile reference

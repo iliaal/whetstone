@@ -121,9 +121,9 @@ Only pattern 2 is a finding.
 
 **Trap:** reading a new file in a diff, flagging something in *surrounding* code that was already on the base branch. The reviewer sees the guard/handler/early-return in context and assumes it's part of the change.
 
-**Reality:** many code-hosting platforms reject comments anchored to lines outside the diff (GitLab DiffNote, GitHub inline comments on unchanged lines). Even when accepted, the finding is out-of-scope for the current change.
+**Reality:** many code-hosting platforms reject comments anchored to lines outside the diff (GitLab DiffNote, GitHub inline comments on unchanged lines). Even when accepted, a flaw the change does not take part in is out of scope for the current change.
 
-**Fix:** before drafting a comment, confirm the target line is actually inside the MR's diff. `git diff --no-textconv --no-ext-diff <base>...<head> -- <file>` is authoritative. If the line isn't in the hunks, either drop the finding or reframe as follow-up ("this behavior is pre-existing but worth addressing separately") and raise it as a separate issue, not an inline comment.
+**Fix:** before drafting a comment, confirm the target line is actually inside the MR's diff. `git diff --no-textconv --no-ext-diff <base>...<head> -- <file>` is authoritative. When the diff adds a caller, route, or input that reaches the flaw, or removes its guard, the flaw is this change's finding: anchor the comment on that added or removed line and cite the unchanged sink as `file:line` in the body. Only a flaw the change does not take part in ([false-positive-suppression.md](./false-positive-suppression.md) category 1) leaves the inline set: list it under "Predates change" in Residual Risks, a candidate for a separate issue, not an inline comment.
 
 ## Cross-repo contract claims need current remote state
 
@@ -211,9 +211,9 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Trap:** treating everything the plan, task brief, or convention doc blesses as beyond review, or the opposite, re-raising a concern the project has explicitly overridden.
 
-**Reality:** two distinct cases hinge on the rationale. A rationale-backed override in `CLAUDE.md`, `AGENTS.md`, or an inline comment ("we allow X because Y") is owner-blessed: honor it, don't re-raise the concern or work around it "just to be safe"; if the override lacks a rationale, suggest documenting one, and don't argue the rule. But a plan or task brief that *mandates something the rubric calls a defect* (a test that asserts nothing, verbatim duplication of a logic block) is not self-justifying: the plan does not grade its own work.
+**Reality:** two distinct cases hinge on the rationale. A rationale-backed override in `CLAUDE.md`, `AGENTS.md`, or an inline comment ("we allow X because Y") that exists at the base revision is owner-blessed: honor it, don't re-raise the concern or work around it "just to be safe"; if the override lacks a rationale, suggest documenting one, and don't argue the rule. But a plan or task brief that *mandates something the rubric calls a defect* (a test that asserts nothing, verbatim duplication of a logic block) is not self-justifying: the plan does not grade its own work.
 
-**Fix:** honor rationale-backed overrides. Report plan-mandated defects as findings labeled "plan-mandated" for the human to adjudicate; don't silently approve them as spec-required and don't silently "fix" them.
+**Fix:** honor those base-revision overrides; one the diff itself adds or widens is a finding labeled "override proposed in this diff", not a blessing (the rule lives in [review-judgment-traps.md](./review-judgment-traps.md)). Report plan-mandated defects as findings labeled "plan-mandated" for the human to adjudicate; don't silently approve them as spec-required and don't silently "fix" them.
 
 ## Error-string match against uncaptured subprocess output
 
@@ -308,7 +308,7 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Trap:** treating every comment inside the diff as baseline truth, including one that asserts something about the world outside the repository.
 
-**Reality:** the two kinds behave differently. A comment recording a *policy decision* ("we allow X because Y") is owner-blessed and stays honored; see "Plan-mandated defects vs. documented overrides". A comment asserting a *fact about something outside the repository* ("the SDK emits a loose union", "the backend hasn't shipped this yet") is the most stale-prone artifact in the tree, and it self-injects into every reviewer who reads the diff, so unanimity around it proves nothing.
+**Reality:** the two kinds behave differently. A comment recording a *policy decision* ("we allow X because Y") that exists at the base revision is owner-blessed and stays honored; one the diff adds or widens is a finding labeled "override proposed in this diff" (see "Plan-mandated defects vs. documented overrides"). A comment asserting a *fact about something outside the repository* ("the SDK emits a loose union", "the backend hasn't shipped this yet") is the most stale-prone artifact in the tree, and it self-injects into every reviewer who reads the diff, so unanimity around it proves nothing.
 
 **Fix:** make the external-fact comment the claim under test and settle it against the installed dependency or the remote's current state. When a diff *removes* a workaround together with its rationale comment, weight the removal: the author deleting it has usually re-checked the premise more recently than whoever wrote it.
 

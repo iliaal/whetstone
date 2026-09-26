@@ -2,7 +2,7 @@
 
 ## Intent
 
-`ia-document-review` is a `workflow`-class skill (a multi-step process producing concrete artifacts). Structural review of documents for gaps, clarity, completeness, and organization. Use when a brainstorm, plan, spec, ADR, or any doc needs polish before the next workflow step. For exploring new ideas from scratch, use brainstorming instead.
+`ia-document-review` is a `workflow`-class skill (a multi-step process producing concrete artifacts). Structural and accuracy review of documents: gaps, clarity, completeness, organization, and claims checked against the code. Use when a brainstorm, plan, spec, ADR, or any doc needs polish before the next workflow step. For exploring new ideas from scratch, use brainstorming instead.
 
 ## Scope
 

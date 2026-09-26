@@ -39,4 +39,4 @@ Codex agents share the current filesystem. The collaboration schema has no `isol
 
 ## Task tracking and shutdown
 
-Codex collaboration tools do not expose Claude's `TaskCreate`, `TaskUpdate`, team inbox, or shutdown operations. Track dependencies in the current plan or file-based todos when available. Agents finish their own turns; interrupt a running agent only when its work must stop.
+Codex collaboration tools do not expose Claude's `TaskCreate`, `TaskUpdate`, team inbox, or shutdown operations. Track dependencies in the current plan. Agents finish their own turns; interrupt a running agent only when its work must stop.

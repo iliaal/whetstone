@@ -9,7 +9,7 @@ When asked to deepen a plan, don't re-run the full planning workflow. Instead:
 1. Read the existing plan file
 2. Identify phases or tasks that are vague, under-specified, or missing verification steps
 3. For each weak area, run targeted research (read relevant code, check existing patterns, verify assumptions)
-4. Expand the weak sections with concrete file paths, code patterns, and verification steps
+4. Expand the weak sections with concrete file paths, decisions (signatures, assertions, spec values), and verification steps
 5. Preserve supported decisions; replace instructions contradicted by verified evidence. Keep useful superseded rationale in a separate decision-history note, not in the active execution steps.
 
 Maintain one internally consistent current plan. Restructure only where needed to resolve a gap or contradiction, and report material decision changes.
@@ -32,9 +32,7 @@ When research changes a section, update its active instructions and add the rele
 - [Optimization opportunity or benchmark to target]
 
 **Implementation Details:**
-```[language]
-// Concrete code example from research
-```
+- [Signature, pinned value, or assertion the research settled; a code body only for an algorithm the signature and tests leave undetermined]
 
 **Edge Cases:**
 - [Edge case and handling strategy]

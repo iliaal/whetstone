@@ -45,8 +45,10 @@ Determine the target branch for this PR. Use this as "the base branch" in all su
 ```bash
 gh pr view --json baseRefName -q .baseRefName 2>/dev/null || \
 gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || \
-echo "main"
+git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||'
 ```
+
+If every command prints nothing, stop and ask for the base branch (`AskUserQuestion`); never assume `main`.
 
 If on the base branch: abort with "You're on the base branch. Run this from a feature branch."
 
@@ -54,10 +56,13 @@ If on the base branch: abort with "You're on the base branch. Run this from a fe
 
 ## Step 1: Pre-flight & diff analysis
 
+Fetch the base first; a stale or missing local `<base>` picks an old merge-base and attributes already-merged commits to this branch. The explicit refspec writes `origin/<base>` even in a single-branch clone, where a bare `git fetch origin <base>` exits 0 and updates only `FETCH_HEAD`. If the fetch fails, stop and report the error. If `git merge-base origin/<base> HEAD` then finds nothing and `git rev-parse --is-shallow-repository` prints `true`, rerun the fetch with `--unshallow` and retry; if there is still no merge base, stop and report it. The commands assume `origin` is the repository `gh` resolved in Step 0; in a fork checkout where gh's default repository is the upstream, substitute the remote whose URL matches `gh repo view --json url -q .url`.
+
 ```bash
-git diff <base>...HEAD --stat
-git log <base>..HEAD --oneline
-git diff <base>...HEAD --name-only
+git fetch --no-tags origin "+refs/heads/<base>:refs/remotes/origin/<base>"
+git diff origin/<base>...HEAD --stat
+git log origin/<base>..HEAD --oneline
+git diff origin/<base>...HEAD --name-only
 ```
 
 Discover all documentation files:
@@ -180,7 +185,7 @@ Skip if TODOS.md does not exist.
 Check if VERSION (or the version field in plugin.json/package.json/pyproject.toml) was already modified on this branch:
 
 ```bash
-git diff <base>...HEAD -- VERSION plugin.json package.json pyproject.toml 2>/dev/null
+git diff --no-textconv --no-ext-diff origin/<base>...HEAD -- VERSION plugin.json package.json pyproject.toml 2>/dev/null
 ```
 
 **If not bumped:** Ask:
@@ -208,8 +213,10 @@ If no documentation files were modified, output "All documentation is up to date
 ```bash
 git add <file1> <file2> ...
 git commit -m "docs: sync documentation for vX.Y.Z"
-git push
+git push origin <current-branch>
 ```
+
+If the push fails, stop and report the error verbatim. Skip the PR body update and print every updated row of the health summary as `Committed, not pushed -- <error>`, never as `Updated`. Never force-push or rebase to make it succeed.
 
 **PR body update:**
 
@@ -243,4 +250,4 @@ Documentation health:
   VERSION         [Bumped -- 2.45.5 → 2.45.6]
 ```
 
-Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not bumped -- user chose to skip`
+Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not bumped -- user chose to skip`, `Committed, not pushed -- <error>`

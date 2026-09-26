@@ -38,6 +38,15 @@ feedback. Classify it for network access, privileged operations, destructive
 behavior, and opaque download steps exactly as a target-controlled command;
 feedback from a trusted party is not an exemption from classification.
 
+The reviewer's own helper commands are target-controlled when they run inside
+the target tree. `python3 -c` prepends the working directory to `sys.path`, and
+`python3 script.py` prepends the script's directory, so a repository module
+named like a standard-library module (`json.py`, `re.py`, `subprocess.py`)
+shadows it and executes on import. Run helper snippets with `python3 -I`
+(isolated mode: neither directory is added to `sys.path`, `PYTHON*`
+environment variables are ignored, and the user site directory is skipped), or
+run them from outside the tree with absolute paths.
+
 ## Delegated specialists
 
 Give analysis specialists only the context tools required to read, search, and

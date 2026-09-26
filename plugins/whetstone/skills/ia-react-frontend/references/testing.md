@@ -15,7 +15,7 @@ import userEvent from '@testing-library/user-event';
 vi.mock('@/api/client');
 
 describe('UserForm', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => { vi.clearAllMocks(); }); // redundant on Vitest 5 unless clearMocks: false
 
   it('should submit valid form data', async () => {
     const onSubmit = vi.fn();
@@ -107,3 +107,14 @@ Fill forms with one `fireEvent.change` per field when typing is not the behavior
 Under `pool: 'vmThreads'` a worker's RSS grows monotonically across files, and the recycler's default threshold is a share of `os.totalmem()` (the *host's* RAM, not the container's cgroup limit), so in CI the kernel OOM-kills the worker before Vitest decides to recycle it. Fingerprint: `Worker exited unexpectedly` late in the run, every test that ran reporting green, and **no `Test Files ... | Tests ...` summary line at all**. Set `test.vmMemoryLimit` in the Vitest config (512MB is a sane starting point) on every app using a VM pool; it is a recycle threshold rather than a hard cap, and it is inert on non-VM pools, so it is safe to set repo-wide.
 
 happy-dom installs a virtual console that swallows `console.*`, so debug output written from a test never reaches the runner and a diagnostic that prints nothing looks like a code path that never ran. Write diagnostics through `process.stdout.write`. Any console-reporting safety net (a setup file that fails the suite on an unexpected `console.error`, for instance) must write to stdout the same way, and must throw when the environment hook it depends on is missing rather than silently reporting nothing.
+
+## Vitest 5 Upgrade: Changes That Stay Green
+
+These 5.0 changes alter what a suite checks or emits without a loud failure. Audit them on upgrade (source: the official Vitest migration guide):
+
+- `clearMocks` defaults to `true`: mock call history is cleared before every test, so calls recorded in `beforeAll` or at module scope are gone when the test body runs. A `not.toHaveBeenCalled()` over them passes vacuously, and a `vi.clearAllMocks()` in `beforeEach` becomes redundant. Set `clearMocks: false` to keep the v4 behavior.
+- `-t` / `testNamePattern` matches the full name, with suite and test titles joined by `' > '`, so an existing filter can select a different set of tests.
+- Config files are no longer found in parent directories; running `vitest` from a subdirectory needs `--config <path>` or it runs without the parent config.
+- The `json` and `junit` reporters write to `.vitest/json/output.json` and `.vitest/junit/output.xml` by default instead of stdout, so a CI step parsing stdout reads nothing.
+- Coverage `include`/`exclude` patterns match paths relative to the project root, and a pattern with no wildcard matches a whole directory, so coverage totals can shift.
+- `toThrow('')` matches any error message; assert an empty message with `/^$/`.

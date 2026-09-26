@@ -68,10 +68,11 @@ You will systematically execute these security scans:
    - Check for type validation, length limits, and format constraints
    - Ensure validation happens at route/controller level, not deep in business logic
 
-2. **SQL Injection Risk Assessment**
+2. **SQL and Command Injection Risk Assessment**
    - Scan for raw queries and string concatenation in SQL contexts
    - Ensure all queries use parameterization, prepared statements, or ORM query builders
    - Flag any string interpolation in SQL contexts
+   - Trace untrusted input into shell and process sinks: shell-string execution is command injection, and an argv element that can start with `-` is option injection even without a shell
 
 3. **XSS Vulnerability Detection**
    - Identify all output points in views and templates
@@ -100,6 +101,8 @@ You will systematically execute these security scans:
 7. **Agentic / LLM Sinks** (when the code drives an LLM or exposes tools to one)
    - **Confused-deputy on tool scope**: a tool or function exposed to the model can invoke an action the requesting user is not authorized to perform, making the model a deputy with broader privilege than the caller. Verify tool authorization is checked against the *caller's* identity, not the agent's.
    - **Cost exhaustion from unauthenticated reach**: an agent loop with no iteration/cost cap, or a paid-model API call, whose trigger is reachable from unauthenticated input. Anchor the scan on provider SDKs (`anthropic`, `openai`, `langchain`, `bedrock`, `vertexai`) and `messages=`/`tools=`/`.invoke(`/`.run(`.
+   - **Model output carries the trust of the least-trusted text in its context**: with only the requesting user's own message present, treat it as that user's request input (a finding only where another principal consumes it); once third-party content (fetched page, retrieved document, another user's data) reached the context, treat it as attacker-controlled. Trace completion text and structured output into `eval`/`exec`, SQL, shell, `innerHTML`/`dangerouslySetInnerHTML`, redirects, and file paths.
+   - **Model-emitted tool arguments are validated before execution** against a schema, allowlisted values, and path containment; caller authorization alone still lets `read_file(path="../../.env")` run with the caller's own rights.
    - Prompt-injection *into* system prompts, tool schemas, or function definitions is governed by the FP-suppression precedents (below); apply those rather than re-deriving the rule here.
 
 ## Audit Deliverable Format
@@ -158,7 +161,7 @@ Be thorough. Be paranoid.
 
 ## References
 
-Read [security-patterns.md](../skills/ia-code-review/references/security-patterns.md) for grep-able detection patterns across the common vulnerability classes (deployment, config, auth, CSRF, XSS, cache, file handling, injection, SSRF, redirects, CORS, deserialization/XXE, weak randomness/TLS). Use these patterns to systematically scan the codebase.
+Read [security-patterns.md](../skills/ia-code-review/references/security-patterns.md) for grep-able detection patterns across the common vulnerability classes (deployment, config, auth, CSRF, XSS, cache, file handling and archive extraction, SQL/NoSQL injection, command/argument injection, SSRF and cross-origin credential forwarding, redirects, CORS, deserialization/XXE, weak randomness/TLS, fail-open integrity checks). Use these patterns to systematically scan the codebase.
 
 If the security-patterns reference is unavailable, apply OWASP Top 10 checks inline: injection (SQL, NoSQL, command, LDAP), broken auth, sensitive data exposure, XXE, broken access control, security misconfiguration, XSS, insecure deserialization, known vulnerable components, insufficient logging.
 

@@ -22,9 +22,11 @@ Manage project documentation by verifying against actual codebase state: analyze
 
 ## Portability
 
-AGENTS.md is the universal context file (works with Claude Code, Codex, Kilocode). During Initialize Context or Update Context Files workflows only: if CLAUDE.md exists without AGENTS.md, confirm with the user first (Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat), then `mv CLAUDE.md AGENTS.md && ln -sf AGENTS.md CLAUDE.md`. Never migrate as a side effect of another task.
+AGENTS.md is the universal context file (works with Claude Code, Codex, Kilocode). During Initialize Context or Update Context Files workflows only: if CLAUDE.md exists without AGENTS.md, confirm with the user first (Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat), then `mv CLAUDE.md AGENTS.md`. Never migrate as a side effect of another task.
 
-When this skill references "context files", it means AGENTS.md (and CLAUDE.md if present as symlink).
+The CLAUDE.md symlink is optional compatibility, not a required step. Claude Code v2.1.277 and later reads AGENTS.md natively when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in the working directory or above it; any of those three found there silently stops that loading, so flag it. For harnesses or sessions that read only CLAUDE.md, offer a CLAUDE.md containing `@AGENTS.md`; offer `ln -s AGENTS.md CLAUDE.md` only when no contributor uses Windows (a clone without `core.symlinks` gets a one-line text file); Edit/Write refuse to write through the link. Keep an existing symlink unless the user asks to remove it. Details and fixes: [init-agents.md](./references/init-agents.md), section "Claude Code compatibility".
+
+When this skill references "context files", it means AGENTS.md (and CLAUDE.md if present, as a symlink or an `@AGENTS.md` import).
 
 
 ## Monorepos

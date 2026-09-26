@@ -14,7 +14,7 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 
 | Agent | Lens | Focus |
 |-------|------|-------|
-| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed, and for every rule loosened or removed state what it suppresses in this same diff ("2 findings suppressed by a rule added in this PR", quoted). Resolve criteria from the reviewed head; never silently apply a rule the diff introduces. |
+| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed. A rule change that permits what the base rules flag (an added exemption, a loosened or removed rule) suppresses nothing in this same diff: judge those hunks against the base-revision rules, report every finding it would suppress, and disclose the rule change as a finding labeled "override proposed in this diff" that names them ("2 findings a rule added in this PR would suppress", quoted). A rule the diff adds or tightens to flag more applies at the reviewed head. |
 | correctness | Logic & behavior | Intent alignment (code matches stated PR intent), edge cases, off-by-ones, error paths, type safety, null handling, async ordering, state management |
 | security | Attack surface | Injection vectors (SQL, XSS, CSRF, SSRF, command), auth/authz gaps, secrets exposure, trust boundaries, race conditions. Load [security-patterns.md](./security-patterns.md) |
 | testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage |
@@ -150,7 +150,7 @@ After all agents return, apply these rules in order. Each consolidated finding c
 6. **Two or more agents agree** → tag `MULTI-SPECIALIST AGREEMENT ({contributors})` and record whether they checked distinct evidence. Agent count alone changes neither severity nor confidence.
 7. **New evidence from any contributor** → reassess the claim, its impact, and remaining assumptions.
 8. **Apply confidence rubric** → main findings need a concrete supported failure path; consequential unresolved candidates go to Residual Risks.
-9. **Apply false-positive suppression** → remove entries matching the categories in the main skill.
+9. **Apply false-positive suppression** → remove entries matching the categories in [false-positive-suppression.md](./false-positive-suppression.md), except genuinely pre-existing flaws, which move to the "Predates change" line under Residual Risks.
 10. **Sort by severity** (Critical > Important > Medium > Minor), then by confidence within each level.
 11. **Cap total findings** at 20 across all agents. If more exist, note the overflow count.
 

@@ -36,17 +36,17 @@ Treat each target independently:
 
 - The metadata source is the nearest enclosing manifest (the one in its own directory; otherwise walk up to the repo root).
 - A nested `README.md` links to its **sibling** `AGENTS.md`, not the root one.
-- Each `AGENTS.md` gets a sibling `CLAUDE.md` symlink in the **same** directory (`ln -sf AGENTS.md CLAUDE.md`, run from that directory).
+- When CLAUDE.md symlinks are in use (optional; see [Claude Code compatibility](./init-agents.md#claude-code-compatibility)), each `AGENTS.md` gets its sibling `CLAUDE.md` symlink in the **same** directory (`ln -s AGENTS.md CLAUDE.md`, run from that directory). Match the repo's existing convention; keep existing symlinks unless the user asks to remove them. Under the default setting, a root `CLAUDE.md` symlink means every package `AGENTS.md` needs its own sibling symlink or import, or it does not load.
 - `CONTRIBUTING.md` is checked per directory; apply the merge advisory from the Update CONTRIBUTING section of SKILL.md.
 
 Process deepest-first or root-first consistently, and report results grouped by path.
 
 ## Context loading rules
 
-Claude Code's context-file loading in monorepos follows three rules, and they determine where content belongs:
+Claude Code's context-file loading in monorepos follows three rules, and they determine where content belongs. Under the default **Project instructions** setting, AGENTS.md loads only when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in the working directory or above it, and a lazily loaded subdirectory AGENTS.md also requires that subdirectory to have none of the three (see [Claude Code compatibility](./init-agents.md#claude-code-compatibility)):
 
-- **Ancestors load immediately**: walking UP from the current working directory, every AGENTS.md / CLAUDE.md encountered is loaded at startup. Put shared conventions at the repo root.
-- **Descendants load lazily**: an AGENTS.md deeper in the tree loads only when Claude reads or edits a file inside that subtree. Put package-specific conventions at each package's root (`packages/api/AGENTS.md`, `apps/web/AGENTS.md`).
+- **Ancestors load immediately**: walking UP from the current working directory, every CLAUDE.md encountered is loaded at startup, and every AGENTS.md too when the condition above holds. Put shared conventions at the repo root.
+- **Descendants load lazily**: a CLAUDE.md or AGENTS.md deeper in the tree loads only when Claude reads a file inside that subtree. Put package-specific conventions at each package's root (`packages/api/AGENTS.md`, `apps/web/AGENTS.md`).
 - **Siblings never load**: `packages/a/AGENTS.md` will NOT auto-load when working in `packages/b/`. Do not rely on sibling-package context leaking across.
 
 Implication for monorepo layouts: duplicate any rule that must apply across sibling packages into each package's AGENTS.md (or hoist it to the repo root). The loader will not discover it laterally. Conversely, avoid putting package-specific rules at the root; they'll load into every session regardless of relevance and burn context.

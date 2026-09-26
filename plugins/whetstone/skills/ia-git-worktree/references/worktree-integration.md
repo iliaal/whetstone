@@ -20,7 +20,7 @@ Adapt the workflow to the detected context rather than failing with a generic er
 ### Code review (`/ia-review` in Claude Code)
 
 1. Check current branch
-2. If ALREADY on target branch -> stay there, no worktree needed
+2. If ALREADY on target branch -> stay there, no worktree needed; for a PR target, first confirm `git rev-parse HEAD` equals `gh pr view <pr> --json headRefOid -q .headRefOid`, and on a mismatch refetch or review `gh pr diff <pr>`
 3. If DIFFERENT branch -> Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. Options: 1) review in a new worktree 2) switch branch in place
 
 ### Plan execution (`/ia-work` in Claude Code)

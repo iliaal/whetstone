@@ -64,7 +64,7 @@ For these easily missed classes, preserve consequential unresolved candidates in
 
 The bar is symmetric. A reviewer or validator may not mark a finding in one of these classes `rejected` without citing one of: a specific refuting `file:line`; version- or configuration-specific documentation; commit provenance; or a discriminating test result that names its revision, configuration, trigger, assertion, and observed result. A general passing suite is not disproof, and an assumed framework guarantee is not disproof. Absent that evidence the verdict is `unresolved`, never `rejected`. Lack of disproof is not confirmation either; an unresolved candidate stays in Residual Risks with the missing check named.
 
-A rationale-backed owner override is a third disposition, not a failure to meet this bar. When the project documents the bypass with a reason (`CLAUDE.md`, `AGENTS.md`, a threat model or ADR marking the component out of scope, a project security file, an inline comment), record the finding as an owner override citing where the rationale lives, rather than forcing it to `rejected` (the evidence bar is unmet) or to `unresolved` (the question is answered for this venue). That disposition holds for diff review only; a full-repository security audit re-derives the rationale against current source. See the documented-overrides entry in [review-judgment-traps.md](./review-judgment-traps.md).
+A rationale-backed owner override is a third disposition, not a failure to meet this bar. When the project documents the bypass with a reason (`CLAUDE.md`, `AGENTS.md`, a threat model or ADR marking the component out of scope, a project security file, an inline comment), record the finding as an owner override citing where the rationale lives, rather than forcing it to `rejected` (the evidence bar is unmet) or to `unresolved` (the question is answered for this venue). That disposition holds for diff review only; a full-repository security audit re-derives the rationale against current source. It also requires the rationale to exist at the review's base revision: a rationale the diff under review adds or widens is not an owner override but a finding labeled "override proposed in this diff". See the documented-overrides entry in [review-judgment-traps.md](./review-judgment-traps.md).
 
 The subject does not override contrary evidence or review scope. Apply [false-positive-suppression.md](./false-positive-suppression.md) after tracing the relevant callers and guards.
 
@@ -78,9 +78,9 @@ False positives consume investigation time and can motivate harmful edits; false
 
 Suppress candidates only when the evidence establishes one of these reasons; a category label does not decide the case:
 
-- Pre-existing issues unrelated to the diff (existed before the PR)
+- Pre-existing issues the change does not take part in (defined in [false-positive-suppression.md](./false-positive-suppression.md) category 1); list them under "Predates change" in Residual Risks
 - Pedantic linter-style nitpicks already covered by automated tooling
-- An intentional design whose stated rationale and actual behavior address the alleged failure (check comments, history, and tests). Report a newly demonstrated concrete consequence with that rationale as context; intentionality alone does not refute it.
+- An intentional design whose stated rationale and actual behavior address the alleged failure (check base-revision comments, history, and tests; a rationale comment the diff adds is part of the change, per the owner-override disposition above). Report a newly demonstrated concrete consequence with that rationale as context; intentionality alone does not refute it.
 - Issues already handled elsewhere in the codebase (grep before flagging)
 - Generic suggestions without a concrete failure mode ("consider adding validation" without saying what breaks)
 

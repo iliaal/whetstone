@@ -29,7 +29,9 @@ Return a `permissionDecision` to control whether a tool call proceeds:
 - **ask**: escalate to user confirmation
 - **defer**: fall through to the next hook or default behavior
 
-Use PreToolUse to enforce invariants: prevent writes to protected paths, require confirmation for destructive operations, or inject validation before specific tools run.
+Use PreToolUse to enforce invariants on structured tool input: block built-in `Edit`/`Write` calls to protected paths (for Bash, see below), require confirmation for destructive operations, or inject validation before specific tools run.
+
+**Gates that match Bash command text are best-effort, not a boundary.** Claude Code's own permission rules have documented gaps, and a hook that matches command text the same way repeats them. `Read`/`Edit` deny rules cover the built-in file tools, the Bash file commands Claude Code recognizes (`cat`, `head`, `tail`, `sed`, `tee`), and redirection targets; they do not cover a command that reads files without naming them (`grep -r pattern .`) or a Python or Node script that opens files itself. A `Bash(...)` deny rule matches the command text after compound splitting and wrapper stripping, so it misses the same program by full path (`/bin/rm`), inside `sh -c` or `bash -c`, or with the arguments reshaped (`git -C . push` against `Bash(git push *)`). When a protected-path or network invariant must hold against shell commands, enforce it with Claude Code's OS-level sandbox (filesystem and network isolation that applies to Bash, PowerShell, and Monitor commands and their child processes) or a read-only mount, and keep the text gate as the fast, explainable first layer. The sandbox does not cover the built-in Read, Edit, and Write tools or MCP tools; for those, the tool-level deny (a permission rule, or a PreToolUse `deny` on the parsed tool input) is the enforcement. `Edit` rules apply to every built-in file-editing tool; `Read` rules reach Grep, Glob, and `@file` mentions only on a best-effort basis.
 
 **The decision must nest under `hookSpecificOutput`, with `hookEventName`.** A flat top-level `permissionDecision` is ignored without error, so a `deny` hook written that way allows every call it was installed to block:
 
@@ -85,7 +87,7 @@ Common patterns:
 | `mcp__github__create_.*` | All create operations on the GitHub server |
 | `mcp__db__execute_query` | A specific tool on a specific server |
 
-Regex matchers enable policy enforcement across MCP servers without enumerating every tool. Combine with PreToolUse `deny` to create a security boundary, or with `ask` to require human approval for specific operations.
+Regex matchers enable policy enforcement across MCP servers without enumerating every tool. Combine with PreToolUse `deny` to block matched tools (the sandbox does not apply to MCP calls, so this tool-level deny is the enforcement), or with `ask` to require human approval for specific operations.
 
 **Matcher semantics.** `"*"`, `""`, or an omitted `matcher` field all match every tool call. Anything else is a JavaScript regex tested unanchored via `RegExp.prototype.test`, so `mcp__memory` (no `.*`) still matches `mcp__memory__write`. Anchor deliberately, or leave the field off when a catch-all is actually intended.
 

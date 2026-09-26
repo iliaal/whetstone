@@ -56,7 +56,7 @@ fallbacks are for in-progress local work, where `git diff HEAD` is the correct
 command. Do not stitch the two: a branch review needs the merge-base, not the
 working-tree delta.
 
-When reviewing a branch (no specific files, no PR), derive the comparison base
+When reviewing a branch (no specific files given), derive the comparison base
 via this fallback chain:
 
 1. **If a PR exists for the branch**, use its base: `gh pr view --json baseRefName --jq .baseRefName`. Authoritative; no further detection needed.
@@ -64,6 +64,8 @@ via this fallback chain:
 3. **Else fallback list**: try `origin/main`, `origin/master`, `origin/develop`, `origin/trunk` in order; pick the first that resolves via `git rev-parse --verify`. Bare-local names are a last resort if no `origin/*` remote ref exists.
 4. **Compute the diff base**: `git merge-base HEAD <resolved-base>`. Review the range `<merge-base>..HEAD`, not `HEAD` against the working tree.
 5. **Shallow-clone retry**: if `git merge-base` returns nothing and `git rev-parse --is-shallow-repository` is `true`, run `git fetch --unshallow origin` and retry. Document this in the review output so the reviewer knows the comparison range only became available after unshallowing.
+
+**PR head identity.** For a PR review, a fetched or checked-out ref is the PR head only when its SHA equals `gh pr view <pr> --json headRefOid --jq .headRefOid`. On a mismatch (stale fetch, force-push, wrong ref), refetch or review from `gh pr diff <pr>` and say which in the coverage notes; never review a ref that has not passed this check as the PR.
 
 **Never fall back to `git diff HEAD`** when base resolution fails; that hides
 all committed work on the branch and reviews only the uncommitted delta. Stop and
@@ -106,8 +108,10 @@ When a branch is stacked on another unmerged branch, `git merge-base HEAD
 <default-branch>` over-covers: it sweeps in the sibling branch's commits,
 fabricating findings on files this change doesn't touch. Prefer the hosting
 platform's authoritative base SHA (PR/MR `base_sha`, or `gh pr diff`) over a
-locally computed merge-base. After the run, intersect every finding's path with
-the change's `--name-only` set and discard off-scope ones.
+locally computed merge-base. After the run, intersect every finding's anchor with
+the change's `--name-only` set and discard off-scope ones, anchoring each finding
+at the changed line its failing path runs through (the off-scope filter in
+[scope-and-mode-selection.md](./scope-and-mode-selection.md)).
 
 ## Review coverage ledger
 

@@ -49,4 +49,4 @@ Create AGENTS.md from scratch for projects without documentation. See [init-agen
 
 1. Analyze project: language, framework, structure, build/test tools
 2. Generate terse, expert-to-expert context sections
-3. Write AGENTS.md, create CLAUDE.md symlink
+3. Write AGENTS.md; create the CLAUDE.md symlink only when needed (optional, see [init-agents.md](./init-agents.md#claude-code-compatibility))

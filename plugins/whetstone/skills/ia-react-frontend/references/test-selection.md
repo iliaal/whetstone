@@ -11,7 +11,7 @@
 - One behavior per test with AAA structure. Name: `should <behavior> when <condition>`
 - Use `userEvent` over `fireEvent` for realistic interactions
 - `findBy*` for async elements, `waitFor` after state-triggering actions
-- `vi.clearAllMocks()` in `beforeEach`. Recreate state per test.
+- `vi.clearAllMocks()` in `beforeEach` on Vitest 4 or with `clearMocks: false` (Vitest 5 clears by default). Recreate state per test.
 - Timing (`useLayoutEffect` vs `useEffect` report races), engine fidelity (jsdom/happy-dom vs a real browser engine for parser/layout-dependent behavior), interaction-mode pitfalls (`userEvent` delay, fake-timer incompatibility, `fireEvent` vs `userEvent` tradeoffs), and runner/environment failures (`vmThreads` OOM, happy-dom swallowing `console.*`): see [testing.md](./testing.md)
 General testing discipline (anti-patterns, rationalization resistance): see the `ia-writing-tests` skill.
 See [testing patterns and examples](./testing.md) for component, hook, and mocking examples.

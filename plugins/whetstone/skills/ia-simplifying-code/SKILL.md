@@ -37,7 +37,7 @@ Changing an interface, exported name, persisted format, or path reaches past the
 3. **Identify targets**: find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> data shaping -> types (see Smell -> Fix table)
 4. **Apply in order**: control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
 5. **Verify**: confirm no behavior change: tests pass, types check, imports resolve
-6. **Pre-submit scope audit**: walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. Drive-by edits belong in a separate change, not the current patch. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `ia-verification-before-completion`'s Scope Confirmation gate.
+6. **Pre-submit scope audit**: walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `ia-verification-before-completion`'s Scope Confirmation gate.
 
 
 ## Stop Conditions
@@ -56,7 +56,7 @@ Stop and ask before proceeding when:
 - Do not bundle unrelated cleanups into one patch; each simplification should be a coherent, reviewable unit
 - Do not introduce framework-wide patterns while simplifying a small local change
 - Do not replace understandable duplication with opaque utility layers; three similar lines are better than a premature abstraction
-- Keep comments that explain intent, invariants, or non-obvious constraints. Remove comments that restate obvious code behavior.
+- Keep comments that explain intent, invariants, or non-obvious constraints, and tool directives ([carve-outs](./references/simplification-patterns.md)). Remove comments that restate obvious code behavior. Fix stale comments only on lines this pass touches.
 - If a simplification would make the code harder to understand, skip it
 - Watch for over-simplification: inlining too aggressively removes names that gave concepts meaning; combining unrelated logic into one function hides distinct responsibilities; removing abstractions that exist for testability breaks the test suite
 - When unsure whether a block is dead code, ask instead of deleting

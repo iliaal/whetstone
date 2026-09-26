@@ -29,6 +29,7 @@ Profiles: [review unit -> primary skill (+ supplemental), or generic]
 ### Residual Risks
 - [unresolved assumptions, areas not covered, open questions]
 - Set aside as out of scope: [one line per behavior considered and consciously set aside as outside the change's scope or spec, with the reason; or "no declined scope"]
+- Predates change: [one line per flaw the change does not take part in (false-positive-suppression.md category 1), citing the unchanged base `file:line`; or "none"]
 
 ### Verdict
 Ready to merge / Ready with fixes / Not ready -- [one-sentence rationale]

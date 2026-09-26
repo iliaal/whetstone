@@ -19,3 +19,8 @@
 {"prompt":"Rewrite this marketing paragraph","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Explain what a pull request means","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Design a new API from scratch","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Review these patches for me","expect":true,"source":"sync-2026-09-26","note":"matches only via the patch(es) alternation"}
+{"prompt":"can you review the patch pasted inline here","expect":true,"source":"sync-2026-09-26"}
+{"prompt":"please review this patch before it lands","expect":true,"source":"sync-2026-09-26"}
+{"prompt":"Write a commit message for this pasted diff","expect":false,"source":"sync-2026-09-26","note":"pasted diff, but the ask is a commit message, not a review"}
+{"prompt":"Apply this patch to the config loader","expect":false,"source":"sync-2026-09-26"}

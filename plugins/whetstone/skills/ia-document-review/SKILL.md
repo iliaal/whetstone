@@ -2,8 +2,8 @@
 name: ia-document-review
 class: workflow
 description: >-
-  Structural review of documents for gaps, clarity, completeness, and
-  organization. Use when a brainstorm, plan, spec, ADR, or any doc needs polish
+  Structural and accuracy review of documents: gaps, clarity, completeness,
+  organization, and claims checked against the code. Use when a brainstorm, plan, spec, ADR, or any doc needs polish
   before the next workflow step. For exploring new ideas from scratch, use
   brainstorming instead.
 ---
@@ -34,6 +34,7 @@ Read through the document and ask:
 - What assumptions are unstated?
 - Where could scope accidentally expand?
 - Is this technically feasible with the current architecture?
+- Is what it says about the current system true? Follow each checkable claim (file paths, function, command, or config names, endpoints, cited PRs or issues, numbers, behavior implied by verbs like "retries") to its source, reading only. On a long document, sample and state the coverage.
 - Are there security implications in what's proposed?
 
 These questions surface issues. Note findings without fixing yet.
@@ -64,6 +65,7 @@ Score the document against these criteria:
 | **Completeness** | Required sections present, constraints stated, open questions flagged |
 | **Specificity** | Concrete enough for next step (brainstorm → can plan, plan → can implement) |
 | **YAGNI** | No hypothetical features, simplest approach chosen |
+| **Accuracy** | Checked claims match their source (Step 2); a contradicted claim is a defect reported with the conflicting `file:line`; claims outside the stated coverage are unverified, not passed |
 
 If invoked within a workflow (after `/ia-brainstorm` or `/ia-plan`), also check:
 - **User intent fidelity**: Document reflects what was discussed, assumptions validated
@@ -97,7 +99,7 @@ Classify opaque anchors by what they do, not by vocabulary:
 
 - **Navigation anchors** (IDs the document itself defines) keep the ID and gain a short handle at first mention: `R6 (suppress peer panels on low-stakes calls)`, never a bare `R6`.
 - **Provenance anchors** (ticket IDs, PR numbers) get a role gloss only when the referenced event changes the decision; otherwise move them to the trace.
-- **Mechanism anchors** (function, file, line names) translate to the role they play in the decision ("the terminal-failure predicate"), keeping the exact symbol only when precise scope is what the decision turns on.
+- **Mechanism anchors** (function, file, line names) translate to the role they play in the decision ("the terminal-failure predicate"), keeping the exact symbol only when precise scope is what the decision turns on. A contradicted accuracy claim keeps its conflicting `file:line` as the one mechanism anchor.
 
 A finding whose only route to a decision is "go read the section" has failed, however correct it is.
 
@@ -143,7 +145,7 @@ Return control to the caller (workflow or user) after selection.
 
 ## Success Criteria
 
-- Document read and scored on all four quality criteria
+- Document read and scored on all five quality criteria
 - Relevant review lenses activated and checks applied
 - Critical improvements identified with specific suggestions
 - User presented with clear next-action choice (refine or complete)

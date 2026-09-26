@@ -277,8 +277,8 @@ After all tests complete, present summary:
 ### Failures: [count]
 - `/dashboard` - [issue description]
 
-### Created Todos: [count]
-- `005-pending-p1-browser-test-dashboard-error.md`
+### Recorded Findings: [count]
+- `/dashboard` - [severity] - [reproduction steps]
 
 ### Result: [PASS / FAIL / PARTIAL]
 ```

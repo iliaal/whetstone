@@ -83,7 +83,11 @@ When an authorized reference implementation embodies target behavior, cite the s
 
 **Keep phase state current.** Changing a phase's `Status` also refreshes `## Next Step`. That one line is what the resume protocol reads after a compaction or a new session, so a stale `Next Step` is worse than none: it resumes work that already happened.
 
-**No placeholders in tasks.** Every task must contain actual code patterns, commands, or file paths. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Tasks may be read out of order; repeat the spec, code pattern, or file path in every task that needs it. A step that cannot be specified concretely needs further breakdown before it belongs in a plan.
+**Record decisions, not code bodies.** A test step names the test and its assertions, with the spec's exact values. A code step names the file, the exact signature, and the pinned values; include a body only for an algorithm the signature and tests leave undetermined. A verification step gives the command and its passing output. A step that depends on another task's work restates that task's interface (file and signature) instead of repeating its code.
+
+**Proportion check.** After drafting, compare the plan's length to the spec it implements. A plan much longer than its spec, or one made mostly of code blocks, is an implementation transcript: replace bodies with signatures and assertions. Placeholders (below) are the opposite failure.
+
+**No placeholders in tasks.** Every task must contain the concrete decision it carries: a signature, assertion, command, spec value, or file path. Forbid: "TBD", "TODO", "handle errors appropriately", "add validation", "implement as needed", "similar to above", "Similar to Task N", "See above." Tasks may be read out of order; repeat the spec value, signature, or file path in every task that needs it. A step that cannot be specified concretely needs further breakdown before it belongs in a plan.
 
 **Type-consistency check.** After writing all tasks, scan for naming drift. If Task 3 says `clearLayers()` but Task 7 says `clearFullLayers()`, that's a bug in the plan. Function names, variable names, and file paths must be consistent across all tasks.
 

@@ -35,7 +35,7 @@ First, read and parse the plan to identify each major section that can be enhanc
 - [ ] Proposed Solution sections
 - [ ] Technical Approach/Architecture
 - [ ] Implementation phases/steps
-- [ ] Code examples and file references
+- [ ] Signatures, pinned values, and file references (plus any code bodies to reduce to them)
 - [ ] Acceptance criteria
 - [ ] Any UI/UX components mentioned
 - [ ] Technologies/frameworks mentioned (React, Python, TypeScript, Laravel, etc.)
@@ -146,7 +146,7 @@ Wait for ALL parallel agents to complete: skills, research agents, review agents
 
 **For each agent's findings, extract:**
 - [ ] Concrete recommendations (actionable items)
-- [ ] Code patterns and examples (copy-paste ready)
+- [ ] Decisions the research settled (signatures, pinned values, assertions, file paths); code only for an algorithm those leave undetermined
 - [ ] Anti-patterns to avoid (warnings)
 - [ ] Performance considerations (metrics, benchmarks)
 - [ ] Security considerations (vulnerabilities, mitigations)
@@ -214,7 +214,7 @@ Update the plan file in place (or if user requests a separate file, append `-dee
 Before finalizing:
 - [ ] Supported decisions preserved; superseded decisions clearly replaced and their rationale retained when useful
 - [ ] Research insights clearly marked and attributed
-- [ ] Code examples are syntactically correct
+- [ ] Signatures, values, and file paths match the researched API and codebase; any retained algorithm code is syntactically correct
 - [ ] Links are valid and relevant
 - [ ] No contradictions between sections
 - [ ] Enhancement summary accurately reflects changes

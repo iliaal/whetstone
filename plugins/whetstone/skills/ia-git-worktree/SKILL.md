@@ -13,8 +13,7 @@ description: >-
 
 ## Working rules
 
-- Work in place when given an existing worktree without a creation/removal request.
-- Keep one writer per worktree and preserve other sessions' branches, files, and staged work.
+- Preserve other sessions' branches, files, and staged work (see Ownership).
 - Verify dependencies resolve first-party code from the intended worktree.
 - Keep merge, push, and cleanup within user authorization; report the exact exercised checkout and resulting commit.
 
@@ -30,9 +29,9 @@ The script handles critical setup that raw git commands don't:
 
 All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh <command>`. If `CLAUDE_PLUGIN_ROOT` is unset (non-Claude-Code harness), resolve the script relative to this skill's own directory.
 
-Before creating worktrees, export a unique `WORKTREE_SESSION_ID` and retain that same value for this session's later manager calls. For example, `export WORKTREE_SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"`. The manager records ownership in each new worktree's Git metadata. Creation without a session ID remains available, but manager cleanup then refuses that tree; never adopt a previous session's ID to bypass ownership.
+Before creating worktrees, export a unique `WORKTREE_SESSION_ID` and retain that same value for this session's later manager calls. Example: `export WORKTREE_SESSION_ID="$(python3 -I -c 'import uuid; print(uuid.uuid4())')"`. The manager records ownership in each new worktree's Git metadata. Creation without a session ID works, but manager cleanup then refuses that tree; never adopt a previous session's ID to bypass ownership.
 
-The manager script fetches `origin/<base>` fresh and branches from it; it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. Details: [troubleshooting.md](./references/troubleshooting.md).
+The manager script fetches `origin/<base>` fresh and branches from it; it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. PR review: pass the fetched PR head as `<base>`, then verify its SHA ([workflow-examples.md](./references/workflow-examples.md)). Details: [troubleshooting.md](./references/troubleshooting.md).
 
 
 ## Commands
@@ -45,7 +44,7 @@ The manager script fetches `origin/<base>` fresh and branches from it; it never 
 | `copy-env <name>` | Copy .env files to existing worktree | `...worktree-manager.sh copy-env feature-login` |
 | `cleanup <name> [...]` / `clean` | Confirm removal of named, session-owned, clean worktrees | `...worktree-manager.sh cleanup feature-login` |
 
-Run commands with `env -C "$target" <command>` or the harness workdir argument. A child script cannot change the caller's working directory. Listing and resolving names work from the main checkout, linked checkouts, and their subdirectories.
+Run commands with `env -C "$target" <command>` or the harness workdir argument. A child script cannot change the caller's working directory. Listing and name resolution work from any main or linked checkout, including subdirectories.
 
 Cleanup refuses the current checkout, another session's tree, and tracked, untracked, or ignored files. Auto-copied `.env` files and installed dependencies therefore require explicit user-managed disposition before cleanup. Confirm no process uses the named trees; the manager cannot detect every external reader. Git's normal removal safeguards remain enabled, including locked-tree refusal. Do not force deletion or suppress failures to finish cleanup.
 
@@ -61,7 +60,7 @@ git check-ignore .worktrees || echo "WARNING: .worktrees not in .gitignore"
 
 If not ignored, add it to `.gitignore` before proceeding.
 
-After creating a worktree, run the project's test suite (or the fastest relevant subset if the full suite exceeds a few minutes) to establish a clean baseline. Catch pre-existing failures in the worktree before starting new work, not mid-implementation.
+After creating a worktree, run the project's test suite (or its fastest relevant subset when the full suite is slow) to establish a clean baseline. Catch pre-existing failures in the worktree before starting new work, not mid-implementation.
 
 
 ## Ownership

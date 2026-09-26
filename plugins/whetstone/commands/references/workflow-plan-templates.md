@@ -30,17 +30,8 @@ origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md  # if originated from 
 
 ## MVP
 
-### example.ts
-
-```typescript
-class Example {
-  private name: string;
-
-  constructor() {
-    this.name = "test";
-  }
-}
-```
+- `path/to/file.ts`: `functionName(arg: Type): ReturnType` -- [pinned value or behavior this step decides]
+- Test `[test name]` asserts [exact expected value]
 
 ## Sources
 

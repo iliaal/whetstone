@@ -28,7 +28,7 @@ assistant: "I'll use the spec-flow-analyzer agent to thoroughly analyze this onb
 
 **Scope**: Runs *before* implementation planning to exhaustively surface gaps in specs. Every unspecified flow is a risk. For turning validated specs into implementation phases and tasks, use the `ia-planning` skill *after* this agent's analysis is complete. Sequential: spec-flow-analyzer (exhaustive gap analysis) → planning skill (pragmatic implementation breakdown).
 
-**Boundary vs `ia-document-review`:** that skill is the general structural pass over a document (gaps, clarity, organization, completeness). This agent is the flow-specific complement: it enumerates user journeys, permutations, and state transitions and asks what happens at each step. Run the structural pass for "does this doc read well and cover its sections"; run this agent for "does this spec account for every path a user can take".
+**Boundary vs `ia-document-review`:** that skill is the general structural and accuracy pass over a document (gaps, clarity, organization, completeness, claims checked against the code). This agent is the flow-specific complement: it enumerates user journeys, permutations, and state transitions and asks what happens at each step. Run the structural pass for "does this doc read well and cover its sections"; run this agent for "does this spec account for every path a user can take".
 
 Mission:
 1. Map out ALL possible user flows and permutations

@@ -3,7 +3,7 @@
 ## Content Formatting
 
 - [ ] Use clear, descriptive headings with proper hierarchy (##, ###)
-- [ ] Include code examples in triple backticks with language syntax highlighting
+- [ ] Put signatures, commands, and error output in triple backticks with language syntax highlighting (decisions, not implementation bodies)
 - [ ] Add screenshots/mockups if UI-related (drag & drop or use image hosting)
 - [ ] Use task lists (- [ ]) for trackable items that can be checked off
 - [ ] Add collapsible sections for lengthy logs or optional details using `<details>` tags
