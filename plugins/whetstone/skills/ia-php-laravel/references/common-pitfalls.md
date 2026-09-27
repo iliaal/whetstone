@@ -104,7 +104,7 @@ The mode is decided by the file the CALL is written in, never by the file declar
 
 ### #[Scoped] resets in exactly one place: the queue worker, between jobs
 
-`forgetScopedInstances()` has a single caller, so under PHP-FPM `#[Scoped]` and `#[Singleton]` are indistinguishable (a fresh container per request resets everything anyway), and Octane does not reset it on the HTTP path unless the app wires it. None of the reset points is a database transaction boundary: a scoped service that fills a memo from rows written inside `DB::transaction()` keeps that memo after the rollback, for the rest of the request or job.
+Inside `laravel/framework`, `forgetScopedInstances()` has a single caller, so under PHP-FPM `#[Scoped]` and `#[Singleton]` are indistinguishable (a fresh container per request resets everything anyway). Octane adds a second reset: its published `config/octane.php` runs `FlushTemporaryContainerInstances` on `OperationTerminated`, which calls `forgetScopedInstances()` after every request, task or tick unless the app removed that listener. None of the reset points is a database transaction boundary: a scoped service that fills a memo from rows written inside `DB::transaction()` keeps that memo after the rollback, for the rest of the request or job.
 
 Lazy invalidation (`unset` the key, re-query on the next read) is rollback-safe by construction. Converting it to a write-through refill as an optimisation silently trades that away, and no test that never rolls back mid-request will show it.
 

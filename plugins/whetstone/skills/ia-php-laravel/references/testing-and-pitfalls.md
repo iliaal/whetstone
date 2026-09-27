@@ -48,11 +48,14 @@ Real production pitfalls, invisible to PHPStan and feature tests alone. Mechanis
 - **`BelongsToMany` pivot writes**: `attach`/`detach`/`sync`/`updateExistingPivot` fire no pivot model events without `using()`, and `sync()` reads the RAW pivot table, so a relationship-level `where` never filters it.
 - **`chunkById + json_decode + mutate + json_encode + update`** loses any concurrent write to a jsonb column between the SELECT and the UPDATE ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **`date:<fmt>` cast format** reaches `$model->toArray()` only, never `JsonResource::resolve()`.
-- **A string that trims to empty** skips every non-implicit validation rule, `nullable` or not ([pitfalls-deep.md](./pitfalls-deep.md)).
+- **A string that trims to empty** skips every non-implicit validation rule, `nullable` or not; over HTTP the global blank-to-null middleware converts it first, so only input that bypasses that stack is exposed ([pitfalls-deep.md](./pitfalls-deep.md)).
+- **`['required', 'nullable']` still rejects `null`**: `required` fails on `null` and `""` before `nullable` is consulted, so switching to `['sometimes', 'nullable']` relaxes "must send a value" to "optional" and does not change what a `null` payload does.
 - **An empty array versus an absent key**: `empty()` and truthiness conflate them, so a Clear-all save can become a silent no-op. `isset()` and `?? null` distinguish `[]` from absence, but conflate `null` with absence; use `array_key_exists()` when null presence matters. Form encoding can drop empty arrays on the wire too.
 - **Nested-array validation**: `'items.*.name'` rules do not stop `items.*` from being a scalar; always pair with `'items.*' => 'array'`.
 - **`validated()`** rebuilds a nested key from its ruled sub-keys only and drops the rest ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **The `boolean` rule** validates but never normalises, so `=== true` is false for input it accepted ([pitfalls-deep.md](./pitfalls-deep.md)).
+- **`$request->boolean('flag')`** returns `false` for an absent key, so a DTO built on it overrides a column's `DEFAULT true` for every payload that omits the field; use `array_key_exists()` / `$request->has()` when absence must mean "keep the default".
+- **`$model->relation->field ?: $fallback`** warns on a null relation and `HandleExceptions` turns the warning into a 500; `??` and `isset()` suppress it, so `$a->b->c ?? 'x'` is safe and the Elvis form is not. Fix with `?->`.
 - **`distinct` at two wildcard levels** compares the whole payload, not per-parent ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **`Exists` / `Unique` self-skip after any message**, so `bail` does not protect the query, and the exposed value is the rule's SCOPE argument ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **`DB::afterCommit`** prevents run-on-rollback; it does NOT retry a post-commit failure ([pitfalls-deep.md](./pitfalls-deep.md)).

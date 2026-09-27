@@ -61,6 +61,7 @@ Common mistakes:
 - `col - 'a,b'` treats `'a,b'` as a single key name (no-op against a normally-structured document; the comma isn't a path separator).
 - `col - 'a' - 'b'` first removes the entire `a` subtree before attempting `- 'b'` on the result (data loss of `a.*`, then a no-op).
 - `jsonb_set(col, '{a,b}', 'null'::jsonb)` sets the value to JSON `null` rather than removing the key, so strict "key absent" checks downstream then fail. Worse: `jsonb_set(col, '{a,b}', NULL)` with a bare SQL `NULL` makes the STRICT function return SQL `NULL`, clobbering the entire column on update. To delete the key, use `#-`; to set it explicitly to JSON null, use `'null'::jsonb` (and know that's distinct from absence).
+- `jsonb_set_lax(col, path, :value)` (PG 13+) is the NULL-tolerant variant for a nullable bound parameter: its default `null_value_treatment => 'use_json_null'` writes JSON `null`, `'delete_key'` removes the key, and `'return_target'` leaves the document unchanged, so an SQL `NULL` no longer wipes the column.
 
 For nested deletes, use `#-` with a text-array path. Verify with one round-tripped row of the worst-case shape before committing the migration: `SELECT col #- '{a,b}' FROM t WHERE id = ? LIMIT 1`, then confirm the key is gone (not present-as-null, no sibling data loss).
 

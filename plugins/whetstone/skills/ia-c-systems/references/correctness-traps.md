@@ -108,6 +108,10 @@ A generated lexer whose condition has no default rule backtracks, on unmatched i
 
 Clamping the subtraction fixes only the first and converts the crash into an infinite loop emitting empty tokens, so the fix belongs at the accept: give the unmatched input a rule that consumes at least one byte, either a default rule for the condition or a narrow rule for the offending characters. An allocation size near `(size_t)-N` is the signature of an unsigned underflow rather than a real request, and the generator's undefined-control-flow warning names exactly which input strings reach the undefined state.
 
+## State copied into a local is lost on every early return
+
+A function that copies its state into a local for the hot loop and writes it back only at the normal exit leaves the stored state at its entry value on every early `return`, including returns hidden inside callback-invoking macros. A new abort site written as a plain `return` therefore leaves the object half-advanced and reusable. Route every abort through the function's existing error label, which sets a defined terminal state, and check which other fields that label still does not write back.
+
 ## Function-like macros must not shadow caller variables
 
 A macro that declares its own locals can shadow a caller's variable of the same name, and the argument expression then silently reads the macro's variable instead of the caller's:

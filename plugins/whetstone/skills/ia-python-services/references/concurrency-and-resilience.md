@@ -77,10 +77,11 @@ See [fastapi.md](./fastapi.md) for project structure, lifespan, config, DI, asyn
 
 **Retries with tenacity:**
 ```python
-from tenacity import retry, stop_after_attempt, wait_exponential_jitter, retry_if_exception_type
+import httpx
+from tenacity import retry, stop_after_attempt, stop_after_delay, wait_exponential_jitter, retry_if_exception_type
 
 @retry(
-    retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+    retry=retry_if_exception_type(httpx.TransportError),
     stop=stop_after_attempt(5) | stop_after_delay(60),
     wait=wait_exponential_jitter(initial=1, max=30),
     before_sleep=log_retry_attempt,
@@ -88,6 +89,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential_jitter, retry_i
 def call_api(url: str) -> dict: ...
 ```
 
+- Name the client's own transport classes in the retry predicate (`httpx.TransportError`, `requests.ConnectionError`/`requests.Timeout`, botocore's `EndpointConnectionError`): builtin `ConnectionError`/`TimeoutError` are not their base classes, so a predicate on the builtins retries nothing those clients raise.
+- **Never classify errors by `type(exc).__name__`.** Name matching misses subclasses (`ConnectionResetError` is a `ConnectionError`) and every SDK that wraps its transport in its own hierarchy (botocore, httpx, openai, requests' `Timeout`). On 3.11+, `asyncio.TimeoutError`, `concurrent.futures.TimeoutError` and `socket.timeout` are the builtin `TimeoutError`, so a thread-pool timeout matches an API-outage rule. Use `isinstance` against each SDK's own base classes.
 - Retry only transient errors: network, 429/502/503/504. Never retry 4xx (except 429), auth errors, validation errors
 - Every network call needs a timeout
 - `@fail_safe(default=[])` decorator for non-critical paths: return cached/default on failure. **Never on a path where the call is the security decision** (authz check, trust score, entitlement or license gate): there the default has to be deny, and a `default=[]` or `default=None` that a caller reads as "no restrictions" is a fail-open with a decorator on it. Any fail-open allowance scopes to transport failure alone: `ConnectError`, `ConnectTimeout`. A response that arrived but cannot be trusted (4xx/5xx, malformed JSON, a body that fails schema validation, an unrecognized verdict string) stays denied, because the endpoint was reached and did not answer. Same for a "no record yet" state: reject by default, allow only through an explicit onboarding opt-in

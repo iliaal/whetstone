@@ -30,4 +30,16 @@ To audit whether existing tests detect regressions, use ia-test-audit.
 
 - Posting a remedy without replaying the trigger through it: a finding that ships a fix carries two claims, and only the defect claim gets graded
 
+- Checking a remedy against the trigger but not the defect's population: a replayed trigger and a green suite still pass a guard that fires on the wrong rows. Tabulate the defect's sub-populations by which fields each side carries and mark where the guard fires; a precondition requiring the field whose absence the feature exists to tolerate (fallbacks, lenient parsers, optional-field paths) misses the likeliest rows. An absence-inferring remedy ("flag X when it is missing from the output") must enumerate every path on which the producer legitimately omits X, since each is a false positive on valid input
+
+- Dismissing a finding via an assumed flag state: "that path is behind flag X, so it is moot" holds only if X is set wherever the code runs. Read the flag accessor's code default; it is usually the legacy or unsafe value, so treat the path as live and ask what the flag is set to in each deploy environment rather than dropping the finding
+
+- Recommending a defensive guard copied from a sibling path "for safety": a bail disables whatever the change does for that input, so when the change's feature is the transformation the guard would skip, the note reverts the change for that case while reading as hardening. Run or read the change's tests for inputs the guard would catch first; an expected output that depends on the closed path makes the guard a behavior change. Then check whether the producer can emit that input at all: a guard against an input nothing produces is dead code
+
+- Reading a clause appended to an existing rule (prompt, policy, spec bullet) in isolation: it reads as an override because it is later, more specific, and under review, but position does not establish precedence. Establish what the complete rule and its definitions already admit, then decide whether the clause clarifies, restricts, or replaces that condition; only explicit replacement wording changes it
+
+- Filing a finding the author already disclosed: search the change description for the finding's own subject (identifier, rule name, field), not for admission vocabulary such as "limitation" or "unmeasured". Disclosures sit under headings the author chose; a disclosed residue is rated against the disclosure and cited, not presented as discovered
+
+- Filing a gap the finding's own concessions already close: before posting, re-read its hedges and compliments as the author's rebuttal. A hedge ("if X submits the stale value") flags an unverified harm; praise enumerating what the artifact does ("it names the cause and the remedy") often names exactly the content the finding calls missing, and then the finding is already dead
+
 Extended examples: [review-traps-catalog.md](./review-traps-catalog.md).

@@ -10,6 +10,8 @@ Before reporting a finding, check whether it falls into one of these categories.
 
 The finding exists in code that was NOT changed in this diff. Decide "pre-existing" by whether the change takes part in the failing path, not by whether the buggy line is new. A flaw is pre-existing only when its source, sink, guards, and every route to it read the same at the base; cite the unchanged lines from `git show --no-textconv --no-ext-diff <base>:<file>`. A caller, route, or input the diff adds that reaches an old sink, or a guard the diff removes, makes the change take part: that flaw is a finding of this review. List genuinely pre-existing flaws separately on the report's "Predates change" line under Residual Risks (full-repository audit material), neither as findings nor as a refutation of the flaw.
 
+Scope a base control for a "this change makes X reachable" claim to the outcome, not the component. Before grading the capability as new, check every surface at the base that reaches the same terminal state, cascades included (deleting a parent's last child can delete the parent). A pre-existing equivalent route keeps the finding in this review but lowers its severity, and the finding discloses that route.
+
 ### 2. Linter/formatter covered
 
 Style issues that the project's linter or formatter already enforces. Don't duplicate automated tooling. If tooling is missing, distinguish a documented convention violation from a personal preference.

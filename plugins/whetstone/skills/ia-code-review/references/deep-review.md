@@ -140,11 +140,13 @@ After all agents return, apply these rules in order. Each consolidated finding c
 
 **Independence starts with the prompt.** A corroborating pass whose job is to independently confirm or refute a specific finding receives only the artifact, the agreed outcome, and the constraints. Never forward the first reviewer's diagnostic questions, claims, or proposed wording to it: they prime the second pass toward the same reading, and its agreement then measures the priming, not the code. The adversarial passes differ by design: the Red-Team Pass and the Skeptic Pass receive the consolidated findings because their job is to attack them, additively and subtractively.
 
+**A premise in shared specialist context comes from the artifact, not from recall.** Framing such as "the fix for X landed in file Y, verify it is intact" or "the previous pass found Z at line N" steers every lens. A wrong file or line spends each specialist's budget on refuting the premise and can steer the review away from the file the fix actually touched. Check each historical claim against its canonical source (changelog, advisory, the earlier pass's actual output) and paste that wording, not a summary of it.
+
 **Shared inputs can preserve a shared blind spot.** Lenses reading the same diff may all miss a caller, producer, or guard. Compare their evidence, including probes and context outside the diff. Name untested premises in Residual Risks. Never add a fixed confidence increment for agent count; reassess confidence only from new evidence.
 
 1. **Same file:line + same issue class and root cause** → merge into one finding. Keep the supporting evidence and most actionable verified fix text.
 2. **Same file:line + different issue class** → keep both. Tag as "co-located" in the output so the author sees they share a line.
-3. **Conflicting severity on the same merged finding** → derive the tier from the combined impact and reachability evidence; explain consequential disagreements instead of taking the highest vote.
+3. **Conflicting severity on the same merged finding** → derive the tier from the combined impact and reachability evidence; explain consequential disagreements instead of taking the highest vote. Before adjudicating a severity or scope split, check whether the contributors had the same inputs: a lens that could see the incumbent code or the cited rule disagrees with one that could not for that reason alone. Weight the richer-input verdict unless the other names evidence it lacked.
 4. **Conflicting recommendations** → present both and mark as `NEEDS DECISION`. Do not silently pick one.
 5. **One agent flags, others don't** → evaluate its evidence normally; silence from another lens does not disprove it.
 6. **Two or more agents agree** → tag `MULTI-SPECIALIST AGREEMENT ({contributors})` and record whether they checked distinct evidence. Agent count alone changes neither severity nor confidence.

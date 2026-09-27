@@ -25,3 +25,9 @@ Read before asserting caller completeness, state provenance, guard coverage, red
 - Treating prior clearances as settled: a clearance retires an area for every later round on a denominator that came from reading
 
 - Accepting an author's correction because it arrives with evidence attached: the finding got three rounds of scrutiny and the rebuttal gets none
+
+- Sourcing a leak's payload from a test fixture: a redaction or leak finding is two claims, verified separately. Transport asks whether the value reaches the sink; payload asks whether the value is sensitive, and it is settled by tracing the value to its production writer: the parameters actually sent to the third-party API, the DTO's construction site, the log-context assignment. A fixture string, a variable or field name, or the author's removal of the field shows the author's threat model, not the producer's output. Transport evidence is zero credit toward the payload claim
+
+- Characterising a write from the ORM call: a database trigger, rule, or default can archive, delete, or rewrite the row, and neither the service nor the model shows it. Before describing what a write does to a table, grep the migrations or schema for triggers on it. A test that suppresses application events and still asserts a side effect is pointing at the database layer
+
+- Reading file metadata as a signal without tracing the file: creation date, EXIF, page count, hash, and size belong to whatever tool last wrote the file. Trace the path variable to its source; if a converter, compressor, or re-encoder sits in between, the metadata is that tool's, so read the original before preprocessing. Verify the library's metadata behavior by running it, and do not trust a "converted/compressed" flag as the proxy for regeneration

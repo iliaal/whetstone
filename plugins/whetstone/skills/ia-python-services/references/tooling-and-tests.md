@@ -38,6 +38,7 @@ See [cli-tools.md](./cli-tools.md) for Click patterns, argparse, and CLI project
 
 ## Testing Patterns
 
+- **`python -m unittest discover` collects only `TestCase` subclasses**, so module-level pytest `def test_*` functions are silently skipped: no error, just a smaller `Ran N tests` and `OK`. When a script or CI gate uses it, compare its count against `pytest --collect-only -q` at the same commit.
 - **pytest flags**: `--lf` (last failed), `-x` (stop on first failure), `-k "pattern"` (filter), `--pdb` (debugger on failure)
 - **Fixtures**: use `conftest.py` for shared fixtures. Scope wisely: `@pytest.fixture(scope="session")` for expensive setup (DB connections), `scope="function"` (default) for test isolation
 - **`tmp_path`**: built-in fixture for temp files; no manual cleanup needed

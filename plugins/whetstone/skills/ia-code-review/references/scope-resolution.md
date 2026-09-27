@@ -113,6 +113,14 @@ the change's `--name-only` set and discard off-scope ones, anchoring each findin
 at the changed line its failing path runs through (the off-scope filter in
 [scope-and-mode-selection.md](./scope-and-mode-selection.md)).
 
+When the stacked change targets the default branch rather than its parent, the
+platform's `base_sha` is that same over-covering merge-base (the parent's files
+appear as added or deleted); diff from the parent change's head instead,
+confirmed with `git merge-base <head> <parent-head>`. After a rebase, a new head
+SHA says nothing about scope: compare the platform's own changed-file list and
+live base against the reviewed set, not `git diff <old_head>..<new_head>`, which
+reports everything the rebase absorbed from below.
+
 ## Review coverage ledger
 
 Track mechanical coverage separately from finding quality. Prove only that each selected file received a completed correctness review, not that it is defect-free.

@@ -10,6 +10,7 @@
 - `as const` for custom hook tuple returns
 - `useRef<HTMLInputElement>(null)` for DOM (use `?.`), `useRef<number>(0)` for mutable values
 - Explicit `useState<User | null>(null)` for unions/null
+- Pass optional handlers through unwrapped: `onX={(a) => handler?.(a)}` is always truthy, so a child that renders a control only when `onX` is provided always renders it, and the click silently does nothing. Pass `handler` (or `undefined`) and gate the control on the real handler's presence.
 - useReducer actions as discriminated unions: `{ type: 'set'; payload: number } | { type: 'reset' }`
 - useContext null guard: throw in custom `useX()` hook if context is null
 - **A parameter type whose properties are all optional is a weak type, and a mismatched argument fails to compile rather than passing `undefined`.** TypeScript requires the argument to share at least one property with a weak type, so `(record: { newField?: boolean })` rejects a generated type that does not yet carry `newField` with `TS2559: Type 'X' has no properties in common with type 'Y'`. Intersect with the base type instead (`T & { newField?: boolean }`); the shim then deletes cleanly once the field lands upstream

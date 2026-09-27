@@ -93,6 +93,7 @@ The bare `catch (...)` is required: `catch (const std::exception &)` alone still
 - `pemalloc(size, persistent)`/`pefree(ptr, persistent)`: survives the request. Anything that must outlive the request, including anything reachable from a persistent resource, has to be persistent-allocated.
 - Request-scoped (`emalloc`) data may live in module globals, which is a standard pattern across php-src's own extensions, provided it is released **and the pointer reset** in `RSHUTDOWN`. What corrupts is a request-scoped pointer left in a global across requests: the next request reads freed memory.
 - Never cross the allocators. `emalloc` pairs only with `efree`; `malloc` only with `free`.
+- Trace `is_persistent` on every path before calling a `pefree` redundant. One handle variable can hold request-scoped memory on the happy path and a persistent allocation on a failed-retry or destructor path, where a plain `efree` frees persistent memory with the request allocator.
 - `zend_string` is refcounted: `zend_string_copy` to take a reference, `zend_string_release` to drop one. Interned strings have refcount handling of their own, so never `efree` a `zend_string` directly.
 - `zval` ownership: `ZVAL_COPY` takes a reference, `ZVAL_COPY_VALUE` does not. `zval_ptr_dtor` on anything owned.
 - A limit enforced by the request allocator counts only allocations that went through it. Bytes a bundled C library takes from `malloc(3)` are invisible to `memory_limit`, to the debug allocator, and to `memory_get_usage`, and no in-tree call installs an allocator hook for the XML stack. So any claim that `memory_limit` bounds an input-driven allocation is wrong wherever the bytes came from libxml, libxslt, GD, libzip, or ICU; the cap has to sit at the trust boundary, with an operating-system limit behind it. Parse and transform stages bypass it entirely, and only the copy back into a PHP string is ever counted.
@@ -122,6 +123,7 @@ typedef struct {
 - `free_obj` must call `zend_object_std_dtor` after releasing owned fields.
 - A custom `create_object` without a matching `clone_obj` handler, or with `clone_obj` left pointing at the default, corrupts the heap on `clone`. Set it explicitly, including to NULL when cloning must be rejected.
 - An abstract internal base is worth giving sentinel handlers that fail loudly, rather than leaving inherited ones that assume a concrete layout. Confirm the reachable paths against the engine version in use before relying on any specific one.
+- A `MINIT` that resolves another extension's class needs `ZEND_MOD_REQUIRED("<ext>")` in a `zend_module_dep` array on the module entry, with `STANDARD_MODULE_HEADER_EX`. The engine orders `MINIT` calls from that array only; `PHP_ADD_EXTENSION_DEP` in `config.m4` is a configure-time consistency check on Unix. With only the `config.m4` line, the extension works while ini load order happens to put the dependency first and fatals at startup when its own name sorts earlier in `conf.d`.
 
 ## Module globals
 
@@ -142,6 +144,8 @@ Guard on `PHP_VERSION_ID`, never on a runtime version string:
 ```
 
 Keep the guard around the smallest region that differs. A guard wrapping a whole function duplicates the body and the two copies drift.
+
+A feature gated on a core-provided `HAVE_*` macro (`#ifdef HAVE_PHP_SESSION`) compiles out with no warning against a PHP built without that extension, so it gets zero coverage and ships untested. Keep at least one build-and-test lane on a PHP that defines the macro, and read the macro rather than redefining it.
 
 ## Verify
 

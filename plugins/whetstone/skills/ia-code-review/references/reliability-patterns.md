@@ -9,6 +9,7 @@ Review lens for operational resilience: what happens when things go wrong at run
 - **Error type specificity**: catching broad exception types (`Exception`, `Error`) when only specific failures are expected. Broad catches mask unexpected bugs.
 - **Error context stripping**: re-throwing without the original cause/stack. Wrap, don't replace.
 - **Idempotent-retry branch that skips the rest of the operation**: when one logical operation is two calls (confirm then mark-verified, create then attach) and the handler treats "already done" on the first as "fully handled", a failure between the two becomes permanent: the retry returns success without ever performing the second call. The already-done path must still run the remaining calls.
+- **Partial-failure abort guard keyed on success instead of output**: a fan-out that isolates failed sub-operations and publishes the survivors usually guards "nothing salvaged, fail loudly". Keyed on "every sub-operation failed", it passes when the data-bearing parts failed and the rest succeeded empty, and publishes an empty result as success. Key the guard on "something failed and the final output is empty", and test the mixed failed-plus-empty-survivors input. A chain of continue-on-error steps has the same hole: it exits 0 on 100% item failure unless something aggregates the counts.
 
 ## Timeout and Cancellation
 
@@ -23,6 +24,7 @@ Review lens for operational resilience: what happens when things go wrong at run
 - **Unbounded retries**: max attempts must be finite. Infinite retry loops become resource exhaustion.
 - **Retry surface**: retry at the right layer. Retrying an entire transaction because one HTTP call failed wastes work. Retry the call, not the transaction.
 - **Double retry (stacked retry layers)**: application `@retry` wrapping a client SDK that already auto-retries multiplies attempts (3×3 = 9) and the backoff compounds, so a nominal 5s timeout becomes 30s+. Audit the client's default retry policy before wrapping it. Retry at exactly one layer: if the SDK retries, configure its policy; do not add another `@retry` on top. The no-wrapper case needs the same audit: an SDK's `timeout` is normally **per attempt**, and several SDKs default to non-zero built-in retries, so a single call with `timeout=T` has a worst case near `T × (retries + 1)` plus backoff even with no application-level retry around it. "Bounded" is true; a claimed hard ceiling on an interactive path is not. Require `max_retries=0` plus the per-attempt timeout, or an outer deadline.
+- **Assuming a throw reaches the retry mechanism**: "it throws, so the queue retries" holds only if the exception escapes the handler. A `catch` that marks the job failed, disables further retries, or logs and returns turns the throw into a permanent failure with no requeue, and the attempt budget never engages. Read the job's own catch and failure path before asserting either retry-safety or that a retry happens at all.
 
 ## Post-Commit External Writes
 
@@ -39,6 +41,7 @@ When calling a flaky upstream service:
 - **Connection/handle leaks on error paths**: DB connections, file handles, locks acquired in try blocks must be released in finally/defer/context manager. Check BOTH success and error paths.
 - **Pool exhaustion**: if connections are acquired but not returned on timeout or error, the pool drains over time. This is a slow-burn production incident.
 - **Subscription leaks**: event listeners, WebSocket connections, pub/sub subscriptions registered without corresponding unsubscribe on teardown.
+- **Early exit added mid-construction**: a new bailout placed after a function builds state in stages inherits every reference, flag, and scope swap acquired so far. Reading the function's tail for frees misses releases the normal path performs only because the skipped callee sets a flag at run time. Prefer moving the check before the first stage, where nothing is held yet; if it must stay late, list each acquisition and trace who releases it on the normal path.
 
 ## Queue and Job Resilience
 
@@ -52,6 +55,8 @@ When calling a flaky upstream service:
 
 - **A flag that gates the producer is not a revert.** A staged rollout gates the writer on a flag while a shared list or type set gates the readers. Flag on gives a bounded window; flag off removes the bound: the producer never runs, replacement records never arrive, and the reader-side suppression becomes permanent. Grep the flag's config key for every reader; if its only consumer is the producer's dispatcher, "with the flag off the change is inert" is false. Classify each consumer of the shared list as row-keyed or type-keyed.
 - **A memoisation key must cover the transformer, not just the input.** A key over the source digest proves the input unchanged and says nothing about the code that transformed it; the first time two versions coexist (a binary replaced mid-run, a warm container outliving a deploy) the cache serves old-rule output forever. Bind the rule set's digest or the build revision, with a hand-bumped constant as the floor, and prefer over-invalidation. Ask of any added cache: what happens when the process is replaced while the cache directory survives?
+- **The old release is a writer during every rolling deploy.** A new marker column, a new column default, or a repair keyed on a transition (`old === null && new !== null`) is maintained only by instances running the new code. An old instance still serving creates rows already past the transition and without the marker, so a one-shot backfill that already streamed past them and a transition-gated guard both miss them permanently. Enumerate writers of the state, old release included. Close with a re-runnable sweep after old instances drain, or with a write at the invalidating mutation that holds however the state arose; that write is itself absent from old instances, so only the post-drain sweep needs no deploy choreography.
+- **A companion change that deletes redundant enforcement expires the producer's "safe to revert".** While two sides enforce the same rule, one side's change is genuinely additive and reversible. Once the companion removes its copy, the producer is the only place the rule lives, and "additive, revert the change" becomes false with no change to the producer's diff. When a description claims revertability, check for in-flight changes that delete the other copy, and restate the claim against the merge order.
 
 ## Detection Patterns
 

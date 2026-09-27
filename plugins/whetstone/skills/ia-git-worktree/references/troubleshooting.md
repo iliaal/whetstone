@@ -40,6 +40,10 @@ env -C "$main_checkout" git status --short
 
 Supply explicit names and the `WORKTREE_SESSION_ID` set before creation. Do not reuse another session's token. Preserve any dirty, untracked, or ignored files, including copied environment files and dependencies; arrange their disposition under user authority before retrying. A locked tree remains protected by Git. A clean tree from this session can be removed after confirming no process uses it.
 
+### Tree-scanning tests fail with phantom offenders?
+
+A worktree under `.worktrees/` is a full second checkout inside the repository. `.gitignore` hides it from Git, not from a test that walks the tree with `rglob` or `find`, so a hygiene test reports offenders that repeat known-good files under the worktree prefix, and CI never reproduces the failure. Check `git worktree list` before debugging one. Remove only this session's clean trees through the manager, or run the suite from a checkout that contains no nested worktree; for parallel suites, create the worktrees outside the repository.
+
 ---
 
 ## Branch from a fresh remote base (manager-script behavior)

@@ -70,6 +70,7 @@ Read the relevant reference before implementing the matching behavior:
 
 - GNU coreutils differ from macOS: `sed -i` (no `''` suffix), `grep -P` (PCRE support), `readlink -f` (canonical path)
 - `timeout 30s cmd` to prevent automation hangs
+- `sed -i` replaces a symlink with a regular file: it writes a temp file and renames it over the path, so the two copies diverge later with no error. Use `sed -i --follow-symlinks` or edit the target by name, and check `git status --short` for `T` (typechange) after scripted edits
 
 ## ShellCheck
 
