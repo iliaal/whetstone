@@ -6,9 +6,11 @@ Contents: [specialists](#specialist-agents) · [coverage](#correctness-coverage-
 
 ## Specialist Agents
 
-Dispatch all agents in parallel (read-only, safe to parallelize). Each receives the full diff, the PR description/intent, and the scope resolution results.
+Dispatch all applicable specialist lenses through the harness's available delegation interface. Run them in parallel when supported (read-only, safe to parallelize). Each receives the full diff, the PR description/intent, and the scope resolution results. Use the table's focus and the Agent Prompt Template as standalone role prompts. Named specialist agents are optional conveniences when installed; the review does not require them.
 
 **When a dispatch fails.** A concurrency or active-agent-limit error is backpressure: leave the specialist queued and retry after a slot frees. A launch that fails for any other reason (bad agent type, malformed prompt, missing permission) does not stall the merge: run that lens inline in the parent context using the same prompt template, and disclose it in one line of the report. The same applies when the harness exposes no subagent primitive at all. This is the sole exception to the main skill's "pass the diff to agents; do NOT read it first" rule: the parent reads the diff for the substituted lens only, and the delegation rule still holds for every lens that dispatched successfully.
+
+Apply the same fallback to triggered red-team and Skeptic passes. Preserve their role prompts and evidence checks when running inline. Disclose that inline passes share the parent context and do not provide independent review.
 
 **Agent lifecycle.** Collect every specialist's terminal outcome, including failures, before any cleanup. When the harness offers caller-owned cleanup, close or release review-owned agent handles before refilling a slot, advancing a stage, or returning. Never message a completed agent that has no remaining work. A slot counts as free when the harness reports the agent finished (its completion notification arrived or its handle was released), not when output merely stops arriving and not when the agent is interrupted mid-run. Do not invent cleanup operations the harness does not expose.
 
@@ -21,11 +23,11 @@ Dispatch all agents in parallel (read-only, safe to parallelize). Each receives 
 | maintainability | Long-term health | Coupling, naming, complexity, API surface changes, SRP violations, leaky abstractions, dead code |
 | performance | Efficiency | N+1 queries, unbounded collections, missing indexes, unnecessary allocations, cache opportunities, algorithmic complexity |
 | reliability | Failure resilience | Error handling completeness, timeout/retry logic, circuit breakers, resource cleanup on error paths, graceful degradation. Load [reliability-patterns.md](./reliability-patterns.md) |
-| cloud-infra | Infrastructure | Terraform/IaC review, cloud architecture, cost implications, disaster recovery. Only dispatch when diff touches infrastructure files (*.tf, Dockerfile, docker-compose.*, CI/CD configs). Use `ia-cloud-architect` agent. |
+| cloud-infra | Infrastructure | Terraform/IaC review, cloud architecture, cost implications, disaster recovery. Only dispatch when diff touches infrastructure files (*.tf, Dockerfile, docker-compose.*, CI/CD configs). Prefer `ia-cloud-architect` when installed; otherwise use this role's focus with the prompt template. |
 | api-contract | API surface | Breaking changes (removed fields, type changes, new required params), versioning strategy, error response consistency, backwards compatibility, documentation drift. Only dispatch when diff touches public endpoints, exported interfaces, or API route files. |
-| data-migration | Migration safety | Reversibility (can it roll back?), data loss risk, lock duration on large tables, backfill strategy, index creation timing, multi-phase safety (deploy code first, then migrate). Only dispatch when diff includes migration files. Use `ia-database-guardian` agent. |
+| data-migration | Migration safety | Reversibility (can it roll back?), data loss risk, lock duration on large tables, backfill strategy, index creation timing, multi-phase safety (deploy code first, then migrate). Only dispatch when diff includes migration files. Prefer `ia-database-guardian` when installed; otherwise use this role's focus with the prompt template. |
 
-Model tiers come from each agent's own frontmatter; do not override per-dispatch.
+Use the harness's configured reviewer model by default. Apply the risk-based selection below only when the harness supports model selection within existing authorization.
 
 ### Correctness coverage ownership
 
@@ -110,7 +112,7 @@ Limit to 10 findings, highest severity first.
 
 ### Model Selection
 
-Model tiers come from each dispatched agent's own frontmatter; do not set a per-lens override. Single sanctioned exception: if the diff touches auth, payments, or crypto, upgrade the security lens to opus.
+If the diff touches auth, payments, or crypto, prefer a reviewer with stronger reasoning capability for the security lens when the harness supports that selection within existing authorization. Otherwise retain the configured model and all review passes. Disclose any consequential capability limitation in Residual Risks. Do not depend on a particular model family or agent frontmatter field.
 
 ### Red-Team Pass (Second Phase)
 

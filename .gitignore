@@ -22,3 +22,6 @@ distillery/.injection-attestation.json
 
 # Plugin eval run artifacts (timestamped reports, not shared)
 plugins/whetstone/evals/results/
+
+# OpenAI public submission archives
+dist/openai/

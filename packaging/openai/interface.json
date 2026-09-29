@@ -1,0 +1,24 @@
+{
+  "displayName": "Whetstone",
+  "shortDescription": "Disciplined coding workflows",
+  "longDescription": "Apply repeatable engineering workflows for planning, debugging, code review, verification, documentation, and implementation. Whetstone includes focused skills for C, C++, PHP and Laravel, Python, JavaScript and TypeScript, React, Rust, Bash, PostgreSQL, Terraform, and Pine Script. Use the skills with code and project materials available in the conversation or workspace. Running builds, tests, scripts, and Git workflows requires an execution environment and access to the relevant project. Documentation lookup uses available documentation or web tools. This skills-only package does not connect to an external service or require a Whetstone account.",
+  "developerName": "Ilia Alshanetsky",
+  "category": "Developer Tools",
+  "capabilities": [
+    "Implementation planning",
+    "Systematic debugging",
+    "Code review",
+    "Behavior verification",
+    "Project documentation"
+  ],
+  "websiteURL": "https://github.com/iliaal/whetstone",
+  "supportURL": "https://github.com/iliaal/whetstone/issues",
+  "defaultPrompt": [
+    "Use Whetstone to review this code and explain the most consequential findings.",
+    "Use Whetstone to investigate this failure and verify the remedy.",
+    "Use Whetstone to plan and implement this change in the available workspace."
+  ],
+  "brandColor": "#176B59",
+  "composerIcon": "./assets/whetstone.svg",
+  "logo": "./assets/whetstone.svg"
+}

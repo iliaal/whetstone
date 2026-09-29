@@ -1,6 +1,6 @@
 # Authentication & Security
 
-For full security auditing (OWASP compliance, vulnerability scanning, checklist), use the `ia-security-sentinel` agent. This reference covers Node.js-specific tooling and patterns only.
+For full security auditing (OWASP compliance, vulnerability scanning, checklist), use the `ia-security-sentinel` agent when installed. Otherwise use `ia-code-review` with a security focus. This reference covers Node.js-specific tooling and patterns only.
 
 ## Authentication Pattern
 
@@ -28,7 +28,7 @@ For full security auditing (OWASP compliance, vulnerability scanning, checklist)
 `npm audit` catches *known advisories only*, not a freshly-malicious or typosquatted package. Harden the install itself:
 
 - **Frozen installs.** Commit the lockfile and install with the manager's immutable mode (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`) so CI can't silently resolve a different tree.
-- **Gate lifecycle scripts.** Block dependency `preinstall`/`postinstall` scripts by default and approve them per-package via the manager's native policy, so a compromised transitive dependency can't run arbitrary code at install time. The exact flag is manager- and version-specific; resolve it via Context7 rather than hardcoding it.
+- **Gate lifecycle scripts.** Block dependency `preinstall`/`postinstall` scripts by default and approve them per-package via the manager's native policy, so a compromised transitive dependency can't run arbitrary code at install time. Verify the exact manager- and version-specific flag in current official documentation. Prefer Context7 when available; otherwise read the package manager's official docs with available web tools.
 - **Audit ≠ safety.** A clean `npm audit` is not proof a dependency is trustworthy. Never run `npm audit fix --force` unattended; it can jump majors and break the build. Treat audit as one signal, not a gate.
 - **Verify provenance** where the registry supports it (npm signature/provenance attestations) before adding a new or unfamiliar package.
 

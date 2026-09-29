@@ -1,6 +1,6 @@
 # Tailwind CSS v4
 
-**Verify before implementing**: For v4-specific syntax (`@theme`, `@variant`, CSS-first config), look up current docs via Context7 (`query-docs`) before writing code. Tailwind v4 changed significantly from v3 and training data may be stale.
+**Verify before implementing**: For v4-specific syntax (`@theme`, `@variant`, CSS-first config), look up current official docs before writing code. Prefer Context7 (`query-docs`) when available. Otherwise use available web tools to read the [Tailwind CSS docs](https://tailwindcss.com/docs/) for the project's version. Tailwind v4 changed significantly from v3 and training data may be stale.
 
 ## Working rules
 

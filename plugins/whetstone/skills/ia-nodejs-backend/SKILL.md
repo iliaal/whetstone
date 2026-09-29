@@ -10,7 +10,7 @@ paths: "**/*.ts,**/*.js,**/*.mjs,**/*.cjs"
 
 # Node.js Backend
 
-**Verify before implementing**: For framework-specific APIs (Express 5, Fastify 5, Node.js 22+ built-ins), look up current docs via Context7 (`query-docs`) before writing code. Training data may lag current releases.
+**Verify before implementing**: For framework-specific APIs (Express 5, Fastify 5, Node.js 22+ built-ins), look up current, version-matched official docs before writing code. Prefer Context7 (`query-docs`) when available. Otherwise use available web tools to read the framework's official documentation, or the [Node.js API docs](https://nodejs.org/api/) for Node.js built-ins. Training data may lag current releases.
 
 ## Working rules
 
