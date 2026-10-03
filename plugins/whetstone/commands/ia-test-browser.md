@@ -139,12 +139,27 @@ Then run `/ia-test-browser` again.
 
 <test_pages>
 
+Allocate a fresh invocation-owned directory before saving evidence:
+
+```bash
+CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/test-browser.XXXXXXXX")
+printf '%s\n' "$CAPTURE_DIR"
+```
+
+Record the emitted absolute path as `[capture-dir]` and substitute it literally in later calls. Save screenshots, console evidence, and any requested report beneath that directory with distinct route/action names. Retain artifacts for the caller; never overwrite or delete caller-provided or concurrent artifacts.
+
 For each affected route, use agent-browser CLI commands (NOT Chrome MCP):
+
+Collect preflight console/page errors before clearing them and label that evidence separately. Clear the buffers before each route navigation, then collect them after navigation and each critical interaction. Use distinct evidence filenames such as `[capture-dir]/[route-id]-[action-id]-console.json`. If the installed CLI lacks these commands or collection fails, mark the corresponding log check unverified rather than report zero errors.
 
 **Step 1: Navigate and capture snapshot**
 ```bash
+agent-browser console --clear
+agent-browser errors --clear
 agent-browser open "[verified-base-url]/[route]"
 agent-browser snapshot -i
+agent-browser console --json > "[capture-dir]/[route-id]-navigation-console.json"
+agent-browser errors > "[capture-dir]/[route-id]-navigation-errors.txt"
 ```
 
 **Step 2: For headed mode (visual debugging)**
@@ -163,13 +178,19 @@ agent-browser --headed snapshot -i
 **Step 4: Test critical interactions**
 ```bash
 agent-browser click @e1  # Use ref from snapshot
+agent-browser wait "[expected-result-selector]"
+agent-browser get text "[result-selector]"
 agent-browser snapshot -i
+agent-browser console --json > "[capture-dir]/[route-id]-[action-id]-console.json"
+agent-browser errors > "[capture-dir]/[route-id]-[action-id]-errors.txt"
 ```
+
+Choose the expected result from the actual flow before the action. Inspect collected messages and page errors; a screenshot with no visible error is not console evidence. Retain error severity, text, and the route/action that produced it. Report relevant runtime errors as findings even when the page looks normal.
 
 **Step 5: Take screenshots**
 ```bash
-agent-browser screenshot page-name.png
-agent-browser screenshot --full page-name-full.png  # Full page
+agent-browser screenshot "[capture-dir]/[route-id]-viewport.png"
+agent-browser screenshot --full "[capture-dir]/[route-id]-full.png"
 ```
 
 </test_pages>
@@ -212,7 +233,7 @@ Did it work correctly?
 When a test fails:
 
 1. **Document the failure:**
-   - Screenshot the error state: `agent-browser screenshot error.png`
+   - Screenshot the error state: `agent-browser screenshot "[capture-dir]/[route-id]-[action-id]-error.png"`
    - Note the exact reproduction steps
 
 2. **Interactive mode: ask how to proceed.** In a read-only pipeline run, return the failure as a finding; implementation remains with the parent:
@@ -267,8 +288,10 @@ After all tests complete, present summary:
 | `/dashboard` | Fail | Console error: [msg] |
 | `/checkout` | Skip | Requires payment credentials |
 
-### Console Errors: [count]
-- [List any errors found]
+### Browser Logs
+- Console errors: [observed count, or unverified with reason]
+- Page errors: [observed count, or unverified with reason]
+- Evidence: [route/action, relevant messages, and retained log paths]
 
 ### Human Verifications: [count]
 - OAuth flow: Confirmed
@@ -281,7 +304,11 @@ After all tests complete, present summary:
 - `/dashboard` - [severity] - [reproduction steps]
 
 ### Result: [PASS / FAIL / PARTIAL]
+
+**Artifacts:** [invocation-owned capture/report paths]
 ```
+
+Report PARTIAL when required revision, runtime, log, or human verification remains unverified. Never substitute zero or PASS for an unavailable check.
 
 </test_summary>
 

@@ -9,4 +9,18 @@ Load this reference when productionizing a Rust service: adding config validatio
 - **When the outbound call *is* the security decision, the fallback is deny.** For an authz check, trust score, entitlement or license gate, a shed request or an exhausted retry budget must resolve to "denied", never to "allowed because the check was unavailable". Any fail-open allowance scopes to transport failure alone: connection refused, DNS failure, timeout. A response that arrived but cannot be trusted (4xx/5xx, malformed body, a variant that does not deserialize, an unrecognized verdict) stays denied: the endpoint was reached and did not answer. Model this in the type system rather than in a branch: give the verdict enum exactly the variants the protocol defines and no `Default` impl, so an unparseable response has to be handled at the parse site. A `#[derive(Default)]` on that enum is the failure: it lets `unwrap_or_default()` compile and resolve an unreachable service to whichever variant carries `#[default]`. Same for a subject with no verdict on record yet: reject by default, and allow only through an explicit onboarding opt-in.
 - **Timeouts on every network call**, no defaults. `tokio::time::timeout(dur, fut)` or `reqwest::Client::builder().timeout(dur)`.
 - **Connection pools**: `sqlx::PgPool`, `reqwest::Client`. Build once, clone (cheap, `Arc` inside), share via `State`.
-- **Resilience layer stack** (outbound HTTP clients and shared services): `ServiceBuilder::new().layer(TimeoutLayer).layer(RateLimitLayer).layer(ConcurrencyLimitLayer).layer(LoadShedLayer).layer(RetryLayer).service(client)`. Name each layer explicitly: `LoadShedLayer` sheds excess load, `ConcurrencyLimitLayer` caps in-flight requests, `RateLimitLayer` bounds request rate, `RetryLayer` retries classified transient errors. Combining `LoadShedLayer` + `ConcurrencyLimitLayer` produces proper backpressure instead of unbounded queueing.
+- **Resilience layer order**: `ServiceBuilder` calls the first-added layer first. Put `LoadShed` outside the rate/concurrency limiters so their unavailable capacity becomes an overload error instead of a growing queue. Build and share the stack once; rebuilding it per request resets limits.
+
+```rust
+use std::time::Duration;
+use tower::ServiceBuilder;
+
+let mut service = ServiceBuilder::new()
+    .load_shed()
+    .concurrency_limit(64)
+    .rate_limit(100, Duration::from_secs(1))
+    .timeout(Duration::from_secs(2))
+    .service(client);
+```
+
+The stack's timeout starts when `call` runs; it does not bound time spent awaiting readiness. Bound the complete operation, including readiness and any retries, with `tokio::time::timeout(total_budget, (&mut service).oneshot(request))` using `tower::ServiceExt`. If adding `RetryLayer`, choose whether the rate limit counts logical requests or individual attempts and give retries a finite attempt/deadline policy; an outer total budget must cover both. Verify that an additional call fails promptly while every concurrency permit is held, and that an unavailable service reaches the readiness deadline.

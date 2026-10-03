@@ -71,11 +71,13 @@ For large test suites, call PHPUnit directly to avoid artisan's memory overhead:
 ./vendor/bin/phpunit                              # all tests (direct, lower memory)
 ./vendor/bin/phpunit --filter=PostTest             # by name
 ./vendor/bin/paratest --processes=auto   # parallel via ParaTest (what artisan test --parallel wraps)
-./vendor/bin/phpunit --coverage-text --min=80      # with coverage threshold
+./vendor/bin/phpunit --coverage-text               # coverage report; no threshold flag
 
 php artisan test                                   # small suites or quick runs
 php -d memory_limit=1G artisan test                # if artisan needed on large suites
 ```
+
+Enforce the 80% target through the project's coverage gate. Native PHPUnit has no `--min` option; if using Laravel's coverage wrapper, confirm `php artisan test --help` supports `--coverage --min=80` and allow for Artisan's memory overhead.
 
 ## Strict-mode MissingAttributeException from factories
 

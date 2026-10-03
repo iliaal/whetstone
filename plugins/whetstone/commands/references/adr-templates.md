@@ -88,13 +88,14 @@ Chosen option: "[Option N]", because [justification].
 
 ```markdown
 ---
-status: deprecated
+status: proposed
 date: YYYY-MM-DD
-superseded-by: NNNN-new-decision.md
+supersedes: OOOO-original-decision.md
 ---
-# NNNN. [Original Title] [DEPRECATED]
+# NNNN. [Decision to replace or retire the original decision]
 
-Superseded by [NNNN. New Decision](NNNN-new-decision.md).
+This decision supersedes [OOOO. Original Decision](OOOO-original-decision.md).
+Set status to accepted once the replacement or retirement is decided.
 
 ## Original Context
 

@@ -24,3 +24,9 @@
 {"prompt": "write CSS modules for the layout", "expect": false, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
 {"prompt": "set up styled-components", "expect": false, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
 {"prompt": "convert this to vanilla CSS", "expect": false, "added_in": "3.0.3", "source": "merged-from-ia-tailwind-css"}
+{"prompt":"Synchronize frontend JSON locales for the new checkout messages in en and fr","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Review translations in the frontend JSON locale files for stale source messages","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Add a locale to the React app","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Add a locale to the application","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Add a locale to the Laravel backend","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Review translations in the backend JSON locale files","expect":false,"source":"audit-2026-10-03"}

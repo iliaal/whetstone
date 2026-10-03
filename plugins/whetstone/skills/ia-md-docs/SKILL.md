@@ -46,7 +46,7 @@ Treat these as user-request modifiers: apply when the request contains the flag 
 
 ## Backup Handling
 
-Before overwriting: `cp FILE FILE.backup`; never auto-delete backups.
+Before overwriting, create a unique adjacent backup path with exclusive creation (for example, `mktemp FILE.backup.XXXXXX`). Copy the source bytes into that new path. Report the backup path. If creation or copying fails, stop before overwriting the source. Never replace or auto-delete an existing backup.
 
 
 ## Report Format

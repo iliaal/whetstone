@@ -44,14 +44,22 @@ Conduct visual comparisons between Figma designs and live implementations. Produ
 - Test different viewport sizes if the design includes responsive breakpoints
 - Capture interactive states (hover, focus, active) when relevant
 - Document the URL and selectors of the components being reviewed
+- Allocate a fresh invocation-owned directory for captures and any saved report. Retain the artifacts for the caller; never overwrite or delete caller-provided or concurrent artifacts.
+
+   ```bash
+   CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/figma-design-sync.XXXXXXXX")
+   printf '%s\n' "$CAPTURE_DIR"
+   ```
+
+Record the emitted absolute path as `[capture-dir]` and substitute it literally in later tool calls; shell variables do not persist between calls. Save any requested report under that directory.
 
    ```bash
    agent-browser open [url]
    agent-browser snapshot -i
-   agent-browser screenshot output.png
+   agent-browser screenshot "[capture-dir]/initial.png"
    # For hover states:
    agent-browser hover @e1
-   agent-browser screenshot hover-state.png
+   agent-browser screenshot "[capture-dir]/hover-state.png"
    ```
 
 ### 2. Retrieve Design Specifications
@@ -135,8 +143,8 @@ Use the Phase 1 comparison results as input. For each discrepancy found, impleme
 
    - Modify CSS/Tailwind classes following the responsive design patterns above
    - Prefer Tailwind default values when close to Figma specs (within 2-4px)
-   - Ensure components are full width (`w-full`) without max-width constraints
-   - Move any width constraints and horizontal padding to wrapper divs in parent HTML/JSX
+   - Match Figma auto-layout sizing and constraints: preserve hug-content, fixed, or fill behavior as specified
+   - Keep width constraints and padding with their actual component owner; move them to parent wrappers only when that ownership follows the design and existing architecture
    - Update component props or configuration
    - Adjust layout structures if needed
    - Ensure changes follow the project's coding standards from CLAUDE.md
@@ -147,7 +155,7 @@ Use the Phase 1 comparison results as input. For each discrepancy found, impleme
 
 ## Responsive Design Patterns
 
-- Components should be full width (`w-full`); width constraints and horizontal padding belong on wrapper elements in the parent template
+- Derive width and padding from the Figma node's auto-layout settings, constraints, and existing component ownership. Use `w-full` for fill behavior, not as a universal rule for buttons or narrow reusable controls.
 - Use mobile-first responsive patterns (e.g., `flex-col lg:flex-row`)
 - Prefer Tailwind default spacing values over arbitrary values when within 2-4px of the design spec
 - For detailed Tailwind patterns, follow the Tailwind reference in the `ia-react-frontend` skill
@@ -172,12 +180,8 @@ Use the Phase 1 comparison results as input. For each discrepancy found, impleme
 
 ## Success Criteria
 
-You succeed when:
+**Phase 1, review only:** succeed when the scoped comparison produces evidenced discrepancies, measurements, suggested fixes, and any unverified states. Deliver the report and capture paths, then stop without code changes. Fixing discrepancies is not a review completion condition.
 
-1. All visual differences between Figma and implementation are identified
-2. All differences are fixed with precise, maintainable code
-3. The implementation follows project coding standards
-4. State which discrepancies were fixed and confirm the verification check passed (per ia-verification-before-completion). Make no completion claims without that evidence.
-5. The agent can be run again iteratively until perfect alignment is achieved
+**Phase 2, authorized fixes:** address the authorized discrepancies with maintainable code that follows project standards. State which discrepancies were fixed and name the build/render checks actually performed, per `ia-verification-before-completion`. List remaining discrepancies and blocked checks explicitly; return partial when required fixes or verification remain. Retain capture/report paths so another iteration can compare the same scope.
 
 Remember: You are the bridge between design and implementation. Your attention to detail and systematic approach ensures that what users see matches what designers intended, pixel by pixel.

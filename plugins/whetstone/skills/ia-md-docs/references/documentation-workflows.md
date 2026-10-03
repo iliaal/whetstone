@@ -18,8 +18,8 @@ Generate or refresh README.md from project metadata and structure. See [update-r
 
 1. Detect language/stack from config files (package.json, pyproject.toml, composer.json)
 2. Extract metadata: name, version, description, license, scripts
-3. If README exists and `--preserve`: keep custom sections (About, Features), regenerate standard sections (Install, Usage)
-4. Generate sections appropriate to project type (library vs application)
+3. If README exists and `--preserve`: fix verified inaccuracies in place; retain every section and its order
+4. Otherwise, generate sections appropriate to project type (library vs application)
 5. Report changes
 
 ### Update CONTRIBUTING
@@ -27,7 +27,7 @@ Generate or refresh README.md from project metadata and structure. See [update-r
 Update existing CONTRIBUTING.md only; never auto-create. See [update-contributing.md](./update-contributing.md).
 
 When updating, detect project conventions automatically:
-- Package manager from lock files (package-lock.json → npm, yarn.lock → yarn, pnpm-lock.yaml → pnpm, bun.lockb → bun)
+- Package manager from verified `packageManager` configuration, then lock files (package-lock.json → npm, yarn.lock → yarn, pnpm-lock.yaml → pnpm, bun.lock or legacy bun.lockb → bun). Resolve conflicting signals against repository scripts and CI before documenting commands.
 - Branch conventions from git history (feature/, fix/, chore/ prefixes)
 - Test commands from package.json scripts or pyproject.toml
 
@@ -37,11 +37,11 @@ When updating, detect project conventions automatically:
 
 If `DOCS.md` exists, treat it as API-level documentation (endpoints, function signatures, type definitions). Verify against actual code the same way as AGENTS.md. Never auto-create DOCS.md; only update existing.
 
-When a doc prescribes a machine-consumed shape (a JSON artifact, config file, or request body) that code then validates, the two drift silently and each drift costs one caller a rejected write. A test that greps the doc for key names is a second copy of the doc: it goes green when both copies are wrong together, which is the only failure that matters. Have the tool report its validators' key sets as a versioned subcommand, sourced from the **same constants the validators read** (a constant only the report reads is decoration), then compare the doc against that report in both directions: a documented key no validator accepts, and a required key no example shows. Guard the guard: an example nothing can classify is a failure rather than a skip, and a validated artifact with no example is a failure.
+When a doc prescribes a machine-consumed shape (a JSON artifact, config file, or request body), compare the documented shape against the validator's actual source of truth. Use existing schemas, validator constants, or introspection sourced from those definitions. Check both directions: documented keys the validator rejects and required keys the examples omit. Treat an unclassifiable example or a validated artifact with no example as a comparison failure. If the tool lacks introspection, inspect its validator definitions. Report any remaining verification gap. Propose a new reporting subcommand separately. Implement it only when the caller authorized that product change.
 
 - Assert nested rows separately; a walk over top-level examples cannot reach a row inside an array.
 - Assert field order when the doc's order is how a reader learns the shape.
-- Run the comparison against the installed binary as well as the build tree.
+- When an existing interface supports the comparison, check the installed binary as well as the build tree. Report unavailable interfaces or artifacts instead of adding them under documentation-only authority.
 
 ### Initialize Context
 

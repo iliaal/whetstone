@@ -48,25 +48,29 @@ A worktree under `.worktrees/` is a full second checkout inside the repository. 
 
 ## Branch from a fresh remote base (manager-script behavior)
 
-Do not run these steps manually; the script runs them. Read only when debugging why `create` branched from `origin/<base>` instead of a local branch, or why it fell back to a local ref.
+Do not run these steps manually; the script runs them. Read only when debugging the resolved fetched commit or the local-ref fallback.
 
 When creating a worktree's branch from the default branch (`main`/`master`), the local base may be ahead of `origin/<base>` due to another session, worktree, or background task. Branching from local HEAD silently carries those unrelated commits into the new feature branch and the eventual PR. Checking out `<base>` in the caller's working tree to update it first is worse: it silently switches the user's active branch out from under them, which is why the script never does that.
 
 The script's actual sequence (fetch-only, never checks out the caller's branch):
 
 ```bash
-GIT_TERMINAL_PROMPT=0 git fetch --no-tags origin <base>
+fetch_marker=$(mktemp "${TMPDIR:-/tmp}/whetstone-fetch.XXXXXXXXXX")
+fetch_ref="refs/whetstone/fetch/${fetch_marker##*/}"
+GIT_TERMINAL_PROMPT=0 git fetch --no-tags --refmap= origin "<base>:$fetch_ref"
 if [ $? -eq 0 ]; then
-  base_ref="origin/<base>"
+  base_sha=$(git rev-parse --verify "$fetch_ref^{commit}")
 else
-  base_ref="<base>"   # offline fallback: branch from the local ref
+  base_sha=$(git rev-parse --verify '<base>^{commit}')
 fi
-git worktree add .worktrees/<name> -b <branch> "$base_ref"
+git update-ref -d "$fetch_ref"
+rm -- "$fetch_marker"
+git worktree add .worktrees/<name> -b <branch> "$base_sha"
 ```
 
-A narrow `remote.origin.fetch` refspec makes `git fetch origin` silently partial. When the config maps only one branch, every other remote-tracking ref stays frozen, and `git log origin/<other>` or `git merge-base --is-ancestor` return stale answers with no error. Check `git config --get-all remote.origin.fetch`, and pass an explicit refspec before making any claim about another branch.
+A narrow `remote.origin.fetch` refspec can leave remote-tracking refs frozen even after an explicit branch fetch succeeds. `FETCH_HEAD` is also shared between linked checkouts, so another fetch can overwrite it. The manager uses its own private destination, pins that SHA, removes its ref, and verifies the created checkout against the SHA. It does not assume `origin/<base>` was updated. For separate claims about remote-tracking history, check `git config --get-all remote.origin.fetch` and fetch an explicit destination refspec first.
 
-Known gap: the script does not distinguish "stale-base contamination" (another session advanced local `<base>` past `origin/<base>` with unrelated commits) from "forgot-to-branch" (the user's own unpushed commits on local `<base>` that were meant for a feature branch); it always prefers `origin/<base>` when the fetch succeeds. To carry unpushed local commits on `<base>` forward into the new branch instead, branch manually: `git worktree add <path> -b <branch> <base>`.
+Known gap: the script does not distinguish "stale-base contamination" (another session advanced local `<base>` past the remote base with unrelated commits) from "forgot-to-branch" (the user's own unpushed commits on local `<base>` that were meant for a feature branch); it always prefers the fetched remote commit when the fetch succeeds. To carry unpushed local commits on `<base>` forward into the new branch instead, branch manually: `git worktree add <path> -b <branch> <base>`.
 
 ---
 

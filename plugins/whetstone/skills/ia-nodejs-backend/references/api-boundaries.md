@@ -22,11 +22,11 @@ Ask user: deployment target, cold start needs, team experience, existing codebas
 
 ## Error Handling
 
-Custom error hierarchy: `AppError(message, statusCode, isOperational)` → `ValidationError(400)`, `NotFoundError(404)`, `UnauthorizedError(401)`, `ForbiddenError(403)`, `ConflictError(409)`
+Custom error hierarchy: `AppError(message, statusCode, code, isOperational)` → `ValidationError(400)`, `NotFoundError(404)`, `UnauthorizedError(401)`, `ForbiddenError(403)`, `ConflictError(409)`
 
 Centralized handler middleware:
-- `AppError` → return `{ error: message }` with statusCode
-- Unknown → log full stack, return 500 + generic message in production
+- `AppError` → return `{ error: { code, message, details? } }` with `statusCode`; expose only client-safe details
+- Unknown → log full stack, return 500 with `{ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }` in production
 - Async wrapper: `const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);`
 
 For custom transport callbacks, event listeners, and subscription handlers, establish the error boundary where the callback runs. Catch synchronous parsing or serialization failures there. Handle rejected promises when the SDK does not await the callback. An RxJS `catchError` upstream does not catch a throw from the final `subscribe` callback. Use the transport's error response, failed-message disposition, or bounded logging as appropriate. Verify that a malformed message and a rejected callback leave the process alive and the next valid message usable. Inspect framework-provided HTTP boundaries before adding another wrapper.

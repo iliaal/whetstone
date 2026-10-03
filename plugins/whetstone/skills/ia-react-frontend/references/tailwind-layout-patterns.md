@@ -55,11 +55,7 @@ Reference with `z-(--z-modal)` syntax; never use `z-[9999]`.
 
 ## Container Queries
 
-Component-level responsiveness independent of viewport.
-
-```css
-@plugin "@tailwindcss/container-queries";
-```
+Component-level responsiveness independent of viewport. Container queries are built into Tailwind v4; no `@tailwindcss/container-queries` plugin is needed. The separate plugin applies only to compatible Tailwind v3 projects.
 
 ```html
 <article class="@container">

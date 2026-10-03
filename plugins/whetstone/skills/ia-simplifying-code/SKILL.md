@@ -4,8 +4,7 @@ class: discipline
 description: >-
   Simplifies, polishes, and declutters code without changing behavior. Use when
   asked to simplify, clean up, refactor, declutter, remove dead code or AI slop,
-  or improve readability. For analysis-only reports without code changes, use
-  code-simplicity-reviewer agent.
+  or improve readability, including analysis-only simplification reports.
 ---
 
 # Simplifying Code
@@ -15,6 +14,7 @@ description: >-
 - Preserve behavior, interfaces, side effects, and domain intent; prove any unshipped-shape exception has no consumers outside scope.
 - Before removing a guard for an external hazard, reproduce its precondition and show the hazard is handled; otherwise retain it.
 - Verify standard-library substitutions on empty, null, no-match, ordering, and zero-value cases.
+- For analysis-only requests, identify targets and report proposed simplifications without editing code.
 
 ## Principles
 
@@ -35,8 +35,8 @@ Changing an interface, exported name, persisted format, or path reaches past the
 1. **Read first**: understand the full file and its dependents before changing anything. Apply Chesterton's Fence: when code looks unnecessary but its reason is unclear, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
 2. **Identify invariants**: what must stay the same? Public API, return types, side effects, error behavior
 3. **Identify targets**: find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> data shaping -> types (see Smell -> Fix table)
-4. **Apply in order**: control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last
-5. **Verify**: confirm no behavior change: tests pass, types check, imports resolve
+4. **Apply in order**: control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last. For analysis-only requests, describe the proposed changes instead of applying them.
+5. **Verify**: for applied changes, confirm behavior parity with relevant tests, type checks, and import checks. For analysis-only reports, identify the required checks and available evidence without claiming that proposed changes passed verification.
 6. **Pre-submit scope audit**: walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `ia-verification-before-completion`'s Scope Confirmation gate.
 
 
@@ -65,20 +65,19 @@ Stop and ask before proceeding when:
 
 ## Verify
 
+For analysis-only reports, distinguish available evidence from checks required after implementation. Apply the following checks after code changes:
+
 - Tests pass and types check after changes
 - No behavior change (same inputs produce same outputs)
 - Scope limited to requested files; no drive-by cleanups
 - Match test scope to the importer count surfaced in step 1 (Surface assumptions). Zero external importers: scoped tests on the changed paths. One or more external importers, or shared/utility code edited: run tests covering each importer. Run the full suite when the test runner has no path-scoping mechanism.
 
 
-## Integration
-
-- `ia-code-simplicity-reviewer` agent: analysis-only pass producing a simplification report (no code changes). Use before refactoring to identify targets.
-
-
 ## Output
 
-After simplifying, report:
+For analysis-only requests, report each target's location, proposed change, rationale, behavior risk, and required verification. Label proposals as unimplemented.
+
+After applying simplifications, report:
 - **Scope touched**: files and functions modified
 - **Key simplifications**: what changed and why (one line each)
 - **Verification**: tests pass, types check, no behavior change

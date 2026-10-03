@@ -13,7 +13,7 @@ paths: "**/*.tf,**/*.tfvars"
 ## Working rules
 
 - Preserve state and resource addresses during refactoring; inspect the plan for unintended replacement.
-- Separate plan-only checks from apply-mode tests that create real infrastructure and incur cost.
+- Separate tests with verified local or mocked effects from tests that access real services or create billable infrastructure. Plan mode can still read real data sources; mocked apply can run without infrastructure creation.
 
 ## File Organization & Naming
 
@@ -133,7 +133,7 @@ Run before declaring done:
 terraform fmt -check && terraform validate && tflint && trivy config .
 ```
 
-All commands must pass with zero errors. Where plan-mode tests exist, add `terraform test -filter=<unit-test-file>`. Restrict this to plan-mode suites, since apply-mode tests stand up real infrastructure and do not belong in a pre-completion check.
+All commands must pass with zero errors. Inspect providers, data sources, provisioners, and external commands before selecting test files. Include safe plan tests and fully mocked apply tests in completion checks. Keep real-service or infrastructure tests behind the task's authorization and cost boundary. Pass the root-relative test filename, such as `terraform test -filter=tests/vpc_unit_test.tftest.hcl`, and verify that the intended file completed at least one run; an exit code alone can accept an unknown filter with no tests selected. Use the checked selection recipe in [native-test-patterns.md](./references/native-test-patterns.md).
 
 ## Task-specific references
 

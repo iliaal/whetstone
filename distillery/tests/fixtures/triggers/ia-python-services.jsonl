@@ -21,3 +21,11 @@
 {"prompt":"Send a thank-you note signed ty","expect":false,"source":"audit-2026-09-07-boundary"}
 {"prompt":"Click the command palette in VS Code","expect":false,"source":"audit-2026-09-07-boundary"}
 {"prompt":"Click the CLI option in the settings menu","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"Configure uv dependencies in pyproject.toml","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Run uv sync --locked","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Use uv add httpx for the project","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Run uv lock to refresh Python dependencies","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Use uv run pytest","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Update dependencies in pyproject.toml","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Explain ultraviolet UV radiation exposure","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Configure UV exposure for the skin treatment","expect":false,"source":"audit-2026-10-03"}

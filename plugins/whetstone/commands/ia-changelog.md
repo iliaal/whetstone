@@ -97,16 +97,27 @@ Do not include any of your thought process or the original data in the output.
 
 ## Discord Posting (Optional)
 
-You can post changelogs to Discord by adding your own webhook URL:
+For an authorized Discord post, preserve the exact approved changelog as file data. Create a session-owned temporary directory:
 
+```bash
+mktemp -d /tmp/changelog.XXXXXX
 ```
-# Set your Discord webhook URL
-DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
 
-# Post using curl
-curl -H "Content-Type: application/json" \
-  -d "{\"content\": \"{{CHANGELOG}}\"}" \
-  $DISCORD_WEBHOOK_URL
+Use the file-writing tool (`Write` in Claude Code, `apply_patch` in Codex) to write the exact approved message to `changelog.md` in the printed directory. Keep arbitrary message text out of shell commands, command substitutions, and heredoc source. Substitute only the printed directory path in the commands below.
+
+Encode the file with a JSON serializer:
+
+```bash
+jq -n --rawfile content "<printed-dir>/changelog.md" \
+  '{content: $content}' > "<printed-dir>/payload.json"
+```
+
+Verify that decoding `payload.json` reproduces `changelog.md` exactly. Check the decoded content against the 2000-character limit. If encoding or either check fails, stop before posting. With `DISCORD_WEBHOOK_URL` configured, send the encoded file:
+
+```bash
+curl --fail-with-body -H "Content-Type: application/json" \
+  --data-binary "@<printed-dir>/payload.json" \
+  "$DISCORD_WEBHOOK_URL"
 ```
 
 To get a webhook URL, go to your Discord server → Server Settings → Integrations → Webhooks → New Webhook.
@@ -116,4 +127,3 @@ To get a webhook URL, go to your Discord server → Server Settings → Integrat
 - If no changes in the time period, post a "quiet day" message: "🌤️ Quiet day! No new changes merged."
 - If unable to fetch PR details, list the PR numbers for manual review
 - Always validate message length before posting to Discord (max 2000 chars)
-

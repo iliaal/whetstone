@@ -63,7 +63,7 @@ gh pr view --json number -q '.number'
 
 **Get PR details:**
 ```bash
-gh pr view [number] --json title,body,files,headRefName -q '.'
+gh pr view [number] --json title,body,files,headRefName,headRefOid -q '.'
 ```
 
 **Get changed files:**
@@ -72,6 +72,12 @@ gh pr view [number] --json files -q '.files[].path'
 ```
 
 **Map files to testable routes** (same mapping used by `/ia-test-browser`; see [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full file-to-route table).
+
+**Bind the recording to the served revision:** record the immutable requested PR SHA from `headRefOid`. Before recording, inspect the server process command and working directory. Verify the served checkout's SHA and scoped staged, unstaged, and relevant untracked content. If the server serves generated assets, establish which content produced the running build through build metadata or an authorized fresh scoped build/restart; matching checkout HEAD alone is insufficient. A responsive port or a matching page title does not prove revision identity.
+
+For another PR or branch, use an isolated target checkout/server when authorized. Do not switch or reset the caller's working tree. Treat the parsed base URL and port resolver result as candidates until the process/checkout/build evidence binds them to the target. Record the resulting literal URL as `[verified-base-url]` and use it in every navigation. Recheck identity after a source change, rebuild, restart, or port change.
+
+If the caller explicitly requests another revision or environment, label that override with the requested PR SHA, intended served revision, and reason. Verify the overridden target rather than describe it as the PR head. If served identity cannot be established, return PARTIAL with revision coverage unverified and the missing setup action; do not record or publish it as a verified PR walkthrough.
 
 </gather_context>
 
@@ -142,7 +148,7 @@ Preflight the starting route and confirm the rendered page matches the shot list
 
 **Step 1: Navigate to starting point**
 ```bash
-agent-browser open "[base-url]/[start-route]"
+agent-browser open "[verified-base-url]/[start-route]"
 agent-browser wait "[start-ready-selector]"
 agent-browser screenshot "[capture-dir]/screenshots/01-start.png"
 ```
@@ -201,6 +207,8 @@ ffmpeg -y -framerate 0.5 -pattern_type glob -i '[capture-dir]/screenshots/*.png'
 
 **Upload with rclone only to an authorized destination (otherwise retain local artifacts):**
 
+If upload authority, configuration, or a verified destination is missing, skip upload and PR editing and return the completed local video. If an upload or public-URL check fails, retain local artifacts and report that failure; do not proceed to PR editing.
+
 ```bash
 # Check rclone is configured -- abort upload step if not
 rclone listremotes || { echo "rclone not configured, skipping upload"; exit 0; }
@@ -234,6 +242,8 @@ curl -I "$PREVIEW_URL" | head -n 1 | grep -q ' 200 ' || exit 1
 
 <update_pr>
 
+Run this step only when upload succeeded, the public URLs passed verification, and the caller authorized the selected PR edit or comment. Otherwise retain the local result and report PR publication as not attempted.
+
 **Get current PR body:**
 ```bash
 gh pr view [number] --json body -q '.body'
@@ -258,19 +268,22 @@ Example (using `$PUBLIC_BASE_URL`):
 [![Feature Demo]($PUBLIC_BASE_URL/pr-videos/pr-137/feature-demo-preview.gif)]($PUBLIC_BASE_URL/pr-videos/pr-137/feature-demo.mp4)
 ```
 
-**Update the PR:**
+Write the exact proposed Markdown to `[capture-dir]/pr-body.md` with a non-shell file-writing tool (`Write`, or the harness equivalent). Preserve unrelated sections from the current PR body. Show the exact draft for approval unless that content is already approved. Keep retrieved Markdown out of shell command text, including heredocs, `echo`, and interpolated double-quoted arguments. If the current PR body changes before submission, reconcile the change and renew approval when the proposed content changes.
+
+**Update the PR using the exact approved file:**
 ```bash
-gh pr edit [number] --body "[updated body with video section]"
+gh pr edit [number] --body-file "[capture-dir]/pr-body.md"
 ```
 
 **Or add as a comment if preferred:**
+
+Write and approve the exact comment through the same non-shell method as `[capture-dir]/pr-comment.md`. Authority for editing the description does not also authorize a comment; execute only the selected authorized action.
+
 ```bash
-gh pr comment [number] --body "## Feature Demo
-
-![Demo]([video-url])
-
-_Automated walkthrough of the changes in this PR_"
+gh pr comment [number] --body-file "[capture-dir]/pr-comment.md"
 ```
+
+Record success only after the selected `gh` command succeeds and the resulting PR body or comment contains the approved content. On failure, retain the draft and report the failed action.
 
 </update_pr>
 
@@ -292,13 +305,18 @@ echo "Video retained at: [capture-dir]/videos/feature-demo.mp4"
 
 <summary>
 
-Present completion summary:
+Report only observed actions and captured shots. Set capture, upload, and PR publication statuses independently. A completed local capture is a valid local result and does not imply upload or a PR edit. Include retained local paths even when publication was skipped or failed.
 
 ```markdown
-## Feature Video Complete
+## Feature Video Result
 
 **PR:** #[number] - [title]
-**Video:** [url or local path]
+**Requested revision:** [PR SHA]
+**Served revision evidence:** [checkout/process/build identity, or unverified]
+**Revision override:** [explicit override and reason, or none]
+**Server:** [verified-base-url, or unverified candidate]
+**Local video:** [retained local path, or no completed video]
+**Public video:** [verified URL, or not uploaded]
 **Duration:** ~[X] seconds
 **Format:** [GIF/MP4]
 
@@ -308,9 +326,10 @@ Present completion summary:
 3. [Feature demo] - [description]
 4. [Result] - [description]
 
-### PR Updated
-- [x] Video section added to PR description
-- [ ] Ready for review
+### Action Results
+- Capture: [complete / partial / not attempted, with evidence or gap]
+- Upload: [succeeded / failed / not attempted, with destination or reason]
+- PR publication: [description updated / comment added / failed / not attempted, with receipt or reason]
 
 **Next steps:**
 - Review the video to ensure it accurately demonstrates the feature

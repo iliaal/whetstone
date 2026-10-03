@@ -221,16 +221,17 @@ Before finalizing:
 
 ## Post-Enhancement Options
 
-After writing the enhanced plan in interactive mode, use the **AskUserQuestion tool** to present these options. In non-interactive mode, return its exact path and unresolved decisions to the parent:
+After writing the enhanced plan in interactive mode, use the **AskUserQuestion tool** with at most four options per question. Load it with ToolSearch `select:AskUserQuestion` if needed. In non-interactive mode, return its exact path and unresolved decisions to the parent:
 
 **Question:** "Plan deepened at `[plan_path]`. What would you like to do next?"
 
 **Options:**
-1. **View diff** - Show what was added/changed
-2. **Run `/ia-review`** - Get feedback from reviewers on enhanced plan
-3. **Start `/ia-work`** - Begin implementing this enhanced plan
-4. **Deepen further** - Run another round of research on specific sections
-5. **Revert** - Restore original plan (if backup exists)
+1. **Inspect or review** - Choose a diff or independent review
+2. **Start `/ia-work`** - Begin implementing this enhanced plan
+3. **Deepen further** - Run another round of research on specific sections
+4. **Revert** - Restore the original plan when a recoverable original exists
+
+For **Inspect or review**, ask a second question with two options: **View diff** and **Run `/ia-review`**. Offer **Revert** only when an original is recoverable. Preserve every available choice through these follow-up menus; do not add the tool's automatic Other choice explicitly.
 
 Based on selection:
 - **View diff** → Run `git diff [plan_path]` or show before/after

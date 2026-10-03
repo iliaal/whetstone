@@ -23,12 +23,14 @@ Route by length first. Short-form (commits, PR descriptions, comments, posts): q
 
 **Long-form output skeleton** (tag vocabulary, severity suffixes, and fix actions live in [audit-workflow.md](./audit-workflow.md)):
 
+For a plain edit, return only the full corrected text. Keep the audit internal unless the caller requests it. Detect mode returns only the audit. Place requested audit or changelog detail outside any delivered artifact.
+
 ```
-## AUDIT
+## AUDIT (detect mode or requested audit detail only)
 1. "quoted snippet" [TAG] [TAG +H]
 — END AUDIT: [n] issues found —
 
-## CORRECTED TEXT
+## CORRECTED TEXT (editing only; omit this wrapper inside delivered artifacts)
 [full corrected text]
 
 ## CHANGELOG (only when the caller asked for one; never inside a delivered artifact such as a commit body, PR description, or comment)

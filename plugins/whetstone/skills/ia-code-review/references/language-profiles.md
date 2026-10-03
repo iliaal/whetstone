@@ -62,7 +62,7 @@ Pin the lookup to the project's actual version. Read `package.json`, `composer.j
 
 If Context7 is unavailable, fall back to the vendor's official docs URL directly via the harness's web fetch tool. **Do not skip verification**: a finding that asserts framework behavior without a citation is worse than no finding, because authors trust review output.
 
-When the verified behavior contradicts the finding's premise, drop the finding and (if reviewing a real diff) add the version-correct behavior to the relevant entry in `review-traps-catalog.md` so the next review starts smarter.
+When verified behavior contradicts the finding's premise, drop the finding. Report the version-correct evidence as a proposed lesson when useful. Edit the relevant entry in [review-traps-catalog.md](./review-traps-catalog.md) only under separate skill-maintenance authority; review alone does not authorize that write.
 
 ## TypeScript / React (.ts, .tsx, .jsx)
 

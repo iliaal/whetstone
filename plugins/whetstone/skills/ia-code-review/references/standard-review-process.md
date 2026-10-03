@@ -17,7 +17,7 @@ Read when conducting a complete standard review. A caller-defined specialist bri
 5. **Test coverage**: untested new paths, error paths, and behavioral changes without test updates. Flag implementation-coupled tests (mocked internals, private methods); test behavior, not wiring.
 6. **Reliability**: error handling completeness, timeout/retry, resource cleanup on error paths, graceful degradation. Patterns in [reliability-patterns.md](./reliability-patterns.md).
 7. **Removal candidates**: dead code, unused imports, cleanup-ready feature flags; safe-to-delete (no references) vs defer-with-plan. "No references" does not establish safe-to-delete in a `.pyi` stub, where a self-aliased or `__all__`-listed import is the declared public surface; apply the stub re-export rule in [language-profiles.md](./language-profiles.md) before proposing removal.
-8. **Verify**: run formatter/lint/tests on touched files; state what was skipped and why. Note doc staleness (README/ARCHITECTURE/CONTRIBUTING) as informational.
+8. **Verify**: run formatter check mode, lint, and tests on the reviewed revision; do not use formatting or autofix modes that rewrite the caller's files during review. State what was skipped and why. Note doc staleness (README/ARCHITECTURE/CONTRIBUTING) as informational.
 9. **Summary**: reconcile the coverage ledger, then group findings by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Never emit either Ready verdict when coverage is partial.
 
 **Large diffs:** >500 lines → review by module, not file-by-file. Flag oversized PRs (ideal ~100-300 meaningful lines) and suggest a split; thresholds and the four split strategies are in [pr-sizing.md](./pr-sizing.md).

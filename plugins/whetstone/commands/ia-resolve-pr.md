@@ -30,11 +30,15 @@ Returns `{unresolved: [...threads], conversation: {...}, cross_invocation: {sign
 
 Triage them separately rather than appending them to `unresolved`, because the two channels have different hit rates: a review thread is line-scoped and almost always actionable, while the conversation tab also carries "LGTM", release chatter, and bot summaries. For each entry, decide *actionable request* / *acknowledgement or discussion* / *status without a request*, and carry only the first group into Phase 2 as an untargeted item (no file or line; the fix agent has to locate the referent itself, and should report back if it cannot). `by_pr_author` and bot identity are evidence for that judgement, not filters: either author can relay an actionable request.
 
-If the script fails, fall back to:
+If the script fails, retain its exit status and error; no usable complete fetch has occurred. If repository autodetection failed and the requested repository is known, retry the same paginated GraphQL helper with the explicit repository:
+
 ```bash
-gh pr view PR_NUMBER --json reviews,comments
-gh api repos/{owner}/{repo}/pulls/PR_NUMBER/comments
+bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER OWNER/REPO
 ```
+
+When the helper cannot run but GraphQL remains available, recover with the queries and pagination contract in [scripts/get-pr-comments](scripts/get-pr-comments). Follow every page of review threads, each thread's comments, top-level comments, and review bodies. Require advancing cursors, no GraphQL errors, and the same complete `{unresolved, conversation, cross_invocation}` envelope, including thread IDs and resolution/outdated state, before Phase 2 or fix dispatch.
+
+REST review comments and `gh pr view --json reviews,comments` may supply diagnostic context; they do not provide that thread envelope. Mark any unrecovered fetch `partial` or `unavailable`, identify missing channels/pages, and stop fix dispatch and thread resolution until completeness is restored. Never substitute a REST comment ID for a GraphQL thread ID or claim that an incomplete result has no unresolved feedback.
 
 ## Phase 2: Cluster Analysis
 
@@ -88,7 +92,7 @@ For each review-thread item, pass its GraphQL thread ID from `unresolved[].node.
 - Group related changes into logical commits (one per concern, not per file)
 - Commit message: `address review: <summary>`
 - For code changes, perform an authorized push successfully, then fetch the PR's current head and verify it contains the fix commits. If publication lacks authority, fails, or the remote head lacks the fix, report the local result and leave affected threads open. A reply-only disposition requires no push.
-- Send approved replies through the correct channel and verify their stored body and submitted state before resolving a thread. Follow `ia-pr-comment-resolver`'s readback procedure; a created but pending reply is not a posted reply.
+- Send approved replies through the correct channel and verify their stored body. For review-thread replies, also require submitted state before resolving the thread. Follow `ia-pr-comment-resolver`'s readback procedure; a created but pending review reply is not a posted reply.
 - Resolve **only** threads whose resolver reported `Resolved`. A `Referent not found` or `Needs decision` thread is unfixed: leave it open and carry it into the deferred bucket below with its reason. Resolving it collapses it in the GitHub UI as if addressed, which is unrecoverable without a reviewer noticing.
 
 ```bash

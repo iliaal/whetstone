@@ -162,7 +162,7 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 | Pattern | Only a finding when |
 |---------|---------------------|
 | PHP `assert("...")` string-eval; `preg_replace(...)` with `/e` | PHP < 8.0 (assert removed); PHP < 7.0 (`/e` removed) |
-| `yaml.load(...)` without `Loader=SafeLoader` | PyYAML < 5.4 (`FullLoader` exploitable before); use `safe_load` regardless |
+| `yaml.load(..., Loader=FullLoader)` using the historical arbitrary-object construction path | PyYAML < 5.4; verify the actual loader and reachable input. `Loader`, `UnsafeLoader`, and their unsafe C variants still support arbitrary Python construction on later versions; untrusted input reaching those loaders remains reportable. Prefer `safe_load` for untrusted YAML |
 | XXE via default entity expansion | libxml2 < 2.9.0 (disabled by default since); PHP `libxml_disable_entity_loader()` is dead code from 8.0 |
 | `jsonwebtoken`/`PyJWT` key-confusion via `kid`/`jku`/`x5u`/`jwk` | `jsonwebtoken` < 9.0.0 (CVE-2022-23540/23539): finding only when all of: `jwt.verify` called with no explicit `algorithms` option and a falsy/empty verification key, or an RSA key accepted for an HS-family algorithm. `PyJWT` < 2.4.0 (CVE-2022-29217): finding only when all of: the app allows both asymmetric and HMAC algorithms and the supplied public key is in a PEM/SSH format the pre-2.4.0 blocklist missed |
 | Next.js Server Actions SSRF | Next.js < 14.1.1, CVE-2024-34351: finding only when all of: self-hosted (not Vercel), the `Host` header reaching the app is attacker-controllable, Server Actions are in use, and a Server Action redirects to a relative path |

@@ -27,7 +27,7 @@ State the correction factually: "Checked this, you're correct because [reason]. 
 
 Draft replies first and obtain any required user authorization before posting or resolving threads. This procedure supplies no posting authority.
 
-- Reply in the inline review thread. Set `PR_NUMBER` to the PR number and `COMMENT_ID` to the numeric REST ID of the thread's original top-level review comment, not a GraphQL node ID or a reply's ID. Set `REPLY_FILE` to the file containing the exact approved reply:
+- Reply in the inline review thread. Set `PR_NUMBER` to the PR number and `COMMENT_ID` to the numeric REST ID of the thread's original top-level review comment, not a GraphQL node ID or a reply's ID. Write the exact approved reply to an invocation-owned file with a file-writing tool, then set `REPLY_FILE` to that path. Do not interpolate Markdown into shell arguments or heredoc source:
 
   ```bash
   gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \

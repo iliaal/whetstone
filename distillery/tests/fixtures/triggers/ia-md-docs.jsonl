@@ -21,3 +21,7 @@
 {"prompt":"Write a product tagline","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Read CONTRIBUTING.md before editing","expect":false,"source":"audit-2026-09-07-boundary"}
 {"prompt":"The README describes the new CLI","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"Update DOCS.md for the new endpoint","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Refresh DOCS for the new CLI","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Read DOCS.md before changing code","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"The DOCS.md file describes the API","expect":false,"source":"audit-2026-10-03"}

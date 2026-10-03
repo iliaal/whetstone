@@ -24,9 +24,12 @@ Capture stdout/stderr to a file so a quiet tail isn't mistaken for a dead proces
   accepted/actionable findings**: a structured exit 0, not a prose "looks good".
 - Stop as soon as it exits clean. Do **not** run one extra review just to get a
   nicer "all clear" summary; that burns time/tokens and risks new churn.
-- Bind the review to one frozen diff bundle (`base SHA … head SHA`) so every
-  iteration reviews the same surface; don't re-derive scope mid-loop (see
-  "Base-branch resolution for branch reviews" in the main skill).
+- Keep the comparison base and selected scope stable across the loop. After
+  each authorized fix, freeze a fresh diff bundle using the new head SHA or
+  workspace-content fingerprint. Bind that iteration's findings and verdict to
+  those exact bytes; an earlier snapshot cannot verify a later fix. Reconcile
+  changed paths before dispatch, and return any required scope expansion to the
+  caller instead of silently widening the review.
 - **Cap the loop at two consecutive `unavailable` results**: the initial run
   plus one retry. "Clean" is not the only exit: a reviewer broken for a reason
   unrelated to the diff (auth outage, vendor incident, tool bug) returns

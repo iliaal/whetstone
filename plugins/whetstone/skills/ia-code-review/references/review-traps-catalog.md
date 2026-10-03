@@ -16,7 +16,7 @@ Concrete review-reasoning failure modes harvested from real Codex cycle disagree
 
 **Reality:** official documentation shows the idiom users copy. Public APIs carry an implicit contract with the docs, not just with the test suite. "Every test passed" does not prove "every documented usage still works."
 
-**Fix:** for any change to a widely-used public method, find the canonical example in the official docs and run it against the patched build before declaring done. If the harness has the Context7 MCP, prefer `query-docs` (after `resolve-library-id`) for the library at the project's pinned version over a raw web grep; it returns versioned official sections, not SEO blog pollution. Otherwise grep the official docs directly (`php.net/manual/en/<class>.<method>.php`, library README, Sphinx docs). Add the docs idiom to the test suite as a standing smoke test.
+**Fix:** for any change to a widely-used public method, find the canonical example in the official docs and run it against the patched build before declaring done. If the harness has the Context7 MCP, prefer `query-docs` (after `resolve-library-id`) for the library at the project's pinned version over a raw web grep; it returns versioned official sections, not SEO blog pollution. Otherwise grep the official docs directly (`php.net/manual/en/<class>.<method>.php`, library README, Sphinx docs). During review, report a proposed standing smoke test with the example and observed result. Add the test only when the caller authorizes implementation.
 
 ## Key-vs-label: open three files before flagging
 

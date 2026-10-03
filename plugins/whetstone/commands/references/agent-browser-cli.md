@@ -19,8 +19,14 @@ agent-browser type @e1 "text"      # Type without clearing
 agent-browser press Enter          # Press key
 
 # Screenshots
-agent-browser screenshot out.png       # Viewport screenshot
-agent-browser screenshot --full out.png # Full page screenshot
+agent-browser screenshot "[capture-dir]/viewport.png"       # Viewport screenshot
+agent-browser screenshot --full "[capture-dir]/full.png"    # Full page screenshot
+
+# Debug evidence
+agent-browser console --json       # Console messages, including severity
+agent-browser console --clear      # Clear after retaining any earlier evidence
+agent-browser errors               # Uncaught page errors
+agent-browser errors --clear       # Clear before a new route's observation
 
 # Headed mode (visible browser)
 agent-browser --headed open <url>      # Open with visible browser
@@ -30,6 +36,8 @@ agent-browser --headed click @e1       # Click in visible browser
 agent-browser wait @e1             # Wait for element
 agent-browser wait 2000            # Wait milliseconds
 ```
+
+Allocate `[capture-dir]` as a fresh invocation-owned directory before saving screenshots or logs. Substitute its emitted absolute path literally in later calls. Use distinct route/action filenames and retain evidence for the caller. A viewport screenshot is not an element crop. Check installed command support against `agent-browser --help` and the [official debug commands](https://agent-browser.dev/commands#debug); mark unavailable log checks unverified instead of reporting zero.
 
 ## File-to-Route Mapping
 

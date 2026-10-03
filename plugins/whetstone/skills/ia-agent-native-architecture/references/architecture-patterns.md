@@ -171,33 +171,18 @@ You decide the structure. Make it good.
 
 Separate "propose" from "apply" for dangerous operations.
 
-```typescript
-// Pending changes stored separately
-const pendingChanges = new Map<string, string>();
+Use this transaction contract in the trusted application service. Agent tools may propose or inspect drafts; the authenticated approval UI supplies approval records. An agent argument such as `approved: true` grants no authority.
 
-tool("write_file", async ({ path, content }) => {
-  if (requiresApproval(path)) {
-    // Store for approval
-    pendingChanges.set(path, content);
-    const diff = generateDiff(path, content);
-    return {
-      text: `Change requires approval.\n\n${diff}\n\nReply "yes" to apply.`
-    };
-  } else {
-    // Apply immediately
-    writeFileSync(path, content);
-    return { text: `Wrote ${path}` };
-  }
-});
+1. Resolve the proposed destination through the workspace service, check the caller's write grant, and read its current revision.
+2. Persist one draft with an ID, canonical destination, baseline revision, content bytes, content hash, and monotonically increasing draft revision. Any edit invalidates existing approval.
+3. Show the exact destination and diff to the approving user. Store authenticated approval referencing that draft ID, revision, content hash, and destination.
+4. For an apply request, acquire the destination's write lock and load the current draft and approval from trusted storage. Reject missing, stale, or differently scoped approval before writing.
+5. Recompute the content hash and validate the exact destination and baseline revision. If the target changed, keep the draft pending and return a conflict for rereading and review.
+6. Atomically claim that draft revision so only one worker can apply it. Write those approved bytes through the workspace's revision-conditional replacement while retaining the lock.
+7. Persist the resulting revision and receipt before reporting applied. A crash after the write but before the receipt requires reconciliation against the recorded claim and artifact; do not blindly retry.
+8. Clear only the applied draft. Other pending drafts retain their individual approval state.
 
-tool("apply_pending", async () => {
-  for (const [path, content] of pendingChanges) {
-    writeFileSync(path, content);
-  }
-  pendingChanges.clear();
-  return { text: "Applied all pending changes" };
-});
-```
+Expose `apply_pending({ draftId, revision })` as a request to this service, never as a loop over all pending changes. The same destination lock or database transaction must cover approval validation, the claim, baseline comparison, and replacement. Verify the positive approved path, missing approval, changed content, stale baseline, unrelated pending drafts, concurrent claims, and interruption after replacement.
 
 **What requires approval:**
 - src/*.ts (agent code)
@@ -423,9 +408,9 @@ Different agents need different intelligence levels. Use the cheapest model that
 
 ```swift
 enum ModelTier {
-    case fast      // claude-3-haiku: Quick, cheap, simple tasks
-    case balanced  // claude-3-sonnet: Good balance for most tasks
-    case powerful  // claude-3-opus: Complex reasoning, synthesis
+    case fast      // Configured provider model for simple tasks
+    case balanced  // Configured provider model for general work
+    case powerful  // Configured provider model for complex synthesis
 }
 
 struct AgentConfig {
@@ -455,6 +440,8 @@ let lookupConfig = AgentConfig(
     systemPrompt: "Answer quick questions about the user's library."
 )
 ```
+
+Resolve tiers through the active provider configuration in [mobile-cost.md](./mobile-cost.md); a tier is not a fixed model ID.
 
 **Cost optimization strategies:**
 - Start with balanced tier, only upgrade if quality insufficient

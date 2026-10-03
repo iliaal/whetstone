@@ -18,7 +18,7 @@ ORDER BY id ASC
 LIMIT :limit + 1;  -- fetch N+1 to determine has_next
 ```
 
-Response: `{ data, pagination: { next_cursor, has_next } }`. Encode cursor as opaque base64 to prevent client manipulation.
+Response: `{ data, pagination: { next_cursor, has_next } }`. Base64 encodes cursor state but supplies no integrity. Validate decoded fields and bind the cursor to the authorized tenant, filters, and sort order. When cursor state must resist modification, authenticate it with a signature/MAC or use a server-stored opaque token. Always reapply authorization independently of cursor contents.
 
 ## Filtering
 
@@ -59,9 +59,11 @@ Prefix `-` for descending, comma-separated for multi-field:
 |-------------------------------|--------------------------------|
 | Adding optional fields/params | Removing or renaming fields |
 | Adding new endpoints | Changing field types |
-| Adding new enum values | Removing endpoints |
+| Widening accepted input enum values | Removing endpoints |
 | Relaxing validation | Tightening validation |
 | Extending response with new keys | Changing response structure |
+
+Adding an emitted response enum member is compatible only when existing clients demonstrably tolerate unknown members; closed validators and exhaustive switches can reject it. Verify client behavior before classifying that change as nonbreaking.
 
 ## Pre-Ship Endpoint Checklist
 

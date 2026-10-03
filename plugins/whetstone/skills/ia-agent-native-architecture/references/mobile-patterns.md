@@ -128,26 +128,29 @@ func readPhotos() async -> ToolResult {
 
 Don't request permissions until needed:
 
-```swift
-// BAD: Request all permissions at launch
-func applicationDidFinishLaunching() {
-    requestPhotoAccess()
-    requestCameraAccess()
-    requestLocationAccess()
-    // User is overwhelmed with permission dialogs
+```typescript
+type ImageInput = { bytes: Uint8Array; mediaType: string };
+type Camera = { requestAccess(): Promise<boolean>; capture(): Promise<ImageInput> };
+
+async function analyzeBookCover(
+  image: ImageInput,
+  analyze: (image: ImageInput) => Promise<string>,
+): Promise<string> {
+  return analyze(image);
 }
 
-// GOOD: Request when the feature is used
-tool("analyze_book_cover", async ({ image }) => {
-    // Only request camera access when user tries to scan a cover
-    let status = await AVCaptureDevice.requestAccess(for: .video)
-    if status {
-        return await scanCover(image)
-    } else {
-        return ToolResult(text: "Camera access needed for book scanning")
-    }
-})
+async function captureBookCover(
+  camera: Camera,
+  analyze: (image: ImageInput) => Promise<string>,
+): Promise<string> {
+  if (!await camera.requestAccess()) {
+    throw new Error("Camera access denied; select an existing image instead");
+  }
+  return analyzeBookCover(await camera.capture(), analyze);
+}
 ```
+
+An imported image requires its source access grant, not camera access. Request camera permission only for capture. If analysis uses a cloud model, separately enforce the permitted transmission of these bytes before invoking it.
 </permissions>
 
 <offline_handling>
@@ -211,33 +214,17 @@ let hybridTools: Set<String> = [
 
 Queue actions that require connectivity:
 
-```swift
-class OfflineQueue: ObservableObject {
-    @Published var pendingActions: [QueuedAction] = []
+Use a durable queue and retain its connectivity subscription for the queue's lifetime:
 
-    func queue(_ action: QueuedAction) {
-        pendingActions.append(action)
-        persist()
-    }
+1. Persist each queued action with a stable operation ID, destination, payload hash, and authorization revision before showing it as queued.
+2. Install one connectivity observer when the queue starts; retain its subscription and dispose it when the queue shuts down. Drain immediately if already online.
+3. Serialize draining or atomically claim actions so reconnect events cannot create competing workers.
+4. Before execution, revalidate authorization and content, then atomically record the attempt as started. Dispatch only an unstarted action.
+5. Persist the authoritative receipt before marking the action complete. Do not remove a started action merely because its request returned or timed out.
+6. If interruption leaves a started action without a receipt, hold it as unknown and reconcile it. Replay only with verified provider idempotency using the original operation key; never replay uncertain external sends automatically.
+7. Show queued, started, completed, failed, and unknown separately. Retry a definite failure only when evidence proves no effect occurred and the action remains authorized.
 
-    func processWhenOnline() {
-        network.$isConnected
-            .filter { $0 }
-            .sink { [weak self] _ in
-                self?.processPendingActions()
-            }
-    }
-
-    private func processPendingActions() {
-        for action in pendingActions {
-            Task {
-                try await execute(action)
-                remove(action)
-            }
-        }
-    }
-}
-```
+Follow [operator-approval-loop.md](./operator-approval-loop.md) for external-send claims and [mobile-execution.md](./mobile-execution.md) for restoring attempts. Test offline enqueue, online startup, later reconnect, duplicate reconnect events, and a crash after the remote effect but before receipt persistence.
 </offline_handling>
 
 <checklist>
@@ -245,14 +232,14 @@ class OfflineQueue: ObservableObject {
 
 **iOS Storage:**
 - [ ] iCloud Documents as primary storage (or conscious alternative)
-- [ ] Local Documents fallback when iCloud unavailable
-- [ ] Handle `.icloud` placeholder files (trigger download)
-- [ ] Use NSFileCoordinator for conflict-safe writes
+- [ ] Stable workspace identity and reconciled migration when changing storage backends
+- [ ] Inspect provider availability and request downloads for remote documents
+- [ ] Coordinate revision-conditional writes and propagate writer errors
 
 **Background Execution:**
 - [ ] Checkpoint/resume implemented for all agent sessions
 - [ ] State machine for agent lifecycle (idle, running, backgrounded, etc.)
-- [ ] Background task extension for critical saves (30 second window)
+- [ ] Incremental checkpoints and expiration-safe critical saves without a fixed runtime guarantee
 - [ ] User-visible status for backgrounded agents
 
 **Permissions:**
@@ -275,8 +262,7 @@ class OfflineQueue: ObservableObject {
 - [ ] Clear user communication about offline state
 
 **Battery Awareness:**
-- [ ] Battery monitoring for heavy operations
+- [ ] Initial battery snapshot and retained charging/level subscriptions for heavy operations
 - [ ] Low power mode detection
 - [ ] Defer or downgrade based on battery state
 </checklist>
-

@@ -41,17 +41,24 @@ const iconButton = tv({
 
 ### Responsive Variants
 
+For current Tailwind Variants with Tailwind v4, put responsive prefixes in complete class strings. The old `responsiveVariants` option and object-shaped breakpoint values are unavailable.
+
 ```typescript
 const grid = tv({
   base: "grid gap-4",
   variants: {
-    cols: { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-4" },
+    layout: {
+      compact: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+      spacious: "grid-cols-1 md:grid-cols-2",
+    },
   },
-  responsiveVariants: ["sm", "md", "lg"],
+  defaultVariants: { layout: "compact" },
 });
 
-// Usage: <div className={grid({ cols: { initial: 1, sm: 2, lg: 4 } })} />
+const gridClassName = grid({ layout: "compact" });
 ```
+
+Use `gridClassName` as the container's `className`. Include the recipe file in Tailwind's scanned sources. See [Tailwind Variants v4 guidance](https://www.tailwind-variants.org/docs/tailwind-v4#responsive-variants).
 
 ## CVA (class-variance-authority)
 

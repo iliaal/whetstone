@@ -12,6 +12,10 @@ class OrderShipped extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public function __construct(public readonly Order $order)
+    {
+    }
+
     public function via(object $notifiable): array
     {
         // Channel selection per user preference
@@ -45,7 +49,7 @@ Notification::send($users, new OrderShipped($order));
 - Always implement `ShouldQueue`; notifications are side effects, never block the request
 - Use `toArray()` for database channel; it powers in-app notification feeds
 - Read: `$user->unreadNotifications`, mark: `$notification->markAsRead()`
-- Rate limit with `ShouldBeUnique` to prevent notification spam
+- Apply notification `middleware()` with a configured queue rate limiter for delivery frequency. `ShouldBeUnique` on a notification does not make Laravel's `SendQueuedNotifications` wrapper unique. For duplicate-event suppression, use a unique outer job or durable recipient/event deduplication; rate limiting alone does not provide that guarantee.
 
 ## Broadcasting
 
@@ -93,7 +97,7 @@ Value objects for model attributes: encapsulate formatting, validation, and beha
 ```php
 class Money implements CastsAttributes
 {
-    public function get(Model $model, string $key, mixed $value, array $attributes): Money
+    public function get(Model $model, string $key, mixed $value, array $attributes): MoneyValue
     {
         return new MoneyValue(
             amount: (int) $value,

@@ -42,4 +42,4 @@ CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX ON items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);
 ```
 
-Always filter BEFORE vector search (use partial indexes or CTEs with pre-filtered rows). Distance operators: `<=>` cosine, `<->` L2, `<#>` inner product.
+Choose filtering according to the search contract. For exact search over a bounded subset, use a materialized filtered CTE and sort that subset by distance; an ordinary CTE may inline and does not establish a prefilter. For approximate HNSW/IVFFlat search, filters can run after the index retrieves candidates, returning fewer than K rows. Use a matching partial index or partitioning where suitable, or version-gated iterative scans (pgvector 0.8.0+) with tuned search limits. Verify the actual plan, returned count, and recall against an exact baseline; syntax alone proves none of them. Distance operators: `<=>` cosine, `<->` L2, `<#>` inner product.

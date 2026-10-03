@@ -6,9 +6,9 @@
 > "Here's the thing: building products is hard. Not because the technology is complex. Because people are complex. Let that sink in."
 
 **After:**
-> "Building products is hard. Technology is manageable. People aren't."
+> "Building products is hard because people are complex. Technological complexity isn't the cause."
 
-Removed opener, binary contrast, emphasis crutch. Direct statements.
+Removed the opener and emphasis crutch. Preserved both claims about the cause of difficulty.
 
 ---
 
@@ -18,9 +18,9 @@ Removed opener, binary contrast, emphasis crutch. Direct statements.
 > "It turns out that most teams struggle with alignment. The uncomfortable truth is that nobody wants to admit they're confused. And that's okay."
 
 **After:**
-> "Teams struggle with alignment. Nobody admits confusion."
+> "Most teams struggle with alignment. Nobody wants to admit they're confused."
 
-Cut hedging ("most"), removed throat-clearing phrases, deleted permission-granting ending.
+Removed throat-clearing phrases and the permission-granting ending. Preserved the frequency qualifier and the claim about willingness to admit confusion.
 
 ---
 
@@ -30,9 +30,9 @@ Cut hedging ("most"), removed throat-clearing phrases, deleted permission-granti
 > "In today's fast-paced landscape, we need to lean into discomfort and navigate uncertainty with clarity. This matters because your competition isn't waiting."
 
 **After:**
-> "Move faster. Your competition is."
+> "We need to accept discomfort and handle uncertainty clearly. Your competition isn't waiting."
 
-Eliminated jargon entirely. Core message in six words.
+Replaced jargon with plain language. Preserved the need to handle discomfort and uncertainty without inventing a claim about speed.
 
 ---
 
@@ -66,9 +66,9 @@ Direct claim. No rhetorical scaffolding.
 > "The complaint becomes a fix when the culture shifts toward accountability."
 
 **After:**
-> "Someone fixed it. The team started owning problems instead of passing them."
+> "When the culture shifts toward accountability, people fix the problem raised in the complaint."
 
-Named the actors. Removed inanimate verbs.
+Named the human actors. Preserved the conditional relationship instead of asserting that a fix already happened.
 
 ---
 
@@ -78,6 +78,6 @@ Named the actors. Removed inanimate verbs.
 > "Nobody designs a toxic team culture. It happens gradually. People tend to optimize for comfort over truth."
 
 **After:**
-> "You don't sit down one day and decide to stop telling your manager bad news. It just starts feeling easier not to."
+> "Team culture turns toxic gradually without anyone designing it that way. People tend to favor comfort over truth."
 
-Reader is in the room, not watching from above.
+Kept the gradual change and tendency claims. Avoided inventing a manager, an event, or a feeling.

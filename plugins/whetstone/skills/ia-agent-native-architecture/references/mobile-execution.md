@@ -27,138 +27,83 @@ Agent is mid-execution... what happens?
 
 Save agent state before backgrounding, restore on foreground:
 
-```swift
-class AgentOrchestrator: ObservableObject {
-    @Published var activeSessions: [AgentSession] = []
+Use the same checkpoint contract on mobile, a web worker, or a TypeScript service:
 
-    // Called when app is about to background
-    func handleAppWillBackground() {
-        for session in activeSessions {
-            saveCheckpoint(session)
-            session.transition(to: .backgrounded)
-        }
-    }
+1. Persist a versioned checkpoint after each completed step and before suspension. Include session ID, messages, partial results, task states, waiting reason, previous runnable state, and durable attempt IDs.
+2. Write checkpoints atomically; propagate storage errors and keep the last valid checkpoint. Suspension is not proof that saving succeeded.
+3. At startup, discover persisted nonterminal sessions rather than relying on an in-memory session list. Validate checkpoint version and restore every saved field.
+4. Restore a waiting-for-user session to that state. Resume a runnable session only after the dispatcher reconciles its attempt records.
+5. Dispatch a queued operation only when its durable record proves it never started, or when verified provider idempotency permits replay of the same operation key.
+6. Treat a started external effect without a receipt as unknown. Reconcile with authoritative provider state or request human inspection; do not infer failure from a timeout.
+7. Restore terminal receipts without re-execution. Preserve partial and blocked state when pending work cannot safely continue.
+8. Notify the UI of restored state and remaining work.
 
-    // Called when app returns to foreground
-    func handleAppDidForeground() {
-        for session in activeSessions where session.state == .backgrounded {
-            if let checkpoint = loadCheckpoint(session.id) {
-                resumeFromCheckpoint(session, checkpoint)
-            }
-        }
-    }
-
-    private func saveCheckpoint(_ session: AgentSession) {
-        let checkpoint = AgentCheckpoint(
-            sessionId: session.id,
-            conversationHistory: session.messages,
-            pendingToolCalls: session.pendingToolCalls,
-            partialResults: session.partialResults,
-            timestamp: Date()
-        )
-        storage.save(checkpoint, for: session.id)
-    }
-
-    private func resumeFromCheckpoint(_ session: AgentSession, _ checkpoint: AgentCheckpoint) {
-        session.messages = checkpoint.conversationHistory
-        session.pendingToolCalls = checkpoint.pendingToolCalls
-
-        // Resume execution if there were pending tool calls
-        if !checkpoint.pendingToolCalls.isEmpty {
-            session.transition(to: .running)
-            Task { await executeNextTool(session) }
-        }
-    }
-}
-```
+The trusted dispatcher must atomically claim an attempt before transport and persist the receipt afterward. A process crash does not clear the claim. Follow [operator-approval-loop.md](./operator-approval-loop.md) for external sends; their unknown outcomes never auto-retry. Read-only operations may be resumed under an explicitly verified read-only policy.
 
 ### State Machine for Agent Lifecycle
 
-```swift
-enum AgentState {
-    case idle           // Not running
-    case running        // Actively executing
-    case waitingForUser // Paused, waiting for user input
-    case backgrounded   // App backgrounded, state saved
-    case completed      // Finished successfully
-    case failed(Error)  // Finished with error
-}
+```typescript
+type AgentState = "idle" | "running" | "waitingForUser" | "backgrounded" |
+  "completed" | "partial" | "blocked" | "failed";
 
-class AgentSession: ObservableObject {
-    @Published var state: AgentState = .idle
+const transitions: Record<AgentState, readonly AgentState[]> = {
+  idle: ["running"],
+  running: ["waitingForUser", "backgrounded", "completed", "partial", "blocked", "failed"],
+  waitingForUser: ["running", "backgrounded", "blocked"],
+  backgrounded: ["running", "waitingForUser", "partial", "blocked", "failed"],
+  completed: [],
+  partial: ["running", "blocked"],
+  blocked: ["running"],
+  failed: ["running"],
+};
 
-    func transition(to newState: AgentState) {
-        let validTransitions: [AgentState: Set<AgentState>] = [
-            .idle: [.running],
-            .running: [.waitingForUser, .backgrounded, .completed, .failed],
-            .waitingForUser: [.running, .backgrounded],
-            .backgrounded: [.running, .completed],
-        ]
+class AgentSession {
+  state: AgentState = "idle";
+  error: string | null = null;
 
-        guard validTransitions[state]?.contains(newState) == true else {
-            logger.warning("Invalid transition: \(state) → \(newState)")
-            return
-        }
-
-        state = newState
+  transition(next: AgentState, error: string | null = null): void {
+    if (!transitions[this.state].includes(next)) {
+      throw new Error(`Invalid transition: ${this.state} -> ${next}`);
     }
+    if (next === "failed" && !error) {
+      throw new Error("A failed state requires an error");
+    }
+    this.state = next;
+    this.error = next === "failed" ? error : null;
+  }
 }
 ```
+
+Persist error details separately from the state discriminator. Restore the saved discriminator and error before applying a transition; completed sessions remain terminal.
 
 ### Background Task Extension (iOS)
 
 Request extra time when backgrounded during critical operations:
 
-```swift
-class AgentOrchestrator {
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+1. Checkpoint incrementally while the app is foregrounded; do not defer all durable writes until suspension.
+2. Request the platform's finite background-execution lease before beginning a critical save. Treat refusal as unavailable time rather than assuming a fixed window.
+3. Save within the actual remaining allowance. On expiration, stop starting new work and cancel or finish only operations whose durability contract permits it.
+4. End the lease on success, failure, or cancellation. Its expiration callback must not claim a completed save.
+5. On the next launch, inspect the last durable checkpoint and reconcile interrupted attempts before resuming.
 
-    func handleAppWillBackground() {
-        // Request extra time for saving state
-        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
-            self?.endBackgroundTask()
-        }
-
-        // Save all checkpoints
-        Task {
-            for session in activeSessions {
-                await saveCheckpoint(session)
-            }
-            endBackgroundTask()
-        }
-    }
-
-    private func endBackgroundTask() {
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-        }
-    }
-}
-```
+Map these operations to the selected mobile host or browser lifecycle adapter. Background execution is opportunistic; use a server-side orchestrator when sustained runtime is required.
 
 ### User Communication
 
 Let users know what's happening:
 
-```swift
-struct AgentStatusView: View {
-    @ObservedObject var session: AgentSession
-
-    var body: some View {
-        switch session.state {
-        case .backgrounded:
-            Label("Paused (app in background)", systemImage: "pause.circle")
-                .foregroundColor(.orange)
-        case .running:
-            Label("Working...", systemImage: "ellipsis.circle")
-                .foregroundColor(.blue)
-        case .waitingForUser:
-            Label("Waiting for your input", systemImage: "person.circle")
-                .foregroundColor(.green)
-        // ...
-        }
-    }
+```typescript
+function agentStatusLabel(state: string, waitingReason?: string): string {
+  switch (state) {
+    case "backgrounded": return "Paused; durable progress will be restored";
+    case "running": return "Working";
+    case "waitingForUser": return waitingReason ?? "Waiting for input";
+    case "completed": return "Complete";
+    case "partial": return "Partially complete; work remains";
+    case "blocked": return waitingReason ?? "Blocked";
+    case "failed": return "Failed; inspect the recorded error";
+    default: return "Idle";
+  }
 }
 ```
 </background_execution>
@@ -168,58 +113,40 @@ struct AgentStatusView: View {
 
 Respect device battery state:
 
-```swift
-class BatteryMonitor: ObservableObject {
-    @Published var batteryLevel: Float = 1.0
-    @Published var isCharging: Bool = false
-    @Published var isLowPowerMode: Bool = false
+```typescript
+type PowerSnapshot = {
+  level: number | null;
+  charging: boolean | null;
+  lowPower: boolean | null;
+};
 
-    var shouldDeferHeavyWork: Bool {
-        return batteryLevel < 0.2 && !isCharging
-    }
+type PowerSource = {
+  snapshot(): PowerSnapshot;
+  subscribe(listener: (snapshot: PowerSnapshot) => void): () => void;
+};
 
-    func startMonitoring() {
-        UIDevice.current.isBatteryMonitoringEnabled = true
+class BatteryMonitor {
+  current: PowerSnapshot;
+  private unsubscribe: () => void;
 
-        NotificationCenter.default.addObserver(
-            forName: UIDevice.batteryLevelDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.batteryLevel = UIDevice.current.batteryLevel
-        }
+  constructor(source: PowerSource) {
+    this.current = source.snapshot();
+    this.unsubscribe = source.subscribe(snapshot => { this.current = snapshot; });
+  }
 
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name.NSProcessInfoPowerStateDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
-        }
-    }
-}
+  shouldDeferHeavyWork(): boolean {
+    const { level, charging, lowPower } = this.current;
+    return level === null || charging === null || lowPower === null ||
+      lowPower || (level < 0.2 && !charging);
+  }
 
-class AgentOrchestrator {
-    @ObservedObject var battery = BatteryMonitor()
-
-    func startAgent(_ config: AgentConfig) async {
-        if battery.shouldDeferHeavyWork && config.isHeavy {
-            let proceed = await showAlert(
-                "Low Battery",
-                message: "This task uses significant battery. Continue or defer until charging?"
-            )
-            if !proceed { return }
-        }
-
-        // Adjust model tier based on battery
-        let adjustedConfig = battery.isLowPowerMode
-            ? config.withModelTier(.fast)
-            : config
-
-        await runAgent(adjustedConfig)
-    }
+  dispose(): void {
+    this.unsubscribe();
+  }
 }
 ```
+
+Supply a host adapter that reads the initial snapshot and emits battery level, charging, and low-power changes. Unsupported readings remain null. Before heavy work, offer continue or defer when this policy returns true; use an explicit user choice rather than silently assuming a full battery. Retain the subscription until the session is disposed.
 </battery_awareness>
 
 <on_device_vs_cloud>
@@ -244,10 +171,11 @@ Understanding what runs where in a mobile agent-native app:
 
 **Data stays local:**
 - File operations happen on device
-- Sensitive data never leaves the device unless explicitly synced
-- Privacy is preserved by default
+- Local persistence does not prevent transmission to a cloud model
+- Classify tool results before the provider adapter sends them; enforce approved fields, redaction, destination, and user grants in trusted code
+- Keep sensitive results on device unless the caller authorizes the specific model transmission; offer local processing or a summary of approved fields
+- Photos and document contents require the same transmission policy even when their tool execution is local
 
 **Long-running agents:**
 For truly long-running agents (hours), consider a server-side orchestrator that can run indefinitely, with the mobile app as a viewer and input mechanism.
 </on_device_vs_cloud>
-

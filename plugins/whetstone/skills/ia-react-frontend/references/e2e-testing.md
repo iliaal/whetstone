@@ -5,26 +5,29 @@
 ## Directory Structure
 
 ```
-e2e/
+project-root/
 ├── playwright.config.ts
-├── fixtures/
-│   ├── auth.fixture.ts
-│   └── test-data.fixture.ts
-├── pages/
-│   ├── base.page.ts
-│   └── <page-name>.page.ts
-├── tests/
-│   ├── auth/
-│   │   └── login.spec.ts
-│   └── smoke/
-│       └── critical-paths.spec.ts
-└── utils/
-    └── api-helpers.ts
+└── e2e/
+    ├── fixtures/
+    │   ├── auth.fixture.ts
+    │   └── test-data.fixture.ts
+    ├── pages/
+    │   ├── base.page.ts
+    │   └── <page-name>.page.ts
+    ├── tests/
+    │   ├── auth/
+    │   │   └── login.spec.ts
+    │   └── smoke/
+    │       └── critical-paths.spec.ts
+    └── utils/
+        └── api-helpers.ts
 ```
 
 Naming: tests `<feature>.spec.ts`, page objects `<page>.page.ts`, fixtures `<concern>.fixture.ts`.
 
 ## Configuration
+
+Keep this config at the project root and run the CLI from that root. Playwright resolves `testDir` relative to the config file. For a nested config, adjust its relative directories and pass `--config <path>` explicitly.
 
 ```typescript
 import { defineConfig, devices } from '@playwright/test';
@@ -36,6 +39,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  expect: {
+    toHaveScreenshot: { animations: 'disabled' },
+  },
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -164,8 +170,10 @@ Tests receive auth state via `storageState` in config projects.
 |-------|-----|
 | Hardcoded waits | Explicit wait conditions |
 | Shared test data | Each test creates its own |
-| Animations | `animations: 'disabled'` in config |
+| Animations | Wait for the actual interaction result; for screenshot assertions, use `expect.toHaveScreenshot.animations: 'disabled'` as configured above |
 | Race conditions | Wait for API responses before assertions |
+
+The screenshot animation option affects screenshot assertions. It does not disable application animations during interaction tests.
 
 **Quarantine workflow**: confirm flakiness before quarantining:
 ```bash

@@ -133,21 +133,33 @@ create_worktree() {
 
   # Fetch a fresh remote base without touching the caller's checkout.
   echo -e "${BLUE}Fetching $from_branch from origin...${NC}"
-  local base_ref="origin/$from_branch"
+  local base_sha fetch_marker fetch_ref base_valid=0
+  fetch_marker=$(mktemp "${TMPDIR:-/tmp}/whetstone-fetch.XXXXXXXXXX") || return 1
+  fetch_ref="refs/whetstone/fetch/${fetch_marker##*/}"
   # GIT_TERMINAL_PROMPT=0: fail fast instead of hanging on a credential
   # prompt blocking on an inherited tty. A non-zero exit (offline, no
   # remote) falls back to the local branch ref below.
-  if ! GIT_TERMINAL_PROMPT=0 git fetch --no-tags origin "$from_branch"; then
+  # FETCH_HEAD is shared by linked worktrees; a private destination binds this fetch.
+  if GIT_TERMINAL_PROMPT=0 git fetch --no-tags --refmap= origin "$from_branch:$fetch_ref"; then
+    base_sha=$(git rev-parse --verify "$fetch_ref^{commit}") && base_valid=1
+  else
     echo -e "${YELLOW}Fetch failed; branching from local $from_branch instead${NC}"
-    base_ref="$from_branch"
+    base_sha=$(git rev-parse --verify --end-of-options "$from_branch^{commit}") && base_valid=1
   fi
+  git update-ref -d "$fetch_ref" || return 1
+  rm -- "$fetch_marker" || return 1
+  [[ "$base_valid" == 1 ]] || return 1
 
   mkdir -p "$WORKTREE_DIR"
   ensure_gitignore
   printf '%s\n' "$GIT_ROOT" > "$COMMON_DIR/whetstone-main-root"
 
   echo -e "${BLUE}Creating worktree...${NC}"
-  git worktree add -b "$branch_name" "$worktree_path" "$base_ref"
+  git worktree add -b "$branch_name" "$worktree_path" "$base_sha"
+  [[ "$(git -C "$worktree_path" rev-parse HEAD)" == "$base_sha" ]] || {
+    echo "Error: created worktree does not match fetched/local base $base_sha" >&2
+    return 1
+  }
 
   if [[ -n "${WORKTREE_SESSION_ID:-}" ]]; then
     printf '%s\n' "$WORKTREE_SESSION_ID" > "$(git -C "$worktree_path" rev-parse --git-path whetstone-owner)"
@@ -158,6 +170,7 @@ create_worktree() {
   copy_env_files "$worktree_path"
 
   echo -e "${GREEN}✓ Worktree created successfully!${NC}"
+  echo "  Base commit: $base_sha"
   echo ""
   echo "Run commands with this worktree as their workdir:"
   printf 'env -C %q <command>\n' "$worktree_path"

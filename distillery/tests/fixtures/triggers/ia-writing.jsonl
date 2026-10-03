@@ -13,3 +13,14 @@
 {"prompt": "scan my blog draft for AI tells, don't rewrite it", "expect": true, "added_in": "4.3.1", "source": "detect-mode"}
 {"prompt": "make this sound less like AI", "expect": true, "added_in": "4.3.1", "source": "detect-mode"}
 {"prompt": "review the AI-generated code for bugs", "expect": false, "added_in": "4.3.1", "source": "detect-mode", "note": "AI-generated <code> is not a writing-detect request; guards against a bare ai-generated clause"}
+{"prompt":"Rewrite this PostgreSQL query to use an index","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Rewrite the authentication code in TypeScript","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Remove AI slop from this authentication code","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Rewrite this paragraph to sound more natural","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Remove AI slop from this blog draft","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Remove AI language from this email","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Rewrite this SQL query plan for better joins","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Rewrite this implementation plan for clarity","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Rewrite these paragraphs for clarity","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Rewrite this sentence to make it clearer","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Remove AI slop from these blog posts","expect":true,"source":"audit-2026-10-03"}

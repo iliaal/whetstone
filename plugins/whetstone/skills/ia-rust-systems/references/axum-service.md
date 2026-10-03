@@ -169,6 +169,8 @@ async fn shutdown_signal() {
             .expect("install sigterm handler")
             .recv().await;
     };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
     tokio::select! { _ = ctrl_c => {}, _ = terminate => {} }
     tracing::info!("shutdown signal received");
 }

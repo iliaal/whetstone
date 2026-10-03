@@ -5,12 +5,12 @@ Load this reference when setting up or tuning a Rust project's Cargo build profi
 ## Profile definitions (Cargo.toml)
 
 ```toml
-# Production release: maximum optimization, minimum binary
+# Production release with task/request panic recovery
 [profile.release]
 lto = "fat"           # Link-time optimization across all crates
 codegen-units = 1     # Single codegen unit trades compile time for runtime perf
 strip = true          # Strip symbols from the final binary
-panic = "abort"       # No unwinding tables — smaller binary, faster panics
+panic = "unwind"
 
 # Release with symbols kept for profiling (perf, flamegraph, pprof)
 [profile.release-dbg]
@@ -24,7 +24,7 @@ inherits = "release"
 opt-level = "z"       # Optimize for size over speed
 ```
 
-`panic = "abort"` breaks `catch_unwind`-based recovery; skip it for libraries others will link against, or for binaries that rely on panic hooks (some web frameworks do). For most CLIs and backend services, it's pure win.
+Keep `panic = "unwind"` when a task boundary or `catch_unwind` must convert a panic into an error response. Choose `panic = "abort"` only when immediate process termination is the intended failure policy; Tokio cannot return a panic as `JoinError` after the process aborts. Panic hooks run in both modes and provide diagnostics, not recovery. Select panic policy at the final application's profile rather than promising recovery from a library's profile setting.
 
 ## Dev-machine compile speedups (.cargo/config.toml)
 

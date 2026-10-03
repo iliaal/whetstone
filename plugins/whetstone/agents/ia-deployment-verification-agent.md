@@ -159,15 +159,17 @@ ORDER BY RANDOM() LIMIT 10;
 
 For any canary, percentage rollout, or feature-flag ramp, define quantified advance / hold / rollback bands per metric so the deploy has concrete go/no-go signals during the ramp. These bands govern the staged rollout; post-100%, the Post-Deploy Monitoring table inside the checklist template applies instead. Fill with deployment-specific values; the defaults below are starting points.
 
+Define units, the baseline window, the observation window, and minimum sample counts. Express changes to error rates in percentage points (pp). Use relative percentage deltas only when the baseline denominator is nonzero; otherwise supply absolute bounds. Apply the projected error-budget-exhaustion rollback override first. For the remaining cases, use these exclusive bands:
+
 | Metric | Advance | Hold | Rollback |
 |--------|---------|------|----------|
-| Error rate delta (vs baseline) | < +0.1% | +0.1% to +0.5% | > +0.5% |
-| p95 latency delta | < +10% | +10% to +25% | > +25% |
-| Client JS error rate (if web) | < baseline | = baseline | > baseline |
-| Business metric delta (conversion, completion rate) | ≥ baseline | slight dip (< 2%) | > 2% dip |
-| Error-budget burn rate (vs baseline pace, over the stage's observation window) | ≤ 1x | 1x-2x | > 2x sustained for the full window, or budget projected to exhaust before rollout completes |
+| Error rate delta (vs baseline) | ≤ +0.1 pp | > +0.1 pp and ≤ +0.5 pp | > +0.5 pp |
+| p95 latency delta | ≤ +10% | > +10% and ≤ +25% | > +25% |
+| Client JS error rate (if web) | ≤ baseline | None; any increase rolls back | > baseline |
+| Business metric delta (relative change vs baseline) | ≥ 0% | > -2% and < 0% | ≤ -2% |
+| Error-budget burn rate (over the stage's observation window) | ≤ 1x | > 1x and ≤ 2x, or > 2x for less than the full window | > 2x sustained for the full window |
 
-**Decision protocol**: advance to the next stage only if ALL metrics are in the Advance band over the stage's observation window. If ANY metric enters Hold, pause and investigate before advancing (do not rollback yet). If ANY metric enters Rollback, revert immediately per the Rollback Plan above.
+**Decision protocol**: roll back first if the budget is projected to exhaust before rollout completes or ANY metric enters Rollback. Otherwise, hold if ANY metric enters Hold, a required metric is missing, or its sample/window requirement is incomplete. Advance only when ALL applicable metrics remain in Advance for the completed observation window. A zero-baseline, zero-error web canary satisfies the JS Advance band.
 
 **Example stages (calibrate per SEV level; see Severity Matrix)**: `1% for 30 min → 10% for 1h → 50% for 2h → 100%`. SEV1/SEV2 deploys warrant longer observation windows and tighter Advance bands than SEV3/SEV4. Do not ramp faster than the observation window, or you lose the ability to detect a regression before the blast radius grows.
 

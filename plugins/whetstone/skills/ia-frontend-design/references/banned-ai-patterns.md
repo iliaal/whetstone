@@ -14,7 +14,7 @@ Visual patterns that signal AI-generated interfaces. Avoid all of these.
 | Nested cards (two independent cards, each with its own header, padding, and shadow, stacked one inside the other) | Stacked elevation with no hierarchy gain; reads as component nesting left visible. A single surface framed by a hairline `ring-1` wrapper (the double-bezel pattern in aesthetics-and-interaction.md) is one surface with one elevation and is not this pattern | Flatten the inner card to a plain region, `divide-y` row, or heading; one elevation level per container |
 | Cookie-cutter section rhythm (every section follows identical structure) | Monotonous, signals templated generation | Vary section types: hero, split, bento, full-bleed, editorial |
 | Colored left-border accent cards | Common AI component pattern | Use top borders, background tints, or typography weight for emphasis |
-| Bento grids with empty/dead cells | Missing `grid-flow-dense` lets grids render with visible gaps that read as broken | Apply `grid-auto-flow: dense` (Tailwind: `grid-flow-dense`); verify `col-span`/`row-span` values interlock mathematically; zero empty cells |
+| Unintended gaps in bento grids | Span choices can leave visually awkward holes | Adjust spans first. Use `grid-auto-flow: dense` only for decorative or order-independent content; dense placement changes visual order without changing DOM or keyboard order. For interactive cards, verify meaningful reading and focus order, and preserve gaps when filling them would disrupt that order |
 
 ## Color Patterns
 

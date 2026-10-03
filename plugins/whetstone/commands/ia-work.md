@@ -298,7 +298,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    - Never proceed with failing tests
    - Never force-push without explicit user request
    - Never merge directly to main/master without explicit user permission
-   - Always run tests after merge. If tests fail: revert (`git revert -m 1 HEAD`), keep branch, diagnose
+   - Before an authorized local merge, capture the base commit and preserve the feature branch. Run tests after integration; on failure, reverse the complete integration from the captured base, verify restoration, and keep the feature branch for diagnosis. Follow [Local merge and recovery](../skills/ia-git-worktree/references/worktree-integration.md#local-merge-and-recovery); a tip-only revert does not undo a multi-commit fast-forward.
 
 4. **Notify User**
    - Summarize what was completed using experiential framing (what the user/end-user can now do, then technical details)

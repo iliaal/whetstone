@@ -18,7 +18,17 @@ grep -rn '#\[ObservedBy' app/Models
 grep -rn 'IsAuditable\|Auditable' app/Models
 ```
 
-`Model::query()->where(...)->update([...])` does NOT fire Eloquent model events. Any observer, OwenIt Auditable trait subscribe, or model-boot `static::saving/updating` callback is silently skipped. If the target model is auditable or has observers, the migration loses audit rows and side effects without any visible signal. Flag and recommend `DB::transaction(fn() => $row = Model::whereKey($id)->lockForUpdate()->first(); ...; $row->save());` unless the bypass is intentional and commented.
+`Model::query()->where(...)->update([...])` does NOT fire Eloquent model events. Any observer, OwenIt Auditable trait subscribe, or model-boot `static::saving/updating` callback is silently skipped. If the target model is auditable or has observers, the migration loses audit rows and side effects without any visible signal. Flag unless the bypass is intentional and commented. Recommend a transaction with an ordinary closure, a locked model read, the intended mutation, and `save()`; adapt the model, ID, and changes to the migration:
+
+```php
+DB::transaction(function () use ($id, $changes) {
+    $row = Model::whereKey($id)->lockForUpdate()->firstOrFail();
+    $row->fill($changes);
+    $row->save();
+});
+```
+
+Confirm that `$changes` contains the intended writable attributes and that `fill()` respects the model's mass-assignment contract; assign attributes explicitly when required.
 
 ## Column rename missed JSON-embedded copies
 

@@ -36,26 +36,25 @@ Use the AskUserQuestion tool to collect the following information:
 - Get reproduction steps
 
 **Question 6: Error Messages**
-- Ask: "Did you see any error messages? If so, please share them."
-- Capture any error output
+- Ask for a minimal error excerpt with credentials, personal information, private code, and machine-specific paths removed.
+- Review the excerpt before including it; retain the failure mechanism while replacing sensitive values with labeled redactions. Do not save or publish raw logs.
 
 ## Step 2: Collect Environment Information
 
-Automatically gather:
+Collect only the plugin version, Claude Code version, OS family/kernel version, and architecture. Do not dump the installed-plugin registry or collect the hostname:
 ```bash
-# Get plugin version
-cat ~/.claude/plugins/installed_plugins.json 2>/dev/null | grep -A5 "whetstone" | head -10 || echo "Plugin info not found"
+jq -r '[ (.plugins // {}) | to_entries[] | select((.key | split("@")[0]) == "whetstone") | .value[]? | .version? | select(type == "string") ] | unique | if length == 1 then .[0] else "Plugin version unknown" end' ~/.claude/plugins/installed_plugins.json 2>/dev/null || echo "Plugin version unknown"
 
-# Get Claude Code version
 claude --version 2>/dev/null || echo "Claude CLI version unknown"
 
-# Get OS info
-uname -a
+uname -srm
 ```
+
+If `jq` or the registry is unavailable, report the plugin version as unknown or obtain the version alone from the caller. Review all supplied descriptions, reproduction steps, and additional context for the same sensitive content; sanitizing only the error field is insufficient.
 
 ## Step 3: Format the Bug Report
 
-Create a well-structured bug report with:
+Create a report using only the sanitized fields:
 
 ```markdown
 ## Bug Description
@@ -86,26 +85,39 @@ Create a well-structured bug report with:
 ## Error Messages
 
 ```
-[Any error output]
+[Minimal sanitized error excerpt, with labeled redactions]
 ```
 
 ## Additional Context
 
-[Any other relevant information]
+[Relevant sanitized context]
 
 ---
 *Reported via `/ia-report-bug` command*
 ```
 
-## Step 4: Create GitHub Issue
+## Step 4: Review and Create GitHub Issue
 
-Use the GitHub CLI to create the issue:
+Show the exact sanitized title and body, any remaining disclosure, and the public destination `iliaal/whetstone`. Obtain required approval when existing authorization does not cover that exact outgoing report. Answers to collection questions do not grant additional posting authority.
+
+Allocate invocation-owned files:
 
 ```bash
+REPORT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/whetstone-bug-report.XXXXXXXX")
+REPORT_FILE="$REPORT_DIR/report.md"
+TITLE_FILE="$REPORT_DIR/title.txt"
+```
+
+Require successful allocation. Write the exact approved report and title to those files with a file-writing tool. Do not interpolate report content into shell arguments, heredoc source, or a generated script. Confirm the files still match the approved sanitized text before sending.
+
+Under the required posting authority, use the GitHub CLI:
+
+```bash
+ISSUE_TITLE=$(cat "$TITLE_FILE")
 gh issue create \
   --repo iliaal/whetstone \
-  --title "[whetstone] Bug: [Brief description]" \
-  --body "[Formatted bug report from Step 3]" \
+  --title "$ISSUE_TITLE" \
+  --body-file "$REPORT_FILE" \
   --label "bug,whetstone"
 ```
 
@@ -113,8 +125,8 @@ gh issue create \
 ```bash
 gh issue create \
   --repo iliaal/whetstone \
-  --title "[whetstone] Bug: [Brief description]" \
-  --body "[Formatted bug report]"
+  --title "$ISSUE_TITLE" \
+  --body-file "$REPORT_FILE"
 ```
 
 ## Step 5: Confirm Submission
@@ -144,10 +156,4 @@ The maintainer will review your report and respond as soon as possible.
 
 ## Privacy Notice
 
-This command does NOT collect:
-- Personal information
-- API keys or credentials
-- Private code from your projects
-- File paths beyond basic OS info
-
-Only technical information about the bug is included in the report.
+The report includes selected technical version/OS fields and the sanitized descriptions and excerpts approved for publication. Supplied text can contain credentials, personal information, private code, or machine-specific paths; inspect and redact every field before saving or sending the report. Publish only the exact approved sanitized title and body. Automatic collection does not include the hostname, installation paths, or the full plugin registry.

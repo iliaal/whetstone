@@ -55,7 +55,7 @@ When receiving a comment or review feedback:
    - Any additional considerations or notes for the reviewer
    - A confirmation that the issue has been resolved
 
-Draft the reply for the channel the item came from; the dispatch prompt states which. Send only when explicitly authorized and not delegated to the parent:
+Draft the reply for the channel the item came from; the dispatch prompt states which. Send only when explicitly authorized and not delegated to the parent. Materialize the exact approved reply with a file-writing tool in an invocation-owned file, and set `REPLY_FILE` to that path. Never interpolate retrieved or approved Markdown into shell arguments, heredoc source, or command substitutions; a shell may reference the already-written file path.
 
 - **Review thread** (file + line): use the GraphQL thread ID from `get-pr-comments` at `unresolved[].node.id`. Set `THREAD_ID` to that item's thread ID and `REPLY_FILE` to the file containing the exact approved reply. The nested `comments.nodes[].id` identifies a comment, not its thread. Send with:
 
@@ -83,7 +83,7 @@ Draft the reply for the channel the item came from; the dispatch prompt states w
   ```
 
   Compare the stored `body` with the exact approved reply and require `state: SUBMITTED` before reporting it as posted or resolving its thread. `PENDING` identifies a draft review comment, even when creation returned a URL; report the pending state and obtain any missing authority for review submission. Never submit or discard an existing user draft review as automatic recovery. These fields and states are defined in [GitHub's pull request GraphQL reference](https://docs.github.com/en/graphql/reference/pulls#pullrequestreviewcommentstate). Replying does not resolve the thread. If the result is uncertain, re-fetch the thread before retrying to avoid duplicate replies.
-- **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply: these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
+- **Conversation** (top-level PR comment or review body, no file or line): quote enough of the original in the approved reply to identify what is being answered. Set `PR_NUMBER` to the target PR number, then send `gh pr comment "$PR_NUMBER" --body-file "$REPLY_FILE"`. Capture the created comment URL, read back the corresponding issue comment, and compare its stored body with the exact approved file before reporting it as posted. Issue comments have no review `SUBMITTED` state. `in_reply_to` does not apply: these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
 
 Your response format should be:
 

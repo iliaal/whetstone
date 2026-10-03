@@ -31,7 +31,7 @@ All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/wor
 
 Before creating worktrees, export a unique `WORKTREE_SESSION_ID` and retain that same value for this session's later manager calls. Example: `export WORKTREE_SESSION_ID="$(python3 -I -c 'import uuid; print(uuid.uuid4())')"`. The manager records ownership in each new worktree's Git metadata. Creation without a session ID works, but manager cleanup then refuses that tree; never adopt a previous session's ID to bypass ownership.
 
-The manager script fetches `origin/<base>` fresh and branches from it; it never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it falls back to the local `<base>` ref. PR review: pass the fetched PR head as `<base>`, then verify its SHA ([workflow-examples.md](./references/workflow-examples.md)). Details: [troubleshooting.md](./references/troubleshooting.md).
+The manager script fetches `<base>` from `origin` into an invocation-private ref, resolves that commit, and creates the branch from its SHA, even when `origin/<base>` is absent or stale or another checkout fetches concurrently. It removes only its private ref and never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it resolves the local `<base>` instead. PR review: pass the fetched PR head as `<base>`, then verify its SHA ([workflow-examples.md](./references/workflow-examples.md)). Details: [troubleshooting.md](./references/troubleshooting.md).
 
 
 ## Commands
@@ -60,7 +60,7 @@ git check-ignore .worktrees || echo "WARNING: .worktrees not in .gitignore"
 
 If not ignored, add it to `.gitignore` before proceeding.
 
-After creating a worktree, run the project's test suite (or its fastest relevant subset when the full suite is slow) to establish a clean baseline. Catch pre-existing failures in the worktree before starting new work, not mid-implementation.
+Before any baseline suite or migration, apply `ia-verification-before-completion`'s effective-target preflight. Resolve worktree environment/configuration overlays; verify disposable database and service targets, never the dev database. Copied `.env` files do not prove isolation. Without verified disposable targets, stop before tests. Then run the suite or its fastest relevant subset to establish a clean baseline before implementation.
 
 
 ## Ownership
@@ -69,8 +69,8 @@ After creating a worktree, run the project's test suite (or its fastest relevant
 - Do not mutate a tree while the current session's suite runs there. Test runners load source files as they reach them, so a mid-run edit produces a mass-failure result that looks exactly like a real regression.
 - A failure burst that contradicts a claim is a harness **hypothesis**, not a conclusion. Do not record or report the self-inflicted attribution until a re-run on a tree just asserted clean (`git status --short` empty) has returned.
 - When a mutation is unavoidable, assert the restore (grep the token back to its original count, plus `git status --short`) rather than trusting `git checkout --`.
-- One checkout has one index, so staging explicit paths does not scope a commit: `git add <mine> && git commit` also commits whatever a peer staged, under the current session's message. The protection is a pathspec on the commit itself (`git commit -- <paths>`), which takes those paths from the working tree and ignores the index; new files still need `git add`. It constrains that commit, not a peer's, so the residual control is latency between writing and committing. Read `git show --stat HEAD` afterwards and confirm only the intended files are there.
-- `git -C <repo> push <remote> HEAD:<branch>` resolves `HEAD` in **that** repo, not in the worktree that was edited. Edits made in a linked worktree and pushed with `-C` at the main checkout publish the main checkout's commit onto the feature branch, and `--force-with-lease` does not catch it because the lease checks the branch's old value, not what `HEAD` names. Never spell `HEAD:` in a `-C` push; resolve the SHA in the worktree and push it explicitly, then confirm with `git ls-remote`. Two branches "updated" to one SHA, or a pushed subject unrelated to the work, is the tell.
+- One checkout has one index: a bare commit includes unrelated staged entries, while `git commit -- <paths>` records complete working-tree files, including caller or peer hunks. Use a pathspec commit only after establishing whole-file ownership of every selected change. For mixed hunks, commit the attributable patch in a clean session-owned checkout while preserving the caller's HEAD, index, and files. Inspect the exact proposed and committed patches, not only filenames or `--stat`; follow [commit-ownership.md](./references/commit-ownership.md).
+- Never use `HEAD:` in a `git -C` push. Resolve the SHA in the edited worktree, push it explicitly, and confirm with `git ls-remote`; a lease cannot catch selection of another checkout's HEAD. Details: [commit-ownership.md](./references/commit-ownership.md).
 - Linked worktrees share one stash stack. `git stash` writes to the common git directory, so a red/green cycle in one worktree can pop and drop a stash another worktree pushed in between. Never stash for red/green here: `git diff > /tmp/red.patch`, `git checkout -- <files>` (worktree-local) for the red run, `git apply /tmp/red.patch` for green. A dropped stash is still recoverable while its commit survives: `git stash store -m <message> <sha>` re-registers the SHA that `Dropped refs/stash@{0} (<sha>)` printed.
 - A worktree's HEAD is shared mutable state, so answer branch questions from refs. Any other session can check something else out there, which makes `git -C <worktree> rev-parse HEAD` describe a different branch and report a correct push as a mismatch. Refs are shared across every worktree: ask any one of them about the branch by name (`rev-parse <branch>`, `rev-list --count origin/<branch>..<branch>`, `reflog <branch>`).
 
@@ -90,6 +90,7 @@ Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persi
 - [workflow-examples.md](./references/workflow-examples.md) - Code review and parallel development workflows
 - [troubleshooting.md](./references/troubleshooting.md) - Common issues, fresh-remote-base behavior, directory structure, how it works
 - [hooks-and-excludes.md](./references/hooks-and-excludes.md) - Hook safety under Husky, .git/info/exclude vs .gitignore
+- [commit-ownership.md](./references/commit-ownership.md) - Whole-file commits and isolated staging for mixed hunks
 - [worktree-manager.sh](./scripts/worktree-manager.sh) - The manager script
 
 ## Task-specific references

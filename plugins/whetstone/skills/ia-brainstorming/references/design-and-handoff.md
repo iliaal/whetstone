@@ -52,5 +52,5 @@ Present the design doc to the user for approval. The user explicitly confirming 
 Brainstorming answers WHAT to build. Planning answers HOW. When brainstorm output exists, `/ia-plan` (Claude Code) or the ia-planning skill detects it and skips idea refinement.
 
 - **Next step:** planning, always (`/ia-plan` in Claude Code; the `ia-planning` skill elsewhere)
-- **Threat modeling:** when the brainstorm involves auth, payments, external API surfaces, or multi-tenant data, suggest a `ia-security-sentinel` threat model before moving to planning. Catching trust boundary issues at the design stage prevents costly rework.
+- **Threat modeling:** when the brainstorm involves auth, payments, external API surfaces, or multi-tenant data, suggest a read-only threat-model review before planning. Use an available security reviewer through native delegation, or review inline if none is available; surface trust-boundary gaps and unresolved risks within the caller's scope.
 - **Predecessor:** user request or ambiguous feature description

@@ -11,30 +11,39 @@ Mobile users may be on cellular data or concerned about API costs. Design agents
 
 Use the cheapest model that achieves the outcome:
 
-```swift
-enum ModelTier {
-    case fast      // claude-3-haiku: ~$0.25/1M tokens
-    case balanced  // claude-3-sonnet: ~$3/1M tokens
-    case powerful  // claude-3-opus: ~$15/1M tokens
+```typescript
+type ModelTier = "fast" | "balanced" | "powerful";
+type ModelChoice = {
+  id: string;
+  inputUSDPerMillion: number;
+  outputUSDPerMillion: number;
+};
 
-    var modelId: String {
-        switch self {
-        case .fast: return "claude-3-haiku-20240307"
-        case .balanced: return "claude-3-sonnet-20240229"
-        case .powerful: return "claude-3-opus-20240229"
-        }
-    }
+function configuredModel(
+  tier: ModelTier,
+  settings: Record<string, string | undefined>,
+): ModelChoice {
+  const prefix = `AGENT_${tier.toUpperCase()}`;
+  const id = settings[`${prefix}_MODEL`]?.trim();
+  const input = Number(settings[`${prefix}_INPUT_USD_PER_MILLION`]);
+  const output = Number(settings[`${prefix}_OUTPUT_USD_PER_MILLION`]);
+  if (!id || !Number.isFinite(input) || input <= 0 ||
+      !Number.isFinite(output) || output <= 0) {
+    throw new Error(`Configure an active model and both token rates for ${tier}`);
+  }
+  return { id, inputUSDPerMillion: input, outputUSDPerMillion: output };
 }
 
-// Match model to task complexity
-let agentConfigs: [AgentType: ModelTier] = [
-    .quickLookup: .fast,        // "What's in my library?"
-    .chatAssistant: .balanced,  // General conversation
-    .researchAgent: .balanced,  // Web search + synthesis
-    .profileGenerator: .powerful, // Complex photo analysis
-    .introductionWriter: .balanced,
-]
+const taskTiers: Record<string, ModelTier> = {
+  quickLookup: "fast",
+  chatAssistant: "balanced",
+  researchAgent: "balanced",
+  profileGenerator: "powerful",
+  introductionWriter: "balanced",
+};
 ```
+
+Configure provider-specific IDs and prices from the [model overview](https://platform.claude.com/docs/en/models/overview), [pricing](https://platform.claude.com/docs/en/about-claude/pricing), and [deprecation table](https://platform.claude.com/docs/en/about-claude/model-deprecations). Active direct-API examples verified on 2026-10-03 include `claude-haiku-4-5-20251001`, `claude-sonnet-5-5`, and `claude-opus-5-5`; account availability and partner IDs still require verification. Configuration has no obsolete fallback or zero-price placeholder. Track input, output, and any provider-specific caching charges separately.
 
 ### Token Budgets
 
@@ -135,43 +144,59 @@ await agent.chat("Summarize each of these books briefly: \(bookList)")
 
 Cache expensive operations:
 
-```swift
+```typescript
+type SearchRequest = {
+  userId: string;
+  workspaceId: string;
+  bookId: string;
+  query: string;
+  limit: number;
+  source: string;
+};
+type Research = { summary: string };
+
 class ResearchCache {
-    private var cache: [String: CachedResearch] = [:]
+  private entries = new Map<string, { research: Research; timestamp: number }>();
 
-    func getCachedResearch(for bookId: String) -> CachedResearch? {
-        guard let cached = cache[bookId] else { return nil }
+  private key(request: SearchRequest): string {
+    return JSON.stringify([
+      request.userId, request.workspaceId, request.bookId,
+      request.query, request.limit, request.source,
+    ]);
+  }
 
-        // Expire after 24 hours
-        if Date().timeIntervalSince(cached.timestamp) > 86400 {
-            cache.removeValue(forKey: bookId)
-            return nil
-        }
-
-        return cached
+  get(request: SearchRequest, now = Date.now()): Research | undefined {
+    const key = this.key(request);
+    const cached = this.entries.get(key);
+    if (!cached) return undefined;
+    if (now - cached.timestamp >= 86400_000) {
+      this.entries.delete(key);
+      return undefined;
     }
+    return structuredClone(cached.research);
+  }
 
-    func cacheResearch(_ research: Research, for bookId: String) {
-        cache[bookId] = CachedResearch(
-            research: research,
-            timestamp: Date()
-        )
-    }
+  set(request: SearchRequest, research: Research, now = Date.now()): void {
+    this.entries.set(this.key(request), {
+      research: structuredClone(research), timestamp: now,
+    });
+  }
 }
 
-// In research tool
-tool("web_search", async ({ query, bookId }) => {
-    // Check cache first
-    if let cached = cache.getCachedResearch(for: bookId) {
-        return ToolResult(text: cached.research.summary, cached: true)
-    }
-
-    // Otherwise, perform search
-    let results = await webSearch(query)
-    cache.cacheResearch(results, for: bookId)
-    return ToolResult(text: results.summary)
-})
+async function cachedSearch(
+  request: SearchRequest,
+  cache: ResearchCache,
+  webSearch: (request: SearchRequest) => Promise<Research>,
+): Promise<Research> {
+  const cached = cache.get(request);
+  if (cached !== undefined) return cached;
+  const research = await webSearch(request);
+  cache.set(request, research);
+  return research;
+}
 ```
+
+Authorize the current user and workspace before looking up cached results. Include every option that changes search results in the cache key; invalidate cached content when its access grant changes.
 
 ### Cost Visibility
 
@@ -202,4 +227,3 @@ struct AgentCostView: View {
 }
 ```
 </cost_awareness>
-

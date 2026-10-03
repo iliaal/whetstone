@@ -9,7 +9,7 @@ All 33 Claude Code hook events are declarable in agent frontmatter; there is no 
 | Event | Fires in agent context | Decision control |
 |-------|----------------------|------------------|
 | **PreToolUse** | Yes | `permissionDecision`: allow, deny, ask, defer |
-| **PostToolUse** | Yes | None (observe only) |
+| **PostToolUse** | Yes | `decision: block` adds feedback; output replacement can change model-visible results, but cannot undo completed side effects |
 | **PermissionRequest** | Yes | `decision.behavior` |
 | **PostToolUseFailure** | Yes | None (observe only) |
 | **PermissionDenied** | Yes | `retry: true` lets the model retry the denied call; ignored when the classifier gave no verdict |
@@ -78,9 +78,15 @@ Target specific MCP tools using regex patterns in the `matcher` field:
 
 ```json
 {
-  "hook": "PreToolUse",
-  "matcher": "mcp__memory__.*",
-  "command": "./hooks/guard-memory-writes.sh"
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "^mcp__memory__.*$",
+      "hooks": [{
+        "type": "command",
+        "command": "./hooks/guard-memory-writes.sh"
+      }]
+    }]
+  }
 }
 ```
 
@@ -104,16 +110,16 @@ Regex matchers enable policy enforcement across MCP servers without enumerating 
 Separate shared policy from personal overrides:
 
 **Shared config** (committed to repo):
-`.claude/hooks/config/hooks-config.json`
+`.claude/settings.json` (project hooks), or `hooks/hooks.json` relative to a plugin root (plugin hooks)
 
 Contains team-wide policy: approval gates for destructive tools, audit logging, security boundaries. Committed and version-controlled so all team members inherit the same governance.
 
 **Personal overrides** (git-ignored):
-`.claude/hooks/config/hooks-config.local.json`
+`.claude/settings.local.json`
 
-Individual toggles: disable noisy hooks during focused work, add personal notification hooks, override thresholds. Add to `.gitignore` so personal preferences never pollute the shared config.
+Use personal settings for local additions; do not assume that omitting an inherited hook disables it. Keep the file git-ignored. Project-relative commands above assume the scripts exist in that project; plugin handlers should use the plugin's runtime root for bundled scripts.
 
-**Per-hook disable toggles**: include an `enabled` field in each hook entry. Quick suppression without removing configuration: flip the toggle, don't delete the block. Restoring a disabled hook is a one-character change instead of reconstructing the config.
+**Disable behavior:** Native configuration has no per-hook `enabled` field. Remove an optional handler from its defining settings, or implement a documented environment switch in that handler. Do not expose an override for mandatory authorization checks. `disableAllHooks` is the native global switch. A custom configuration file needs an explicit loader; Claude Code does not load arbitrary paths. See the [hook configuration reference](https://code.claude.com/docs/en/hooks#configuration).
 
 ## Async Hooks
 
@@ -121,10 +127,16 @@ For non-blocking side effects that should not slow the agent loop:
 
 ```json
 {
-  "hook": "PostToolUse",
-  "matcher": ".*",
-  "command": "./hooks/audit-log.sh",
-  "async": true
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "./hooks/audit-log.sh",
+        "async": true
+      }]
+    }]
+  }
 }
 ```
 

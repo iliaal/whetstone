@@ -120,35 +120,28 @@ For multi-step tasks, track progress at the task level for resume capability.
 
 ### Task State Tracking
 
-```swift
-enum TaskStatus {
-    case pending      // Not yet started
-    case inProgress   // Currently working on
-    case completed    // Finished successfully
-    case failed       // Couldn't complete (with reason)
-    case skipped      // Intentionally not done
+```typescript
+type TaskStatus = "pending" | "inProgress" | "completed" | "failed" | "skipped";
+type AgentTask = {
+  id: string;
+  description: string;
+  status: TaskStatus;
+  notes: string | null;
+};
+
+function taskProgress(tasks: readonly AgentTask[]): { completed: number; total: number } {
+  return {
+    completed: tasks.filter(task => task.status === "completed").length,
+    total: tasks.length,
+  };
 }
 
-struct AgentTask {
-    let id: String
-    let description: String
-    var status: TaskStatus
-    var notes: String?  // Why it failed, what was done
-}
-
-struct AgentSession {
-    var tasks: [AgentTask]
-
-    var isComplete: Bool {
-        tasks.allSatisfy { $0.status == .completed || $0.status == .skipped }
-    }
-
-    var progress: (completed: Int, total: Int) {
-        let done = tasks.filter { $0.status == .completed }.count
-        return (done, tasks.count)
-    }
+function tasksFinished(tasks: readonly AgentTask[]): boolean {
+  return tasks.every(task => task.status === "completed" || task.status === "skipped");
 }
 ```
+
+A skipped task needs an explicitly accepted scope reason; finishing the task list does not bypass application-owned acceptance checks.
 
 ### UI Progress Display
 
@@ -171,34 +164,47 @@ Progress: 3/5 tasks complete (60%)
 - Resume continues from where it left off, not from beginning
 
 **Agent fails on one task:**
-- Task marked `.failed` with error in notes
+- Task marked `failed` with error in notes
 - Other tasks may continue (agent decides)
 - Orchestrator doesn't automatically abort entire session
 
 **Network error mid-task:**
 - Current iteration throws
-- Session marked `.failed`
+- Session marked `failed`
 - Checkpoint preserves messages up to that point
 - Resume possible from checkpoint
 
 ### Checkpoint Structure
 
-```swift
-struct AgentCheckpoint: Codable {
-    let sessionId: String
-    let agentType: String
-    let messages: [Message]          // Full conversation history
-    let iterationCount: Int
-    let tasks: [AgentTask]           // Task state
-    let customState: [String: Any]   // Agent-specific state
-    let timestamp: Date
+```typescript
+type JSONValue = null | boolean | number | string | JSONValue[] |
+  { [key: string]: JSONValue };
 
-    var isValid: Bool {
-        // Checkpoints expire (default 1 hour)
-        Date().timeIntervalSince(timestamp) < 3600
-    }
+type AgentCheckpoint = {
+  version: 1;
+  sessionId: string;
+  agentType: string;
+  messages: JSONValue[];
+  iterationCount: number;
+  tasks: AgentTask[];
+  customState: { [key: string]: JSONValue };
+  waitingReason: string | null;
+  resumeState: "running" | "waitingForUser" | "partial" | "blocked";
+  attemptIds: string[];
+  timestamp: number;
+};
+
+function checkpointIsFresh(checkpoint: AgentCheckpoint, now = Date.now()): boolean {
+  const age = now - checkpoint.timestamp;
+  return checkpoint.version === 1 && age >= 0 && age < 3600_000;
+}
+
+function encodeCheckpoint(checkpoint: AgentCheckpoint): string {
+  return JSON.stringify(checkpoint);
 }
 ```
+
+Use the preceding `AgentTask` type. Accept only schema-validated JSON values at runtime; reject unsupported versions, non-finite numbers, cycles, and missing fields rather than coercing them into a valid-looking checkpoint. Persist encoded bytes by atomic replacement and propagate errors. A stale checkpoint is retained for reconciliation and explicit user disposition, not silently replayed or deleted. Reconcile every durable attempt before running remaining effects; follow [mobile-execution.md](./mobile-execution.md).
 
 ### Resume Flow
 
@@ -232,46 +238,35 @@ Different agents need different intelligence levels. Use the cheapest model that
 
 ### Implementation
 
-```swift
-enum ModelTier {
-    case fast      // claude-3-haiku: Quick, cheap, simple tasks
-    case balanced  // claude-sonnet: Good balance for most tasks
-    case powerful  // claude-opus: Complex reasoning, synthesis
+Configure the tier's provider ID at startup using the validated `configuredModel` function in [mobile-cost.md](./mobile-cost.md), including current input and output token rates.
 
-    var modelId: String {
-        switch self {
-        case .fast: return "claude-3-haiku-20240307"
-        case .balanced: return "claude-sonnet-4-20250514"
-        case .powerful: return "claude-opus-4-20250514"
-        }
-    }
-}
+```typescript
+type AgentConfig = {
+  name: string;
+  modelTier: "fast" | "balanced" | "powerful";
+  toolNames: readonly string[];
+  systemPrompt: string;
+  maxIterations: number;
+};
 
-struct AgentConfig {
-    let name: String
-    let modelTier: ModelTier
-    let tools: [AgentTool]
-    let systemPrompt: String
-    let maxIterations: Int
-}
+const researchConfig: AgentConfig = {
+  name: "research",
+  modelTier: "balanced",
+  toolNames: ["read_file", "write_file", "web_search", "web_fetch"],
+  systemPrompt: "Research the selected book and persist sourced findings.",
+  maxIterations: 20,
+};
 
-// Examples
-let researchConfig = AgentConfig(
-    name: "research",
-    modelTier: .balanced,
-    tools: researchTools,
-    systemPrompt: researchPrompt,
-    maxIterations: 20
-)
-
-let quickLookupConfig = AgentConfig(
-    name: "lookup",
-    modelTier: .fast,
-    tools: [readLibrary],
-    systemPrompt: "Answer quick questions about the user's library.",
-    maxIterations: 3
-)
+const quickLookupConfig: AgentConfig = {
+  name: "lookup",
+  modelTier: "fast",
+  toolNames: ["read_library"],
+  systemPrompt: "Answer quick questions using the authorized library.",
+  maxIterations: 3,
+};
 ```
+
+Resolve these names to the installed, authorized tool registry; reject missing entries. Model tiers express a quality/cost choice, not a fixed historical model family.
 
 ### Cost Optimization Strategies
 

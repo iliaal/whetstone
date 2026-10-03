@@ -51,7 +51,12 @@ Use [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/)
 ## Strategy & Backtesting
 
 - Use `strategy.*` functions: `strategy.wintrades`, `strategy.losstrades`, `strategy.grossprofit`
-- Drawdown tracking: `maxEquity = math.max(strategy.equity, nz(maxEquity[1]))`, then `dd = (maxEquity - strategy.equity) / maxEquity * 100`
+- Declare persistent drawdown state before updating it:
+  ```pine
+  var float maxEquity = strategy.equity
+  maxEquity := math.max(maxEquity, strategy.equity)
+  dd = maxEquity > 0 ? (maxEquity - strategy.equity) / maxEquity * 100 : na
+  ```
 - Estimate annualized Sharpe from mean excess returns divided by their standard deviation, scaled by the square root of periods per year; state the sampling interval and annualization assumptions and handle zero variance.
 - **Walk-forward validation**: optimize on period 1, test on period 2, re-optimize on period 2, test on period 3. Compare degradation against sampling uncertainty, costs, and regime changes; no universal percentage establishes overfitting.
 - **Indicator accuracy testing**: at bar `t`, score `prediction[horizon]` against the now-realized outcome, such as `close > close[horizon]`, excluding warmup bars. Positive offsets reference the past, never future bars; see [history referencing](https://www.tradingview.com/pine-script-docs/language/operators/).

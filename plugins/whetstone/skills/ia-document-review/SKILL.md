@@ -128,7 +128,7 @@ After changes are complete, ask:
 
 ### Iteration Guidance
 
-After 2 refinement passes, recommend completion; diminishing returns are likely. If the user wants to continue, allow up to 4 passes total. After 4, stop and report "review converged; further changes require new direction." Do not continue past 4 even on user request without a fresh framing.
+After 2 refinement passes, recommend completion only if no material issues remain. If the user wants to continue, allow up to 4 passes total. Claim convergence only when a pass finds no material changes needed. After 4, stop. Report "review limit reached; further passes require new direction." Include unresolved findings and unverified claims in the handoff. Do not continue past 4 even on user request without a fresh framing.
 
 **Withdraw what earlier answers already settled.** On pass 2 and later, judge each remaining finding against the decisions already made this session before presenting it. If an earlier answer resolves or contradicts it, do not re-raise it: say in one line what the finding was and which answer retired it, then move on, and record it as `withdrawn` in the summary with the retiring decision named. The distinction that matters: a withdrawal caused by a **user decision** (a skip, a defer, an asserted fact) is durable and suppresses the finding on every later pass; a withdrawal caused by a **pending fix** is provisional, because the fix can fail or land in the wrong place, so a finding that regenerates on the next pass must resurface rather than stay suppressed. Evaluate lazily, at the moment the finding would have been presented; do not rescan after every answer. (Code review carries the same rule; see `ia-code-review` on reconciling prior discussions.)
 

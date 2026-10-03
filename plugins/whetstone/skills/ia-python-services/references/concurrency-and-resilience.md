@@ -68,7 +68,7 @@ See [fastapi.md](./fastapi.md) for project structure, lifespan, config, DI, asyn
 - Return job ID immediately, process async. Client polls `/jobs/{id}` for status
 - **Celery**: `@app.task(bind=True, max_retries=3, autoretry_for=(ConnectionError,))` with exponential backoff: `raise self.retry(countdown=2**self.request.retries * 60)`
 - **Alternatives**: Dramatiq (modern Celery), RQ (simple Redis), cloud-native (SQS+Lambda, Cloud Tasks)
-- **Idempotency is mandatory**: tasks may retry. Use idempotency keys for external calls and atomic upserts for writes (`ON CONFLICT DO UPDATE`, `INSERT ... ON DUPLICATE KEY UPDATE`). A read-then-write pair is not idempotent under concurrent retry: two workers both read "absent" and both insert. Uniqueness has to be enforced by a database constraint, not by the preceding read
+- **Prove replay idempotency**: tasks may retry. An atomic upsert prevents a duplicate-row race but can repeat an effect (`ON CONFLICT DO UPDATE SET count = count + 1`). Use deterministic same-operation assignments where sufficient, or insert a consumer/message receipt under a uniqueness constraint and apply its database effects in the same transaction; roll back both on failure and acknowledge only after commit. Record intent before external effects, use stable operation keys where the provider supports them, and reconcile unknown outcomes before replay. Test retries after rollback and after a committed effect, including a lost response; neither a read-before-write check nor uniqueness alone proves the effect happens once.
 - Dead letter queue for permanently failed tasks after max retries
 - Task workflows: `chain(a.s(), b.s())` for sequential, `group(...)` for parallel, `chord(group, callback)` for fan-out/fan-in
 

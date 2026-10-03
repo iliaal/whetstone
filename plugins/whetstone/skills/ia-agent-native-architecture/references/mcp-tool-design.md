@@ -126,6 +126,8 @@ async ({ key }) => {
 <design_template>
 ## Tool Design Template
 
+Require `storage.get` to return `undefined` only for a missing key; stored `null`, `false`, `0`, and empty strings remain valid values.
+
 ```typescript
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
@@ -144,9 +146,9 @@ export const serverName = createSdkMcpServer({
         return {
           content: [{
             type: "text",
-            text: item ? JSON.stringify(item, null, 2) : `Not found: ${key}`,
+            text: item === undefined ? `Not found: ${key}` : JSON.stringify(item, null, 2),
           }],
-          isError: !item,
+          isError: item === undefined,
         };
       }
     ),
@@ -322,66 +324,51 @@ Use your judgment about importance ratings.
 
 **This pattern is specifically for agent-native apps** where you want the agent to have full access to an external API--the same access a user would have. It follows the core agent-native principle: "Whatever the user can do, the agent can do."
 
-If you're building a constrained agent with limited capabilities, static tool mapping may be intentional. But for agent-native apps integrating with HealthKit, HomeKit, GraphQL, or similar APIs:
+If you're building a constrained agent with limited capabilities, static tool mapping may be intentional. But for agent-native apps integrating with GraphQL, OpenAPI, or other APIs exposing authorized capability metadata:
 
 **Static Tool Mapping (Anti-pattern for Agent-Native):**
 Build individual tools for each API capability. Always out of date, limits agent to only what you anticipated.
 
 ```typescript
-// ❌ Static: Every API type needs a hardcoded tool
-tool("read_steps", async ({ startDate, endDate }) => {
-  return healthKit.query(HKQuantityType.stepCount, startDate, endDate);
-});
-
-tool("read_heart_rate", async ({ startDate, endDate }) => {
-  return healthKit.query(HKQuantityType.heartRate, startDate, endDate);
-});
-
-tool("read_sleep", async ({ startDate, endDate }) => {
-  return healthKit.query(HKCategoryType.sleepAnalysis, startDate, endDate);
-});
-
-// When HealthKit adds glucose tracking... you need a code change
+function readSteps(client: MetricClient, start: string, end: string): Promise<unknown> {
+  return client.read("steps", start, end);
+}
+function readHeartRate(client: MetricClient, start: string, end: string): Promise<unknown> {
+  return client.read("heartRate", start, end);
+}
+function readSleep(client: MetricClient, start: string, end: string): Promise<unknown> {
+  return client.read("sleep", start, end);
+}
 ```
+
+Every newly exposed metric needs another binding when only these static functions are registered.
 
 **Dynamic Capability Discovery (Preferred):**
 Build a meta-tool that discovers what's available, and a generic tool that can access anything.
 
 ```typescript
-// ✅ Dynamic: Agent discovers and uses any capability
+function listAvailableCapabilities(client: MetricClient): Promise<MetricType[]> {
+  return client.listTypes();
+}
 
-// Discovery tool - returns what's available at runtime
-tool("list_available_capabilities", async () => {
-  const quantityTypes = await healthKit.availableQuantityTypes();
-  const categoryTypes = await healthKit.availableCategoryTypes();
-
-  return {
-    text: `Available health metrics:\n` +
-          `Quantity types: ${quantityTypes.join(", ")}\n` +
-          `Category types: ${categoryTypes.join(", ")}\n` +
-          `\nUse read_health_data with any of these types.`
-  };
-});
-
-// Generic access tool - type is a string, API validates
-tool("read_health_data", {
-  dataType: z.string(),  // NOT z.enum - let HealthKit validate
-  startDate: z.string(),
-  endDate: z.string(),
-  aggregation: z.enum(["sum", "average", "samples"]).optional()
-}, async ({ dataType, startDate, endDate, aggregation }) => {
-  // HealthKit validates the type, returns helpful error if invalid
-  const result = await healthKit.query(dataType, startDate, endDate, aggregation);
-  return { text: JSON.stringify(result, null, 2) };
-});
+function readMetric(
+  client: MetricClient,
+  dataType: string,
+  start: string,
+  end: string,
+): Promise<unknown> {
+  return client.read(dataType, start, end);
+}
 ```
+
+Use the complete `MetricClient` implementation below. Register discovery and generic access as tools with string type-name inputs, while the authenticated server validates names and grants. Do not assume a native library exposes an enumeration or metadata endpoint that it does not implement.
 
 **When to Use Each Approach:**
 
 | Dynamic (Agent-Native) | Static (Constrained Agent) |
 |------------------------|---------------------------|
 | Agent should access anything user can | Agent has intentionally limited scope |
-| External API with many endpoints (HealthKit, HomeKit, GraphQL) | Internal domain with fixed operations |
+| External API with authorized metadata (GraphQL, OpenAPI) | Internal domain with fixed operations |
 | API evolves independently of your code | Tightly coupled domain logic |
 | You want full action parity | You want strict guardrails |
 
@@ -389,72 +376,73 @@ tool("read_health_data", {
 
 **Complete Dynamic Pattern:**
 
-```swift
-// 1. Discovery tool: What can I access?
-tool("list_health_types", "Get available health data types") { _ in
-    let store = HKHealthStore()
+Use the provider's authenticated metadata API rather than inventing language-level enumeration. This complete TypeScript client discovers and reads arbitrary authorized metric types; the URL is installed by trusted configuration.
 
-    let quantityTypes = HKQuantityTypeIdentifier.allCases.map { $0.rawValue }
-    let categoryTypes = HKCategoryTypeIdentifier.allCases.map { $0.rawValue }
-    let characteristicTypes = HKCharacteristicTypeIdentifier.allCases.map { $0.rawValue }
+```typescript
+type MetricType = { name: string; readable: boolean; writable: boolean };
 
-    return ToolResult(text: """
-        Available HealthKit types:
+class MetricClient {
+  private readonly baseURL: URL;
+  private readonly token: string;
 
-        ## Quantity Types (numeric values)
-        \(quantityTypes.joined(separator: ", "))
-
-        ## Category Types (categorical data)
-        \(categoryTypes.joined(separator: ", "))
-
-        ## Characteristic Types (user info)
-        \(characteristicTypes.joined(separator: ", "))
-
-        Use read_health_data or write_health_data with any of these.
-        """)
-}
-
-// 2. Generic read: Access any type by name
-tool("read_health_data", "Read any health metric", {
-    dataType: z.string().describe("Type name from list_health_types"),
-    startDate: z.string(),
-    endDate: z.string()
-}) { request in
-    // Let HealthKit validate the type name
-    guard let type = HKQuantityTypeIdentifier(rawValue: request.dataType)
-                     ?? HKCategoryTypeIdentifier(rawValue: request.dataType) else {
-        return ToolResult(
-            text: "Unknown type: \(request.dataType). Use list_health_types to see available types.",
-            isError: true
-        )
+  constructor(baseURL: URL, token: string) {
+    if (!baseURL.pathname.endsWith("/")) {
+      throw new Error("Metric API base URL must end with a slash");
     }
+    this.baseURL = new URL(baseURL);
+    this.token = token;
+  }
 
-    let samples = try await healthStore.querySamples(type: type, start: startDate, end: endDate)
-    return ToolResult(text: samples.formatted())
-}
+  private async request(path: string, query?: Record<string, string>): Promise<unknown> {
+    const url = new URL(path, this.baseURL);
+    for (const [key, value] of Object.entries(query ?? {})) {
+      url.searchParams.set(key, value);
+    }
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${this.token}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error(`Metric API returned ${response.status}`);
+    return response.json();
+  }
 
-// 3. Context injection: Tell agent what's available in system prompt
-func buildSystemPrompt() -> String {
-    let availableTypes = healthService.getAuthorizedTypes()
+  async listTypes(): Promise<MetricType[]> {
+    const body = await this.request("types");
+    if (!Array.isArray(body)) throw new Error("Invalid metric inventory");
+    return body.map(item => {
+      if (typeof item !== "object" || item === null ||
+          typeof item.name !== "string" || typeof item.readable !== "boolean" ||
+          typeof item.writable !== "boolean") {
+        throw new Error("Invalid metric capability");
+      }
+      return { name: item.name, readable: item.readable, writable: item.writable };
+    });
+  }
 
-    return """
-    ## Available Health Data
+  async read(typeName: string, start: string, end: string): Promise<unknown> {
+    const types = await this.listTypes();
+    if (!types.some(type => type.name === typeName && type.readable)) {
+      throw new Error("Metric type is unavailable or not authorized");
+    }
+    return this.request("samples", { type: typeName, start, end });
+  }
 
-    You have access to these health metrics:
-    \(availableTypes.map { "- \($0)" }.joined(separator: "\n"))
-
-    Use read_health_data with any type above. For new types not listed,
-    use list_health_types to discover what's available.
-    """
+  async context(): Promise<string> {
+    const types = await this.listTypes();
+    return JSON.stringify({ availableMetricTypes: types });
+  }
 }
 ```
+
+This example specifies a service contract: `GET types` returns capability objects, and `GET samples` validates the supplied type and time range against the authenticated caller's grants. Implement those endpoints in the existing PHP, Python, or TypeScript service. The client check improves diagnostics; the server must independently enforce grants. Preserve returned inventory as labeled app data, not interpolated developer instructions. Add a primitive write endpoint only for discovered writable capabilities and the caller's actual write authority.
 
 **Benefits:**
 - Agent can use any API capability, including ones added after your code shipped
 - API is the validator, not your enum definition
 - Smaller tool surface (2-3 tools vs N tools)
 - Agent naturally discovers capabilities by asking
-- Works with any API that has introspection (HealthKit, GraphQL, OpenAPI)
+- Works with APIs that actually expose authorized metadata or introspection
 </principle>
 
 <principle name="crud-completeness">
@@ -503,7 +491,7 @@ Declare behavioral hints to describe the tool's claimed semantics:
 |-----------|--------|---------|
 | `readOnlyHint` | `true`/`false` | Claims that the tool does not modify state. |
 | `destructiveHint` | `true`/`false` | Tool may irreversibly delete or overwrite data. |
-| `idempotentHint` | `true`/`false` | Calling twice with same args produces same result. |
+| `idempotentHint` | `true`/`false` | Repeated calls with the same arguments have no additional environmental effect; responses may differ. |
 | `openWorldHint` | `true`/`false` | Tool interacts with external entities beyond the server's control. |
 
 Treat annotations as untrusted unless the server is trusted, as required by the [MCP tools specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#tool). Neither an annotation nor a read-like tool name grants authority. Permit automatic approval only under operator policy for a trusted server whose verified behavior fits the approved scope. Recheck that scope when implementations or tool inventories change; wildcard approvals include future matching tools.

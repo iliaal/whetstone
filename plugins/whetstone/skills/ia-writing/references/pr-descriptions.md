@@ -97,7 +97,7 @@ None of these for content that's genuinely prose; don't force structure where it
   - Wrong: `#1 - Fixed bug`
   - Right: `1. Fixed bug` or `- Fixed bug`
 - **Headings stay at H2 and below**: `#` (H1) is reserved for the PR title. Use `##` for section headings.
-- **Code blocks use triple backticks, not quadruple**: GitHub renders quadruple-backtick blocks inconsistently across web vs API views.
+- **Use a fence longer than any embedded fence**: triple backticks suit ordinary code blocks. Use four outer backticks when showing Markdown that contains triple backticks. Use a longer fence if the content requires it.
 
 ## Issue references: verify or omit
 

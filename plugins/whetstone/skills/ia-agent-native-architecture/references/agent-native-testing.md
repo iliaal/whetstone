@@ -89,6 +89,8 @@ describe('Agent Capability Tests', () => {
 
 ### The "Write to Location" Test
 
+Implement `locationHasNewContent` by reading the named location from the real persistence service and matching the unique marker created by this run. Tool-call assertions are routing diagnostics; they do not replace the persisted-outcome assertion. Keep explicitly authorized exclusions in a separately reviewed list rather than silently mapping missing capabilities to `N/A`.
+
 A key litmus test: can the agent create content in specific app locations?
 
 ```typescript
@@ -102,16 +104,14 @@ describe('Location Awareness Tests', () => {
 
   for (const { userPhrase, expectedTool } of locations) {
     test(`Agent knows how to write to "${userPhrase}"`, async () => {
-      const prompt = `Write a test note to ${userPhrase}`;
+      const marker = `location-test-${crypto.randomUUID()}`;
+      const prompt = `Write a note containing "${marker}" to ${userPhrase}`;
       const result = await agent.chat(prompt);
 
-      // Check that agent used the right tool (or achieved the outcome)
       expect(result.toolCalls).toContainEqual(
         expect.objectContaining({ name: expectedTool })
       );
-
-      // Or verify outcome directly
-      // expect(await locationHasNewContent(userPhrase)).toBe(true);
+      expect(await locationHasNewContent(userPhrase, marker)).toBe(true);
     });
   }
 });
@@ -164,7 +164,7 @@ export const capabilityMap = {
   "View highlights": "read_library",  // same tool, different query
   "Edit profile": "write_file",
   "Search web": "web_search",
-  "Export data": "N/A",  // UI-only action
+  "Export data": "export_data",
 };
 
 // parity.test.ts
@@ -177,7 +177,10 @@ describe('Action Parity', () => {
   const systemPrompt = getSystemPrompt();
 
   for (const [uiAction, toolName] of Object.entries(capabilityMap)) {
-    if (toolName === 'N/A') continue;
+    test(`\"${uiAction}\" has an explicit mapping`, () => {
+      expect(toolName).not.toBe('N/A');
+      expect(toolName).not.toBe('');
+    });
 
     test(`"${uiAction}" has agent tool: ${toolName}`, () => {
       const toolNames = agentTools.map(t => t.name);
@@ -445,8 +448,11 @@ Agent tests cost API tokens. Strategies to manage:
 
 ```typescript
 // Use smaller models for basic tests
+const configuredModel = process.env.CI
+  ? process.env.AGENT_TEST_MODEL : process.env.AGENT_DEV_MODEL;
+if (!configuredModel) throw new Error("Configure an active provider-specific test model");
 const testConfig = {
-  model: process.env.CI ? "claude-3-haiku" : "claude-3-opus",
+  model: configuredModel,
   maxTokens: 500,  // Limit output length
 };
 
@@ -474,10 +480,12 @@ class AgentTestHarness {
   private mockServices: MockServices;
 
   async setup() {
+    const model = process.env.AGENT_TEST_MODEL;
+    if (!model) throw new Error("AGENT_TEST_MODEL must identify an active model");
     this.mockServices = createMockServices();
     this.agent = await createAgent({
       services: this.mockServices,
-      model: "claude-3-haiku",  // Cheaper for tests
+      model,
     });
   }
 

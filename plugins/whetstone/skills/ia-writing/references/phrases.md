@@ -182,7 +182,7 @@ If something is hard or significant, show the specific constraint. Don't announc
 
 ## Rhythm
 
-- Three-item lists: use two items or one. Triads are an AI tell.
+- Three-item lists: remove only redundant or manufactured rhetorical items. Preserve every independently meaningful condition, option, or fact, including all three when needed.
 - Questions answered immediately: let questions breathe or cut them.
 
 ## Sentence Starters to Avoid

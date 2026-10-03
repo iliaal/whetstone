@@ -49,19 +49,7 @@ The agent becomes a living system that improves over time, not frozen code.
 Self-modification is powerful. It needs safety mechanisms.
 
 **Approval gates for code changes:**
-```typescript
-tool("write_file", async ({ path, content }) => {
-  if (isCodeFile(path)) {
-    // Store for approval, don't apply immediately
-    pendingChanges.set(path, content);
-    const diff = generateDiff(path, content);
-    return { text: `Requires approval:\n\n${diff}\n\nReply "yes" to apply.` };
-  }
-  // Non-code files apply immediately
-  writeFileSync(path, content);
-  return { text: `Wrote ${path}` };
-});
-```
+Use the [approval-gates pattern](./architecture-patterns.md): `write_file` proposes a revisioned draft for protected paths; trusted orchestration applies only the exact approved content and destination. Ordinary writes still require the caller's workspace grant and revision-conditional persistence. A chat reply of "yes" must resolve to the specific draft shown to that authenticated user.
 
 **Checkpoint an exclusive deployment checkout before changes:**
 
@@ -96,22 +84,56 @@ tool("self_deploy", async () => {
 The command wrappers above must throw on nonzero exit. A successful merge has no active merge to abort. Restore the recorded commit and rebuild its generated artifacts before reporting rollback, and report rollback failure distinctly. Exercise both build failure after a successful fast-forward and failure while rebuilding the prior revision. Check the running revision and application health after restart before claiming deployment success.
 
 **Health checks after restart:**
-```typescript
-tool("health_check", async () => {
-  const uptime = process.uptime();
-  const buildValid = existsSync("dist/index.js");
-  const gitClean = !runGit("status --porcelain");
+The trusted deployment controller persists the expected immutable release revision before restart. Probe the serving application's own endpoint, which reports the revision loaded at process startup and checks required dependencies.
 
-  return {
-    text: JSON.stringify({
-      status: "healthy",
-      uptime: `${Math.floor(uptime / 60)}m`,
-      build: buildValid ? "valid" : "missing",
-      git: gitClean ? "clean" : "uncommitted changes",
-    }, null, 2),
-  };
-});
+```typescript
+type HealthEvidence = {
+  status: "healthy" | "unhealthy" | "unverified";
+  expectedRevision: string;
+  servedRevision?: string;
+  reason: string;
+};
+
+async function checkDeployment(
+  healthURL: URL,
+  expectedRevision: string,
+): Promise<HealthEvidence> {
+  if (!expectedRevision) throw new Error("Expected release revision is required");
+  try {
+    const response = await fetch(healthURL, {
+      signal: AbortSignal.timeout(5000),
+      redirect: "error",
+    });
+    const payload: unknown = await response.json();
+    if (typeof payload !== "object" || payload === null) {
+      throw new Error("Health endpoint returned no evidence object");
+    }
+    const evidence = payload as Record<string, unknown>;
+    if (typeof evidence.revision !== "string" ||
+        typeof evidence.healthy !== "boolean" ||
+        typeof evidence.buildPresent !== "boolean") {
+      throw new Error("Health evidence is incomplete");
+    }
+    const healthy = response.ok && evidence.healthy && evidence.buildPresent &&
+      evidence.revision === expectedRevision;
+    return {
+      status: healthy ? "healthy" : "unhealthy",
+      expectedRevision,
+      servedRevision: evidence.revision,
+      reason: healthy ? "Application checks passed for the expected release"
+        : "Application checks failed, build is missing, or served revision differs",
+    };
+  } catch {
+    return {
+      status: "unverified",
+      expectedRevision,
+      reason: "Serving application health evidence could not be verified",
+    };
+  }
+}
 ```
+
+Bind the endpoint to the configured deployment target; do not accept an arbitrary agent-supplied URL or expected revision. Keep raw upstream and library diagnostics in operator-controlled logs rather than returned health evidence. Uptime, git status, and a local build file are diagnostics, not evidence of the serving application's health. Exercise the endpoint against the expected release before announcing deployment success.
 </guardrails>
 
 <git_architecture>
@@ -215,7 +237,9 @@ const selfMcpServer = createSdkMcpServer({
     tool("search_code", "Search for patterns", { pattern: z.string() }, ...),
 
     // APPROVAL WORKFLOW
-    tool("apply_pending", "Apply approved changes", {}, ...),
+    tool("apply_pending", "Request application of one approved draft", {
+      draftId: z.string(), revision: z.number().int().positive(),
+    }, ...),
     tool("get_pending", "Show pending changes", {}, ...),
     tool("clear_pending", "Discard pending changes", {}, ...),
 

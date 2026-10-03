@@ -20,7 +20,7 @@
 - Branch on a probe's exact exit status, not on nonzero-versus-zero. A tool that exits 2 for "ran, found nothing" and 128 for "could not run" collapses into a single negative under `if ! cmd`, and stderr is often empty for both. Treating every silent nonzero as "absent" converts a network, permission, or spawn failure into a confident false diagnosis
 - `A || B` is a fallback only when `A` **fails** on the case `B` exists for. When `A` succeeds while doing the wrong thing (resolving a different tool, default, or directory), `B` is dead code and the wrong behavior is silent. Same trap in `${VAR:-default}` on a path two processes must agree on: whoever lacks `VAR` gets a different location, the two silently stop sharing state, and neither errors. Pick one resolution and fail loudly when it is unavailable. A fallback chain must also test *usability*, not presence: `${XDG_RUNTIME_DIR:-/tmp}` falls through only when the variable is unset, so a variable pointing at an unwritable directory takes `mkdir` to `EACCES` and aborts on the step the chain made optional. Treat a permission or existence failure on a configured location the same as an unconfigured one, and log which candidate was chosen
 - A `;` list exits with its *last* command's status, so appending a status echo guarantees success: `./run.sh > log 2>&1; echo "EXIT=$?"` exits 0 no matter what `run.sh` did. Capture and re-raise: `rc=$?; printf 'EXIT=%d\n' "$rc"; exit "$rc"`. A redirection binds only to its own command, so in `job >log 2>&1; echo DONE` the sentinel goes to stdout, not `log`, and a watcher running `until grep -q DONE log` spins forever; wait on the process (`wait "$pid"`) instead of a sentinel
-- Under `pipefail`, `cmd | grep -q pat` reports the writer's status, not the match. `grep -q` exits on its first match and the writer takes SIGPIPE, so a successful match reads as failure; the same happens when the command exits nonzero by design and the assertion targets its stderr. Capture, then match: `out=$(cmd 2>&1); grep -q pat <<<"$out"`
+- Under `pipefail`, an early `grep -q` exit can make a matching pipeline fail when its producer takes SIGPIPE. For expected nonzero commands, guard capture against `errexit`, save the exact status, then assert status and output: `if out=$(cmd 2>&1); then status=0; else status=$?; fi; [[ $status -eq 2 ]]; grep -q -- "$pattern" <<<"$out"`. Use the command's actual expected status. For Bash functions whose internal `errexit` behavior matters, run a separate executable with explicit error propagation; a conditional call can suppress their internal `errexit` checks.
 - Never `pkill -f` or `killall` a tool name. `pkill -f node` signals every process on the host whose argv contains the pattern, including other users' and sessions' runs. Record `$!` at launch and `kill "$pid"`; when a search is unavoidable, match a token only the target carries, then still kill the one PID
 - A wait loop that greps for the process it waits on matches itself: `pgrep -f` tests the full argv and the pattern sits in the waiter's own command line, so `until ! pgrep -f build_step; do sleep 10; done` never exits. A pipeline feeding `ps` straight into a matcher includes the matcher's own process the same way, and an empty substitution collapses `/proc/$(pgrep -f cmd | head -1)` to `/proc/`, which always exists. Match the exact process name (`pgrep -x`), drop your own PID (`pgrep -f "$pat" | grep -vx "$$"`), take the snapshot in one command and filter the saved output in the next, and prefer waiting on the process directly (`wait`, `flock`) over polling for it. A `[p]attern` bracket in a target's own argv also hides it from `ps | grep pattern`, so an empty search is evidence about the query before it is evidence about the process table
 
@@ -28,30 +28,57 @@
 ## Safe Iteration
 
 ```bash
-# NUL-delimited file processing
+scan_root=${1:?directory required}
+readonly EX_USAGE=64
+[[ $scan_root == /* ]] || scan_root="./$scan_root"
+if [[ ! -d $scan_root ]]; then
+    printf 'Not a directory: %s\n' "$scan_root" >&2
+    exit "$EX_USAGE"
+fi
+files_file=$(mktemp)
+trap 'rm -f -- "$files_file"' EXIT
+if find "$scan_root" -type f -name '*.log' -print0 >"$files_file"; then
+    :
+else
+    status=$?
+    exit "$status"
+fi
 while IFS= read -r -d '' f; do
-    process "$f"
-done < <(find /path -type f -name '*.log' -print0)
+    printf '%s\0' "$f"
+done <"$files_file"
+```
 
-# Array from command output
-readarray -t lines < <(command)
-readarray -d '' files < <(find . -print0)
+Process substitution (`< <(producer)`) does not transfer the producer's exit status to `while` or `readarray`, even under `pipefail`. Consume only after the producer succeeds. For an array, use `readarray -d '' files <"$files_file"` instead of the loop; for line data, check its producer first, then use `readarray -t lines <"$text_file"`. Integrate temporary-file cleanup with an existing EXIT trap rather than replacing it.
 
-# Glob with no-match guard
+For glob iteration, guard the no-match case:
+
+```bash
 for f in *.txt; do [[ -e "$f" ]] || continue; process "$f"; done
 ```
 
 ## Argument Parsing
 
 ```bash
+readonly EX_USAGE=64
+usage() { printf 'Usage: %s [-v] [-o FILE|--output=FILE] [--] TARGET...\n' "${0##*/}"; }
 verbose=false; output=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -v|--verbose) verbose=true; shift ;;
-        -o|--output)  output="$2"; shift 2 ;;
+        -o|--output)
+            if [[ $# -lt 2 || -z $2 || $2 == -* ]]; then
+                printf 'Missing value for %s\n' "$1" >&2
+                usage >&2
+                exit "$EX_USAGE"
+            fi
+            output="$2"; shift 2 ;;
+        --output=*)
+            output=${1#*=}
+            if [[ -z $output ]]; then usage >&2; exit "$EX_USAGE"; fi
+            shift ;;
         -h|--help)    usage; exit 0 ;;
         --)           shift; break ;;
-        -*)           printf 'Unknown: %s\n' "$1" >&2; exit 1 ;;
+        -*)           printf 'Unknown: %s\n' "$1" >&2; usage >&2; exit "$EX_USAGE" ;;
         *)            break ;;
     esac
 done

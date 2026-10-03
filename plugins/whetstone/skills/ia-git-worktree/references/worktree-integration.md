@@ -39,6 +39,28 @@ When work in a worktree is done, verify tests pass, then present exactly 3 optio
 3. **Keep as-is**: leave branch and worktree for later
 Discarding is never offered as an option. Delete the branch and worktree only when the user asks for it explicitly, and require typing "discard" to confirm first. No silent discards.
 
+### Local merge and recovery
+
+1. Before an authorized local merge, require an exclusively owned base checkout with a clean tracked working tree and index. Record `integration_base=$(git rev-parse HEAD)`, then merge the selected feature commit and record `integration_head=$(git rev-parse HEAD)`. Preserve the feature branch and worktree until post-merge checks pass.
+2. Run the applicable checks against the integrated checkout. If they fail, retain the feature branch and diagnose. If the merge changed nothing (`integration_head` equals `integration_base`), report the failing baseline; there is no integration to undo.
+3. Before recovery, confirm HEAD still equals `integration_head` and the tracked working tree and index remain clean. Preserve test-generated or intervening changes; if they prevent safe recovery, report the blocker instead of overwriting them.
+4. Reverse the complete integrated tree, including every commit delivered by a fast-forward, using an inverse patch in this owned checkout:
+
+   ```bash
+   rollback_patch=$(mktemp)
+   git diff --binary --no-ext-diff --no-textconv "$integration_head" "$integration_base" -- > "$rollback_patch"
+   git apply --check --index "$rollback_patch"
+   git apply --index "$rollback_patch"
+   git diff --cached --binary --no-ext-diff --no-textconv
+   test "$(git write-tree)" = "$(git rev-parse "$integration_base^{tree}")"
+   git commit -m "Revert failed feature integration"
+   git diff --exit-code "$integration_base" HEAD --
+   ```
+
+5. Inspect the exact rollback commit, rerun the applicable checks, and report the recovery result. Do not claim restoration until the tree matches the captured base and checks have completed. Keep the feature branch for diagnosis.
+
+`git revert -m 1 HEAD` can succeed on an ordinary commit, but reverting only the tip of a multi-commit fast-forward leaves earlier feature changes integrated. Capturing the base and reversing the complete integration avoids that partial recovery for either merge topology.
+
 
 ## Change Summary
 

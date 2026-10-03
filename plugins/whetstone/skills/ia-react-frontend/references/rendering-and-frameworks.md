@@ -27,7 +27,7 @@
 - `React.memo` only for expensive subtrees with stable props
 - Hoist static JSX outside components
 
-**React Compiler** (React 19): auto-memoizes, so write idiomatic React and remove manual `useMemo`/`useCallback`/`memo`. Enable via `reactCompiler: true` in next.config (non-framework: `babel-plugin-react-compiler`). Keep components pure.
+**React Compiler** (React 19): auto-memoizes, so write idiomatic React without adding unnecessary manual memoization. Keep existing `useMemo`/`useCallback`/`memo` until identity-sensitive effects and measured performance verify that removal preserves behavior. Enable via `reactCompiler: true` in next.config (non-framework: `babel-plugin-react-compiler`). Keep components pure.
 
 
 ## React 19

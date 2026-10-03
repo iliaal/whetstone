@@ -146,14 +146,32 @@ Every query command supports two modes:
 
 ```rust
 if args.json {
-    println!("{}", serde_json::to_string(&results)?);
+    let document = serde_json::to_string(&results)?;
+    write_stdout(|out| writeln!(out, "{document}"))?;
 } else {
-    render_human(&results);
+    write_stdout(|out| render_human(out, &results))?;
 }
 ```
 
 - JSON output must be a single line or a valid JSON document; no mixed human + JSON in the same stream.
 - Exit with non-zero on failure even when `--json` is set; don't emit `{"error": "..."}` with exit 0.
+- Make human renderers accept `&mut dyn Write` and return `io::Result<()>`. Propagate writes and the final flush; `BufWriter` drop cannot report flush failures.
+
+Handle an early pipe close only at the stdout boundary. A `BrokenPipe` from a network request or another operation must still propagate:
+
+```rust
+use std::io::{self, Write};
+
+fn write_stdout(
+    render: impl FnOnce(&mut dyn Write) -> io::Result<()>,
+) -> io::Result<()> {
+    let mut out = io::BufWriter::new(io::stdout().lock());
+    match render(&mut out).and_then(|()| out.flush()) {
+        Err(error) if error.kind() == io::ErrorKind::BrokenPipe => Ok(()),
+        result => result,
+    }
+}
+```
 
 ## Progress
 
@@ -197,5 +215,5 @@ fn search_returns_json() {
 ## Common Traps
 
 - Don't print to stdout from library crates. Return structured data, let the binary format it.
-- Don't swallow `SIGPIPE`. On Unix, when the reader closes a pipe early, the default is to die; let it. If you install a `tokio::signal` handler, re-raise or exit cleanly on pipe errors.
+- Rust executables normally ignore Unix `SIGPIPE`. Use fallible stdout writes and handle `BrokenPipe` explicitly as above; do not assume OS-default signal termination. Verify a normal output run, an early-closing reader such as `head`, and a different output failure that must remain nonzero.
 - Don't ship a CLI that panics on bad input. Map every user-facing error to a clean `anyhow` chain with `.context()`.

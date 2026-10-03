@@ -4,8 +4,9 @@ class: language
 description: >-
   React architecture patterns, TypeScript, Next.js, hooks, and testing. Use when
   working with React component structure, state management, Next.js routing,
-  Vitest, React Testing Library, or reviewing React code. For visual design and
-  aesthetic direction, use frontend-design instead.
+  Vitest, React Testing Library, reviewing React code, or synchronizing JSON
+  locales and reviewing translations in a React or frontend interface. For
+  visual design and aesthetic direction, use frontend-design instead.
 paths: "**/*.tsx,**/*.jsx,**/*.ts,**/*.css,**/tailwind.config.*,**/*.html,**/*.vue,**/*.blade.php"
 ---
 
@@ -40,7 +41,7 @@ Effects are escape hatches; most logic should NOT use effects.
 - Move objects/functions inside effects to stabilize dependencies
 - `useEffectEvent` for non-reactive values (e.g., theme in a connection effect)
 - Always return cleanup for subscriptions, connections, listeners
-- Data fetching cancellation (pick by situation): `AbortController` for fetch; `ignore` flag for non-cancellable promises; React Query handles both automatically
+- Data fetching cancellation (pick by situation): `AbortController` for fetch; `ignore` flag for non-cancellable promises. With React Query, pass the query function's signal to the transport, such as `queryFn: ({ signal }) => fetch(url, { signal })`. Without consuming that signal, an unused query can finish and populate the cache; do not describe that behavior as transport cancellation.
 
 
 ## Discipline

@@ -42,6 +42,8 @@ FROM articles
 WHERE search_vector @@ websearch_to_tsquery('english', $1);
 ```
 
+`ts_headline` can preserve unsafe markup from `body`; the result is not safe HTML. Before rendering highlights, sanitize the complete output with a maintained sanitizer that allows only the intended `<mark>` element and safe text, or escape source text and construct controlled highlights outside SQL. Test a body containing script and event-handler markup: no executable markup may survive the rendering boundary.
+
 ## When to use PG full-text vs external
 
 Use PG full-text search when:

@@ -48,7 +48,7 @@ Ask about, using the **AskUserQuestion tool**:
 - What constraints drove the choice
 - What consequences are accepted
 
-For deprecation ADRs: which ADR is being superseded and why.
+For deprecation ADRs: which ADR is being superseded, why, and whether the replacement or retirement is proposed or accepted. The new record supersedes the original; do not mark the new record deprecated or point it at itself. Leave the accepted original unchanged unless updating its status and backlink is explicitly authorized by the caller.
 
 ### 4. Generate the ADR
 

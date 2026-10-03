@@ -23,14 +23,16 @@ Target length: `--minimal` 100-200 lines, default 200-400, `--thorough` 400-600.
 
 **Extract from config files:** name, version, description, license, dependencies, scripts, repo URL.
 
-**Detect package manager from lock files:**
+**Prefer verified `packageManager` configuration, then detect from lock files:**
 - `package-lock.json` → npm
 - `pnpm-lock.yaml` → pnpm
 - `yarn.lock` → yarn
-- `bun.lockb` → bun
+- `bun.lock` or legacy `bun.lockb` → bun
 - `composer.lock` → composer
 - `uv.lock` → uv
 - `poetry.lock` → poetry
+
+If configuration and lock files disagree, inspect repository scripts and CI to establish the active package manager before writing commands.
 
 ## Section Order
 
@@ -87,11 +89,11 @@ Target length: `--minimal` 100-200 lines, default 200-400, `--thorough` 400-600.
 
 When `--preserve` is set and README.md exists:
 
-**Keep** (user-written): About, Features, Why X, Background, custom sections.
+- Correct only verified inaccuracies in place, including commands, paths, examples, badges, and configuration values.
+- Retain all sections, their order, and accurate user-written content.
+- Do not regenerate sections, add missing sections, or reorder content. Report those opportunities separately.
 
-**Regenerate** (likely outdated): Install, Usage, Scripts, Structure, Badges, Configuration.
-
-Merge preserved sections with regenerated ones in standard order.
+Apply the section-order and generation guidelines only when creating or regenerating a README. Length targets do not authorize cuts in preserve mode.
 
 ## Formatting
 

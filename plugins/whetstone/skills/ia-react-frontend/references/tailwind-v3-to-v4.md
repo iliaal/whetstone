@@ -4,7 +4,7 @@ Reference for migrating an existing Tailwind v3 project to v4. For greenfield v4
 
 | v3 | v4 | Notes |
 |----|-----|-------|
-| `tailwind.config.ts` | `@theme` in CSS | Delete config file |
+| Legacy Tailwind config | CSS configuration or explicit `@config` compatibility | Retire the file only after its settings/plugins have verified equivalent coverage; migrate unsupported legacy options separately |
 | `@tailwind base/components/utilities` | `@import "tailwindcss"` | Single import |
 | `darkMode: "class"` | `@custom-variant dark (...)` | CSS-only |
 | `bg-gradient-to-r` | `bg-linear-to-r` | Also: `bg-radial`, `bg-conic` |

@@ -51,7 +51,7 @@ Five principles govern agent-native design. For detailed explanations, examples,
 17. **CLI interface** - Design a CLI that agents invoke: output channels, exit codes, self-description, safety tiers
 18. **Approval loop** - Durable human approval for agent-drafted external sends: content binding, single-winner claim, unknown outcomes
 
-**Wait for response before proceeding.**
+Route directly when the request or delegated task identifies the topic. When a material focus remains unresolved, present the relevant options using `AskUserQuestion` in Claude Code (load it with `ToolSearch` if needed), `request_user_input` in Codex, or numbered options in chat when no question tool is available. Wait only for the answer needed to resolve that choice.
 
 
 ## Reference Routing

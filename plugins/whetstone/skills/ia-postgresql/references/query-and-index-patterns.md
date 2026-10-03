@@ -18,17 +18,31 @@
 - `fillfactor = 70-90` on write-heavy tables reserves space for HOT updates, reducing index bloat
 - Drop unused indexes (only after one full business cycle since last restart; check `pg_stat_database.stats_reset` first; on a freshly restarted DB or read replica, `idx_scan = 0` reports live indexes, primary keys included, as unused): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
 
-**Detect unindexed foreign keys:**
+**Find foreign keys without a valid unfiltered B-tree key prefix (PostgreSQL 11+):**
 ```sql
-SELECT conrelid::regclass, a.attname
+SELECT c.conrelid::regclass AS table_name, c.conname,
+       pg_get_constraintdef(c.oid) AS foreign_key
 FROM pg_constraint c
-JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
 WHERE c.contype = 'f'
   AND NOT EXISTS (
     SELECT 1 FROM pg_index i
-    WHERE i.indrelid = c.conrelid AND a.attnum = ANY(i.indkey)
+    JOIN pg_class idx ON idx.oid = i.indexrelid
+    JOIN pg_am am ON am.oid = idx.relam
+    WHERE i.indrelid = c.conrelid
+      AND i.indisvalid AND i.indisready
+      AND i.indpred IS NULL
+      AND am.amname = 'btree'
+      AND i.indnkeyatts >= cardinality(c.conkey)
+      AND ARRAY(
+        SELECT k.attnum
+        FROM unnest(i.indkey) WITH ORDINALITY AS k(attnum, position)
+        WHERE k.position <= cardinality(c.conkey)
+        ORDER BY k.attnum
+      ) = ARRAY(SELECT fk.attnum FROM unnest(c.conkey) AS fk(attnum) ORDER BY fk.attnum)
   );
 ```
+
+Treat results as review candidates: a partial index can cover the required referencing rows when its predicate is guaranteed by the FK lookup, and other access methods need separate evaluation. Verify predicate coverage and the actual lookup plan before adding an index. `INCLUDE` payloads are not search keys; separate single-column indexes do not establish one complete composite-FK prefix.
 
 
 ## JSONB Patterns
@@ -77,7 +91,7 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 - Prefer `EXISTS` over `IN` for correlated subqueries
 - Use `LATERAL JOIN` when subquery needs outer row reference
 - Cursor pagination (`WHERE id > $last ORDER BY id LIMIT $n`) over `OFFSET`
-- Bounded per-key snapshot plus cursor tailing. For "the most recent N rows per key", one windowed query (the window function is standard SQL) beats both N+1 per-key queries and a full scan, and the maximum id it observes becomes the cursor for incremental catch-up:
+- Per-key snapshot plus keyset pagination over settled rows. A windowed query returns at most N rows per key without N+1 queries; its scan work still depends on the source rows and plan:
   ```sql
   -- bootstrap: at most 50 rows per account, newest first
   SELECT id, account_id, payload
@@ -86,11 +100,11 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
     FROM events e
   ) ranked
   WHERE rn <= 50;
-  -- tail: O(new rows), never re-reads history
+  -- keyset page: safe for settled rows or a proven commit-ordered watermark
   SELECT id, account_id, payload FROM events
   WHERE id > :cursor ORDER BY id ASC LIMIT :n;
   ```
-  Bootstrap is bounded by `keys x N`, catch-up is proportional to new rows, and unlike `OFFSET` pagination the pair neither degrades as the table grows nor skips rows under concurrent inserts. Add a `WHERE account_id IN (...)` to the inner query when the key set is known, so the window runs over an index range rather than the whole table; the cursor column must be monotonic (a sequence or identity column, not a timestamp).
+  Limit the known key set in the inner query with `WHERE account_id IN (...)` and inspect the plan. A sequence or identity orders allocation, not commits: transaction A can allocate 100, B commit 101, the reader advance to 101, and A later commit 100 below the cursor. For lossless live catch-up, establish a snapshot/CDC handoff with a commit-ordered position, or use overlap, deduplication, and reconciliation that explicitly covers late commits. A finite overlap is sufficient only with a proven bound on lateness. Do not treat the maximum observed ID or a timestamp as that proof; retain simple ID keyset pagination for settled datasets or listings that accept concurrent omissions.
 - Approximate row counts: `SELECT reltuples FROM pg_class WHERE relname = 'table'` avoids full `count(*)` on large tables
 - Materialized views for expensive aggregations: `REFRESH MATERIALIZED VIEW CONCURRENTLY` (needs unique index). Schedule refresh, not per-query.
 - Anchor a time bucket to the domain's own boundary, not to the epoch. `date_bin(stride, ts, origin)` lays the grid down at `origin`, and `date_trunc` is calendar-anchored, so a stride that does not divide the gap between domain boundaries produces a bucket straddling one; grouping by that bucket plus a row-derived day then emits two rows per bucket and violates an `(entity, bucket_start)` primary key. Pass the domain boundary as `origin`, key on `(entity, bucket_start)`, and derive the day from the bucket rather than from the row.

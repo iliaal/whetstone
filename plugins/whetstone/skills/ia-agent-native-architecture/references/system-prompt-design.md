@@ -201,9 +201,12 @@ The site should look professional and be easy to scan.
 ## Message Deduplication
 
 Before processing any message:
-1. Check memory.recall(key: "processed_{messageId}")
-2. Skip if already processed
-3. After processing, store the key
+1. Ask the trusted dispatcher for the durable attempt keyed by authenticated source, messageId, operation, and destination
+2. Skip a completed attempt only when its receipt is present
+3. Process a never-started attempt through the dispatcher, which records and claims it before any external effect
+4. If an attempt started but has no receipt, stop and request reconciliation; never replay it merely because a processed marker is missing
+
+The dispatcher, not prompt memory, atomically claims attempts and persists receipts. Use provider idempotency or receipt lookup only where its guarantees are verified. Unknown outbound-send outcomes remain terminal until a human reconciles them; follow [operator-approval-loop.md](./operator-approval-loop.md).
 
 ## Tone
 

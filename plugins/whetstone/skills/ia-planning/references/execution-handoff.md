@@ -31,6 +31,6 @@ When the user requested a plan only, stop after delivering the plan. When the re
 
 - **Predecessor:** `ia-brainstorming` when requirements are ambiguous; use an existing brainstorm spec (`docs/brainstorms/`) as input and skip idea refinement.
 - **Architecture decisions:** record significant trade-offs (chosen approach, what was given up) as an ADR (`/ia-adr` in Claude Code); ADRs outlive the plan.
-- **Threat modeling:** dispatch `ia-security-sentinel` in threat-model mode before implementation when the plan adds auth flows, payment handling, external API surfaces, or new trust boundaries; architectural gaps are cheaper to fix in the plan than the code.
+- **Threat modeling:** obtain a read-only threat-model review before implementation when the plan adds auth flows, payment handling, external API surfaces, or new trust boundaries. Use an available security reviewer through the harness's native delegation capability, or perform the review inline when no suitable delegate exists. Return architectural gaps and unresolved risks within the caller's scope.
 - **Prose quality:** `ia-writing` to humanize plan language and strip AI slop.
 - **Execution handoff:** continue authorized work or ask only when the execution-mode choice is material, per *Execution Handoff* above.

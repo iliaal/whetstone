@@ -144,10 +144,10 @@ Checks: >
   -modernize-use-trailing-return-type,
   -readability-magic-numbers
 WarningsAsErrors: 'bugprone-*,cert-*'
-HeaderFilterRegex: '^(include|src)/'
+HeaderFilterRegex: '(^|/)(include|src)/'
 ```
 
-`HeaderFilterRegex` is required, or clang-tidy either ignores headers entirely or floods the output with findings from system and third-party headers.
+Match both relative and absolute project-header paths in `HeaderFilterRegex`. For nested third-party trees that also contain `include/` or `src/`, use a resolved project-root expression or explicit exclusions. Verify a known diagnostic in a project header through the same compilation-database invocation used by CI; seeing main-file warnings does not prove that headers were included.
 
 `clang-analyzer-*` is absent from that `Checks:` list on purpose: clang-tidy enables it by default and a config-file `Checks:` adds to the default set rather than replacing it, so the path-sensitive checks (use-after-free, uninitialized reads) run either way. Verify on the local toolchain with `clang-tidy --list-checks` if in doubt. What the list above *does* decide is `WarningsAsErrors`: `bugprone-*,cert-*` are fatal and analyzer findings are not, so a use-after-free warns and CI still goes green. Promoting `clang-analyzer-*` to fatal is defensible on a clean tree and hostile on a legacy one, since path-sensitive analysis has a real false-positive rate. Decide it deliberately and write the decision down, rather than inheriting the warn-only behavior by omission.
 

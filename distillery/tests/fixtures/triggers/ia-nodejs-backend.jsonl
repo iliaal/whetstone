@@ -18,3 +18,9 @@
 {"prompt": "grab a bun from the bakery on the way to the office", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "explain what middleware means in networking theory", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
 {"prompt": "compare koala and panda diets for the zoo report", "expect": false, "added_in": "4.4.3", "source": "recall-fix"}
+{"prompt":"Add middleware authentication to the Laravel routes","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Add Django middleware for auth","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Add authentication middleware to the Node.js app","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Add middleware auth to the Express app","expect":true,"source":"audit-2026-10-03"}
+{"prompt":"Explain middleware authentication in networking","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Add Node middleware for authentication","expect":true,"source":"audit-2026-10-03"}

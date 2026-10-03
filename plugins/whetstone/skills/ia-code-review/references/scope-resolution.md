@@ -56,13 +56,27 @@ fallbacks are for in-progress local work, where `git diff HEAD` is the correct
 command. Do not stitch the two: a branch review needs the merge-base, not the
 working-tree delta.
 
-When reviewing a branch (no specific files given), derive the comparison base
-via this fallback chain:
+When reviewing a branch (no specific files given), resolve the requested target
+before deriving the base. Set `TARGET_REF` to the caller's exact branch/ref; use
+the current branch only when the caller selected it or supplied no other target.
+Freeze its commit:
 
-1. **If a PR exists for the branch**, use its base: `gh pr view --json baseRefName --jq .baseRefName`. Authoritative; no further detection needed.
+```bash
+REVIEW_HEAD=$(git rev-parse --verify "$TARGET_REF^{commit}")
+```
+
+Require successful resolution; an unknown requested ref does not permit a HEAD
+fallback. For a PR, set `PR_TARGET` to that PR's number or URL. For a named
+branch, set `PR_TARGET` to that requested branch's name on the hosting service,
+not an implicit current branch. Record the resolved target, head SHA, and base in every specialist brief.
+Read branch content by the frozen SHA even when another branch is checked out.
+
+Derive the comparison base via this fallback chain:
+
+1. **If a PR exists for the requested target**, use its base: `gh pr view "$PR_TARGET" --json baseRefName,headRefOid`. Verify that the returned `headRefOid` equals `REVIEW_HEAD`; resolve and freeze the named base ref. A mismatch requires refetching the requested target, not reviewing the current branch.
 2. **Else infer the default branch**: try `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` (parses to `origin/<name>`). If unset, try `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
 3. **Else fallback list**: try `origin/main`, `origin/master`, `origin/develop`, `origin/trunk` in order; pick the first that resolves via `git rev-parse --verify`. Bare-local names are a last resort if no `origin/*` remote ref exists.
-4. **Compute the diff base**: `git merge-base HEAD <resolved-base>`. Review the range `<merge-base>..HEAD`, not `HEAD` against the working tree.
+4. **Compute the diff base**: `REVIEW_BASE=$(git merge-base "$REVIEW_HEAD" "$RESOLVED_BASE")`. Require success, freeze that SHA, and review `git diff --no-textconv --no-ext-diff "$REVIEW_BASE" "$REVIEW_HEAD"`. Never substitute the checked-out HEAD or working tree for the requested head.
 5. **Shallow-clone retry**: if `git merge-base` returns nothing and `git rev-parse --is-shallow-repository` is `true`, run `git fetch --unshallow origin` and retry. Document this in the review output so the reviewer knows the comparison range only became available after unshallowing.
 
 **PR head identity.** For a PR review, a fetched or checked-out ref is the PR head only when its SHA equals `gh pr view <pr> --json headRefOid --jq .headRefOid`. On a mismatch (stale fetch, force-push, wrong ref), refetch or review from `gh pr diff <pr>` and say which in the coverage notes; never review a ref that has not passed this check as the PR.
@@ -104,7 +118,7 @@ markers.
 
 ### Stacked branches
 
-When a branch is stacked on another unmerged branch, `git merge-base HEAD
+When a branch is stacked on another unmerged branch, `git merge-base <reviewed-head-SHA>
 <default-branch>` over-covers: it sweeps in the sibling branch's commits,
 fabricating findings on files this change doesn't touch. Prefer the hosting
 platform's authoritative base SHA (PR/MR `base_sha`, or `gh pr diff`) over a
@@ -160,7 +174,8 @@ Use one disposition per path:
 | `excluded` | Changed files deliberately outside review, with a reason. |
 
 For standard reviews, hold the ledger in context. For persisted `/ia-review`
-runs, store the same top-level arrays in transient review scratch state; entries
+runs, allocate a unique invocation-owned scratch directory and retain its exact
+path. Store the same top-level arrays there; entries
 carry `path` plus `status`/`fingerprint`, `unit`, or `reason` as applicable.
 Assign every selected file to exactly one correctness unit, even when multiple
 specialist lenses inspect it.

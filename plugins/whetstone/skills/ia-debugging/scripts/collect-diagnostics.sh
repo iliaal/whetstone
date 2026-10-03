@@ -9,6 +9,24 @@ set -euo pipefail
 
 OUTPUT="${1:-}"
 
+sanitize_remote() {
+    local remote="$1"
+    if [[ "$remote" == *://* ]]; then
+        local scheme="${remote%%://*}"
+        local address="${remote#*://}"
+        local authority="${address%%[/?#]*}"
+        local path="${address#"$authority"}"
+        if [[ "$authority" == *@* ]]; then
+            authority="<REDACTED>@${authority##*@}"
+        fi
+        path="${path%%\?*}"
+        path="${path%%\#*}"
+        printf '%s://%s%s' "$scheme" "$authority" "$path"
+    else
+        printf '%s' "$remote"
+    fi
+}
+
 collect() {
     local buf=""
 
@@ -43,7 +61,9 @@ collect() {
         buf+="| Branch | $(git branch --show-current 2>/dev/null || echo 'detached') |"$'\n'
         buf+="| Last commit | $(git log -1 --format='%h %s' 2>/dev/null || echo 'none') |"$'\n'
         buf+="| Dirty files | $(git status --porcelain 2>/dev/null | wc -l | tr -d ' ') |"$'\n'
-        buf+="| Remote | $(git remote get-url origin 2>/dev/null || echo 'none') |"$'\n'
+        local remote
+        remote=$(git remote get-url origin 2>/dev/null || echo 'none')
+        buf+="| Remote | $(sanitize_remote "$remote") |"$'\n'
         buf+=$'\n'
     fi
 

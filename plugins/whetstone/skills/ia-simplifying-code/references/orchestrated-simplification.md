@@ -23,6 +23,10 @@ Constraints:
 - [other constraints specific to this run]
 ```
 
-Every chained sub-skill receives this block verbatim in its prompt and uses it as the source of truth: no re-running `git diff --name-only`, no re-parsing the user request, no independent scope resolution. Sub-skills accept `--no-verify --no-report` flags when chained so verification and reporting happen once at the end of the chain, not per-skill. The last sub-skill in the chain runs verification; the orchestrator trusts that result rather than re-verifying.
+Pass this block verbatim to each chained sub-skill as the source of truth for scope. Reuse the block instead of independently resolving the request again. If later edits require a scope change, reconcile the block before continuing.
+
+Assign one final verification owner after all edits are integrated. Honor each sub-skill's documented checks; do not invent suppression flags. The final owner can be the orchestrator or a delegated verifier with access to the integrated files.
+
+Require a verification receipt with the checked revision and worktree identity, relevant file or diff fingerprints for uncommitted changes, executed commands, exit statuses, material output, and coverage gaps. Confirm that the receipt covers the final integrated state and the required checks. Fresh delegated evidence is valid when that correspondence holds; delegation alone does not require a duplicate parent suite. If files change after verification or the receipt is incomplete, rerun the affected checks against the new state. Produce one final report based on the receipt.
 
 This prevents two failure modes: scope drift (sub-skill A simplifies one set of files, sub-skill B reviews a different set) and double work (every sub-skill rediscovers the same facts).

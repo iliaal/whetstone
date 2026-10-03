@@ -87,6 +87,7 @@ options:
 
 If "View": read and display the file, then stop.
 If "Keep current": stop.
+If "Reconfigure": retain the full existing file as the edit baseline. Preserve its other frontmatter fields and all body content through Step 10.
 
 ### Step 6: Detect Stack
 
@@ -190,7 +191,9 @@ options:
 - Fast: stack + `ia-code-simplicity-reviewer` only
 - Comprehensive: all above + `ia-git-history-analyzer, ia-database-guardian`
 
-Write `whetstone.local.md` at the repo root:
+If `whetstone.local.md` exists, edit only the `review_agents` field in its YAML frontmatter. Preserve every other field, comment, and body section, including Review Context. Add the field if absent. If the frontmatter cannot be safely parsed or the field is duplicated, report the conflict before writing. Compare the exact diff with the baseline; only the selected agent configuration may change.
+
+If the file does not exist, create `whetstone.local.md` at the repo root using this template:
 
 ```markdown
 ---

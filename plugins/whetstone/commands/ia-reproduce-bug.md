@@ -33,26 +33,40 @@ Think about the places it could go wrong. Look for logging output that helps nar
 
 If the bug is UI-related or involves user flows, use agent-browser to visually reproduce it:
 
-### Step 1: Verify Server is Running
+### Step 1: Bind the Server to the Intended Revision
+
+Record the source checkout, intended commit, and any workspace changes before capturing browser evidence:
 
 ```bash
+REPRO_REPO=$(git rev-parse --show-toplevel)
+REPRO_HEAD=$(git rev-parse --verify 'HEAD^{commit}')
+git status --short
 PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
 BASE_URL="http://localhost:$PORT"
+```
+
+Require successful repository, commit, and port resolution. Port 3000 is a convention, not proof of the served application.
+
+Identify the process listening on the resolved port. On Linux, inspect `ss -ltnp "sport = :$PORT"`, then set `SERVER_PID` to the observed numeric process ID. Inspect `readlink "/proc/$SERVER_PID/cwd"` and `ps -p "$SERVER_PID" -o pid=,lstart=,args=`. On other systems, use equivalent listener and process inspection. Record the process, startup command, and serving checkout; inspect relevant build output directories when the process serves a separate artifact.
+
+Verify the revision/build the server actually serves using evidence the application provides: response/build metadata, a served manifest or source map, or a startup/build record bound to that process and artifact. Match the served identity to `REPRO_HEAD` and the actual workspace/build content. A matching process directory, process start time, or open port alone does not establish the served revision.
+
+If the caller explicitly selects another checkout, deployed revision, or build, label the evidence **Revision override** and record both intended and served identities. If process or build identity cannot be established, label the result **Served revision unverified** with the missing evidence. Exploratory reproduction may continue, but do not claim it verifies the current checkout or derive a current-source cause from that browser result alone.
+
+If server not running, inform user to start their dev server.
+
+Retain the selected `BASE_URL` and identity evidence for the entire reproduction. Open it after recording the binding or its explicit limitation:
+
+```bash
 agent-browser open "$BASE_URL"
 agent-browser snapshot -i
 ```
-
-Port 3000 is a convention, not a guarantee. Resolve it rather than assuming, or the reproduction fails against a server that is running on 5173.
-
-If server not running, inform user to start their dev server.
 
 ### Step 2: Navigate to Affected Area
 
 Based on the issue description, navigate to the relevant page:
 
 ```bash
-PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
-BASE_URL="http://localhost:$PORT"
 agent-browser open "$BASE_URL/[affected_route]"
 agent-browser snapshot -i
 ```
@@ -102,16 +116,19 @@ agent-browser console
 - [ ] Include screenshots showing the bug reproduction
 - [ ] List console errors if any
 - [ ] Document the exact reproduction steps
+- [ ] Record the selected URL, source revision/workspace state, server process/checkout, served build identity, and any **Revision override** or **Served revision unverified** limitation
 
 ## Phase 4: Report Back
 
-Add a comment to the issue with:
+Return findings to the caller with:
 
 1. **Findings** - What you discovered about the cause
 2. **Reproduction Steps** - Exact steps to reproduce (verified)
-3. **Screenshots** - Visual evidence of the bug (upload captured screenshots)
+3. **Screenshots** - Local visual evidence of the bug and its served-revision binding
 4. **Relevant Code** - File paths and line numbers
 5. **Suggested Fix** - If you have one
+
+Reproduction alone does not authorize posting an issue comment or uploading screenshots. If external reporting is requested, show the exact draft and selected attachments, redact sensitive content, and obtain any missing posting authority. Existing authorization must specifically cover that external action. When authorized, write the exact approved comment with a file-writing tool and send it through a body-file argument; never interpolate issue text or Markdown into shell source.
 
 ## Integration
 

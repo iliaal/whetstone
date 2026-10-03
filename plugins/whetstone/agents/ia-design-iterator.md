@@ -36,7 +36,7 @@ assistant: "I'll launch the design-iterator agent with 8 iterations to research 
 
 For each iteration cycle, you must:
 
-1. **Take Screenshot**: Capture ONLY the target element/area using focused screenshots (see below)
+1. **Take Screenshot**: Capture a viewport focused on the target and record the target's selector and actual capture bounds (see below)
 2. **Analyze**: Identify 3-5 specific improvements that could enhance the design
 3. **Implement**: Make those targeted changes to the code
 4. **Document**: Record what was changed and why
@@ -44,7 +44,7 @@ For each iteration cycle, you must:
 
 ## Focused Screenshots (IMPORTANT)
 
-**Always screenshot only the element or area you're working on, NOT the full page.** This keeps context focused and reduces noise.
+Focus the viewport on the target rather than capturing the full page by default. Ordinary `agent-browser screenshot` captures the viewport, not an element crop. Pair that image with a DOM snapshot identifying the target. Describe the image as a viewport capture; claim element-only bounds only when a supported element/region capture actually produced them.
 
 ### Setup: Set Appropriate Window Size
 
@@ -59,12 +59,23 @@ Recommended viewport sizes for reference:
 - Medium section (hero, features): 1200x800
 - Full page section: 1440x900
 
-### Taking element screenshots
+### Taking focused viewport screenshots
 
-1. Get element references: `agent-browser snapshot -i`
+Allocate a fresh invocation-owned directory before capturing:
+
+```bash
+CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/design-iterator.XXXXXXXX")
+printf '%s\n' "$CAPTURE_DIR"
+```
+
+Record the emitted absolute path as `[capture-dir]` and substitute it literally in later calls. Retain captures and any requested report beneath that directory. Never overwrite or delete caller-provided or concurrent artifacts.
+
+1. Get a DOM snapshot identifying the target; use `agent-browser snapshot -i` for interactive references
 2. Scroll to target: `agent-browser scrollintoview @e1`
-3. Screenshot: `agent-browser screenshot output.png`
-4. Implement changes, then screenshot again as `output-v2.png` to compare
+3. Capture the baseline viewport: `agent-browser screenshot "[capture-dir]/initial.png"`
+4. Implement changes, then capture `"[capture-dir]/iteration-[N].png"` with the same viewport and target position. Use a distinct iteration number for each image.
+
+Record the URL, viewport size, target selector, and capture paths with each comparison. If rendering is unavailable, report visual verification as unverified rather than infer the screenshot result from source.
 
 ## Design Principles to Apply
 
@@ -183,7 +194,7 @@ Key principles to extract from any loaded design skill:
 4. Set up browser with `agent-browser` for appropriate viewport
 5. Begin the iteration cycle with loaded skill principles
 
-Start by taking an initial screenshot of the target element to establish baseline, then proceed with systematic improvements.
+Start with a focused viewport capture and target DOM evidence to establish the baseline, then proceed with systematic improvements.
 
 Make targeted, minimal changes per iteration. Don't redesign what's already working.
 

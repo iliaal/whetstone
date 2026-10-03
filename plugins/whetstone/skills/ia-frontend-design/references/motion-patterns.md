@@ -24,12 +24,12 @@ Animate exclusively via `transform` and `opacity`. Never animate `top`, `left`, 
 
 ## Scroll Entry Recipe
 
-Combine Y translation + blur + opacity for premium depth on scroll entry:
+Combine Y translation and opacity for scroll entry, within the transform/opacity policy:
 
 ```
-translate-y-16 blur-md opacity-0
+translate-y-16 opacity-0
   resolving to
-translate-y-0 blur-0 opacity-100
+translate-y-0 opacity-100
 ```
 
 ## IntersectionObserver Mandate
@@ -42,7 +42,7 @@ Never use `useState` for continuous or magnetic hover animations. `useState` tri
 
 ## Perpetual Motion Components
 
-Memoize perpetual motion components with `React.memo` and isolate them as leaf `'use client'` components. This prevents parent re-renders from resetting animations and keeps the motion calculation isolated from the component tree.
+Keep CSS/compositor animation in CSS; continuous animation alone does not cause React renders or require a Client Component. Isolate input-driven motion or state-driven frame work as a small client leaf and use motion values instead of React state for continuous updates. Add `React.memo` only when profiling identifies avoidable renders with stable props. Verify animation continuity rather than assuming every parent render resets it.
 
 ## Grain and Noise Filters
 

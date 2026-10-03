@@ -83,13 +83,13 @@ SKILL_TIERS[ia-php-laravel]=2
 # mention, e.g. reviews of `Avatar.tsx` (paths also contain "components", so a noun
 # anchor doesn't help). `\b[jt]sx\b` needs a runtime SYMPTOM (rendering/broken/error/
 # crash), which path noise lacks; `react.*test` / `hook.*component` spans are bounded.
-SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test|tailwind|@theme.*token|@utility.*css|class.?variance|\bcva\b|utility.?class|dark.?mode.*css'
+SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test|tailwind|@theme.*token|@utility.*css|class.?variance|\bcva\b|utility.?class|dark.?mode.*css|\b(react|frontend)\b.{0,40}\b(locales?|translations?)\b|\b(locales?|translations?)\b.{0,40}\b(react|frontend)\b'
 SKILL_TIERS[ia-react-frontend]=2
 
-SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,24}(auth|route|server|express)'
+SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,40}\b(express|node(\.?js)?)\b|\b(express|node(\.?js)?)\b.{0,40}\bmiddleware\b'
 SKILL_TIERS[ia-nodejs-backend]=2
 
-SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b|\basyncio\b|\bty\b.{0,20}\bpyproject\.toml\b|\b(implement|build|write|configure|test)\b.{0,20}\bclick\b.{0,20}\b(command|cli|option|subcommand)\b'
+SKILL_PATTERNS[ia-python-services]='\bfastapi\b|python.*(cli|service|backend|api)|async.*python|\bruff\b|\basyncio\b|\bty\b.{0,20}\bpyproject\.toml\b|\b(implement|build|write|configure|test)\b.{0,20}\bclick\b.{0,20}\b(command|cli|option|subcommand)\b|\buv +(add|sync|lock|run)\b|\buv\b.{0,25}\b(dependencies|dependency|pyproject\.toml)\b|\b(dependencies|dependency)\b.{0,30}\bpyproject\.toml\b|\bpyproject\.toml\b.{0,30}\b(dependencies|dependency)\b'
 SKILL_TIERS[ia-python-services]=2
 
 SKILL_PATTERNS[ia-rust-systems]='(write|review|refactor|debug|fix|implement|design|structure|optimi[sz]e|port|migrate|test)\b[^.]{0,40}\brust\b|\brust\b.{0,30}(cli|service|binary|workspace|backend|api|server|handler|async|tokio|axum)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\bcrates?\.io\b|\bcrate\b.{0,25}\bworkspace\b|\bworkspace\b.{0,25}\bcrates?\b'
@@ -150,13 +150,13 @@ SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
 
-SKILL_PATTERNS[ia-writing]='\brewrite\b|humanize|improve.*text|fix.*(tone|wording)|proofread|remove.*ai.?(language|tell|slop)|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?slop|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|write.*(pull.?request|\bplan\b)'
+SKILL_PATTERNS[ia-writing]='\brewrite\b.{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|readme|descriptions?|wording)\b|\brewrite +((the|this|our|my) +)?((implementation|migration|project|release|sprint|rollout|feature) +)?plan\b|humanize|improve.*text|fix.*(tone|wording)|proofread|\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b.{0,60}(remove.{0,20}ai.?(language|tell|slop)|ai[- ]?slop)|remove.{0,20}ai.?(language|tell|slop).{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b|\b(is|was) this ai[- ]?slop\b|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|\bwrite\b.{0,60}(pull.?request|\bplan\b)'
 SKILL_TIERS[ia-writing]=3
 
 # Intent-anchored: bare `claude\.md` fires on any prompt citing CLAUDE.md as
 # reference material; unbounded `update.*` alternates span multi-KB prompts. Verbs
 # required near the doc noun.
-SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md|\b(create|write|refresh|regenerate)\b.{0,30}\b(readme|contributing)(\.md)?\b'
+SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refresh|sync|regenerate|structure).{0,40}agents\.?md|update.{0,40}contributing|update.{0,40}context.?files|(update|create|init|write|refresh|sync|migrate|regenerate|structure).{0,30}claude\.md|\b(create|write|refresh|regenerate)\b.{0,30}\b(readme|contributing)(\.md)?\b|\b(update|create|write|refresh|sync|regenerate)\b.{0,30}\bdocs(\.md)?\b'
 SKILL_TIERS[ia-md-docs]=3
 
 

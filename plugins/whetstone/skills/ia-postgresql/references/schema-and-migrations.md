@@ -31,9 +31,11 @@
 
 **Expand-contract pattern** for zero-downtime renames and removals:
 
-1. **Expand**: add the new column/table, backfill data, update writes to populate both old and new
-2. **Migrate**: switch reads to the new column/table, verify in production
-3. **Contract**: remove the old column/table in a later deploy
+1. **Expand**: add the new column/table while preserving old readers and writers.
+2. **Deploy compatible writes**: populate both representations atomically, or use a durable synchronization mechanism. Drain old application instances, workers, and other writers that only populate the old representation.
+3. **Backfill and reconcile**: migrate existing rows under the live-write concurrency contract, verify no missing or mismatched values remain, and keep compatible writes active.
+4. **Switch reads**: use the new representation and verify production behavior while retaining rollback compatibility.
+5. **Contract**: remove the old representation and compatibility code in a later deploy after dependent clients and jobs have drained.
 
 Never rename or remove a column in a single migration; callers reading the old name will break between deploy and code rollout.
 
@@ -57,7 +59,7 @@ WHERE id IN (
 );
 ```
 
-Run in a loop until zero rows affected.
+Commit each batch independently. Zero affected rows means no work was available to this batch, not that the backfill is complete: another transaction may hold every remaining row. Check `SELECT EXISTS (SELECT 1 FROM target WHERE new_col IS NULL)` without `SKIP LOCKED` in a fresh transaction. If work remains, retry within the migration's deadline or report partial completion with the remaining count; do not mark the migration complete. Require `compute(old_col)` to produce a non-null completion value, or track completion separately. Drain incompatible writers and reconcile values before switching reads.
 
 **Full-replace clobber on read-modify-write loops.** A migration that loops `SELECT col → mutate in app → UPDATE SET col = new_full_value WHERE id = ?` silently drops concurrent writes that landed between SELECT and UPDATE. Any column written by live traffic is exposed: `jsonb` documents, comma-separated tag fields, denormalized counters, JSON-encoded attribute blobs. Mitigations, in order of preference:
 

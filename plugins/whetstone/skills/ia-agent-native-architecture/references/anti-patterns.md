@@ -47,7 +47,7 @@ Fix: Inject available resources, capabilities, and vocabulary into system prompt
 
 **Silent actions**: Agent changes state but UI doesn't update. Fix: Use shared data stores with reactive binding, or file system observation.
 
-**Heuristic completion detection**: Detecting agent completion through heuristics (consecutive iterations without tool calls, checking for expected output files). This is fragile. Fix: Require agents to explicitly signal completion through a `complete_task` tool.
+**Heuristic completion detection**: Detecting agent completion through heuristics (consecutive iterations without tool calls, checking for expected output files). This is fragile. Fix: Require an explicit terminal signal that preserves success, partial, and blocked; accept success only after application-owned outcome checks. Follow [agent-execution-patterns.md](./agent-execution-patterns.md).
 
 **Static tool mapping for dynamic APIs**: Building 50 tools for 50 API endpoints when a `discover` + `access` pattern would give more flexibility.
 ```typescript

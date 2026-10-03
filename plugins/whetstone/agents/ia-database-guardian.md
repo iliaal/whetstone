@@ -57,7 +57,7 @@ Apply these checks to every migration under review:
 
 **Backfill strategy**: If the migration adds a `NOT NULL` column, how are existing rows handled? Acceptable approaches: a default value in the DDL, a background backfill script that runs before the constraint is enforced, or a deploy-code-then-migrate sequence. A bare `NOT NULL` addition without a default on a populated table will fail or lock. Flag it.
 
-**Multi-phase safety**: Migrations that change both schema and application code should be deployed in phases: (1) deploy code that handles both old and new schema, (2) run migration, (3) remove old-schema handling. Flag single-deployment PRs that combine schema changes with application code that only works against the new schema; these create a window where rollback breaks the application.
+**Multi-phase safety**: Expand the schema while preserving existing consumers, deploy compatible dual writers, drain old writers, then backfill and reconcile before switching reads. Remove old-schema handling in a later deploy after dependent clients and jobs drain. A preliminary release may tolerate both schema versions, but it cannot write a column before that column exists. Verify the live-write synchronization and rollback contract; flag a read switch based only on a completed historical backfill while incompatible writers remain active.
 
 ### 3. Validate Data Constraints
 
@@ -89,8 +89,8 @@ Classify every column the migration adds or changes into one of three tiers, and
 
 | Tier | Contents | Required handling |
 |------|----------|-------------------|
-| Non-personal | Aggregates, opaque internal IDs, config | None beyond normal review |
-| Personal | Name, email, phone, address, IP, device ID, any identifier that resolves to a person | Retention TTL declared; reads go through one named accessor or the table has row-level audit logging enabled (say which); excluded from logs and error payloads |
+| Non-personal | Config, aggregates that cannot reasonably identify a person, internal IDs with no reasonable link to a natural person | None beyond normal review |
+| Personal | Name, email, phone, address, IP, device ID, any identifier that resolves to a person directly or through other data, including pseudonymous UUIDs | Retention TTL declared; reads go through one named accessor or the table has row-level audit logging enabled (say which); excluded from logs and error payloads |
 | Sensitive | Health, biometric, financial account, government ID, precise location, protected-characteristic data | Encrypted at rest as a column (not just disk-level); access restricted to a named role; encryption at rest is not a substitute for a retention TTL |
 
 Then check the three things that fail most often:

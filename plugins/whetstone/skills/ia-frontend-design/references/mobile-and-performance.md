@@ -8,16 +8,16 @@ Any layout using asymmetry, rotations, negative-margin overlaps, or `md:` / `lg:
 
 - **Collapse to single-column below `md:`**: reset widths to `w-full`, reset `grid-cols-*` to 1, apply `px-4 py-8` for baseline spacing.
 - **Remove rotations and negative overlaps on mobile**: `md:-translate-y-8` and `md:rotate-2` should not carry over; they collide with touch targets at small widths.
-- **Minimum 44×44px touch targets**: hit areas below that fail WCAG 2.5.5 and cause fat-finger misses. Apply `min-h-[44px] min-w-[44px]` on every button, link, and interactive icon.
-- **No horizontal overflow**: wrap the outermost layout container with `overflow-x-hidden w-full max-w-full` to prevent off-canvas animations or oversized grids from creating a horizontal scrollbar.
+- **Touch target sizing**: prefer 44×44px hit areas for standalone touch controls. WCAG 2.5.5 is a Level AAA criterion with exceptions; it does not make every smaller link a violation. For WCAG 2.2 AA, check 2.5.8: at least 24×24px or sufficient spacing, subject to its inline, equivalent-control, user-agent, and essential exceptions. Check the applicable [AA minimum](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) or [AAA enhanced](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html) criterion before reporting a compliance failure.
+- **No unintended horizontal overflow**: identify and constrain the actual oversized grid or decorative layer. Do not hide overflow on the outermost layout by default; `overflow-x-hidden` can change vertical scrolling and clip focus indicators or overlays. Verify menus, focus visibility, and sticky behavior after applying containment. Preserve intentional scrolling regions such as wide data tables.
 
 Test the narrowest breakpoint before considering an asymmetric layout done.
 
 ## Performance Guardrails
 
-These are architecture-level errors, not style preferences. Violating any one of them causes continuous GPU repaints, mobile jank, or z-index collisions that are hard to undo later.
+Check these guards against the actual rendering mechanism and measure performance in the affected viewport.
 
 - **Grain and noise filters** apply exclusively to fixed, `pointer-events-none` pseudo-elements (e.g., `fixed inset-0 z-50 pointer-events-none`). Never on scrolling containers: the filter re-rasterizes every scroll frame and collapses mobile performance.
 - **Animate only `transform` and `opacity`**. Never animate `top`, `left`, `width`, or `height`; these trigger layout on every frame and cannot be GPU-composited.
 - **Z-index restraint**: reserve `z-*` values for systemic layer contexts (sticky navbars, modals, overlays). Never spam arbitrary `z-10` or `z-50` to push elements around; that's what stacking contexts and DOM order are for.
-- **Perpetual animations must be memoized and isolated** in their own tiny Client Component (`React.memo`-wrapped). An infinite loop inside a large layout causes the parent to re-render every frame.
+- **Distinguish animation from React updates**: CSS/compositor animations do not themselves re-render React. Keep those animations in CSS without introducing a Client Component solely for animation. Isolate state-driven frame work or input-driven motion in a small client leaf. Use motion values to avoid frame-by-frame React state updates. Apply `React.memo` only when profiling shows avoidable renders with stable props.

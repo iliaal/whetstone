@@ -114,17 +114,19 @@ After all agents complete, compile a summary with:
 [List top 5 strengths]
 ```
 
-### Step 3: Persist Report
+### Step 3: Deliver Report
 
-Write the compiled report to `docs/audits/YYYY-MM-DD-agent-native-audit.md`. Commit to git.
+Return the report in the conversation. When the caller authorizes persistence, write to `docs/audits/YYYY-MM-DD-agent-native-audit.md`; if that path exists, choose an unused suffix and preserve the existing report. Commit only when the caller also authorizes a commit. A read-only audit does not write or commit.
 
 ## Success Criteria
 
-- [ ] All 8 sub-agents complete their audits
-- [ ] Each principle has a specific numeric score (X/Y format)
-- [ ] Summary table shows all scores and status indicators
-- [ ] Top 10 recommendations are prioritized by impact
+- [ ] Quick mode completes its single-pass capability map and five-core-principle checklist without subagents
+- [ ] Deep mode completes all eight dimension audits and their summary table
+- [ ] Single-principle mode completes the selected dimension's audit without claiming coverage of the others
+- [ ] Scores identify the counted applicable inventory; unavailable evidence and unverified areas are named
+- [ ] Recommendations are prioritized by impact within the inspected scope
 - [ ] Report identifies both strengths and gaps
+- [ ] Persistence and commits occur only within the caller's authorization
 
 ## Optional: Single Principle Audit
 

@@ -56,6 +56,15 @@ If on the base branch: abort with "You're on the base branch. Run this from a fe
 
 ## Step 1: Pre-flight & diff analysis
 
+Before capturing the baseline or committing, coordinate a pause for other writers in this checkout. Capture the current HEAD, index state, status, staged patch, and unstaged patch before editing. Record existing untracked paths and their contents when they may be affected. Use the baseline to distinguish this task's changes from caller-owned or peer-owned changes, including separate hunks in the same file. Preserve unrelated index entries and working-tree content throughout the workflow. Do not reset, stash, or overwrite caller state to prepare a documentation commit.
+
+```bash
+git rev-parse HEAD
+git status --short --untracked-files=all
+git diff --cached --binary --no-textconv --no-ext-diff
+git diff --binary --no-textconv --no-ext-diff
+```
+
 Fetch the base first; a stale or missing local `<base>` picks an old merge-base and attributes already-merged commits to this branch. The explicit refspec writes `origin/<base>` even in a single-branch clone, where a bare `git fetch origin <base>` exits 0 and updates only `FETCH_HEAD`. If the fetch fails, stop and report the error. If `git merge-base origin/<base> HEAD` then finds nothing and `git rev-parse --is-shallow-repository` prints `true`, rerun the fetch with `--unshallow` and retry; if there is still no merge base, stop and report it. The commands assume `origin` is the repository `gh` resolved in Step 0; in a fork checkout where gh's default repository is the upstream, substitute the remote whose URL matches `gh repo view --json url -q .url`.
 
 ```bash
@@ -203,13 +212,25 @@ git diff --no-textconv --no-ext-diff origin/<base>...HEAD -- VERSION plugin.json
 git status
 ```
 
-If no documentation files were modified, output "All documentation is up to date." and exit without committing.
+If this task made no documentation changes, output "All documentation is up to date." and exit without committing caller-owned changes.
 
-**Stage and commit modified documentation files by name:**
+**Whole-file ownership path:** Use the following path only when every change in each selected file belongs to this task. Establish that condition from the Step 1 baseline and the current staged and unstaged patches. Inspect the complete prospective commit patch for the selected files. Recheck HEAD and selected file contents immediately before committing. If either changed since inspection, reconcile ownership first.
 
 ```bash
-git add <file1> <file2> ...
-git commit -m "docs: sync documentation for vX.Y.Z"
+git add -- <owned-file1> <owned-file2>
+git diff --cached --binary --no-textconv --no-ext-diff -- <owned-file1> <owned-file2>
+git commit --only -m "docs: sync documentation for vX.Y.Z" -- <owned-file1> <owned-file2>
+git show --format=fuller --binary --no-textconv --no-ext-diff HEAD
+git diff --cached --binary --no-textconv --no-ext-diff
+```
+
+Compare the exact committed patch with the inspected task patch, not just its filenames or stat. Confirm that unrelated staged entries and working-tree content still match the baseline. A plain commit without a pathspec can absorb pre-existing staged changes; a pathspec commit includes whole working-tree files, so it cannot select task-owned hunks inside a mixed file.
+
+**Mixed ownership path:** If any selected file contains caller-owned or peer-owned hunks, use `ia-git-worktree`'s commit-ownership reference to create a clean, session-owned isolated checkout from the captured HEAD. Apply only the attributable documentation patch there. Stage only that owned patch. Inspect the exact staged diff. Commit in the isolated checkout. Inspect the exact committed diff. Leave the original checkout's HEAD, index, and working tree unchanged. Retain the isolated branch and commit SHA for authorized integration. If attribution is ambiguous or the owned patch cannot apply cleanly, stop without altering caller state. Report the conflict.
+
+If an isolated commit is awaiting integration, report its SHA and the remaining integration step instead of pushing the original branch or updating the PR body. Once the commit is integrated through an authorized path, inspect the integrated patch. Recheck preservation of caller changes before continuing. On the whole-file ownership path, proceed only after the same ownership checks pass:
+
+```bash
 git push origin <current-branch>
 ```
 

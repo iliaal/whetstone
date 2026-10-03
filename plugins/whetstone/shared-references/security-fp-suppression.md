@@ -9,7 +9,7 @@ Load this reference when running a security audit. Before filing any finding, fi
 - **SSRF in client-rendered HTML**: `.html/.jsx/.tsx/.vue` client code does not make server-side requests. Skip.
 - **Regex injection / ReDoS**: require a reachable attacker-controlled pattern or input and evidence of excessive work within the application's input limits. A fixed developer-written regex can catastrophically backtrack on hostile input; pattern ownership is not a defense. Bound reproduction time and report the input size and measured cost.
 - **Markdown files**: distinguish passive prose from instructions consumed by agents, executable snippets, configuration, and exposed secrets. Review the behavior the content actually drives; a file extension does not establish a trust boundary.
-- **React/Vue XSS without `dangerouslySetInnerHTML` / `v-html` / `innerHTML`**: frameworks escape by default. Flag only when the dangerous method is present.
+- **Safely escaped React/Vue text**: suppress XSS claims only when the pinned framework safely escapes the actual output context. Check attacker-controlled URL schemes, executable templates, and code/event sinks separately; a Vue `:href` binding can accept a `javascript:` URL without `v-html` or `innerHTML`. Trace attacker control and the framework's actual handling before reporting or suppressing the path.
 
 ## Precedents (not findings)
 

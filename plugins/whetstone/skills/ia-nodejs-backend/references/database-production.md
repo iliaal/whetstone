@@ -26,14 +26,14 @@ Always `EXPLAIN ANALYZE` slow queries. Watch for sequential scans on large table
 
 **Migrations:**
 - Separate schema and data migrations; data backfills in their own migration file
-- Renames/removals use expand-contract: add new column → backfill → switch reads → drop old (see `ia-postgresql` skill for the full pattern)
+- Renames/removals use expand-contract: add new column → deploy compatible dual writes → drain old writers → backfill and reconcile → switch reads → drop old in a later deploy (see `ia-postgresql` skill for the full pattern)
 - Never edit a migration that has already run in a shared environment
 - Kysely: always type migrations as `Kysely<any>`, not your app's typed DB interface; migrations are frozen in time and the schema will evolve past them
 - Drizzle/Prisma: keep migration SQL files under version control, review generated SQL before applying
 
 ## Production
 
-- **Docker**: multi-stage build, `node:20-alpine` builder + prod image with `npm ci --omit=dev`
+- **Docker**: multi-stage build using the same supported Node release in builder and runtime, matching the project's `engines` and required APIs (Node 22+ for this skill; for example, `node:22-alpine` while supported). Pin the project's chosen image version or digest; install runtime dependencies with `npm ci --omit=dev`.
 - **Process**: PM2 cluster mode (`instances: 'max'`) or container orchestration
 - **Shutdown**: SIGTERM → stop accepting connections → drain in-flight → close DB pool
 - **Logging**: Pino (structured JSON), not console.log

@@ -119,134 +119,126 @@ and refined by you on January 16th.
 
 Give the agent the same file primitives the app uses:
 
-```swift
-// iOS/Swift implementation
-struct FileTools {
-    static func readFile() -> AgentTool {
-        tool(
-            name: "read_file",
-            description: "Read a file from the user's documents",
-            parameters: ["path": .string("File path relative to Documents/")],
-            execute: { params in
-                let path = params["path"] as! String
-                let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let fileURL = documentsURL.appendingPathComponent(path)
-                let content = try String(contentsOf: fileURL)
-                return ToolResult(text: content)
-            }
-        )
-    }
-
-    static func writeFile() -> AgentTool {
-        tool(
-            name: "write_file",
-            description: "Write a file to the user's documents",
-            parameters: [
-                "path": .string("File path relative to Documents/"),
-                "content": .string("File content")
-            ],
-            execute: { params in
-                let path = params["path"] as! String
-                let content = params["content"] as! String
-                let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let fileURL = documentsURL.appendingPathComponent(path)
-
-                // Create parent directories if needed
-                try FileManager.default.createDirectory(
-                    at: fileURL.deletingLastPathComponent(),
-                    withIntermediateDirectories: true
-                )
-
-                try content.write(to: fileURL, atomically: true, encoding: .utf8)
-                return ToolResult(text: "Wrote \(path)")
-            }
-        )
-    }
-
-    static func listFiles() -> AgentTool {
-        tool(
-            name: "list_files",
-            description: "List files in a directory",
-            parameters: ["path": .string("Directory path relative to Documents/")],
-            execute: { params in
-                let path = params["path"] as! String
-                let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let dirURL = documentsURL.appendingPathComponent(path)
-                let contents = try FileManager.default.contentsOfDirectory(atPath: dirURL.path)
-                return ToolResult(text: contents.joined(separator: "\n"))
-            }
-        )
-    }
-
-    static func searchText() -> AgentTool {
-        tool(
-            name: "search_text",
-            description: "Search for text across files",
-            parameters: [
-                "query": .string("Text to search for"),
-                "path": .string("Directory to search in").optional()
-            ],
-            execute: { params in
-                // Implement text search across documents
-                // Return matching files and snippets
-            }
-        )
-    }
-}
-```
+Use the same contained, revision-aware service contract on every platform. The complete TypeScript service below defines read, replacement, listing, and append. A native file-provider adapter must preserve its containment and conditional-write semantics rather than bypassing them with raw caller paths. [mobile-storage.md](./mobile-storage.md) specifies provider coordination and availability handling.
 
 ### TypeScript/Node.js Implementation
 
 ```typescript
-const fileTools = [
-  tool(
-    "read_file",
-    "Read a file from the workspace",
-    { path: z.string().describe("File path") },
-    async ({ path }) => {
-      const content = await fs.readFile(path, 'utf-8');
-      return { text: content };
-    }
-  ),
+import * as fs from "node:fs/promises";
+import { constants } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
 
-  tool(
-    "write_file",
-    "Write a file to the workspace",
-    {
-      path: z.string().describe("File path"),
-      content: z.string().describe("File content")
-    },
-    async ({ path, content }) => {
+type FileVersion = { content: string; revision: string } | null;
+
+async function workspacePath(root: string, input: string): Promise<string> {
+  if (isAbsolute(input)) throw new Error("Use a workspace-relative path");
+  const canonicalRoot = await fs.realpath(root);
+  const candidate = resolve(canonicalRoot, input);
+  const offset = relative(canonicalRoot, candidate);
+  if (offset === ".." || offset.startsWith(".." + sep) || isAbsolute(offset)) {
+    throw new Error("Path is outside the workspace");
+  }
+  let current = canonicalRoot;
+  for (const component of offset.split(sep).filter(Boolean)) {
+    current = join(current, component);
+    try {
+      if ((await fs.lstat(current)).isSymbolicLink()) {
+        throw new Error("Workspace paths cannot contain symlinks");
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+  return candidate;
+}
+
+class Workspace {
+  private readonly pending = new Map<string, Promise<void>>();
+  private readonly root: string;
+  constructor(root: string) { this.root = root; }
+
+  private async exclusive<T>(path: string, action: () => Promise<T>): Promise<T> {
+    const previous = this.pending.get(path) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>(done => { release = done; });
+    this.pending.set(path, current);
+    await previous;
+    try {
+      return await action();
+    } finally {
+      release();
+      if (this.pending.get(path) === current) this.pending.delete(path);
+    }
+  }
+
+  async read(input: string): Promise<FileVersion> {
+    const path = await workspacePath(this.root, input);
+    try {
+      const handle = await fs.open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+      try {
+        if (!(await handle.stat()).isFile()) throw new Error("Not a regular file");
+        const content = await handle.readFile("utf8");
+        const revision = createHash("sha256").update(content).digest("hex");
+        return { content, revision };
+      } finally {
+        await handle.close();
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+  }
+
+  async list(input: string): Promise<string[]> {
+    const path = await workspacePath(this.root, input);
+    return fs.readdir(path);
+  }
+
+  async replace(input: string, content: string, expected: string | null): Promise<string> {
+    const path = await workspacePath(this.root, input);
+    if (path === await fs.realpath(this.root)) throw new Error("Cannot replace workspace root");
+    return this.exclusive(path, async () => {
+      const current = await this.read(input);
+      if ((current?.revision ?? null) !== expected) {
+        throw new Error("Revision conflict; reread before replacing");
+      }
       await fs.mkdir(dirname(path), { recursive: true });
-      await fs.writeFile(path, content, 'utf-8');
-      return { text: `Wrote ${path}` };
-    }
-  ),
+      await workspacePath(this.root, input);
+      const temporary = join(dirname(path), `.${randomUUID()}.tmp`);
+      try {
+        const handle = await fs.open(temporary, "wx", 0o600);
+        try {
+          await handle.writeFile(content, "utf8");
+          await handle.sync();
+        } finally {
+          await handle.close();
+        }
+        await fs.rename(temporary, path);
+        const directory = await fs.open(dirname(path), "r");
+        try { await directory.sync(); } finally { await directory.close(); }
+      } finally {
+        await fs.rm(temporary, { force: true });
+      }
+      return createHash("sha256").update(content).digest("hex");
+    });
+  }
 
-  tool(
-    "list_files",
-    "List files in a directory",
-    { path: z.string().describe("Directory path") },
-    async ({ path }) => {
-      const files = await fs.readdir(path);
-      return { text: files.join('\n') };
+  async append(input: string, content: string, expected: string | null): Promise<string> {
+    const current = await this.read(input);
+    if ((current?.revision ?? null) !== expected) {
+      throw new Error("Revision conflict; reread before appending");
     }
-  ),
-
-  tool(
-    "append_file",
-    "Append content to a file",
-    {
-      path: z.string().describe("File path"),
-      content: z.string().describe("Content to append")
-    },
-    async ({ path, content }) => {
-      await fs.appendFile(path, content, 'utf-8');
-      return { text: `Appended to ${path}` };
-    }
-  ),
-];
+    return this.replace(input, (current?.content ?? "") + content, expected);
+  }
+}
 ```
+
+Install the canonical root from trusted application configuration and check the caller's grants before invoking this service. Bind read/list tools to `read`/`list`, and write/append tools to `replace`/`append` with an expected revision returned by `read` (null means create only if absent).
+
+This Node.js example assumes one shared service instance owns all writes and directory entries on a POSIX filesystem. All cooperating user and agent edits use it. The per-path lock makes its revision check and replacement indivisible among those writers. Direct editor writes, other processes, hostile directory renames, and mount changes require a backend transaction or OS containment/coordination mechanism; do not claim this lock covers them. A failure after rename but before the durability receipt is unknown and requires artifact reconciliation.
+
+Exercise contained read/write/list/append, creation, stale revision, traversal, absolute paths, sibling prefixes, symlinks, and propagation of write failures.
 </file_tools>
 
 <ui_integration>
@@ -384,8 +376,9 @@ When you create content (introductions, research notes, etc.), the user may
 edit it afterward. Always read existing files before modifying them--the user
 may have made improvements you should preserve.
 
-If a file exists and has been modified by the user (check the metadata or
-compare to your last known version), ask before overwriting.
+Read the content and its revision together. Submit that expected revision with
+any replacement. If it changed, reread and preserve the user's edits before
+proposing a merged version; never bypass a conflict by dropping the revision.
 ```
 
 ### Pattern: User Seeds, Agent Expands
@@ -424,24 +417,9 @@ For chat logs or activity streams:
 
 Don't give agents access to the entire filesystem:
 
-```swift
-// GOOD: Scoped to app's documents
-let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+Use the complete scoped TypeScript service above for every read, write, listing, and append. Resolve the configured root and candidate path, compare relative path components, and reject absolute paths, traversal outside the root, and symlink escapes. For new files, validate existing ancestors and the created parent under the same stable-directory contract.
 
-tool("read_file", { path }) {
-    // Path is relative to documents, can't escape
-    let fileURL = documentsURL.appendingPathComponent(path)
-    guard fileURL.path.hasPrefix(documentsURL.path) else {
-        throw ToolError("Invalid path")
-    }
-    return try String(contentsOf: fileURL)
-}
-
-// BAD: Absolute paths allow escape
-tool("read_file", { path }) {
-    return try String(contentsOf: URL(fileURLWithPath: path))  // Can read /etc/passwd!
-}
-```
+A string prefix is insufficient: `Documents-backup` shares the bytes of `Documents` without being its child. When untrusted actors can rename ancestors concurrently, use OS-enforced workspace isolation or a handle-relative filesystem adapter; prechecking a path is not a race-proof boundary.
 
 ### Protect Sensitive Files
 
@@ -580,37 +558,19 @@ iCloud Drive/
 
 ### Handling Sync Conflicts
 
-iCloud handles conflicts automatically, but you should design for it:
+The provider synchronizes documents, but the application must handle unavailable content and unresolved versions:
 
-```swift
-// Check for conflicts when reading
-func readJournalEntry(at url: URL) throws -> JournalEntry {
-    // iCloud may create .icloud placeholder files for not-yet-downloaded content
-    if url.pathExtension == "icloud" {
-        // Trigger download
-        try FileManager.default.startDownloadingUbiquitousItem(at: url)
-        throw FileNotYetAvailableError()
-    }
+Follow the complete [mobile-storage.md](./mobile-storage.md) read/write transaction contract:
 
-    let data = try Data(contentsOf: url)
-    return try JSONDecoder().decode(JournalEntry.self, from: data)
-}
+1. Inspect the logical document's provider availability and unresolved-version state.
+2. Request download for remote content and return pending; do not classify availability by filename suffix.
+3. Decode only available bytes and propagate decoding errors.
+4. Serialize the complete replacement before acquiring its write transaction.
+5. Compare the current revision with the expected revision while coordinated; retain conflicting versions rather than overwriting them.
+6. Propagate coordination and writer-callback errors. Return the persisted revision only after atomic replacement succeeds.
+7. Mark resolved versions only after the merged document is saved and update UI observers.
 
-// For writes, use coordinated file access
-func writeJournalEntry(_ entry: JournalEntry, to url: URL) throws {
-    let coordinator = NSFileCoordinator()
-    var error: NSError?
-
-    coordinator.coordinate(writingItemAt: url, options: .forReplacing, error: &error) { newURL in
-        let data = try? JSONEncoder().encode(entry)
-        try? data?.write(to: newURL)
-    }
-
-    if let error = error {
-        throw error
-    }
-}
-```
+The same contract applies to journal entries and agent observations. A local write receipt does not assert that other devices have received the revision.
 
 ### What This Enables
 

@@ -63,10 +63,10 @@ git log --grep="refactor" --oneline -- <path>
 
 ### Step 5: Contributor Mapping
 
-Identify key contributors and their domains:
+Identify key contributors and their domains. Resolve `REVIEWED_REVISION` to the caller's reviewed commit, or record the current HEAD when no revision was supplied:
 
 ```bash
-git shortlog -sn -- <path>
+git shortlog -sn "$REVIEWED_REVISION" -- <path>
 ```
 
 ### Step 6: Change Clustering

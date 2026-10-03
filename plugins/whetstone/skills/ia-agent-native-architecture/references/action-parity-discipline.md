@@ -306,7 +306,10 @@ describe('Action Parity', () => {
   const capabilityMap = loadCapabilityMap();
 
   for (const [action, toolName] of Object.entries(capabilityMap)) {
-    if (toolName === 'N/A') continue;
+    test(`${action} has an explicit mapping`, () => {
+      expect(toolName).not.toBe('N/A');
+      expect(toolName).not.toBe('');
+    });
 
     test(`${action} has agent tool: ${toolName}`, () => {
       expect(agentTools.map(t => t.name)).toContain(toolName);
