@@ -1,6 +1,6 @@
 {
   "name": "whetstone",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "AI-powered development tools. 18 agents, 19 commands, 29 skills, 1 hook, 1 MCP server for code review, research, design, and workflow automation.",
   "author": {
     "name": "Ilia Alshanetsky",

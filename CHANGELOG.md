@@ -5,6 +5,40 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1] - 2026-10-03
+
+Patch: 56 upstream improvements and 126 audit fixes corrected execution recipes, authority boundaries, runtime examples, and skill routing. Five change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
+
+### Added
+
+- A skills-only OpenAI package builder produced a separate archive with its own interface metadata. Existing Claude Code and Codex plugin manifests retained their supported surfaces.
+
+### Changed
+
+- `ia-agent-native-architecture` tied external-action approval to trusted orchestration, the exact draft, revision, and destination; checked workspace containment for every operation; and replaced defective mobile and tool examples with supported-stack recipes. Health checks now distinguish a running process from a healthy application serving the intended revision.
+- `ia-code-review` strengthened source and boundary evidence, credential provenance, serializer checks, WebSocket authentication and Origin review, and version-specific false-positive suppression. Reviews now freeze the requested head and treat repository content as evidence rather than authority for an exception.
+- `ia-orchestrating-swarms`, `ia-planning`, and `ia-brainstorming` clarified dispatch context, installed model selection, handoff capabilities, and mode-specific completion. Cloud handoffs now carry the exact plan and stop if it cannot be read.
+- `ia-php-laravel`, `ia-nodejs-backend`, `ia-python-services`, and `ia-postgresql` clarified durable acceptance, idempotent effects, unknown-outcome reconciliation, commit-order assumptions, bounded backfills, savepoints, and compatible writer rollouts. Laravel version, serialized-job, encrypted-cast, pivot, and middleware claims were corrected against executable behavior.
+- `ia-react-frontend` and `ia-frontend-design` corrected Tailwind migration, configuration, and layout recipes; scoped memoization removal to verified redundancy; and clarified cancellation, mutation callbacks, screenshot configuration, readiness, locale synchronization, and review-only completion.
+- `ia-md-docs`, `ia-document-review`, and `ia-writing` preserved verified values and qualifications, separated review from authorized edits, and aligned output with the requested mode. Documentation checks now run within the caller's authority, and setup changes preserve unrelated configuration.
+- `ia-reflect` reported missing or truncated session evidence, tied working-command claims to observed execution, and preserved authorized memories in the existing format. Retrospectives now distinguish a skipped or broken check from a missing check before proposing more tooling.
+- `ia-writing-tests` followed the selected test posture in vertical slices, with tests-after as the feature default and test-first when explicitly selected. Bug fixes retained the failing-reproducer-first requirement.
+- `ia-simplifying-code` supported analysis-only reports without editing code and required a verification receipt covering the final integrated state. Fresh delegated evidence remained valid when its revision and file fingerprints matched.
+- `ia-c-systems`, `ia-cpp-systems`, `ia-linux-bash-scripting`, `ia-rust-systems`, `ia-terraform`, and `ia-pinescript` corrected sanitizer, linker, header-filter, producer-status, option-parser, load-shedding, panic, interning, stdout, mocked-apply, test-selection, and drawdown examples. Recipes now state the runtime and platform evidence needed for their guarantees.
+
+### Fixed
+
+- `ia-git-worktree` fetched into an invocation-owned ref instead of relying on shared FETCH_HEAD, preserved complete commit ownership, and recorded the full integrated range for rollback. `ia-verification-before-completion` now materializes the selected base-to-owned change and verifies its bytes without including caller-owned hunks or files.
+- `ia-debugging` sanitized credential-bearing Git remotes before printing or recording diagnostics. Behavioral tests cover redaction and the published isolated-verification recipe, including mixed ownership and an outside-manifest rejection.
+- Triggers for `ia-python-services`, `ia-nodejs-backend`, `ia-react-frontend`, `ia-writing`, and `ia-md-docs` gained bounded context and negative controls. Added 35 regression cases for uv, Node middleware, frontend locales, prose editing, and DOCS.md; all 694 trigger cases passed.
+- `/ia-report-bug`, `/ia-feature-video`, and `/ia-changelog` now write payloads without shell evaluation. Reports and browser artifacts use invocation-owned paths, and external publication requires authority for the exact outgoing content.
+- `ia-receiving-code-review` and `/ia-resolve-pr` verified submitted reply bodies and required an authorized push containing fixes before resolving threads. The command distinguished partial or unavailable retrieval from complete review-thread data. Browser and video workflows now report the served revision, actual capture bounds, collected errors, and observed publication status.
+
+### For contributors
+
+- Markdown reference validation gained a shared parser and regression coverage for local links and fragments. OpenAI package tests verify the separate archive's contents.
+- SkillOpt's offline fixtures and reward handling clarified the deterministic floor, soft process score, execution provenance, and held-out comparison limits.
+
 ## [5.0.0] - 2026-09-26
 
 Major: four skills, one agent, and four commands with little organic use were removed or folded into neighbors, the new `ia-test-audit` skill audits whether tests actually catch regressions, and a cross-repo sync plus two audits corrected rule conflicts and several claims that failed when tested. Six commits. Component counts go from 32 skills, 19 agents, and 22 commands to 29 skills, 18 agents, and 19 commands.

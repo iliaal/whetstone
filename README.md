@@ -295,8 +295,8 @@ python3 distillery/scripts/distiller.py test-triggers       # Regression test tr
 ```
 whetstone/
 ├── plugins/whetstone/   # The plugin
-│   ├── agents/                     # 19 specialized subagents
-│   ├── commands/                   # 22 slash commands
+│   ├── agents/                     # 18 specialized subagents
+│   ├── commands/                   # 19 slash commands
 │   ├── skills/                     # 29 skills
 │   ├── hooks/                      # Skill injection into subagents
 │   └── README.md                   # Full component reference
