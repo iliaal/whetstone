@@ -23,3 +23,5 @@ When upgrading an existing project, audit first, then fix in this priority order
 Use the [redesign-audit.md](./redesign-audit.md) checklist (typography, color, layout, interactivity, content, component pattern checks) to systematically identify violations before starting fixes.
 
 Work with the existing tech stack. Do not migrate frameworks or styling libraries. Keep changes reviewable and focused: small, targeted improvements over big rewrites. Before importing any new library or writing any styles, check `package.json` for the Tailwind version (v3 vs v4); v4 syntax in a v3 project will break the build.
+
+For a visual-only redesign, inspect the affected interface's behavioral dependencies before changing markup. Preserve route paths, anchor IDs, form field names, analytics event names, and selectors consumed by scripts or tests. Preserve legal and consent wording unless the requested change authorizes its revision. An authorized identifier migration requires updating its consumers. Exercise affected deep links, form submissions, tracked actions, and consent controls after the redesign; a screenshot does not establish that these behaviors still work.

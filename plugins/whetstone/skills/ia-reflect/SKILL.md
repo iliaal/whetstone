@@ -12,6 +12,7 @@ description: >-
 ## Success Criteria
 
 - Every mistake/friction point cites the specific moment and its impact
+- Findings state the reviewed evidence's limits; missing observations do not establish success or complete coverage
 - Improvements are actionable and prioritized (cap defined in step 4)
 - Each skill audit proposes measurable changes (not vague suggestions)
 - Memory persistence follows existing authorization, or the user selects concrete proposed items before any write
@@ -21,7 +22,7 @@ description: >-
 
 ### 1. Session Review
 
-Scan the full conversation. For each finding, cite the specific exchange (quote or paraphrase) and its impact.
+Scan the available conversation and relevant artifacts. State any missing or truncated evidence and the scope actually reviewed. For each finding, cite the specific exchange or artifact (quote or paraphrase) and its impact. Do not infer a clean session from gaps in the record.
 
 | Category | Signal |
 |----------|--------|
@@ -52,9 +53,13 @@ If the session included PR or MR review activity in either direction, run this s
 
 Before listing improvements, scan the session for operational insights worth preserving. Apply the 5-minute filter: would knowing this save 5+ minutes in a future session? If yes, include it. Examples: a project-specific quirk, a project command that failed for a project-specific reason, an approach that worked better than expected.
 
+Label a command as working only when the reviewed record contains its execution and relevant successful result. Preserve the revision and environment conditions needed to reproduce that result. Treat an asserted success without output as unverified.
+
 Exclude harness-level noise ("File has not been read yet", token-limit truncations, bash-quoting slips, and other tooling artifacts). Those aren't project learnings; capture the *project's* behavior, not the agent's mechanics.
 
 Also scan for **information-access gaps**: points where the session stalled or guessed because the agent lacked read access to something a human would have checked (dev-server logs, a third-party dashboard, a staging database, CI output). Distinct from the harness noise excluded above: a one-off tooling hiccup isn't reusable, but a standing access gap is, since granting access pays off in every future session. Each gap is an improvement candidate ("grant readonly access to X" or "pipe X into a file the agent can read"), often worth more than a prompt tweak.
+
+For a recurring repository mistake, inspect the relevant check commands and configuration before proposing memory or a new check. Distinguish an existing check that was not run, a broken check, a missing deterministic check, and a rule requiring judgment. Propose the smallest remedy supported by that evidence: run or wire the existing check, repair the check, add a targeted check, or preserve a judgment rule. A retrospective proposal does not authorize implementing unrequested tooling.
 
 ### 4. Improvements
 
@@ -63,6 +68,8 @@ Numbered list of **concrete improvements**, ranked by impact. Each item: one sen
 For items not already authorized for persistence, present the concrete candidates and ask which to remember. Use the active harness's supported approval interface, or ask directly in chat. Do not ask again for items the user already authorized.
 
 Save authorized items in the project's configured memory location using the active harness's file-editing tool and memory format. In Claude Code, inspect `~/.claude/projects/<project-slug>/memory/` and its MEMORY.md index; use the configured project slug rather than inventing one.
+
+Keep each memory item to an independently correctable claim in the configured format. Include the date and source when a claim's validity depends on them. When retaining an older claim for historical context, mark the superseded claim and exclude it from active guidance. Use the existing memory convention; do not introduce an archive or index solely for the retrospective.
 
 Before writing, grep the existing memory directory for the item's key terms. On a near-duplicate, update that file instead of adding a second. On a direct contradiction with an entry already on file ("use tabs" when "use spaces" is recorded), do not blind-append; surface both and let the user choose merge, replace, or keep-both. Silent duplicate and contradiction accumulation is the main way a curated memory index rots.
 

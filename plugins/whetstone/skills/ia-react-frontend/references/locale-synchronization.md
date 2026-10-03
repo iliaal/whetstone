@@ -1,0 +1,10 @@
+# JSON locale synchronization
+
+Synchronize the requested messages with the application's installed message formatter and usage context. Produce a focused locale diff and report structural checks separately from language review.
+
+1. Read the locale configuration and source messages. Trace each changed key to its component or call site. Identify the message's meaning, UI role, interpolation values, and space constraints; a key name alone does not establish translation context.
+2. Compare source history to identify added, changed, and removed messages. If history is unavailable, report translation staleness as unknown. Key parity alone cannot show whether an existing translation still matches a changed source message.
+3. Update only the authorized keys and locales. Preserve unrelated translations, non-string values, and array structure. Confirm usage before removing a message; absence from one source file does not prove the application no longer uses the key.
+4. Preserve required placeholder names and formatter tokens exactly. Validate plural and select grammar with the installed formatter. Use the categories required by the target locale rather than copying the source locale's categories. Preserve interpolation bindings and the markup expected by the renderer; translated text may reorder placeholders or tags where the formatter permits it.
+5. Parse the edited JSON and run the repository's locale or message validation. Check key coverage against the configured fallback policy. Verify placeholder compatibility, plural branches, markup structure, and unchanged non-string values. Reject a structurally valid message that loses a required substitution or branch.
+6. Exercise changed messages in the UI, including representative plural values, long text, and right-to-left layout when applicable. Report linguistic accuracy or visual fit as unverified when no fluent review or browser check occurred. A parser or placeholder check establishes structural compatibility, not translation quality.

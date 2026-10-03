@@ -4,7 +4,9 @@ Run from the skillopt root:  PYTHONPATH=. python -m pytest tests/ -q
 """
 from __future__ import annotations
 
+import argparse
 import json
+import os
 
 import pytest
 
@@ -43,6 +45,217 @@ def test_grounded_evidence_is_kept():
     assert out["reproduced_first"]["score"] == 1.0
     assert out["reproduced_first"]["grounded"] is True
     assert weighted_soft(rubric, out) == 1.0
+
+
+def test_essential_criterion_failure_cannot_be_offset():
+    rubric = {"essential": (0.1, "required action"), "optional": (0.9, "other action")}
+    criteria = {"essential": {"score": 0.2}, "optional": {"score": 1.0}}
+    assert weighted_soft(rubric, criteria) == 0.92
+    assert weighted_soft(
+        rubric, criteria, soft_gates={"essential": {"minimum": 0.8, "cap": 0.0}},
+    ) == 0.0
+
+
+@pytest.mark.parametrize("score, expected", [(0.8, 0.98), (0.79999, 0.1234567)])
+def test_soft_gate_respects_threshold_and_exact_cap(score, expected):
+    rubric = {"essential": (0.1, "required action"), "optional": (0.9, "other action")}
+    criteria = {"essential": {"score": score}, "optional": {"score": 1.0}}
+    assert weighted_soft(
+        rubric, criteria, soft_gates={"essential": {"minimum": 0.8, "cap": 0.1234567}},
+    ) == expected
+
+
+def test_multiple_failed_criteria_use_the_smallest_cap():
+    rubric = {"first": (0.1, "action"), "second": (0.1, "action"), "optional": (0.8, "action")}
+    criteria = {"first": {"score": 0}, "second": {"score": 0}, "optional": {"score": 1}}
+    assert weighted_soft(rubric, criteria, soft_gates={
+        "first": {"minimum": 1, "cap": 0.2},
+        "second": {"minimum": 1, "cap": 0.4},
+    }) == 0.2
+
+
+def test_failed_criterion_cap_does_not_raise_a_lower_score():
+    rubric = {"essential": (1.0, "required action")}
+    assert weighted_soft(rubric, {"essential": {"score": 0.1}}, soft_gates={
+        "essential": {"minimum": 1, "cap": 0.4},
+    }) == 0.1
+
+
+@pytest.mark.parametrize("score", [float("nan"), float("inf"), float("-inf")])
+def test_nonfinite_judge_score_cannot_satisfy_essential_criterion(score):
+    rubric = {"essential": (1.0, "required action")}
+    quote = "Ran the requested test before making a source change."
+    criteria = score_criteria(rubric, "q", quote, _const_complete({"criteria": {
+        "essential": {"score": score, "evidence": quote},
+    }}))
+    assert criteria["essential"]["score"] == 0.0
+
+
+@pytest.mark.parametrize("policy", [
+    [], {"unknown": {"minimum": 1, "cap": 0}},
+    {"essential": None}, {"essential": {"minimum": 1}},
+    {"essential": {"minimum": 1, "cap": 0, "typo": 1}},
+    {"essential": {"minimum": True, "cap": 0}},
+    {"essential": {"minimum": "1", "cap": 0}},
+    {"essential": {"minimum": -0.1, "cap": 0}},
+    {"essential": {"minimum": 1.1, "cap": 0}},
+    {"essential": {"minimum": 10 ** 400, "cap": 0}},
+    {"essential": {"minimum": float("nan"), "cap": 0}},
+    {"essential": {"minimum": 1, "cap": float("inf")}},
+    {"essential": {"minimum": 1, "cap": -0.1}},
+    {"essential": {"minimum": 1, "cap": 1.1}},
+])
+def test_invalid_soft_gate_policy_is_rejected(policy):
+    with pytest.raises(ValueError, match="soft_gates"):
+        weighted_soft({"essential": (1.0, "required action")}, {}, soft_gates=policy)
+
+
+@pytest.mark.parametrize("hard", [0, 1])
+def test_evaluation_caps_grounded_soft_without_changing_hard(tmp_path, hard):
+    (tmp_path / "test_result.py").write_text(f"def test_result():\n    assert {hard} == 1\n")
+    rubric = {"essential": (0.1, "required action"), "optional": (0.9, "other action")}
+    quote = "Ran the requested test before making a source change."
+    payload = {"criteria": {
+        "essential": {"score": 0.2, "evidence": quote},
+        "optional": {"score": 1.0, "evidence": quote},
+    }}
+    ev = evaluate(
+        str(tmp_path), {"question": "q"}, quote, rubric, _const_complete(payload),
+        soft_gates={"essential": {"minimum": 0.8, "cap": 0.0}},
+    )
+    assert ev["hard"] == hard
+    assert ev["infra_error"] is False
+    assert ev["criteria"]["essential"]["grounded"] is True
+    assert ev["soft_uncapped"] == 0.92
+    assert ev["soft"] == 0.0
+    assert ev["soft_gates_failed"] == ["essential"]
+    assert "soft gates failed: essential" in ev["fail_reason"]
+
+
+def test_yaml_policy_reaches_adapter_rollout_scoring(tmp_path, monkeypatch):
+    import yaml
+    from scripts.train import get_adapter, load_config
+    from skillopt.envs.whetstone import adapter as adapter_module, rollout
+    from skillopt.model import backend_config
+
+    fixture = tmp_path / "tasks" / "example"
+    fixture.mkdir(parents=True)
+    (fixture / "test_result.py").write_text("def test_result():\n    assert 1 == 1\n")
+    for split in ("train", "val", "test"):
+        split_dir = tmp_path / "splits" / split
+        split_dir.mkdir(parents=True)
+        (split_dir / "items.json").write_text(json.dumps([{"id": "example", "question": "q"}]))
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.safe_dump({"env": {
+        "name": "whetstone", "skill_name": "ia-debugging",
+        "split_dir": str(tmp_path / "splits"), "tasks_root": str(tmp_path / "tasks"),
+        "out_root": str(tmp_path / "run"), "workers": 1,
+        "soft_gates": {"reproduced_first": {"minimum": 1.0, "cap": 0.0}},
+    }}))
+    cfg = load_config(argparse.Namespace(config=str(config_path), cfg_options=[]))
+    adapter = get_adapter(cfg)
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "config.json").write_text(json.dumps(cfg))
+    adapter.setup(cfg)
+    batch = adapter.get_dataloader().build_eval_batch(env_num=1, split="valid_seen", seed=42)
+    quote = "Ran the requested test before making a source change."
+    payload = {"criteria": {
+        name: {"score": 0.0 if name == "reproduced_first" else 1.0, "evidence": quote}
+        for name in adapter.rubric
+    }}
+    monkeypatch.setattr(backend_config, "TARGET_BACKEND", "claude_code_exec")
+    monkeypatch.setenv("CLAUDE_CODE_SANDBOXED", "1")
+    for name in ("CLAUDE_CODE_COORDINATOR_MODE", "CLAUDE_PROJECT_DIR",
+                 "CLAUDE_CODE_PROJECT_DIR", "CLAUDE_CODE_ENTRYPOINT"):
+        monkeypatch.setenv(name, os.environ.get(name, "test"))
+    monkeypatch.setattr(rollout, "run_target_exec", lambda **kwargs: (quote, quote))
+    monkeypatch.setattr(adapter_module, "optimizer_complete", _const_complete(payload))
+    results = adapter.rollout(adapter.build_env_from_batch(batch), "skill", str(tmp_path / "eval"))
+    assert len(results) == 1
+    assert results[0]["hard"] == 1
+    assert results[0]["soft_uncapped"] == 0.8
+    assert results[0]["soft"] == 0.0
+    assert results[0]["soft_gates_failed"] == ["reproduced_first"]
+
+
+@pytest.mark.parametrize("previous, current", [
+    ({}, {"reproduced_first": {"minimum": 1, "cap": 0}}),
+    ({"reproduced_first": {"minimum": 1, "cap": 0}}, {}),
+    ({"reproduced_first": {"minimum": 1, "cap": 0}},
+     {"reproduced_first": {"minimum": 1, "cap": 0.3}}),
+])
+def test_existing_run_cannot_resume_under_a_different_soft_policy(tmp_path, previous, current):
+    from skillopt.envs.whetstone.adapter import WhetstoneAdapter
+
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps({"soft_gates": previous}))
+    adapter = WhetstoneAdapter(soft_gates=current)
+    with pytest.raises(ValueError, match="new out_root"):
+        adapter.setup({"out_root": str(tmp_path)})
+    assert json.loads(config_path.read_text()) == {"soft_gates": previous}
+
+
+@pytest.mark.parametrize("weight", [0.0, 0.15])
+def test_soft_gate_scores_cannot_offset_a_lost_hard_result(monkeypatch, weight):
+    from skillopt.utils.scoring import compute_score
+
+    monkeypatch.setenv("SKILLOPT_SOFT_WEIGHT", str(weight))
+    baseline = [{"hard": 1, "soft": 0.0} for _ in range(5)]
+    candidate = [{"hard": 1, "soft": 1.0} for _ in range(4)] + [{"hard": 0, "soft": 1.0}]
+    assert compute_score(candidate)[0] < compute_score(baseline)[0]
+
+
+def test_changed_soft_policy_does_not_reuse_an_uncapped_rollout(tmp_path, monkeypatch):
+    import hashlib
+    from skillopt.envs.whetstone import rollout
+    from skillopt.model import backend_config
+
+    fixture = tmp_path / "fixture"
+    fixture.mkdir()
+    (fixture / "test_result.py").write_text("def test_result():\n    assert 1 == 1\n")
+    out_root = tmp_path / "eval"
+    out_root.mkdir()
+    skill = "skill"
+    (out_root / "results.jsonl").write_text(json.dumps({
+        "id": "example", "skill_hash": hashlib.sha1(skill.encode()).hexdigest()[:12],
+        "hard": 1, "soft": 0.92,
+    }) + "\n")
+    rubric = {"essential": (0.1, "required action"), "optional": (0.9, "other action")}
+    quote = "Ran the requested test before making a source change."
+    payload = {"criteria": {
+        "essential": {"score": 0.2, "evidence": quote},
+        "optional": {"score": 1.0, "evidence": quote},
+    }}
+    executions = []
+
+    def target(**kwargs):
+        executions.append(kwargs["work_dir"])
+        return quote, quote
+
+    monkeypatch.setattr(backend_config, "TARGET_BACKEND", "claude_code_exec")
+    monkeypatch.setenv("CLAUDE_CODE_SANDBOXED", "1")
+    for name in ("CLAUDE_CODE_COORDINATOR_MODE", "CLAUDE_PROJECT_DIR",
+                 "CLAUDE_CODE_PROJECT_DIR", "CLAUDE_CODE_ENTRYPOINT"):
+        monkeypatch.setenv(name, os.environ.get(name, "test"))
+    monkeypatch.setattr(rollout, "run_target_exec", target)
+    kwargs = {
+        "items": [{"id": "example", "_fixture_dir": str(fixture)}],
+        "out_root": str(out_root), "skill_content": skill, "rubric": rubric,
+        "soft_gates": {"essential": {"minimum": 0.8, "cap": 0.0}},
+        "complete": _const_complete(payload), "workers": 1,
+    }
+    results = rollout.run_batch(**kwargs)
+    assert len(results) == 1
+    assert results[0]["soft"] == 0.0
+    assert len(executions) == 1
+    assert rollout.run_batch(**kwargs) == results
+    assert len(executions) == 1
+    kwargs["soft_gates"]["essential"]["cap"] = 0.3
+    changed = rollout.run_batch(**kwargs)
+    assert len(changed) == 1
+    assert changed[0]["soft"] == 0.3
+    assert len(executions) == 2
 
 
 def test_empty_evidence_scores_zero():

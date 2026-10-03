@@ -84,6 +84,8 @@ Key methods:
 - `->emailOutputOnFailure('ops@example.com')`: alert on failures
 - Requires system cron: `* * * * * cd /path && php artisan schedule:run >> /dev/null 2>&1`
 
+`schedule:interrupt` signals cooperative shutdown; it does not preempt an event already executing. For a long command that must stop during deployment, process bounded batches, check cancellation between batches, and persist enough progress to resume. Use `Schedule::hasBeenInterruptedSince($startedAt)` only when the installed framework provides the timestamp-based interrupt implementation and interruption polling is enabled. Capture the command's start time once. Verify that a command started before the signal stops at its next checkpoint and one started after the signal continues; do not assume the scheduler's own loop interrupts command code.
+
 ## Custom Casts
 
 Value objects for model attributes: encapsulate formatting, validation, and behavior.
@@ -118,6 +120,8 @@ Built-in casts to prefer over manual accessors:
 - `AsStringable::class`: fluent string operations on attribute
 - Enum casts: `'status' => OrderStatus::class` gives automatic PHP enum <-> DB value
 - Encrypted cast: `'api_token' => 'encrypted'` gives transparent encrypt/decrypt for sensitive fields
+
+Treat a nested model assignment such as `fill(['secrets->token' => $token])` separately from assigning the whole attribute. On versions without the encrypted-class JSON-path fix (framework PR #61834), `AsEncryptedArrayObject` and `AsEncryptedCollection` bypass their normal cast setter on this path. The old path can discard sibling values and save plaintext JSON. Until the installed `HasAttributes` implementation decrypts and re-encrypts encrypted class casts during JSON-path updates, read the cast value, modify it, reassign the whole attribute, and save the model. Verify raw persisted ciphertext and a fresh model's decrypted value, including preserved siblings. Query-builder JSON updates bypass this model path and need separate verification.
 
 ## Security Hardening
 

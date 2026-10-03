@@ -121,6 +121,45 @@ Verify before any rollout: `build_fixtures.py --verify`, rubric weights = 1.0,
 config paths resolve, `pytest tests/test_whetstone_env.py`. **Onboarded:**
 ia-debugging, ia-simplifying-code, ia-verification-before-completion, ia-code-review.
 
+### Criterion gates
+
+When the skill contract requires an essential action, optionally configure
+`env.soft_gates` in that skill's YAML config:
+
+```yaml
+env:
+  soft_gates:
+    reproduced_first:
+      minimum: 1.0
+      cap: 0.0
+```
+
+Each key must name an existing criterion in the selected skill's rubric. Each
+entry must contain exactly `minimum` and `cap`, both finite numbers in `[0, 1]`.
+Define thresholds from the skill's contract before comparing candidates; do not
+add requirements merely because they produce a convenient score.
+
+The evaluator applies the gate after evidence grounding. A score equal to the
+minimum passes. A score below the minimum caps the whole rollout's weighted
+`soft`; multiple failed gates use the smallest cap. The cap never raises a score.
+Use `cap: 0.0` when other criteria must provide no compensation for the failure.
+The result records `soft_uncapped`, `soft_gates_failed`, and the affected criterion
+names in `fail_reason`. Non-finite judge scores receive zero credit.
+
+Omitting `soft_gates` preserves the existing weighted score. Gates affect only
+`soft`, not deterministic `hard` or the trainer's acceptance rule. With
+`SKILLOPT_SOFT_WEIGHT=0`, gates provide diagnostics without changing selection.
+With a positive weight, retain `λ < 1/n_val`; a soft cap does not replace that
+deterministic floor. A gate is not an unconditional rejection of a candidate that
+improves `hard`.
+
+The judge can mis-score a required action even when its quote is real. Calibrate
+that criterion against known trajectories before enabling the gate. Keep the
+policy fixed across baseline and candidate runs. Resume checks reject a changed
+policy under the same `out_root`; use a new run directory for a new policy.
+Rollout caches also distinguish scoring policies, so uncapped results cannot
+silently supply gated scores.
+
 ## 6. Promotion — manual and gated
 
 `best_skill.md` is a **proposal**, never auto-shipped:

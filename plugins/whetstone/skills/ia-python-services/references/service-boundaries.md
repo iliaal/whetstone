@@ -22,6 +22,10 @@
 - Batch processing: `BatchResult(succeeded={}, failed={})`; don't let one item abort the batch
 - Pydantic `BaseModel` with `field_validator` for complex input validation
 
+### JSONL framing
+
+Frame JSONL records on LF (`\n`), using an LF-delimited stream reader or `text.split("\n")` for an already bounded buffer. Do not use `str.splitlines()`: U+0085, U+2028, and U+2029 are valid inside JSON strings, but `splitlines()` treats those characters as record boundaries. Accept CRLF by leaving the trailing CR as JSON whitespace. Allow a final LF without inventing an extra record; reject blank records between values. Bound record size before accumulating or parsing untrusted input. Test literal and JSON-escaped forms of all three Unicode characters, LF and CRLF delimiters, and a final record without a delimiter.
+
 
 ## Migrations
 

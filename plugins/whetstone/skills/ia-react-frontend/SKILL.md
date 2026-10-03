@@ -72,6 +72,7 @@ Read the relevant reference before implementing or reviewing the matching behavi
 - For performance, React APIs, Next.js boundaries, or caching: [rendering-and-frameworks.md](./references/rendering-and-frameworks.md).
 - For Tailwind CSS: utilities, `@theme` tokens, CVA/tailwind-variants, dark mode, v3-to-v4 migration, or overflow and `hidden` pitfalls: [tailwind.md](./references/tailwind.md).
 - For component, hook, browser, or integration test changes: [test-selection.md](./references/test-selection.md).
+- For synchronizing JSON locale files or reviewing translations: [locale-synchronization.md](./references/locale-synchronization.md).
 
 Existing specialized references, when the corresponding topic applies:
 

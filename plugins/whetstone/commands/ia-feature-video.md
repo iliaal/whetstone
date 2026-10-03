@@ -138,10 +138,12 @@ agent-browser captures screenshots at key moments, then combine into video using
 
 Execute the planned flow, capturing each step:
 
+Preflight the starting route and confirm the rendered page matches the shot list before recording frames. For each shot, identify the expected visible element or state, wait for that condition with the browser's bounded wait/assertion capability, and verify it before taking the screenshot. Substitute stable selectors or expected text from the shot list in the examples below. Use selectors, text, URL, or function conditions for states that have not rendered yet; snapshot refs identify existing elements and cannot name a future result. Refresh snapshot refs after navigation. A fixed sleep is presentation timing, not readiness evidence. If a readiness check times out or the expected state is wrong, stop and report a partial capture; do not encode, upload, or describe it as a completed walkthrough. Set viewing duration separately through the encoded frame rate or intentional dwell after readiness. See the [browser wait commands](https://agent-browser.dev/commands#wait).
+
 **Step 1: Navigate to starting point**
 ```bash
 agent-browser open "[base-url]/[start-route]"
-agent-browser wait 2000
+agent-browser wait "[start-ready-selector]"
 agent-browser screenshot "[capture-dir]/screenshots/01-start.png"
 ```
 
@@ -149,7 +151,7 @@ agent-browser screenshot "[capture-dir]/screenshots/01-start.png"
 ```bash
 agent-browser snapshot -i  # Get refs
 agent-browser click @e1    # Click navigation element
-agent-browser wait 1000
+agent-browser wait "[destination-ready-selector]"
 agent-browser screenshot "[capture-dir]/screenshots/02-navigate.png"
 ```
 
@@ -157,13 +159,14 @@ agent-browser screenshot "[capture-dir]/screenshots/02-navigate.png"
 ```bash
 agent-browser snapshot -i  # Get refs for feature elements
 agent-browser click @e2    # Click feature element
-agent-browser wait 1000
+agent-browser wait "[feature-ready-selector]"
 agent-browser screenshot "[capture-dir]/screenshots/03-feature.png"
 ```
 
 **Step 4: Capture result**
 ```bash
-agent-browser wait 2000
+agent-browser wait --text "[expected-result]"
+agent-browser get text "[result-selector]"
 agent-browser screenshot "[capture-dir]/screenshots/04-result.png"
 ```
 

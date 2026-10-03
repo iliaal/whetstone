@@ -7,6 +7,7 @@ dataloader, the rollout (claude_code_exec), and the per-skill rubric.
 """
 from __future__ import annotations
 
+import json
 import os
 
 from skillopt.datasets.base import BatchSpec
@@ -15,7 +16,7 @@ from skillopt.gradient.reflect import run_minibatch_reflect
 
 from .dataloader import WhetstoneDataLoader
 from .rollout import optimizer_complete, run_batch
-from .rubric import get as get_rubric
+from .rubric import SoftGates, get as get_rubric, validate_soft_gates
 
 
 class WhetstoneAdapter(EnvAdapter):
@@ -41,9 +42,11 @@ class WhetstoneAdapter(EnvAdapter):
         edit_budget: int = 4,
         seed: int = 42,
         limit: int = 0,
+        soft_gates: SoftGates | None = None,
     ) -> None:
         self.skill_name = skill_name
         self.rubric = get_rubric(skill_name)  # fail fast if no rubric for this skill
+        self.soft_gates = validate_soft_gates(self.rubric, soft_gates)
         self.target_model = target_model
         self.exec_timeout = int(exec_timeout)
         self.test_timeout = int(test_timeout)
@@ -67,6 +70,14 @@ class WhetstoneAdapter(EnvAdapter):
     # ── Lifecycle ──────────────────────────────────────────────────────────
 
     def setup(self, cfg: dict) -> None:
+        if cfg.get("out_root"):
+            config_path = os.path.join(cfg["out_root"], "config.json")
+            if os.path.isfile(config_path):
+                with open(config_path, encoding="utf-8") as f:
+                    previous = json.load(f)
+                previous_gates = validate_soft_gates(self.rubric, previous.get("soft_gates"))
+                if previous_gates != self.soft_gates:
+                    raise ValueError("soft_gates changed for an existing run; use a new out_root")
         super().setup(cfg)
         if not self.target_model:
             self.target_model = cfg.get("target_model", "") or ""
@@ -102,6 +113,7 @@ class WhetstoneAdapter(EnvAdapter):
             exec_timeout=self.exec_timeout,
             test_timeout=self.test_timeout,
             workers=self.workers,
+            soft_gates=self.soft_gates,
         )
 
     def reflect(self, results: list[dict], skill_content: str, out_dir: str, **kwargs) -> list[dict | None]:

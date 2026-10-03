@@ -73,6 +73,7 @@ This command takes a work document (plan or specification) and executes it syste
    - You plan to switch between branches frequently
 
 3. **Create Todo List**
+   - Record the initial working-tree and staged diffs before editing. Distinguish caller changes, peer changes, and the invocation's owned changes; keep the original index intact.
    - Use TaskCreate to break plan into actionable tasks
    - Include dependencies between tasks
    - Prioritize based on what needs to be done first
@@ -121,12 +122,18 @@ This command takes a work document (plan or specification) and executes it syste
    # 1. Verify tests pass (use project's test command)
    # Examples: npm test, pytest, php artisan test, go test, etc.
 
-   # 2. Stage only files related to this logical unit (not `git add .`)
+   # 2. Review the exact proposed commit against the ownership inventory
+   git diff --cached
+   git diff
+
+   # 3. Stage only owned changes for this logical unit
    git add <files related to this logical unit>
 
-   # 3. Commit with conventional message
+   # 4. Commit only after confirming every staged hunk belongs to this unit
    git commit -m "feat(scope): description of this unit"
    ```
+
+   Explicit `git add` paths do not exclude unrelated changes already staged: a bare `git commit` includes the entire index. A path-limited commit selects the working-tree content of those files and can absorb caller or peer hunks in the same file. Establish whole-file ownership before using that form. For mixed ownership, use isolated staging that preserves the caller's index, following `ia-git-worktree`'s ownership guidance; inspect the exact proposed patch before committing. Never reset or overwrite someone else's staged changes to simplify the commit.
 
    **Handling merge conflicts:** If conflicts arise during rebasing or merging, resolve them immediately. Incremental commits make conflict resolution easier since each commit is small and focused.
 

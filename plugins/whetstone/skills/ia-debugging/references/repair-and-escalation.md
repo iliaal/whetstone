@@ -12,6 +12,8 @@ Read when implementing a remedy, assessing a failed experiment, or deciding whet
 
 **Trim to the minimal diff.** After the fix verifies, simplify to the smallest change that fixes the root cause, ideally as a fresh-context pass ([specialized-patterns.md](./specialized-patterns.md)).
 
+**Prevent recurrence within scope.** Inspect an existing validated type, constructor, or shared helper before adding another guard at each caller. Reuse the mechanism when it removes the invalid construction without widening the repair. Keep checks for distinct requirements or paths that can bypass the mechanism; see [defense-in-depth.md](./defense-in-depth.md). Report broader interface changes separately.
+
 **On a failed fix:** return to Step 5 and identify what the result actually tests: the causal hypothesis, the remedy, the exercised trigger, or the build identity. Reject or revise the hypothesis when the evidence contradicts it; an incomplete remedy does not itself disprove the cause. Change a named variable before another experiment. The Three-Fix Threshold counts complete hypothesis-test cycles.
 
 ## Three-Fix Threshold
@@ -45,7 +47,7 @@ In [specialized-patterns.md](./specialized-patterns.md) unless noted:
 
 - **Intermittent issues**: races, deadlocks, resource exhaustion, timing. Key signals: shared mutable state, check-then-act, circular lock acquisition, pool exhaustion under load.
 - **Performance regressions**: slow, latency, or throughput symptoms. Measure a numeric baseline before reading code for the cause.
-- **Defense-in-depth validation**: after fixing, validate at every layer, not just where the bug appeared: [defense-in-depth.md](./defense-in-depth.md).
+- **Defense-in-depth validation**: after fixing, prefer scoped structural prevention and guards for distinct reachable failure classes: [defense-in-depth.md](./defense-in-depth.md).
 - **Common bug patterns and triage**: async ordering, stale state, stale build artifacts, recurring fix site; severity-vs-priority triage.
 - **Off-track signals**: user phrases ("stop guessing", "we're going in circles") that mean the systematic process was abandoned.
 

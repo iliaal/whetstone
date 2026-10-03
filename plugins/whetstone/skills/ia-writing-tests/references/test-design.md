@@ -54,6 +54,10 @@ Hand-written cases pick round values and miss the format's conditional branches.
 
 Two longer generation techniques (building a corpus as the cross-product of a table's axes instead of hand-picking cases, and proving a mechanical refactor behavior-preserving with a reflection-driven transcript) are in [generated-corpus-techniques.md](./generated-corpus-techniques.md).
 
+### Sanitize captured fixtures before persisting
+
+Before saving captured responses, transcripts, or baselines, replace live credentials and session tokens with deterministic, obviously fake values. Preserve only the shape or length that the tested behavior needs. Keep related fields consistent after substitution. Recompute synthetic checksums; generate signatures with a test-only key when cryptographic validation is under test. Record any coverage that sanitization removes instead of claiming the sanitized fixture proves the original authenticated response. Supply credentials needed for execution through the project's runtime configuration, outside stored fixtures.
+
 ### DAMP over DRY in tests
 
 Each test should be independently readable without chasing shared setup through helpers. Duplication in tests is acceptable, even desirable, when it makes intent obvious at a glance. Extract shared setup only when it reduces noise without hiding what the test does.

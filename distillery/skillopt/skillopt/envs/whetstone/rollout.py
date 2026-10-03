@@ -25,7 +25,7 @@ from skillopt.model import chat_optimizer, is_target_exec_backend
 from skillopt.model.codex_harness import prepare_workspace, render_skill_md, run_target_exec
 
 from .evaluator import evaluate, run_hard
-from .rubric import Rubric
+from .rubric import Rubric, SoftGates, validate_soft_gates
 
 _COPY_IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache", ".git")
 
@@ -138,6 +138,8 @@ def _eval_detail(ev: dict) -> str:
         lines.append(f"  - {name}: {c.get('score', 0.0):.2f}  evidence: {ev_q!r}")
     if ev.get("fail_reason"):
         lines.append(f"fail_reason: {ev['fail_reason']}")
+    if ev.get("soft_gates_failed"):
+        lines.append(f"soft before gates = {ev['soft_uncapped']:.4f}")
     return "\n".join(lines)
 
 
@@ -151,8 +153,10 @@ def process_one(
     complete: Callable[[str, str], str] = optimizer_complete,
     exec_timeout: int = 300,
     test_timeout: int = 120,
+    soft_gates: SoftGates | None = None,
 ) -> dict:
     """Run + score one fixture task."""
+    gates = validate_soft_gates(rubric, soft_gates)
     _ensure_unsandboxed()
     item_id = str(item["id"])
     pred_dir = os.path.join(out_root, "predictions", item_id)
@@ -177,6 +181,8 @@ def process_one(
         "task_type": "debugging",
         "hard": 0,
         "soft": 0.0,
+        "soft_uncapped": 0.0,
+        "soft_gates_failed": [],
         "criteria": {},
         "fail_reason": "",
         "response": "",
@@ -237,9 +243,12 @@ def process_one(
             work_dir, item, response, rubric, complete,
             test_timeout=test_timeout,
             pre_test_output=pre_test_output, agent_diff=agent_diff,
+            soft_gates=gates,
         )
         result["hard"] = ev["hard"]
         result["soft"] = ev["soft"]
+        result["soft_uncapped"] = ev["soft_uncapped"]
+        result["soft_gates_failed"] = ev["soft_gates_failed"]
         result["criteria"] = ev["criteria"]
         result["fail_reason"] = ev["fail_reason"]
         result["infra_error"] = ev["infra_error"]
@@ -300,8 +309,10 @@ def run_batch(
     exec_timeout: int = 300,
     test_timeout: int = 120,
     workers: int = 4,
+    soft_gates: SoftGates | None = None,
 ) -> list[dict]:
     """Run all items in parallel. Resume-aware via results.jsonl."""
+    gates = validate_soft_gates(rubric, soft_gates)
     if not is_target_exec_backend():
         raise RuntimeError(
             "whetstone rollout requires an exec target backend (claude_code_exec). "
@@ -315,6 +326,10 @@ def run_batch(
     # DIFFERENT skill revision is stale and must be re-run, or the gate would
     # compare rewards computed against two different skills.
     skill_hash = hashlib.sha1(skill_content.encode("utf-8")).hexdigest()[:12]
+    policy_hash = ""
+    if gates:
+        policy = json.dumps({"rubric": rubric, "soft_gates": gates}, sort_keys=True)
+        policy_hash = hashlib.sha256(policy.encode("utf-8")).hexdigest()
 
     done_ids: set[str] = set()
     existing: list[dict] = []
@@ -327,6 +342,8 @@ def run_batch(
                     continue
                 if r.get("skill_hash") != skill_hash:
                     continue  # stale: scored against another skill revision
+                if r.get("soft_gates_hash", "") != policy_hash:
+                    continue
                 done_ids.add(str(r["id"]))
                 existing.append(r)
 
@@ -344,6 +361,7 @@ def run_batch(
             item, out_root, skill_content, rubric,
             model=model, complete=complete,
             exec_timeout=exec_timeout, test_timeout=test_timeout,
+            soft_gates=gates,
         )
 
     with open(results_path, "a") as outf:
@@ -365,6 +383,7 @@ def run_batch(
                             "infra_error": True,
                         }
                     res["skill_hash"] = skill_hash
+                    res["soft_gates_hash"] = policy_hash
                     results.append(res)
                     completed += 1
                     if res.get("hard"):

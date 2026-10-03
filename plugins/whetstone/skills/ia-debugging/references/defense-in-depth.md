@@ -1,21 +1,20 @@
 # Defense-in-Depth Validation
 
-When you fix a bug caused by invalid data, adding validation at one place feels sufficient. But that single check can be bypassed by different code paths, refactoring, or mocks.
+After verifying a fix for invalid data, inspect whether the invalid state can still be constructed through another reachable path. Prefer an existing validated type, constructor, or shared helper when the affected callers can use it within the repair's scope.
 
-**Core principle:** Validate at EVERY layer data passes through. Make the bug structurally impossible.
+**Core principle:** Prevent invalid construction where possible. Add checks at boundaries that catch distinct failure classes or remain reachable without earlier validation.
 
 ## Why Multiple Layers
 
-Single validation: "We fixed the bug."
-Multiple layers: "We made the bug impossible."
-
-Different layers catch different failure modes:
+Use multiple layers when the layers enforce different requirements:
 - Entry validation catches most invalid input
 - Business logic catches domain-specific edge cases
 - Environment guards prevent context-specific dangers (e.g., destructive operations in test)
-- Debug instrumentation captures forensic context when other layers fail
+- Debug instrumentation captures forensic context when checks fail; logging does not enforce an invariant
 
-## The Four Layers
+## Possible Layers
+
+Select the layers required by the observed data flow. Repeating the same check at every function adds maintenance cost without preventing a new failure path.
 
 ### Layer 1: Entry Point Validation
 
@@ -41,8 +40,8 @@ Ensure data makes sense for this specific operation, even if it passed entry val
 ```php
 function initializeWorkspace(string $projectDir, string $sessionId): void
 {
-    if (empty($projectDir)) {
-        throw new \RuntimeException('projectDir required for workspace initialization');
+    if ($sessionId === '') {
+        throw new \RuntimeException('sessionId required for workspace initialization');
     }
     // ... proceed
 }
@@ -86,19 +85,14 @@ Use `console.error()` in tests (not logger, which may be suppressed). Log BEFORE
 
 ## Applying the Pattern
 
-When you fix a bug:
+After verifying the minimal fix:
 
-1. **Trace the data flow**: where does the bad value originate? Where is it consumed?
-2. **Map all checkpoints**: list every function/boundary data passes through
-3. **Add validation at each layer**: entry, business logic, environment, instrumentation
-4. **Test each layer independently**: bypass layer 1, verify layer 2 catches it
+1. **Trace the data flow**: identify where the bad value originates and where it is consumed.
+2. **Inspect construction**: check whether an existing type, constructor, or helper can enforce the invariant for the affected callers.
+3. **Keep prevention scoped**: reuse that mechanism where the repair's scope permits it. Report wider interface changes or refactoring separately.
+4. **Choose distinct checks**: retain guards for independent domain or environment requirements, and for callers that can bypass earlier validation. Remove duplication only after proving those paths cannot bypass the shared mechanism.
+5. **Verify recurrence prevention**: exercise the original trigger and nearby invalid inputs. Test each retained guard through its own reachable failure path; report a missing seam rather than substituting a mock-only bypass.
 
 ## Key Insight
 
-All four layers are typically necessary. During testing, each layer catches bugs the others miss:
-- Different code paths bypass entry validation
-- Mocks bypass business logic checks
-- Edge cases on different platforms need environment guards
-- Debug logging identifies structural misuse patterns
-
-Don't stop at one validation point.
+The number of checks is not the success criterion. Verify that invalid construction is prevented where feasible and that each retained boundary covers a distinct, reachable failure mode. Keep diagnostic instrumentation only when it serves an ongoing operational need.

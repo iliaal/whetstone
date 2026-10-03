@@ -24,7 +24,7 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from .rubric import CompleteFn, Rubric, score_criteria, weighted_soft
+from .rubric import CompleteFn, Rubric, SoftGates, score_criteria, validate_soft_gates, weighted_soft
 
 DEFAULT_TEST_CMD = ["-m", "pytest", "-q"]
 
@@ -134,12 +134,14 @@ def evaluate(
     test_timeout: int = 120,
     pre_test_output: str = "",
     agent_diff: str = "",
+    soft_gates: SoftGates | None = None,
 ) -> dict:
     """Return the hybrid reward + per-criterion breakdown for one rollout.
 
     `agent_report` is the agent's final message; it is folded into a richer
     trajectory alongside the harness-verified artifacts before judging.
     """
+    gates = validate_soft_gates(rubric, soft_gates)
     detection = item.get("detection")
     if detection:
         # Review-style fixture: grade the report against the hidden spec, not pytest.
@@ -161,13 +163,21 @@ def evaluate(
     )
     task = item.get("question", "")
     criteria = score_criteria(rubric, task, trajectory_text, complete)
-    soft = weighted_soft(rubric, criteria)
+    soft_uncapped = weighted_soft(rubric, criteria)
+    soft = weighted_soft(rubric, criteria, soft_gates=gates)
+    failed = [name for name, rule in gates.items()
+              if criteria[name]["score"] < rule["minimum"]]
+    fail_reason = _fail_reason(hard, infra, criteria, test_output)
+    if failed:
+        fail_reason += "; soft gates failed: " + ", ".join(failed)
     return {
         "hard": int(hard),
         "soft": float(soft),
+        "soft_uncapped": float(soft_uncapped),
+        "soft_gates_failed": failed,
         "criteria": criteria,
         "test_output": test_output,
         "infra_error": bool(infra),
         "trajectory_text": trajectory_text,
-        "fail_reason": _fail_reason(hard, infra, criteria, test_output),
+        "fail_reason": fail_reason,
     }

@@ -29,6 +29,8 @@ Centralized handler middleware:
 - Unknown → log full stack, return 500 + generic message in production
 - Async wrapper: `const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);`
 
+For custom transport callbacks, event listeners, and subscription handlers, establish the error boundary where the callback runs. Catch synchronous parsing or serialization failures there. Handle rejected promises when the SDK does not await the callback. An RxJS `catchError` upstream does not catch a throw from the final `subscribe` callback. Use the transport's error response, failed-message disposition, or bounded logging as appropriate. Verify that a malformed message and a rejected callback leave the process alive and the next valid message usable. Inspect framework-provided HTTP boundaries before adding another wrapper.
+
 Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 conflict | 422 business rule | 429 rate limited | 500 server fault
 
 

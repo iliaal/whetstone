@@ -49,7 +49,7 @@ Demonstrated vulnerabilities carry CVSS 3.1 base score/vector, exploit evidence,
 For each finding, emit:
 
 1. **ID**: `SS-001`, `SS-002`... sequential across all severities
-2. **Severity**: CVSS 3.1 base score + vector string
+2. **Severity**: CVSS 3.1 base score + vector string. Calculate the score from the final evidence-backed vector with an available local calculator implementing CVSS 3.1. Reconcile the number and vector after changing any metric; CVSS 3.1 uses its specified round-up rule, not ordinary decimal rounding. If no suitable calculator is available, label the score unverified. Keep private finding data local unless external transmission is authorized. A consistent calculation does not justify the selected metrics; cite exploit evidence for those choices. See the [CVSS 3.1 specification](https://www.first.org/cvss/v3.1/specification-document).
 3. **Proof**: curl command, test snippet, or exploit PoC that demonstrates the vulnerability
 4. **Remediation**: a verified code fix, or a concrete proposed remedy labeled unvalidated with the command or test needed to validate it
 

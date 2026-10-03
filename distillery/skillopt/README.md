@@ -46,6 +46,12 @@ fixtures, with a **hybrid reward**:
   > accept/reject, so fixtures must keep baseline `hard` below 1.0 or no edit can
   > be accepted. To optimize *process* rather than success rate, set the weight.
 
+  Configure optional `env.soft_gates` when the skill contract makes a criterion
+  essential. A criterion below its declared minimum caps the whole rollout's
+  `soft`, so other criteria cannot raise it above that cap. A cap of zero removes
+  all soft credit for that failure. Defaults keep the weighted score unchanged;
+  gates never change `hard`. See [criterion gates](./SKILLOPT-RUNBOOK.md#criterion-gates).
+
 ```
 trainer (vendored)
   rollout ─ claude_code_exec runs Claude Code in a prepared workspace (Read/Edit/Write/Bash)

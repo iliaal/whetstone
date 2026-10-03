@@ -23,10 +23,12 @@ the agent's diff) -- evidence the agent cannot fabricate.
 from __future__ import annotations
 
 import json
+import math
 import re
-from typing import Callable, Protocol
+from typing import Protocol
 
 Rubric = dict[str, tuple[float, str]]
+SoftGates = dict[str, dict[str, float]]
 
 
 class CompleteFn(Protocol):
@@ -200,6 +202,8 @@ def score_criteria(rubric: Rubric, task: str, trajectory_text: str,
             score = float(c.get("score", 0.0))
         except (TypeError, ValueError):
             score = 0.0
+        if not math.isfinite(score):
+            score = 0.0
         out[name] = {"score": max(0.0, min(1.0, score)), "evidence": str(c.get("evidence", ""))}
 
     # Strict parse dropped one or more criteria (usually malformed evidence
@@ -222,8 +226,35 @@ def score_criteria(rubric: Rubric, task: str, trajectory_text: str,
     return out
 
 
-def weighted_soft(rubric: Rubric, criteria: dict[str, dict]) -> float:
+def validate_soft_gates(rubric: Rubric, soft_gates: SoftGates | None) -> SoftGates:
+    if soft_gates is None:
+        return {}
+    if not isinstance(soft_gates, dict):
+        raise ValueError("soft_gates must map rubric criteria to minimum/cap values")
+    validated: SoftGates = {}
+    for name, rule in soft_gates.items():
+        if name not in rubric:
+            raise ValueError(f"Unknown soft_gates criterion: {name!r}")
+        if not isinstance(rule, dict) or set(rule) != {"minimum", "cap"}:
+            raise ValueError(f"soft_gates[{name!r}] requires exactly minimum and cap")
+        validated[name] = {}
+        for key, value in rule.items():
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not 0.0 <= value <= 1.0 or not math.isfinite(value)):
+                raise ValueError(f"soft_gates[{name!r}].{key} must be finite and in [0, 1]")
+            validated[name][key] = float(value)
+    return validated
+
+
+def weighted_soft(
+    rubric: Rubric, criteria: dict[str, dict], *, soft_gates: SoftGates | None = None,
+) -> float:
     """Weighted process score in [0, 1]. The breakdown is what drives the edit;
-    this scalar is what the trainer gates on alongside hard."""
-    return round(sum(w * criteria.get(name, {}).get("score", 0.0)
+    explicit criterion failures cap this scalar without changing hard."""
+    gates = validate_soft_gates(rubric, soft_gates)
+    soft = round(sum(w * criteria.get(name, {}).get("score", 0.0)
                      for name, (w, _) in rubric.items()), 4)
+    for name, rule in gates.items():
+        if criteria.get(name, {}).get("score", 0.0) < rule["minimum"]:
+            soft = min(soft, rule["cap"])
+    return soft

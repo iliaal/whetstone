@@ -13,3 +13,7 @@ Cases enumerated by a generator rather than typed by hand, offloaded from the SK
 **Symptom:** a mechanical refactor is declared safe because the suite is green. The suite covers what someone thought to test, and a mechanical refactor can move anything else, including the surfaces nobody wrote a case for.
 
 **Fix:** enumerate the public surface by reflection, call each entry with a per-type pool of edge values varying one parameter at a time, and print one deterministic line per call: return value, warning, exception. Run that against both revisions and diff the transcripts. Rebuild fixtures before every call, so a mutated fixture does not read as a behavior change. Require every surviving difference to map to an intended change, and treat an unexplained difference as the finding rather than as transcript noise.
+
+## Numerical tolerance in differential comparisons
+
+When a field's contract permits floating-point rounding differences, declare the affected field, units, absolute or relative bounds, and justification before comparing outputs. Derive the tolerance from the contract and numerical method. Keep identifiers, integer counts, text, and exact decimal contracts exact. Apply tolerance only to the declared fields; do not mask whole records or widen bounds after seeing an unexpected difference. Confirm that a plausible wrong numerical result outside the permitted bounds fails the comparison.

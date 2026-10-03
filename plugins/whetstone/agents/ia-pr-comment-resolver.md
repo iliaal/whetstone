@@ -63,14 +63,26 @@ Draft the reply for the channel the item came from; the dispatch prompt states w
   gh api graphql \
     -f query='mutation($thread: ID!, $body: String!) {
       addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $thread, body: $body}) {
-        comment { id url }
+        comment { id url body state }
       }
     }' \
     -f thread="$THREAD_ID" \
     -F body=@"$REPLY_FILE"
   ```
 
-  Require a successful exit, no GraphQL errors, and a returned comment ID and URL before reporting the reply as posted. Replying does not resolve the thread. If the result is uncertain, re-fetch the thread before retrying to avoid duplicate replies.
+  Require a successful exit, no GraphQL errors, and a returned comment ID and URL as the creation receipt. Set `REPLY_ID` to that returned comment ID, then read the stored reply:
+
+  ```bash
+  gh api graphql \
+    -f query='query($reply: ID!) {
+      node(id: $reply) {
+        ... on PullRequestReviewComment { id url body state }
+      }
+    }' \
+    -f reply="$REPLY_ID"
+  ```
+
+  Compare the stored `body` with the exact approved reply and require `state: SUBMITTED` before reporting it as posted or resolving its thread. `PENDING` identifies a draft review comment, even when creation returned a URL; report the pending state and obtain any missing authority for review submission. Never submit or discard an existing user draft review as automatic recovery. These fields and states are defined in [GitHub's pull request GraphQL reference](https://docs.github.com/en/graphql/reference/pulls#pullrequestreviewcommentstate). Replying does not resolve the thread. If the result is uncertain, re-fetch the thread before retrying to avoid duplicate replies.
 - **Conversation** (top-level PR comment or review body, no file or line): `gh pr comment {pr} --body "..."`, quoting enough of the original to identify what is being answered. `in_reply_to` does not apply: these are Issue comments, a different API family with no thread to nest under, and passing their id to the review-comments endpoint fails.
 
 Your response format should be:

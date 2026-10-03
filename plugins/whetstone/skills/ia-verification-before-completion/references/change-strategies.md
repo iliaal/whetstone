@@ -8,6 +8,7 @@ For runnable code with those checks available, type-check and unit tests form a 
 |-------------|----------------------|
 | Frontend (component, page, form) | Start the dev server, exercise the feature in a browser, check the console; test the happy path AND one failure path |
 | Backend handler / endpoint | `curl` the endpoint, check response shape and status code, hit at least one error path (invalid input, missing auth) |
+| Asynchronous workflow / queued job | Exercise the real entry point, then wait within its documented deadline for terminal processing and inspect the durable business effect. Acceptance or enqueue success alone proves no completion. Exercise a relevant terminal failure or dead-letter path and verify its recorded outcome |
 | CLI tool | Run the binary with real inputs; check stdout, stderr, exit code. Run from `/tmp` to catch "only works from source" bugs |
 | Infra / IaC (Terraform, Dockerfile, k8s) | `terraform plan` / `docker build` / `kubectl apply --dry-run=server`; review the diff before applying |
 | Database migration | Run migration up, down, then up again against production-shape data |

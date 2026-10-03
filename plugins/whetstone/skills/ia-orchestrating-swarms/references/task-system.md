@@ -61,6 +61,8 @@ A reader scanning the task list must be able to tell "done" from "deliberately n
 
 ## Task Dependencies
 
+When importing dependencies from an external issue tracker, check what the tracker's closure means. If issues remain open until the overall PR merges, compute readiness from prerequisites whose work is verified and integrated into the working branch. Record that evidence in the existing orchestration state; an external open status does not block a dependent whose prerequisites are already integrated. Do not close external issues early to release dependents. Keep external closure within the configured authority. When native task tools already express the working dependencies, use that graph without adding another.
+
 When a blocking task is completed, blocked tasks are automatically unblocked:
 
 ```javascript

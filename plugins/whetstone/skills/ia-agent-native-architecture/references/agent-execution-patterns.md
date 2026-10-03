@@ -22,57 +22,61 @@ These break in edge cases and create unpredictable behavior.
 
 Provide a `complete_task` tool that:
 - Takes a summary of what was accomplished
-- Returns a signal that stops the loop
+- Returns both a terminal status and a signal that stops the loop
 - Works identically across all agent types
 
+Preserve `success`, `partial`, and `blocked` through tool results, checkpoints, and the final response. Stopping the loop does not establish successful completion. Before accepting `success`, run application-owned acceptance checks against the resulting state; an agent's summary or claimed verification is not that evidence.
+
 ```typescript
-tool("complete_task", {
-  summary: z.string().describe("Summary of what was accomplished"),
-  status: z.enum(["success", "partial", "blocked"]).optional(),
-}, async ({ summary, status = "success" }) => {
-  return {
-    text: summary,
-    shouldContinue: false,  // Key: signals loop should stop
-  };
-});
+function registerCompletionTool(verifyTaskAcceptance: () => Promise<boolean>) {
+  tool("complete_task", {
+    summary: z.string().describe("Summary of outcomes and remaining work"),
+    status: z.enum(["success", "partial", "blocked"]),
+  }, async ({ summary, status }): Promise<ToolResult> => {
+    if (status === "success" && !(await verifyTaskAcceptance())) {
+      return {
+        success: false,
+        output: "Acceptance checks failed; report remaining work or continue.",
+        shouldContinue: true,
+      };
+    }
+
+    return {
+      success: true,
+      output: summary,
+      shouldContinue: false,
+      terminalStatus: status,
+    };
+  });
+}
 ```
+
+Supply `verifyTaskAcceptance` from the application, using observed artifacts or business state for the current request. Permit `partial` and `blocked` to stop with an explanation even when acceptance checks cannot pass.
 
 ### The ToolResult Pattern
 
 Structure tool results to separate success from continuation:
 
-```swift
-struct ToolResult {
-    let success: Bool           // Did tool succeed?
-    let output: String          // What happened?
-    let shouldContinue: Bool    // Should agent loop continue?
-}
+```typescript
+type TerminalStatus = "success" | "partial" | "blocked";
 
-// Three common cases:
-extension ToolResult {
-    static func success(_ output: String) -> ToolResult {
-        // Tool succeeded, keep going
-        ToolResult(success: true, output: output, shouldContinue: true)
-    }
-
-    static func error(_ message: String) -> ToolResult {
-        // Tool failed but recoverable, agent can try something else
-        ToolResult(success: false, output: message, shouldContinue: true)
-    }
-
-    static func complete(_ summary: String) -> ToolResult {
-        // Task done, stop the loop
-        ToolResult(success: true, output: summary, shouldContinue: false)
-    }
-}
+type ToolResult =
+  | { success: boolean; output: string; shouldContinue: true }
+  | {
+      success: true;
+      output: string;
+      shouldContinue: false;
+      terminalStatus: TerminalStatus;
+    };
 ```
 
 ### Key Insight
 
 **This is different from success/failure:**
 
-- A tool can **succeed** AND signal **stop** (task complete)
+- A tool can **succeed** AND signal **stop** (terminal outcome)
 - A tool can **fail** AND signal **continue** (recoverable error, try something else)
+- A completion tool can succeed at recording `partial` or `blocked` while the task remains unfinished
 
 ```typescript
 // Examples:
@@ -80,9 +84,8 @@ read_file("/missing.txt")
 // → { success: false, output: "File not found", shouldContinue: true }
 // Agent can try a different file or ask for clarification
 
-complete_task("Organized all downloads into folders")
-// → { success: true, output: "...", shouldContinue: false }
-// Agent is done
+complete_task({ summary: "Organized all downloads into folders", status: "success" })
+// → { success: true, output: "Organized all downloads into folders", shouldContinue: false, terminalStatus: "success" }
 
 write_file("/output.md", content)
 // → { success: true, output: "Wrote file", shouldContinue: true }
@@ -98,8 +101,11 @@ Tell the agent when to complete:
 
 When you've accomplished the user's request:
 1. Verify your work (read back files you created, check results)
-2. Call `complete_task` with a summary of what you did
+2. Call `complete_task` with status "success" and a summary of outcomes
 3. Don't keep working after the goal is achieved
+
+If some requested work remains unfinished:
+- Call `complete_task` with status "partial" and identify the remaining work
 
 If you're blocked and can't proceed:
 - Call `complete_task` with status "blocked" and explain why
@@ -374,60 +380,84 @@ Don't try to hold everything in memory. Write it down.
 
 One execution engine, many agent types. All agents use the same orchestrator with different configurations.
 
-```swift
+```typescript
+interface Message {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string;
+}
+
+interface ToolCall {
+  name: string;
+  input: unknown;
+}
+
+interface ModelResponse {
+  content: string;
+  toolCalls: ToolCall[];
+}
+
+interface AgentConfig {
+  systemPrompt: string;
+  maxIterations: number;
+}
+
+interface AgentResult {
+  status: TerminalStatus | "max_iterations" | "responded";
+  output: string;
+  iterations: number;
+}
+
 class AgentOrchestrator {
-    static let shared = AgentOrchestrator()
+  constructor(
+    private generateResponse: (
+      config: AgentConfig,
+      messages: Message[],
+    ) => Promise<ModelResponse>,
+    private executeToolCall: (call: ToolCall) => Promise<ToolResult>,
+  ) {}
 
-    func run(config: AgentConfig, userMessage: String) async -> AgentResult {
-        var messages: [Message] = [
-            .system(config.systemPrompt),
-            .user(userMessage)
-        ]
+  async run(config: AgentConfig, userMessage: string): Promise<AgentResult> {
+    const messages: Message[] = [
+      { role: "system", content: config.systemPrompt },
+      { role: "user", content: userMessage },
+    ];
 
-        var iteration = 0
+    for (let iteration = 0; iteration < config.maxIterations; iteration += 1) {
+      const response = await this.generateResponse(config, messages);
+      messages.push({ role: "assistant", content: response.content });
 
-        while iteration < config.maxIterations {
-            // Get agent response
-            let response = await claude.message(
-                model: config.modelTier.modelId,
-                messages: messages,
-                tools: config.tools
-            )
+      for (const toolCall of response.toolCalls) {
+        const result = await this.executeToolCall(toolCall);
+        messages.push({ role: "tool", content: JSON.stringify(result) });
 
-            messages.append(.assistant(response))
-
-            // Process tool calls
-            for toolCall in response.toolCalls {
-                let result = await executeToolCall(toolCall, config: config)
-                messages.append(.toolResult(result))
-
-                // Check for completion signal
-                if !result.shouldContinue {
-                    return AgentResult(
-                        status: .completed,
-                        output: result.output,
-                        iterations: iteration + 1
-                    )
-                }
-            }
-
-            // No tool calls = agent is responding, might be done
-            if response.toolCalls.isEmpty {
-                // Could be done, or waiting for user
-                break
-            }
-
-            iteration += 1
+        if (!result.shouldContinue) {
+          return {
+            status: result.terminalStatus,
+            output: result.output,
+            iterations: iteration + 1,
+          };
         }
+      }
 
-        return AgentResult(
-            status: iteration >= config.maxIterations ? .maxIterations : .responded,
-            output: messages.last?.content ?? "",
-            iterations: iteration
-        )
+      if (response.toolCalls.length === 0) {
+        return {
+          status: "responded",
+          output: response.content,
+          iterations: iteration + 1,
+        };
+      }
     }
+
+    return {
+      status: "max_iterations",
+      output: messages[messages.length - 1].content,
+      iterations: config.maxIterations,
+    };
+  }
 }
 ```
+
+Have the tool executor validate runtime results before returning this type. Preserve the terminal status in persistence and UI labels. A reply without a completion signal remains `responded`, and reaching the iteration limit remains unfinished.
 
 ### Benefits
 
@@ -445,6 +475,8 @@ class AgentOrchestrator {
 - [ ] `complete_task` tool provided (explicit completion)
 - [ ] No heuristic completion detection
 - [ ] Tool results include `shouldContinue` flag
+- [ ] Terminal statuses survive orchestration and checkpoint restore
+- [ ] `success` requires application-observed acceptance evidence
 - [ ] System prompt guides when to complete
 
 ### Partial Completion

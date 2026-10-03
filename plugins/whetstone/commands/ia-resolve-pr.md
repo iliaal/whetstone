@@ -24,11 +24,11 @@ Fetch review threads (requires `gh` and Python 3; follows every feedback connect
 bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
-Returns `{unresolved: [...threads], conversation: {...}, cross_invocation: {signal, resolved_threads}}`. The `unresolved` array carries non-outdated threads with file paths, line numbers, and comment bodies; fix work targets these. The `cross_invocation` block exists so Phase 2 clustering can require cross-round evidence: `signal` is true when both resolved and unresolved threads coexist on the PR (multi-round review), and `resolved_threads` lists the resolved thread paths/IDs for spatial-overlap precheck. Filter out bot comments (CI, linters, coverage) from `unresolved` before processing.
+Returns `{unresolved: [...threads], conversation: {...}, cross_invocation: {signal, resolved_threads}}`. The `unresolved` array carries non-outdated threads with file paths, line numbers, and comment bodies; fix work targets these. The `cross_invocation` block exists so Phase 2 clustering can require cross-round evidence: `signal` is true when both resolved and unresolved threads coexist on the PR (multi-round review), and `resolved_threads` lists the resolved thread paths/IDs for spatial-overlap precheck. Triage feedback by content regardless of author: retain requests to fix, answer, or decide, including actionable bot findings. Drop status wrappers, acknowledgements, summaries without a request, and replies already handled.
 
 `conversation` (the GitHub conversation *tab*, not the resolvable review threads that `ia-receiving-code-review` calls conversations) carries the feedback that is not attached to a diff line: `comments` (top-level PR conversation) and `review_bodies` (the text of a review submission, blank ones already dropped). These are a real request channel (a reviewer asking for a rename in the conversation tab, or the PR author relaying a request on an agent-opened PR), and a fix pass that reads only `unresolved` never sees them.
 
-Triage them separately rather than appending them to `unresolved`, because the two channels have different hit rates: a review thread is line-scoped and almost always actionable, while the conversation tab also carries "LGTM", release chatter, and bot summaries. For each entry, decide *actionable request* / *acknowledgement or discussion* / *bot*, and carry only the first group into Phase 2 as an untargeted item (no file or line; the fix agent has to locate the referent itself, and should report back if it cannot). `by_pr_author` is evidence for that judgement, not a filter: the PR author's own comment is frequently a relayed human request, so weigh it, do not drop it.
+Triage them separately rather than appending them to `unresolved`, because the two channels have different hit rates: a review thread is line-scoped and almost always actionable, while the conversation tab also carries "LGTM", release chatter, and bot summaries. For each entry, decide *actionable request* / *acknowledgement or discussion* / *status without a request*, and carry only the first group into Phase 2 as an untargeted item (no file or line; the fix agent has to locate the referent itself, and should report back if it cannot). `by_pr_author` and bot identity are evidence for that judgement, not filters: either author can relay an actionable request.
 
 If the script fails, fall back to:
 ```bash
@@ -87,13 +87,14 @@ For each review-thread item, pass its GraphQL thread ID from `unresolved[].node.
 
 - Group related changes into logical commits (one per concern, not per file)
 - Commit message: `address review: <summary>`
+- For code changes, perform an authorized push successfully, then fetch the PR's current head and verify it contains the fix commits. If publication lacks authority, fails, or the remote head lacks the fix, report the local result and leave affected threads open. A reply-only disposition requires no push.
+- Send approved replies through the correct channel and verify their stored body and submitted state before resolving a thread. Follow `ia-pr-comment-resolver`'s readback procedure; a created but pending reply is not a posted reply.
 - Resolve **only** threads whose resolver reported `Resolved`. A `Referent not found` or `Needs decision` thread is unfixed: leave it open and carry it into the deferred bucket below with its reason. Resolving it collapses it in the GitHub UI as if addressed, which is unrecoverable without a reviewer noticing.
 
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-pr-thread THREAD_ID
 ```
 
-- Push to remote
 - Never run `gh pr merge` or enable auto-merge on the agent's own judgment, including for a green, low-risk dependency bump; propose the merge and wait for explicit user approval
 - Re-fetch comments to confirm all resolved:
 

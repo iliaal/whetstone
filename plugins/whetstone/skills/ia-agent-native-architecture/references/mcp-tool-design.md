@@ -497,14 +497,16 @@ If any operation is missing, users will eventually ask for it and the agent will
 <principle name="tool-annotations">
 ## Tool Annotations
 
-Every tool must declare its behavioral hints so clients can make safe decisions without reading implementation:
+Declare behavioral hints to describe the tool's claimed semantics:
 
 | Annotation | Values | Purpose |
 |-----------|--------|---------|
-| `readOnlyHint` | `true`/`false` | Tool does not modify state. Clients can auto-approve. |
+| `readOnlyHint` | `true`/`false` | Claims that the tool does not modify state. |
 | `destructiveHint` | `true`/`false` | Tool may irreversibly delete or overwrite data. |
 | `idempotentHint` | `true`/`false` | Calling twice with same args produces same result. |
 | `openWorldHint` | `true`/`false` | Tool interacts with external entities beyond the server's control. |
+
+Treat annotations as untrusted unless the server is trusted, as required by the [MCP tools specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#tool). Neither an annotation nor a read-like tool name grants authority. Permit automatic approval only under operator policy for a trusted server whose verified behavior fits the approved scope. Recheck that scope when implementations or tool inventories change; wildcard approvals include future matching tools.
 
 ```typescript
 tool("delete_item", "Delete an item by key", {
@@ -594,7 +596,7 @@ Credential presence is necessary but not sufficient authorization for a tool tha
 | **Streamable HTTP** | Remote/multi-client, production deployments, cross-network |
 | **SSE** | Deprecated; avoid for new servers |
 
-For local HTTP servers, bind to `127.0.0.1` (not `0.0.0.0`) and validate the `Origin` header to prevent DNS rebinding attacks.
+For local HTTP servers, bind to loopback and validate allowed origins. Also validate parsed `Host` or HTTP authority against the names and ports actually served, even when `Origin` is absent. A local allowlist typically uses `localhost`, `127.0.0.1`, or `[::1]` with the configured port. Reject missing, malformed, or unlisted authority values; do not accept an arbitrary domain because it resolves to loopback. For a reverse proxy, explicitly configure the served names and trust forwarded authority only from that proxy. Test an allowed local request and a foreign Host with no Origin, as well as an invalid Origin. The [MCP transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#security-warning) requires Origin validation; the [Python SDK transport checks](https://github.com/modelcontextprotocol/python-sdk/blob/main/src/mcp/server/transport_security.py) demonstrate the separate Host check. Neither check replaces authentication.
 </principle>
 
 <principle name="tool-naming-multi-server">

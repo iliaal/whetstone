@@ -26,8 +26,16 @@ For slow, latency, or throughput symptoms, code reading is not the reproduction 
 - Establish a baseline before touching anything: time the same input, in the same environment, across N runs. That baseline is the failing test for a perf bug; it stands in for Step 1's reproduction and Step 6's pass/fail check.
 - Attribute before optimizing: a profiler run or per-stage timing that shows where the time actually goes. A hot-spot guess is a hypothesis, not evidence; optimizing an unmeasured suspect is shotgun debugging with extra steps.
 - If the slowness is a regression, bisect commits against the measurement (rerun the baseline at each candidate commit), not by reading diffs for code that looks expensive.
-- The fix is verified by re-running the same baseline measurement, not by reasoning that the change should be faster.
+- Repeat baseline and candidate runs with comparable inputs and conditions. Compare the improvement with run-to-run variance; a delta within the noise is inconclusive. Revert a performance-only change when repeated comparable measurements do not establish a benefit. Keep an independently verified correctness repair even when its performance gain remains inconclusive.
 - When several independent costs sit on one hot path, fixing the first moves the profile instead of flattening it, which reads as "the fix did nothing" unless the new stack is compared against the old. Compare stacks, not totals; once the same stack arrives a third time, stop bisecting configuration and get symbols.
+
+## Connectivity Failures
+
+1. **Identify the actual path**: inspect the failing process's configured endpoint, resolver, proxy, TLS server name, and network namespace. Run probes through that path rather than substituting a public endpoint or the host's network configuration.
+2. **Bound each probe**: set connection and overall deadlines appropriate to the failing operation. Distinguish resolution, connection, TLS negotiation, and HTTP response failures from the observed output.
+3. **Match the resolver**: on Linux, compare the application's resolver with NSS-backed lookup such as `getent ahosts <host>`. `dig <host>` queries DNS and can disagree with NSS sources such as `/etc/hosts`; a successful DNS query does not prove the application resolves the same address.
+4. **Interpret timings by stage**: curl's `time_namelookup`, `time_connect`, and `time_appconnect` are cumulative. For a fresh direct HTTPS request over TCP without redirects, subtract `time_namelookup` from `time_connect` to estimate TCP setup, and `time_connect` from `time_appconnect` to estimate TLS negotiation. Account for proxies, connection reuse, redirects, and the selected transport before assigning a duration to an origin stage.
+5. **Verify the operation**: an HTTP response establishes an HTTP exchange with the responding peer. Check the expected status, payload, and business effect before claiming the requested operation works.
 
 ## CI Failures
 

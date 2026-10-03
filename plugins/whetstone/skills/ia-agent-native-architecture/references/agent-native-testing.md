@@ -125,62 +125,24 @@ A well-designed agent-native app lets the agent figure out creative approaches. 
 
 ### The Test
 
-```typescript
-describe('Agent Creativity Tests', () => {
-  test('Agent can handle open-ended requests', async () => {
-    // Setup: user has some books
-    await libraryService.addBook({ id: "1", title: "1984", author: "Orwell" });
-    await libraryService.addBook({ id: "2", title: "Brave New World", author: "Huxley" });
-    await libraryService.addBook({ id: "3", title: "Fahrenheit 451", author: "Bradbury" });
+Seed a known library with *1984*, *Brave New World*, and *Fahrenheit 451*, including the metadata and excerpts needed to judge the task. Fix the clock for date-sensitive requests. Define acceptance criteria before running the agent:
 
-    // Open-ended request
-    const result = await agent.chat("Help me organize my reading for next month");
+| Request | Required outcome | Plausible output that must fail |
+|---------|------------------|---------------------------------|
+| "Help me organize my reading for next month" | A usable schedule or ordered plan for the requested month, using the seeded library, respecting any supplied availability, and explaining the ordering | A polished plan for a different month, invented books, or a generic reading essay without a plan |
+| "I want to understand the dystopian themes across my sci-fi books" | A comparison across the seeded books, with supported thematic similarities and differences and correctly attributed examples | A long response that swaps the books' examples, mentions dystopia without comparing the books, or only asserts that research was completed |
 
-    // The agent should do SOMETHING useful
-    // We don't specify exactly what--that's the point
-    expect(result.toolCalls.length).toBeGreaterThan(0);
+1. Run the request through the agent and application services under test.
+2. Inspect the returned content and read back any persisted document, mind map, or feed items from that run. Grade the delivered artifact, not an agent's description of an artifact.
+3. Check library identifiers, dates, and user constraints deterministically where possible. Evaluate thematic support and usefulness against the supplied source material, using human review or an independent semantic grader with the same rubric.
+4. Accept different layouts, orderings, and output locations when the request permits them. Require the same outcome criteria for each form.
+5. Challenge the grader with the plausible wrong outputs above. Require rejection even when those outputs are long and contain expected keywords or valid tool calls.
 
-    // It should have engaged with the library
-    const libraryTools = ["read_library", "write_file", "publish_to_feed"];
-    const usedLibraryTool = result.toolCalls.some(
-      call => libraryTools.includes(call.name)
-    );
-    expect(usedLibraryTool).toBe(true);
-  });
-
-  test('Agent finds creative solutions', async () => {
-    // Don't specify HOW to accomplish the task
-    const result = await agent.chat(
-      "I want to understand the dystopian themes across my sci-fi books"
-    );
-
-    // Agent might:
-    // - Read all books and create a comparison document
-    // - Research dystopian literature and relate it to user's books
-    // - Create a mind map in a markdown file
-    // - Publish a series of insights to the feed
-
-    // We just verify it did something substantive
-    expect(result.response.length).toBeGreaterThan(100);
-    expect(result.toolCalls.length).toBeGreaterThan(0);
-  });
-});
-```
+Retain response length, tool counts, and library access as diagnostics for investigating a failed run. Those signals do not prove that the requested outcome exists. Label fixture-based results separately from tests using live application services.
 
 ### What Failure Looks Like
 
-```typescript
-// FAILURE: Agent can only say it can't do that
-const result = await agent.chat("Help me prepare for a book club discussion");
-
-// Bad outcome:
-expect(result.response).not.toContain("I can't");
-expect(result.response).not.toContain("I don't have a tool");
-expect(result.response).not.toContain("Could you clarify");
-
-// If the agent asks for clarification on something it should understand,
-// you have a context injection or capability gap
-```
+For "Help me prepare for a book club discussion", require usable discussion material grounded in the relevant books. An empty artifact, an unsupported summary, or a claim of completion without that material fails. A clarification about a genuinely missing book or discussion constraint can be appropriate; a clarification about information already available in context suggests a context or capability gap. Grade the resulting outcome rather than banning particular response phrases.
 </surprise_test>
 
 <parity_testing>

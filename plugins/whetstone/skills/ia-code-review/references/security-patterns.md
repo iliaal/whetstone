@@ -22,6 +22,8 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `.env` tracked in git | Secrets committed to VCS | Add `.env`, `.env.local`, `.env.*.local` to `.gitignore` |
 | `JSON.stringify.*user`, `__INITIAL_STATE__.*token` | Sensitive data serialized into SSR HTML | Sanitize server-side state before client hydration |
 
+**Check exclusion against the serializer used by the leaking sink.** Dataclass `field(repr=False)` hides a field from the generated representation, but `asdict()` still includes it. Pydantic `Field(repr=False)` does not exclude a field from `model_dump()`; export exclusion is a separate setting. TypeScript `private` does not hide a property at runtime. A `toJSON()` redactor affects `JSON.stringify()`, but Node's `util.inspect()` uses a different path and options. Trace a production credential into the actual output before reporting exposure; a secret-shaped fixture alone does not establish a leak. Run the regression through the sink's serializer and options, including nested objects, rather than testing only the redactor in isolation.
+
 **Per-parameter secret redaction covers only the frame that declares the parameter.** The same secret sitting in an unannotated caller's parameter is still in the caller's frame, and a whole-trace scrubber hooked to one exception class is not equivalent: changing the thrown type is then not redaction-neutral. Verify by triggering through a wrapper whose own parameter carries no annotation, and assert the secret is absent from the whole trace.
 
 ## Auth / AuthZ
@@ -48,6 +50,8 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | Cookie-based auth without CSRF token | Session cookies sent automatically by browser | Add CSRF token to forms/AJAX, or use bearer token auth (no CSRF risk) |
 | `SameSite` not set on session cookies | Cookies sent on cross-origin requests | `SameSite=Lax` (default) or `Strict` for session cookies |
 
+For browser WebSockets authenticated by automatically sent cookies, check authentication and an explicit `Origin` allowlist at the handshake. HTTP CORS middleware does not establish either check for WebSocket messages. Demonstrate a hostile page's actual protected read or mutation before reporting cross-site exposure. `Origin` identifies browser provenance, not user identity: non-browser clients can forge it. Assess a missing header against the supported clients and authentication policy rather than treating every absent `Origin` as a vulnerability. See [RFC 6455 origin considerations](https://www.rfc-editor.org/rfc/rfc6455.html#section-10.2).
+
 ## XSS
 
 | Search for | Vulnerable pattern | Fix |
@@ -55,6 +59,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `innerHTML =`, `insertAdjacentHTML`, `dangerouslySetInnerHTML`, `v-html=` | Untrusted HTML injected into DOM | `.textContent`, DOMPurify, or framework auto-escaping |
 | A helper containing both `textContent =` and `.innerHTML` (the round-trip escaper) | Text-node serialization escapes only `&`, `<`, `>` and U+00A0; quotes pass through, so the result still breaks out of `attr="${escaped}"` | Escape `"` and `'` explicitly, or set the attribute via `setAttribute`/`dataset` instead of building HTML |
 | `mark_safe(`, `Markup(`, `\|safe` in templates | Marking untrusted content as safe | Remove unsafe marking; auto-escape by default |
+| Jinja `\|tojson` inside a double-quoted HTML attribute | Attacker-controlled JSON retains double quotes in a safe-marked value, allowing attribute breakout; auto-escape and ordinary `escape` trust that value | Use a single-quoted attribute or apply `\|forceescape` after `\|tojson`; exercise the actual attribute context. See [Jinja's `tojson` contract](https://jinja.palletsprojects.com/en/stable/templates/#jinja-filters.tojson) |
 | `render_template_string(`, `Template(.*render`, `from_string(` | Server-side template injection (SSTI) | Static templates only; never render user input as template |
 | `document.write(`, `eval(`, `new Function(`, `setTimeout(.*string` | String-to-code execution | Static imports, no dynamic code eval |
 | `javascript:` in `href` or `src` attributes | Protocol-based XSS | Validate URLs, reject non-http/https schemes |
@@ -150,7 +155,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `Math.random(`, `random.random(`, `mt_rand(` for tokens/secrets/IDs | Predictable value used as a security control | `crypto.randomBytes`, `secrets.token_urlsafe`, `random_bytes` |
 | `verify=False` (requests), `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true` | TLS certificate validation disabled (MITM) | Remove the flag; trust/pin the proper CA in the client |
 | ECB mode, static/reused IV or nonce, home-rolled crypto, MD5/SHA1 for integrity | Deterministic ciphertext, reused nonce, forgeable integrity checks | AES-GCM/ChaCha20-Poly1305 with a fresh nonce, audited libraries, HMAC-SHA256+ |
-| `sha256`/`hash_file(`/`hashlib`/signature or HMAC verify on a downloaded, cached, or uploaded artifact (installers, self-updaters, plugin or dependency fetchers) | Integrity check fails open: a missing or malformed digest counts as a pass, a mismatch is only logged or its return value is ignored, a mismatch falls back to a mirror or backend that skips verification, or a cache hit is used without re-verifying | A missing digest is a failure; route every acquisition path, cache reads included, through one verify-then-use helper that refuses the artifact on mismatch. A valid digest proves byte identity only, so archive-extraction checks (File Handling) still apply |
+| `sha256`/`hash_file(`/`hashlib`/signature or HMAC verify on a downloaded, cached, or uploaded artifact (installers, self-updaters, plugin or dependency fetchers) | Integrity check fails open: a missing or malformed digest counts as a pass, a mismatch is only logged or its return value is ignored, a mismatch falls back to a mirror or backend that skips verification, or a cache hit is used without re-verifying | A missing digest is a failure; route every acquisition path, cache reads included, through one verify-then-use helper that refuses the artifact on mismatch. Authenticate the expected digest through trusted provenance, a verified signed manifest, or an authenticated channel; an attacker who can replace both artifact and digest defeats comparison alone. A valid digest proves byte identity only, so archive-extraction checks (File Handling) still apply |
 
 ## Version-Gated False Positives
 

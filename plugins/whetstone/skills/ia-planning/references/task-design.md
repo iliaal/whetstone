@@ -40,4 +40,6 @@ Write every task for a capable implementer with zero context. Given the exact in
 - **Concrete**: name specific files, endpoints, components, and verification. Include code patterns or line-level anchors only when they preserve a decision the implementer could not recover cheaply.
 - **Ordered**: respect dependencies, sequential when needed
 - **Verifiable**: include at least one validation task per phase
-- **Complete**: do not defer test coverage, skip edge cases, or omit error handling to save time. The marginal cost of completeness during initial implementation is near-zero compared to retrofitting later.
+- **Complete**: retain all requested behavior, existing contracts, required error handling, and the tests that prove them. Do not omit covered edge cases to save time.
+
+Before adding an unrequested guard, retry, recovery path, or abstraction, trace the reachable failure in the actual usage. Assess whether the failure will be visible in time for a cheap correction. Consider the cost of adding protection later, especially for stored data, shared interfaces, money, and security. Choose the smallest mechanism justified by that evidence. Record a material safeguard considered but omitted with its reason in the existing scope notes. If a safeguard would delay, cap, gate, or skip requested behavior, resolve the conflict explicitly instead of narrowing the request.

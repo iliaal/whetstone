@@ -10,6 +10,8 @@ Connection pooling: `new Pool({ max: 20, idleTimeoutMillis: 30000, connectionTim
 
 Transactions: `BEGIN` → ops → `COMMIT` / catch → `ROLLBACK` / finally → `client.release()`
 
+For message consumers with database effects, enforce a database uniqueness constraint on the consumer and message ID. Insert the receipt and apply the effect in the same transaction. Skip the effect when a committed receipt already exists. Roll back both when handling fails. Acknowledge delivery only after commit. A receipt committed before the effect can suppress necessary retries; a receipt committed afterward can allow the effect twice. Verify replay after rollback succeeds and replay after commit leaves the effect unchanged. External calls, payment operations, and email delivery require their own idempotency or reconciliation contract; the database transaction cannot roll those effects back.
+
 64-bit integer columns (`BIGINT` primary keys): configure the driver to return them as `string` or `BigInt` *before* any JS code touches the value, and keep them strings across the API boundary. Ordering is the whole point: casting to string in the serializer, after the driver has already produced a JS `Number`, does not restore the lost digits; precision is gone at parse time. `node-postgres` returns `int8` as a string by default; `mysql2` returns a `Number` unless `supportBigNumbers` and `bigNumberStrings` are set. Nothing throws; IDs past 2^53 just come back with wrong low digits, surfacing much later as "record not found".
 
 Index strategies:

@@ -95,6 +95,8 @@ Use these bands to describe measured performance, not to assign code-review seve
 
 **Noise floor before any before/after claim.** A supplied artifact reading 3.2s → 2.9s can sit entirely inside the envelope of changing nothing. On high-variance measurements (agentic runs, cold-start-sensitive paths, anything sharing a host or a rate-limited API), establish what *no change* produces before crediting a delta: run the same harness against two identical builds at the same commit, **interleaved** (A, B, A, B; never all of A then all of B, which confounds the comparison with load and time of day, and admits no post-hoc correction because the confound and the effect are the same column). Whatever spread that produces is the floor; a later claim smaller than it is unsupported however confidently reported. Register the threshold *before* the change exists; a bar chosen after seeing results is not a bar. Report an interval rather than a point estimate, and treat an interval spanning zero as the finding. Name the paths the instrument never exercised; a green run certifies only what it touched. For a low-variance benchmark (p95 over 10k requests), this is overhead; scope it to measurements whose run-to-run spread is plausibly the size of the claimed effect.
 
+**Generation variance.** When a stochastic step generates the artifact being scored (a memory store, retrieval index, or synthesized corpus), repeated scoring of one artifact measures only scoring variance. Pilot two or three independent generations with unchanged inputs and score each with the same procedure. If generation spread could explain the claimed improvement, replicate generation for each variant and compare means across independent builds, or move the changed mechanism closer to the scored behavior. More scoring repetitions over one build cannot establish generation stability. Skip this extra pilot for deterministic generation.
+
 ## Performance Benchmarks
 
 Default thresholds (calibrate per project):
@@ -102,6 +104,8 @@ Default thresholds (calibrate per project):
 - All database queries must use appropriate indexes
 - Memory usage must be bounded and predictable
 - Background jobs should process items in batches when dealing with collections
+
+When the project uses k6, check required business outcomes and payload structure alongside HTTP status and latency. Gate business-check results and any custom application-error metrics with thresholds justified by the project's contract and SLO. [Failed k6 checks alone do not produce a failed exit status](https://grafana.com/docs/k6/latest/using-k6/checks/). In the test environment, deliberately return an HTTP 200 response with a missing required field or failed business operation. Verify that the CI invocation exits nonzero for that response and passes after restoring the valid response. Keep the failing business metric visible in the report.
 
 ## Detection Patterns
 

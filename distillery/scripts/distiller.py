@@ -19,6 +19,8 @@ from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 
+from markdown_links import broken_local_links, link_targets
+
 DISTILLERY_DIR = Path(__file__).resolve().parent.parent
 STAGING_DIR = DISTILLERY_DIR / ".skill-distiller" / "sources"
 GENERATED_DIR = DISTILLERY_DIR / "generated-skills"
@@ -1453,32 +1455,9 @@ def _find_attribution(text):
                 return seen
     return seen
 
-# Relative markdown link target, minus external (http/mailto) and pure-anchor
-# links. A trailing #anchor is dropped before resolution.
-_REL_LINK_RE = _re.compile(r"\]\((?!https?:|mailto:|#)([^)\s]+?)(?:#[^)]*)?\)")
-
 def _find_broken_relative_links(text, base_dir):
-    """Return relative markdown link targets in `text` that don't resolve on disk.
-
-    Resolves each target against base_dir (the linking file's own directory).
-    Catches a reference that points at a sibling reference, script, or asset
-    that was renamed or never created -- the SKILL.md->references resolution in
-    validate-cross-refs.sh only covers links from the SKILL.md itself, not links
-    between reference files. Capped at 5 hits per source.
-    """
-    broken = []
-    for match in _REL_LINK_RE.finditer(text):
-        target = match.group(1).strip()
-        # Only check things that look like file links (extension or path sep);
-        # skip bare-word anchors and section references.
-        if "." not in Path(target).name and "/" not in target:
-            continue
-        if not (base_dir / target).resolve().exists():
-            if target not in broken:
-                broken.append(target)
-            if len(broken) >= 5:
-                break
-    return broken
+    """Return missing local files or Markdown fragments, capped at 5 per source."""
+    return [target for target, _ in broken_local_links(text, base_dir)][:5]
 
 # Every tool, denied. A judge verdict must come from the prompt alone; a judge that
 # can read the repo answers a different question than one that can't, and the two
@@ -1906,9 +1885,17 @@ def validate_plugin(component_filter=None):
         skill_dir = skill_path.parent
         refs_dir = skill_dir / "references"
         scripts_dir_path = skill_dir / "scripts"
+        local_paths = {urllib.parse.unquote(parts.path) for target in link_targets(content)
+                       if not (parts := urllib.parse.urlsplit(target)).scheme and not parts.netloc}
+        skill_root_path = f"/{skill_dir.relative_to(PLUGIN_DIR.parents[1]).as_posix()}/"
+        local_paths = {path.removeprefix(skill_root_path).removeprefix("./") for path in local_paths}
+        for target, reason in broken_local_links(content, skill_dir, repo_root=PLUGIN_DIR.parents[1]):
+            add_finding(skill_name, "BROKEN_REFERENCE_LINK",
+                        f"SKILL.md links to {reason}: {target}", "MEDIUM")
 
         if refs_dir.is_dir():
-            linked_refs = set(re.findall(r'\]\(\./references/([^)]+)\)', content))
+            linked_refs = {path.removeprefix("references/") for path in local_paths
+                           if path.startswith("references/")}
             actual_refs = {f.name for f in refs_dir.iterdir() if f.is_file()}
             orphans = actual_refs - linked_refs
             for orphan in sorted(orphans):
@@ -1936,13 +1923,14 @@ def validate_plugin(component_filter=None):
                     add_finding(skill_name, "AI_ATTRIBUTION_LEAK",
                                 f"AI attribution in {ref_label}: {', '.join(ref_attr_hits[:3])}",
                                 "HIGH")
-                for bad in _find_broken_relative_links(ref_text, ref_path.parent):
+                for bad, reason in broken_local_links(ref_text, ref_path.parent, repo_root=PLUGIN_DIR.parents[1]):
                     add_finding(skill_name, "BROKEN_REFERENCE_LINK",
-                                f"{ref_label} links to missing file: {bad}",
+                                f"{ref_label} links to {reason}: {bad}",
                                 "MEDIUM")
 
         if scripts_dir_path.is_dir():
-            linked_scripts = set(re.findall(r'\]\(\./scripts/([^)]+)\)', content))
+            linked_scripts = {path.removeprefix("scripts/") for path in local_paths
+                              if path.startswith("scripts/")}
             actual_scripts = {f.name for f in scripts_dir_path.iterdir() if f.is_file()}
             orphans = actual_scripts - linked_scripts
             for orphan in sorted(orphans):
@@ -2068,6 +2056,9 @@ def validate_plugin(component_filter=None):
             add_finding(agent_name, "AI_ATTRIBUTION_LEAK",
                         f"AI attribution in agent: {', '.join(agent_attr_hits[:3])}",
                         "HIGH")
+        for target, reason in broken_local_links(content, agent_path.parent, repo_root=PLUGIN_DIR.parents[1]):
+            add_finding(agent_name, "BROKEN_REFERENCE_LINK",
+                        f"{agent_path.name} links to {reason}: {target}", "MEDIUM")
 
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
         for ref in skill_refs:
@@ -2116,6 +2107,9 @@ def validate_plugin(component_filter=None):
             add_finding(cmd_name, "AI_ATTRIBUTION_LEAK",
                         f"AI attribution in command: {', '.join(cmd_attr_hits[:3])}",
                         "HIGH")
+        for target, reason in broken_local_links(content, cmd_path.parent, repo_root=PLUGIN_DIR.parents[1]):
+            add_finding(cmd_name, "BROKEN_REFERENCE_LINK",
+                        f"{cmd_path.name} links to {reason}: {target}", "MEDIUM")
 
         skill_refs = re.findall(r'skills/([a-z][a-z0-9-]+)', body)
         for ref in skill_refs:

@@ -90,3 +90,11 @@ Accepting an `Idempotency-Key` header is the easy half. Four things decide wheth
 - **Decide what an in-flight duplicate gets.** The first request holds the claim and has not finished. Pick one and state it: 409 and let the client retry, block on the claim and return the same response, or 202 with a status URL. Leaving it undefined means the second request usually falls through and double-executes.
 
 Treat every outbound call as three-way: success, failure, and **unknown** (timeout, connection reset after the request was sent). Record the intent before calling out, so an unknown outcome can be reconciled rather than guessed at. Set key retention to outlive the longest path that can replay the request, including a dead-letter queue drained days later; sizing it by storage cost rather than by replay window is how a "already processed" guarantee expires early.
+
+## Webhook Acceptance
+
+Verify the webhook signature against the required request bytes before accepting an event. Durably commit the verified event ID and complete payload as recoverable pending work before returning `2xx`. A durable queue can provide this guarantee; an additional inbox table is unnecessary when the queue already does. A duplicate event must preserve pending work and completed state. An event ID recorded before processing is an acceptance receipt, not proof that the business effect completed.
+
+Reclaim expired worker leases after crashes. Keep failed work retryable or move exhausted attempts to an inspectable failure state. Mark the event complete only after the required effects succeed. Deduplicate each business operation across distinct event IDs as well as retries of the same event; a crash after fulfillment but before completion must not fulfill the order again.
+
+Test storage failure before durable acceptance, duplicate delivery while pending, worker failure before the effect, and a crash after the effect but before completion. Verify recovery produces the required effect once. Return a retryable failure when durable acceptance fails; after `2xx`, recovery must work without depending on the provider sending the event again.

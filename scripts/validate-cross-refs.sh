@@ -81,35 +81,6 @@ agent_name_from_ref() {
     basename "$1" .md
 }
 
-check_markdown_links() {
-    local file="$1"
-    local base_dir="$2"
-    local label="$3"
-
-    [[ -f "$file" ]] || return 0
-
-    while IFS= read -r ref; do
-        if [[ ! -f "$base_dir/$ref" ]]; then
-            echo "  ERROR: $label links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP '(plugins/whetstone/)?agents/[^)[:space:]]+\.md' "$file" 2>/dev/null || true)
-
-    while IFS= read -r ref; do
-        if [[ ! -f "$base_dir/$ref" ]]; then
-            echo "  ERROR: $label links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP '(plugins/whetstone/)?skills/[^)[:space:]]+/SKILL\.md' "$file" 2>/dev/null || true)
-
-    while IFS= read -r ref; do
-        if [[ ! -f "$base_dir/$ref" ]]; then
-            echo "  ERROR: $label links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP '(plugins/whetstone/)?commands/[^)[:space:]]+\.md' "$file" 2>/dev/null || true)
-}
-
 # --- Check references in commands ---
 
 echo "Checking command files for broken references..."
@@ -164,24 +135,6 @@ while IFS= read -r skill_file; do
     skill_dir=$(dirname "$skill_file")
     skill_name=$(basename "$skill_dir")
 
-    # Check for references/ files that don't exist
-    while IFS= read -r ref; do
-        ref_path="$skill_dir/$ref"
-        if [[ ! -f "$ref_path" ]]; then
-            echo "  ERROR: skills/$skill_name/SKILL.md links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP '\]\(\./references/[^)]+\)' "$skill_file" 2>/dev/null | grep -oP '\./references/[^)]+' || true)
-
-    # Check for scripts/ files that don't exist
-    while IFS= read -r ref; do
-        ref_path="$skill_dir/$ref"
-        if [[ ! -f "$ref_path" ]]; then
-            echo "  ERROR: skills/$skill_name/SKILL.md links to missing file: $ref"
-            ((errors++))
-        fi
-    done < <(grep -oP '\]\(\./scripts/[^)]+\)' "$skill_file" 2>/dev/null | grep -oP '\./scripts/[^)]+' || true)
-
     # Path-style links to a sibling skill resolve here but break in every
     # distribution channel that strips the ia- prefix: mirror-to-ai-skills.sh
     # renames the directory (ia-writing-tests -> writing-tests) and rewrites
@@ -195,17 +148,16 @@ while IFS= read -r skill_file; do
 
 done < <(find "$PLUGIN_DIR/skills" -name "SKILL.md" -type f 2>/dev/null)
 
-# --- Check README table entries ---
-
-echo "Checking README tables for broken links..."
-check_markdown_links "$REPO_ROOT/README.md" "$REPO_ROOT" "README.md"
-check_markdown_links "$PLUGIN_DIR/README.md" "$PLUGIN_DIR" "plugins/whetstone/README.md"
+echo "Checking local Markdown files and fragments..."
+if ! python3 "$REPO_ROOT/distillery/scripts/markdown_links.py" --repo-root "$REPO_ROOT" "$PLUGIN_DIR" "$REPO_ROOT/README.md"; then
+    errors=$((errors + 1))
+fi
 
 # --- Summary ---
 
 echo ""
 if [[ "$errors" -gt 0 ]]; then
-    echo "FAILED: $errors broken reference(s) found."
+    echo "FAILED: Cross-reference validation failed."
     exit 1
 else
     echo "OK: All cross-references valid."

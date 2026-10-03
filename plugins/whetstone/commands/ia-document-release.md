@@ -65,16 +65,13 @@ git log origin/<base>..HEAD --oneline
 git diff origin/<base>...HEAD --name-only
 ```
 
-Discover all documentation files:
+Discover authored documentation recursively from tracked files and non-ignored new files:
 
 ```bash
-find . -maxdepth 3 -name "*.md" \
-  -not -path "./.git/*" \
-  -not -path "./node_modules/*" \
-  -not -path "./.plan/*" \
-  -not -path "./docs/plans/*" \
-  -not -path "./docs/brainstorms/*" | sort
+git ls-files -z --cached --others --exclude-standard
 ```
+
+Parse the NUL-delimited inventory without splitting filenames on whitespace. Inspect declared documentation roots and generator configuration, then select by documentation role rather than extension alone: include `.md`, `.mdx`, `.rst`, `.adoc`, and authored `.txt` or `.tmpl` sources where applicable. Exclude dependencies, build output, generated pages, and historical plans or brainstorms unless they are current source documentation. For generated docs, edit the authored source and run its generator. Follow symlinks only when the resolved source stays inside the repository. Do not impose a depth limit; nested documentation is part of the audit.
 
 Classify the diff into categories:
 - **New features**: new files, commands, skills, capabilities
@@ -110,7 +107,7 @@ Read each documentation file and cross-reference against the diff. Classify each
 - Are listed commands, scripts, and file paths accurate?
 - Do build/test instructions match what's in the package manager config?
 
-**Any other .md files:**
+**Other authored documentation files:**
 - Read the file, determine its purpose and audience.
 - Check whether the diff contradicts anything it says.
 

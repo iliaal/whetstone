@@ -184,6 +184,16 @@ After reviewing the returned artifact, send a separate implementation brief with
 
 ## Pattern 6: Coordinated Multi-File Refactoring
 
+When a migration repeats the same transformation across multiple units, prove the reusable recipe before fan-out:
+
+1. Select a representative unit that exercises the changes with the largest blast radius, rather than the easiest unit.
+2. Run the unit's baseline checks before editing.
+3. Apply the migration, then verify the target build and preserved baseline behavior. Check intended behavior changes against their acceptance criteria.
+4. Put the ordered edits, discovered environment requirements, and observed failures with their fixes in the existing dispatch notes.
+5. Dispatch the remaining compatible units from that proven recipe in dependency order. Verify outliers separately instead of assuming the pilot covers a different transformation.
+
+The pilot does not add an approval gate or require a new planning artifact. Independent refactors without a reusable transformation retain their existing dispatch boundaries.
+
 ```javascript
 // 1. Prepare the work items in the current session
 

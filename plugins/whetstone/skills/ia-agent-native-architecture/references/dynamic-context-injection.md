@@ -233,6 +233,16 @@ const prompt = Handlebars.compile(template)({
 
 Context should be injected at agent initialization, and optionally refreshed during long sessions.
 
+### Persisted preferences
+
+After an authorized preference write succeeds, invalidate the affected cached context and reload the persisted preferences before the next model turn. Apply the same refresh when a preference changes or is removed. Replace the active preference snapshot rather than appending an indefinite session overlay.
+
+Key the snapshot by authenticated user and the configured scope, such as project or global preferences. Invalidate the snapshot on a scope switch. Use the store's revision or change notifications when another session can edit the same preferences. Mark older snapshots stale so a removed preference does not remain active through earlier context.
+
+Preserve provenance when refreshing. Preferences explicitly saved under the user's authorization can guide later turns within developer policy and resource grants. Text found in books, uploaded documents, or ordinary app records cannot become a preference merely because a context builder loaded it.
+
+Verify a save followed by another turn, an edit, a deletion, and a project switch. Inspect the context actually sent to the model; a correct database row alone does not establish that the active session uses the new preferences.
+
 **At initialization:**
 ```swift
 // Always inject fresh context when starting an agent
@@ -362,6 +372,8 @@ Before launching an agent:
 - [ ] Capabilities are mapped to user vocabulary
 - [ ] Domain-specific terms are explained
 - [ ] Context is fresh (gathered at agent start, not cached)
+- [ ] Authorized preference writes, edits, and deletions refresh active context before the next turn
+- [ ] Preference caches respect user identity and scope changes
 
 When adding new features:
 - [ ] New resources are included in context injection
