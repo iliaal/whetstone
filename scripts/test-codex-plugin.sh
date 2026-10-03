@@ -108,6 +108,13 @@ test_sync_migrates_legacy_codex_links() {
 #!/usr/bin/env bash
 if [[ "$*" == "plugin list" && -n "${WHETSTONE_FAKE_STATUS:-}" ]]; then
   printf 'whetstone@whetstone  installed, %s  4.2.1  /fixture\n' "$WHETSTONE_FAKE_STATUS"
+  python3 -c 'print("catalog-entry " * 100000)'
+elif [[ "$*" == "plugin list --marketplace whetstone --json" ]]; then
+  case "${WHETSTONE_FAKE_STATUS:-}" in
+    enabled) printf '%s\n' '{"installed":[{"pluginId":"whetstone@whetstone","installed":true,"enabled":true}]}' ;;
+    disabled) printf '%s\n' '{"installed":[{"pluginId":"whetstone@whetstone","installed":true,"enabled":false}]}' ;;
+    *) printf '%s\n' '{"installed":[]}' ;;
+  esac
 fi
 EOF
 	chmod +x "$fake_bin/codex"

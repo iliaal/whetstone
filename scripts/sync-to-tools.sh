@@ -38,7 +38,18 @@ done
 # Native Codex plugin installation supersedes the old direct skill links.
 # Remove only symlinks owned by this checkout after confirming that replacement.
 codex_plugin_installed=false
-if command -v codex >/dev/null 2>&1 && codex plugin list 2>/dev/null | grep -Eq '^whetstone@whetstone[[:space:]]+installed, enabled([[:space:]]|$)'; then
+if command -v codex >/dev/null 2>&1 && codex plugin list --marketplace whetstone --json 2>/dev/null | python3 -c '
+import json, sys
+
+plugins = json.load(sys.stdin).get("installed", [])
+active = any(
+    item.get("pluginId") == "whetstone@whetstone"
+    and item.get("installed") is True
+    and item.get("enabled") is True
+    for item in plugins
+)
+raise SystemExit(0 if active else 1)
+' >/dev/null 2>&1; then
 	codex_plugin_installed=true
 fi
 
