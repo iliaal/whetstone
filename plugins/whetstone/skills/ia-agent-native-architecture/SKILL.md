@@ -15,6 +15,8 @@ description: >-
 - Keep authority, scope, approval, and runtime isolation in trusted orchestration; prompts alone cannot enforce them.
 - Provide explicit completion and partial-progress signals, durable state, and observable action results.
 - Validate capabilities with real tasks, including failure and interruption paths; do not infer improvement from elapsed usage.
+- **Evaluate discovery from original inputs.** Replaying fixed candidates measures classification and cannot reveal candidates a changed search would miss or invent. Compare each discovery variant with a fresh baseline on the same complete inputs in isolation. Independently adjudicate unmatched outputs from the complete result sets, including outputs from clean tasks.
+- **Calibrate decision gates per model.** A replacement model's confidence scores do not preserve the previous model's cutoff, even when ranking accuracy improves. Fit thresholds on a separate calibration set. Verify false-positive and false-negative behavior through the production decision path on untouched representative cases.
 - Use the selected topic's references and the architecture checklist to produce a concrete design with evidence and unresolved constraints.
 
 ## Core Principles

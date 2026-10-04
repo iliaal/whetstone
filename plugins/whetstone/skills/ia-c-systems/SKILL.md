@@ -19,6 +19,8 @@ Covers C11 and later for libraries, systems code, and native extensions. For C++
 
 - Preserve the repository's sanctioned idioms and ABI; do not turn a scoped fix into a restyle.
 - State ownership, check fallible calls, validate public boundaries, and assert internal invariants.
+- **Preserve recovery outside optimizer assumptions.** An assertion that becomes an assumption can remove the branch handling its false case. Keep recoverable checks as runtime branches with diagnostic-only assertions behind a debug preprocessor guard. Exercise the fallback in an optimized release build.
+- **Guard staged initialization against reentry.** Set an in-progress marker before callback-capable work on every constructor or factory path. Permit retry after failure only after fully releasing and resetting partial state. Test recursive entry and retry after failed initialization.
 - Bound traversal of external input and check sizes before allocation or narrowing.
 - Choose helpers only when they name a concept, own an error, or isolate a side effect.
 - Verify the actual rebuilt artifact; use instrumented tests for safety and representative release builds for performance.

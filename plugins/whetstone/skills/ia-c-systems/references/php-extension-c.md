@@ -131,7 +131,7 @@ typedef struct {
 
 ## Assertions
 
-`ZEND_ASSERT(cond)` compiles out unless the build is `--enable-debug`. It is the extension equivalent of the base skill's assert-density rule and carries the same zero release cost.
+With `ZEND_DEBUG` disabled, the normal expansion of `ZEND_ASSERT(cond)` is `ZEND_ASSUME(cond)`. GCC's conditional/unreachable form evaluates the condition; Clang and MSVC assumption intrinsics do not, but assumption-backed forms can eliminate recovery for a false condition. Keep recoverable checks as runtime branches, with diagnostic-only assertions under `#if ZEND_DEBUG` when their release expansion would add work or invalidate a fallback.
 
 ## Version compatibility
 

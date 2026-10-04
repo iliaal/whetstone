@@ -18,6 +18,7 @@ paths: "**/*.tsx,**/*.jsx,**/*.ts,**/*.css,**/tailwind.config.*,**/*.html,**/*.v
 
 - Keep derived state in render and user actions in event handlers; use effects for external synchronization.
 - Give async work a lifecycle and cancellation policy; represent failure separately from pending and empty data.
+- **Bind cache keys to the request's identity.** A tenant-scoped key can receive another tenant's response when server session state changes first. Keep request scope and cache identity consistent throughout context switches. Verify isolation with mounted consumers, in-flight requests, and failed refetches.
 - Preserve focus when hiding interactive regions and exercise keyboard navigation in a real browser.
 - Validate and authorize every public server action; send only needed fields across server/client boundaries.
 - Measure performance changes and test user-visible behavior, not type-checking alone.
@@ -42,6 +43,7 @@ Effects are escape hatches; most logic should NOT use effects.
 - `useEffectEvent` for non-reactive values (e.g., theme in a connection effect)
 - Always return cleanup for subscriptions, connections, listeners
 - Data fetching cancellation (pick by situation): `AbortController` for fetch; `ignore` flag for non-cancellable promises. With React Query, pass the query function's signal to the transport, such as `queryFn: ({ signal }) => fetch(url, { signal })`. Without consuming that signal, an unused query can finish and populate the cache; do not describe that behavior as transport cancellation.
+- **A settled request is not completed initialization.** Consume a one-time initialization latch only after applying usable data or observing a successful terminal empty result. Test empty-then-populated responses within one mount. Verify that later refetches preserve user edits.
 
 
 ## Discipline

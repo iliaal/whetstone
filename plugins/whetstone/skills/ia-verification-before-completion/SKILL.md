@@ -18,6 +18,9 @@ Make completion claims only from fresh evidence for the actual claim. Follow the
 3. **Identify** the command that proves the claim. For ship-level claims, check the full applicable chain: build, types, lint, tests, security scan, and diff review; stop on the first failure. Read project-declared gates and run the ones that apply to this action in their required order; do not invent gates.
 4. **Run** the proof now. Earlier output, a subagent's report, confidence, and a renamed success phrase do not replace fresh execution.
 5. **Read** complete output and exit status, including warnings, executed/passed counts, and missing artifacts. A suite that executes nothing is not proof. Confirm the intended binary, interpreter, source revision, and entry point actually ran.
+
+   - **Preserve raw evidence.** Display filters can produce plausible summaries while dropping records or rewriting bytes. Use unfiltered output when parsing, patches, counts, comparisons, or reviews depend on complete records or exact bytes. A downstream `head`, `tail`, or `cat` cannot restore filtered producer output.
+
 6. **Verify** that evidence covers the requirements and relevant failure paths. An implemented safe positive capability must work through its intended entry point; a refusal-only path, stub, mock, or unreachable implementation is partial.
 7. **Claim** only what the evidence establishes. Report the outcome, exercise command/URL/click path, failed or skipped checks, and material residual risks. State narrower proof scope and distinguish deterministic fixtures from live behavior.
 

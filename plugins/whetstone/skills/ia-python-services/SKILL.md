@@ -14,6 +14,7 @@ paths: "**/*.py,**/pyproject.toml,**/ruff.toml,**/uv.lock"
 ## Working rules
 
 - Validate external inputs and responses at boundaries; preserve exception causes.
+- **Keep missing results distinct from empty results.** When an empty collection means success, require the response field instead of defaulting it to empty; an all-default model can validate `{}` as success. Test missing, misspelled, explicitly empty, and populated payloads through the real validation boundary.
 - Keep simple sequential work synchronous. Bound concurrent work, preserve cancellation, and keep task references.
 - Give network calls timeouts; retry only failures and operations whose semantics permit it.
 - Enforce job idempotency with atomic writes and database constraints.

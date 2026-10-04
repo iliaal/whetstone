@@ -13,6 +13,7 @@ description: >-
 
 - Preserve raw bytes as bytes when fidelity matters; choose parsed types separately for querying.
 - Treat deployed migrations as immutable and account for old and new application versions during rollout.
+- **Data rollback needs provenance.** Selecting rows by the destination value can also select rows the forward migration never touched. When reversibility is required, preserve affected identities and original values under an explicit policy for subsequent writes. Verify restored data with the application version that will read it.
 - Check lock duration and transaction scope; protect read-modify-write paths against concurrent updates.
 - Match index predicates and NULL semantics to every writer and migration query.
 - Measure query changes with representative data and actual plans; verify invariants as database outcomes.
