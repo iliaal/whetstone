@@ -1,4 +1,4 @@
-import { load } from "js-yaml"
+import { dump, load } from "js-yaml"
 
 export type FrontmatterResult = {
   data: Record<string, unknown>
@@ -31,35 +31,12 @@ export function parseFrontmatter(raw: string): FrontmatterResult {
 }
 
 export function formatFrontmatter(data: Record<string, unknown>, body: string): string {
-  const yaml = Object.entries(data)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => formatYamlLine(key, value))
-    .join("\n")
-
-  if (yaml.trim().length === 0) {
+  const entries = Object.entries(data).filter(([, value]) => value !== undefined)
+  if (entries.length === 0) {
     return body
   }
 
+  // Quote strings so YAML syntax, implicit types, and trailing newlines survive conversion.
+  const yaml = dump(Object.fromEntries(entries), { lineWidth: -1, forceQuotes: true }).trimEnd()
   return [`---`, yaml, `---`, "", body].join("\n")
-}
-
-function formatYamlLine(key: string, value: unknown): string {
-  if (Array.isArray(value)) {
-    const items = value.map((item) => `  - ${formatYamlValue(item)}`)
-    return [key + ":", ...items].join("\n")
-  }
-  return `${key}: ${formatYamlValue(value)}`
-}
-
-function formatYamlValue(value: unknown): string {
-  if (value === null || value === undefined) return ""
-  if (typeof value === "number" || typeof value === "boolean") return String(value)
-  const raw = String(value)
-  if (raw.includes("\n")) {
-    return `|\n${raw.split("\n").map((line) => `  ${line}`).join("\n")}`
-  }
-  if (raw.includes(":") || raw.startsWith("[") || raw.startsWith("{") || raw === "*") {
-    return JSON.stringify(raw)
-  }
-  return raw
 }
