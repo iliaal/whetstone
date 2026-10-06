@@ -1,6 +1,8 @@
 name: CLI regression checks
 
 on:
+  push:
+    branches: ["fix/frontmatter-yaml-roundtrip"]
   pull_request:
     paths:
       - "src/**"
