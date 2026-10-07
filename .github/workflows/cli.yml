@@ -2,7 +2,13 @@ name: CLI regression checks
 
 on:
   push:
-    branches: ["fix/frontmatter-yaml-roundtrip"]
+    branches: [master]
+    paths:
+      - "src/**"
+      - "plugins/whetstone/**"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/cli.yml"
   pull_request:
     paths:
       - "src/**"
@@ -10,19 +16,24 @@ on:
       - "package.json"
       - "bun.lock"
       - ".github/workflows/cli.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: cli-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-and-build:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.4.2"
       - name: Install locked dependencies
