@@ -215,13 +215,13 @@ async function collectMarkdownFiles(
 }
 
 async function collectFiles(dirs: string[]): Promise<string[]> {
-  const files: string[] = []
-  for (const dir of dirs) {
+  const files = new Set<string>()
+  for (const dir of new Set(dirs)) {
     if (!(await pathExists(dir))) continue
     const entries = await walkFiles(dir)
-    files.push(...entries)
+    for (const file of entries) files.add(file)
   }
-  return files
+  return [...files]
 }
 
 function isInSupportDir(file: string, roots: string[]): boolean {
