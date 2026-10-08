@@ -122,8 +122,10 @@ async function loadHooks(root: string, hooksField?: ClaudeManifest["hooks"]): Pr
   const hookConfigs: ClaudeHooks[] = []
 
   const defaultPath = path.join(root, "hooks", "hooks.json")
+  const loadedPaths = new Set<string>()
   if (await pathExists(defaultPath)) {
     hookConfigs.push(await readJson<ClaudeHooks>(defaultPath))
+    loadedPaths.add(defaultPath)
   }
 
   if (hooksField) {
@@ -131,8 +133,9 @@ async function loadHooks(root: string, hooksField?: ClaudeManifest["hooks"]): Pr
       const hookPaths = toPathList(hooksField)
       for (const hookPath of hookPaths) {
         const resolved = resolveWithinRoot(root, hookPath, "hooks path")
-        if (await pathExists(resolved)) {
+        if (!loadedPaths.has(resolved) && await pathExists(resolved)) {
           hookConfigs.push(await readJson<ClaudeHooks>(resolved))
+          loadedPaths.add(resolved)
         }
       }
     } else {
