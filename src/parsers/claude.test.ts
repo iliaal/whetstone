@@ -44,3 +44,31 @@ test("loadClaudePlugin ignores command support markdown", async () => {
 
   expect(plugin.commands.map((command) => command.name)).toEqual(["ia-demo"])
 })
+
+test("loadClaudePlugin loads overlapping component paths only once", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({
+    name: "demo",
+    agents: ["./agents", "agents/nested", "extra-agents", "./extra-agents"],
+    commands: ["./commands", "commands/nested", "extra-commands"],
+    skills: ["./skills", "skills/ia-demo", "extra-skills"],
+  }))
+  const files = [
+    "agents/nested/ia-demo.md", "extra-agents/ia-demo.md",
+    "commands/nested/ia-demo.md", "extra-commands/ia-demo.md",
+    "skills/ia-demo/SKILL.md", "extra-skills/ia-demo/SKILL.md",
+  ]
+  for (const file of files) {
+    await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+    await writeFile(path.join(root, file), "---\nname: ia-demo\n---\nInstructions.\n")
+  }
+
+  const plugin = await loadClaudePlugin(root)
+
+  // Distinct files with the same declared name must remain available to converters.
+  expect(plugin.agents.map((agent) => path.relative(root, agent.sourcePath))).toEqual(files.slice(0, 2))
+  expect(plugin.commands.map((command) => path.relative(root, command.sourcePath))).toEqual(files.slice(2, 4))
+  expect(plugin.skills.map((skill) => path.relative(root, skill.skillPath))).toEqual(files.slice(4, 6))
+})
