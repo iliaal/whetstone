@@ -262,6 +262,17 @@ claude /plugin install whetstone
 
 No API key required. Free tier includes 1,000 requests/month.
 
+## Privacy
+
+Whetstone collects no telemetry and runs no service of its own. Data leaves your machine only through these components:
+
+- **Context7 MCP server**: documentation search queries go to `mcp.context7.com`, operated by Upstash.
+- **GitHub commands** (`/ia-resolve-pr` and others): API requests go to GitHub through your own `gh` login.
+- **`/ia-feature-video` upload**: recordings go to the rclone remote you configure, only when you authorize the upload.
+- **Optional Jev suggestions**: subagent prompts go to the service configured in your `jev` CLI, only when you set `WHETSTONE_JEV=1`.
+
+See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
+
 ## Version History
 
 See [CHANGELOG.md](../../CHANGELOG.md) for detailed version history.
