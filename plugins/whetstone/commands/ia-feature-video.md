@@ -33,7 +33,7 @@ This command creates professional video walkthroughs of features for PR document
 
 ## Setup
 
-For agent-browser install/verify steps and the full command reference, see [references/agent-browser-cli.md](references/agent-browser-cli.md).
+For agent-browser install/verify steps and the full command reference, see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md).
 
 ## Main Tasks
 
@@ -71,7 +71,7 @@ gh pr view [number] --json title,body,files,headRefName,headRefOid -q '.'
 gh pr view [number] --json files -q '.files[].path'
 ```
 
-**Map files to testable routes** (same mapping used by `/ia-test-browser`; see [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full file-to-route table).
+**Map files to testable routes** (same mapping used by `/ia-test-browser`; see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md) for the full file-to-route table).
 
 **Bind the recording to the served revision:** record the immutable requested PR SHA from `headRefOid`. Before recording, inspect the server process command and working directory. Verify the served checkout's SHA and scoped staged, unstaged, and relevant untracked content. If the server serves generated assets, establish which content produced the running build through build metadata or an authorized fresh scoped build/restart; matching checkout HEAD alone is insufficient. A responsive port or a matching page title does not prove revision identity.
 

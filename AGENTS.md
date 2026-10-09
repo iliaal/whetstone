@@ -32,9 +32,9 @@ whetstone/
         ├── .claude-plugin/
         │   └── plugin.json      # Plugin metadata
         ├── agents/              # Agents (all `ia-<name>.md`, flat layout)
-        ├── shared-references/   # Cross-agent reference content loaded by agents via Read
-        ├── commands/            # Slash commands (all `ia-<name>.md`)
-        │   └── references/      # Non-invocable reference content (not prefixed)
+        ├── shared-references/   # Reference content shared by agents and commands, loaded via Read
+        ├── commands/            # Slash commands (all `ia-<name>.md`); only command files here
+        │   └── scripts/         # Helper scripts commands run
         ├── skills/              # Skills (all `ia-<name>/`)
         │   └── ia-<skill-name>/
         │       ├── SKILL.md        # Skill content

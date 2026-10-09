@@ -29,7 +29,7 @@ Think about the places it could go wrong. Look for logging output that helps nar
 
 ## Phase 2: Visual Reproduction with agent-browser
 
-**Requires the agent-browser CLI.** If not available, skip to Phase 3 with findings from Phase 1 only. See [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full command reference. **ALWAYS use agent-browser Bash commands. NEVER use `mcp__*` browser tools.**
+**Requires the agent-browser CLI.** If not available, skip to Phase 3 with findings from Phase 1 only. See [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md) for the full command reference. **ALWAYS use agent-browser Bash commands. NEVER use `mcp__*` browser tools.**
 
 If the bug is UI-related or involves user flows, use agent-browser to visually reproduce it:
 

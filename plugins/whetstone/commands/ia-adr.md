@@ -58,7 +58,7 @@ For deprecation ADRs: which ADR is being superseded, why, and whether the replac
 
 **Lifecycle states**: proposed, accepted, deprecated, superseded
 
-Use the template for the chosen format from [adr-templates.md](references/adr-templates.md).
+Use the template for the chosen format from [adr-templates.md](../shared-references/adr-templates.md).
 
 ### 5. Review checklist
 

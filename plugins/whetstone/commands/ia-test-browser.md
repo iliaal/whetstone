@@ -32,13 +32,13 @@ This command tests affected pages in a real browser, catching issues that unit t
 
 <requirements>
 - Local development server running (e.g., `npm run dev`, `php artisan serve`)
-- agent-browser CLI installed (see [references/agent-browser-cli.md](references/agent-browser-cli.md))
+- agent-browser CLI installed (see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md))
 - Git repository with changes to test
 </requirements>
 
 ## Setup
 
-For agent-browser install/verify steps and the full command reference, see [references/agent-browser-cli.md](references/agent-browser-cli.md). Step 0 below performs the runtime install check.
+For agent-browser install/verify steps and the full command reference, see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md). Step 0 below performs the runtime install check.
 
 ## Main Tasks
 
@@ -99,7 +99,7 @@ Record the immutable target SHA (`headRefOid` for a PR, resolved branch SHA othe
 
 <file_to_route_mapping>
 
-Map changed files to testable routes using the file-to-route table in [references/agent-browser-cli.md](references/agent-browser-cli.md).
+Map changed files to testable routes using the file-to-route table in [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md).
 
 Build a list of URLs to test based on the mapping.
 
@@ -327,6 +327,6 @@ Report PARTIAL when required revision, runtime, log, or human verification remai
 
 ## agent-browser CLI Reference
 
-See [references/agent-browser-cli.md](references/agent-browser-cli.md) for the full command reference, file-to-route mapping, and setup instructions.
+See [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md) for the full command reference, file-to-route mapping, and setup instructions.
 
 **ALWAYS use agent-browser Bash commands. NEVER use mcp__claude-in-chrome__* tools.**

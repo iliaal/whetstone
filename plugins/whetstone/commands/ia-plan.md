@@ -128,11 +128,11 @@ Select the plan's level of detail. Simpler is mostly better.
 | **MORE** | Most features, complex bugs | + technical considerations, success metrics, dependencies |
 | **A LOT** | Major features, architectural changes | + phased implementation, alternatives, risk analysis, resource requirements |
 
-See [workflow-plan-templates.md](./references/workflow-plan-templates.md) for the full template of each level.
+See [workflow-plan-templates.md](../shared-references/workflow-plan-templates.md) for the full template of each level.
 
 ### 5. Issue Creation & Formatting
 
-Format the issue content following [workflow-issue-formatting.md](./references/workflow-issue-formatting.md) (content structure, cross-referencing, code examples, AI-era considerations).
+Format the issue content following [workflow-issue-formatting.md](../shared-references/workflow-issue-formatting.md) (content structure, cross-referencing, code examples, AI-era considerations).
 
 ### 6. Final Review & Submission
 
@@ -236,6 +236,6 @@ Include any additional caller constraints in the task before launching. Report t
 
 ## Issue Creation
 
-Follow the issue creation procedure in [workflow-issue-formatting.md](./references/workflow-issue-formatting.md#issue-creation) (tracker detection, GitHub/Linear commands).
+Follow the issue creation procedure in [workflow-issue-formatting.md](../shared-references/workflow-issue-formatting.md#issue-creation) (tracker detection, GitHub/Linear commands).
 
 NEVER CODE! Just research and write the plan.
