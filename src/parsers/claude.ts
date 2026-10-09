@@ -161,7 +161,7 @@ async function loadMcpServers(
 
   const mcpPath = path.join(root, ".mcp.json")
   if (await pathExists(mcpPath)) {
-    return readJson<Record<string, ClaudeMcpServer>>(mcpPath)
+    return readMcpConfig(mcpPath)
   }
 
   return undefined
@@ -260,10 +260,21 @@ async function loadMcpPaths(
   for (const entry of toPathList(value)) {
     const resolved = resolveWithinRoot(root, entry, "mcpServers path")
     if (await pathExists(resolved)) {
-      configs.push(await readJson<Record<string, ClaudeMcpServer>>(resolved))
+      configs.push(await readMcpConfig(resolved))
     }
   }
   return configs
+}
+
+async function readMcpConfig(filePath: string): Promise<Record<string, ClaudeMcpServer>> {
+  const config = await readJson<Record<string, ClaudeMcpServer | Record<string, ClaudeMcpServer>>>(filePath)
+  const wrapped = config.mcpServers
+  // Accept both file formats without mistaking a server named "mcpServers" for a wrapper.
+  if (wrapped && typeof wrapped === "object" && !Array.isArray(wrapped)
+    && typeof wrapped.command !== "string" && typeof wrapped.url !== "string") {
+    return wrapped as Record<string, ClaudeMcpServer>
+  }
+  return config as Record<string, ClaudeMcpServer>
 }
 
 function mergeMcpConfigs(configs: Record<string, ClaudeMcpServer>[]): Record<string, ClaudeMcpServer> {
