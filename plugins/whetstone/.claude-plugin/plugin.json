@@ -9,6 +9,7 @@
   "homepage": "https://github.com/iliaal/whetstone",
   "repository": "https://github.com/iliaal/whetstone",
   "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/iliaal/whetstone/blob/master/plugins/whetstone/PRIVACY.md",
   "keywords": [
     "ai-powered",
     "whetstone",

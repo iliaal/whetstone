@@ -90,7 +90,7 @@ sys.exit(response.get('exit', 0))
 """)
     mock.chmod(0o755)
     result = subprocess.run(
-        ["bash", str(HELPER), *args], text=True, capture_output=True,
+        ["python3", str(HELPER), *args], text=True, capture_output=True,
         env={**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}",
              "MOCK_GH_RESPONSES": str(fixture)},
     )

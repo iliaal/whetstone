@@ -125,7 +125,7 @@ Does this look right?
 **Create an invocation-owned capture directory:**
 ```bash
 mkdir -p tmp
-CAPTURE_DIR=$(mktemp -d "$PWD/tmp/feature-video.XXXXXXXX")
+CAPTURE_DIR=$(realpath "$(mktemp -d -p tmp feature-video.XXXXXXXX)")
 mkdir -p "$CAPTURE_DIR/videos" "$CAPTURE_DIR/screenshots"
 printf '%s\n' "$CAPTURE_DIR"
 ```

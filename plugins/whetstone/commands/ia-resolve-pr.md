@@ -21,7 +21,7 @@ Use the `ia-receiving-code-review` skill for how to handle each comment (verify 
 Fetch review threads (requires `gh` and Python 3; follows every feedback connection before returning JSON):
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
+python3 ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
 Returns `{unresolved: [...threads], conversation: {...}, cross_invocation: {signal, resolved_threads}}`. The `unresolved` array carries non-outdated threads with file paths, line numbers, and comment bodies; fix work targets these. The `cross_invocation` block exists so Phase 2 clustering can require cross-round evidence: `signal` is true when both resolved and unresolved threads coexist on the PR (multi-round review), and `resolved_threads` lists the resolved thread paths/IDs for spatial-overlap precheck. Triage feedback by content regardless of author: retain requests to fix, answer, or decide, including actionable bot findings. Drop status wrappers, acknowledgements, summaries without a request, and replies already handled.
@@ -33,7 +33,7 @@ Triage them separately rather than appending them to `unresolved`, because the t
 If the script fails, retain its exit status and error; no usable complete fetch has occurred. If repository autodetection failed and the requested repository is known, retry the same paginated GraphQL helper with the explicit repository:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER OWNER/REPO
+python3 ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER OWNER/REPO
 ```
 
 When the helper cannot run but GraphQL remains available, recover with the queries and pagination contract in [scripts/get-pr-comments](scripts/get-pr-comments). Follow every page of review threads, each thread's comments, top-level comments, and review bodies. Require advancing cursors, no GraphQL errors, and the same complete `{unresolved, conversation, cross_invocation}` envelope, including thread IDs and resolution/outdated state, before Phase 2 or fix dispatch.
@@ -103,7 +103,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-pr-thread THREAD_ID
 - Re-fetch comments to confirm all resolved:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
+python3 ${CLAUDE_PLUGIN_ROOT}/commands/scripts/get-pr-comments PR_NUMBER
 ```
 
 Separate remaining threads into actionable and deferred (`Referent not found`, `Needs decision`, or unavailable verification). Do not redispatch deferred threads without new information or authority. Continue only for newly actionable feedback, with at most three fix/verify rounds per item; at the limit, report the residual and stop that item. An unresolved deferred thread is an honest partial result, not a reason for an unbounded loop.
