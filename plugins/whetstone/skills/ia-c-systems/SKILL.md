@@ -8,7 +8,9 @@ description: >-
   refactoring, or debugging C, working with malloc lifetimes, buffer
   overflows, sanitizers, or Valgrind, or building native extensions. For C++,
   see ia-cpp-systems.
-paths: "**/*.c,**/*.h"
+paths:
+  - "**/*.c"
+  - "**/*.h"
 ---
 
 # C Systems & Native Code

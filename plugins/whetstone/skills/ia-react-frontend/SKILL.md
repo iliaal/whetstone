@@ -7,7 +7,15 @@ description: >-
   Vitest, React Testing Library, reviewing React code, or synchronizing JSON
   locales and reviewing translations in a React or frontend interface. For
   visual design and aesthetic direction, use frontend-design instead.
-paths: "**/*.tsx,**/*.jsx,**/*.ts,**/*.css,**/tailwind.config.*,**/*.html,**/*.vue,**/*.blade.php"
+paths:
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.ts"
+  - "**/*.css"
+  - "**/tailwind.config.*"
+  - "**/*.html"
+  - "**/*.vue"
+  - "**/*.blade.php"
 ---
 
 # React Frontend
