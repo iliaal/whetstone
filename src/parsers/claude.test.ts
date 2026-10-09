@@ -3,6 +3,8 @@ import os from "os"
 import path from "path"
 import { afterEach, expect, test } from "bun:test"
 import { loadClaudePlugin } from "./claude"
+import { convertClaudeToOpenCode } from "../converters/claude-to-opencode"
+import { renderCodexConfig } from "../targets/codex"
 
 const tempRoots: string[] = []
 
@@ -105,4 +107,53 @@ test("loadClaudePlugin preserves inline hooks after the default config", async (
   const plugin = await loadClaudePlugin(root)
 
   expect(plugin.hooks?.hooks.PreToolUse).toEqual([matcher, matcher])
+})
+
+for (const source of ["default", "path", "paths", "inline"] as const) {
+  for (const wrapped of [false, true]) {
+    if (source === "inline" && wrapped) continue
+    test(`loadClaudePlugin loads ${wrapped ? "wrapped" : "bare"} MCP config from ${source}`, async () => {
+      const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+      tempRoots.push(root)
+      await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+      const servers = {
+        remote: { type: "http", url: "https://example.com/mcp", headers: { "X-Test": "demo" } },
+        local: { command: "node", args: ["server.js"], env: { MODE: "test" } },
+      }
+      const config = wrapped ? { mcpServers: servers } : servers
+      const mcpServers = source === "inline" ? servers
+        : source === "path" ? "custom.json"
+        : source === "paths" ? ["custom.json", "override.json"] : undefined
+      await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo", mcpServers }))
+      await writeFile(path.join(root, source === "default" ? ".mcp.json" : "custom.json"), JSON.stringify(config))
+      const override = { remote: { url: "https://example.com/override" } }
+      await writeFile(path.join(root, "override.json"), JSON.stringify(override))
+
+      const plugin = await loadClaudePlugin(root)
+
+      const expected = source === "paths" ? { ...servers, ...override } : servers
+      expect(plugin.mcpServers).toEqual(expected)
+      const bundle = convertClaudeToOpenCode(plugin, {
+        agentMode: "subagent", inferTemperature: false, permissions: "none",
+      })
+      expect(bundle.config.mcp?.remote?.url).toBe(expected.remote.url)
+      expect(bundle.config.mcp?.local?.command).toEqual(["node", "server.js"])
+      const toml = renderCodexConfig(plugin.mcpServers)
+      expect(toml).toContain("[mcp_servers.remote]")
+      expect(toml).toContain(`url = "${expected.remote.url}"`)
+      expect(toml).toContain('[mcp_servers.local]')
+      expect(toml).not.toContain('[mcp_servers.mcpServers]')
+    })
+  }
+}
+
+test("loadClaudePlugin preserves a bare MCP server named mcpServers", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo" }))
+  const servers = { mcpServers: { command: "node", args: ["server.js"] } }
+  await writeFile(path.join(root, ".mcp.json"), JSON.stringify(servers))
+
+  expect((await loadClaudePlugin(root)).mcpServers).toEqual(servers)
 })
