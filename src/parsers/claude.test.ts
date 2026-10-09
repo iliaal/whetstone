@@ -72,3 +72,37 @@ test("loadClaudePlugin loads overlapping component paths only once", async () =>
   expect(plugin.commands.map((command) => path.relative(root, command.sourcePath))).toEqual(files.slice(2, 4))
   expect(plugin.skills.map((skill) => path.relative(root, skill.skillPath))).toEqual(files.slice(4, 6))
 })
+
+for (const hooks of ["./hooks/hooks.json", ["./hooks/hooks.json", "hooks/../hooks/hooks.json", "extra.json", "./extra.json"]]) {
+  test(`loadClaudePlugin loads each resolved hook config once: ${JSON.stringify(hooks)}`, async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+    tempRoots.push(root)
+    await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+    await mkdir(path.join(root, "hooks"), { recursive: true })
+    await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo", hooks }))
+    const matcher = { matcher: "Bash", hooks: [{ type: "command", command: "echo default" }] }
+    const extraMatcher = { matcher: "Write", hooks: [{ type: "command", command: "echo extra" }] }
+    await writeFile(path.join(root, "hooks", "hooks.json"), JSON.stringify({ hooks: { PreToolUse: [matcher] } }))
+    // Identical entries from distinct files are intentional and must remain in order.
+    await writeFile(path.join(root, "extra.json"), JSON.stringify({ hooks: { PreToolUse: [matcher, extraMatcher] } }))
+
+    const plugin = await loadClaudePlugin(root)
+
+    expect(plugin.hooks?.hooks.PreToolUse).toEqual(Array.isArray(hooks) ? [matcher, matcher, extraMatcher] : [matcher])
+  })
+}
+
+test("loadClaudePlugin preserves inline hooks after the default config", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await mkdir(path.join(root, "hooks"), { recursive: true })
+  const matcher = { matcher: "Bash", hooks: [{ type: "command", command: "echo hook" }] }
+  const hooks = { hooks: { PreToolUse: [matcher] } }
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo", hooks }))
+  await writeFile(path.join(root, "hooks", "hooks.json"), JSON.stringify(hooks))
+
+  const plugin = await loadClaudePlugin(root)
+
+  expect(plugin.hooks?.hooks.PreToolUse).toEqual([matcher, matcher])
+})
