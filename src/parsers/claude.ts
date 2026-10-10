@@ -1,3 +1,4 @@
+import { stat } from "fs/promises"
 import path from "path"
 import { parseFrontmatter } from "../utils/frontmatter"
 import { readJson, readText, pathExists, walkFiles } from "../utils/files"
@@ -221,8 +222,13 @@ async function collectFiles(dirs: string[]): Promise<string[]> {
   const files = new Set<string>()
   for (const dir of new Set(dirs)) {
     if (!(await pathExists(dir))) continue
-    const entries = await walkFiles(dir)
-    for (const file of entries) files.add(file)
+    const info = await stat(dir)
+    if (info.isFile()) {
+      files.add(dir)
+    } else if (info.isDirectory()) {
+      const entries = await walkFiles(dir)
+      for (const file of entries) files.add(file)
+    }
   }
   return [...files]
 }
