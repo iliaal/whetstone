@@ -9,7 +9,7 @@ export interface ClaudeHomeConfig {
 }
 
 export async function loadClaudeHome(claudeHome?: string): Promise<ClaudeHomeConfig> {
-  const home = claudeHome ?? path.join(os.homedir(), ".claude")
+  const home = path.resolve(claudeHome ?? path.join(os.homedir(), ".claude"))
 
   const [skills, mcpServers] = await Promise.all([
     loadPersonalSkills(path.join(home, "skills")),
