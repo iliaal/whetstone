@@ -40,9 +40,8 @@ export async function syncToCodex(
       existingContent = existingContent.slice(0, markerIndex).trimEnd()
     }
 
-    const newContent = existingContent
-      ? existingContent + "\n\n" + marker + "\n" + mcpToml
-      : "# Codex config - synced from Claude Code\n\n" + mcpToml
+    const prefix = existingContent.trimEnd() || "# Codex config - synced from Claude Code"
+    const newContent = prefix + "\n\n" + marker + "\n" + mcpToml
 
     await fs.writeFile(configPath, newContent, { mode: 0o600 })
   }
