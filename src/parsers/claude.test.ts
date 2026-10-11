@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, writeFile } from "fs/promises"
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "fs/promises"
 import os from "os"
 import path from "path"
 import { afterEach, expect, test } from "bun:test"
@@ -195,3 +195,97 @@ for (const component of ["agents", "commands"] as const) {
     })
   }
 }
+
+async function pluginRoot(manifest: Record<string, unknown> = {}): Promise<string> {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo", ...manifest }))
+  return root
+}
+
+for (const [component, file] of [
+  ["agent", "agents/ia-demo.md"],
+  ["command", "commands/ia-demo.md"],
+  ["skill", "skills/ia-demo/SKILL.md"],
+] as const) {
+  for (const name of ['"../../../outside"', '"..\\\\outside"', '"a/b"', '".."', "[a, b]", "42", '"bad\\nname"']) {
+    test(`loadClaudePlugin rejects ${component} name ${name}`, async () => {
+      const root = await pluginRoot()
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+      await writeFile(path.join(root, file), `---\nname: ${name}\ndescription: Demo\n---\nBody.\n`)
+
+      await expect(loadClaudePlugin(root)).rejects.toThrow(`Invalid ${component} name`)
+    })
+  }
+}
+
+test("loadClaudePlugin rejects a plugin name that is not a safe path segment", async () => {
+  const root = await pluginRoot({ name: "../escape" })
+  await expect(loadClaudePlugin(root)).rejects.toThrow("Invalid plugin name")
+})
+
+for (const [label, setup] of [
+  ["default agents directory", async (root: string, outside: string) => {
+    await symlink(outside, path.join(root, "agents"))
+  }],
+  ["manifest agents path", async (root: string, outside: string) => {
+    await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo", agents: "borrowed" }))
+    await symlink(outside, path.join(root, "borrowed"))
+  }],
+  ["default skills directory", async (root: string, outside: string) => {
+    await symlink(outside, path.join(root, "skills"))
+  }],
+  ["default .mcp.json", async (root: string, outside: string) => {
+    await symlink(path.join(outside, "servers.json"), path.join(root, ".mcp.json"))
+  }],
+  ["manifest mcpServers path", async (root: string, outside: string) => {
+    await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo", mcpServers: "mcp.json" }))
+    await symlink(path.join(outside, "servers.json"), path.join(root, "mcp.json"))
+  }],
+  ["default hooks directory", async (root: string, outside: string) => {
+    await symlink(outside, path.join(root, "hooks"))
+  }],
+] as const) {
+  test(`loadClaudePlugin refuses a symlinked ${label} that leaves the plugin root`, async () => {
+    const root = await pluginRoot()
+    const outside = await mkdtemp(path.join(os.tmpdir(), "whetstone-outside-"))
+    tempRoots.push(outside)
+    await writeFile(path.join(outside, "borrowed.md"), "---\nname: borrowed\n---\nOutside instructions.\n")
+    await mkdir(path.join(outside, "ia-borrowed"))
+    await writeFile(path.join(outside, "ia-borrowed", "SKILL.md"), "---\nname: ia-borrowed\n---\nOutside skill.\n")
+    await writeFile(path.join(outside, "servers.json"), JSON.stringify({ outside: { command: "outside" } }))
+    await writeFile(path.join(outside, "hooks.json"), JSON.stringify({ hooks: {} }))
+    await setup(root, outside)
+
+    await expect(loadClaudePlugin(root)).rejects.toThrow("resolves outside the plugin root")
+  })
+}
+
+test("loadClaudePlugin accepts component symlinks that stay inside the plugin root", async () => {
+  const root = await pluginRoot({ agents: "linked-agents" })
+  await mkdir(path.join(root, "shared"))
+  await writeFile(path.join(root, "shared", "ia-shared.md"), "---\nname: ia-shared\n---\nShared.\n")
+  await symlink(path.join(root, "shared"), path.join(root, "linked-agents"))
+
+  const plugin = await loadClaudePlugin(root)
+
+  expect(plugin.agents.map((agent) => agent.name)).toEqual(["ia-shared"])
+})
+
+test("loadClaudePlugin keeps a hook event named __proto__ as data", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await mkdir(path.join(root, "hooks"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo" }))
+  await writeFile(
+    path.join(root, "hooks", "hooks.json"),
+    '{"hooks": {"__proto__": [{"hooks": [{"type": "command", "command": "echo x"}]}]}}',
+  )
+
+  const plugin = await loadClaudePlugin(root)
+
+  expect(Object.keys(plugin.hooks!.hooks)).toEqual(["__proto__"])
+  expect(Object.getPrototypeOf(plugin.hooks!.hooks)).toBe(Object.prototype)
+})

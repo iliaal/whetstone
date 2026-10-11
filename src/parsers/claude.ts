@@ -1,7 +1,9 @@
-import { stat } from "fs/promises"
+import { realpath, stat } from "fs/promises"
 import path from "path"
 import { parseFrontmatter } from "../utils/frontmatter"
-import { readJson, readText, pathExists, walkFiles } from "../utils/files"
+import { isWithin, lstatIfExists, pathExists, readJson, readText, walkFiles } from "../utils/files"
+import { isValidSkillName } from "../utils/symlink"
+import { setOwn } from "../utils/own-property"
 import type {
   ClaudeAgent,
   ClaudeCommand,
@@ -16,15 +18,20 @@ const PLUGIN_MANIFEST = path.join(".claude-plugin", "plugin.json")
 
 export async function loadClaudePlugin(inputPath: string): Promise<ClaudePlugin> {
   const root = await resolveClaudeRoot(inputPath)
-  const manifestPath = path.join(root, PLUGIN_MANIFEST)
+  const realRoot = await realpath(root)
+  const manifestPath = await requireContained(realRoot, path.join(root, PLUGIN_MANIFEST), "plugin manifest")
+  if (!manifestPath) throw new Error(`Could not find ${PLUGIN_MANIFEST} under ${inputPath}`)
   const manifest = await readJson<ClaudeManifest>(manifestPath)
+  if (!isValidSkillName(manifest.name)) {
+    throw new Error(`Invalid plugin name ${JSON.stringify(manifest.name)} in ${manifestPath}`)
+  }
 
-  const agents = await loadAgents(resolveComponentDirs(root, "agents", manifest.agents))
-  const commands = await loadCommands(resolveComponentDirs(root, "commands", manifest.commands))
-  const skills = await loadSkills(resolveComponentDirs(root, "skills", manifest.skills))
-  const hooks = await loadHooks(root, manifest.hooks)
+  const agents = await loadAgents(await resolveComponentDirs(root, realRoot, "agents", manifest.agents))
+  const commands = await loadCommands(await resolveComponentDirs(root, realRoot, "commands", manifest.commands))
+  const skills = await loadSkills(await resolveComponentDirs(root, realRoot, "skills", manifest.skills))
+  const hooks = await loadHooks(root, realRoot, manifest.hooks)
 
-  const mcpServers = await loadMcpServers(root, manifest)
+  const mcpServers = await loadMcpServers(root, realRoot, manifest)
 
   return {
     root,
@@ -62,7 +69,7 @@ async function loadAgents(agentsDirs: string[]): Promise<ClaudeAgent[]> {
   for (const file of files) {
     const raw = await readText(file)
     const { data, body } = parseFrontmatter(raw)
-    const name = (data.name as string) ?? path.basename(file, ".md")
+    const name = componentName(data.name, path.basename(file, ".md"), "agent", file)
     agents.push({
       name,
       description: data.description as string | undefined,
@@ -82,7 +89,7 @@ async function loadCommands(commandsDirs: string[]): Promise<ClaudeCommand[]> {
   for (const file of files) {
     const raw = await readText(file)
     const { data, body } = parseFrontmatter(raw)
-    const name = (data.name as string) ?? path.basename(file, ".md")
+    const name = componentName(data.name, path.basename(file, ".md"), "command", file)
     const allowedTools = parseAllowedTools(data["allowed-tools"])
     const disableModelInvocation = data["disable-model-invocation"] === true ? true : undefined
     commands.push({
@@ -106,7 +113,7 @@ async function loadSkills(skillsDirs: string[]): Promise<ClaudeSkill[]> {
   for (const file of skillFiles) {
     const raw = await readText(file)
     const { data } = parseFrontmatter(raw)
-    const name = (data.name as string) ?? path.basename(path.dirname(file))
+    const name = componentName(data.name, path.basename(path.dirname(file)), "skill", file)
     const disableModelInvocation = data["disable-model-invocation"] === true ? true : undefined
     skills.push({
       name,
@@ -119,12 +126,16 @@ async function loadSkills(skillsDirs: string[]): Promise<ClaudeSkill[]> {
   return skills
 }
 
-async function loadHooks(root: string, hooksField?: ClaudeManifest["hooks"]): Promise<ClaudeHooks | undefined> {
+async function loadHooks(
+  root: string,
+  realRoot: string,
+  hooksField?: ClaudeManifest["hooks"],
+): Promise<ClaudeHooks | undefined> {
   const hookConfigs: ClaudeHooks[] = []
 
   const defaultPath = path.join(root, "hooks", "hooks.json")
   const loadedPaths = new Set<string>()
-  if (await pathExists(defaultPath)) {
+  if (await requireContained(realRoot, defaultPath, "hooks path")) {
     hookConfigs.push(await readJson<ClaudeHooks>(defaultPath))
     loadedPaths.add(defaultPath)
   }
@@ -134,7 +145,7 @@ async function loadHooks(root: string, hooksField?: ClaudeManifest["hooks"]): Pr
       const hookPaths = toPathList(hooksField)
       for (const hookPath of hookPaths) {
         const resolved = resolveWithinRoot(root, hookPath, "hooks path")
-        if (!loadedPaths.has(resolved) && await pathExists(resolved)) {
+        if (!loadedPaths.has(resolved) && await requireContained(realRoot, resolved, "hooks path")) {
           hookConfigs.push(await readJson<ClaudeHooks>(resolved))
           loadedPaths.add(resolved)
         }
@@ -150,18 +161,19 @@ async function loadHooks(root: string, hooksField?: ClaudeManifest["hooks"]): Pr
 
 async function loadMcpServers(
   root: string,
+  realRoot: string,
   manifest: ClaudeManifest,
 ): Promise<Record<string, ClaudeMcpServer> | undefined> {
   const field = manifest.mcpServers
   if (field) {
     if (typeof field === "string" || Array.isArray(field)) {
-      return mergeMcpConfigs(await loadMcpPaths(root, field))
+      return mergeMcpConfigs(await loadMcpPaths(root, realRoot, field))
     }
     return field as Record<string, ClaudeMcpServer>
   }
 
   const mcpPath = path.join(root, ".mcp.json")
-  if (await pathExists(mcpPath)) {
+  if (await requireContained(realRoot, mcpPath, "mcpServers path")) {
     return readMcpConfig(mcpPath)
   }
 
@@ -182,16 +194,21 @@ function parseAllowedTools(value: unknown): string[] | undefined {
   return undefined
 }
 
-function resolveComponentDirs(
+async function resolveComponentDirs(
   root: string,
+  realRoot: string,
   defaultDir: string,
   custom?: string | string[],
-): string[] {
+): Promise<string[]> {
   const dirs = [path.join(root, defaultDir)]
   for (const entry of toPathList(custom)) {
     dirs.push(resolveWithinRoot(root, entry, `${defaultDir} path`))
   }
-  return dirs
+  const contained: string[] = []
+  for (const dir of dirs) {
+    if (await requireContained(realRoot, dir, `${defaultDir} path`)) contained.push(dir)
+  }
+  return contained
 }
 
 function toPathList(value?: string | string[]): string[] {
@@ -249,8 +266,8 @@ function mergeHooks(hooksList: ClaudeHooks[]): ClaudeHooks {
   const merged: ClaudeHooks = { hooks: {} }
   for (const hooks of hooksList) {
     for (const [event, matchers] of Object.entries(hooks.hooks)) {
-      if (!merged.hooks[event]) {
-        merged.hooks[event] = []
+      if (!Object.hasOwn(merged.hooks, event)) {
+        setOwn(merged.hooks, event, [])
       }
       merged.hooks[event].push(...matchers)
     }
@@ -260,12 +277,13 @@ function mergeHooks(hooksList: ClaudeHooks[]): ClaudeHooks {
 
 async function loadMcpPaths(
   root: string,
+  realRoot: string,
   value: string | string[],
 ): Promise<Record<string, ClaudeMcpServer>[]> {
   const configs: Record<string, ClaudeMcpServer>[] = []
   for (const entry of toPathList(value)) {
     const resolved = resolveWithinRoot(root, entry, "mcpServers path")
-    if (await pathExists(resolved)) {
+    if (await requireContained(realRoot, resolved, "mcpServers path")) {
       configs.push(await readMcpConfig(resolved))
     }
   }
@@ -294,4 +312,28 @@ function resolveWithinRoot(root: string, entry: string, label: string): string {
     return resolvedPath
   }
   throw new Error(`Invalid ${label}: ${entry}. Paths must stay within the plugin root.`)
+}
+
+// Lexical checks miss symlinks, so existing paths must also resolve inside the real plugin root.
+async function requireContained(realRoot: string, candidate: string, label: string): Promise<string | null> {
+  if (!(await lstatIfExists(candidate))) return null
+  let resolved: string
+  try {
+    resolved = await realpath(candidate)
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null
+    throw err
+  }
+  if (!isWithin(realRoot, resolved)) {
+    throw new Error(`Invalid ${label}: ${candidate} resolves outside the plugin root`)
+  }
+  return candidate
+}
+
+function componentName(value: unknown, fallback: string, kind: string, file: string): string {
+  const name = value ?? fallback
+  if (!isValidSkillName(name)) {
+    throw new Error(`Invalid ${kind} name ${JSON.stringify(name)} in ${file}`)
+  }
+  return name
 }

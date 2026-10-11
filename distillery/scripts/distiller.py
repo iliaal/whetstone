@@ -31,6 +31,10 @@ PLUGIN_DIR = DISTILLERY_DIR.parent / "plugins" / "whetstone"
 # cwd (where `.agents/skills/` is the plugin's own tracked distribution tree).
 SKILLS_AGENT_DIR = Path(".agents/skills")
 SKILLS_SYMLINK_DIR = Path(".claude/skills")
+# Exact installer version vetted locally. skills@1.7.0 has no `--` end-of-options
+# marker and no `--skill=<id>` form, so argv safety rests on validating every
+# remote field before it reaches the command line.
+SKILLS_CLI = "skills@1.7.0"
 GROK_API_URL = "https://api.x.ai/v1/chat/completions"
 GROK_MODEL = "grok-4-1-fast-reasoning"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -137,7 +141,7 @@ def _is_synthetic_session(project, task_input=""):
 
 # Plugin-maintenance context. A skill injected into a sync/audit/distillery task
 # is a misfire, not usage, and such sessions dominate this repo's harvested data.
-# Mirrors the IS_MAINT_CONTEXT detector in plugins/whetstone/hooks/match-skills.sh;
+# Mirrors the IS_MAINT_CONTEXT detector in plugins/whetstone/hooks/skill-matcher.sh;
 # keep the two in sync.
 _MAINTENANCE_TASK_PATTERN = _re.compile(
     r"plugins/whetstone/(?:skills|agents|commands)/"
@@ -155,7 +159,7 @@ _MAINTENANCE_TASK_PATTERN = _re.compile(
 def _is_maintenance_task(task_input):
     """True if the task is plugin-maintenance (sync/audit/distillery), where any
     skill injection is a misfire rather than organic usage. See
-    match-skills.sh for the canonical definition this mirrors."""
+    skill-matcher.sh for the canonical definition this mirrors."""
     return bool(task_input and _MAINTENANCE_TASK_PATTERN.search(task_input))
 
 # Secret patterns — compiled once, used to scrub content before writing eval data.
@@ -386,17 +390,17 @@ def _check_npx_skills():
     """Verify npx skills CLI is available. Exits with error if not."""
     try:
         result = subprocess.run(
-            ["npx", "skills", "--version"],
+            ["npx", SKILLS_CLI, "--version"],
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
-            print(f"Error: 'npx skills' is not available or returned an error: {result.stderr.strip()}", file=sys.stderr)
+            print(f"Error: 'npx {SKILLS_CLI}' is not available or returned an error: {result.stderr.strip()}", file=sys.stderr)
             sys.exit(1)
     except FileNotFoundError:
         print("Error: 'npx' is not installed or not in PATH", file=sys.stderr)
         sys.exit(1)
     except subprocess.TimeoutExpired:
-        print("Error: 'npx skills --version' timed out", file=sys.stderr)
+        print(f"Error: 'npx {SKILLS_CLI} --version' timed out", file=sys.stderr)
         sys.exit(1)
 
 
@@ -435,10 +439,11 @@ def _validate_skill_id(skill_id):
     """Return skill_id if it is a safe single path segment; else raise ValueError.
 
     The identifier comes from the untrusted skills.sh API response and is joined
-    into filesystem paths (rmtree/move), so a crafted value (`../`, leading
-    dash/dot, path separators) could escape the staging directory. Allowed:
-    lowercase alphanumerics, hyphens, underscores, and dots not at the start.
-    Rejected: empty, path separators, a leading dash or dot, and anything else.
+    into filesystem paths (rmtree/move) and into the installer argv, so a crafted
+    value (`../`, `--global`, path separators) could escape the staging directory
+    or change installer behavior. Allowed: lowercase alphanumerics, hyphens,
+    underscores, and dots not at the start. Rejected: empty, path separators, a
+    leading dash or dot, and anything else.
     """
     import re as _re
     if not isinstance(skill_id, str) or not _re.fullmatch(r"[a-z0-9_][a-z0-9._-]*", skill_id):
@@ -446,11 +451,46 @@ def _validate_skill_id(skill_id):
     return skill_id
 
 
-def _stage_skill(skill_id, work_dir=None):
-    """Move a fetched skill to staging and remove symlinks.
+def _validate_source(source):
+    """Return the canonical `owner/repo` for an untrusted skills.sh source; else raise ValueError.
+
+    Accepts `owner/repo` or `https://github.com/owner/repo` with segments matching
+    `[A-Za-z0-9_.-]+`. The owner may not start with `-` or `.`, and neither
+    segment may be `.` or `..`.
+    """
+    import re as _re
+    m = None
+    if isinstance(source, str):
+        m = _re.fullmatch(r"(?:https://github\.com/)?([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)", source)
+    if not m:
+        raise ValueError(f"Unsafe source (expected owner/repo or https://github.com/owner/repo): {source!r}")
+    owner, repo = m.groups()
+    if owner[0] in "-." or repo.startswith("-") or repo in (".", ".."):
+        raise ValueError(f"Unsafe source (expected owner/repo or https://github.com/owner/repo): {source!r}")
+    return f"{owner}/{repo}"
+
+
+def _staging_key(source, skill_id):
+    """Source-qualified staging directory name for a validated (source, skillId) pair.
+
+    Keying by skillId alone let same-named skills from different repos overwrite
+    each other in staging. Lowercased because GitHub owner/repo names are
+    case-insensitive, so `Foo/bar` and `foo/bar` must claim the same key.
+    The readable prefix alone is ambiguous (`a/b__c` + `d` and `a/b` + `c__d`
+    both read `a__b__c__d`), so the suffix hashes the separated tuple.
+    """
+    owner, repo = source.lower().split("/")
+    skill_id = skill_id.lower()
+    digest = hashlib.sha256("\0".join((owner, repo, skill_id)).encode()).hexdigest()[:16]
+    return _validate_skill_id(f"{owner}__{repo}__{skill_id}--{digest}")
+
+
+def _stage_skill(skill_id, work_dir=None, staging_key=None):
+    """Move a fetched skill to staging and remove symlinks. Returns True if staged.
 
     `work_dir` is the directory `npx skills add` ran in; when None the layout is
     resolved relative to the process cwd (test fixtures monkeypatch the constants).
+    `staging_key` names the directory under STAGING_DIR (defaults to skill_id).
 
     `npx skills add` places the fetched skill under one of two layouts depending
     on version/agent: the older `.agents/skills/<id>` real dir (symlinked into
@@ -461,13 +501,17 @@ def _stage_skill(skill_id, work_dir=None):
     silently discarded the sole real copy for repos using the newer layout.
     """
     _validate_skill_id(skill_id)
+    if staging_key is None:
+        staging_key = skill_id
+    else:
+        _validate_skill_id(staging_key)
     if work_dir is None:
         agent_path = SKILLS_AGENT_DIR / skill_id
         symlink_path = SKILLS_SYMLINK_DIR / skill_id
     else:
         agent_path = Path(work_dir) / ".agents" / "skills" / skill_id
         symlink_path = Path(work_dir) / ".claude" / "skills" / skill_id
-    staging_path = STAGING_DIR / skill_id
+    staging_path = STAGING_DIR / staging_key
 
     moved = False
     if agent_path.exists():
@@ -489,118 +533,223 @@ def _stage_skill(skill_id, work_dir=None):
             moved = True
     elif symlink_path.exists():
         symlink_path.unlink()
+    return moved
+
+
+def _skills_add_cmd(source, skill_ids):
+    """Installer argv for a validated `owner/repo` source and validated skill ids."""
+    return (["npx", SKILLS_CLI, "add", f"https://github.com/{source}", "-s"]
+            + list(skill_ids) + ["-y", "--agent", "claude-code"])
+
+
+def _subprocess_error_text(e):
+    if isinstance(e, subprocess.TimeoutExpired):
+        return "timeout"
+    if getattr(e, "stderr", None):
+        return e.stderr.strip()[:200]
+    return "unknown error"
+
+
+def _scan_staged_record(staged_dir):
+    """Tier-1 injection scan of one staged skill. Returns the per-record verdict.
+
+    Raises when the scanner errors or does not read every markdown file, so the
+    caller can fail the record closed instead of passing it unscanned.
+    """
+    expected = len(_expand_paths([str(staged_dir)]))
+    scan = scan_injection(paths=[str(staged_dir)], strict=True)
+    if expected == 0 or scan["files_scanned"] != expected:
+        raise RuntimeError(f"scanned {scan['files_scanned']} of {expected} markdown file(s)")
+    s = scan["summary"]
+    verdict = "reject" if s["high"] else "review" if s["medium"] else "clean"
+    return {
+        "verdict": verdict,
+        "high": s["high"],
+        "medium": s["medium"],
+        "low": s["low"],
+        "findings": [
+            {k: f[k] for k in ("severity", "check", "file", "line", "message") if k in f}
+            for f in scan["findings"]
+        ],
+    }
 
 
 def fetch_skills(skills_list):
-    """Fetch, stage, and checksum skills. Returns enriched list with sha1 and path."""
-    _check_npx_skills()
-    STAGING_DIR.mkdir(parents=True, exist_ok=True)
-    # Private working directory: `npx skills add` writes `.agents/skills/` and
-    # `.claude/skills/` under its cwd, and the whetstone repo root has a tracked
-    # `.agents/skills/` of its own, so the tool must never run in the caller's cwd.
-    work_dir = Path(tempfile.mkdtemp(prefix="whetstone-fetch-"))
+    """Fetch, stage, checksum, and scan skills. Returns one result per input record.
 
-    by_source = defaultdict(list)
-    for skill in skills_list:
-        by_source[skill["source"]].append(skill)
+    Every record is validated before any subprocess runs. Successful records carry
+    `sha1`, `path`, `source`, `staging_key`, and a `scan` verdict; failures carry a
+    `status` of `invalid`, `fetch_failed`, `missing`, or `scan_failed` and no `sha1`.
+    """
+    results = [None] * len(skills_list)
+    entries = []
+    claimed = set()
 
-    fetch_failures = []
-
-    for source, group in by_source.items():
-        skill_ids = [s["skillId"] for s in group]
-        # npx skills add requires full GitHub URL
-        source_url = source if source.startswith("http") else f"https://github.com/{source}"
-        cmd = ["npx", "skills", "add", source_url, "-s"] + skill_ids + ["-y", "--agent", "claude-code"]
+    for i, skill in enumerate(skills_list):
+        raw = skill if isinstance(skill, dict) else {}
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120, cwd=str(work_dir))
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            err_msg = e.stderr.strip()[:200] if hasattr(e, "stderr") and e.stderr else "timeout" if isinstance(e, subprocess.TimeoutExpired) else "unknown error"
-            print(f"Error: fetch failed for {source}: {err_msg}", file=sys.stderr)
-            # Try to resolve moved repos
-            for skill in group:
-                resolved = _resolve_moved_skill(skill["id"])
-                if resolved:
-                    new_source_url = f"https://github.com/{resolved['source']}"
-                    retry_cmd = ["npx", "skills", "add", new_source_url, "-s", skill["skillId"], "-y", "--agent", "claude-code"]
-                    print(f"  Resolved: {skill['id']} -> {resolved['id']}", file=sys.stderr)
-                    try:
-                        subprocess.run(retry_cmd, check=True, capture_output=True, text=True, timeout=120, cwd=str(work_dir))
-                        skill["id"] = resolved["id"]
-                        skill["source"] = resolved["source"]
-                        skill["installs"] = resolved["installs"]
-                        _stage_skill(skill["skillId"], work_dir)
-                    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                        print(f"  Retry also failed for {resolved['id']}", file=sys.stderr)
-                        fetch_failures.append({"id": skill["id"], "source": source, "error": err_msg})
-                else:
-                    fetch_failures.append({"id": skill["id"], "source": source, "error": err_msg})
+            if not isinstance(skill, dict):
+                raise ValueError("record is not an object")
+            sid = _validate_skill_id(skill.get("skillId"))
+            source = _validate_source(skill.get("source"))
+            key = _staging_key(source, sid)
+            if key in claimed:
+                raise ValueError(f"duplicate staging key {key!r} (same source and skillId listed twice)")
+        except ValueError as e:
+            results[i] = {
+                "id": raw.get("id"),
+                "skillId": raw.get("skillId"),
+                "source": raw.get("source"),
+                "status": "invalid",
+                "error": str(e),
+            }
+            print(f"Error: rejected skill record {raw.get('id')!r}: {e}", file=sys.stderr)
             continue
-
-        # Move to staging and remove symlinks
-        for skill in group:
-            _stage_skill(skill["skillId"], work_dir)
-
-    # If ALL fetches failed, report error (caller decides severity)
-    if fetch_failures and len(fetch_failures) == len(skills_list):
-        print(f"Error: all {len(fetch_failures)} skill fetches failed", file=sys.stderr)
-
-    results = []
-    for skill in skills_list:
-        sid = skill["skillId"]
-        skill_md = STAGING_DIR / sid / "SKILL.md"
-        if skill_md.exists():
-            results.append({
-                "id": skill["id"],
-                "skillId": sid,
-                "installs": skill["installs"],
-                "sha1": compute_sha1(skill_md),
-                "path": str(skill_md),
-            })
-        else:
-            # Check if this was a known fetch failure
-            is_known_failure = any(f["id"] == skill["id"] for f in fetch_failures)
-            if not is_known_failure:
-                results.append({
-                    "id": skill["id"],
-                    "skillId": sid,
-                    "installs": skill["installs"],
-                    "status": "missing",
-                    "error": f"SKILL.md not found at {skill_md}",
-                })
-
-    for failure in fetch_failures:
-        results.append({
-            "id": failure["id"],
-            "status": "fetch_failed",
-            "error": failure["error"],
+        claimed.add(key)
+        entries.append({
+            "index": i,
+            "id": skill.get("id"),
+            "skillId": sid,
+            "source": source,
+            "key": key,
+            "installs": skill.get("installs", 0),
+            "staged": False,
+            "failure": None,
         })
 
-    # Ingestion gate: deterministic prompt-injection scan of freshly-staged,
-    # untrusted skills.sh sources. Surfaces hidden unicode, exfil sinks, and
-    # fetch-then-execute before the content is analyzed/promoted. Advisory by
-    # design -- raw sources are fetched precisely to review, so this warns
-    # loudly rather than aborting; the analyzing agent must act on HIGH/MEDIUM.
-    try:
-        scan = scan_injection(paths=[str(STAGING_DIR)], strict=True)
-        flagged = [f for f in scan["findings"] if f["severity"] in ("HIGH", "MEDIUM")]
-        if flagged:
-            s = scan["summary"]
-            print(f"WARNING: injection scan of staged skills found {s['high']} HIGH, "
-                  f"{s['medium']} MEDIUM finding(s) -- review before promoting:", file=sys.stderr)
-            for f in flagged:
-                print(f"  [{f['severity']}] {f['check']} {f['file']}:{f['line']} {f['message']}", file=sys.stderr)
-    except Exception as e:
-        print(f"WARNING: injection scan of staged skills failed: {e}", file=sys.stderr)
+    if entries:
+        _check_npx_skills()
+    STAGING_DIR.mkdir(parents=True, exist_ok=True)
+    for entry in entries:
+        # A leftover directory from an earlier run must never be reported as this run's fetch.
+        shutil.rmtree(STAGING_DIR / entry["key"], ignore_errors=True)
 
-    # Drop the private working directory and any leftover npx artifacts in it
-    # (e.g. skills with colons in IDs that don't match expected paths).
-    shutil.rmtree(work_dir, ignore_errors=True)
+    # Private working root: `npx skills add` writes `.agents/skills/` and
+    # `.claude/skills/` under its cwd, and the whetstone repo root has a tracked
+    # `.agents/skills/` of its own, so the tool must never run in the caller's cwd.
+    # Each install gets its own subdirectory so one source cannot replace another's files.
+    work_root = Path(tempfile.mkdtemp(prefix="whetstone-fetch-"))
+    try:
+        by_source = defaultdict(list)
+        for entry in entries:
+            by_source[entry["source"]].append(entry)
+
+        for source, group in by_source.items():
+            group_dir = Path(tempfile.mkdtemp(prefix="whetstone-fetch-", dir=work_root))
+            cmd = _skills_add_cmd(source, [e["skillId"] for e in group])
+            try:
+                subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120, cwd=str(group_dir))
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                err_msg = _subprocess_error_text(e)
+                print(f"Error: fetch failed for {source}: {err_msg}", file=sys.stderr)
+                for entry in group:
+                    _retry_moved_skill(entry, err_msg, work_root, claimed)
+                continue
+            for entry in group:
+                entry["staged"] = _stage_skill(entry["skillId"], group_dir, entry["key"])
+
+        all_failed = bool(entries) and all(e["failure"] for e in entries)
+        if all_failed:
+            print(f"Error: all {len(entries)} skill fetches failed", file=sys.stderr)
+
+        for entry in entries:
+            base = {"id": entry["id"], "skillId": entry["skillId"], "source": entry["source"]}
+            staged_dir = STAGING_DIR / entry["key"]
+            skill_md = staged_dir / "SKILL.md"
+            if entry["failure"]:
+                results[entry["index"]] = {**base, "status": "fetch_failed", "error": entry["failure"]}
+                continue
+            if not (entry["staged"] and skill_md.is_file()):
+                results[entry["index"]] = {
+                    **base,
+                    "installs": entry["installs"],
+                    "status": "missing",
+                    "error": f"SKILL.md not found at {skill_md}",
+                }
+                continue
+            # Ingestion gate: deterministic prompt-injection scan of the freshly
+            # staged, untrusted source. Advisory on findings (raw sources are
+            # fetched precisely to review; the verdict travels with the record),
+            # but a scanner error fails the record closed and removes its files.
+            try:
+                scan = _scan_staged_record(staged_dir)
+            except Exception as e:
+                shutil.rmtree(staged_dir, ignore_errors=True)
+                results[entry["index"]] = {**base, "status": "scan_failed",
+                                           "error": f"injection scan failed: {e}"}
+                print(f"Error: injection scan failed for {entry['id']}: {e} -- staged copy removed",
+                      file=sys.stderr)
+                continue
+            if scan["verdict"] != "clean":
+                print(f"WARNING: injection scan of {entry['id']} found {scan['high']} HIGH, "
+                      f"{scan['medium']} MEDIUM finding(s) -- verdict {scan['verdict']}:", file=sys.stderr)
+                for f in scan["findings"]:
+                    if f.get("severity") in ("HIGH", "MEDIUM"):
+                        print(f"  [{f['severity']}] {f.get('check')} {f.get('file')}:{f.get('line')} "
+                              f"{f.get('message')}", file=sys.stderr)
+            results[entry["index"]] = {
+                **base,
+                "staging_key": entry["key"],
+                "installs": entry["installs"],
+                "sha1": compute_sha1(skill_md),
+                "path": str(skill_md),
+                "scan": scan,
+            }
+    finally:
+        # Drop the private working root and any leftover npx artifacts in it
+        # (e.g. skills with colons in IDs that don't match expected paths).
+        shutil.rmtree(work_root, ignore_errors=True)
 
     return results
 
 
+def _retry_moved_skill(entry, err_msg, work_root, claimed):
+    """Re-fetch one skill from the repo skills.sh now lists for it, in its own work dir."""
+    resolved = _resolve_moved_skill(entry["id"])
+    if not resolved:
+        entry["failure"] = err_msg
+        return
+    try:
+        new_source = _validate_source(resolved.get("source"))
+        new_key = _staging_key(new_source, entry["skillId"])
+    except ValueError as e:
+        entry["failure"] = f"{err_msg}; resolved record rejected: {e}"
+        print(f"  Rejected resolved record for {entry['id']}: {e}", file=sys.stderr)
+        return
+    if new_key != entry["key"] and new_key in claimed:
+        entry["failure"] = f"{err_msg}; resolved staging key {new_key!r} already claimed"
+        return
+    print(f"  Resolved: {entry['id']} -> {resolved.get('id')}", file=sys.stderr)
+    retry_dir = Path(tempfile.mkdtemp(prefix="whetstone-fetch-", dir=work_root))
+    try:
+        subprocess.run(_skills_add_cmd(new_source, [entry["skillId"]]), check=True,
+                       capture_output=True, text=True, timeout=120, cwd=str(retry_dir))
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        print(f"  Retry also failed for {resolved.get('id')}", file=sys.stderr)
+        entry["failure"] = err_msg
+        return
+    claimed.discard(entry["key"])
+    claimed.add(new_key)
+    shutil.rmtree(STAGING_DIR / new_key, ignore_errors=True)
+    entry.update(id=resolved.get("id"), source=new_source, key=new_key,
+                 installs=resolved.get("installs", 0))
+    entry["staged"] = _stage_skill(entry["skillId"], retry_dir, new_key)
+
+
+_FETCH_FAILURE_STATUSES = ("fetch_failed", "missing", "invalid", "scan_failed")
+
+
 def check_updates(name):
-    """Check for updates to a generated skill. Returns diff report."""
+    """Check for updates to a generated skill. Returns diff report.
+
+    Only records whose injection scan verdict is `clean` or `review` are offered
+    for reading (`changed`/`new`, each carrying its `scan`). `reject` records are
+    listed under `rejected` without a path and their staged copy is removed. A
+    record without a recognized verdict counts as a scan failure. Status is
+    `scan_failed` when any scan failed, `updates_available` when anything
+    changed or was rejected, `incomplete` when only fetch failures remain, and
+    `no_updates` only when every source fetched, scanned, and matched.
+    """
     manifest_path = GENERATED_DIR / name / "manifest.json"
     if not manifest_path.exists():
         print(f"Error: {manifest_path} not found", file=sys.stderr)
@@ -619,10 +768,32 @@ def check_updates(name):
 
     # Fetch all (existing + new)
     fetched = fetch_skills(fresh_skills)
-    # Separate successful fetches from failures
-    fetched_ok = {f["id"]: f for f in fetched if "sha1" in f}
-    fetched_failed = [f for f in fetched if f.get("status") in ("fetch_failed", "missing")]
+    fetched_ok = {}
+    rejected = []
+    fetched_failed = []
+    for f in fetched:
+        if f.get("status") in _FETCH_FAILURE_STATUSES or "sha1" not in f:
+            fetched_failed.append(f)
+            continue
+        scan = f.get("scan") if isinstance(f.get("scan"), dict) else {}
+        verdict = scan.get("verdict")
+        if verdict == "reject":
+            key = f.get("staging_key")
+            if key:
+                try:
+                    shutil.rmtree(STAGING_DIR / _validate_skill_id(key), ignore_errors=True)
+                except ValueError:
+                    pass
+            rejected.append({"id": f["id"], "source": f.get("source"), "sha1": f["sha1"],
+                             "previously_used": f["id"] in old_sources, "scan": scan})
+        elif verdict in ("clean", "review"):
+            fetched_ok[f["id"]] = f
+        else:
+            fetched_failed.append({k: f[k] for k in ("id", "skillId", "source") if k in f}
+                                  | {"status": "scan_failed",
+                                     "error": f"no recognized scan verdict ({verdict!r})"})
 
+    scan_failures = [f for f in fetched_failed if f.get("status") == "scan_failed"]
     unchanged = []
     changed = []
     new_sources = []
@@ -632,36 +803,46 @@ def check_updates(name):
         if fid in old_sources:
             old_sha1 = old_sources[fid].get("sha1")
             if old_sha1 and old_sha1 == fdata["sha1"]:
-                unchanged.append({"id": fid, "sha1": fdata["sha1"]})
+                unchanged.append({"id": fid, "sha1": fdata["sha1"], "scan": fdata["scan"]})
             else:
                 changed.append({
                     "id": fid,
                     "old_sha1": old_sha1 or "unknown",
                     "new_sha1": fdata["sha1"],
                     "path": fdata["path"],
+                    "scan": fdata["scan"],
                 })
         else:
             new_sources.append({
                 "id": fid,
-                "installs": fdata["installs"],
+                "installs": fdata.get("installs", 0),
                 "sha1": fdata["sha1"],
                 "path": fdata["path"],
+                "scan": fdata["scan"],
             })
 
     for oid in old_ids:
         if oid not in fetched_ok and oid not in fresh_ids:
             removed.append({"id": oid})
 
-    if not changed and not new_sources and not removed:
+    has_updates = bool(changed or new_sources or removed or rejected)
+    if scan_failures:
+        status = "scan_failed"
+    elif has_updates:
+        status = "updates_available"
+    elif fetched_failed:
+        status = "incomplete"
+    else:
         cleanup()
         return {"status": "no_updates"}
 
     result = {
-        "status": "updates_available",
+        "status": status,
         "unchanged": unchanged,
         "changed": changed,
         "new": new_sources,
         "removed": removed,
+        "rejected": rejected,
     }
     if instructions:
         result["instructions"] = instructions
@@ -696,19 +877,42 @@ def update_manifest(name, tok_count, sources_json):
 
 _TOKEN_ENCODER = None
 _TOKEN_ENCODER_TRIED = False
+_TOKEN_ENCODER_ERROR = None
+
+
+class TokenizerUnavailableError(RuntimeError):
+    """The cl100k tokenizer could not be loaded where an exact count is required."""
 
 
 def _token_encoder():
     """Lazily load the cl100k tokenizer; return None if tiktoken is unavailable."""
-    global _TOKEN_ENCODER, _TOKEN_ENCODER_TRIED
+    global _TOKEN_ENCODER, _TOKEN_ENCODER_TRIED, _TOKEN_ENCODER_ERROR
     if not _TOKEN_ENCODER_TRIED:
         _TOKEN_ENCODER_TRIED = True
         try:
             import tiktoken
             _TOKEN_ENCODER = tiktoken.get_encoding("cl100k_base")
-        except Exception:
+        except Exception as e:
             _TOKEN_ENCODER = None
+            _TOKEN_ENCODER_ERROR = f"{type(e).__name__}: {e}"
     return _TOKEN_ENCODER
+
+
+def _require_token_encoder():
+    """Return the cl100k encoder or raise TokenizerUnavailableError.
+
+    The len/4 fallback over-counts prose enough to flip token-budget findings
+    from MEDIUM to HIGH, so a blocking gate that silently fell back would pass
+    or fail depending on whether tiktoken happened to be installed.
+    """
+    enc = _token_encoder()
+    if enc is None:
+        raise TokenizerUnavailableError(
+            "tiktoken's cl100k_base encoding is required for exact token budgets but could not "
+            f"be loaded ({_TOKEN_ENCODER_ERROR}). Install it with: "
+            "python3 -m pip install -r distillery/requirements.txt"
+        )
+    return enc
 
 
 def count_tokens(text):
@@ -1534,7 +1738,7 @@ def _load_skill_negative(name, patterns_file=None):
     """Extract the suppression regex for a skill from skill-patterns.sh, or None.
 
     SKILL_NEGATIVE is optional and most skills have no entry. A skill fires when
-    SKILL_PATTERNS matches AND SKILL_NEGATIVE does not, mirroring match-skills.sh.
+    SKILL_PATTERNS matches AND SKILL_NEGATIVE does not, mirroring skill-matcher.sh.
     """
     import re as _re
     path = Path(patterns_file) if patterns_file else SKILL_PATTERNS_DEFAULT
@@ -1655,9 +1859,11 @@ def validate_plugin(component_filter=None):
         component_filter: only validate this component name (optional)
 
     Returns structured JSON report with per-component findings.
+    Raises TokenizerUnavailableError when tiktoken cannot be loaded.
     """
     import re
 
+    _require_token_encoder()
     skills_dir = PLUGIN_DIR / "skills"
     agents_dir = PLUGIN_DIR / "agents"
     commands_dir = PLUGIN_DIR / "commands"
@@ -6170,10 +6376,14 @@ def main():
         skills_list = json.loads(args.skills)
         results = fetch_skills(skills_list)
         print(json.dumps(results, indent=2))
+        if any(r.get("status") == "scan_failed" for r in results):
+            sys.exit(1)
 
     elif args.command == "check-updates":
         report = check_updates(args.name)
         print(json.dumps(report, indent=2))
+        if report["status"] in ("scan_failed", "incomplete"):
+            sys.exit(1)
 
     elif args.command == "update-manifest":
         update_manifest(args.name, args.token_count, args.sources)
@@ -6236,7 +6446,11 @@ def main():
             sys.exit(1)
 
     elif args.command == "validate-plugin":
-        report = validate_plugin(args.component)
+        try:
+            report = validate_plugin(args.component)
+        except TokenizerUnavailableError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(2)
         inv = report["inventory"]
         s = report["summary"]
         print(f"\n  Plugin: {inv['skills']} skills, {inv['agents']} agents, {inv['commands']} commands", file=sys.stderr)

@@ -3,6 +3,8 @@ import path from "path"
 import type { ClaudeHomeConfig } from "../parsers/claude-home"
 import type { ClaudeMcpServer } from "../types/claude"
 import type { OpenCodeMcpServer } from "../types/opencode"
+import { assertSafeDestination, writeText } from "../utils/files"
+import { setOwn } from "../utils/own-property"
 import { forceSymlink, isValidSkillName } from "../utils/symlink"
 
 export async function syncToOpenCode(
@@ -23,10 +25,11 @@ export async function syncToOpenCode(
 
   if (Object.keys(config.mcpServers).length > 0) {
     const configPath = path.join(outputRoot, "opencode.json")
+    await assertSafeDestination(outputRoot, configPath)
     const existing = await readJsonSafe(configPath)
     const mcpConfig = convertMcpForOpenCode(config.mcpServers)
     existing.mcp = { ...(existing.mcp ?? {}), ...mcpConfig }
-    await fs.writeFile(configPath, JSON.stringify(existing, null, 2), { mode: 0o600 })
+    await writeText(configPath, JSON.stringify(existing, null, 2), { root: outputRoot, mode: 0o600 })
   }
 }
 
@@ -49,22 +52,22 @@ function convertMcpForOpenCode(
 
   for (const [name, server] of Object.entries(servers)) {
     if (server.command) {
-      result[name] = {
+      setOwn(result, name, {
         type: "local",
         command: [server.command, ...(server.args ?? [])],
         environment: server.env,
         enabled: true,
-      }
+      })
       continue
     }
 
     if (server.url) {
-      result[name] = {
+      setOwn(result, name, {
         type: "remote",
         url: server.url,
         headers: server.headers,
         enabled: true,
-      }
+      })
     }
   }
 

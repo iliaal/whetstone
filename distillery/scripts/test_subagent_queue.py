@@ -133,7 +133,7 @@ def test_private_queue_and_default_type(queue_env):
     assert files[0].stat().st_mode & 0o777 == 0o600
     entry = json.loads(files[0].read_text())
     assert entry == {"subagent_type": "general-purpose", "prompt": "write Python CLI",
-                     "enqueued_at": entry["enqueued_at"]}
+                     "skills": ["ia-python-services"], "enqueued_at": entry["enqueued_at"]}
     assert abs(time.time() - entry["enqueued_at"]) < 10
     assert "ia-python-services/SKILL.md" in start(queue_env)
     assert not list(directory.glob("*.json"))
@@ -180,17 +180,45 @@ def test_symlink_queue_rejected(queue_env, tmp_path):
     assert not list(target.iterdir())
 
 
-def test_fifo_and_type_routing(queue_env):
+def test_type_routing_and_same_type_batch_union(queue_env):
     record(queue_env, "write Python CLI", "whetstone:ia-security-sentinel", "first")
     record(queue_env, "implement Rust CLI", "Explore", "second")
     record(queue_env, "build Laravel controller", "ia-security-sentinel", "third")
     assert start(queue_env, "Plan") == ""
-    assert "ia-rust-systems/SKILL.md" in start(queue_env, "Explore")
-    first = start(queue_env, "ia-security-sentinel")
-    assert "ia-python-services/SKILL.md" in first
-    assert "ia-php-laravel/SKILL.md" not in first
-    assert "ia-php-laravel/SKILL.md" in start(queue_env, "whetstone:ia-security-sentinel")
-    assert start(queue_env, "ia-security-sentinel") == ""
+    explore = start(queue_env, "Explore")
+    assert "ia-rust-systems/SKILL.md" in explore
+    assert "started together" not in explore
+    for _ in range(2):
+        context = start(queue_env, "ia-security-sentinel")
+        assert "started together" in context
+        assert "ia-python-services/SKILL.md" in context
+        assert "ia-php-laravel/SKILL.md" in context
+    assert start(queue_env, "whetstone:ia-security-sentinel") == ""
+    assert not list(queue_dir(queue_env).glob("*.json"))
+    assert not list(queue_dir(queue_env).glob(".used-*"))
+
+
+@pytest.mark.parametrize("order", ["forward", "reverse"])
+def test_parallel_same_type_starts_each_receive_own_context(queue_env, order):
+    record(queue_env, "write Python CLI", tool="tool-a")
+    record(queue_env, "build Laravel controller", tool="tool-b")
+    first, second = start(queue_env), start(queue_env)
+    contexts = [first, second] if order == "forward" else [second, first]
+    for context in contexts:
+        assert "ia-python-services/SKILL.md" in context
+        assert "ia-php-laravel/SKILL.md" in context
+    assert not list(queue_dir(queue_env).glob(".used-*"))
+    record(queue_env, "build Laravel controller", tool="tool-c")
+    context = start(queue_env)
+    assert "ia-php-laravel/SKILL.md" in context
+    assert "ia-python-services/SKILL.md" not in context
+    assert "started together" not in context
+
+
+def test_leftover_entry_does_not_blank_next_start(queue_env):
+    record(queue_env, "write Python CLI", tool="orphan")
+    record(queue_env, "build Laravel controller", tool="fresh")
+    assert "ia-php-laravel/SKILL.md" in start(queue_env)
 
 
 def test_other_plugin_namespace_and_session_stay_distinct(queue_env):
@@ -249,14 +277,30 @@ def test_concurrent_claims_are_exactly_once(queue_env, tmp_path):
     count = 12
     plugin = make_fixture_plugin(tmp_path / "plugin", count)
     for index in range(count):
+        record(queue_env, f"token{index}end", f"agent-{index}", f"tool-{index}", plugin=plugin)
+    with ThreadPoolExecutor(max_workers=count) as pool:
+        contexts = list(pool.map(lambda i: start(queue_env, f"agent-{i}", plugin=plugin), range(count)))
+    for index, context in enumerate(contexts):
+        assert [line.split("/skills/")[1] for line in context.splitlines() if "/skills/" in line] == [
+            f"ia-queue-{index}/SKILL.md"]
+    assert not list(queue_dir(queue_env).glob("*.json"))
+    assert not list(queue_dir(queue_env).glob(".claimed-*"))
+    assert start(queue_env, "agent-0", plugin=plugin) == ""
+
+
+def test_concurrent_same_type_starts_each_receive_whole_batch(queue_env, tmp_path):
+    count = 12
+    plugin = make_fixture_plugin(tmp_path / "plugin", count)
+    for index in range(count):
         record(queue_env, f"token{index}end", tool=f"tool-{index}", plugin=plugin)
     with ThreadPoolExecutor(max_workers=count) as pool:
         contexts = list(pool.map(lambda _: start(queue_env, plugin=plugin), range(count)))
-    actual = [line.split("/skills/")[1] for context in contexts for line in context.splitlines() if "/skills/" in line]
-    assert sorted(actual) == sorted(f"ia-queue-{i}/SKILL.md" for i in range(count))
+    expected = {f"ia-queue-{index}/SKILL.md" for index in range(count)}
+    for context in contexts:
+        assert {line.split("/skills/")[1] for line in context.splitlines() if "/skills/" in line} == expected
     assert not list(queue_dir(queue_env).glob("*.json"))
+    assert not list(queue_dir(queue_env).glob(".used-*"))
     assert not list(queue_dir(queue_env).glob(".claimed-*"))
-    assert start(queue_env, plugin=plugin) == ""
 
 
 def test_additional_context_is_capped(queue_env, tmp_path):
@@ -282,3 +326,94 @@ def test_hook_scripts_cannot_rewrite_or_approve_calls():
     result = subprocess.run(["grep", "-nE", "updatedInput|permissionDecision", *map(str, files)],
                             text=True, capture_output=True, timeout=10)
     assert result.returncode == 1, result.stdout + result.stderr
+
+
+def test_bash_agent_record_stores_no_matches(queue_env):
+    record(queue_env, "write Python CLI", "Bash")
+    entry = json.loads(next(queue_dir(queue_env).glob("*.json")).read_text())
+    assert entry["skills"] == []
+    assert start(queue_env, "Bash") == ""
+
+
+def test_start_uses_stored_matches(queue_env):
+    record(queue_env, "write Python CLI")
+    entry_file = next(queue_dir(queue_env).glob("*.json"))
+    entry = json.loads(entry_file.read_text())
+    entry["skills"] = ["ia-php-laravel", "../escape", "ia-not-installed"]
+    entry_file.write_text(json.dumps(entry))
+    context = start(queue_env)
+    assert "ia-php-laravel/SKILL.md" in context
+    assert "ia-python-services/SKILL.md" not in context
+    assert "escape" not in context and "ia-not-installed" not in context
+
+
+@pytest.mark.parametrize("batch", [False, True])
+def test_legacy_record_without_skills_matches_at_start(queue_env, batch):
+    record(queue_env, "write Python CLI", tool="legacy")
+    if batch:
+        record(queue_env, "implement Rust CLI", tool="current")
+    legacy = next(queue_dir(queue_env).glob("*-legacy.json"))
+    entry = json.loads(legacy.read_text())
+    del entry["skills"]
+    legacy.write_text(json.dumps(entry))
+    context = start(queue_env)
+    assert "ia-python-services/SKILL.md" in context
+    assert ("ia-rust-systems/SKILL.md" in context) == batch
+    assert ("started together" in context) == batch
+
+
+def test_full_batch_start_with_real_patterns_is_within_timeout(queue_env):
+    timeout = next(hook["timeout"] for group in json.loads((PLUGIN / "hooks" / "hooks.json").read_text())[
+        "hooks"]["SubagentStart"] for hook in group["hooks"])
+    prompts = ["write Python CLI with pytest", "build Laravel controller", "implement Rust CLI",
+               "debug the failing React component test", "plan the terraform module"]
+    count = 64
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        list(pool.map(lambda i: record(queue_env, f"{prompts[i % len(prompts)]} {i}", tool=f"tool-{i}"),
+                      range(count)))
+    assert len(list(queue_dir(queue_env).glob("*.json"))) == count
+    began = time.monotonic()
+    context = start(queue_env)
+    elapsed = time.monotonic() - began
+    assert elapsed < timeout / 2, elapsed
+    assert "started together" in context
+    for skill in ["ia-python-services", "ia-php-laravel", "ia-rust-systems", "ia-terraform"]:
+        assert f"{skill}/SKILL.md" in context
+
+
+def test_discard_waits_for_queue_lock(queue_env):
+    record(queue_env, "write Python CLI")
+    lock = queue_dir(queue_env) / ".lock"
+    holder = subprocess.Popen(["flock", str(lock), "sleep", "1"])
+    try:
+        time.sleep(0.2)
+        began = time.monotonic()
+        finish(queue_env, "PostToolUseFailure")
+        assert time.monotonic() - began >= 0.5
+    finally:
+        holder.wait(timeout=10)
+    assert not list(queue_dir(queue_env).glob("*.json"))
+
+
+def test_claim_tolerates_record_removed_by_concurrent_cleanup(queue_env, tmp_path):
+    for index in range(3):
+        record(queue_env, ["write Python CLI", "build Laravel controller", "implement Rust CLI"][index],
+               tool=f"tool-{index}")
+    vanishing = next(queue_dir(queue_env).glob("*-tool-1.json"))
+    shim = tmp_path / "bin"
+    shim.mkdir()
+    real_jq = shutil.which("jq")
+    # Deletes the record after the claim enumerated it and before jq opens it.
+    (shim / "jq").write_text(
+        "#!/bin/bash\n"
+        f"for arg; do [[ $arg == {shlex.quote(str(vanishing))} ]] && rm -f -- \"$arg\"; done\n"
+        f'exec {shlex.quote(real_jq)} "$@"\n')
+    (shim / "jq").chmod(0o755)
+    env = {**queue_env, "PATH": f"{shim}:{queue_env['PATH']}"}
+    context = start(env)
+    assert "started together" in context
+    assert "ia-python-services/SKILL.md" in context
+    assert "ia-rust-systems/SKILL.md" in context
+    assert "ia-php-laravel/SKILL.md" not in context
+    assert "ia-python-services/SKILL.md" in start(env)
+    assert start(env) == ""

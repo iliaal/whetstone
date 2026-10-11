@@ -10,6 +10,7 @@ Run the full release pipeline for the whetstone plugin. This command owns all ve
 
 ## Phase 1: Survey what changed since the last release
 
+0. Confirm both repos are releasable before editing anything: whetstone and `~/ai/ai-skills` must each have `master` checked out and contain `origin/master`, and `~/ai/ai-skills` must have a clean working tree. `release.sh` aborts on any of these, so a bump applied on a feature branch has to be redone on `master`.
 1. Find the current version in `plugins/whetstone/.claude-plugin/plugin.json`.
 2. Run `git log v<current-version>..HEAD --oneline` (fallback: `git log --since="<last release date>" --oneline`) to list commits since the last tag.
 3. Run `git diff v<current-version>..HEAD --stat` to see which files changed.
@@ -53,6 +54,7 @@ The attestation is bound to the changed files' content hash. If any of those fil
 
 Run `bash scripts/release.sh "$ARGUMENTS"` — this handles:
 
+- **Branch preflight** — **BLOCKING**, runs before anything else. Both whetstone and `~/ai/ai-skills` must have `master` checked out (not detached), no merge or cherry-pick in progress, and already contain `origin/master` after a fetch; `~/ai/ai-skills` must also have a clean working tree, because the release commits everything there with `git add -A`.
 - Version consistency check across the Claude plugin, Claude marketplace, and Codex plugin
 - **Pre-commit gates** (each with its blocking status):
   - `update-metadata.sh --check` — **BLOCKING**. Aborts if component counts / descriptions drifted from plugin.json + marketplace.json.
@@ -61,14 +63,14 @@ Run `bash scripts/release.sh "$ARGUMENTS"` — this handles:
   - Tier-1 prompt-injection corpus scan (`scan-injection`, deterministic) — **BLOCKING on HIGH**. Aborts if any HIGH-severity finding.
   - Tier-2 attestation verify (`scan-injection --verify-attestation`) — **BLOCKING**; verifies the Phase 3.5 sub-agent judge pass produced a valid content-bound attestation for the changed-file set. **Skipped with a WARNING** (non-blocking) when no previous `v*` tag exists.
   - Skill-injection hook tests (`test-semantic`) — **NON-BLOCKING**. Prints a WARNING on failure and continues. (These are deterministic hook-firing tests, distinct from the Tier-1/Tier-2 prompt-injection scan above.)
-  - Skill manifest regeneration (`generate-manifest.py`) — the baseline is first reset to the last-released manifest (from the `v*` tag) so mid-work regens can't freeze changed skills at the old version and make ClawHub false-skip them.
+  - Skill manifest regeneration (`generate-manifest.py`) — the baseline is first reset to the last-released manifest (from the `v*` tag) so mid-work regens can't freeze changed skills at the old version and make ClawHub false-skip them. Each skill gets two hashes: `content_hash`/`content_changed` (SKILL.md only, used for eval staleness) and `bundle_hash`/`bundle_changed` (every tracked or untracked-but-not-ignored file in the skill directory, used for ClawHub change detection). A references-, scripts-, or assets-only edit therefore republishes the skill. The first release after `bundle_hash` was introduced finds no prior bundle hash and republishes every skill once.
 - Commit all plugin changes + CHANGELOG + both marketplaces
 - Refresh `whetstone@whetstone` in the local Codex installation after commit but before push; a configured Codex failure blocks publication
-- Push to `origin/master`
+- Push the release commit by SHA (`git push origin <sha>:refs/heads/master`), then confirm with `git ls-remote` that `origin/master` equals that SHA; a mismatch aborts before tagging, mirroring, or ClawHub publication
 - Sync the GitHub repo description from `plugin.json`
-- **Create the GitHub release on whetstone** — this mints the `v<version>` tag. Phase 1's `git log v<current>..HEAD` on the *next* release depends on this tag existing, so a skipped/failed GitHub release silently breaks the next changelog survey.
-- Mirror skills to `~/ai/ai-skills`, **sync the ai-skills CHANGELOG** (extract skill-related entries from this release's notes), push, and **create the ai-skills GitHub release**
-- Publish skills to the ClawHub registry via `publish-clawhub.sh` — **non-fatal** (see below)
+- **Create the GitHub release on whetstone** with `--target <release sha>` — this mints the `v<version>` tag on the exact commit pushed. Phase 1's `git log v<current>..HEAD` on the *next* release depends on this tag existing, so a skipped/failed GitHub release silently breaks the next changelog survey.
+- Mirror skills to `~/ai/ai-skills`, **sync the ai-skills CHANGELOG** (extract skill-related entries from this release's notes), push the ai-skills commit by SHA with the same `ls-remote` check, and **create the ai-skills GitHub release** targeting that SHA
+- Publish skills to the ClawHub registry via `publish-clawhub.sh` — **non-fatal** (see below). Both scripts run the clawhub CLI pinned by `CLAWHUB_VERSION` (currently `0.23.3`) rather than `clawhub@latest`; bump the constant in both scripts together after reviewing a new CLI release.
 - Sync skills to shared Agents and Kilocode directories via `sync-to-tools.sh`; remove only legacy Whetstone-owned direct Codex links
 - Update the locally installed plugin via `update-plugin.sh`
 - `git fetch --tags` back-sync so local tags match the remote release tag just minted
@@ -78,7 +80,7 @@ Run `bash scripts/release.sh "$ARGUMENTS"` — this handles:
 - **Unauthenticated** (`clawhub whoami` fails): publish is skipped with a WARNING.
 - **Publish error** (`publish-clawhub.sh` exits non-zero): the step logs a WARNING and continues; the remaining local steps still run.
 
-In both cases `release.sh` prints a prominent `ACTION REQUIRED` block at the end naming the cause and the exact resume command. Resume path: `npx clawhub@latest login` (only if unauthenticated) then `bash scripts/publish-clawhub.sh`. `publish-clawhub.sh` skips versions already on the registry, so re-running it is safe.
+In both cases `release.sh` prints a prominent `ACTION REQUIRED` block at the end naming the cause and the exact resume command. Resume path: `npx clawhub@0.23.3 login` (only if unauthenticated; match `CLAWHUB_VERSION`) then `bash scripts/publish-clawhub.sh`. `publish-clawhub.sh` skips versions already on the registry, so re-running it is safe.
 
 If `$ARGUMENTS` is empty, `release.sh` auto-generates the commit message from the CHANGELOG headline.
 
@@ -92,3 +94,4 @@ State the version that shipped and the commit count that was bundled into it.
 - Do not skip the pre-flight survey — blindly bumping without reading `git log` produces inaccurate CHANGELOGs.
 - If the working tree is clean and `git log v<current>..HEAD` is empty, stop — there is nothing to release.
 - Never force-push to `master`.
+- Release only from `master`. Do not work around the branch preflight by pushing another branch's commit to `master` by hand.

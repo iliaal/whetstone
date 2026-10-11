@@ -22,10 +22,33 @@ printf '%s' "$INPUT" | jq -e '
 ' >/dev/null
 TOOL_USE_ID=$(printf '%s' "$INPUT" | jq -r '.tool_use_id')
 
+# Matching here, outside the lock, keeps SubagentStart to a union of stored lists even
+# when a whole same-type batch starts at once. A null list makes the start match itself.
+record_skills() {
+  local agent_type prompt
+  agent_type=$(printf '%s' "$INPUT" | jq -r '(.tool_input.subagent_type // "general-purpose") | sub("^whetstone:"; "")')
+  prompt=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt')
+  PROMPT_MATCHES=()
+  case "$agent_type" in
+    Bash | statusline-setup) ;;
+    *)
+      $SKILL_PATTERNS_LOADED || return 1
+      if [[ -n "${prompt//[[:space:]]/}" ]]; then
+        match_prompt "$prompt"
+      fi
+      ;;
+  esac
+  jq -cn '$ARGS.positional' --args ${PROMPT_MATCHES[@]+"${PROMPT_MATCHES[@]}"}
+}
+# The subshell keeps a matcher failure from discarding the record itself.
+# shellcheck source=skill-matcher.sh
+SKILLS_JSON=$(source "$SCRIPT_DIR/skill-matcher.sh" && record_skills) || SKILLS_JSON=null
+
 QUEUE_TEMP=$(mktemp "$QUEUE_DIR/.pending-XXXXXXXX")
-printf '%s' "$INPUT" | jq '{
+printf '%s' "$INPUT" | jq --argjson skills "$SKILLS_JSON" '{
   subagent_type: ((.tool_input.subagent_type // "general-purpose") | sub("^whetstone:"; "")),
   prompt: .tool_input.prompt,
+  skills: $skills,
   enqueued_at: (now | floor)
 }' >"$QUEUE_TEMP"
 # Serialize publication and cap enforcement; readers only see complete JSON files.

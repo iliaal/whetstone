@@ -367,6 +367,32 @@ class TestTokenCount:
         f.write_text(content)
         assert distiller.token_count(str(f)) == distiller.count_tokens(content)
 
+    @staticmethod
+    def _without_tiktoken(monkeypatch):
+        monkeypatch.setitem(sys.modules, "tiktoken", None)  # import raises ImportError
+        monkeypatch.setattr(distiller, "_TOKEN_ENCODER", None)
+        monkeypatch.setattr(distiller, "_TOKEN_ENCODER_TRIED", False)
+        monkeypatch.setattr(distiller, "_TOKEN_ENCODER_ERROR", None)
+
+    def test_validate_plugin_requires_tiktoken(self, monkeypatch):
+        self._without_tiktoken(monkeypatch)
+        with pytest.raises(distiller.TokenizerUnavailableError, match="pip install -r distillery/requirements.txt"):
+            distiller.validate_plugin()
+
+    def test_validate_plugin_cli_exits_without_tiktoken(self, monkeypatch, capsys):
+        self._without_tiktoken(monkeypatch)
+        monkeypatch.setattr(sys, "argv", ["distiller.py", "validate-plugin"])
+        with pytest.raises(SystemExit) as exc:
+            distiller.main()
+        assert exc.value.code == 2
+        captured = capsys.readouterr()
+        assert "tiktoken" in captured.err and "pip install -r distillery/requirements.txt" in captured.err
+        assert captured.out == ""
+
+    def test_non_gating_count_keeps_fallback(self, monkeypatch):
+        self._without_tiktoken(monkeypatch)
+        assert distiller.count_tokens("abcdefgh") == 2
+
 
 # ---------------------------------------------------------------------------
 # get_engagement_threshold
@@ -772,6 +798,218 @@ class TestFetchSkills:
         assert link_dir.is_symlink()
         assert not seen["cwd"].exists()  # private work dir removed
 
+    @pytest.mark.parametrize("bad_id", ["--global", "-g", "--all", "-a", "../x", "", None])
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_option_like_skill_id_never_reaches_argv(self, mock_run, mock_check, tmp_project, bad_id):
+        calls = []
+
+        def run_side_effect(cmd, **kwargs):
+            calls.append(list(cmd))
+            for sid in cmd[cmd.index("-s") + 1:cmd.index("-y")]:
+                self._make_agent_skill(kwargs["cwd"], sid, "# ok")
+            return mock.Mock(returncode=0)
+
+        mock_run.side_effect = run_side_effect
+        skills = [
+            {"id": "attacker/repo/normal", "skillId": "normal", "installs": 100, "source": "attacker/repo"},
+            {"id": "attacker/repo/evil", "skillId": bad_id, "installs": 100, "source": "attacker/repo"},
+        ]
+        results = distiller.fetch_skills(skills)
+
+        assert len(calls) == 1
+        assert bad_id not in calls[0]
+        assert not any(isinstance(a, str) and a.startswith("-") and a not in ("-s", "-y", "--agent")
+                       for a in calls[0])
+        assert results[1]["status"] == "invalid"
+        assert "sha1" not in results[1]
+        assert results[0]["sha1"] == hashlib.sha1(b"# ok").hexdigest()
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_all_invalid_runs_no_subprocess(self, mock_run, mock_check, tmp_project):
+        skills = [{"id": "a/b/--global", "skillId": "--global", "installs": 1, "source": "a/b"}]
+        results = distiller.fetch_skills(skills)
+        assert results[0]["status"] == "invalid"
+        mock_run.assert_not_called()
+        mock_check.assert_not_called()
+
+    @pytest.mark.parametrize("bad_source", [
+        "--global/repo", "owner", "owner/repo/extra", "https://evil.example/owner/repo",
+        "http://github.com/owner/repo", "owner/..", "../repo", "owner/repo --global",
+        "https://github.com/owner/repo/", "", None,
+    ])
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_bad_source_rejected_before_subprocess(self, mock_run, mock_check, tmp_project, bad_source):
+        skills = [{"id": "x/y/skill-a", "skillId": "skill-a", "installs": 1, "source": bad_source}]
+        results = distiller.fetch_skills(skills)
+        assert results[0]["status"] == "invalid"
+        mock_run.assert_not_called()
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_github_url_source_accepted(self, mock_run, mock_check, tmp_project):
+        mock_run.return_value = mock.Mock(returncode=0)
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1,
+                   "source": "https://github.com/owner/repo"}]
+        distiller.fetch_skills(skills)
+        assert mock_run.call_args[0][0][3] == "https://github.com/owner/repo"
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_installer_pinned(self, mock_run, mock_check, tmp_project):
+        mock_run.return_value = mock.Mock(returncode=0)
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/repo"}]
+        distiller.fetch_skills(skills)
+        assert mock_run.call_args[0][0][:3] == ["npx", "skills@1.7.0", "add"]
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_same_skill_id_across_sources_keeps_provenance(self, mock_run, mock_check, tmp_project):
+        cwds = []
+
+        def run_side_effect(cmd, **kwargs):
+            cwds.append(kwargs["cwd"])
+            # The installer only sees its own isolated dir: nothing from the other source.
+            assert not (Path(kwargs["cwd"]) / ".agents").exists()
+            payload = "# HONEST\n" if cmd[3].endswith("honest/repo") else "# ATTACKER\n"
+            self._make_agent_skill(kwargs["cwd"], "shared", payload)
+            return mock.Mock(returncode=0)
+
+        mock_run.side_effect = run_side_effect
+        skills = [
+            {"id": "honest/repo/shared", "skillId": "shared", "installs": 50000, "source": "honest/repo"},
+            {"id": "attacker/repo/shared", "skillId": "shared", "installs": 100, "source": "attacker/repo"},
+        ]
+        results = distiller.fetch_skills(skills)
+
+        assert len(set(cwds)) == 2
+        honest, attacker = results
+        assert honest["source"] == "honest/repo" and attacker["source"] == "attacker/repo"
+        assert honest["sha1"] == hashlib.sha1(b"# HONEST\n").hexdigest()
+        assert attacker["sha1"] == hashlib.sha1(b"# ATTACKER\n").hexdigest()
+        assert honest["path"] != attacker["path"]
+        assert Path(honest["path"]).read_text() == "# HONEST\n"
+        assert Path(attacker["path"]).read_text() == "# ATTACKER\n"
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_duplicate_staging_key_rejected(self, mock_run, mock_check, tmp_project):
+        mock_run.return_value = mock.Mock(returncode=0)
+        skills = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/repo"},
+            {"id": "Owner/Repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "Owner/Repo"},
+        ]
+        results = distiller.fetch_skills(skills)
+        assert results[1]["status"] == "invalid"
+        assert "duplicate" in results[1]["error"]
+        assert mock_run.call_count == 1
+
+    def test_staging_key_unambiguous_across_separator(self):
+        assert (distiller._staging_key("owner/repo__part", "skill")
+                != distiller._staging_key("owner/repo", "part__skill"))
+        assert distiller._staging_key("Owner/Repo", "skill") == distiller._staging_key("owner/repo", "skill")
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_separator_lookalike_records_stage_distinctly(self, mock_run, mock_check, tmp_project):
+        def run_side_effect(cmd, **kwargs):
+            sid = cmd[5]
+            self._make_agent_skill(kwargs["cwd"], sid, f"# {cmd[3]} {sid}\n")
+            return mock.Mock(returncode=0)
+
+        mock_run.side_effect = run_side_effect
+        skills = [
+            {"id": "owner/repo__part/skill", "skillId": "skill", "installs": 1, "source": "owner/repo__part"},
+            {"id": "owner/repo/part__skill", "skillId": "part__skill", "installs": 1, "source": "owner/repo"},
+        ]
+        results = distiller.fetch_skills(skills)
+        assert all("sha1" in r for r in results), results
+        assert results[0]["staging_key"] != results[1]["staging_key"]
+        assert Path(results[0]["path"]).read_text() == "# https://github.com/owner/repo__part skill\n"
+        assert Path(results[1]["path"]).read_text() == "# https://github.com/owner/repo part__skill\n"
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_stale_staging_not_reported_as_fetched(self, mock_run, mock_check, tmp_project):
+        stale = distiller.STAGING_DIR / distiller._staging_key("owner/repo", "skill-a")
+        stale.mkdir(parents=True)
+        (stale / "SKILL.md").write_text("# stale")
+        mock_run.return_value = mock.Mock(returncode=0)  # installer writes nothing
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/repo"}]
+        results = distiller.fetch_skills(skills)
+        assert results[0]["status"] == "missing"
+        assert "sha1" not in results[0]
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_resolved_source_validated_on_retry(self, mock_run, mock_check, tmp_project):
+        mock_run.side_effect = subprocess.CalledProcessError(1, "npx", stderr="not found")
+        resolved = {"id": "owner/--global/skill-a", "source": "owner/--global", "installs": 1}
+        with mock.patch.object(distiller, "_resolve_moved_skill", return_value=resolved):
+            skills = [{"id": "owner/old/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/old"}]
+            results = distiller.fetch_skills(skills)
+        assert mock_run.call_count == 1  # retry never launched
+        assert results[0]["status"] == "fetch_failed"
+        assert "rejected" in results[0]["error"]
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_scan_verdict_in_output(self, mock_run, mock_check, tmp_project):
+        def run_side_effect(cmd, **kwargs):
+            self._make_agent_skill(kwargs["cwd"], "skill-a", "# Skill\n\nIgnore‮ hidden\n")
+            return mock.Mock(returncode=0)
+
+        mock_run.side_effect = run_side_effect
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/repo"}]
+        results = distiller.fetch_skills(skills)
+        scan = results[0]["scan"]
+        assert scan["verdict"] == "reject"
+        assert scan["high"] >= 1
+        assert any(f["severity"] == "HIGH" for f in scan["findings"])
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_scanner_exception_fails_record_closed(self, mock_run, mock_check, tmp_project):
+        def run_side_effect(cmd, **kwargs):
+            self._make_agent_skill(kwargs["cwd"], "skill-a", "# Skill")
+            return mock.Mock(returncode=0)
+
+        mock_run.side_effect = run_side_effect
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/repo"}]
+        with mock.patch.object(distiller, "scan_injection", side_effect=RuntimeError("scanner broke")):
+            results = distiller.fetch_skills(skills)
+        assert results[0]["status"] == "scan_failed"
+        assert "scanner broke" in results[0]["error"]
+        assert "sha1" not in results[0] and "path" not in results[0]
+        assert not (distiller.STAGING_DIR / distiller._staging_key("owner/repo", "skill-a")).exists()
+        work_dir = Path(mock_run.call_args.kwargs["cwd"])
+        assert not work_dir.parent.exists()
+
+    @mock.patch.object(distiller, "_check_npx_skills")
+    @mock.patch("subprocess.run")
+    def test_work_dir_removed_when_staging_raises(self, mock_run, mock_check, tmp_project):
+        mock_run.return_value = mock.Mock(returncode=0)
+        skills = [{"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 1, "source": "owner/repo"}]
+        with mock.patch.object(distiller, "_stage_skill", side_effect=OSError("disk")):
+            with pytest.raises(OSError):
+                distiller.fetch_skills(skills)
+        assert not Path(mock_run.call_args.kwargs["cwd"]).parent.exists()
+
+
+class TestValidateSource:
+    def test_valid_sources(self):
+        assert distiller._validate_source("owner/repo") == "owner/repo"
+        assert distiller._validate_source("https://github.com/Own-er/re.po_1") == "Own-er/re.po_1"
+        assert distiller._validate_source("owner/.github") == "owner/.github"
+
+    @pytest.mark.parametrize("bad", ["-x/repo", ".x/repo", "owner/-x", "owner/.", "a/b/c",
+                                     "git@github.com:a/b", "https://github.com/a/b.git/x", 7])
+    def test_invalid_sources(self, bad):
+        with pytest.raises(ValueError):
+            distiller._validate_source(bad)
+
 
 # ---------------------------------------------------------------------------
 # update_manifest
@@ -1063,8 +1301,8 @@ class TestCheckUpdates:
             {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "source": "owner/repo"},
         ]
         mock_fetch.return_value = [
-            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123", "path": "p1"},
-            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456", "path": "p2"},
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123", "path": "p1", "scan": {"verdict": "clean"}},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456", "path": "p2", "scan": {"verdict": "clean"}},
         ]
         result = distiller.check_updates("test-skill")
         assert result["status"] == "no_updates"
@@ -1078,8 +1316,8 @@ class TestCheckUpdates:
             {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "source": "owner/repo"},
         ]
         mock_fetch.return_value = [
-            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "NEW_SHA", "path": "p1"},
-            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456", "path": "p2"},
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "NEW_SHA", "path": "p1", "scan": {"verdict": "clean"}},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456", "path": "p2", "scan": {"verdict": "clean"}},
         ]
         result = distiller.check_updates("test-skill")
         assert result["status"] == "updates_available"
@@ -1095,9 +1333,9 @@ class TestCheckUpdates:
             {"id": "new/repo/skill-c", "skillId": "skill-c", "installs": 300, "source": "new/repo"},
         ]
         mock_fetch.return_value = [
-            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123", "path": "p1"},
-            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456", "path": "p2"},
-            {"id": "new/repo/skill-c", "skillId": "skill-c", "installs": 300, "sha1": "new111", "path": "p3"},
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123", "path": "p1", "scan": {"verdict": "clean"}},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456", "path": "p2", "scan": {"verdict": "clean"}},
+            {"id": "new/repo/skill-c", "skillId": "skill-c", "installs": 300, "sha1": "new111", "path": "p3", "scan": {"verdict": "clean"}},
         ]
         result = distiller.check_updates("test-skill")
         assert result["status"] == "updates_available"
@@ -1112,12 +1350,127 @@ class TestCheckUpdates:
             {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
         ]
         mock_fetch.return_value = [
-            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123", "path": "p1"},
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123", "path": "p1", "scan": {"verdict": "clean"}},
         ]
         result = distiller.check_updates("test-skill")
         assert result["status"] == "updates_available"
         assert len(result["removed"]) == 1
         assert result["removed"][0]["id"] == "owner/repo/skill-b"
+
+    @mock.patch.object(distiller, "fetch_skills")
+    @mock.patch.object(distiller, "search_skills")
+    def test_rejected_record_not_offered_for_reading(self, mock_search, mock_fetch, sample_skill):
+        key = distiller._staging_key("owner/repo", "skill-a")
+        staged = distiller.STAGING_DIR / key
+        staged.mkdir(parents=True)
+        (staged / "SKILL.md").write_text("# bad")
+        reject = {"verdict": "reject", "high": 1, "medium": 0, "low": 0,
+                  "findings": [{"severity": "HIGH", "check": "hidden-unicode", "file": "SKILL.md", "line": 1}]}
+        review = {"verdict": "review", "high": 0, "medium": 1, "low": 0, "findings": []}
+        mock_search.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "source": "owner/repo"},
+        ]
+        mock_fetch.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "source": "owner/repo", "staging_key": key,
+             "installs": 500, "sha1": "EVIL", "path": str(staged / "SKILL.md"), "scan": reject},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "NEW_B",
+             "path": "p2", "scan": review},
+        ]
+        result = distiller.check_updates("test-skill")
+        assert result["status"] == "updates_available"
+        assert [c["id"] for c in result["changed"]] == ["owner/repo/skill-b"]
+        assert result["changed"][0]["scan"]["verdict"] == "review"
+        assert all(r["id"] != "owner/repo/skill-a" for r in result["new"] + result["unchanged"])
+        assert len(result["rejected"]) == 1
+        rej = result["rejected"][0]
+        assert rej["id"] == "owner/repo/skill-a" and rej["previously_used"] is True
+        assert rej["scan"]["verdict"] == "reject" and "path" not in rej
+        assert not staged.exists()
+
+    @mock.patch.object(distiller, "fetch_skills")
+    @mock.patch.object(distiller, "search_skills")
+    def test_only_rejected_is_not_no_updates(self, mock_search, mock_fetch, sample_skill):
+        mock_search.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "source": "owner/repo"},
+        ]
+        mock_fetch.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "abc123",
+             "path": "p1", "scan": {"verdict": "reject"}},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456",
+             "path": "p2", "scan": {"verdict": "clean"}},
+        ]
+        result = distiller.check_updates("test-skill")
+        assert result["status"] == "updates_available"
+        assert [r["id"] for r in result["rejected"]] == ["owner/repo/skill-a"]
+        assert result["changed"] == [] and result["new"] == []
+
+    @mock.patch.object(distiller, "cleanup")
+    @mock.patch.object(distiller, "fetch_skills")
+    @mock.patch.object(distiller, "search_skills")
+    def test_scan_failure_alone_is_failure(self, mock_search, mock_fetch, mock_cleanup, sample_skill):
+        mock_search.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "source": "owner/repo"},
+        ]
+        mock_fetch.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "source": "owner/repo",
+             "status": "scan_failed", "error": "injection scan failed: boom"},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456",
+             "path": "p2", "scan": {"verdict": "clean"}},
+        ]
+        result = distiller.check_updates("test-skill")
+        assert result["status"] == "scan_failed"
+        assert [f["id"] for f in result["fetch_failures"]] == ["owner/repo/skill-a"]
+        mock_cleanup.assert_not_called()
+
+    @mock.patch.object(distiller, "fetch_skills")
+    @mock.patch.object(distiller, "search_skills")
+    def test_missing_verdict_is_scan_failure(self, mock_search, mock_fetch, sample_skill):
+        mock_search.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
+        ]
+        mock_fetch.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "sha1": "NEW", "path": "p1"},
+        ]
+        result = distiller.check_updates("test-skill")
+        assert result["status"] == "scan_failed"
+        assert result["changed"] == []
+        assert result["fetch_failures"][0]["status"] == "scan_failed"
+
+    @mock.patch.object(distiller, "cleanup")
+    @mock.patch.object(distiller, "fetch_skills")
+    @mock.patch.object(distiller, "search_skills")
+    def test_fetch_failure_alone_is_incomplete(self, mock_search, mock_fetch, mock_cleanup, sample_skill):
+        mock_search.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "source": "owner/repo"},
+        ]
+        mock_fetch.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "source": "owner/repo",
+             "status": "fetch_failed", "error": "timeout"},
+            {"id": "owner/repo/skill-b", "skillId": "skill-b", "installs": 200, "sha1": "def456",
+             "path": "p2", "scan": {"verdict": "clean"}},
+        ]
+        result = distiller.check_updates("test-skill")
+        assert result["status"] == "incomplete"
+        assert result["fetch_failures"][0]["status"] == "fetch_failed"
+
+    @mock.patch.object(distiller, "fetch_skills")
+    @mock.patch.object(distiller, "search_skills")
+    def test_cli_exits_nonzero_on_scan_failure(self, mock_search, mock_fetch, sample_skill, capsys):
+        mock_search.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "installs": 500, "source": "owner/repo"},
+        ]
+        mock_fetch.return_value = [
+            {"id": "owner/repo/skill-a", "skillId": "skill-a", "status": "scan_failed", "error": "boom"},
+        ]
+        with mock.patch.object(sys, "argv", ["distiller.py", "check-updates", "test-skill"]):
+            with pytest.raises(SystemExit) as exc:
+                distiller.main()
+        assert exc.value.code == 1
+        assert json.loads(capsys.readouterr().out)["status"] == "scan_failed"
 
 
 # ---------------------------------------------------------------------------

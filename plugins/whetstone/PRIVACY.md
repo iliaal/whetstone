@@ -15,9 +15,9 @@ Context7's handling of queries is governed by the [Context7 privacy policy](http
 
 ## Local processing
 
-The `inject-skills` PreToolUse hook briefly stores each subagent prompt and agent type in a local temporary queue at `${TMPDIR:-/tmp}/whetstone-subagent-queue-<uid>/<session_id>/`. Queue directories have mode `0700`; files have mode `0600`, readable and writable only by your user. The hook emits no output and does not change tool input or permissions.
+The `inject-skills` PreToolUse hook matches each subagent prompt against local skill trigger patterns and briefly stores the prompt, agent type, and matched skill names in a local temporary queue at `${TMPDIR:-/tmp}/whetstone-subagent-queue-<uid>/<session_id>/`. Queue directories have mode `0700`; files have mode `0600`, readable and writable only by your user. The hook emits no output and does not change tool input or permissions.
 
-The `subagent-start` hook claims a queued prompt for the same session and agent type, deletes the file, and matches the prompt against local skill trigger patterns. It adds matching skill paths to the subagent's starting context. Both hooks prune entries older than 15 minutes on each run, including entries from abandoned sessions. If neither hook runs again, expired files remain until the next run or system temp cleanup. A session retains at most 64 queued tasks. The hooks do not log prompt text elsewhere. Without Jev enabled, nothing leaves your machine.
+The `subagent-start` hook claims the queued task for the same session and agent type and adds its recorded skill paths to the subagent's starting context; a record without stored matches is matched at start. When several tasks of the same agent type are queued together, each start receives the union of the group's skill paths, and the group's files are deleted once its last task is claimed; otherwise the claimed file is deleted immediately. Both hooks prune entries older than 15 minutes on each run, including entries from abandoned sessions. If neither hook runs again, expired files remain until the next run or system temp cleanup. A session retains at most 64 queued tasks. The hooks do not log prompt text elsewhere. Without Jev enabled, nothing leaves your machine.
 
 ## Contact
 

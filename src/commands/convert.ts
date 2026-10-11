@@ -41,8 +41,8 @@ export default defineCommand({
     },
     permissions: {
       type: "string",
-      default: "broad",
-      description: "Permission mapping: none | broad | from-commands",
+      default: "none",
+      description: "Permission mapping written to opencode.json: none (default) | broad | from-commands",
     },
     agentMode: {
       type: "string",

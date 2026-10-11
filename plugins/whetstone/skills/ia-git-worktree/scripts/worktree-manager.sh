@@ -58,46 +58,106 @@ ensure_gitignore() {
 
 copy_env_files() {
   local worktree_path="$1"
+  local source name dest tmp copied=0 skipped=0
 
   echo -e "${BLUE}Copying environment files...${NC}"
 
-  local env_files=()
-  for f in "$GIT_ROOT"/.env*; do
-    if [[ -f "$f" ]]; then
-      local basename
-      basename=$(basename "$f")
-      if [[ "$basename" != ".env.example" ]]; then
-        env_files+=("$basename")
-      fi
-    fi
-  done
-
-  if [[ ${#env_files[@]} -eq 0 ]]; then
-    echo -e "  ${YELLOW}ℹ️  No .env files found in main repository${NC}"
-    return
+  # Destinations sit directly in the worktree root, so the root is the only parent to check.
+  if [[ -L "$worktree_path" || "$(realpath -e -- "$worktree_path")" != "$worktree_path" ]]; then
+    echo -e "  ${RED}Refusing env copy into redirected worktree path: $worktree_path${NC}" >&2
+    return 1
   fi
 
-  local copied=0
-  for env_file in "${env_files[@]}"; do
-    local source="$GIT_ROOT/$env_file"
-    local dest="$worktree_path/$env_file"
-
-    if [[ -f "$dest" ]]; then
-      echo -e "  ${YELLOW}⚠️  $env_file already exists, backing up to ${env_file}.backup${NC}"
-      cp "$dest" "${dest}.backup"
+  for source in "$GIT_ROOT"/.env*; do
+    [[ -e "$source" || -L "$source" ]] || continue
+    name=${source##*/}
+    [[ "$name" != ".env.example" ]] || continue
+    if [[ -L "$source" || ! -f "$source" ]]; then
+      echo -e "  ${YELLOW}Skipped $name: not a regular file in the main checkout${NC}"
+      skipped=$((skipped + 1))
+      continue
     fi
-
-    cp "$source" "$dest"
-    echo -e "  ${GREEN}✓ Copied $env_file${NC}"
+    dest="$worktree_path/$name"
+    # Checked-out content controls the destination; a committed symlink there would redirect the write.
+    if [[ -e "$dest" || -L "$dest" ]]; then
+      echo -e "  ${YELLOW}Skipped $name: already present in the worktree (remove it first to refresh)${NC}"
+      skipped=$((skipped + 1))
+      continue
+    fi
+    tmp=$(mktemp "$worktree_path/.whetstone-env.XXXXXXXXXX") || return 1
+    if ! cat -- "$source" >"$tmp"; then
+      rm -f -- "$tmp"
+      return 1
+    fi
+    mv -n -- "$tmp" "$dest" || :
+    if [[ -e "$tmp" || -L "$dest" || ! -f "$dest" ]]; then
+      rm -f -- "$tmp"
+      echo -e "  ${YELLOW}Skipped $name: destination appeared during copy${NC}"
+      skipped=$((skipped + 1))
+      continue
+    fi
+    echo -e "  ${GREEN}✓ Copied $name${NC}"
     copied=$((copied + 1))
   done
 
-  echo -e "  ${GREEN}✓ Copied $copied environment file(s)${NC}"
+  if [[ $((copied + skipped)) -eq 0 ]]; then
+    echo -e "  ${YELLOW}ℹ️  No .env files found in main repository${NC}"
+    return
+  fi
+  echo -e "  ${GREEN}✓ Copied $copied environment file(s), skipped $skipped${NC}"
+}
+
+# Env files go only to the default branch or to a local branch that already contains
+# the fetched commit. A branch that exists only on a remote is someone else's code even
+# on origin, and PR heads, fork remotes, tags, and raw SHAs can carry fork commits.
+# Callers must decide before creating any ref, or a new branch named after the base vouches for itself.
+# Ask origin first so a server-side default rename is seen; the cached origin/HEAD
+# is the offline fallback. Read the full ref: --short output is disambiguated
+# against other refs, so a pushed tag can change the shortened spelling.
+remote_default_branch() {
+  local default line
+  while IFS= read -r line; do
+    if [[ "$line" == "ref: refs/heads/"*$'\t'HEAD ]]; then
+      line=${line#ref: refs/heads/}
+      printf '%s\n' "${line%$'\t'HEAD}"
+      return 0
+    fi
+  done < <(GIT_TERMINAL_PROMPT=0 git ls-remote --symref origin HEAD 2>/dev/null)
+  default=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null) || return 1
+  [[ "$default" == refs/remotes/origin/?* ]] || return 1
+  printf '%s\n' "${default#refs/remotes/origin/}"
+}
+
+base_is_trusted_branch() {
+  local base="$1" base_sha="$2" default
+  case "$base" in
+    refs/*|pull/*|merge-requests/*) return 1 ;;
+  esac
+  git check-ref-format --branch "$base" >/dev/null 2>&1 || return 1
+  [[ -n "$base_sha" ]] || return 1
+  if default=$(remote_default_branch); then
+    [[ "$base" == "$default" || "$base" == "origin/$default" ]] && return 0
+  elif ! git remote get-url origin >/dev/null 2>&1; then
+    # Without an origin remote, no one else can have pushed a main or master here.
+    case "$base" in
+      main|master) return 0 ;;
+    esac
+  fi
+  git show-ref --verify --quiet "refs/heads/$base" || return 1
+  git merge-base --is-ancestor "$base_sha" "refs/heads/$base"
 }
 
 create_worktree() {
-  local branch_name="$1"
-  local from_branch="${2:-main}"
+  local copy_env=1 args=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --no-env) copy_env=0 ;;
+      *) args+=("$1") ;;
+    esac
+    shift
+  done
+  local branch_name="${args[0]:-}"
+  local from_branch="${args[1]:-main}"
 
   if [[ -z "$branch_name" ]]; then
     echo -e "${RED}Error: Branch name required${NC}"
@@ -133,22 +193,42 @@ create_worktree() {
 
   # Fetch a fresh remote base without touching the caller's checkout.
   echo -e "${BLUE}Fetching $from_branch from origin...${NC}"
-  local base_sha fetch_marker fetch_ref base_valid=0
+  local base_sha fetch_marker fetch_ref base_valid=0 base_from_branch=0 branch_like=0
   fetch_marker=$(mktemp "${TMPDIR:-/tmp}/whetstone-fetch.XXXXXXXXXX") || return 1
   fetch_ref="refs/whetstone/fetch/${fetch_marker##*/}"
+  case "$from_branch" in
+    refs/*|pull/*|merge-requests/*|origin/*) ;;
+    *) git check-ref-format --branch "$from_branch" >/dev/null 2>&1 && branch_like=1 ;;
+  esac
   # GIT_TERMINAL_PROMPT=0: fail fast instead of hanging on a credential
   # prompt blocking on an inherited tty. A non-zero exit (offline, no
   # remote) falls back to the local branch ref below.
   # FETCH_HEAD is shared by linked worktrees; a private destination binds this fetch.
-  if GIT_TERMINAL_PROMPT=0 git fetch --no-tags --refmap= origin "$from_branch:$fetch_ref"; then
+  # An unqualified name resolves a same-named tag before the branch, even with
+  # --no-tags, so branch names are fetched as refs/heads/ first.
+  if [[ "$branch_like" == 1 ]] &&
+    GIT_TERMINAL_PROMPT=0 git fetch --no-tags --refmap= origin "refs/heads/$from_branch:$fetch_ref" 2>/dev/null; then
+    base_sha=$(git rev-parse --verify "$fetch_ref^{commit}") && base_valid=1 && base_from_branch=1
+  elif GIT_TERMINAL_PROMPT=0 git fetch --no-tags --refmap= origin "$from_branch:$fetch_ref"; then
     base_sha=$(git rev-parse --verify "$fetch_ref^{commit}") && base_valid=1
   else
     echo -e "${YELLOW}Fetch failed; branching from local $from_branch instead${NC}"
-    base_sha=$(git rev-parse --verify --end-of-options "$from_branch^{commit}") && base_valid=1
+    if [[ "$branch_like" == 1 ]] && git show-ref --verify --quiet "refs/heads/$from_branch"; then
+      base_sha=$(git rev-parse --verify "refs/heads/$from_branch^{commit}") && base_valid=1 && base_from_branch=1
+    elif [[ "$from_branch" == origin/* ]] && git show-ref --verify --quiet "refs/remotes/$from_branch"; then
+      base_sha=$(git rev-parse --verify "refs/remotes/$from_branch^{commit}") && base_valid=1 && base_from_branch=1
+    else
+      base_sha=$(git rev-parse --verify --end-of-options "$from_branch^{commit}") && base_valid=1
+    fi
   fi
   git update-ref -d "$fetch_ref" || return 1
   rm -- "$fetch_marker" || return 1
   [[ "$base_valid" == 1 ]] || return 1
+
+  local env_trusted=0
+  if [[ "$copy_env" == 1 && "$base_from_branch" == 1 ]] && base_is_trusted_branch "$from_branch" "$base_sha"; then
+    env_trusted=1
+  fi
 
   mkdir -p "$WORKTREE_DIR"
   ensure_gitignore
@@ -167,7 +247,14 @@ create_worktree() {
     echo "Set WORKTREE_SESSION_ID before create to enable session-owned cleanup." >&2
   fi
 
-  copy_env_files "$worktree_path"
+  if [[ "$copy_env" == 0 ]]; then
+    echo -e "${YELLOW}Skipped .env copy (--no-env)${NC}"
+  elif [[ "$env_trusted" == 1 ]]; then
+    copy_env_files "$worktree_path"
+  else
+    echo -e "${YELLOW}Skipped .env copy: $from_branch is not the default branch or a local branch containing this commit.${NC}"
+    echo "  Treat this tree as untrusted: no credentials, no dependency lifecycle scripts."
+  fi
 
   echo -e "${GREEN}✓ Worktree created successfully!${NC}"
   echo "  Base commit: $base_sha"
@@ -261,7 +348,8 @@ main() {
 
   case "$command" in
     create)
-      create_worktree "${2:-}" "${3:-main}"
+      shift
+      create_worktree "$@"
       ;;
     list|ls)
       list_worktrees
@@ -295,8 +383,8 @@ Git Worktree Manager
 Usage: worktree-manager.sh <command> [options]
 
 Commands:
-  create <branch-name> [from-branch]  Create new worktree (copies .env files automatically)
-                                      (from-branch defaults to main)
+  create [--no-env] <branch-name> [from-branch]
+                                      Create new worktree (from-branch defaults to main)
   list | ls                           List all worktrees
   switch | go [name]                  Print registered worktree path for caller workdir
   copy-env | env [name]               Copy .env files from main repo to worktree
@@ -305,14 +393,20 @@ Commands:
   help                                Show this help message
 
 Environment Files:
-  - Automatically copies .env, .env.local, .env.test, etc. on create
-  - Skips .env.example (should be in git)
-  - Creates .backup files if destination already exists
-  - Use 'copy-env' to refresh env files after main repo changes
+  - On create, copies .env, .env.local, .env.test, etc. only when from-branch
+    is the default branch, or a local branch that already contains the fetched
+    commit, and --no-env is absent; remote-only branches (origin included),
+    PR refs (pull/*, refs/*), fork remotes, tags, and SHAs get no env files
+  - Skips .env.example (should be in git) and non-regular or symlinked sources
+  - Never overwrites or follows an existing file or symlink in the worktree;
+    remove the worktree copy first to refresh it with 'copy-env'
+  - New copies are mode 600
+  - Pass --no-env for any branch that holds third-party code
 
 Examples:
   worktree-manager.sh create feature-login
   worktree-manager.sh create feature-auth develop
+  worktree-manager.sh create --no-env pr-123 refs/review/pr-123
   worktree-manager.sh switch feature-login
   worktree-manager.sh copy-env feature-login
   worktree-manager.sh copy-env                   # copies to current worktree
