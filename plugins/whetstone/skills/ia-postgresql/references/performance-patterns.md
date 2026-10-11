@@ -43,3 +43,6 @@ CREATE INDEX ON items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 
 ```
 
 Choose filtering according to the search contract. For exact search over a bounded subset, use a materialized filtered CTE and sort that subset by distance; an ordinary CTE may inline and does not establish a prefilter. For approximate HNSW/IVFFlat search, filters can run after the index retrieves candidates, returning fewer than K rows. Use a matching partial index or partitioning where suitable, or version-gated iterative scans (pgvector 0.8.0+) with tuned search limits. Verify the actual plan, returned count, and recall against an exact baseline; syntax alone proves none of them. Distance operators: `<=>` cosine, `<->` L2, `<#>` inner product.
+
+- For hybrid vector/full-text search with reciprocal rank fusion (RRF), retrieve `candidate_k > K` rows from each branch before combining ranks. Apply the final `LIMIT K` after fusion. Truncating each branch to K can discard documents that would rank highly after fusion; tune candidate depth against measured recall.
+- For batched embedding responses with an `index` field, associate each vector with its input chunk by that index, not response order. Before inserting, require the response count to equal the chunk count and the indices to contain exactly `0..n-1`, with no duplicates or gaps.

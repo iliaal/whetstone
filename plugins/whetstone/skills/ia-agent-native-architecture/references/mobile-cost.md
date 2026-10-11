@@ -47,81 +47,122 @@ Configure provider-specific IDs and prices from the [model overview](https://pla
 
 ### Token Budgets
 
-Limit tokens per agent session:
+Separate the per-request output cap from the session budget. Use the prompt to request concise answers. Leave enough output capacity for a complete attempt; for providers that count reasoning toward the output limit, include reasoning headroom. Treat a `max_tokens` stop as an incomplete attempt, never a successful answer or a reason to retry at the same cap.
 
-```swift
-struct AgentConfig {
-    let modelTier: ModelTier
-    let maxInputTokens: Int
-    let maxOutputTokens: Int
-    let maxTurns: Int
+Reserve a conservative input, output, and currency bound before every paid attempt. The following TypeScript uses app-defined provider adapters; `bound` must cover the exact request and configured output cap, including applicable caching and other charges.
 
-    static let research = AgentConfig(
-        modelTier: .balanced,
-        maxInputTokens: 50_000,
-        maxOutputTokens: 4_000,
-        maxTurns: 20
-    )
+```typescript
+type Usage = { inputTokens: number; outputTokens: number; usd: number };
+type Limits = {
+  outputTokenCap: number;
+  maxSessionTokens: number;
+  maxSessionUSD: number;
+  maxAttempts: number;
+  maxRetries: number;
+};
+type BudgetSession = { charged: Usage; attempts: number; stopped: boolean };
+type AttemptResult = {
+  status: "complete" | "retryable-failure" | "failed" | "truncated";
+  text: string;
+  usage?: Usage;
+};
+type PaidAttempt = {
+  bound: Usage;
+  call(outputTokenCap: number): Promise<AttemptResult>;
+};
 
-    static let quickChat = AgentConfig(
-        modelTier: .fast,
-        maxInputTokens: 10_000,
-        maxOutputTokens: 1_000,
-        maxTurns: 5
-    )
+function validUsage(usage: Usage): boolean {
+  return [usage.inputTokens, usage.outputTokens].every(
+    value => Number.isSafeInteger(value) && value >= 0,
+  ) && Number.isFinite(usage.usd) && usage.usd >= 0;
 }
 
-class AgentSession {
-    var totalTokensUsed: Int = 0
+async function runWithFallback(
+  limits: Limits,
+  session: BudgetSession,
+  candidates: PaidAttempt[],
+): Promise<string> {
+  if (![limits.outputTokenCap, limits.maxSessionTokens, limits.maxAttempts]
+      .every(value => Number.isSafeInteger(value) && value > 0) ||
+      !Number.isSafeInteger(limits.maxRetries) || limits.maxRetries < 0 ||
+      !Number.isFinite(limits.maxSessionUSD) || limits.maxSessionUSD <= 0 ||
+      !validUsage(session.charged) ||
+      !Number.isSafeInteger(session.attempts) || session.attempts < 0) {
+    throw new Error("Invalid budget configuration or session ledger");
+  }
 
-    func checkBudget() -> Bool {
-        if totalTokensUsed > config.maxInputTokens {
-            transition(to: .failed(AgentError.budgetExceeded))
-            return false
-        }
-        return true
+  for (const attempt of candidates.slice(0, limits.maxRetries + 1)) {
+    const bound = attempt.bound;
+    const charged = session.charged;
+    if (session.stopped || !validUsage(bound) ||
+        bound.outputTokens < limits.outputTokenCap ||
+        session.attempts >= limits.maxAttempts ||
+        charged.inputTokens + charged.outputTokens +
+          bound.inputTokens + bound.outputTokens > limits.maxSessionTokens ||
+        charged.usd + bound.usd > limits.maxSessionUSD) {
+      session.stopped = true;
+      throw new Error("No budget for another paid attempt");
     }
+
+    session.charged = {
+      inputTokens: charged.inputTokens + bound.inputTokens,
+      outputTokens: charged.outputTokens + bound.outputTokens,
+      usd: charged.usd + bound.usd,
+    };
+    session.attempts += 1;
+    let result: AttemptResult;
+    try {
+      result = await attempt.call(limits.outputTokenCap);
+    } catch (error) {
+      session.stopped = true;
+      throw error;
+    }
+    const actual = result.usage;
+    if (!actual || !validUsage(actual)) {
+      session.stopped = true;
+      throw new Error("Unknown billing; retain the reservation and reconcile");
+    }
+    session.charged = {
+      inputTokens: charged.inputTokens + actual.inputTokens,
+      outputTokens: charged.outputTokens + actual.outputTokens,
+      usd: charged.usd + actual.usd,
+    };
+    if (actual.inputTokens > bound.inputTokens ||
+        actual.outputTokens > bound.outputTokens || actual.usd > bound.usd) {
+      session.stopped = true;
+      throw new Error("Attempt exceeded its reserved bound");
+    }
+    if (result.status === "complete") return result.text;
+    if (result.status !== "retryable-failure") {
+      throw new Error(`Attempt ${result.status}; revise the request before retrying`);
+    }
+  }
+  throw new Error("No successful attempt within the retry limit");
 }
 ```
+
+Keep the same session ledger across turns and provider fallbacks. Count actual input and output tokens and charges for failed attempts too. Serialize access to the ledger; persist reservations before dispatch and settlements before another attempt. A client timeout leaves remote billing unresolved, so retain the reservation and stop until reconciliation. Unknown or non-finite charges must never trigger provider fallback. A truncated attempt needs a revised plan or larger cap and a fresh budget check before retrying. Give optional shadow evaluations a separate budget and await or cancel them before returning the production result.
 
 ### Network-Aware Execution
 
 Defer heavy operations to WiFi:
 
-```swift
-class NetworkMonitor: ObservableObject {
-    @Published var isOnWiFi: Bool = false
-    @Published var isExpensive: Bool = false  // Cellular or hotspot
+Use an app-defined adapter for native connectivity state; TypeScript has no portable API for determining whether a mobile connection is metered.
 
-    private let monitor = NWPathMonitor()
+```typescript
+type NetworkState = { connected: boolean; metered: boolean | null };
+type NetworkMonitor = { current(): NetworkState };
 
-    func startMonitoring() {
-        monitor.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
-                self?.isOnWiFi = path.usesInterfaceType(.wifi)
-                self?.isExpensive = path.isExpensive
-            }
-        }
-        monitor.start(queue: .global())
-    }
-}
-
-class AgentOrchestrator {
-    @ObservedObject var network = NetworkMonitor()
-
-    func startResearchAgent(for book: Book) async {
-        if network.isExpensive {
-            // Warn user or defer
-            let proceed = await showAlert(
-                "Research uses data",
-                message: "This will use approximately 1-2 MB of cellular data. Continue?"
-            )
-            if !proceed { return }
-        }
-
-        // Proceed with research
-        await runAgent(ResearchAgent.create(book: book))
-    }
+async function startResearch(
+  network: NetworkMonitor,
+  confirmDataUse: () => Promise<boolean>,
+  runResearch: () => Promise<void>,
+): Promise<"completed" | "deferred"> {
+  const state = network.current();
+  if (!state.connected) return "deferred";
+  if (state.metered !== false && !await confirmDataUse()) return "deferred";
+  await runResearch();
+  return "completed";
 }
 ```
 
@@ -129,15 +170,15 @@ class AgentOrchestrator {
 
 Combine multiple small requests:
 
-```swift
+```typescript
 // BAD: Many small API calls
-for book in books {
-    await agent.chat("Summarize \(book.title)")
+for (const book of books) {
+  await agent.chat(`Summarize ${book.title}`);
 }
 
 // GOOD: Batch into one request
-let bookList = books.map { $0.title }.joined(separator: ", ")
-await agent.chat("Summarize each of these books briefly: \(bookList)")
+const bookList = books.map(book => book.title).join(", ");
+await agent.chat(`Summarize each of these books briefly: ${bookList}`);
 ```
 
 ### Caching
@@ -202,28 +243,32 @@ Authorize the current user and workspace before looking up cached results. Inclu
 
 Show users what they're spending:
 
-```swift
-struct AgentCostView: View {
-    @ObservedObject var session: AgentSession
+Build a framework-independent view model, then render it with the app's UI components. Keep unresolved reservations distinct from confirmed usage.
 
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Session Stats")
-                .font(.headline)
+```typescript
+type SessionStats = {
+  turns: number;
+  inputTokens: number;
+  outputTokens: number;
+  estimatedUSD: number | null;
+  billingPending: boolean;
+};
 
-            HStack {
-                Label("\(session.turnCount) turns", systemImage: "arrow.2.squarepath")
-                Spacer()
-                Label(formatTokens(session.totalTokensUsed), systemImage: "text.word.spacing")
-            }
-
-            if let estimatedCost = session.estimatedCost {
-                Text("Est. cost: \(estimatedCost, format: .currency(code: "USD"))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
+function costLabels(stats: SessionStats, locale: string): string[] {
+  const count = new Intl.NumberFormat(locale);
+  const currency = new Intl.NumberFormat(locale, {
+    style: "currency", currency: "USD",
+  });
+  const labels = [
+    `${count.format(stats.turns)} turns`,
+    `${count.format(stats.inputTokens)} input tokens`,
+    `${count.format(stats.outputTokens)} output tokens`,
+  ];
+  if (stats.estimatedUSD !== null) {
+    labels.push(`Est. cost: ${currency.format(stats.estimatedUSD)}`);
+  }
+  if (stats.billingPending) labels.push("Billing reconciliation pending");
+  return labels;
 }
 ```
 </cost_awareness>

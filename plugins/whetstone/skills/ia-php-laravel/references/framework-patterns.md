@@ -51,7 +51,10 @@ Use when applicable, with no explanatory comments for these in generated code:
 
 ## API Design
 
+- **Through v13.35.0, `eventStream()` does not split string messages into SSE data lines**: `\n\n` ends an event early, and `\nevent:` or `\nid:` can inject fields. The fix is unreleased as of that version; yield arrays, which Laravel JSON-encodes, as a workaround.
+- **`StreamedEvent` event names remain unsanitized after the message fix**; keep event names application-controlled, never derived from user input.
 - **Contract-first**: define the API Resource (response contract) and Form Request (input contract) before writing the controller.
+- **Allowlist sort columns and query operators with `Rule::in([...])` before passing them to query builders.** Identifier quoting alone is insufficient: before v13.35.0, `cursorPaginate()` could turn a parenthesized sort value into raw SQL only when a cursor was present. The 12.x correction remains unreleased after v12.69.3. Exercise page 2 with a parenthesized sort value and verify rejection; a page-1 test misses this path.
 - Never return raw models or `toArray()` from controllers; Resources control exactly what's serialized. Every observable field, ordering, or timing becomes a caller dependency (Hyrum's Law).
 - **Add, don't modify**: new fields/endpoints over changing or removing existing ones. Deprecate first (`@deprecated` in OpenAPI/docblock), remove in a later version.
 - **Consistent envelope**: `{ "success": bool, "data": ..., "error": null, "meta": {} }`. Normalize `ValidationException`, `ModelNotFoundException`, `AuthorizationException`, and application errors to `{ "success": false, "error": { "code": "...", "message": "..." } }` in the exception handler, so callers build error handling once.

@@ -2,7 +2,7 @@
 
 ## Integration Rules
 
-**Post-integration verification**: after all agents return, check overlapping file edits, review for conflicting approaches, run full test suite.
+**Post-integration verification**: after all agents return, check overlapping file edits, review for conflicting approaches, and run the full test suite. Compare failures against the committed baseline and attribute new failures through worker-owned paths before a scoped rollback; follow [wave-contract.md](./wave-contract.md) when attribution is ambiguous.
 
 **Spawned-session behavior**: when a skill runs inside an orchestrated pipeline (as a subagent, not user-invoked), suppress interactive prompts, auto-choose the conservative/safe default, and skip upgrade checks and telemetry (also called headless mode in sibling skills). Focus on completing the task and report what shipped, verification evidence, and any material uncertainty without padding the response with empty sections.
 

@@ -347,6 +347,7 @@ test_release_refresh_ordering() {
 	cd "$work"
 	git config user.email test@example.com
 	git config user.name Test
+	git config commit.gpgsign false
 	git remote add origin "$origin"
 	write_fixture_files
 	git add .
@@ -358,6 +359,7 @@ test_release_refresh_ordering() {
 	git init -q -b master "$tmp/home/ai/ai-skills"
 	git -C "$tmp/home/ai/ai-skills" config user.email test@example.com
 	git -C "$tmp/home/ai/ai-skills" config user.name Test
+	git -C "${tmp}/home/ai/ai-skills" config commit.gpgsign false
 	git -C "$tmp/home/ai/ai-skills" remote add origin "$tmp/ai-origin.git"
 	printf '# Changelog\n\n## [0.1.0]\n' >"$tmp/home/ai/ai-skills/CHANGELOG.md"
 	git -C "$tmp/home/ai/ai-skills" add CHANGELOG.md

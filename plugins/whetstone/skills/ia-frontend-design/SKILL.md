@@ -21,7 +21,9 @@ Read the user's frontend requirements: a component, page, application, or interf
 
 ## Context Detection
 
-Before designing, assess the existing design environment. Count design signals in the project: design tokens/CSS variables, component library (shadcn, MUI, Ant), CSS framework config (Tailwind, styled-components), font imports, color system, animation patterns, spacing scale.
+When implementing a supplied mockup, screenshot, or design frame, use reference-fidelity mode in [redesigning-existing.md](./references/redesigning-existing.md), even in an empty repository. Skip the design philosophy and swap test; reproduce the reference's visual language.
+
+Otherwise, assess the existing design environment before designing. Count design signals in the project: design tokens/CSS variables, component library (shadcn, MUI, Ant), CSS framework config (Tailwind, styled-components), font imports, color system, animation patterns, spacing scale.
 
 - **4+ signals** = Existing system. Match it. Do not impose new aesthetics; extend what's there.
 - **1-3 signals** = Partial system. Blend: respect existing choices, fill gaps with this skill's guidance.
@@ -32,7 +34,7 @@ When in doubt, check `package.json`, `tailwind.config.*`, global CSS files, and 
 
 ## Design Philosophy (Write First, Code Second)
 
-For full pages, applications, or multi-component interfaces: write a **3-sentence design philosophy** before any code. This forces a coherent aesthetic direction and prevents generic output.
+For full pages, applications, or multi-component interfaces outside reference-fidelity mode: write a **3-sentence design philosophy** before any code. This forces a coherent aesthetic direction and prevents generic output.
 
 1. **Sentence 1, Intent**: What emotional response should this interface provoke? (Not "clean and modern"; that's every AI default. Be specific: "controlled tension between density and breathing room" or "the quiet confidence of a well-bound book.")
 2. **Sentence 2, Signature**: What single visual choice makes this unmistakable? (A typeface, a color relationship, a spatial pattern, a motion behavior.)
@@ -54,7 +56,7 @@ With the philosophy written, commit to the specifics:
 
 Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work; the key is intentionality, not intensity.
 
-**Validation gate (greenfield pages and apps, before writing code):** run the swap test on the drafted token system. Could this exact palette, type pairing, and layout be lifted onto an unrelated brief without anyone noticing? If yes, the choice is a default, not a decision: repick the axis that reads generic (recolor the signature, swap the typeface, restructure the grid) and re-test before implementing. Distinctiveness comes from the subject's own world (its materials, instruments, artifacts, and vernacular), so ground a generic axis in something only this subject would use. Skip this gate for small components matched to an existing system (per Context Detection); there, consistency with that system is the goal, not distinctiveness.
+**Validation gate (greenfield pages and apps outside reference-fidelity mode, before writing code):** run the swap test on the drafted token system. Could this exact palette, type pairing, and layout be lifted onto an unrelated brief without anyone noticing? If yes, the choice is a default, not a decision: repick the axis that reads generic (recolor the signature, swap the typeface, restructure the grid) and re-test before implementing. Distinctiveness comes from the subject's own world (its materials, instruments, artifacts, and vernacular), so ground a generic axis in something only this subject would use. Skip this gate for small components matched to an existing system (per Context Detection); there, consistency with that system is the goal, not distinctiveness.
 
 Before importing any third-party library (framer-motion, lucide-react, zustand, etc.), check `package.json`. If the package is missing, output the install command before the code. Never assume a library exists.
 
@@ -69,16 +71,19 @@ Then implement working code (HTML/CSS/JS, React, Vue, etc.) that is:
 
 Most items below are observable only in a rendered viewport, not in the diff. Where rendering tooling is available, do not claim visual verification from source inspection: capture a screenshot or DOM snapshot at one narrow and one wide viewport, and exercise every changed interaction and state. Where the environment cannot render (CI, headless subagent, plain terminal), say so explicitly and report what *was* checked instead. The completion-claim discipline itself lives in `ia-verification-before-completion`.
 
-- Design philosophy written before code (for full pages)
-- No forbidden AI patterns present in output
+- Design philosophy written before code (for full pages outside reference-fidelity mode)
+- No forbidden AI patterns introduced beyond visual choices required by a supplied reference
 - Dependency check done before any new library import
 - Code renders without errors in the browser
+- Confirm the actual rendered font and required weights after loading; inspect browser rendered-font information, not only the declared `font-family`
 - No `outline: none` without replacement focus indicator
+- Measure CTA/form text and necessary control/focus contrast, including image backgrounds and changed states; use the thresholds in [aesthetics-and-interaction.md](./references/aesthetics-and-interaction.md)
 - Reachable loading, empty, and error states exercised; focus and press feedback checked for changed controls. Record non-applicable states for synchronous links, toggles, or accordions instead of inventing async behavior.
 - No animation of `top`/`left`/`width`/`height` (transform/opacity only)
 - Non-essential motion suppressed under `prefers-reduced-motion: reduce`
 - Grain/noise filters only on fixed `pointer-events-none` layers
 - Interactive/animated components isolated as leaf `'use client'` components (Next.js App Router)
+- For greenfield pages/screens, list invented branding, copy, placeholder assets, and mock data in the completion report; name one replacement constant, token, or module for each item and keep repeated uses tied to it
 
 
 ## References
@@ -91,6 +96,7 @@ Most items below are observable only in a rendered viewport, not in the diff. Wh
 - [Premium detail patterns](./references/premium-details.md): `<kbd>` keystrokes, faux-OS chrome, hero image fade, banned meta-labels, card-group baseline alignment, browser-automation safety boundary
 - [Mobile collapse + performance guardrails](./references/mobile-and-performance.md): single-column below `md:`, touch targets, rotations on mobile, GPU-composited animation, z-index discipline
 - [Design system routing](./references/design-system-routing.md): brief-to-component-system table for greenfield product-register work, before drafting bespoke tokens
+- [SVG decoration](./references/svg-decoration.md): instance IDs, theme inheritance, decorative accessibility, and responsive cropping
 - For WCAG audits, use an available accessibility-review capability or perform scoped checks inline. Record the WCAG version/level, tested pages, keyboard and contrast evidence, and any actual screen-reader testing. Mark unavailable browser or assistive-technology checks unverified; source inspection alone does not establish conformance.
 
 ## Task-specific references

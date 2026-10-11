@@ -78,6 +78,9 @@ declare -A TIER_MAP=(
 )
 
 mkdir -p "$(dirname "$OUTPUT")"
+output_target=$(readlink -m -- "${OUTPUT}")
+temporary_output=$(mktemp "${output_target}.tmp.XXXXXX")
+trap 'rm -f -- "${temporary_output}"' EXIT
 
 # --- Header ---
 {
@@ -94,7 +97,7 @@ HEADER
   printf '# Then hand-tune each new regex and merge into skill-patterns.sh.\n\n'
   printf 'declare -A SKILL_PATTERNS\n'
   printf 'declare -A SKILL_TIERS\n\n'
-} >"$OUTPUT"
+} >"${temporary_output}"
 
 count=0
 current_tier=0
@@ -106,8 +109,16 @@ for skill_dir in "$SKILLS_DIR"/*/; do
 
   [[ -f "$skill_file" ]] || continue
 
-  # Extract YAML frontmatter (between first and second ---)
-  frontmatter=$(awk '/^---$/{n++; next} n==1{print} n>=2{exit}' "$skill_file")
+  if ! frontmatter=$(awk '
+    { sub(/\r$/, "") }
+    NR == 1 { if ($0 != "---") exit 1; next }
+    $0 == "---" { closed=1; exit }
+    { print }
+    END { if (!closed) exit 1 }
+  ' "${skill_file}"); then
+    printf 'Invalid frontmatter in %s: expected opening and closing --- lines\n' "${skill_file}" >&2
+    exit 1
+  fi
 
   # Extract description field (may span multiple lines)
   description=$(printf '%s\n' "$frontmatter" |
@@ -133,9 +144,9 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   # Add tier section header if tier changed
   if [[ "$tier" != "$current_tier" ]]; then
     case "$tier" in
-      1) printf '\n# --- Tier 1: Methodology (process/approach skills) ---\n\n' >>"$OUTPUT" ;;
-      2) printf '\n# --- Tier 2: Domain/Language (language/framework-specific) ---\n\n' >>"$OUTPUT" ;;
-      3) printf '\n# --- Tier 3: Supporting/Workflow ---\n\n' >>"$OUTPUT" ;;
+      1) printf '\n# --- Tier 1: Methodology (process/approach skills) ---\n\n' >>"${temporary_output}" ;;
+      2) printf '\n# --- Tier 2: Domain/Language (language/framework-specific) ---\n\n' >>"${temporary_output}" ;;
+      3) printf '\n# --- Tier 3: Supporting/Workflow ---\n\n' >>"${temporary_output}" ;;
     esac
     current_tier="$tier"
   fi
@@ -145,12 +156,18 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     printf "# Triggers: %s\n" "${trigger_text:-$description}"
     printf 'SKILL_PATTERNS[%s]=%q\n' "$skill_name" "${trigger_text:-$description}"
     printf 'SKILL_TIERS[%s]=%s\n\n' "$skill_name" "$tier"
-  } >>"$OUTPUT"
+  } >>"${temporary_output}"
 
   count=$((count + 1))
 done
 
-printf '\n# Total skills: %d\n' "$count" >>"$OUTPUT"
+printf '\n# Total skills: %d\n' "${count}" >>"${temporary_output}"
+if [[ -e "${output_target}" ]]; then
+  chmod --reference="${output_target}" "${temporary_output}"
+else
+  chmod '=rw' "${temporary_output}"
+fi
+mv -- "${temporary_output}" "${output_target}"
 
 printf "Generated %d skill patterns to %s\n" "$count" "$OUTPUT"
 if [[ "$force" == true ]]; then

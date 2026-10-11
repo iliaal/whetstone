@@ -20,7 +20,7 @@ When an agent fails, classify the failure before acting:
 - **Reassign**: agent-specific issue (context pollution, wrong model for task complexity). Dispatch a fresh agent, optionally with a different model.
 - **Escalate**: systemic problem (bad spec, missing dependency, impossible constraint). Surface to the orchestrator or user with an [Escalation Report](./handoff-templates.md).
 
-For agent-reported `BLOCKED` status specifically (as opposed to crashes or timeouts), use the BLOCKED triage decision tree in the main skill under "Dispatch Discipline". It maps the four BLOCKED root causes (missing context / reasoning ceiling / task too large / spec wrong) to concrete responses.
+For agent-reported `BLOCKED` status specifically (as opposed to crashes or timeouts), use the [worker-lifecycle.md](./worker-lifecycle.md) triage table. It maps premature stops, missing context, reasoning ceilings, oversized tasks, and faulty specifications to concrete responses.
 
 Never retry blindly. Repeating the same prompt in the same conditions produces the same failure.
 
@@ -41,6 +41,8 @@ A multi-stage synthesis pipeline can exhaust the dispatching context before the 
 When an agent fails mid-pipeline after earlier agents have already written files or made changes, classify whether those earlier effects are reversible before deciding the recovery path. If reversible (file writes, uncommitted changes), revert and retry the pipeline segment. If irreversible (committed code, external API calls, database writes), compensate rather than retry: apply a corrective action that accounts for the partial state. Never retry blindly when earlier stages have produced side effects.
 
 ## Post-failure synthesis
+
+Before starting a multi-phase plan, trace each phase output to a later consumer or an explicit check. Resolve unused outputs as dropped requirements or unnecessary work. If an upstream filter or failure leaves a phase with an empty input list, report "no input" rather than a clean verdict.
 
 Even partial results from a failed swarm run have value. When some agents succeed and others fail, collect and present the successful outputs rather than discarding everything. Mark failed tasks as incomplete in the synthesis so downstream consumers know which areas lack coverage.
 

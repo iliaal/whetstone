@@ -13,6 +13,7 @@ Read when producing a standalone review report or routing its recommendations in
 ```
 ## Review: [brief title]
 Profiles: [review unit -> primary skill (+ supplemental), or generic]
+Assumed: <one-sentence intent>; load: <basis from README/deploy config>
 
 ### Critical
 - **CR-001.** [file:line] `quoted code` -- [issue]. Confidence: [evidence and remaining assumptions]. [Impact if not fixed]. Fix: [concrete suggestion].

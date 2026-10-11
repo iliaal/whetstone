@@ -46,6 +46,7 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 - `cargo fmt --all -- --check` passes with zero diffs
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings` passes
 - `cargo nextest run --workspace` (or `cargo test --workspace`) passes with zero failures
+- When using nextest, `cargo test --doc --workspace` also passes; nextest does not run doctests
 - `cargo deny check` passes (licenses, advisories, duplicates) for any crate going to production
 - No new `unsafe` without `// SAFETY:` comment
 

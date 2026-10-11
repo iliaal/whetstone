@@ -15,6 +15,7 @@ Review lens for operational resilience: what happens when things go wrong at run
 
 - **Unbounded external calls**: HTTP requests, DB queries, queue operations, file I/O without timeouts. Every external call must have an explicit timeout.
 - **Timeout propagation**: if a request has a 30s timeout but calls three services sequentially, each needs a fraction of the budget, not the full 30s.
+- **Nested timeout controls**: distinguish the overall operation budget from each request's timeout and check that they can be configured independently. Raising or disabling the outer budget must not imply that an unchanged inner timer was raised or disabled. State the effective limits and which deadline fired; inspect the caller's cancellation state before attributing failure to the request timer.
 - **Cancellation handling**: long-running operations should respect cancellation signals (AbortController, context cancellation, CancellationToken). Check whether in-flight work is abandoned or cleaned up.
 
 ## Retry Logic

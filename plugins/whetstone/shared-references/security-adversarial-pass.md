@@ -29,6 +29,10 @@ For each finding, answer two questions:
 1. What is the easiest path to exploit this? If it requires chaining three bugs, it's lower priority than a single unauthenticated endpoint that leaks PII.
 2. What is the highest-impact vulnerability that a standard automated scan would miss? Prioritize findings by exploitability and blast radius, not by category.
 
+## Past security fixes
+
+For full-repository audits, search commit messages with `git log -i --grep` for CVE, security, vuln, fix, and exploit, plus 6-10 terms derived from the stack (for example, injection, SSRF, IDOR, traversal, XSS, CSRF, and deserialization for a web service). Inspect the relevant fix diffs. Check whether each fix closed the original path and reached every sibling call site. Keep this history hunt out of ordinary diff review.
+
 ## Verifying a security fix
 
 Re-audit a proposed fix in four modes, not one: regression (does the original proof-of-concept still fail against the patched code), bypass (same sink, a different encoding or path reaches it), incomplete fix (other call sites of the same pattern left untouched), sibling vulnerability (the same bug class in adjacent code the fix author never looked at).

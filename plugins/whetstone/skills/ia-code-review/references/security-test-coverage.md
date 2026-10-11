@@ -8,9 +8,14 @@ Demonstrated vulnerabilities carry CVSS 3.1 base score/vector, exploit evidence,
 
 - [ ] Missing token → 401, not 500
 - [ ] Expired token → refresh or re-auth path exercised
+- [ ] Identity token missing `exp` or `sub` → rejected
 - [ ] Token with `alg=none` or weak algorithm → rejected
 - [ ] Wrong issuer / audience / key ID → rejected
 - [ ] Token reuse after logout → rejected
+- [ ] State-based OAuth flow: missing/mismatched `state` → rejected; flows without state have verified transaction-bound PKCE/nonce CSRF protection
+- [ ] Replayed or simultaneous callbacks for the same flow → at most one consumes the flow and exchanges the code
+- [ ] Parallel login cannot overwrite the captured OIDC nonce; failed exchange requires a fresh flow
+- [ ] Reuse of a rotated refresh token → active refresh tokens in that family revoked
 
 ## Authorization
 

@@ -953,10 +953,27 @@ def backfill_sha1(name):
     return manifest
 
 
+def _read_md_frontmatter(text):
+    """Return (mapping, body, error), using standalone LF/CRLF delimiters."""
+    match = _re.match(r"\A---\r?\n(.*?)^---(?:\r?\n|\Z)", text, _re.DOTALL | _re.MULTILINE)
+    if not match:
+        error = ("Opening --- without closing ---"
+                 if _re.match(r"\A---(?:\r?\n|\Z)", text) else "No YAML frontmatter found")
+        return {}, text, error
+    body = text[match.end():].strip()
+    try:
+        import yaml
+        frontmatter = yaml.safe_load(match.group(1))
+    except Exception as error:
+        return {}, body, f"Invalid YAML: {error}"
+    if not isinstance(frontmatter, dict):
+        return {}, body, "Frontmatter must be a YAML mapping"
+    return frontmatter, body, None
+
+
 def validate(name):
     """Validate a generated skill using multi-gate scoring. Returns JSON with gates, score, and pass/fail."""
     import re
-    import yaml  # lazy import — only needed here
 
     skill_dir = GENERATED_DIR / name
     skill_path = skill_dir / "SKILL.md"
@@ -976,21 +993,8 @@ def validate(name):
     content = skill_path.read_text()
 
     # --- Gate 1: YAML frontmatter ---
-    frontmatter = {}
-    body = content
-    gate1_issues = []
-    if content.startswith("---"):
-        parts = content.split("---", 2)
-        if len(parts) >= 3:
-            try:
-                frontmatter = yaml.safe_load(parts[1]) or {}
-            except Exception as e:
-                gate1_issues.append(f"Invalid YAML: {e}")
-            body = parts[2].strip()
-        else:
-            gate1_issues.append("Opening --- without closing ---")
-    else:
-        gate1_issues.append("No YAML frontmatter found")
+    frontmatter, body, frontmatter_error = _read_md_frontmatter(content)
+    gate1_issues = [frontmatter_error] if frontmatter_error else []
 
     inert_fields = {"triggers", "role", "scope", "domain", "output-format", "author",
                     "version", "license", "related-skills", "tags"}
@@ -1653,7 +1657,6 @@ def validate_plugin(component_filter=None):
     Returns structured JSON report with per-component findings.
     """
     import re
-    import yaml
 
     skills_dir = PLUGIN_DIR / "skills"
     agents_dir = PLUGIN_DIR / "agents"
@@ -1724,18 +1727,11 @@ def validate_plugin(component_filter=None):
             "HIGH",
         )
 
-    def parse_frontmatter(content):
+    def parse_frontmatter(content, component):
         """Parse YAML frontmatter from markdown content."""
-        fm = {}
-        body = content
-        if content.startswith("---"):
-            parts = content.split("---", 2)
-            if len(parts) >= 3:
-                try:
-                    fm = yaml.safe_load(parts[1]) or {}
-                except Exception:
-                    fm = {"_parse_error": True}
-                body = parts[2].strip()
+        fm, body, error = _read_md_frontmatter(content)
+        if error:
+            add_finding(component, "frontmatter", error, "HIGH")
         return fm, body
 
     # --- Validate skills ---
@@ -1744,7 +1740,7 @@ def validate_plugin(component_filter=None):
             continue
 
         content = skill_path.read_text()
-        fm, body = parse_frontmatter(content)
+        fm, body = parse_frontmatter(content, skill_name)
         body_tokens = count_tokens(body)
         desc = fm.get("description", "")
         desc_tokens = count_tokens(desc) if desc else 0
@@ -1757,11 +1753,6 @@ def validate_plugin(component_filter=None):
         })
 
         # --- Frontmatter gates ---
-        if not content.startswith("---"):
-            add_finding(skill_name, "frontmatter", "No YAML frontmatter found", "HIGH")
-        elif fm.get("_parse_error"):
-            add_finding(skill_name, "frontmatter", "YAML parse error", "HIGH")
-
         inert_fields = {"triggers", "role", "scope", "domain", "output-format", "author",
                         "version", "license", "related-skills", "tags"}
         found_inert = inert_fields & set(fm.keys())
@@ -1823,6 +1814,11 @@ def validate_plugin(component_filter=None):
                         "HIGH")
 
         # --- Placeholder text ---
+        positional = sorted(set(re.findall(r'\$[0-9]|\$ARGUMENTS', body)))
+        if positional:
+            add_finding(skill_name, "POSITIONAL_PLACEHOLDER",
+                        f"Argument substitution token(s) in SKILL.md body: {', '.join(positional)} -- move examples to references/ or rephrase",
+                        "HIGH")
         # Strip markdown links first to avoid false positives on [example-file.md](...)
         body_no_links = re.sub(r'\[[^\]]+\]\([^)]+\)', '', body)
         # Strip code blocks and inline code to avoid matching examples within them
@@ -2015,7 +2011,7 @@ def validate_plugin(component_filter=None):
             continue
 
         content = agent_path.read_text()
-        fm, body = parse_frontmatter(content)
+        fm, body = parse_frontmatter(content, agent_name)
         body_tokens = count_tokens(body)
         desc = fm.get("description", "")
 
@@ -2071,7 +2067,7 @@ def validate_plugin(component_filter=None):
             continue
 
         content = cmd_path.read_text()
-        fm, body = parse_frontmatter(content)
+        fm, body = parse_frontmatter(content, cmd_name)
         body_tokens = count_tokens(body)
         desc = fm.get("description", "")
 
@@ -3484,28 +3480,29 @@ def _find_skill_path(name):
 
 
 def _extract_skill_keywords(skill_text):
-    """Extract relevance keywords from a skill's YAML description and first section.
+    """Extract relevance keywords from a skill's YAML name, description, and paths.
 
     Returns a set of lowercase keyword strings (2+ chars) for fast relevance checking.
     """
     keywords = set()
-    # Extract description from YAML frontmatter
-    if skill_text.startswith("---"):
-        parts = skill_text.split("---", 2)
-        if len(parts) >= 3:
-            frontmatter = parts[1]
-            for line in frontmatter.splitlines():
-                if line.strip().startswith("description:") or line.strip().startswith("name:"):
-                    value = line.split(":", 1)[1].strip().strip("'\"").strip(">-").strip()
-                    keywords.update(w.lower() for w in _re.findall(r'[a-zA-Z]{3,}', value))
-                elif line.startswith("  ") and keywords:
-                    # continuation line of description
-                    keywords.update(w.lower() for w in _re.findall(r'[a-zA-Z]{3,}', line))
+    frontmatter, _, _ = _read_md_frontmatter(skill_text)
+    for key in ("name", "description"):
+        value = frontmatter.get(key)
+        if isinstance(value, str):
+            keywords.update(w.lower() for w in _re.findall(r'[a-zA-Z]{3,}', value))
+
+    paths = frontmatter.get("paths", [])
+    if isinstance(paths, str):
+        paths = [paths]
+    if isinstance(paths, list):
+        for path in paths:
+            if isinstance(path, str):
+                keywords.update(w.lower() for w in _re.findall(r'[a-zA-Z]{3,}', path))
 
     # Extract from skill name (hyphen-separated)
-    name_match = _re.search(r'^name:\s*(.+)', skill_text, _re.MULTILINE)
-    if name_match:
-        keywords.update(name_match.group(1).strip().split("-"))
+    name = frontmatter.get("name")
+    if isinstance(name, str):
+        keywords.update(name.lower().strip().split("-"))
 
     # Remove common stop words that would match everything
     stop = {"the", "and", "for", "use", "when", "with", "this", "that", "from",
@@ -5392,19 +5389,8 @@ _INJ_SECRET_RE = r"(?i)(\b\w*(api[_-]?key|secret|passwd|password|credential|acce
 
 def _parse_md_frontmatter(text):
     """Return (frontmatter_dict, body). Tolerant of missing/broken frontmatter."""
-    if not text.startswith("---"):
-        return {}, text
-    parts = text.split("---", 2)
-    if len(parts) < 3:
-        return {}, text
-    try:
-        import yaml
-        fm = yaml.safe_load(parts[1]) or {}
-        if not isinstance(fm, dict):
-            fm = {}
-    except Exception:
-        fm = {}
-    return fm, parts[2].strip()
+    frontmatter, body, _ = _read_md_frontmatter(text)
+    return frontmatter, body
 
 
 def _scan_file_deterministic(path, text):

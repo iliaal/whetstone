@@ -33,10 +33,10 @@ Changing an interface, exported name, persisted format, or path reaches past the
 ## Process
 
 1. **Read first**: understand the full file and its dependents before changing anything. Apply Chesterton's Fence: when code looks unnecessary but its reason is unclear, check `git blame` before removing it. First understand the reason, then decide if the reason still applies.
-2. **Identify invariants**: what must stay the same? Public API, return types, side effects, error behavior
+2. **Identify invariants**: what must stay the same? Public API, return types, side effects, error behavior. Before editing, capture relevant observable outputs from a throwaway worktree representing the exact pre-edit state; a pre-change ref suffices only if it matches that state. Preserve relevant existing uncommitted edits in the baseline copy without stashing the working tree.
 3. **Identify targets**: find the highest-impact simplification opportunities. Impact = readability and maintainability; prioritize: control flow -> naming -> duplication -> data shaping -> types (see Smell -> Fix table)
 4. **Apply in order**: control flow → naming → duplication → data shaping → types. Structural changes first, cosmetic last. For analysis-only requests, describe the proposed changes instead of applying them.
-5. **Verify**: for applied changes, confirm behavior parity with relevant tests, type checks, and import checks. For analysis-only reports, identify the required checks and available evidence without claiming that proposed changes passed verification.
+5. **Verify**: for applied changes, confirm behavior parity with relevant tests, type checks, and import checks. Compare responses, CLI output and exit status, or job artifacts against the pre-edit captures under identical inputs. Normalize only documented nondeterministic fields consistently on both sides; treat unexplained differences as regressions. Use direct comparison when tests are absent, while naming unobserved behavior. For analysis-only reports, identify the required checks and available evidence without claiming that proposed changes passed verification.
 6. **Pre-submit scope audit**: walk every changed line and ask "does the requested task explicitly require this line?" If no, revert it and list it as a follow-up under Residual Risks. For the pre-edit complement on ambiguous-scope requests ("simplify my project"), see `ia-verification-before-completion`'s Scope Confirmation gate.
 
 
@@ -44,7 +44,7 @@ Changing an interface, exported name, persisted format, or path reaches past the
 
 Stop and ask before proceeding when:
 - Simplification requires changing a public API (function signatures, return types, exports)
-- Behavior parity cannot be verified (no tests exist and behavior is non-obvious)
+- Behavior parity cannot be verified through tests or a direct baseline comparison
 - Code is intentionally complex for domain reasons (performance-critical, protocol compliance)
 - Scope implies a redesign rather than a simplification
 
@@ -59,7 +59,7 @@ Stop and ask before proceeding when:
 - Keep comments that explain intent, invariants, or non-obvious constraints, and tool directives ([carve-outs](./references/simplification-patterns.md)). Remove comments that restate obvious code behavior. Fix stale comments only on lines this pass touches.
 - If a simplification would make the code harder to understand, skip it
 - Watch for over-simplification: inlining too aggressively removes names that gave concepts meaning; combining unrelated logic into one function hides distinct responsibilities; removing abstractions that exist for testability breaks the test suite
-- When unsure whether a block is dead code, ask instead of deleting
+- Before deleting apparently dead code, search the whole tree, including tests, fixtures, config, templates, and string-keyed or dynamic callers. If the search cannot detect the relevant dispatch mechanism, retain the code and ask instead of treating zero hits as proof
 - For artifacts whose value is self-containment (prompts, skill and agent instructions, per-service configuration, vendored policy files), duplication is cheaper than a shared dependency until edits actually drift. Extract only after coordinated changes have repeatedly gone out of sync, or a real consumer of the shared form exists
 
 

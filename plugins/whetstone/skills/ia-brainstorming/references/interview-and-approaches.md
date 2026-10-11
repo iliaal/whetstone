@@ -28,9 +28,9 @@ Example after a spec dump:
 ```
 Before I propose approaches, quick clarifications:
 
-1. Auth — SSO (which provider?) or username/password?
-2. Sync or async for the webhook delivery?
-3. Which of the three integrations is P0?
+1. What authentication does this need, and which provider is already fixed?
+2. What must happen before a webhook delivery counts as complete?
+3. Which integration must ship first, and why?
 4. "Fast enough" in the spec — what's the actual number?
 
 Answer whichever you know; leave blanks for the rest.
@@ -38,7 +38,7 @@ Answer whichever you know; leave blanks for the rest.
 
 **Question Techniques:**
 
-1. **Prefer multiple choice when natural options exist.** Good: "Notification: (a) email, (b) in-app, (c) both?" Avoid: "How should users be notified?"
+1. **Start with open-ended questions.** Ask "How should users be notified?" Reserve multiple-choice questions for the Blindspot Pass and approach selection.
 2. **Start broad, then narrow.** Core purpose → users → constraints.
 3. **Validate assumptions and probe success early.** "I'm assuming users are logged in. Correct?" / "How will you know this is working?"
 
@@ -49,6 +49,7 @@ Answer whichever you know; leave blanks for the rest.
 | Purpose | What problem does this solve? What's the motivation? |
 | Users | Who uses this? What's their context? |
 | Constraints | Any technical limitations? Timeline? Dependencies? |
+| Build medium | Which platform, language, and library choices are already fixed by the request or repository, retained by the user, or delegated? |
 | Success | How will you measure success? What's the happy path? |
 | Edge Cases | What shouldn't happen? Any error states to consider? |
 | Existing Patterns | Are there similar features in the codebase to follow? |
@@ -56,7 +57,7 @@ Answer whichever you know; leave blanks for the rest.
 
 See [deep-interview.md](./deep-interview.md) for deep interview techniques, including **rigor probes** (evidence/specificity/counterfactual/attachment as open-ended forced production, not menus), the **blindspot pass** for domains the user can't evaluate, and the **integration check** that fires before Phase 1 exit when combining stated answers + agent defaults produces an unsurfaced downstream effect.
 
-**Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets and confirm with the user.
+**Exit Condition:** Continue until the idea is clear OR user says "proceed". Before moving to Phase 2, summarize understanding in 3-5 bullets, always including an explicit out-of-scope line, and confirm with the user. Weak agreement ("sounds good", "whatever you think") is not confirmation: ask for refinements, or route delegated decisions to the Blindspot Pass. State delegated platform, language, and library choices and record them as the agent's decisions; when questions are skipped, still disclose significant build-medium choices before implementation.
 
 ### Phase 2: Explore Approaches
 
@@ -81,7 +82,7 @@ After understanding the idea, propose 2-3 concrete approaches.
 ```
 
 **Guidelines:**
-- Lead with a recommendation and explain why
+- Lead with a recommendation and explain why; in the chat fallback, phrase the question so "yes" accepts the stated recommendation
 - Be honest about trade-offs
 - Consider YAGNI--simpler is usually better
 - Reference codebase patterns when relevant

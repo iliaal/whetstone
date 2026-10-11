@@ -174,6 +174,7 @@ agent-browser --headed snapshot -i
 - Primary content rendered
 - No error messages visible
 - Forms have expected fields
+- For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.
 
 **Step 4: Test critical interactions**
 ```bash
@@ -187,11 +188,15 @@ agent-browser errors > "[capture-dir]/[route-id]-[action-id]-errors.txt"
 
 Choose the expected result from the actual flow before the action. Inspect collected messages and page errors; a screenshot with no visible error is not console evidence. Retain error severity, text, and the route/action that produced it. Report relevant runtime errors as findings even when the page looks normal.
 
+Exercise reversible controls through initial state, changed state, and return to initial state. Scripted state injection may prepare or inspect a test, but signoff interactions must use actual clicks and typing.
+
 **Step 5: Take screenshots**
 ```bash
 agent-browser screenshot "[capture-dir]/[route-id]-viewport.png"
 agent-browser screenshot --full "[capture-dir]/[route-id]-full.png"
 ```
+
+Use the viewport capture as signoff evidence; the full-page capture supplies secondary context and cannot establish that required content is visible in the viewport.
 
 </test_pages>
 
@@ -308,7 +313,7 @@ After all tests complete, present summary:
 **Artifacts:** [invocation-owned capture/report paths]
 ```
 
-Report PARTIAL when required revision, runtime, log, or human verification remains unverified. Never substitute zero or PASS for an unavailable check.
+Report PARTIAL when required revision, runtime, log, layout, or human verification remains unverified. Never substitute zero or PASS for an unavailable check.
 
 </test_summary>
 

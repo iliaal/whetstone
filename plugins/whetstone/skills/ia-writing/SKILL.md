@@ -24,7 +24,7 @@ Edit human-facing prose while preserving meaning, factual accuracy, and the writ
 2. Match the requested surface and mode. Short commits, PR descriptions, comments, and posts need a quick audit. Long documents, essays, and reports use the two-phase [audit-workflow.md](./references/audit-workflow.md).
 3. Lead with a concrete fact or point. Use active voice, specific actors where relevant, simple words, stable terminology, and meaningful numbers. Keep related words together, one topic per paragraph, and tone appropriate to the audience.
 4. Flag formulaic structures, vague claims, passive evasions, unnecessary qualifiers, artificial contrasts, synonym cycling, mechanical formatting, and fake-profound endings. A flag is a candidate, not a verdict.
-5. Apply restraint: leave natural sentences intact, preserve useful uncertainty, and retain lists/tables that carry real structure. Match the tone problem, not a forbidden token. Do not invent opinions, feelings, facts, or actors to satisfy a stylistic pattern.
+5. Apply restraint: leave natural sentences intact, preserve useful uncertainty, and retain lists/tables that carry real structure. Keep each claim's degree of certainty unchanged; adding or removing a hedge changes its meaning. Match the tone problem, not a forbidden token. Do not invent opinions, feelings, facts, or actors to satisfy a stylistic pattern.
 6. Read the result aloud. Check that edits remain proportional and that the writer would recognize the voice. Return the full corrected text when editing; add audit or changelog detail only when the caller asked for it, and keep it outside the delivered artifact.
 
 ## Conditional references

@@ -32,15 +32,19 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 |-----------|-------------------|-----|
 | `?token=`, `?password=`, `?api_key=` | Secrets in URL query strings (logged, cached, referer-leaked) | Authorization headers, POST bodies, or HttpOnly cookies |
 | `plaintext.*password`, `md5(`, `sha1(`, `hashlib.sha` | Weak password hashing | bcrypt, argon2id, or scrypt |
-| `jwt.decode.*verify.*False`, `alg.*none` | JWT validation disabled or algorithm confusion | Enforce `verify_signature=True`, allowlist algorithms |
+| `jwt.decode.*verify.*False`, `alg.*none`, `jwt.verify` without required claims | JWT verification disabled, algorithm confusion, or missing expiry/subject accepted; PyJWT and jsonwebtoken check expiry only when `exp` exists | Verify signatures; allowlist algorithms; require and validate `exp` and `sub` for identity tokens (PyJWT: `options={"require": ["exp", "sub"]}`) |
+| OAuth/OIDC callback reading `state`, PKCE verifier, or `nonce` from mutable session state | Replay or concurrent callbacks reuse a flow; another login overwrites its nonce | With state, match a non-empty string to the session; otherwise verify transaction-specific PKCE/nonce bound to the browser session (PKCE requires server support). Capture and consume the flow record before exchange: before any `await` in memory, atomically (`GETDEL`, conditional `DELETE ... RETURNING`) in a shared store. Match any requested ID-token nonce to the captured value before token use; restart after exchange failure. Exact-match allowed `redirect_uri` values, except native-app loopback ports |
+| Account-switch callback clearing/rebinding a session before validating its CSRF binding | Forced-navigation logout or identity switch; error branches retain the previous identity when the switch promises to end it | Validate and consume the flow before changing identity. Exercise denied/cancelled/error branches against the promised session lifecycle |
 | `kid`, `jku`, `x5u`, embedded `jwk` selecting the key | Attacker-controlled until pinned; key-confusion accepts an RS256 public key as an HS256 secret | Resolve `kid` against a fixed JWKS only; never fetch `jku`/`x5u` or import `jwk` (version preconditions: Version-Gated False Positives below) |
-| Route without `Depends(get_current_user)` or auth middleware | Missing per-request authorization | Every state-changing endpoint must verify auth server-side |
+| Route without `Depends(get_current_user)` or auth middleware; ownership granted before a role downgrade | Missing per-request authorization; stale grants permit later reads | Check current role and resource access server-side on every protected read or mutation |
 | Frontend-only route guards (no server check) | Client-side auth bypass | Server-side authorization on every request; client guards are UX only |
 | `===`, `!=`, `==`, `.equals(` comparing a bearer token, API key, webhook signature, or reset token | Byte-by-byte timing leak from early-exit comparison (CWE-208) | Compare length first (length is not secret), then `crypto.timingSafeEqual` (Node), `hash_equals` (PHP), `hmac.compare_digest` (Python), `subtle::ConstantTimeEq` (Rust). Guard the absent-header case before comparing |
 | `fill($request->all())`, `$guarded = []`, spreading `req.body` into a write | Mass assignment as an authz bug: body maps onto owner/role/tenant/price | Explicit `$fillable`/DTO allowlist; never `fill()`/spread a raw body onto a privileged model |
 | List/index handler scopes by owner; sibling export/share/detail handler omits the check | IDOR/BOLA: one route's guard doesn't cover its siblings | Diff every handler for the resource; each needs its own ownership check |
 | Primary query scoped by tenant/owner/consent; a follow-up `whereIn('id', $ids)` loads related rows by id alone | Scope does not carry to the secondary by-id load: a stale or malformed foreign id surfaces another owner's row under this parent | Scope the secondary load by the same owner key, or reject a loaded row whose owner differs from the parent's; rate severity by who can write the foreign id |
 | Unknown role reaching `allow`; `Gate::before` returning `true`; authz middleware after the route, or an in-check exception hitting `next()` | Fail-open authz: default-allow or ordering grants access | Default denies; `Gate::before` reserved for a documented bypass; middleware before the route, reject not `next()` |
+| Shared 403/404/500 renderer loading names or counts outside the authz path | Denial page discloses data the blocked role cannot read | Apply the same access scope to error context, or render public-only context |
+| `trust proxy: true`, `TrustProxies('*')`, `forwarded_allow_ips='*'`, direct `X-Forwarded-*` reads | Spoofed IP/scheme/host controls an IP gate, rate limit, HTTPS check, or generated URL | Confirm deployment topology before assigning severity. Trust known proxy subnets or a fixed hop count with no shorter ingress path; require the last trusted proxy to strip/overwrite client-supplied forwarded headers |
 
 ## CSRF
 
@@ -49,6 +53,7 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 | `@csrf_exempt`, `skip_csrf`, `disable.*csrf` | CSRF protection disabled on state-changing endpoint | Enable CSRF middleware, use tokens |
 | Cookie-based auth without CSRF token | Session cookies sent automatically by browser | Add CSRF token to forms/AJAX, or use bearer token auth (no CSRF risk) |
 | `SameSite` not set on session cookies | Cookies sent on cross-origin requests | `SameSite=Lax` (default) or `Strict` for session cookies |
+| Localhost-bound server using `Host`, `Origin`, or `Sec-Fetch-Site` checks as authentication | Different localhost ports on the same scheme are same-site; non-browser local processes choose any `Host`; server-side clients following a `307` to `127.0.0.1` can replay the request into the local server | Require a random per-install token stored in a `0600` file, sent only to the exact trusted origin in an `Authorization: Bearer` header. Cookies lack port isolation ([RFC 6265 §8.5](https://www.rfc-editor.org/rfc/rfc6265.html#section-8.5)). `Host`, `Origin`, and `Sec-Fetch-Site` checks only supplement authentication |
 
 For browser WebSockets authenticated by automatically sent cookies, check authentication and an explicit `Origin` allowlist at the handshake. HTTP CORS middleware does not establish either check for WebSocket messages. Demonstrate a hostile page's actual protected read or mutation before reporting cross-site exposure. `Origin` identifies browser provenance, not user identity: non-browser clients can forge it. Assess a missing header against the supported clients and authentication policy rather than treating every absent `Origin` as a vulnerability. See [RFC 6455 origin considerations](https://www.rfc-editor.org/rfc/rfc6455.html#section-10.2).
 
@@ -63,6 +68,7 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 | `render_template_string(`, `Template(.*render`, `from_string(` | Server-side template injection (SSTI) | Static templates only; never render user input as template |
 | `document.write(`, `eval(`, `new Function(`, `setTimeout(.*string` | String-to-code execution | Static imports, no dynamic code eval |
 | `javascript:` in `href` or `src` attributes | Protocol-based XSS | Validate URLs, reject non-http/https schemes |
+| `JSON.stringify`, `json.dumps`, or `json_encode` embedded in a hand-built `<script>` / JSON island | Raw `</script>` terminates the element even inside JSON; HTML parsing precedes JS parsing | Escape `<` as `\u003c` in serialized JSON (PHP: `JSON_HEX_TAG`), or use `Js::from`, Django `json_script`, or Jinja `tojson` for the matching context. Verify existing framework hydration escaping before reporting |
 
 ## Cache Security
 
@@ -76,7 +82,7 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
-| `sendFile(.*req`, `send_file(.*request`, `os.path.join(.*request` | Path traversal via user-controlled path | Allowlist file IDs mapped to paths, `send_from_directory`, `safe_join` |
+| `sendFile(`, `send_file(`, `FileResponse(` with input-derived paths | Traversal when input escapes the intended root; `join`/`normalize`/`resolve` alone do not enforce containment | Map authorized file IDs to paths. Fixed-root Express `sendFile` and Flask `send_from_directory`/`safe_join` constrain path traversal; standard Laravel `Storage` keys are disk-relative. Check custom adapters and attacker-controlled symlinks separately |
 | A `..`-component check that splits the path on `/` only (`split('/')`, `explode('/', ...)`, `path.split('/')`) | A `..\` component passes the filter and is honored by any consumer that treats `\` as a separator: a Windows filesystem API, a Windows-hosted CI runner, or a later normalization step | Normalize separators (`\` to `/`) *before* splitting and checking components; a filter written for `/`-only input is not a traversal guard |
 | Delete/move/overwrite on a job-payload or sibling-service path, guarded only by shape (absolute, N dirs deep) | Shape isn't authorization: `startsWith(base)` matches `/base2` | Require: allowlisted root (post-symlink), one level below it, ownership evidence read first; log and stop on refusal, never a broader default |
 | File upload without size limit | Unrestricted upload = DoS | Set `MAX_CONTENT_LENGTH`, `express.json({ limit: '1mb' })` |
@@ -97,6 +103,12 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 | `find({.*request`, `$where`, `$ne`, `$gt` in MongoDB queries | NoSQL operator injection | Validate/sanitize query objects, reject `$`-prefixed keys in user input |
 | `parseInt(req.query` without `radix` or type check | Type confusion leading to injection | Validate types explicitly, use Zod/validator at boundaries |
 
+## Prototype Pollution (JS/TS)
+
+| Search for | Vulnerable pattern | Fix |
+|-----------|-------------------|-----|
+| `deepMerge`, `_.merge`/`_.set`/`_.defaultsDeep`, `obj[k1][k2] = v` over request-derived keys | A recursive walker follows `__proto__` or `constructor.prototype`; report with a reachable inherited-property gadget (role check, process or template options), not the API name alone | Reject `__proto__`, `constructor`, and `prototype` at every depth, or use `Map`/null-prototype dictionaries throughout the traversal. `JSON.parse` alone creates an own key; unsafe later traversal creates the pollution |
+
 ## Command / Argument Injection
 
 | Search for | Vulnerable pattern | Fix |
@@ -109,19 +121,23 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
-| `requests.get(.*request`, `fetch(.*request`, `http.Get(.*request` | Fetching user-provided URL without validation | Allowlist domains, block private IPs and metadata endpoints |
-| `file://`, `gopher://`, `ftp://` in URL construction | Non-HTTP protocol SSRF | Whitelist `https:` scheme only |
+| `requests.get(.*request`, `fetch(.*request`, `file_get_contents($url)` | URL checks bypassed by DNS rebinding or redirects | Allowlist parsed scheme/host; reject URL credentials. Check every resolved address and pin the connection to a validated IP via lookup/connect hooks or an egress proxy, preserving Host, TLS SNI, and hostname verification. Disable redirects or repeat all checks per hop |
+| `file://`, `gopher://`, `ftp://` in URL construction | Alternate-scheme access only when the actual client supports it | Allowlist schemes before I/O. `urllib.request`'s default opener includes redirects, FTP, and file handlers; Node core `http(s).request` supports neither file/gopher nor automatic redirects |
 | `169.254.169.254`, `metadata.google`, `100.100.100.200` | Cloud metadata endpoint access | Block metadata IP ranges in outbound requests |
-| HTTP client without timeout | SSRF DoS via slow response | Set explicit timeouts: `timeout=5`, `Timeout: 10*time.Second` |
+| String-prefix IP filters, single-address DNS checks | Decimal/octal IPv4, `0.0.0.0`, `[::1]`, or IPv4-mapped `::ffff:127.0.0.1` bypass the filter | Canonicalize with the client's URL parser and an IP parser; reject ambiguous forms. Block loopback, private, link-local, unspecified, and metadata destinations across IPv4/IPv6, including mapped addresses |
+| HTTP client without timeout | SSRF DoS via slow response | Set explicit timeouts, e.g. `timeout=5` (requests) |
+| Unencoded identifier concatenated into a fixed upstream URL path | Secondary-context path traversal reaches another endpoint on the same host with server credentials; not host-control SSRF | Allowlist identifier syntax, or encode each segment and reject `.`/`..`; encoding alone leaves bare dots intact. Verify the upstream's decoding behavior |
 | A credentialed client following redirects (`allow_redirects`, `redirect: 'follow'`, `maxRedirects`), or a token sent to a URL read from a response (`Location`, `Link: rel=next`, a pagination `next` field, a `WWW-Authenticate` realm or token endpoint) | The credential leaves its origin. On a redirect, Python `requests` strips `Authorization` (keeping it on a same-host http-to-https hop) and drops a manually set `Cookie` header, re-sending only jar cookies that match the new domain; undici `fetch` and Guzzle strip `Authorization` and `Cookie` on a cross-origin hop (Guzzle before 7.4.5 missed the HTTPS-downgrade and port-change cases); `follow-redirects` (axios in Node) keeps them when the new host is a subdomain. Custom credential headers (`X-Api-Key`, `PRIVATE-TOKEN`, `X-Auth-Token`) are forwarded by all of these | Bind each credential to an origin allowlist checked on every hop, or disable auto-redirect and re-authorize per request; never attach a token to a response-supplied URL without the same origin check |
+
+Check effective client defaults: requests follows redirects except for HEAD; fetch defaults to `redirect: 'follow'`; Guzzle's default redirect middleware allows 5 hops (`sendRequest()` does not follow). PHP `allow_url_fopen` defaults on, enabling HTTP URLs in `file_get_contents`. Client wrappers can override these defaults.
 
 ## Open Redirects
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
-| `res.redirect(req.query`, `redirect(request.GET`, `window.location = params` | Redirect to untrusted URL | Validate against allowlist, allow only relative paths |
+| `res.redirect(req.query`, `window.location = params`, `startsWith('/')`, `!includes('//')`, `/^https?:/` URL guards | Raw checks disagree with browser parsing: `/\host`, `//host`, or embedded tabs/newlines change destination/scheme | Parse with `new URL(value, trustedBase)` or a framework helper; require an allowed protocol and origin, then redirect to the parsed value. Same-origin redirects require exact origin equality |
 | `next=`, `return_to=`, `redirect=`, `url=`, `continue=` in params | Open redirect parameter without validation | `url_has_allowed_host_and_scheme` (Django), allowlist check |
-| `location.href.*javascript:` | Protocol-based redirect attack | Reject non-http/https, validate with `new URL()` |
+| `location.href.*javascript:` | Protocol-based redirect attack | Apply the protocol/origin checks above after parsing; a successful parse alone is not validation |
 
 ## CRLF / Header Injection
 
@@ -146,14 +162,14 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 |-----------|-------------------|-----|
 | `pickle.loads(`, `marshal.loads(`, `yaml.load(` without `Loader=SafeLoader` | Arbitrary object/code execution on untrusted input | `json.loads`, `yaml.safe_load`, or a signed/allowlisted schema |
 | `unserialize($` on user input (PHP) | Object injection / POP-chain gadget execution | `json_decode`, or `unserialize($x, ['allowed_classes' => false])` |
-| `etree.parse(`/`lxml` without `resolve_entities=False`; `DocumentBuilderFactory` without `disallow-doctype-decl` | XXE: external entity expansion reads files or triggers SSRF | Disable DTD/external entities on the parser |
+| lxml `resolve_entities=True`; PHP `LIBXML_NOENT`/`LIBXML_DTDLOAD`, XMLReader `LIBXML_XINCLUDE`, custom entity loaders; libxmljs `noent: true`; SAX `feature_external_ges=True` | Untrusted XML reaches enabled external-resource loading, allowing file reads or SSRF | Disable external entities/DTDs and XInclude; inspect custom loaders. `LIBXML_NONET` does not block local files. PHP `LIBXML_NO_XXE` requires PHP >=8.4.0 and libxml >=2.13.0 |
 
 ## Weak Randomness / TLS Verification
 
 | Search for | Vulnerable pattern | Fix |
 |-----------|-------------------|-----|
 | `Math.random(`, `random.random(`, `mt_rand(` for tokens/secrets/IDs | Predictable value used as a security control | `crypto.randomBytes`, `secrets.token_urlsafe`, `random_bytes` |
-| `verify=False` (requests), `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `InsecureSkipVerify: true` | TLS certificate validation disabled (MITM) | Remove the flag; trust/pin the proper CA in the client |
+| `verify=False`, `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`; `curl -k`/`--insecure`, `wget --no-check-certificate`, `kubectl --insecure-skip-tls-verify`, `http.sslVerify=false`/`GIT_SSL_NO_VERIFY`, `pip --trusted-host`, `npm config set strict-ssl false` | TLS certificate validation disabled in application, CLI, or CI traffic (MITM) | Remove the bypass; configure the correct CA (`--cacert`, `--certificate-authority`, or the client's trust store) |
 | ECB mode, static/reused IV or nonce, home-rolled crypto, MD5/SHA1 for integrity | Deterministic ciphertext, reused nonce, forgeable integrity checks | AES-GCM/ChaCha20-Poly1305 with a fresh nonce, audited libraries, HMAC-SHA256+ |
 | `sha256`/`hash_file(`/`hashlib`/signature or HMAC verify on a downloaded, cached, or uploaded artifact (installers, self-updaters, plugin or dependency fetchers) | Integrity check fails open: a missing or malformed digest counts as a pass, a mismatch is only logged or its return value is ignored, a mismatch falls back to a mirror or backend that skips verification, or a cache hit is used without re-verifying | A missing digest is a failure; route every acquisition path, cache reads included, through one verify-then-use helper that refuses the artifact on mismatch. Authenticate the expected digest through trusted provenance, a verified signed manifest, or an authenticated channel; an attacker who can replace both artifact and digest defeats comparison alone. A valid digest proves byte identity only, so archive-extraction checks (File Handling) still apply |
 
@@ -163,6 +179,6 @@ For browser WebSockets authenticated by automatically sent cookies, check authen
 |---------|---------------------|
 | PHP `assert("...")` string-eval; `preg_replace(...)` with `/e` | PHP < 8.0 (assert removed); PHP < 7.0 (`/e` removed) |
 | `yaml.load(..., Loader=FullLoader)` using the historical arbitrary-object construction path | PyYAML < 5.4; verify the actual loader and reachable input. `Loader`, `UnsafeLoader`, and their unsafe C variants still support arbitrary Python construction on later versions; untrusted input reaching those loaders remains reportable. Prefer `safe_load` for untrusted YAML |
-| XXE via default entity expansion | libxml2 < 2.9.0 (disabled by default since); PHP `libxml_disable_entity_loader()` is dead code from 8.0 |
+| XXE via default entity expansion | Check the parser: lxml `XMLParser` <5.0; `iterparse`/`ETCompatXMLParser` <6.1 ([advisory](https://github.com/lxml/lxml/security/advisories/GHSA-vfmq-68hx-4jfw)); Python SAX <3.7.1. PHP/libxml >=2.9 disables substitution by default, but explicit loading options can restore exposure. `libxml_disable_entity_loader()` is deprecated since PHP 8.0, not inert |
 | `jsonwebtoken`/`PyJWT` key-confusion via `kid`/`jku`/`x5u`/`jwk` | `jsonwebtoken` < 9.0.0 (CVE-2022-23540/23539): finding only when all of: `jwt.verify` called with no explicit `algorithms` option and a falsy/empty verification key, or an RSA key accepted for an HS-family algorithm. `PyJWT` < 2.4.0 (CVE-2022-29217): finding only when all of: the app allows both asymmetric and HMAC algorithms and the supplied public key is in a PEM/SSH format the pre-2.4.0 blocklist missed |
 | Next.js Server Actions SSRF | Next.js < 14.1.1, CVE-2024-34351: finding only when all of: self-hosted (not Vercel), the `Host` header reaching the app is attacker-controllable, Server Actions are in use, and a Server Action redirects to a relative path |

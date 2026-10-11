@@ -94,7 +94,9 @@ Mocks should be a last resort, not a first choice. Every mock is an assumption a
 
 **Exception: framework-provided test doubles.** Framework faking mechanisms (Laravel `Queue::fake()`/`Event::fake()`, React test providers, `vi.mock` for API layers) are idiomatic and maintained alongside the framework; use them. The rule targets hand-rolled mocks that drift, not framework-blessed utilities.
 
-**Where to cut the mock seam.** When a mock is warranted (the right column above: external APIs, gateways, delivery services, rate-limited SDKs), place it at the last point owned code touches the unowned resource: mock the payment-client wrapper, not `fetch`; the mailer adapter, not the SMTP transport. Mocking below the wrapper re-implements the third party's behavior inside the test suite and leaves the wrapper's own logic untested. Database queries stay on the left column: a real test DB, not a mocked repository.
+**Where to cut the mock seam.** When testing a wrapper's consumers and a mock is warranted (the right column above: external APIs, gateways, delivery services, rate-limited SDKs), mock the payment-client wrapper rather than `fetch`, or the mailer adapter rather than the SMTP transport. These consumer tests leave the wrapper's own logic untested. Database queries stay on the left column: a real test DB, not a mocked repository.
+
+When the wrapper itself is the subject, run its real serialization and assert on the request at the transport boundary: path, query, headers, and body. Use a transport interceptor or a loopback HTTP server bound to `127.0.0.1` on port `0`, supplied through the client's base-URL configuration, and close the server after the test. Include reserved characters such as `+/= ` in opaque pagination cursors, and cover response errors and retries when the wrapper owns them.
 
 ### Tests expose bugs, not the reverse
 

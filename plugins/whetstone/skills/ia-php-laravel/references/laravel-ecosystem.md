@@ -50,6 +50,7 @@ Notification::send($users, new OrderShipped($order));
 - Use `toArray()` for database channel; it powers in-app notification feeds
 - Read: `$user->unreadNotifications`, mark: `$notification->markAsRead()`
 - Apply notification `middleware()` with a configured queue rate limiter for delivery frequency. `ShouldBeUnique` on a notification does not make Laravel's `SendQueuedNotifications` wrapper unique. For duplicate-event suppression, use a unique outer job or durable recipient/event deduplication; rate limiting alone does not provide that guarantee.
+- **Enable `Illuminate\Mail\Markdown::withSecuredEncoding()` in `AppServiceProvider::boot()`** (available since v11.44.5); ordinary HTML escaping leaves Markdown links and images active in interpolated mail values, including `MailMessage::line()`. Through v13.35.0, even secured encoding permits backslash bypasses; the correction is unreleased after v13.35.0. Keep user-controlled values out of Markdown link text and URL positions. Test rendered mail with a literal `\[x](https://example.invalid)` value and assert that it creates no link or image to that URL.
 
 ## Broadcasting
 

@@ -13,9 +13,9 @@ Push back (with evidence) when a suggestion:
 
 **Valid evidence:** code references (`file:line`), test output, git blame/log, framework docs, reproduction steps, grep results showing usage patterns. **Not evidence:** "I think", "it should work", "it's fine", appeals to convention without citing the convention, or restating the original code as justification.
 
-### False-Positive Taxonomy (for dismissed suggestions)
+### Disposition tags (for declined suggestions)
 
-When dismissing a suggestion (AUTO-DECLINE, manual push-back), tag the dismissal with one of four categories so the reviewer sees structured reasoning, not a bare "no":
+Tag each declined suggestion with its reason. Reserve AUTO-DECLINE for technically invalid findings; scope decisions and accepted risk remain distinct from false positives:
 
 | Category | Reviewer's response cited | Evidence required | Maps to "When to Push Back" |
 |----------|--------------------------|-------------------|------------------------------|
@@ -23,8 +23,11 @@ When dismissing a suggestion (AUTO-DECLINE, manual push-back), tag the dismissal
 | **FP-CONVENTION** | Suggestion conflicts with this project's conventions | Cite the CLAUDE.md rule, ADR, or the established pattern in `file:line` | "Violates project conventions" |
 | **FP-ALREADY-HANDLED** | The concern is handled elsewhere (parent function, middleware, framework) | Show the existing handler in `file:line`. When the dismissal is "subsumed by the other fix", showing the handler is not enough: check the covering fix against every precondition the dismissed finding needs, because two findings bundled together almost always fail under different conditions and the covering fix closes only one | "Adds unnecessary complexity" |
 | **FP-OUT-OF-SCOPE** | Valid concern but belongs in a separate change | State where it will be tracked (issue, todo, next PR) | YAGNI / scope creep |
+| **ACCEPTED-RISK** | Valid, in-scope defect retained by explicit owner decision | Establish rarity under supported conditions, recoverability, and fix complexity disproportionate to the risk; record the owner decision and a one-line tradeoff in both reply and report | Owner-approved cost/benefit decision |
 
 Use the tag in the reply: "FP-ALREADY-HANDLED: null check happens in `auth/middleware.ts:42` before this handler runs. Keeping as-is." Structured tags prevent the "you're wrong because reasons" reply pattern and make future triage faster (if the same comment class keeps hitting `FP-CONVENTION`, the convention needs better documentation).
+
+Never use `ACCEPTED-RISK` for security, data loss, money, or corruption of persisted state. An unverified claim that a failure is rare is insufficient. In headless mode, route a proposed accepted-risk decision to ESCALATE, never AUTO-DECLINE.
 
 ## When NOT to Push Back
 
@@ -35,6 +38,8 @@ Accept feedback when:
 - It improves readability without changing behavior
 - It aligns with project conventions you overlooked
 - The reviewer has domain expertise you lack
+
+Apply the owner-approved `ACCEPTED-RISK` exception only under the conditions above; the exception acknowledges a valid finding rather than refuting it.
 
 ## Common Mistakes
 

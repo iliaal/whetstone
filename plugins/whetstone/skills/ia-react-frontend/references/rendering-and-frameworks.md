@@ -70,8 +70,9 @@
 - Use Suspense boundaries for slow queries
 - `React.cache()` for per-request dedup
 - `generateStaticParams` for static generation
-- `generateMetadata` for dynamic SEO
-- Static metadata with `title: { default: 'App', template: '%s | App' }` for cascading page titles
+- Use `generateMetadata` for dynamic metadata; verify the complete raw response with `curl` using both its default user agent and a social scraper such as `Twitterbot`. A hydrated DOM snapshot does not establish what a scraper receives.
+- On Next.js 15.2+, runtime metadata can stream into `<body>` for ordinary user agents; bots matched by `htmlLimitedBots` receive blocking metadata in `<head>`. Check custom bot configuration. Prerendered metadata is included in the initial HTML. See [streaming metadata](https://nextjs.org/docs/app/api-reference/functions/generate-metadata#streaming-metadata).
+- With `title: { default: 'App', template: '%s | App' }`, check for one effective `<title>` and a single brand suffix. Use [`title.absolute`](https://nextjs.org/docs/app/api-reference/functions/generate-metadata#absolute) when a page supplies a complete title that must bypass a parent template.
 - `after()` for non-blocking side effects (logging, analytics); runs after response is sent
 - Hoist static I/O (fonts, config) to module level; runs once, not per request
 - Never hold request-scoped or user data in module-level mutable state: server renders run concurrently in one process, so shared module state leaks across requests (one user's data surfacing in another's response). Hoist only immutable static I/O; keep request data local to the render tree (pass as props)

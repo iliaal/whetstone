@@ -14,6 +14,8 @@
 
 Key the choice on reasoning difficulty, not size: file count, agent count, and wave width are not model triggers. A large mechanical rename stays cheap; a single-file change to a concurrency invariant does not. Escalate for nonlocal invariants, concurrency or state machines, migrations, parsing, auth and security, retry/error semantics, or public API and data-contract changes.
 
+**Reasoning effort:** Inspect the active schema and permitted values before setting effort. Where session instructions permit, use lower effort for fan-out lookups and mechanical work with direct checks, and higher effort for reasoning-heavy units. In Claude Code v2.1.292+, a non-fork invocation's `effort` overrides definition frontmatter and survives resume; `CLAUDE_CODE_EFFORT_LEVEL` overrides both. See [effort configuration](https://code.claude.com/docs/en/sub-agents#choose-an-effort-level).
+
 **Handoff protocol: structured agent-to-agent transfers.** When passing work between agents (leader→implementer, implementer→reviewer, reviewer→leader), include:
 1. **Context**: what was done, relevant files, constraints discovered
 2. **Deliverable**: specific output expected from the receiving agent
@@ -29,10 +31,11 @@ The controller reads all tasks from the plan upfront and provides full task text
 
 Partial work, a stub, a mock, a refusal-only path, or an unverifiable deliverable maps onto that vocabulary as `DONE_WITH_CONCERNS` when the delivered part is itself verified and the gap is named in the report, and `BLOCKED` otherwise; never `DONE`.
 
-**BLOCKED triage decision tree**: when a teammate reports BLOCKED, classify the root cause before acting. Never retry the same prompt on the same model without changing a variable.
+**BLOCKED triage decision tree**: when a teammate reports BLOCKED or its DONE report contradicts its coverage evidence, classify the root cause before acting. Never retry the same prompt on the same model without changing a variable.
 
 | Root cause | Signal | Response |
 |-----------|--------|----------|
+| Premature stop | BLOCKED cites only time or effort despite most of the budget remaining and no concrete obstacle, or DONE lists uninspected in-scope paths | Continue the same agent once with the uncovered paths and remaining budget named; count it as continuation, not a new worker. If the host cannot resume, retain the gap as an open question |
 | Missing context | Agent asked for a file, spec, or decision it needed | Provide the missing context, re-dispatch same agent |
 | Reasoning ceiling | Agent attempted, got stuck on a subtlety it cannot resolve | If supported, escalate the model; otherwise narrow the task or provide stronger evidence and re-dispatch |
 | Task too large | Agent made partial progress but hit token/complexity limits | Split into smaller tasks with explicit interface contracts |

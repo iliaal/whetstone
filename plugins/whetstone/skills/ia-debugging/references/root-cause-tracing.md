@@ -81,7 +81,13 @@ npm test 2>&1 | grep 'DEBUG git init'
 
 When a test passes in isolation but fails in the suite, another test is polluting shared state.
 
-**Bisection approach:** Run tests one at a time until the polluter is found.
+**Victim-order bisection:** First confirm that the failing test passes alone and fails after the tests that preceded it in the failing run. Recover that order from the CI log or shard listing and configure the runner to preserve it in the same process or shared environment.
+
+1. Run half of the predecessor list, in its original order, followed by the victim from a fresh initial state.
+2. Retain the half that still triggers the victim's failure, then repeat until one polluting file remains. Check the other half when the first passes; if neither reproduces the failure, investigate an interaction between subsets or an uncontrolled condition instead of blaming one file.
+3. Identify the leaked state: environment variable, working directory, module singleton or cache, unrestored mock, listening server, shared temporary path, or global timer. Repair cleanup at the polluter; a victim-only reset hides the broken isolation contract.
+
+**Artifact scan:** When pollution leaves a concrete artifact, run files individually and check for that artifact after each run. This linear scan serves a different case from victim-order bisection.
 
 ```bash
 # Run each test file individually, check if artifact appears after each

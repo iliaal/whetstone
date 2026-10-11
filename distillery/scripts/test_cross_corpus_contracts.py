@@ -72,6 +72,7 @@ class IsolationRecipeTests(unittest.TestCase):
         self.git("init", "-q")
         self.git("config", "user.email", "fixture@example.invalid")
         self.git("config", "user.name", "Fixture")
+        self.git("config", "commit.gpgsign", "false")
         self.git("config", "core.hooksPath", str(self.directory / "empty-hooks"))
         for name in ("committed", "staged", "caller"):
             (self.repo / f"{name}.py").write_text("VALUE = 0\n", encoding="utf-8")

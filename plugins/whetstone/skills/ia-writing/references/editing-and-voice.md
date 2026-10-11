@@ -2,7 +2,7 @@
 
 ## Quality Gate
 
-Route by length first. Short-form (commits, PR descriptions, comments, posts): quick audit + Self-Check 1-4, stop there. Long-form (docs, essays, reports): two-phase audit per [audit-workflow.md](./audit-workflow.md), then Self-Check 1-5.
+Run the invariant check below for every edit. Route the remaining checks by length. Short-form (commits, PR descriptions, comments, posts): quick audit + Self-Check 1-4, stop there. Long-form (docs, essays, reports): two-phase audit per [audit-workflow.md](./audit-workflow.md), then Self-Check 1-5.
 
 **Quick audit**: flag anything below; a flag is a candidate, not a verdict (adjudicate with Restraint before editing):
 - Intensifiers and -ly hedges ("very", "really", "significantly")? Flag them.
@@ -39,6 +39,10 @@ For a plain edit, return only the full corrected text. Keep the audit internal u
 
 ## Voice
 
+When editing, retain the voice demonstrated in the source. Do not introduce first person, opinions, feelings, or fragments to manufacture a personal voice. Vary sentence construction without chopping complete thoughts into fragment sequences.
+
+Apply the following choices when drafting as the author, using the author's supplied stance and voice. Never invent the author's experiences or feelings.
+
 - **Have opinions**: react to facts, don't just report them
 - **Vary rhythm**: short sentences, then longer ones. Quick audit rule: three consecutive sentences match length? Break one.
 - **Acknowledge complexity**: "impressive but also unsettling" beats "impressive"
@@ -56,6 +60,8 @@ For a plain edit, return only the full corrected text. Keep the audit internal u
 - Match tone to context: casual for blogs, precise for docs, direct for UI text.
 
 ## Self-Check
+
+**Invariant check (all lengths):** Before editing, record the names, exact numbers and units, thresholds, commands, paths, links, conditions, caveats, and uncertainty that must survive. After editing, compare the result with that record and the original. Restore lost details or qualifications. Keep scoped claims scoped and caveats beside the claims they qualify. Preserve both sides of a contested claim. Flag unsupported claims or commands for verification without certifying or strengthening them.
 
 1. Read every sentence aloud. If it sounds like a press release, Wikipedia, or chatbot, rewrite.
 2. Grep the text against the entries in [phrases.md](./phrases.md); zero unexamined matches required. Apply Restraint to legitimate contextual uses; remove formulaic uses.

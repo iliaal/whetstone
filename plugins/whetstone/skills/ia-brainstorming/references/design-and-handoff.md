@@ -26,6 +26,16 @@ Silent pass is valid. Clean draft → move to Phase 4.
 
 ### Phase 4: Review and Handoff
 
+Before handoff, dispatch a fresh subagent as a cold builder in the relevant domain. Give it the design without the interview history, and ask only for ranked questions where an incorrect guess would materially change the build. Exclude wording preferences and decisions explicitly delegated to the implementer. If delegation is unavailable, perform the same read directly and disclose that limitation.
+
+Triage each question once:
+
+1. **Already settled:** put the existing answer into the design so a builder can find it.
+2. **Minor and delegated:** choose within caller authority and label the choice as the agent's decision in the design.
+3. **User-owned:** collect the remaining questions into one batch, ordered by consequence, through the entry point's question mechanism.
+
+Limit this builder check to one question round. Update the design with the answers; preserve unanswered material questions as unresolved instead of assuming approval. In headless mode, return decisions outside delegated authority to the caller. For flow-heavy designs, offer a separate flow analysis when state transitions or permutations warrant it.
+
 Present the design doc to the user for approval. The user explicitly confirming the design is the gate to proceed. When invoked via `/ia-brainstorm`, the command handles spec review dispatch and next-step orchestration.
 
 **Explicit headless mode:** return the design and unresolved assumptions to the caller. Handoff may continue only within the caller's delegated authority; report the design as caller-delegated, not user-approved.

@@ -57,6 +57,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **MCP Matchers:** Regex patterns target tools by server and operation for capability-based security
 - [ ] **Two-Tier Config:** Commit shared hooks in `.claude/settings.json` or plugin `hooks/hooks.json`; keep personal additions in `.claude/settings.local.json`. Native hooks have no per-entry `enabled` switch; remove an optional entry or implement a named switch inside its handler.
 - [ ] **Cold-start budget:** every hook invocation is a fresh process, so the runtime is chosen by cold-start latency against the hook timeout, not by warm throughput; a framework whose accelerator initialises lazily pays that cost on every invocation. Measure first-run latency.
+- [ ] **Cancellation:** Hooks avoid shared index writes and recover owned temporary state after termination; Git readers disable optional locks and diff index refreshes. See [hooks-patterns.md](./hooks-patterns.md) Hooks Are Cancellable.
 
 ### Mobile (if applicable)
 - [ ] **Checkpoint/Resume:** Handle iOS app suspension gracefully

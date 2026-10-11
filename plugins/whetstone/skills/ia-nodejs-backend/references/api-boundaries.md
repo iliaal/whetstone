@@ -31,6 +31,8 @@ Centralized handler middleware:
 
 For custom transport callbacks, event listeners, and subscription handlers, establish the error boundary where the callback runs. Catch synchronous parsing or serialization failures there. Handle rejected promises when the SDK does not await the callback. An RxJS `catchError` upstream does not catch a throw from the final `subscribe` callback. Use the transport's error response, failed-message disposition, or bounded logging as appropriate. Verify that a malformed message and a rejected callback leave the process alive and the next valid message usable. Inspect framework-provided HTTP boundaries before adding another wrapper.
 
+For NestJS `@Sse()` routes through v12.1.2, event data that throws during serialization (such as BigInt or circular objects) leaves the stream hanging. Pre-serialize data inside the observable with `map` and `JSON.stringify` so failures enter its error path. Interceptor-set status and headers were dropped on Fastify; status was also ignored on Express. Even after the header/status fix, a header set after an `await` in an interceptor is still not sent on either adapter.
+
 Codes: 400 bad input | 401 no auth | 403 no permission | 404 missing | 409 conflict | 422 business rule | 429 rate limited | 500 server fault
 
 

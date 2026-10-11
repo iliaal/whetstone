@@ -1,6 +1,6 @@
 # Language-Specific Review Profiles
 
-Contents: [routing](#deterministic-stack-routing) · [framework verification](#verifying-framework-idioms-before-flagging) · [TypeScript/React](#typescript--react-ts-tsx-jsx) · [Python](#python-py-pyi) · [PHP](#php-php) · [Shell](#shell-sh-bash-non-github-actions-ci-configs) · [GitHub Actions](#github-actions-githubworkflowsyml) · [Configuration](#configuration-env-yml-yaml-json-toml) · [Data](#data-formats-csv-json-ingestion-parsers) · [Security](#security-all-files) · [LLM boundaries](#llm-trust-boundaries)
+Contents: [routing](#deterministic-stack-routing) · [framework verification](#verifying-framework-idioms-before-flagging) · [TypeScript/React](#typescript--react-ts-tsx-jsx) · [Python](#python-py-pyi) · [PHP](#php-php) · [Shell](#shell-sh-bash-non-github-actions-ci-configs) · [GitHub Actions](#github-actions-githubworkflowsyml) · [Agent packages](#agent-packages) · [MCP configuration](#mcp-configuration) · [Configuration](#configuration-env-yml-yaml-json-toml) · [Data](#data-formats-csv-json-ingestion-parsers) · [Security](#security-all-files) · [LLM boundaries](#llm-trust-boundaries)
 
 ## Deterministic stack routing
 
@@ -30,6 +30,8 @@ reasoning.
 | `.rs`, `Cargo.toml`, or `Cargo.lock` | `ia-rust-systems` |
 | `.sh`, `.bash`, or a shell-driven CI step outside `.github/workflows/` | `ia-linux-bash-scripting` |
 | `.github/workflows/*.yml` | GitHub Actions profile below (supersedes Shell for these files) |
+| `SKILL.md`, `agents/*.md`, `hooks.json`, `.mcp.json`, or `settings.json` in an agent package | Agent package profile below; also apply MCP configuration checks to `.mcp.json` |
+| `.mcp.json` outside an agent package, `.cursor/mcp.json`, or `.vscode/mcp.json` | MCP configuration profile below |
 | `.tf`, `.tfvars`, or HCL Terraform/OpenTofu configuration | `ia-terraform` |
 
 Do not route `.ts`/`.js` from extension alone: distinguish React from Node using
@@ -72,6 +74,7 @@ When verified behavior contradicts the finding's premise, drop the finding. Repo
 - Missing `key` props in mapped JSX
 - Effects without cleanup (subscriptions, timers, event listeners)
 - `typeof x === "number"` used as a validity check: it admits `NaN`, `Infinity`, and finite-but-unusable magnitudes. Narrow to the range the consumer accepts (`Number.isFinite`, plus an explicit bound where one exists); `new Date(1e300).toISOString()` throws `RangeError`, and a bare `z.number()` needs `.finite()`
+- ISO date-only strings such as `new Date('2026-07-04')` parse at UTC midnight; ISO date-time strings without an offset parse in local time. Local formatting west of UTC can show July 3 for that date-only value. Preserve calendar dates as strings, or format their UTC parse with `timeZone: 'UTC'`.
 
 ## Python (.py, .pyi)
 
@@ -99,6 +102,9 @@ When verified behavior contradicts the finding's premise, drop the finding. Repo
 - Command injection via unsanitized input in `eval` or backticks
 - `cd` without error check: use `cd dir || exit 1`
 - Hardcoded paths that should be variables
+- Deploy credentials in unprotected or unmasked CI variables, or deploy jobs allowed on unprotected branches/tags. Protect and mask deploy variables, and restrict deployment to protected refs.
+- Pipe-to-shell installers (`curl … | sh`, `irm … | iex`): flag only in jobs or image builds that hold secrets. Use the package manager or a pinned release with a verified checksum; apply the fail-open integrity check in [security-patterns.md](./security-patterns.md).
+- TLS verification bypasses in CLI/CI: `curl -k`/`--insecure`, `wget --no-check-certificate`, `kubectl --insecure-skip-tls-verify`, `git -c http.sslVerify=false`/`GIT_SSL_NO_VERIFY`, `pip --trusted-host`, or `npm config set strict-ssl false`. Supply the intended CA instead, using the tool's CA option such as `--cacert` or `--certificate-authority`.
 
 ## GitHub Actions (.github/workflows/*.yml)
 
@@ -113,8 +119,36 @@ Reviews the *reviewed repository's* CI, not the harness the review runs under.
 - `actions/upload-artifact` of a directory containing `.git/` ships `.git/config` with the persisted `GITHUB_TOKEN` (`actions/checkout`'s default is `persist-credentials: true`), and anyone who can download the artifact gets the token for its lifetime
 - `permissions: id-token: write` at workflow level lets any job on any ref, including a fork PR under `pull_request_target`, mint an OIDC token that the cloud-side trust policy may accept. Scope the permission to the deploy job alone and pin the trust policy's subject to a specific ref (e.g. `ref:refs/heads/main`)
 - `${{ github.event.* }}` interpolated inside `actions/github-script`'s `script:` is the same injection as in `run:`; pass the value through `env:` and read it back as `process.env.X`
+- `issue_comment` command matching without a trusted-author gate (`comment.author_association` restricted to `OWNER`/`MEMBER`/`COLLABORATOR`, or an explicit permission check): inspect privileged commands, PR-head/merge checkouts, and comment interpolation. Author approval alone does not make the checked-out PR code trustworthy.
+- Privileged `workflow_run` consumers that execute or deploy fork-produced artifacts, or extract them over workspace scripts: verify the producer's `head_repository` identity and allowed ref. A fork can name its branch `main`, so `head_branch == 'main'` alone is insufficient. Consume untrusted artifacts only as validated data.
+- Cache poisoning from untrusted code in base-branch jobs (`pull_request_target`, `issue_comment`, `workflow_run`): require effective cache-write access and a trusted downstream restore path. GitHub's current defaults deny these triggers writes unless a write-capable `cache-mode` overrides them. Ordinary `pull_request` caches belong to the merge ref and cannot be restored by the base branch. Verify the deployed platform's [cache-access rules](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#cache-access-for-low-trust-workflow-triggers).
+- Fork-controlled code reaching a persistent `runs-on: self-hosted` runner: trace retained files, credentials, and network access into later jobs. Require a clean, isolated runner environment for each untrusted job; removing the runner registration alone does not clean reused hardware.
+
+Require an external actor's input path before classifying a workflow issue as an external-attacker finding. `workflow_dispatch` inputs requiring write access, scheduled execution, and protected-branch pushes alone do not supply that path; trace any untrusted data those jobs consume separately.
 
 Scope the pinning check before filing it: report a mutable ref only for a **third-party** action in a **privileged** job (one holding secrets, an OIDC token, a write-scoped `GITHUB_TOKEN`, or release/deploy/publish/signing power). First-party `actions/*` and `github/*` on a version tag, same-repo `./.github/actions/...` refs, and unprivileged read-only jobs are not findings. When ownership is unclear, treat anything outside `actions/*`, `github/*`, and local paths as third-party.
+
+## Agent packages
+
+Apply to agent-consumed packages containing `SKILL.md`, `agents/*.md`, `hooks.json`, `.mcp.json`, or `settings.json`. Inspect execution and persistence paths without running package code:
+
+- Trace automatically executing hooks declared in frontmatter or plugin configuration, including their trigger and granted authority.
+- Review `` !`cmd` `` load-time expansion in local/package skill bodies as shell execution before the model reads the instructions; inspect the command and its inputs. See [Claude Code dynamic context injection](https://code.claude.com/docs/en/skills#inject-dynamic-context).
+- Resolve symlink targets and flag paths that escape the package boundary.
+- Inspect auto-discovered executables (`conftest.py`, `*.test.*`, `postinstall`) and establish which runner or lifecycle loads them.
+- Trace writes to agent configuration or memory (`CLAUDE.md`, `settings.json`, hook files) that persist after package uninstall.
+- Compare granted tools with the body's actual needs, and compare the description's promised behavior with the instructions; flag unused grants and mismatches.
+
+## MCP configuration
+
+Inspect package selectors in committed MCP launch commands without executing them. Classify direct-selector drift separately from evidence of exploitation:
+
+- **HIGH**: bare package names, `@latest` or other dist-tags, and Docker images without a digest (including version tags).
+- **MEDIUM**: npm `^`/`~`/ranges or Python `>=`, `~=`, and wildcard equality such as `==1.*`.
+- **SAFE for direct-selector drift only**: an exact package version or Docker `@sha256:` digest. This does not establish package or transitive-dependency safety.
+- **REVIEW**: local paths, VCS/URL sources, or ambiguous command parsing.
+- Parse `npx --package`, `uvx --from`, `pipx run --spec`, and Docker's image operand separately from option values and executable arguments.
+- Recommend a reviewed version or digest from existing evidence; never invent a pin from the registry's current latest release.
 
 ## Configuration (.env, .yml, .yaml, .json, .toml)
 

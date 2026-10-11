@@ -22,6 +22,13 @@ Capture stdout/stderr to a file so a quiet tail isn't mistaken for a dead proces
 
 - Keep iterating (fix → re-run the external review) until it returns **no
   accepted/actionable findings**: a structured exit 0, not a prose "looks good".
+- Treat a finding with a verified `FP-*` disposition or an explicitly
+  owner-approved `ACCEPTED-RISK` tradeoff under `ia-receiving-code-review` as
+  non-actionable for closeout. Bind
+  that disposition to the frozen diff bundle; a repeat of the same finding
+  without new evidence does not require another fix-and-review round. Reassess
+  when new evidence or changed bytes invalidate the disposition. Report retained
+  risks explicitly; an accepted risk is not proof that no defect exists.
 - Stop as soon as it exits clean. Do **not** run one extra review just to get a
   nicer "all clear" summary; that burns time/tokens and risks new churn.
 - Keep the comparison base and selected scope stable across the loop. After
@@ -30,7 +37,11 @@ Capture stdout/stderr to a file so a quiet tail isn't mistaken for a dead proces
   those exact bytes; an earlier snapshot cannot verify a later fix. Reconcile
   changed paths before dispatch, and return any required scope expansion to the
   caller instead of silently widening the review.
-- **Cap the loop at two consecutive `unavailable` results**: the initial run
+- If a failure diagnostic proves the peer never reviewed the diff (usage/session
+  quota, an unsupported CLI option), report `unavailable` immediately without a
+  retry. Otherwise report the observed failure without claiming whether review
+  occurred.
+- **For other failures, cap the loop at two consecutive `unavailable` results**: the initial run
   plus one retry. "Clean" is not the only exit: a reviewer broken for a reason
   unrelated to the diff (auth outage, vendor incident, tool bug) returns
   `unavailable` forever, so stop after the second failure instead of iterating.

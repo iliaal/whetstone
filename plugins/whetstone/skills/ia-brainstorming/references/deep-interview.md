@@ -2,6 +2,8 @@
 
 Apply the deep interview protocol on top of the baseline questions above. Assumption probing and contradiction tracking always run. Research-backed challenges and second-order effects run when the scope warrants it (multi-system changes, infrastructure decisions, technology selection).
 
+Start with open-ended questions; use multiple choice only in the Blindspot Pass and approach selection.
+
 **Assumption probing:** After each substantive answer, identify what the user assumed but didn't state. "You described X. Are you assuming Y is already in place?" Surface hidden dependencies and unstated constraints.
 
 **Second-order effects:** For features that touch shared infrastructure or data models, ask what success creates downstream. "If this works and gets adopted, what pressure does it put on [related system]?"
@@ -16,7 +18,7 @@ Apply the deep interview protocol on top of the baseline questions above. Assump
 
 **Question clustering:** When probing a single dimension (e.g., data model, auth flow), ask 2-3 related questions together using AskUserQuestion's multi-question support. Switch to one-at-a-time when jumping between dimensions.
 
-**Completeness assessment:** Track which dimensions have been explored. Before proposing to move to Phase 2, assess coverage and signal confidence: "We've covered purpose, users, and constraints well. Data flow and failure modes are still thin. Want to explore those, or proceed?"
+**Completeness assessment:** Track which dimensions have been explored. Before proposing to move to Phase 2, assess coverage and signal confidence: "We've covered purpose, users, and constraints well. Data flow and failure modes are still thin. What's still missing before we compare approaches?"
 
 ## Rigor Probes for Ambiguous Gaps
 

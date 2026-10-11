@@ -8,6 +8,9 @@
     "description": "Plugin marketplace for Claude Code extensions",
     "version": "5.0.1"
   },
+  "renames": {
+    "compound-engineering": "whetstone"
+  },
   "plugins": [
     {
       "name": "whetstone",

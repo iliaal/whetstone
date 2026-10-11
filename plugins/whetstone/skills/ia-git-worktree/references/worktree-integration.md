@@ -64,7 +64,7 @@ Discarding is never offered as an option. Delete the branch and worktree only wh
 
 ## Change Summary
 
-When completing work in a worktree (before merge or PR), output a structured summary:
+When completing work in a worktree (before merge or PR), output a structured summary; omit any section with nothing to report:
 
 ```
 CHANGES MADE:

@@ -57,44 +57,51 @@ Mobile agents may need access to system resources. Handle permission requests gr
 
 Check permissions before executing:
 
-```swift
-struct PhotoTools {
-    static func readPhotos() -> AgentTool {
-        tool(
-            name: "read_photos",
-            description: "Read photos from the user's photo library",
-            parameters: [
-                "limit": .number("Maximum photos to read"),
-                "dateRange": .string("Date range filter").optional()
-            ],
-            execute: { params, context in
-                // Check permission first
-                let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+The TypeScript example uses an app-defined adapter for the platform photo library. Map native authorization states to this contract and restrict reads to the granted selection when access is limited.
 
-                switch status {
-                case .authorized, .limited:
-                    // Proceed with reading photos
-                    let photos = await fetchPhotos(params)
-                    return ToolResult(text: "Found \(photos.count) photos", images: photos)
+```typescript
+type PhotoPermission =
+  | "authorized" | "limited" | "denied" | "restricted"
+  | "not-determined" | "unknown";
+type PhotoQuery = { limit: number; dateRange?: string };
+type PhotoAsset = { id: string; bytes: Uint8Array; mediaType: string };
+type PhotoResult = {
+  status: "complete" | "unavailable";
+  text: string;
+  images?: PhotoAsset[];
+};
+type PhotoLibrary = {
+  status(): Promise<PhotoPermission>;
+  requestAccess(): Promise<PhotoPermission>;
+  fetchVisible(query: PhotoQuery): Promise<PhotoAsset[]>;
+};
 
-                case .denied, .restricted:
-                    return ToolResult(
-                        text: "Photo access needed. Please grant permission in Settings → Privacy → Photos.",
-                        isError: true
-                    )
-
-                case .notDetermined:
-                    return ToolResult(
-                        text: "Photo permission required. Please try again.",
-                        isError: true
-                    )
-
-                @unknown default:
-                    return ToolResult(text: "Unknown permission status", isError: true)
-                }
-            }
-        )
-    }
+function photoTool(library: PhotoLibrary) {
+  return {
+    name: "read_photos",
+    description: "Read photos available under the current photo-library grant",
+    async execute(query: PhotoQuery): Promise<PhotoResult> {
+      if (!Number.isSafeInteger(query.limit) || query.limit <= 0) {
+        throw new Error("Photo limit must be a positive integer");
+      }
+      let status = await library.status();
+      if (status === "not-determined") status = await library.requestAccess();
+      switch (status) {
+        case "authorized":
+        case "limited": {
+          const images = await library.fetchVisible(query);
+          return { status: "complete", text: `Found ${images.length} photos`, images };
+        }
+        case "denied":
+        case "restricted":
+          return { status: "unavailable", text: "Photo access is unavailable. Check the app's photo permissions in system settings." };
+        case "not-determined":
+          return { status: "unavailable", text: "Photo permission is still required. Try again when ready." };
+        case "unknown":
+          return { status: "unavailable", text: "Could not determine photo permission." };
+      }
+    },
+  };
 }
 ```
 
@@ -102,25 +109,17 @@ struct PhotoTools {
 
 When permissions aren't granted, offer alternatives:
 
-```swift
-func readPhotos() async -> ToolResult {
-    let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-
-    switch status {
-    case .denied, .restricted:
-        // Suggest alternative
-        return ToolResult(
-            text: """
-            I don't have access to your photos. You can either:
-            1. Grant access in Settings → Privacy → Photos
-            2. Share specific photos directly in our chat
-
-            Would you like me to help with something else instead?
-            """,
-            isError: false  // Not a hard error, just a limitation
-        )
-    // ...
-    }
+```typescript
+async function readPhotosWithAlternatives(
+  library: PhotoLibrary,
+  query: PhotoQuery,
+): Promise<PhotoResult> {
+  const result = await photoTool(library).execute(query);
+  if (result.status === "complete") return result;
+  return {
+    status: "unavailable",
+    text: `${result.text}\nShare selected photos directly in chat, or continue with a task that does not require photos.`,
+  };
 }
 ```
 
@@ -158,56 +157,57 @@ An imported image requires its source access grant, not camera access. Request c
 
 Handle offline scenarios gracefully:
 
-```swift
-class ConnectivityAwareAgent {
-    @ObservedObject var network = NetworkMonitor()
+Use app-defined connectivity and tool adapters. Keep network requirements in the tool registry so newly added tools receive the same check.
 
-    func executeToolCall(_ toolCall: ToolCall) async -> ToolResult {
-        // Check if tool requires network
-        let requiresNetwork = ["web_search", "web_fetch", "call_api"]
-            .contains(toolCall.name)
+```typescript
+type ToolCall = { name: string; args: unknown };
+type ToolResult = { status: "complete" | "unavailable"; text: string };
+type RegisteredTool = {
+  requiresNetwork: boolean;
+  execute(args: unknown): Promise<ToolResult>;
+};
 
-        if requiresNetwork && !network.isConnected {
-            return ToolResult(
-                text: """
-                I can't access the internet right now. Here's what I can do offline:
-                - Read your library and existing research
-                - Answer questions from cached data
-                - Write notes and drafts for later
-
-                Would you like me to try something that works offline?
-                """,
-                isError: false
-            )
-        }
-
-        return await executeOnline(toolCall)
-    }
+async function executeToolCall(
+  call: ToolCall,
+  registry: ReadonlyMap<string, RegisteredTool>,
+  connected: () => boolean,
+): Promise<ToolResult> {
+  const tool = registry.get(call.name);
+  if (!tool) throw new Error(`Unknown tool: ${call.name}`);
+  if (tool.requiresNetwork && !connected()) {
+    return {
+      status: "unavailable",
+      text: "Internet access is unavailable. Read local files or cached research, or write drafts for later.",
+    };
+  }
+  return tool.execute(call.args);
 }
 ```
+
+Connectivity can change after the check. Let each tool report transport failures and preserve unknown outcomes for remote mutations instead of blindly retrying them.
 
 ### Offline-First Tools
 
 Some tools should work entirely offline:
 
-```swift
-let offlineTools: Set<String> = [
+```typescript
+const offlineTools = new Set([
     "read_file",
     "write_file",
     "list_files",
     "read_library",  // Local database
     "search_local",  // Local search
-]
+]);
 
-let onlineTools: Set<String> = [
+const onlineTools = new Set([
     "web_search",
     "web_fetch",
     "publish_to_cloud",
-]
+]);
 
-let hybridTools: Set<String> = [
+const hybridTools = new Set([
     "publish_to_feed",  // Works offline, syncs later
-]
+]);
 ```
 
 ### Queued Actions
