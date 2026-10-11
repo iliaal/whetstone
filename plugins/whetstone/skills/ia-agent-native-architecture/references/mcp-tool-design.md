@@ -1,5 +1,5 @@
 <overview>
-How to design MCP tools following prompt-native principles. Tools should be primitives that enable capability, not workflows that encode decisions.
+How to design MCP tools following prompt-native principles. Start with primitives that enable capability. Graduate proven hot paths only under the performance and reliability criteria in [from-primitives-to-domain-tools.md](./from-primitives-to-domain-tools.md#graduating-to-code). Retain primitive fallback for edge cases.
 
 For a CLI rather than an MCP surface, see [cli-agent-interface.md](./cli-agent-interface.md).
 
@@ -128,6 +128,8 @@ async ({ key }) => {
 
 Require `storage.get` to return `undefined` only for a missing key; stored `null`, `false`, `0`, and empty strings remain valid values.
 
+Require `storage.list` and `db.feedback.list` to return a page with the fields shown below. Use stable ordering for offsets. Set `status` to `incomplete` when more pages, a scan cap, or skipped records leave results unexamined. Supply a `reason` and `scanned`, the number of records examined in this call. Return `total_count` as the exact filtered count or `null` when unknown. Return `has_more` as a boolean or `null` when unknown. Return a usable `next_offset` when continuation is possible, otherwise `null`. Set `status` to `complete` only when the requested traversal reaches the end without omissions. Use `reason: null` for a complete traversal. An empty incomplete page does not establish absence.
+
 ```typescript
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
@@ -155,17 +157,26 @@ export const serverName = createSdkMcpServer({
 
     tool(
       "list_items",
-      "List all items, optionally filtered",
+      "Return one page of items, optionally filtered. Continue with next_offset; check status before treating a scan as complete.",
       {
         prefix: z.string().optional().describe("Filter by key prefix"),
-        limit: z.number().default(100).describe("Max items"),
+        limit: z.number().int().min(1).max(100).default(100).describe("Max items per page"),
+        offset: z.number().int().min(0).default(0).describe("Starting offset; use the previous next_offset"),
       },
-      async ({ prefix, limit }) => {
-        const items = await storage.list({ prefix, limit });
+      async ({ prefix, limit, offset }) => {
+        const page = await storage.list({ prefix, limit, offset });
         return {
           content: [{
             type: "text",
-            text: `Found ${items.length} items:\n${items.map(i => i.key).join("\n")}`,
+            text: JSON.stringify({
+              items: page.items,
+              has_more: page.has_more,
+              next_offset: page.next_offset,
+              total_count: page.total_count,
+              status: page.status,
+              reason: page.reason,
+              scanned: page.scanned,
+            }, null, 2),
           }],
         };
       }
@@ -205,14 +216,24 @@ export const serverName = createSdkMcpServer({
     // EXTERNAL operations
     tool(
       "call_api",
-      "Make an HTTP request",
+      "Make an HTTP request with an optional JSON body. For GET, omit body and put query parameters in the URL.",
       {
         url: z.string().url(),
         method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("GET"),
         body: z.any().optional(),
       },
       async ({ url, method, body }) => {
-        const response = await fetch(url, { method, body: JSON.stringify(body) });
+        if (method === "GET" && body !== undefined) {
+          return {
+            content: [{ type: "text", text: "GET requests cannot have a body. Omit body and put query parameters in the URL." }],
+            isError: true,
+          };
+        }
+        const response = await fetch(url, {
+          method,
+          headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
         const text = await response.text();
         return {
           content: [{
@@ -266,17 +287,26 @@ export const feedbackMcpServer = createSdkMcpServer({
 
     tool(
       "list_feedback",
-      "List feedback items",
+      "Return one page of feedback items. Continue with next_offset; check status before treating a scan as complete.",
       {
-        limit: z.number().default(50),
+        limit: z.number().int().min(1).max(100).default(50),
+        offset: z.number().int().min(0).default(0).describe("Starting offset; use the previous next_offset"),
         status: z.string().optional(),
       },
-      async ({ limit, status }) => {
-        const items = await db.feedback.list({ limit, status });
+      async ({ limit, offset, status }) => {
+        const page = await db.feedback.list({ limit, offset, status });
         return {
           content: [{
             type: "text",
-            text: JSON.stringify(items, null, 2),
+            text: JSON.stringify({
+              items: page.items,
+              has_more: page.has_more,
+              next_offset: page.next_offset,
+              total_count: page.total_count,
+              status: page.status,
+              reason: page.reason,
+              scanned: page.scanned,
+            }, null, 2),
           }],
         };
       }
@@ -631,7 +661,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Inputs are data, not decisions
 - [ ] Outputs are rich (enough for agent to verify)
 - [ ] CRUD operations are separate tools (not one mega-tool)
-- [ ] No business logic in tool implementations
+- [ ] Use primitive tools by default; graduate hot paths only for measured performance or reliability needs under [from-primitives-to-domain-tools.md](./from-primitives-to-domain-tools.md#graduating-to-code), with primitive fallback retained
 - [ ] Error states clearly communicated via `isError`
 - [ ] Descriptions state capability and the boundary against sibling tools, never workflow context (see Writing the description)
 - [ ] Descriptions carry no worked examples, numbered protocols, `CRITICAL:`-style boosters, or cross-tool `ALWAYS`/`NEVER` scolding

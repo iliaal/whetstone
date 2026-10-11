@@ -22,7 +22,7 @@ CREATE INDEX idx_partial ON t(col) WHERE status = 'active'; -- filtered
 CREATE INDEX idx_cover ON t(col) INCLUDE (name);            -- covering
 ```
 
-Always `EXPLAIN ANALYZE` slow queries. Watch for sequential scans on large tables.
+Start slow-query inspection with `EXPLAIN`. Use `EXPLAIN ANALYZE` only when executing the query and its side effects is authorized and safe. For writes, prefer disposable data; use a transaction followed by rollback only when all relevant effects are transactional. Watch for sequential scans on large tables.
 
 **Migrations:**
 - Separate schema and data migrations; data backfills in their own migration file

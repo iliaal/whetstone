@@ -21,9 +21,9 @@ _BACKEND_DEFAULT_MODELS = {
     "openai_chat": "gpt-4o",
     "codex": "gpt-4o",
     "codex_exec": "gpt-4o",
-    "claude": "claude-sonnet-4-6",
-    "claude_chat": "claude-sonnet-4-6",
-    "claude_code_exec": "claude-sonnet-4-6",
+    "claude": "claude-sonnet-5-5",
+    "claude_chat": "claude-sonnet-5-5",
+    "claude_code_exec": "claude-sonnet-5-5",
     "qwen_chat": "Qwen/Qwen3.5-4B",
 }
 

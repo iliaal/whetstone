@@ -9,7 +9,7 @@ Never satisfy a worktree's gitignored dependency directory with a symlink to ano
 
 Before creating worktrees, detect the execution context:
 
-1. **Codex/sandbox environment?** If `$CODEX_SANDBOX` is set or the repo is at a non-standard path (e.g., `/tmp/`, `/workspace/`), worktrees may not be supported. Fall back to regular branch switching.
+1. **Worktree support and permissions?** Inspect the installed `git worktree` commands and effective permissions before choosing a workflow. Check whether permitted operations allow writes to both the destination and repository administration data, resolving the common directory with `git rev-parse --git-common-dir`. Environment variables and path prefixes alone do not establish that worktrees are unavailable. Preserve requested isolation. If an isolated checkout is unavailable, serialize only in an exclusively owned checkout when that satisfies the task; otherwise report the limitation. Do not switch branches in a shared checkout as a fallback.
 2. **Bare repo?** If `git rev-parse --is-bare-repository` returns true, worktrees are the only way to have a working directory. Adjust paths accordingly.
 
 Adapt the workflow to the detected context rather than failing with a generic error.

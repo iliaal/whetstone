@@ -67,18 +67,20 @@ Server-side drivers in Laravel 13: Reverb (first-party WebSocket server, `php ar
 Define recurring tasks in `routes/console.php`:
 
 ```php
+use Illuminate\Support\Facades\Schedule;
+
 // Artisan commands
-$schedule->command('reports:generate')->dailyAt('02:00')->withoutOverlapping();
-$schedule->command('cache:prune-stale-tags')->hourly();
+Schedule::command('reports:generate')->dailyAt('02:00')->withoutOverlapping();
+Schedule::command('cache:prune-stale-tags')->hourly();
 
 // Closures for simple tasks
-$schedule->call(fn () => DB::table('sessions')->where('last_active', '<', now()->subDay())->delete())
+Schedule::call(fn () => DB::table('sessions')->where('last_active', '<', now()->subDay())->delete())
     ->daily()
     ->name('cleanup-sessions')
     ->withoutOverlapping();
 
 // Queue jobs
-$schedule->job(new ProcessDailyMetrics)->dailyAt('01:00');
+Schedule::job(new ProcessDailyMetrics)->dailyAt('01:00');
 ```
 
 Key methods:
@@ -120,7 +122,7 @@ protected function casts(): array
 ```
 
 Built-in casts to prefer over manual accessors:
-- `AsEncryptedCollection::class`: encrypt JSON columns at rest
+- `AsEncryptedCollection::class`: store encrypted collections in a `TEXT`-or-larger column. Encrypted contents cannot be searched or queried with JSON operators.
 - `AsEnumCollection::class`: array of enums stored as JSON
 - `AsStringable::class`: fluent string operations on attribute
 - Enum casts: `'status' => OrderStatus::class` gives automatic PHP enum <-> DB value

@@ -29,3 +29,6 @@
 {"prompt":"Update dependencies in pyproject.toml","expect":true,"source":"audit-2026-10-03"}
 {"prompt":"Explain ultraviolet UV radiation exposure","expect":false,"source":"audit-2026-10-03"}
 {"prompt":"Configure UV exposure for the skin treatment","expect":false,"source":"audit-2026-10-03"}
+{"prompt":"Review the Markdown fence walker in tests/test_docs.py, verify its list and blockquote cases, and run ruff and ty.","expect":true,"source":"audit-2026-10-11-labeller-false-positive"}
+{"prompt":"Fix the Rust CLI's provenance mismatch and add regression cases in tests/ledger_py; run the Python tests, ruff, and ty.","expect":true,"source":"audit-2026-10-11-labeller-false-positive"}
+{"prompt":"Audit the Python contract-test helper for weakened assertions after the documentation split; run uv run pytest on the affected tests.","expect":true,"source":"audit-2026-10-11-labeller-false-positive"}

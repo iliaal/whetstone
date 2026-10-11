@@ -110,7 +110,8 @@ Automated scans and source inspection establish only the checks they actually pe
 - Touch targets assessed against the selected criterion: WCAG 2.2 AA 2.5.8 requires 24x24px or sufficient spacing, subject to its exceptions. Prefer 44x44px for standalone touch controls as a design recommendation; WCAG 2.5.5's 44x44px requirement is AAA and also has exceptions. Check inline, equivalent-control, user-agent, and essential cases before declaring a violation.
 - Gesture alternatives for all swipe/pinch actions
 - Content works in both orientations
-- No horizontal scrolling at 320px viewport width
+- For WCAG 2.1/2.2 AA, verify [1.4.10 Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html): preserve information and functionality without two-dimensional scrolling at 320 CSS px width for vertically scrolling content or 256 CSS px height for horizontally scrolling content.
+- Apply exceptions only to parts that require a two-dimensional layout for use or meaning, such as maps and data tables. Require surrounding content and individual table cells to reflow unless they independently qualify for the exception. Page-level two-dimensional scrolling caused solely by excepted content is permitted when all non-excepted content reflows.
 
 ## Report Format
 

@@ -58,6 +58,8 @@ A Node hook that emits its response with `process.stdout.write()` must not call 
 
 That fail-closed rule covers the gate's decision logic, not its bookkeeping. A hook that tracks per-session state (a first-touch marker, a cache file, a state directory) hits a separate failure mode when that storage is unwritable or corrupt: failing closed there blocks every later call in the session with no way to ever record "already checked", which deadlocks the gate rather than protecting it. Fail open on bookkeeping failures instead, and name the broken path or variable in a stderr warning so the gap is visible rather than silent.
 
+For synchronous policy `command` or `http` hooks on Claude Code **v2.1.295+**, set `onFailure: "block"` to cover startup failures, crashes, JSON parse/schema failures, and timeouts. Plain-text command output is not a parse failure; validate the returned decision too. This setting has no effect on background hooks (`async` or `asyncRewake`) or `Stop`, `SubagentStop`, `TaskCompleted`, and `TeammateIdle`. Handle bookkeeping errors inside the handler and warn; command hooks must still return the policy decision with exit 0. See [host failure handling](https://code.claude.com/docs/en/hooks#block-the-action-when-a-hook-fails).
+
 PreToolUse also fires once per tool call, never once per batch. Each tool in a parallel batch is evaluated through its own PreToolUse pipeline; a deny on one call neither blocks nor undoes its siblings, and there is no batch-level rollback (PostToolBatch fires only after every tool in the batch has been processed). A stateful gate (one that records "this file has now been checked" as a side effect of its first decision) therefore cannot lock a parallel batch: call 1 is denied, and call 2, dispatched alongside it, evaluates against the already-updated state and passes. A gate that needs all-or-nothing semantics over a batch cannot get them from PreToolUse; verify the end state instead, at the resource or in a Stop/SubagentStop gate.
 
 A gate that inspects a Bash command string for a specific flag must replicate the target CLI's own parsing rules, not run a substring or whitespace-token scan. git accepts any unambiguous prefix of a long option, so `--no-veri` and `--no-verif` run as `--no-verify` and a scan for the literal `--no-verify` under-blocks; a short option with an optional attached value (`git commit -uno` is `--untracked-files=no`) is one argument, so a scan that splits on letters misparses the cluster. Derive the accepted spellings from the CLI's option table, test the gate with abbreviated and clustered forms, and treat an unparseable command as deny.
@@ -99,12 +101,15 @@ Target specific MCP tools using regex patterns in the `matcher` field:
       "matcher": "^mcp__memory__.*$",
       "hooks": [{
         "type": "command",
-        "command": "./hooks/guard-memory-writes.sh"
+        "command": "./hooks/guard-memory-writes.sh",
+        "onFailure": "block"
       }]
     }]
   }
 }
 ```
+
+Test this gate with a missing handler and, separately, a handler that exceeds a configured `timeout`. Assert that a matching tool call remains unexecuted in both cases.
 
 Common patterns:
 
@@ -158,7 +163,7 @@ For non-blocking side effects that should not slow the agent loop:
 
 Set `async: true` for logging, notifications, metrics collection, or any hook where the agent does not need the result before proceeding.
 
-**asyncRewake**: for async hooks that should wake the model on failure. Use this when the side effect is best-effort but failures need visibility: a logging hook that fails silently is fine, but a compliance audit hook that fails should surface the error.
+**asyncRewake**: set `asyncRewake: true` to run in the background and wake the model on **exit code 2**. Deliberately map failures requiring attention to exit 2; exit 1 does not wake it. The reminder uses stderr, falling back to stdout when stderr is empty. See [command hook fields](https://code.claude.com/docs/en/hooks#command-hook-fields).
 
 ## Hooks Are Cancellable
 

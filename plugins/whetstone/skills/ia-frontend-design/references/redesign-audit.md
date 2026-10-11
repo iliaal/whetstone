@@ -2,11 +2,11 @@
 
 Use when the user explicitly asks to redesign, audit, or improve an existing interface. This audit does NOT apply when building new features within an existing design system; in that case, match the existing system per the Context Detection rules in the parent skill.
 
-Walk through each section, note violations, then prioritize fixes by ROI.
+Walk through each section and note violations. For screenshot repairs, fix the diagnosed cause first. For broader redesigns, prioritize findings by impact and risk.
 
-## Fix Priority Order
+## Suggested order for broad redesigns
 
-Font swap (highest ROI, lowest risk) -> Color cleanup -> Hover/active states -> Layout/spacing -> Replace generics -> Add loading/empty/error states -> Polish typography
+Use this sequence as a guide when it fits the findings: Font swap -> Color cleanup -> Hover/active states -> Layout/spacing -> Replace generics -> Add loading/empty/error states -> Polish typography. Prioritize typography when font choice or metrics explain the defect; otherwise start with the diagnosed cause.
 
 ## Typography (10 checks)
 
@@ -36,7 +36,7 @@ Font swap (highest ROI, lowest risk) -> Color cleanup -> Hover/active states -> 
 
 1. Everything centered with no asymmetry or visual tension?
 2. Three equal-width cards in a row (the AI default)?
-3. Using `h-screen` instead of `min-h-[100dvh]`?
+3. Does viewport height match the intended behavior as browser chrome expands or retracts (`dvh` tracks the current viewport; `svh` stays stable against expanded chrome unless the viewport itself resizes)? Check for unwanted resizing or obscured content.
 4. Complex flexbox percentage math (`w-[calc(33%-1rem)]`) instead of CSS Grid?
 5. No `max-width` container (content stretches to viewport edge)?
 6. All cards exactly the same height with no variation?

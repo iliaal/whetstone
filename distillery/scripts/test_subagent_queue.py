@@ -1,6 +1,8 @@
 import json
 import os
 from pathlib import Path
+import re
+import shlex
 import shutil
 import subprocess
 import time
@@ -53,6 +55,72 @@ def start(env, agent="general-purpose", session="session", plugin=PLUGIN):
     return body["hookSpecificOutput"]["additionalContext"]
 
 
+def finish(env, event, tool="tool", session="session", tool_name="Agent"):
+    hooks = json.loads((PLUGIN / "hooks" / "hooks.json").read_text())["hooks"]
+    for group in hooks.get(event, []):
+        if not re.fullmatch(group["matcher"], tool_name):
+            continue
+        for hook in group["hooks"]:
+            command = hook["command"].replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN))
+            result = subprocess.run(
+                shlex.split(command), input=json.dumps({
+                    "session_id": session, "tool_use_id": tool, "tool_name": tool_name,
+                    "hook_event_name": event,
+                }), text=True, capture_output=True, env=env, cwd=env["TMPDIR"], timeout=10,
+            )
+            assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+@pytest.mark.parametrize("event", ["PostToolUseFailure", "PermissionDenied"])
+@pytest.mark.parametrize("tool_name", ["Agent", "Task"])
+def test_failed_or_denied_call_cannot_supply_next_context(queue_env, event, tool_name):
+    record(queue_env, "write Python CLI", tool="denied")
+    record(queue_env, "build Laravel controller", tool="next")
+    finish(queue_env, event, tool="denied", tool_name=tool_name)
+    context = start(queue_env)
+    assert "ia-php-laravel/SKILL.md" in context
+    assert "ia-python-services/SKILL.md" not in context
+    assert start(queue_env) == ""
+
+
+@pytest.mark.parametrize("event", ["PostToolUseFailure", "PermissionDenied"])
+def test_cleanup_matches_complete_call_id_and_session(queue_env, event):
+    record(queue_env, "write Python CLI", tool="prefix-tool")
+    record(queue_env, "implement Rust CLI", tool="tool", session="other")
+    record(queue_env, "build Laravel controller", tool="tool")
+    finish(queue_env, event)
+    assert "ia-python-services/SKILL.md" in start(queue_env)
+    assert start(queue_env) == ""
+    assert "ia-rust-systems/SKILL.md" in start(queue_env, session="other")
+
+
+@pytest.mark.parametrize("event", ["PostToolUseFailure", "PermissionDenied"])
+def test_cleanup_after_claim_leaves_other_pending_calls(queue_env, event):
+    record(queue_env, "write Python CLI")
+    assert "ia-python-services/SKILL.md" in start(queue_env)
+    record(queue_env, "build Laravel controller", tool="next")
+    finish(queue_env, event)
+    finish(queue_env, event)
+    assert "ia-php-laravel/SKILL.md" in start(queue_env)
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("tool_use_id", ""), ("tool_use_id", "../tool"), ("tool_use_id", "*"),
+    ("tool_use_id", None), ("tool_use_id", []), ("tool_use_id", "tool\n"),
+    ("session_id", "../session"), ("session_id", None),
+    ("hook_event_name", "PermissionRequest"), ("hook_event_name", "PreToolUse"),
+    ("tool_name", "Bash"),
+])
+def test_cleanup_rejects_uncorrelated_events(queue_env, field, value):
+    record(queue_env, "write Python CLI")
+    payload = {
+        "session_id": "session", "tool_use_id": "tool", "tool_name": "Agent",
+        "hook_event_name": "PostToolUseFailure", field: value,
+    }
+    assert run_hook("discard-subagent.sh", payload, queue_env) == ""
+    assert "ia-python-services/SKILL.md" in start(queue_env)
+
+
 def test_private_queue_and_default_type(queue_env):
     run_hook("inject-skills.sh", {
         "session_id": "session", "tool_use_id": "tool", "tool_input": {"prompt": "write Python CLI"},
@@ -71,7 +139,7 @@ def test_private_queue_and_default_type(queue_env):
     assert not list(directory.glob("*.json"))
 
 
-@pytest.mark.parametrize("script", ["inject-skills.sh", "subagent-start.sh"])
+@pytest.mark.parametrize("script", ["inject-skills.sh", "subagent-start.sh", "discard-subagent.sh"])
 @pytest.mark.parametrize("payload", ["{", "null", "[]", "1", '"input"'])
 def test_malformed_input_fails_open(queue_env, script, payload):
     result = subprocess.run(["bash", str(PLUGIN / "hooks" / script)], input=payload,
@@ -96,7 +164,7 @@ def test_queue_creation_error_fails_open(queue_env):
     assert start(queue_env) == ""
 
 
-@pytest.mark.parametrize("script", ["inject-skills.sh", "subagent-start.sh"])
+@pytest.mark.parametrize("script", ["inject-skills.sh", "subagent-start.sh", "discard-subagent.sh"])
 def test_missing_dependencies_fail_open(queue_env, script):
     env = {**queue_env, "PATH": queue_env["TMPDIR"]}
     result = subprocess.run(["/bin/bash", str(PLUGIN / "hooks" / script)], input="{}",

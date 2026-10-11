@@ -11,11 +11,11 @@
 ## Core Principles
 
 - **Active voice**: "We shipped the fix" not "The fix was shipped"
-- **Name the actor**: Every sentence needs a human subject doing something. Inanimate objects don't fix bugs, shift cultures, or tell us anything; a person does.
+- **Name the actor**: Name the actual actor, including an automated system. Use a human subject only when a person performed the action. Preserve accurate statements such as "The scheduler retries failed jobs."
 - **Specific over vague**: "Cut reporting from 4 hours to 15 minutes" not "Save time"
 - **Simple words**: "Use" not "utilize", "help" not "facilitate", "start" not "initiate"
 - **Positive form**: Say what it is, not what it isn't: "Ignore" not "Do not pay attention to"
-- **Confident**: Cut "almost", "very", "really", "quite", "arguably", and all -ly adverbs
+- **Adverbs**: Cut empty intensifiers. Preserve adverbs that carry degree, uncertainty, mechanism, or meaningful emphasis.
 - **Concrete**: Name the thing, state the number, cite the source
 - **Omit needless words**: "Because" not "due to the fact that"; "Now" not "at this point in time"; "Can" not "has the ability to"
 - **Use contractions**: "don't", "won't", "it's", "they're". Uncontracted forms are a major AI tell
@@ -74,7 +74,7 @@ Core offenders:
 
 ## False Agency
 
-AI avoids naming actors by giving inanimate things human verbs. Find the person; put them at the front of the sentence.
+Replace figurative agency with the actual actor. For human actions, name the person; for automated actions, name the system. Apply the human-action examples below only when a person performed the action.
 
 | AI slop | Fix |
 |---------|-----|
@@ -86,4 +86,4 @@ AI avoids naming actors by giving inanimate things human verbs. Find the person;
 | "the conversation moves toward" | Someone steered it |
 | "a bet lives or dies" | Someone kills or ships it |
 
-If no specific person fits, use "you" to put the reader in the seat. Person rules: "you" for the reader, "we" for organizational actions, "I" for personal voice. Avoid third-person passive ("it was decided"); name the actor.
+Use "you" only for actions the reader performs, "we" for organizational actions, and "I" for personal actions. If the actor is unknown, preserve that uncertainty instead of inventing a person. When the actor is known, name the actor instead of using a vague passive such as "it was decided."

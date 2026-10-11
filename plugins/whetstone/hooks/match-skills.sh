@@ -37,7 +37,7 @@ fi
 # skill files, or maintenance commands, skills whose names appear as references
 # shouldn't fire as if the user is invoking them.
 IS_MAINT_CONTEXT=false
-if printf '%s' "$PROMPT" | grep -qiE 'plugins/whetstone/(skills|agents|commands)/|skill-patterns\.sh|/sync-from-repos\b|/audit-plugin\b|/(analyze-misfires|diagnose-negatives|evolve-skill|eval-skills)\b|^run .{0,80}distiller\.py +(analyze-misfires|diagnose-negatives)\b' 2>/dev/null; then
+if grep -qiE 'plugins/whetstone/(skills|agents|commands)/|skill-patterns\.sh|/sync-from-repos\b|/audit-plugin\b|/(analyze-misfires|diagnose-negatives|evolve-skill|eval-skills)\b|^run .{0,80}distiller\.py +(analyze-misfires|diagnose-negatives)\b' <<<"$PROMPT" 2>/dev/null; then
   IS_MAINT_CONTEXT=true
 fi
 
@@ -52,7 +52,7 @@ TIER3=()
 readarray -t SKILL_NAMES < <(printf '%s\n' "${!SKILL_PATTERNS[@]}" | LC_ALL=C sort)
 for skill_name in "${SKILL_NAMES[@]}"; do
   pattern="${SKILL_PATTERNS[$skill_name]}"
-  if printf '%s' "$PROMPT_LOWER" | grep -qE "$pattern" 2>/dev/null; then
+  if grep -qE "$pattern" <<<"$PROMPT_LOWER" 2>/dev/null; then
     skill_path="$PLUGIN_ROOT/skills/$skill_name/SKILL.md"
     [[ -f "$skill_path" ]] || continue
 
@@ -62,7 +62,7 @@ for skill_name in "${SKILL_NAMES[@]}"; do
     # skill on a C# or Objective-C prompt. Keep entries to unambiguous markers; this is
     # not a place to fix a positive pattern that is merely too loose.
     if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]]; then
-      if printf '%s' "$PROMPT_LOWER" | grep -qE "${SKILL_NEGATIVE[$skill_name]}" 2>/dev/null; then
+      if grep -qE "${SKILL_NEGATIVE[$skill_name]}" <<<"$PROMPT_LOWER" 2>/dev/null; then
         continue
       fi
     fi
@@ -101,7 +101,7 @@ if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
     [[ -f "$PLUGIN_ROOT/skills/$skill_name/SKILL.md" ]] || continue
     [[ " ${ALL_MATCHES[*]-} " == *" $skill_name "* ]] && continue
     if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]] &&
-      printf '%s' "$PROMPT_LOWER" | grep -qE "${SKILL_NEGATIVE[$skill_name]}" 2>/dev/null; then
+      grep -qE "${SKILL_NEGATIVE[$skill_name]}" <<<"$PROMPT_LOWER" 2>/dev/null; then
       continue
     fi
     if $IS_MAINT_CONTEXT && [[ -n "${SKILL_MAINT_SUPPRESS[$skill_name]+x}" ]]; then
@@ -135,15 +135,15 @@ if [[ -n "${TEST_INJECTION_LOG:-}" ]]; then
   done
 fi
 
-INJECTION="BEFORE STARTING: Read and follow these skill files for methodology and patterns relevant to this task:"
+INJECTION="BEFORE STARTING: These skill files matched your task description; confirm each applies to your actual task, then read and follow it:"
 if [[ $REGEX_MATCH_COUNT -eq 0 ]]; then
-  INJECTION="BEFORE STARTING: Jev suggests these skill files; check applicability before following their instructions:"
+  INJECTION="BEFORE STARTING: Jev suggests these skill files for your task; confirm each applies to your actual task before following it:"
 fi
 for index in "${!ALL_MATCHES[@]}"; do
   skill_name="${ALL_MATCHES[$index]}"
   if [[ $index -eq $REGEX_MATCH_COUNT && $index -gt 0 ]]; then
     INJECTION="$INJECTION
-Additional skill suggestions (Jev; check applicability before following):"
+Additional skill suggestions (Jev; check applicability against your actual task before following):"
   fi
   INJECTION="$INJECTION
 - ${PLUGIN_ROOT}/skills/${skill_name}/SKILL.md"

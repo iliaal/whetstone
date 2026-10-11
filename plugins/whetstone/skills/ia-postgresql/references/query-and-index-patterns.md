@@ -82,7 +82,7 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 
 ## Query Optimization
 
-- Always `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` before optimizing
+- Start with `EXPLAIN` before optimizing. Use `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` only when executing the query and its side effects is authorized and safe. For writes, prefer disposable data; use a transaction followed by rollback only when all relevant effects are transactional.
 - Pin the plan as a regression assertion, not only a one-time diagnostic. For a hot-path query whose performance depends on a specific access method, assert the plan in an automated test: a migration that drops an index, or a rewrite that makes a predicate non-sargable (`WHERE lower(email) = ...` against a plain index, `WHERE col + 0 = ...`), silently regresses the query from an index scan to a sequential scan while every result-correctness test still passes. Plan text is not stable across minor versions and configuration (`work_mem`, `random_page_cost`, table statistics), so never string-match the whole plan; use `EXPLAIN (FORMAT JSON)` and assert on the node type: `Index Scan` or `Index Only Scan` on the expected index name, or the absence of `Seq Scan` on the target relation. Run it against a fixture with enough rows that the planner's choice is not dominated by table size; a planner on a 10-row table legitimately prefers a seq scan.
 - Use `pg_stat_statements` for slow-query detection and `pg_stat_user_tables` for bloat (see [operations.md](./operations.md) for the full SQL)
 - Sequential scan on large table -> add index or check `WHERE` for function wrapping

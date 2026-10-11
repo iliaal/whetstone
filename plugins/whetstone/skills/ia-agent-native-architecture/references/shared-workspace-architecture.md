@@ -507,122 +507,7 @@ Documents/
 <icloud_sync>
 ## iCloud File Storage for Multi-Device Sync (iOS)
 
-For agent-native iOS apps, use iCloud Drive's Documents folder for your shared workspace. This gives you **free, automatic multi-device sync** without building a sync layer or running a server.
-
-### Why iCloud Documents?
-
-| Approach | Cost | Complexity | Offline | Multi-Device |
-|----------|------|------------|---------|--------------|
-| Custom backend + sync | $$$ | High | Manual | Yes |
-| CloudKit database | Free tier limits | Medium | Manual | Yes |
-| **iCloud Documents** | Free (user's storage) | Low | Automatic | Automatic |
-
-iCloud Documents:
-- Uses user's existing iCloud storage (free 5GB, most users have more)
-- Automatic sync across all user's devices
-- Works offline, syncs when online
-- Files visible in Files.app for transparency
-- No server costs, no sync code to maintain
-
-### Implementation Pattern
-
-The TypeScript layer needs an application-owned native bridge. `DocumentProvider` below supplies opaque document-root handles, not browser or Node.js APIs for iCloud. Return `null` when no cloud container is available; propagate other provider errors. Resolve every relative path through the provider's scoped, revision-aware storage service.
-
-```typescript
-type DocumentRoot = { id: string; provider: "icloud" | "local" };
-type DocumentPath = { root: DocumentRoot; relativePath: string };
-interface DocumentProvider {
-  cloudDocuments(): Promise<DocumentRoot | null>;
-  localDocuments(): Promise<DocumentRoot>;
-}
-
-class SharedWorkspace {
-  private constructor(readonly root: DocumentRoot) {}
-
-  static async open(provider: DocumentProvider): Promise<SharedWorkspace> {
-    const root = (await provider.cloudDocuments()) ?? (await provider.localDocuments());
-    return new SharedWorkspace(root);
-  }
-
-  researchPath(bookId: string): DocumentPath {
-    if (!/^[a-zA-Z0-9_-]+$/.test(bookId)) throw new Error("Invalid book ID");
-    return { root: this.root, relativePath: `Research/${bookId}` };
-  }
-
-  journalPath(): DocumentPath {
-    return { root: this.root, relativePath: "Journal" };
-  }
-}
-```
-
-### Directory Structure in iCloud
-
-```
-iCloud Drive/
-└── YourApp/                          # Your app's container
-    └── Documents/                    # Visible in Files.app
-        ├── Journal/
-        │   ├── user/
-        │   │   └── 2025-01-15.md     # Syncs across devices
-        │   └── agent/
-        │       └── 2025-01-15.md     # Agent observations sync too
-        ├── Experiments/
-        │   └── magnesium-sleep/
-        │       ├── config.json
-        │       └── log.json
-        └── Research/
-            └── {topic}/
-                └── sources.md
-```
-
-### Handling Sync Conflicts
-
-The provider synchronizes documents, but the application must handle unavailable content and unresolved versions:
-
-Follow the complete [mobile-storage.md](./mobile-storage.md) read/write transaction contract:
-
-1. Inspect the logical document's provider availability and unresolved-version state.
-2. Request download for remote content and return pending; do not classify availability by filename suffix.
-3. Decode only available bytes and propagate decoding errors.
-4. Serialize the complete replacement before acquiring its write transaction.
-5. Compare the current revision with the expected revision while coordinated; retain conflicting versions rather than overwriting them.
-6. Propagate coordination and writer-callback errors. Return the persisted revision only after atomic replacement succeeds.
-7. Mark resolved versions only after the merged document is saved and update UI observers.
-
-The same contract applies to journal entries and agent observations. A local write receipt does not assert that other devices have received the revision.
-
-### What This Enables
-
-1. **User starts experiment on iPhone** → Agent creates `Experiments/sleep-tracking/config.json`
-2. **User opens app on iPad** → Same experiment visible, no sync code needed
-3. **Agent logs observation on iPhone** → Syncs to iPad automatically
-4. **User edits journal on iPad** → iPhone sees the edit
-
-### Entitlements Required
-
-Add to your app's entitlements:
-
-```xml
-<key>com.apple.developer.icloud-container-identifiers</key>
-<array>
-    <string>iCloud.com.yourcompany.yourapp</string>
-</array>
-<key>com.apple.developer.icloud-services</key>
-<array>
-    <string>CloudDocuments</string>
-</array>
-<key>com.apple.developer.ubiquity-container-identifiers</key>
-<array>
-    <string>iCloud.com.yourcompany.yourapp</string>
-</array>
-```
-
-### When NOT to Use iCloud Documents
-
-- **Sensitive data** - Use Keychain or encrypted local storage instead
-- **High-frequency writes** - iCloud sync has latency; use local + periodic sync
-- **Large media files** - Consider CloudKit Assets or on-demand resources
-- **Shared between users** - iCloud Documents is single-user; use CloudKit for sharing
+When implementing an iOS shared workspace with iCloud Documents, follow [mobile-storage.md](./mobile-storage.md) for the native adapter, persistent workspace identity, backend reconciliation, file-state transactions, and entitlements.
 </icloud_sync>
 
 <checklist>
@@ -652,8 +537,8 @@ Collaboration:
 - [ ] Metadata tracks who created/modified (optional)
 
 Multi-Device (iOS):
-- [ ] Use iCloud Documents for shared workspace (free sync)
-- [ ] Fallback to local Documents if iCloud unavailable
-- [ ] Handle `.icloud` placeholder files (trigger download)
-- [ ] Use NSFileCoordinator for conflict-safe writes
+- [ ] Follow [mobile-storage.md](./mobile-storage.md) when using iCloud Documents
+- [ ] Persist workspace ID and backend; reconcile before switching, and retain the same workspace when cloud access is unavailable
+- [ ] Inspect provider-reported availability; request downloads and resume only when local bytes are available
+- [ ] Coordinate revision checks and replacement; retain conflicts, propagate write errors, and distinguish local saves from remote sync
 </checklist>

@@ -44,7 +44,7 @@ When the `ia-pr-comment-resolver` agent encounters feedback that requires judgme
 ## Verify
 
 - All feedback items triaged (classified as correct, incorrect, or unclear)
-- Ambiguous items clarified before any implementation
+- Material ambiguity clarified before implementing affected or dependent items; independent clear work continues where safe
 - Each fix verified individually (test after each, not batch)
 - No performative agreement phrases in responses ("Great catch!", "Absolutely right")
 

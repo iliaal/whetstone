@@ -28,10 +28,13 @@ an earlier report. Use separate directories for concurrent packages and retries.
 ## Python
 
 - **junit:** `pytest --junitxml="$audit_report_dir/gate.xml"`, appended to the gate's pytest command.
-- **reach, CLI-driven suites:** in the scratch copy, run
-  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<this skill's directory>/scripts REACH_PROBE_OUT=/tmp/reach.jsonl
+- **reach, CLI-driven suites:** in the scratch copy, allocate a fresh directory for
+  each invocation with `reach_probe_dir=$(mktemp -d);`. In the same shell, run
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<this skill's directory>/scripts REACH_PROBE_OUT="$reach_probe_dir/reach.jsonl"
   pytest -p pytest_reach_probe <tests>`, then
-  `python3 <this skill's directory>/scripts/pytest_reach_probe.py /tmp/reach.jsonl`.
+  `python3 <this skill's directory>/scripts/pytest_reach_probe.py "$reach_probe_dir/reach.jsonl"`.
+  Share that invocation's path among its xdist workers; use a new directory for
+  each concurrent invocation or retry.
   The probe runs the suite and patches only `subprocess.Popen.communicate`, so it sees
   `subprocess.run` and wrappers built on `run` or `communicate`. It does not observe
   `subprocess.call`, `check_call`, a bare `Popen(...).wait()`, `os.system`, or asyncio

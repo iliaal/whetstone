@@ -63,7 +63,7 @@
 - `fetch(url, { cache: 'force-cache' })`: static
 - `fetch(url, { next: { revalidate: 60 } })`: ISR
 - `fetch(url, { cache: 'no-store' })`: dynamic
-- Tag-based: `fetch(url, { next: { tags: ['products'] } })` then `revalidateTag('products')`
+- Tag-based ([Next.js 16+](https://nextjs.org/blog/next-16#improved-caching-apis)): `fetch(url, { next: { tags: ['products'] } })`, then choose the invalidation policy. Use [`revalidateTag('products', 'max')`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag) when the next request may serve stale data while revalidating in the background. For immediate expiration, use [`updateTag('products')`](https://nextjs.org/docs/app/api-reference/functions/updateTag) in Server Actions, or `revalidateTag('products', { expire: 0 })` in Route Handlers; the next request waits for fresh data. Avoid the deprecated single-argument `revalidateTag` form. Check the installed Next.js version before adopting these APIs; consult the matching documentation for older releases.
 
 **Data fetching:**
 - Fetch in Server Components where data is used

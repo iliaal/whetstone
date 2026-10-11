@@ -198,30 +198,48 @@ describe('Action Parity', () => {
 
 ### Context Parity Testing
 
+Capture the serialized request at the provider transport boundary. In these examples, `captureProviderRequest` runs the supplied callback and records that outgoing request. Implement `readTrustedInstructions` and `readRuntimeDataMessages` against the provider's actual instruction and data/tool-result fields; return a string and an array of strings, respectively. Do not reconstruct those values from service state or the context builder's output. Use isolated fixtures for each test.
+
 ```typescript
 describe('Context Parity', () => {
-  test('Agent sees all data that UI shows', async () => {
-    // Setup: create some data
-    await libraryService.addBook({ id: "1", title: "Test Book" });
-    await feedService.addItem({ id: "f1", content: "Test insight" });
+  test('Provider receives UI records only as runtime data', async () => {
+    const title = `Test Book ${crypto.randomUUID()}`;
+    const content = `Test insight ${crypto.randomUUID()}`;
+    await libraryService.addBook({ id: "1", title });
+    await feedService.addItem({ id: "f1", content });
 
-    // Get system prompt (which includes context)
-    const systemPrompt = await buildSystemPrompt();
+    const request = await captureProviderRequest(() =>
+      agent.chat("Summarize my library and reading feed")
+    );
+    const trustedPrompt = readTrustedInstructions(request);
+    const runtimeData = readRuntimeDataMessages(request).join("\n");
 
-    // Verify data is included
-    expect(systemPrompt).toContain("Test Book");
-    expect(systemPrompt).toContain("Test insight");
+    for (const record of [title, content]) {
+      expect(runtimeData).toContain(record);
+      expect(trustedPrompt).not.toContain(record);
+    }
   });
 
   test('Recent activity is visible to agent', async () => {
-    // Perform some actions
-    await activityService.log({ action: "highlighted", bookId: "1" });
-    await activityService.log({ action: "researched", bookId: "2" });
+    const highlightedBookId = `highlight-${crypto.randomUUID()}`;
+    const researchedBookId = `research-${crypto.randomUUID()}`;
+    await libraryService.addBook({ id: highlightedBookId, title: "Book to highlight" });
+    await libraryService.addBook({ id: researchedBookId, title: "Book to research" });
+    await activityService.log({ action: "highlighted", bookId: highlightedBookId });
+    await activityService.log({ action: "researched", bookId: researchedBookId });
 
-    const systemPrompt = await buildSystemPrompt();
+    const request = await captureProviderRequest(() =>
+      agent.chat("Summarize my recent reading activity")
+    );
+    const trustedPrompt = readTrustedInstructions(request);
+    const runtimeData = readRuntimeDataMessages(request).join("\n");
 
-    // Verify activity is included
-    expect(systemPrompt).toMatch(/highlighted|researched/);
+    expect(runtimeData).toContain("highlighted");
+    expect(runtimeData).toContain("researched");
+    for (const bookId of [highlightedBookId, researchedBookId]) {
+      expect(runtimeData).toContain(bookId);
+      expect(trustedPrompt).not.toContain(bookId);
+    }
   });
 });
 ```
@@ -322,33 +340,26 @@ describe('Failure Recovery', () => {
 <snapshot_testing>
 ## Snapshot Testing for System Prompts
 
-Track changes to system prompts and context injection over time.
+Snapshot trusted instructions without app records. Verify runtime sections separately in the captured provider request, using the helpers from Context Parity Testing.
 
 ```typescript
 describe('System Prompt Stability', () => {
-  test('System prompt structure matches snapshot', async () => {
+  test('Trusted system prompt matches snapshot', async () => {
     const systemPrompt = await buildSystemPrompt();
-
-    // Extract structure (removing dynamic data)
-    const structure = systemPrompt
-      .replace(/id: \w+/g, 'id: [ID]')
-      .replace(/"[^"]+"/g, '"[TITLE]"')
-      .replace(/\d{4}-\d{2}-\d{2}/g, '[DATE]');
-
-    expect(structure).toMatchSnapshot();
+    expect(systemPrompt).toMatchSnapshot();
   });
 
-  test('All capability sections are present', async () => {
-    const systemPrompt = await buildSystemPrompt();
+  test('Capabilities and runtime sections use their intended channels', async () => {
+    const request = await captureProviderRequest(() =>
+      agent.chat("Summarize my available books and recent activity")
+    );
+    const trustedPrompt = readTrustedInstructions(request);
+    const runtimeData = readRuntimeDataMessages(request).join("\n");
 
-    const requiredSections = [
-      "Your Capabilities",
-      "Available Books",
-      "Recent Activity",
-    ];
-
-    for (const section of requiredSections) {
-      expect(systemPrompt).toContain(section);
+    expect(trustedPrompt).toBe(await buildSystemPrompt());
+    expect(trustedPrompt).toContain("Your Capabilities");
+    for (const section of ["Available Books", "Recent Activity"]) {
+      expect(runtimeData).toContain(section);
     }
   });
 });
@@ -536,7 +547,7 @@ Automated Tests:
 - [ ] "Can Agent Do It?" tests for each UI action
 - [ ] Location awareness tests ("write to my feed")
 - [ ] Parity tests (tool exists, documented in prompt)
-- [ ] Context parity tests (agent sees what UI shows)
+- [ ] Context parity tests inspect provider-bound runtime data and exclude app records from trusted instructions
 - [ ] End-to-end flow tests
 - [ ] Failure recovery tests
 

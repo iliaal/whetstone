@@ -91,3 +91,23 @@ test("Codex visibly skips SubagentStart without losing converted skills", () => 
     warning.mockRestore()
   }
 })
+
+test("OpenCode skips Whetstone queue-cleanup events with the recorder, but rejects them otherwise", () => {
+  const cleanup = [{ matcher: "Task|Agent", hooks: [{ type: "command" as const, command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/discard-subagent.sh"' }] }]
+  const warning = spyOn(console, "warn").mockImplementation(() => {})
+  try {
+    const plugin = pluginWithHooks({ hooks: {
+      PreToolUse: [{ matcher: "Task|Agent", hooks: [{ type: "command", command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh"' }] }],
+      PostToolUseFailure: cleanup,
+      PermissionDenied: cleanup,
+      SubagentStart: [{ hooks: [{ type: "command", command: "true" }] }],
+    } }, "whetstone")
+    expect(() => convertClaudeToOpenCode(plugin, options)).not.toThrow()
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining("PostToolUseFailure queue cleanup"))
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining("PermissionDenied queue cleanup"))
+  } finally {
+    warning.mockRestore()
+  }
+  expect(() => convertClaudeToOpenCode(pluginWithHooks({ hooks: { PostToolUseFailure: cleanup } }), options))
+    .toThrow("does not support Claude hook event PostToolUseFailure")
+})

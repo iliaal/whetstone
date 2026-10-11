@@ -198,15 +198,16 @@ Ship completions via the `completions` subcommand rather than pre-generated file
 
 ```rust
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 #[test]
 fn search_returns_json() {
-    Command::cargo_bin("myapp").unwrap()
+    let assertion = Command::cargo_bin("myapp").unwrap()
         .args(["search", "foo", "--json"])
         .assert()
-        .success()
-        .stdout(predicate::str::starts_with("["));
+        .success();
+    let document: serde_json::Value = serde_json::from_slice(&assertion.get_output().stdout)
+        .expect("stdout must contain one complete JSON document");
+    assert!(document.is_array(), "search results must be a JSON array");
 }
 ```
 

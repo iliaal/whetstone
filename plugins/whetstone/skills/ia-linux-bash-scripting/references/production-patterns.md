@@ -69,11 +69,11 @@ A linear script with irreversible steps (commit, push, tag, publish) must be re-
 - Moving a secret out of argv into a temp file closes the `ps` / `/proc/<pid>/cmdline` exposure and nothing else. Bash stores a multi-line command as **one** history entry, heredoc body included, and the single-line form `printf %s '<value>' >"$tmp"` puts the value on the command line too. Take it from stdin and let a JSON-aware writer escape it:
   ```bash
   umask 077; tmp=$(mktemp); trap 'rm -f -- "$tmp"' EXIT
-  read -rs SECRET                                   # stdin: never a command line, never in history
+  IFS= read -rs SECRET                              # stdin: never a command line, never in history
   printf '%s' "$SECRET" | jq -Rs '{Password:.}' >"$tmp"
   ```
   Bash's builtin `printf` sends the value through stdin, avoiding `jq --arg`'s process-argument exposure; `jq -Rs` escapes JSON characters. Use `mktemp` rather than a predictable path that an attacker can replace with a symlink.
-- Generate secret/token files with no trailing newline. `cmd >"$f"` keeps the `\n`, `$(cat "$f")` strips it, and CLI arguments of the `file://$f` shape transmit it verbatim, so one generated value installed into two consumers differs by one byte while both sides *display* the same characters and every constant-time comparison on the far side just returns false. Fix at the generator (`printf %s "$(cmd)" >"$f"`), never per reader, and verify with `wc -c < "$f"`
+- Generate secret/token files with no trailing newline. `cmd >"$f"` keeps the `\n`, `$(cat "$f")` strips it, and CLI arguments of the `file://$f` shape transmit it verbatim, so one generated value installed into two consumers differs by one byte while both sides *display* the same characters and every constant-time comparison on the far side just returns false. Capture and check the generator before opening the output file: `token=$(cmd) || exit "$?"; printf '%s' "${token}" >"${f}"`. Verify with `wc -c < "$f"`
 - Signal cleanup: use `trap 'cleanup; exit 130' INT` and `trap 'cleanup; exit 143' TERM` to report the conventional signal-specific exit status.
 - A script that shells out to a coding-agent or automation CLI with a prompt or task file whose content the script's author does not fully control (a ticket body, a generated plan, a file from another repo) must default to that CLI's most restrictive approval and execution mode. Never hardcode a full-auto or bypass flag. The task content is an indirect prompt-injection surface, so the execution mode is the last boundary the script can still enforce. Where an operator override is supported, validate the value against an explicit allowlist and reject anything unrecognized instead of passing it through:
   ```bash
@@ -102,7 +102,7 @@ die()   { error "$@"; exit 1; }
 |-----|-----|
 | `for f in $(ls)` | `for f in *; do` or `find -print0 \| while read` |
 | `local x=$(cmd)` | `local x; x=$(cmd)` preserves exit code |
-| `x=$(cmd)` then an `[[ -z $x ]]` fallback check | `x=$(cmd) \|\| true`: under `set -e` a failed `$()` in a bare assignment aborts the script there, so the fallback never runs (opposite of the `local` case: `local` masks the failure, a bare assignment propagates it) |
+| `x=$(cmd)` then an `[[ -z $x ]]` fallback check | Capture status explicitly: `rc=0; x=$(cmd) \|\| rc=$?`. Accept output or fall back only for documented expected statuses; propagate operational failures. Handle partial output according to the command's status contract. |
 | `x=$(cmd 2>/dev/null \|\| echo MISSING)` | Capture and test separately. A tool that prints to stdout *and* exits nonzero (some echo their unresolved argument before failing) contributes both strings, so `x` becomes `<junk>` + `MISSING` and every comparison built on it reports a spurious difference. The `2>/dev/null` that quiets the loop is also what hides the error line |
 | `echo "$data"` | `printf '%s\n' "$data"` |
 | `cat file \| grep` | `grep pat file` |

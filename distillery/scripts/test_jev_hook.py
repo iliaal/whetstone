@@ -83,6 +83,8 @@ def test_opt_in_adds_semantic_match_to_starting_context(tmp_path):
     assert result["hookEventName"] == "SubagentStart"
     assert "ia-debugging/SKILL.md" in result["additionalContext"]
     assert "Jev suggests" in result["additionalContext"]
+    assert "confirm each applies to your actual task" in result["additionalContext"]
+    assert "confirm each applies to your actual task" in result["additionalContext"]
     assert prompt not in result["additionalContext"]
     request = json.loads(log.read_text())
     assert request["state"] == {"request": prompt, "already_selected": []}
@@ -146,7 +148,7 @@ def test_threshold_is_configurable_and_regex_selections_remain_first(tmp_path):
     env["WHETSTONE_JEV_THRESHOLD"] = "0.90"
     updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["additionalContext"]
     assert updated.index("ia-python-services/SKILL.md") < updated.index("ia-debugging/SKILL.md")
-    assert "Additional skill suggestions (Jev; check applicability before following):" in updated
+    assert "Additional skill suggestions (Jev; check applicability against your actual task before following):" in updated
     request = json.loads(log.read_text())
     assert "ia-python-services" not in request["questions"]
     assert request["state"]["already_selected"] == ["ia-python-services"]

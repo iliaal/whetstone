@@ -79,6 +79,36 @@ def test_explicit_python_task_survives_js_repository_markers(tmp_path, prompt):
     assert "ia-python-services/SKILL.md" in result["hookSpecificOutput"]["additionalContext"]
 
 
+@pytest.mark.parametrize("trigger_first", [True, False])
+def test_large_prompt_matches_at_either_end(tmp_path, trigger_first):
+    trigger = "Implement a Python CLI service"
+    padding = "x" * 160_000
+    prompt = f"{trigger}\n{padding}" if trigger_first else f"{padding}\n{trigger}"
+    _, result = run_hook(tmp_path, prompt)
+    assert result is not None
+    assert "ia-python-services/SKILL.md" in result["hookSpecificOutput"]["additionalContext"]
+
+
+@pytest.mark.parametrize(("marker", "trigger", "excluded"), [
+    ("Inspect plugins/whetstone/skills/ia-debugging/SKILL.md", "Fix the bug", "ia-debugging"),
+    ("Inspect this C# service", "Fix a segfault", "ia-c-systems"),
+])
+def test_large_prompt_preserves_exclusions(tmp_path, marker, trigger, excluded):
+    _, result = run_hook(tmp_path, marker + "\n" + "x" * 160_000 + "\n" + trigger)
+    context = result["hookSpecificOutput"]["additionalContext"] if result else ""
+    assert f"{excluded}/SKILL.md" not in context
+
+
+def test_queue_suggestions_require_actual_task_check(tmp_path):
+    _, result = run_hook(tmp_path, "Implement a Python CLI service")
+    context = result["hookSpecificOutput"]["additionalContext"]
+    assert context.startswith("BEFORE STARTING: These skill files matched your task description")
+    assert "confirm each applies to your actual task" in context
+    assert "Read and follow these skill files" not in context
+    assert distiller._extract_injected_skills(context) == [{"skill": "ia-python-services", "version": None}]
+    assert distiller._strip_injection_header(context + "\nActual task") == "Actual task"
+
+
 @pytest.mark.parametrize("tool_input", [None, [], {"prompt": []}, {"prompt": "task", "subagent_type": []}])
 def test_malformed_input_declines_without_rewrite(tmp_path, tool_input):
     _, result = run_hook(tmp_path, "task", tool_input=tool_input)

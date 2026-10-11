@@ -73,7 +73,7 @@ When verified behavior contradicts the finding's premise, drop the finding. Repo
 - Unchecked nullable access (`?.` chains that silently swallow nulls)
 - Missing `key` props in mapped JSX
 - Effects without cleanup (subscriptions, timers, event listeners)
-- `typeof x === "number"` used as a validity check: it admits `NaN`, `Infinity`, and finite-but-unusable magnitudes. Narrow to the range the consumer accepts (`Number.isFinite`, plus an explicit bound where one exists); `new Date(1e300).toISOString()` throws `RangeError`, and a bare `z.number()` needs `.finite()`
+- `typeof x === "number"` used as a validity check: it admits `NaN`, `Infinity`, and finite-but-unusable magnitudes. Narrow to the range the consumer accepts (`Number.isFinite`, plus an explicit bound where one exists); `new Date(1e300).toISOString()` throws `RangeError`. In Zod 3, add `.finite()` to `z.number()` when finite values are required; [Zod 4 rejects infinities by default](https://zod.dev/v4/changelog#znumber). Enforce consumer-specific magnitude bounds in either version.
 - ISO date-only strings such as `new Date('2026-07-04')` parse at UTC midnight; ISO date-time strings without an offset parse in local time. Local formatting west of UTC can show July 3 for that date-only value. Preserve calendar dates as strings, or format their UTC parse with `timeZone: 'UTC'`.
 
 ## Python (.py, .pyi)
@@ -103,7 +103,7 @@ When verified behavior contradicts the finding's premise, drop the finding. Repo
 - `cd` without error check: use `cd dir || exit 1`
 - Hardcoded paths that should be variables
 - Deploy credentials in unprotected or unmasked CI variables, or deploy jobs allowed on unprotected branches/tags. Protect and mask deploy variables, and restrict deployment to protected refs.
-- Pipe-to-shell installers (`curl … | sh`, `irm … | iex`): flag only in jobs or image builds that hold secrets. Use the package manager or a pinned release with a verified checksum; apply the fail-open integrity check in [security-patterns.md](./security-patterns.md).
+- A remote installer piped directly into a shell interpreter: flag only in jobs or image builds that hold secrets. Use the package manager or a pinned release with a verified checksum; apply the fail-open integrity check in [security-patterns.md](./security-patterns.md).
 - TLS verification bypasses in CLI/CI: `curl -k`/`--insecure`, `wget --no-check-certificate`, `kubectl --insecure-skip-tls-verify`, `git -c http.sslVerify=false`/`GIT_SSL_NO_VERIFY`, `pip --trusted-host`, or `npm config set strict-ssl false`. Supply the intended CA instead, using the tool's CA option such as `--cacert` or `--certificate-authority`.
 
 ## GitHub Actions (.github/workflows/*.yml)
@@ -116,7 +116,7 @@ Reviews the *reviewed repository's* CI, not the harness the review runs under.
 - `permissions: write-all`, or no `permissions:` key at all so the job inherits the repository default
 - Jobs with no `timeout-minutes`: a hung job holds a runner until the 6-hour ceiling
 - Misspelled action inputs (`fetch-detph`, `fetch_depth`): unknown `with:` keys are **silently ignored**, not errors, so the step runs with the default and the intent is lost
-- `actions/upload-artifact` of a directory containing `.git/` ships `.git/config` with the persisted `GITHUB_TOKEN` (`actions/checkout`'s default is `persist-credentials: true`), and anyone who can download the artifact gets the token for its lifetime
+- Before reporting a token leak through `actions/upload-artifact`, verify both the credential location for the pinned `actions/checkout` version and its inclusion in the uploaded files or prebuilt archive. [Upload-artifact v4.4.0 and later exclude hidden files by default](https://github.com/actions/upload-artifact/releases/tag/v4.4.0); inspect older versions, `include-hidden-files: true`, and archive contents. [Checkout v6 stores persisted credentials under `RUNNER_TEMP`](https://github.com/actions/checkout/blob/v6/README.md), rather than directly in `.git/config`; check the actual persistence configuration and upload paths. Report exposure only when the artifact includes a usable credential, with impact bounded by its permissions and lifetime.
 - `permissions: id-token: write` at workflow level lets any job on any ref, including a fork PR under `pull_request_target`, mint an OIDC token that the cloud-side trust policy may accept. Scope the permission to the deploy job alone and pin the trust policy's subject to a specific ref (e.g. `ref:refs/heads/main`)
 - `${{ github.event.* }}` interpolated inside `actions/github-script`'s `script:` is the same injection as in `run:`; pass the value through `env:` and read it back as `process.env.X`
 - `issue_comment` command matching without a trusted-author gate (`comment.author_association` restricted to `OWNER`/`MEMBER`/`COLLABORATOR`, or an explicit permission check): inspect privileged commands, PR-head/merge checkouts, and comment interpolation. Author approval alone does not make the checked-out PR code trustworthy.
