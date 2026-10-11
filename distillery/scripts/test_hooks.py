@@ -2,32 +2,59 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import distiller
 import pytest
 
 
-def run_hook(tmp_path, prompt, **fields):
+def run_hook(tmp_path, prompt, *, env=None, **fields):
     payload = {
+        "session_id": "hook-test",
+        "tool_use_id": "tool-test",
         "tool_name": "Agent",
         "hook_event_name": "PreToolUse",
         "permission_mode": "default",
         "tool_input": {"prompt": prompt, "subagent_type": "general-purpose"},
         **fields,
     }
-    process = subprocess.run(
-        ["bash", str(distiller.INJECT_HOOK_PATH)],
-        input=json.dumps(payload), capture_output=True, text=True, cwd=tmp_path,
-        timeout=5, env={**os.environ, "WHETSTONE_JEV": "0"}, check=False,
-    )
-    assert process.returncode == 0, process.stderr
-    return payload, json.loads(process.stdout) if process.stdout else None
+    with tempfile.TemporaryDirectory(dir=tmp_path) as queue_tmp:
+        hook_env = {**(env if env is not None else os.environ), "TMPDIR": queue_tmp}
+        if env is None:
+            hook_env["WHETSTONE_JEV"] = "0"
+        process = subprocess.run(
+            ["bash", str(distiller.INJECT_HOOK_PATH)],
+            input=json.dumps(payload), capture_output=True, text=True, cwd=tmp_path,
+            timeout=5, env=hook_env, check=False,
+        )
+        assert process.returncode == 0, process.stderr
+        assert process.stdout == ""
+        tool_input = payload.get("tool_input")
+        agent_type = "general-purpose"
+        if isinstance(tool_input, dict):
+            agent_type = tool_input.get("subagent_type", "general-purpose")
+            if isinstance(tool_input.get("prompt"), str) and isinstance(agent_type, str):
+                entries = list(Path(queue_tmp).rglob("*.json"))
+                assert len(entries) == 1
+                assert json.loads(entries[0].read_text())["prompt"] == tool_input["prompt"]
+        process = subprocess.run(
+            ["bash", str(distiller.SUBAGENT_START_HOOK_PATH)],
+            input=json.dumps({
+                "session_id": payload["session_id"], "agent_id": "agent-test",
+                "agent_type": agent_type, "hook_event_name": "SubagentStart",
+                "cwd": str(tmp_path),
+            }),
+            capture_output=True, text=True, cwd=tmp_path,
+            timeout=5, env=hook_env, check=False,
+        )
+        assert process.returncode == 0, process.stderr
+        return payload, json.loads(process.stdout) if process.stdout else None
 
 
 @pytest.mark.parametrize("mode", ["default", "bypassPermissions", "plan"])
 @pytest.mark.parametrize("suffix", ["", "\n", "\n\n", "\u0000\n"])
-def test_preserves_arguments_and_permission_policy(tmp_path, mode, suffix):
+def test_records_exact_prompt_without_emitting_a_tool_decision(tmp_path, mode, suffix):
     original = {
         "prompt": "Fix the bug in Python CLI service\nKeep the literal $value and `quoted text`." + suffix,
         "subagent_type": "general-purpose", "model": "sonnet",
@@ -35,13 +62,10 @@ def test_preserves_arguments_and_permission_policy(tmp_path, mode, suffix):
     }
     _, result = run_hook(tmp_path, original["prompt"], tool_input=original, permission_mode=mode)
     output = result["hookSpecificOutput"]
-    assert "permissionDecision" not in output
-    updated = output["updatedInput"]
-    assert updated["prompt"].endswith("\n\n" + original["prompt"])
-    assert "ia-python-services/SKILL.md" in updated["prompt"]
-    assert {k: v for k, v in updated.items() if k != "prompt"} == {
-        k: v for k, v in original.items() if k != "prompt"
-    }
+    assert set(output) == {"hookEventName", "additionalContext"}
+    assert output["hookEventName"] == "SubagentStart"
+    assert "ia-python-services/SKILL.md" in output["additionalContext"]
+    assert original["prompt"] not in output["additionalContext"]
 
 
 @pytest.mark.parametrize("prompt", [
@@ -52,7 +76,7 @@ def test_preserves_arguments_and_permission_policy(tmp_path, mode, suffix):
 def test_explicit_python_task_survives_js_repository_markers(tmp_path, prompt):
     (tmp_path / "package.json").write_text("{}")
     _, result = run_hook(tmp_path, prompt)
-    assert "ia-python-services/SKILL.md" in result["hookSpecificOutput"]["updatedInput"]["prompt"]
+    assert "ia-python-services/SKILL.md" in result["hookSpecificOutput"]["additionalContext"]
 
 
 @pytest.mark.parametrize("tool_input", [None, [], {"prompt": []}, {"prompt": "task", "subagent_type": []}])
@@ -61,7 +85,10 @@ def test_malformed_input_declines_without_rewrite(tmp_path, tool_input):
     assert result is None
 
 
-@pytest.mark.parametrize("damage", ["invalid-json", "missing-fields", "altered-prompt", "invalid-event"])
+@pytest.mark.parametrize("damage", [
+    "invalid-json", "missing-fields", "invalid-context", "oversized-context",
+    "invalid-event", "unexpected-field",
+])
 def test_semantic_runner_rejects_broken_wire_output(tmp_path, monkeypatch, damage):
     prompt = "Fix the bug in Python CLI service"
     _, good = run_hook(tmp_path, prompt)
@@ -70,17 +97,45 @@ def test_semantic_runner_rejects_broken_wire_output(tmp_path, monkeypatch, damag
     else:
         hook = good["hookSpecificOutput"]
         if damage == "missing-fields":
-            del hook["updatedInput"]["subagent_type"]
-        elif damage == "altered-prompt":
-            hook["updatedInput"]["prompt"] += "discarded user requirement"
-        else:
+            del hook["additionalContext"]
+        elif damage == "invalid-context":
+            hook["additionalContext"] = []
+        elif damage == "oversized-context":
+            hook["additionalContext"] += "x" * 10001
+        elif damage == "unexpected-field":
+            hook["permissionDecision"] = "allow"
+        elif damage == "invalid-event":
             hook["hookEventName"] = "PostToolUse"
         output = json.dumps(good)
     stub = tmp_path / "broken-hook.sh"
     stub.write_text("cat <<'OUTPUT'\n" + output + "\nOUTPUT\n")
-    monkeypatch.setattr(distiller, "INJECT_HOOK_PATH", stub)
+    monkeypatch.setattr(distiller, "SUBAGENT_START_HOOK_PATH", stub)
     fixture = tmp_path / "fixtures.jsonl"
     fixture.write_text(json.dumps({"prompt": prompt, "should_trigger": [], "should_not_trigger": []}) + "\n")
+    result = distiller.test_semantic(fixtures_path=fixture)
+    assert result["all_passed"] is False
+    assert result["summary"]["errors"] == 1
+
+
+@pytest.mark.parametrize("output", [" ", '{"hookSpecificOutput":{}}'])
+def test_semantic_runner_rejects_any_recorder_output(tmp_path, monkeypatch, output):
+    stub = tmp_path / "noisy-recorder.sh"
+    stub.write_text("cat <<'OUTPUT'\n" + output + "\nOUTPUT\n")
+    monkeypatch.setattr(distiller, "INJECT_HOOK_PATH", stub)
+    fixture = tmp_path / "fixtures.jsonl"
+    fixture.write_text(json.dumps({"prompt": "A task", "should_trigger": []}) + "\n")
+    result = distiller.test_semantic(fixtures_path=fixture)
+    assert result["all_passed"] is False
+    assert result["summary"]["errors"] == 1
+
+
+@pytest.mark.parametrize("hook_name", ["INJECT_HOOK_PATH", "SUBAGENT_START_HOOK_PATH"])
+def test_semantic_runner_rejects_crashing_hooks(tmp_path, monkeypatch, hook_name):
+    stub = tmp_path / "crashing-hook.sh"
+    stub.write_text("exit 1\n")
+    monkeypatch.setattr(distiller, hook_name, stub)
+    fixture = tmp_path / "fixtures.jsonl"
+    fixture.write_text(json.dumps({"prompt": "A task", "should_trigger": []}) + "\n")
     result = distiller.test_semantic(fixtures_path=fixture)
     assert result["all_passed"] is False
     assert result["summary"]["errors"] == 1
@@ -89,13 +144,14 @@ def test_semantic_runner_rejects_broken_wire_output(tmp_path, monkeypatch, damag
 def test_semantic_runner_uses_wire_not_diagnostic_log(tmp_path, monkeypatch):
     stub = tmp_path / "silent-hook.sh"
     stub.write_text('if [ -n "${TEST_INJECTION_LOG:-}" ]; then printf "ia-debugging\\n" >>"$TEST_INJECTION_LOG"; fi\n')
-    monkeypatch.setattr(distiller, "INJECT_HOOK_PATH", stub)
+    monkeypatch.setattr(distiller, "SUBAGENT_START_HOOK_PATH", stub)
     monkeypatch.setenv("TEST_INJECTION_LOG", str(tmp_path / "diagnostic.log"))
     fixture = tmp_path / "fixtures.jsonl"
     fixture.write_text(json.dumps({"prompt": "Fix the bug", "should_trigger": ["ia-debugging"]}) + "\n")
     result = distiller.test_semantic(fixtures_path=fixture)
     assert result["all_passed"] is False
     assert result["results"][0]["missing"] == ["ia-debugging"]
+    assert (tmp_path / "diagnostic.log").read_text() == "ia-debugging\n"
 
 
 def test_cap_and_order_are_stable(tmp_path):
@@ -103,7 +159,7 @@ def test_cap_and_order_are_stable(tmp_path):
     _, first = run_hook(tmp_path, prompt)
     _, second = run_hook(tmp_path, prompt)
     assert first == second
-    paths = [line for line in first["hookSpecificOutput"]["updatedInput"]["prompt"].splitlines() if line.startswith("- ")]
+    paths = [line for line in first["hookSpecificOutput"]["additionalContext"].splitlines() if line.startswith("- ")]
     assert len(paths) == 5
     assert len(set(paths)) == 5
     assert all(Path(line[2:]).is_file() for line in paths)
@@ -124,9 +180,5 @@ def test_semantic_runner_never_calls_opted_in_jev(tmp_path, monkeypatch):
     result = distiller.test_semantic(fixtures_path=fixture)
     assert result["all_passed"] is True
     assert not marker.exists()
-    subprocess.run(
-        ["bash", str(distiller.INJECT_HOOK_PATH)],
-        input=json.dumps({"tool_input": {"prompt": "Fix the bug"}}), text=True,
-        capture_output=True, env=os.environ.copy(), timeout=5, check=True,
-    )
+    run_hook(tmp_path, "Fix the bug", env=os.environ.copy())
     assert marker.exists(), "Positive control must observe the opted-in CLI invocation"

@@ -137,7 +137,7 @@ def _is_synthetic_session(project, task_input=""):
 
 # Plugin-maintenance context. A skill injected into a sync/audit/distillery task
 # is a misfire, not usage, and such sessions dominate this repo's harvested data.
-# Mirrors the IS_MAINT_CONTEXT detector in plugins/whetstone/hooks/inject-skills.sh;
+# Mirrors the IS_MAINT_CONTEXT detector in plugins/whetstone/hooks/match-skills.sh;
 # keep the two in sync.
 _MAINTENANCE_TASK_PATTERN = _re.compile(
     r"plugins/whetstone/(?:skills|agents|commands)/"
@@ -155,7 +155,7 @@ _MAINTENANCE_TASK_PATTERN = _re.compile(
 def _is_maintenance_task(task_input):
     """True if the task is plugin-maintenance (sync/audit/distillery), where any
     skill injection is a misfire rather than organic usage. See
-    inject-skills.sh:50 for the canonical definition this mirrors."""
+    match-skills.sh for the canonical definition this mirrors."""
     return bool(task_input and _MAINTENANCE_TASK_PATTERN.search(task_input))
 
 # Secret patterns — compiled once, used to scrub content before writing eval data.
@@ -1534,7 +1534,7 @@ def _load_skill_negative(name, patterns_file=None):
     """Extract the suppression regex for a skill from skill-patterns.sh, or None.
 
     SKILL_NEGATIVE is optional and most skills have no entry. A skill fires when
-    SKILL_PATTERNS matches AND SKILL_NEGATIVE does not, mirroring inject-skills.sh.
+    SKILL_PATTERNS matches AND SKILL_NEGATIVE does not, mirroring match-skills.sh.
     """
     import re as _re
     path = Path(patterns_file) if patterns_file else SKILL_PATTERNS_DEFAULT
@@ -2341,19 +2341,20 @@ def test_triggers(skill_filter=None, fixtures_dir=None):
 
 SEMANTIC_FIXTURES_PATH = DISTILLERY_DIR / "tests" / "fixtures" / "semantic-triggers.jsonl"
 INJECT_HOOK_PATH = PLUGIN_DIR / "hooks" / "inject-skills.sh"
+SUBAGENT_START_HOOK_PATH = PLUGIN_DIR / "hooks" / "subagent-start.sh"
 
 
 def test_semantic(max_tests=None, fixtures_path=None):
     """Deterministic skill-injection hook test -- no LLM, no API cost.
 
-    Drives the real PreToolUse hook (inject-skills.sh) with a synthesized Task
-    tool input for each fixture and validates the emitted updatedInput protocol.
-    Exercise tier bucketing, maintenance suppression, the 5-skill cap, and field
-    preservation, which the Python regex test (test-triggers) does not. Each
-    fixture runs in an isolated cwd with its optional project_files markers.
+    Drives the silent PreToolUse recorder and then SubagentStart for each fixture,
+    validating additionalContext from the real queued prompt. Exercises tier
+    bucketing, maintenance suppression, and the 5-skill cap, which the Python
+    regex test (test-triggers) does not. Each fixture runs in an isolated cwd and
+    TMPDIR with its optional project_files markers.
 
     Args:
-        max_tests: limit number of fixtures (each runs in <15ms; cost-free)
+        max_tests: limit number of fixtures (offline; no API cost)
         fixtures_path: override path to semantic-triggers.jsonl
 
     Returns dict with per-test results and overall pass/fail.
@@ -2364,9 +2365,10 @@ def test_semantic(max_tests=None, fixtures_path=None):
     if not fpath.exists():
         print(f"Error: fixtures file not found: {fpath}", file=sys.stderr)
         sys.exit(1)
-    if not INJECT_HOOK_PATH.exists():
-        print(f"Error: inject-skills hook not found: {INJECT_HOOK_PATH}", file=sys.stderr)
-        sys.exit(1)
+    for hook_path in (INJECT_HOOK_PATH, SUBAGENT_START_HOOK_PATH):
+        if not hook_path.exists():
+            print(f"Error: skill-injection hook not found: {hook_path}", file=sys.stderr)
+            sys.exit(1)
 
     fixtures = []
     with open(fpath) as f:
@@ -2404,6 +2406,8 @@ def test_semantic(max_tests=None, fixtures_path=None):
 
             fixture_cwd = Path(neutral_cwd) / str(i)
             fixture_cwd.mkdir()
+            fixture_tmp = fixture_cwd / "hook-tmp"
+            fixture_tmp.mkdir(mode=0o700)
             for marker in fixture.get("project_files", []):
                 marker_path = fixture_cwd / marker
                 if Path(marker).is_absolute() or ".." in Path(marker).parts:
@@ -2417,6 +2421,8 @@ def test_semantic(max_tests=None, fixtures_path=None):
                     "prompt": prompt,
                 }
                 hook_input = json.dumps({
+                    "session_id": f"semantic-{i}",
+                    "tool_use_id": f"tool-{i}",
                     "tool_input": original_input,
                     "tool_name": fixture.get("tool_name", "Agent"),
                     "hook_event_name": "PreToolUse",
@@ -2426,12 +2432,27 @@ def test_semantic(max_tests=None, fixtures_path=None):
                 proc = subprocess.run(
                     ["bash", str(INJECT_HOOK_PATH)],
                     input=hook_input, capture_output=True, text=True,
-                    timeout=15, cwd=fixture_cwd, env={**os.environ, "WHETSTONE_JEV": "0"},
+                    timeout=15, cwd=fixture_cwd,
+                    env={**os.environ, "WHETSTONE_JEV": "0", "TMPDIR": str(fixture_tmp)},
                 )
+                if proc.returncode != 0:
+                    raise ValueError(f"PreToolUse recorder exited {proc.returncode}: {proc.stderr[-500:]}")
+                if proc.stdout:
+                    raise ValueError("PreToolUse recorder must emit no stdout")
 
-                # A non-zero hook exit is an error, NOT "declined to inject".
-                # Conflating the two makes a crashing hook pass every negative
-                # fixture (empty log looks like a clean decline).
+                start_input = json.dumps({
+                    "session_id": f"semantic-{i}",
+                    "agent_id": f"agent-{i}",
+                    "agent_type": original_input["subagent_type"],
+                    "hook_event_name": "SubagentStart",
+                    "cwd": str(fixture_cwd),
+                })
+                proc = subprocess.run(
+                    ["bash", str(SUBAGENT_START_HOOK_PATH)],
+                    input=start_input, capture_output=True, text=True,
+                    timeout=15, cwd=fixture_cwd,
+                    env={**os.environ, "WHETSTONE_JEV": "0", "TMPDIR": str(fixture_tmp)},
+                )
                 if proc.returncode != 0:
                     all_pass = False
                     results.append({
@@ -2447,24 +2468,17 @@ def test_semantic(max_tests=None, fixtures_path=None):
                     continue
 
                 injected = set()
-                if proc.stdout.strip():
+                if proc.stdout:
                     envelope = json.loads(proc.stdout)
                     output = envelope["hookSpecificOutput"]
-                    if output["hookEventName"] != "PreToolUse":
+                    if output["hookEventName"] != "SubagentStart":
                         raise ValueError("Wrong hook event")
-                    updated = output["updatedInput"]
-                    if not isinstance(updated, dict):
-                        raise ValueError("updatedInput must be an object")
-                    remaining = {k: v for k, v in updated.items() if k != "prompt"}
-                    expected = {k: v for k, v in original_input.items() if k != "prompt"}
-                    if remaining != expected:
-                        raise ValueError("Hook changed non-prompt tool fields")
-                    modified = updated["prompt"]
-                    suffix = "\n\n" + prompt
-                    if not isinstance(modified, str) or not modified.endswith(suffix):
-                        raise ValueError("Hook did not preserve the original prompt")
-                    header = modified[:-len(suffix)]
-                    paths = [line[2:] for line in header.splitlines() if line.startswith("- ")]
+                    if set(output) != {"hookEventName", "additionalContext"}:
+                        raise ValueError("Unexpected SubagentStart output fields")
+                    context = output["additionalContext"]
+                    if not isinstance(context, str) or len(context) > 10000:
+                        raise ValueError("additionalContext must be a string of at most 10000 characters")
+                    paths = [line[2:] for line in context.splitlines() if line.startswith("- ")]
                     if not paths:
                         raise ValueError("Injection contains no skill paths")
                     for path_text in paths:
@@ -6009,7 +6023,7 @@ def build_parser():
     p_tt.add_argument("--fixtures-dir", default=None, help="Override fixtures directory")
 
     # test-semantic
-    p_ts = sub.add_parser("test-semantic", help="Run skill-injection hook tests (deterministic, drives inject-skills.sh; no API cost)")
+    p_ts = sub.add_parser("test-semantic", help="Run skill-injection hook tests (deterministic, drives PreToolUse and SubagentStart; no API cost)")
     p_ts.add_argument("--max-tests", type=int, default=None, help="Limit number of tests")
     p_ts.add_argument("--fixtures", default=None, help="Path to semantic-triggers.jsonl")
 

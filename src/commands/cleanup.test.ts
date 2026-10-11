@@ -61,11 +61,10 @@ test.each([false, true])("project cleanup preserves user artifacts (customized p
     const installed = await import(pathToFileURL(pluginFile).href)
     const hooks = await installed.default({ directory: project })
     const args = { prompt: "Debug the failing Python test and find its root cause", subagent_type: "general" }
+    const original = { ...args }
     await hooks["tool.execute.before"]({ tool: "task", sessionID: "cleanup-session", callID: "call-1" }, { args })
-    expect(args.prompt).toContain("BEFORE STARTING:")
-    for (const match of args.prompt.matchAll(/^- (.+\/SKILL\.md)$/gm)) {
-      expect(await readFile(match[1], "utf8")).toContain("name:")
-    }
+    expect(args).toEqual(original)
+    expect(await readFile(path.join(project, ".opencode/.whetstone/whetstone/plugin/skills/ia-debugging/SKILL.md"), "utf8")).toContain("name: ia-debugging")
   } else {
     expect(await lstat(pluginFile).catch(() => null)).toBeNull()
     expect(await lstat(path.join(project, ".opencode/.whetstone/whetstone")).catch(() => null)).toBeNull()

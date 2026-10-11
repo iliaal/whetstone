@@ -134,17 +134,33 @@ function convertMcp(servers: Record<string, ClaudeMcpServer>): Record<string, Op
 
 function convertHooks(hooks: ClaudeHooks, pluginName: string) {
   if (!/^[a-z0-9][a-z0-9_-]*$/i.test(pluginName)) throw new Error("Invalid plugin name for hook installation")
+  const supported: ClaudeHooks = { hooks: {} }
+  const skipRecorder = pluginName === "whetstone" && Boolean(hooks.hooks.SubagentStart?.length)
   for (const [event, matchers] of Object.entries(hooks.hooks)) {
+    if (event === "SubagentStart") {
+      console.warn("Warning: skipping Claude SubagentStart hooks: the OpenCode adapter has no subagent-start context equivalent.")
+      continue
+    }
     if (event !== "PreToolUse" && event !== "PostToolUse") {
       throw new Error(`OpenCode conversion does not support Claude hook event ${event}`)
     }
     for (const matcher of matchers) {
       if (matcher.matcher && matcher.matcher !== "*") new RegExp(matcher.matcher)
+      const retained = []
       for (const hook of matcher.hooks) {
         if (hook.type !== "command") throw new Error(`OpenCode conversion does not support ${hook.type} hooks`)
+        if (skipRecorder && event === "PreToolUse" && hook.command === 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh"') {
+          console.warn("Warning: skipping Whetstone's paired skill recorder: automatic per-task skill context is unavailable in OpenCode; prompts will not be queued.")
+          continue
+        }
         if (hook.timeout !== undefined && (!Number.isFinite(hook.timeout) || hook.timeout <= 0)) {
           throw new Error("Hook timeout must be a positive number")
         }
+        retained.push(hook)
+      }
+      if (retained.length > 0) {
+        supported.hooks[event] ??= []
+        supported.hooks[event].push({ ...matcher, hooks: retained })
       }
     }
   }
@@ -156,7 +172,7 @@ import { createHooks } from ${JSON.stringify(`${supportPath}/opencode-hooks.ts`)
 
 export default async function ({ directory }: { directory: string }) {
   const root = fileURLToPath(new URL(${JSON.stringify(`${supportPath}/plugin/`)}, import.meta.url))
-  return createHooks(${JSON.stringify(hooks)}, root, directory)
+  return createHooks(${JSON.stringify(supported)}, root, directory)
 }`,
   }
 }

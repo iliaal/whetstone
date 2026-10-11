@@ -40,7 +40,7 @@ whetstone/
         │       ├── SKILL.md        # Skill content
         │       ├── references/     # Optional supplementary docs
         │       └── scripts/        # Optional bundled scripts
-        ├── hooks/               # 1 hook (inject-skills into subagents)
+        ├── hooks/               # Record tasks, then add skills to subagent starting context
         └── README.md            # Plugin documentation
 ```
 
