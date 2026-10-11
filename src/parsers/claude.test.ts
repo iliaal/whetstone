@@ -157,3 +157,41 @@ test("loadClaudePlugin preserves a bare MCP server named mcpServers", async () =
 
   expect((await loadClaudePlugin(root)).mcpServers).toEqual(servers)
 })
+
+for (const component of ["agents", "commands"] as const) {
+  for (const form of ["file", "mixed"] as const) {
+    test(`loadClaudePlugin accepts ${form} ${component} paths`, async () => {
+      const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+      tempRoots.push(root)
+      await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+      const customFile = `custom-${component}/ia-custom.md`
+      const paths = form === "file" ? `./${customFile}` : [
+        `./${customFile}`, customFile, `custom-${component}`,
+        `missing-${component}.md`, `custom-${component}/notes.txt`,
+        `custom-${component}/references/template.md`,
+      ]
+      await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({
+        name: "demo", [component]: paths,
+      }))
+      for (const file of [`${component}/ia-default.md`, customFile]) {
+        await mkdir(path.dirname(path.join(root, file)), { recursive: true })
+        await writeFile(path.join(root, file), `---\ndescription: Custom component\n---\nInstructions for ${file}.\n`)
+      }
+      await writeFile(path.join(root, `custom-${component}/notes.txt`), "Not a component.\n")
+      // Command support documents remain excluded even when their parent is also listed.
+      await mkdir(path.join(root, `custom-${component}/references`))
+      await writeFile(path.join(root, `custom-${component}/references/template.md`), "Support only.\n")
+
+      const plugin = await loadClaudePlugin(root)
+      const loaded = plugin[component]
+      const expected = [`${component}/ia-default.md`, customFile]
+      if (component === "agents" && form === "mixed") {
+        expected.push(`custom-${component}/references/template.md`)
+      }
+      expect(loaded.map((item) => path.relative(root, item.sourcePath))).toEqual(expected)
+      expect(loaded[1].name).toBe("ia-custom")
+      expect(loaded[1].description).toBe("Custom component")
+      expect(loaded[1].body).toBe(`Instructions for ${customFile}.`)
+    })
+  }
+}
