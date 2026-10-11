@@ -44,13 +44,15 @@ fi
 mcp_count=$(jq '.mcpServers | length' "$PLUGIN_JSON")
 
 # Build optional fragments for descriptions
+plural() { [[ "$1" -eq 1 ]] && printf '%s %s' "$1" "$2" || printf '%s %ss' "$1" "$2"; }
 hook_fragment=""
-[[ "$hook_count" -gt 0 ]] && hook_fragment="${hook_count} hook, "
+[[ "$hook_count" -gt 0 ]] && hook_fragment="$(plural "$hook_count" hook), "
+mcp_fragment=$(plural "$mcp_count" "MCP server")
 
 # --- Render the canonical description strings (single source of truth) ---
 
-desc="AI-powered development tools. ${agent_count} agents, ${command_count} commands, ${skill_count} skills, ${hook_fragment}${mcp_count} MCP server for code review, research, design, and workflow automation."
-mkt_desc="AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes ${agent_count} specialized agents, ${command_count} commands, ${skill_count} skills, and ${hook_fragment}${mcp_count} MCP server."
+desc="AI-powered development tools. ${agent_count} agents, ${command_count} commands, ${skill_count} skills, ${hook_fragment}${mcp_fragment} for code review, research, design, and workflow automation."
+mkt_desc="AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes ${agent_count} specialized agents, ${command_count} commands, ${skill_count} skills, and ${hook_fragment}${mcp_fragment}."
 
 # --- Mode: check (drift gate, no writes) ---
 
