@@ -5,6 +5,41 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2026-10-11
+
+Minor: skill injection moved from rewriting subagent prompts to adding context at subagent start, which clears the plugin directory's `HOOK_GRANTS_PERMISSION` finding. A full reference-repo sync and a scoped audit corrected about 200 recipes, rules, and examples. 20 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands; the hook configuration now declares 4 hook entries.
+
+### Added
+
+- `ia-agent-native-architecture` gained an intervention-evaluation reference for testing whether a hook, prompt rule, or skill changes outcomes: off, real, and placebo arms; pre-registered sample size; paired exact tests; and controls the intervention cannot reach.
+- `ia-frontend-design` gained an inline SVG reference covering per-instance IDs, token inheritance, decorative accessibility, and `preserveAspectRatio` choices.
+- `ia-code-review` gained review profiles for agent packages (`SKILL.md`, hooks, `.mcp.json`, settings) and for MCP server package pins.
+- The plugin package now ships an icon and a privacy policy, and the README lists every data destination.
+
+### Changed
+
+- The skill-injection hook no longer edits `Agent` or `Task` input. A `PreToolUse` recorder queues the subagent prompt privately and prints nothing; `SubagentStart` claims the matching entry and adds the matched skills as context the subagent checks against its actual task. Failed or denied calls prune their queue entry, and the OpenCode and Codex converters skip the new events with a visible note.
+- `ia-code-review` security guidance now pins SSRF connections to validated addresses and rechecks every redirect, parses URLs before redirect checks, scopes XXE findings to parser versions and enabling flags, and adds rows for OAuth callbacks, forwarded-header trust, localhost token authentication, prototype pollution, script-context JSON, and GitHub Actions comment, artifact, cache, and runner risks. Repository rationale no longer suppresses a finding without caller authority.
+- `ia-agent-native-architecture` replaced all Swift examples with TypeScript and corrected hook semantics, prompt and agent hooks, MCP long-running calls, mobile cost caps, cache-preserving context refreshes, and trust tiers for user messages.
+- `ia-writing` now checks that numbers, conditions, caveats, and claim certainty survive an edit, and no longer recommends inventing sources, actors, or voice.
+- `ia-frontend-design` and `ia-react-frontend` dropped fabricated window chrome and round-number heuristics, added reference-fidelity work from supplied mockups, preserved metadata and accessibility during redesigns, and corrected `dvh`, font loading, contrast, `revalidateTag`, and metadata-streaming guidance.
+- `ia-php-laravel`, `ia-nodejs-backend`, `ia-rust-systems`, `ia-linux-bash-scripting`, `ia-postgresql`, and `ia-pinescript` corrected Markdown mail link injection, cursor pagination ordering, sticky replica reads, NestJS transient global guards, shutdown and readiness, tracing secrets, `select!` termination, doctests, build profiles that broke stable Rust, secret prompts, producer status, and history-dependent Pine calls.
+- `ia-orchestrating-swarms`, `ia-verification-before-completion`, `ia-debugging`, `ia-receiving-code-review`, `ia-brainstorming`, `ia-reflect`, `ia-simplifying-code`, and `ia-git-worktree` aligned triage, verification proof, delivery-state claims, worktree isolation, accepted-risk dispositions, open-ended interviewing, memory capture safety, and dead-code proof.
+- Agents and commands gained file-coverage accounting in the security sentinel, measured index and N+1 rules in the performance oracle, WCAG 2.2 form and reflow criteria in the accessibility tester, review of fix commits in `/ia-lfg`, acceptance-edit detection in `/ia-work`, index-scoped pre-commit checks in `/ia-verify`, and version-source detection in `/ia-document-release`.
+
+### Fixed
+
+- Triggers for `ia-document-review`, `ia-python-services`, and `ia-meta-prompting` no longer fire on unrelated tasks that previously misfired 23 to 32 percent of the time; new negative fixtures cover the observed cases.
+- Session-eval tooling again counts current-model sessions; a stale model baseline had filtered most recent sessions as out of date.
+- Claude, Codex, and OpenCode conversion now loads each component and hook path once, preserves YAML metadata, normalizes wrapped MCP configs, resolves relative Claude homes, and keeps Codex deduplication idempotent with large catalogs.
+- `ia-linux-bash-scripting` no longer places a `$0` example in its skill body, where argument substitution rewrote it.
+
+### For contributors
+
+- `validate-plugin` reports positional placeholders in skill bodies as HIGH, parses frontmatter strictly, and keeps path keywords in relevance scoring. Fixture repositories disable commit signing.
+- Metadata descriptions pluralize hook and MCP server counts, the marketplace declares the `compound-engineering` rename, and SkillOpt defaults moved to the Claude 5.5 models.
+- `/sync-from-repos` rechecks unchanged reference repos against plugin files changed since their last scan.
+
 ## [5.0.1] - 2026-10-03
 
 Patch: 56 upstream improvements and 126 audit fixes corrected execution recipes, authority boundaries, runtime examples, and skill routing. Five change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.

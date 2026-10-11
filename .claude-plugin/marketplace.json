@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Plugin marketplace for Claude Code extensions",
-    "version": "5.0.1"
+    "version": "5.1.0"
   },
   "renames": {
     "compound-engineering": "whetstone"
@@ -14,8 +14,8 @@
   "plugins": [
     {
       "name": "whetstone",
-      "description": "AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes 18 specialized agents, 19 commands, 29 skills, and 1 hook, 1 MCP server.",
-      "version": "5.0.1",
+      "description": "AI-powered development tools that get smarter with every use. Make each unit of engineering work easier than the last. Includes 18 specialized agents, 19 commands, 29 skills, and 4 hooks, 1 MCP server.",
+      "version": "5.1.0",
       "author": {
         "name": "Ilia Alshanetsky",
         "url": "https://github.com/iliaal"
