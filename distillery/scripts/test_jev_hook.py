@@ -4,12 +4,14 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
 
 PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "whetstone"
 HOOK = PLUGIN / "hooks" / "inject-skills.sh"
+START_HOOK = PLUGIN / "hooks" / "subagent-start.sh"
 SPEC = importlib.util.spec_from_file_location("jev_skills", PLUGIN / "hooks" / "jev-skills.py")
 assert SPEC is not None and SPEC.loader is not None
 HELPER = importlib.util.module_from_spec(SPEC)
@@ -18,6 +20,10 @@ SPEC.loader.exec_module(HELPER)
 
 def run_hook(prompt, env):
     payload = {
+        "session_id": "jev-test",
+        "tool_use_id": "jev-tool",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Agent",
         "tool_input": {
             "prompt": prompt,
             "subagent_type": "general-purpose",
@@ -25,12 +31,22 @@ def run_hook(prompt, env):
             "run_in_background": True,
         }
     }
-    result = subprocess.run(
-        ["bash", str(HOOK)], input=json.dumps(payload), text=True,
-        capture_output=True, env=env, timeout=5, check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    return result.stdout
+    with tempfile.TemporaryDirectory(dir=env["TMPDIR"]) as queue_tmp:
+        hook_env = {**env, "TMPDIR": queue_tmp}
+        result = subprocess.run(
+            ["bash", str(HOOK)], input=json.dumps(payload), text=True,
+            capture_output=True, env=hook_env, timeout=5, check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        assert result.stdout == ""
+        result = subprocess.run(
+            ["bash", str(START_HOOK)], input=json.dumps({
+                "session_id": payload["session_id"], "agent_id": "jev-agent",
+                "agent_type": "general-purpose", "hook_event_name": "SubagentStart",
+            }), text=True, capture_output=True, env=hook_env, timeout=5, check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        return result.stdout
 
 
 def fake_jev(tmp_path, answers):
@@ -49,10 +65,11 @@ def fake_jev(tmp_path, answers):
     executable.chmod(0o700)
     env = {key: value for key, value in os.environ.items() if not key.startswith("WHETSTONE_JEV")}
     env["WHETSTONE_JEV_COMMAND"] = str(executable)
+    env["TMPDIR"] = str(tmp_path)
     return env, log
 
 
-def test_opt_in_adds_semantic_match_without_changing_arguments(tmp_path):
+def test_opt_in_adds_semantic_match_to_starting_context(tmp_path):
     env, log = fake_jev(tmp_path, {
         "__need__": {"type": "noul", "noul": 0.97},
         "ia-debugging": {"type": "noul", "noul": 0.97},
@@ -61,12 +78,12 @@ def test_opt_in_adds_semantic_match_without_changing_arguments(tmp_path):
     assert run_hook(prompt, env) == ""
     assert not log.exists()
     env["WHETSTONE_JEV"] = "1"
-    result = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["updatedInput"]
-    assert "ia-debugging/SKILL.md" in result["prompt"]
-    assert "Jev suggests" in result["prompt"]
-    assert result["prompt"].endswith("\n\n" + prompt)
-    assert result["model"] == "sonnet"
-    assert result["run_in_background"] is True
+    result = json.loads(run_hook(prompt, env))["hookSpecificOutput"]
+    assert set(result) == {"hookEventName", "additionalContext"}
+    assert result["hookEventName"] == "SubagentStart"
+    assert "ia-debugging/SKILL.md" in result["additionalContext"]
+    assert "Jev suggests" in result["additionalContext"]
+    assert prompt not in result["additionalContext"]
     request = json.loads(log.read_text())
     assert request["state"] == {"request": prompt, "already_selected": []}
     assert request["questions"]["ia-debugging"]["type"] == "noul"
@@ -127,7 +144,7 @@ def test_threshold_is_configurable_and_regex_selections_remain_first(tmp_path):
     env.update(WHETSTONE_JEV="1", WHETSTONE_JEV_THRESHOLD="0.95")
     assert run_hook(prompt, env) == original
     env["WHETSTONE_JEV_THRESHOLD"] = "0.90"
-    updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["updatedInput"]["prompt"]
+    updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["additionalContext"]
     assert updated.index("ia-python-services/SKILL.md") < updated.index("ia-debugging/SKILL.md")
     assert "Additional skill suggestions (Jev; check applicability before following):" in updated
     request = json.loads(log.read_text())
@@ -176,7 +193,7 @@ def test_high_scores_add_at_most_one_miss(tmp_path):
     })
     env["WHETSTONE_JEV"] = "1"
     prompt = "Implement a Python CLI service"
-    updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["updatedInput"]["prompt"]
+    updated = json.loads(run_hook(prompt, env))["hookSpecificOutput"]["additionalContext"]
     paths = [line for line in updated.splitlines() if line.startswith("- ")]
     assert len(paths) == 2
     assert paths[0].endswith("ia-python-services/SKILL.md")

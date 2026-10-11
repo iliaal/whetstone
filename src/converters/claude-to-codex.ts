@@ -11,6 +11,9 @@ export function convertClaudeToCodex(
   plugin: ClaudePlugin,
   _options: ClaudeToCodexOptions,
 ): CodexBundle {
+  if (plugin.hooks?.hooks.SubagentStart?.length) {
+    console.warn("Warning: skipping Claude SubagentStart hooks: Codex conversion installs skills and prompts, without Claude hook execution.")
+  }
   const promptNames = new Set<string>()
   const skillDirs = plugin.skills.map((skill) => ({
     name: skill.name,

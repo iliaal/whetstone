@@ -158,9 +158,14 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 
 | Hook | Event | Description |
 |------|-------|-------------|
-| `inject-skills` | PreToolUse (Task) | Injects relevant skill instructions into subagent prompts |
+| `inject-skills` | PreToolUse (Task or Agent) | Briefly records the subagent prompt in a private local queue; emits no output |
+| `subagent-start` | SubagentStart | Claims the queued task and adds matching skill paths to the subagent's starting context |
 
-When the main agent spawns a subagent via the Task tool, this hook analyzes the subagent's prompt and identifies matching skills based on trigger keywords. It prepends "Read these SKILL.md files" instructions to the prompt so subagents follow the same methodology as the main agent.
+These are the two hooks the plugin runs automatically. Before a Task or Agent call, `inject-skills.sh` records the prompt and agent type without changing the tool input or deciding permissions. When the subagent starts, `subagent-start.sh` claims the oldest queued task for that session and agent type, runs `match-skills.sh` with `skill-patterns.sh`, and adds instructions to read matching `SKILL.md` paths to the subagent's starting context.
+
+Both hooks use `subagent-queue.sh` to keep prompts briefly in `${TMPDIR:-/tmp}/whetstone-subagent-queue-<uid>/<session_id>/`. Directories have mode `0700`; files have mode `0600`. A claimed prompt is deleted before matching. Each hook run removes entries older than 15 minutes, including abandoned sessions; without another run, expired entries remain until the next run or system temp cleanup. Each session holds at most 64 queued tasks, dropping the oldest when full. Prompts are not logged elsewhere by the hooks.
+
+Whetstone's namespaced and bare agent names compare equally. Parallel starts of the same agent type rely on FIFO ordering because SubagentStart supplies no tool-call ID or prompt. A denied call can leave an entry until expiry, so a later start of that type may claim it. Context is capped defensively at 8,000 characters.
 
 Skills are matched using a 3-tier priority system:
 1. **Methodology** (planning, debugging, code-review, etc.): process skills, matched first
@@ -169,7 +174,7 @@ Skills are matched using a 3-tier priority system:
 
 Up to 5 matching skills are injected per subagent call, prioritized by tier. Subagent types without file read access (e.g., Bash) are skipped.
 
-**Requirements:** the hook is a Bash script and needs `bash` and `jq` on PATH. On Windows, run Claude Code under WSL or Git Bash. When either is missing the hook exits quietly and subagents run without injected skills; everything else in the plugin (agents, commands, skills invoked directly) works unchanged.
+**Requirements:** Bash 4.4+, `jq`, `flock`, GNU coreutils, and GNU findutils on PATH. On Windows, use WSL with these dependencies installed. Internal hook failures exit quietly with status 0; subagents then run without matching skill context. The optional Jev path also runs `jev-skills.py` through Python 3 and your configured `jev` CLI, as described below.
 
 ### Optional Jev suggestions
 

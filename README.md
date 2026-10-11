@@ -78,7 +78,9 @@ In this checkout, Codex also discovers the 12 repository commands and `skill-dis
 
 OpenCode reads skills from its per-project config. The converter translates the plugin's `SKILL.md` format into OpenCode's expected shape and writes output into the current project (override with `--output <dir>`).
 
-Command-based `PreToolUse` and `PostToolUse` hooks use a bundled adapter; unsupported hook events and types cause conversion to fail. Whetstone's injection hook requires Bash and `jq` on PATH. The installed bundle includes its scripts and skill files, so it does not depend on the source checkout.
+Command-based `PreToolUse` and `PostToolUse` hooks use a bundled adapter. Conversion skips `SubagentStart` with a warning because the adapter has no equivalent event; it also skips Whetstone's paired recorder so prompts are not queued without a consumer. Automatic per-task skill context is therefore available only in Claude Code; converted skills remain available to OpenCode. Other unsupported hook events and types cause conversion to fail.
+
+Converted command hooks require Bash on PATH and retain any script-specific dependencies. The installed bundle includes its scripts and skill files, so it does not depend on the source checkout. Codex conversion also warns when skipping `SubagentStart`; it installs skills and prompts without executing Claude hooks.
 
 ```bash
 bun run src/index.ts install ./plugins/whetstone --to opencode

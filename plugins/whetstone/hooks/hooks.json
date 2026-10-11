@@ -8,7 +8,20 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh\"",
             "timeout": 5,
-            "statusMessage": "Injecting relevant skills..."
+            "statusMessage": "Recording subagent skill context..."
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-start.sh\"",
+            "timeout": 5,
+            "statusMessage": "Adding relevant skill context..."
           }
         ]
       }
