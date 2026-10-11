@@ -80,7 +80,13 @@ Build two inventories in parallel:
 
 Every repo must be analyzed. Do not skip repos based on surface-level impressions. Repos that look simple may contain high-quality patterns in non-obvious locations.
 
-**The one sanctioned exception is the Retired sources table in `$SYNC_LOG`** (above the `## Log` marker), read during Phase 0. A retired repo is exhausted, not uninteresting — it earned the entry by being fully mined once. Skipping it still costs one command: `git -C $REPOS_DIR/<repo> rev-parse HEAD`. If the SHA matches the pinned one, note the repo as retired-unchanged in the Phase 5b entry and spend no subagent on it. **If the SHA moved, the retirement is void** — scan the delta like any other repo, then either re-pin at the new SHA or strike the entry, and say which in the run entry. Never skip on the table alone without checking.
+**Unchanged since the last full scan — narrow the pass with proof.** Before pulling in Phase 1, record each repo's HEAD (`git -C $REPOS_DIR/<repo> rev-parse HEAD`). A repo counts as unchanged when its HEAD did not move in the pull and the most recent full-scope sync scanned it at that same SHA. Proof is the SHA listed under that run's `### Scanned SHAs`; for runs that predate the list, `git -C $REPOS_DIR/<repo> reflog -1 --date=short` must show the last HEAD change on or before that run's date. Without proof, treat the repo as changed. Loose notes follow the same rule, using the file's mtime.
+
+An unchanged source still yields new findings when the plugin moved under it: the same text now meets different gaps, and no other command re-reads external sources against the current plugin. So take the plugin diff since that scan (`git diff --name-only <whetstone SHA from Scanned SHAs>..HEAD -- $PLUGIN_DIR`; for older runs, the run's last recorded commit):
+- **Plugin diff empty** — skip the source entirely and record it as unchanged-skipped.
+- **Plugin diff non-empty** — dispatch the subagent, but scope it to the changed plugin files: cross-reference the source only against them, and drop findings against untouched files, which the prior scan already judged. Record it as unchanged-rechecked.
+
+**The other sanctioned exception is the Retired sources table in `$SYNC_LOG`** (above the `## Log` marker), read during Phase 0. A retired repo is exhausted, not uninteresting — it earned the entry by being fully mined once. Skipping it still costs one command: `git -C $REPOS_DIR/<repo> rev-parse HEAD`. If the SHA matches the pinned one, note the repo as retired-unchanged in the Phase 5b entry and spend no subagent on it. **If the SHA moved, the retirement is void** — scan the delta like any other repo, then either re-pin at the new SHA or strike the entry, and say which in the run entry. Never skip on the table alone without checking.
 
 **Loose notes at `$REPOS_DIR/` root** — also scan `*.md` files sitting directly in `$REPOS_DIR/` (not inside a repo subdirectory). These are reference docs Ilia dropped in for cross-repo harvesting. Read each in full, extract actionable patterns, and feed them into Phase 3 the same way as repo content. Source tag: `loose:<filename>`. Skip if the file is obviously not a reference doc (e.g., a stray export, a tarball listing).
 
@@ -233,6 +239,10 @@ Run context: <external repos scanned or specific focus>
 
 ### Deferred
 - `<component>`: <proposed change> -- <reason + revisit condition>
+
+### Scanned SHAs
+- whetstone <full HEAD SHA the plugin was compared against>
+- `<repo>` <full HEAD SHA> (scanned | unchanged-rechecked | unchanged-skipped | retired-unchanged)
 ```
 
 If a rejection reason generalizes to "we never do X because Y", also propose promoting it to a feedback-memory entry and link to the memory file from the log bullet instead of repeating the reasoning.
@@ -268,7 +278,7 @@ External source changes are the most likely to introduce conflicting rules, term
 - Never delete existing content without asking
 - Never create new skills/agents without approval — only propose them
 - Never modify files outside the plugin directory without asking
-- Every repo must get a deep pass — do not skip repos based on surface impressions. Use parallel subagents (one per repo) to keep analysis thorough without being slow.
+- Every repo must get a deep pass — do not skip repos based on surface impressions. The only narrowed or skipped passes are SHA-proven ones (Phase 2): unchanged sources rechecked against the changed plugin files, or skipped when the plugin is unchanged too, and retired-unchanged repos. Use parallel subagents (one per repo) to keep analysis thorough without being slow.
 - Triage happens AFTER reading, not before. Read the content, then decide if it's actionable. The exception: files that are clearly project-specific tooling (e.g., a company's deploy script) can be skipped on sight.
 - Analyze skills, agents, AND commands with equal rigor. Agent frontmatter patterns (tools, model, maxTurns, paths), command orchestration workflows, and hook configurations are all in scope.
 - If an external source is a generic checklist with no measurable criteria, note it as low-quality and move on
