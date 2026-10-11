@@ -1,10 +1,11 @@
 {
   "plugin_version": "5.0.1",
   "model_baseline_prefixes": [
-    "claude-opus-4-8",
-    "claude-haiku-4-5",
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "claude-haiku-5-5",
     "claude-fable-5",
-    "claude-sonnet-5"
+    "claude-mythos-5"
   ],
   "generated_at": "2026-10-03T17:00:25.248791+00:00",
   "skills": {
