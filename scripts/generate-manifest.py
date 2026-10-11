@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Generate .skill-versions.json -- tracks content and pattern hashes per skill.
 
-Computes SHA256 of each skill's SKILL.md and its regex pattern block in
-skill-patterns.sh. Compares against the prior manifest (if it exists) to
-determine which skills have changed since the last release. Unchanged entries
-preserve their prior *_changed version.
+Computes SHA256 of each skill's SKILL.md, of its whole publishable bundle, and
+of its regex pattern block in skill-patterns.sh. Compares against the prior
+manifest (if it exists) to determine which skills have changed since the last
+release. Unchanged entries preserve their prior *_changed version.
+
+content_hash/content_changed cover SKILL.md only and drive eval staleness
+filtering in distiller.py. bundle_hash/bundle_changed cover every file a
+publish uploads (SKILL.md, references/, scripts/, assets/) and drive
+publish-clawhub.sh change detection, so a references-only edit republishes
+without invalidating harvested eval examples.
 
 On first run (no prior manifest), all skills are set to the current plugin
 version, establishing a clean baseline for staleness tracking.
@@ -14,6 +20,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +42,34 @@ MODEL_BASELINE_PREFIXES = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku
 def _sha256_file(path: Path) -> str:
     """SHA256 hex digest of file bytes."""
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _bundle_files(skill_dir: Path) -> list[str]:
+    """Repo-relative paths of the files `git add -A` would commit for a skill dir.
+
+    Tracked plus untracked-but-not-ignored files, so gitignored build artifacts
+    (__pycache__, eval results) never change the hash while a new reference file
+    added during the release cycle does. Tracked files deleted from the working
+    tree are dropped, matching what the release commit will contain.
+    """
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files", "-z", "--cached", "--others",
+         "--exclude-standard", "--", str(skill_dir.relative_to(REPO_ROOT))],
+        check=True, capture_output=True,
+    ).stdout
+    paths = {p.decode() for p in out.split(b"\0") if p}
+    return sorted(p for p in paths if (REPO_ROOT / p).is_file())
+
+
+def _sha256_bundle(skill_dir: Path) -> str:
+    """SHA256 over the sorted (skill-relative path, file bytes) pairs of a skill bundle."""
+    h = hashlib.sha256()
+    for rel in _bundle_files(skill_dir):
+        data = (REPO_ROOT / rel).read_bytes()
+        name = Path(rel).relative_to(skill_dir.relative_to(REPO_ROOT)).as_posix().encode()
+        h.update(len(name).to_bytes(8, "big") + name)
+        h.update(len(data).to_bytes(8, "big") + data)
+    return h.hexdigest()
 
 
 def _sha256_string(text: str) -> str:
@@ -96,10 +131,8 @@ def generate() -> dict:
         if not skill_file.exists():
             continue
 
-        # Hashes SKILL.md only: a references-only change does not bump
-        # content_changed, so publish-clawhub.sh skips it unless run with
-        # --force or --skill <name>.
         content_hash = _sha256_file(skill_file)
+        bundle_hash = _sha256_bundle(skill_dir)
 
         pattern_text = _extract_pattern_block(skill_name, patterns_content)
         pattern_hash = _sha256_string(pattern_text) if pattern_text else None
@@ -112,6 +145,13 @@ def generate() -> dict:
         if prev_content_hash != content_hash:
             content_changed = version
 
+        # A prior manifest without bundle_hash (pre-bundle format) stamps every
+        # skill at the current version once, so the next publish re-uploads all
+        # bundles and repairs references-only edits earlier releases skipped.
+        bundle_changed = prev.get("bundle_changed", version)
+        if prev.get("bundle_hash") != bundle_hash:
+            bundle_changed = version
+
         pattern_changed = prev.get("pattern_changed", version)
         if pattern_hash is not None and prev_pattern_hash != pattern_hash:
             pattern_changed = version
@@ -119,6 +159,8 @@ def generate() -> dict:
         entry = {
             "content_hash": content_hash,
             "content_changed": content_changed,
+            "bundle_hash": bundle_hash,
+            "bundle_changed": bundle_changed,
         }
         if pattern_hash is not None:
             entry["pattern_hash"] = pattern_hash

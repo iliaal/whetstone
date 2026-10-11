@@ -13,8 +13,11 @@ export WORKTREE_SESSION_ID="$(python3 -I -c 'import uuid; print(uuid.uuid4())')"
 git fetch --no-tags origin "+pull/123/head:refs/review/pr-123"
 # Pass the review ref as the base. Without it the manager branches from origin/main.
 # Its own `git fetch origin refs/review/pr-123` fails (no such remote ref) and it
-# falls back to the local ref, which is the intended base. Copies .env files automatically:
-bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh create pr-123-feature-name refs/review/pr-123
+# falls back to the local ref, which is the intended base. PR code is untrusted: --no-env
+# keeps credentials out (refs/* bases skip env copy anyway). Do not run copy-env here, and
+# install dependencies only with lifecycle scripts and plugins disabled (npm ci --ignore-scripts,
+# composer install --no-scripts --no-plugins) or not at all:
+bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh create --no-env pr-123-feature-name refs/review/pr-123
 
 # Apply the returned path to each review command's workdir:
 target=$(bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh switch pr-123-feature-name)
@@ -36,7 +39,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh cl
 ## Parallel Feature Development
 
 ```bash
-# For first feature (copies .env files):
+# For first feature (copies .env files; main is the default branch):
 export WORKTREE_SESSION_ID="$(python3 -I -c 'import uuid; print(uuid.uuid4())')"
 bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh create feature-login
 

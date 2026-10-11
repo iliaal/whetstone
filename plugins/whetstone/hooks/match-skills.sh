@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 # Sourced by subagent-start.sh after claiming a prompt; INPUT retains Jev's input shape.
-PROMPT=$(printf '%s' "$INPUT" | jq -r '.tool_input.prompt // empty')
 AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // empty')
-
-if [[ -z "$PROMPT" ]]; then
-  exit 0
-fi
 
 # Skip agent types that can't read files
 case "$AGENT_TYPE" in
@@ -13,89 +8,61 @@ case "$AGENT_TYPE" in
 esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PATTERNS_FILE="$SCRIPT_DIR/skill-patterns.sh"
+# shellcheck source=skill-matcher.sh
+source "$SCRIPT_DIR/skill-matcher.sh"
+$SKILL_PATTERNS_LOADED || exit 0
 
-if [[ ! -f "$PATTERNS_FILE" ]]; then
-  exit 0
-fi
+# One line per prompt: "S" followed by the matches stored when the call was recorded, or
+# "L <index>" for a record written before matches were stored. A batch carries every
+# prompt of an ambiguous same-type group (see queue_claim).
+mapfile -t ENTRIES < <(printf '%s' "$INPUT" | jq -r '
+  .tool_input
+  | if (.prompts | type) == "array"
+    then [.prompts, (.skills | if type == "array" then . else [] end)]
+    else [[.prompt], [.skills]] end
+  | . as [$prompts, $skills]
+  | range(0; $prompts | length)
+  | if ($skills[.] | type) == "array"
+    then "S" + ([$skills[.][] | strings | " " + .] | join(""))
+    else "L \(.)" end
+')
 
-# shellcheck source=skill-patterns.sh
-source "$PATTERNS_FILE"
+prompt_at() {
+  printf '%s' "$INPUT" | jq -r --argjson i "$1" '
+    .tool_input | if (.prompts | type) == "array" then .prompts[$i] else .prompt end | strings
+  '
+}
 
-# Guard: older pattern files may not declare SKILL_MAINT_SUPPRESS
-if ! declare -p SKILL_MAINT_SUPPRESS &>/dev/null; then
-  declare -A SKILL_MAINT_SUPPRESS
-fi
+add_match() {
+  [[ " ${ALL_MATCHES[*]-} " == *" $1 "* ]] || ALL_MATCHES+=("$1")
+}
 
-# Guard: older pattern files may not declare SKILL_NEGATIVE
-if ! declare -p SKILL_NEGATIVE &>/dev/null; then
-  declare -A SKILL_NEGATIVE
-fi
-
-# Detect plugin-maintenance context. When the prompt mentions plugin internals,
-# skill files, or maintenance commands, skills whose names appear as references
-# shouldn't fire as if the user is invoking them.
-IS_MAINT_CONTEXT=false
-if grep -qiE 'plugins/whetstone/(skills|agents|commands)/|skill-patterns\.sh|/sync-from-repos\b|/audit-plugin\b|/(analyze-misfires|diagnose-negatives|evolve-skill|eval-skills)\b|^run .{0,80}distiller\.py +(analyze-misfires|diagnose-negatives)\b' <<<"$PROMPT" 2>/dev/null; then
-  IS_MAINT_CONTEXT=true
-fi
-
-# Lowercase prompt for case-insensitive matching
-PROMPT_LOWER=$(printf '%s' "$PROMPT" | tr '[:upper:]' '[:lower:]')
-
-# Collect matching skills into tier buckets
-TIER1=()
-TIER2=()
-TIER3=()
-
-readarray -t SKILL_NAMES < <(printf '%s\n' "${!SKILL_PATTERNS[@]}" | LC_ALL=C sort)
-for skill_name in "${SKILL_NAMES[@]}"; do
-  pattern="${SKILL_PATTERNS[$skill_name]}"
-  if grep -qE "$pattern" <<<"$PROMPT_LOWER" 2>/dev/null; then
-    skill_path="$PLUGIN_ROOT/skills/$skill_name/SKILL.md"
-    [[ -f "$skill_path" ]] || continue
-
-    # Suppress when the prompt carries an explicit marker for a NEIGHBOURING language
-    # or stack. SKILL_PATTERNS cannot express "X unless Y" (ERE has no lookahead), so
-    # a language-neutral alternative like `segfault` or `\.h\b` otherwise fires the C
-    # skill on a C# or Objective-C prompt. Keep entries to unambiguous markers; this is
-    # not a place to fix a positive pattern that is merely too loose.
-    if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]]; then
-      if grep -qE "${SKILL_NEGATIVE[$skill_name]}" <<<"$PROMPT_LOWER" 2>/dev/null; then
-        continue
-      fi
-    fi
-
-    # Suppress skills whose name tends to appear as a reference in plugin-maintenance
-    # prompts (skill name in file path, command discussion, distiller output, etc.).
-    if $IS_MAINT_CONTEXT && [[ -n "${SKILL_MAINT_SUPPRESS[$skill_name]+x}" ]]; then
-      continue
-    fi
-
-    tier="${SKILL_TIERS[$skill_name]}"
-    case "$tier" in
-      1) TIER1+=("$skill_name") ;;
-      2) TIER2+=("$skill_name") ;;
-      3) TIER3+=("$skill_name") ;;
-    esac
-  fi
-done
-
+# A batch suggests the union of every prompt's matches, so each start still receives
+# its own skills; the recipient filters the rest by applicability.
 ALL_MATCHES=()
-[[ ${#TIER1[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER1[@]}")
-[[ ${#TIER2[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER2[@]}")
-[[ ${#TIER3[@]} -gt 0 ]] && ALL_MATCHES+=("${TIER3[@]}")
-
-# Cap at 5 skills to avoid context bloat
-MAX_SKILLS=5
-if [[ ${#ALL_MATCHES[@]} -gt $MAX_SKILLS ]]; then
-  ALL_MATCHES=("${ALL_MATCHES[@]:0:$MAX_SKILLS}")
-fi
+for entry in ${ENTRIES[@]+"${ENTRIES[@]}"}; do
+  if [[ "$entry" == S* ]]; then
+    read -ra STORED <<<"${entry#S}"
+    for skill_name in ${STORED[@]+"${STORED[@]}"}; do
+      if skill_installed "$skill_name"; then
+        add_match "$skill_name"
+      fi
+    done
+    continue
+  fi
+  prompt=$(prompt_at "${entry#L }")
+  [[ -n "${prompt//[[:space:]]/}" ]] || continue
+  match_prompt "$prompt"
+  for skill_name in ${PROMPT_MATCHES[@]+"${PROMPT_MATCHES[@]}"}; do
+    add_match "$skill_name"
+  done
+done
 REGEX_MATCH_COUNT=${#ALL_MATCHES[@]}
 
-if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
+if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ENTRIES[@]} -eq 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
+  PROMPT=$(prompt_at 0) && [[ -n "${PROMPT//[[:space:]]/}" ]] &&
   command -v python3 >/dev/null 2>&1 && command -v "${WHETSTONE_JEV_COMMAND:-jev}" >/dev/null 2>&1; then
+  prompt_context "$PROMPT"
   ELIGIBLE=()
   for skill_name in "${SKILL_NAMES[@]}"; do
     [[ -f "$PLUGIN_ROOT/skills/$skill_name/SKILL.md" ]] || continue
@@ -136,7 +103,9 @@ if [[ -n "${TEST_INJECTION_LOG:-}" ]]; then
 fi
 
 INJECTION="BEFORE STARTING: These skill files matched your task description; confirm each applies to your actual task, then read and follow it:"
-if [[ $REGEX_MATCH_COUNT -eq 0 ]]; then
+if [[ ${#ENTRIES[@]} -gt 1 ]]; then
+  INJECTION="BEFORE STARTING: Several tasks of this agent type started together, so these skill files matched one or more of them, not necessarily yours. Confirm each applies to your actual task; read and follow only those that do:"
+elif [[ $REGEX_MATCH_COUNT -eq 0 ]]; then
   INJECTION="BEFORE STARTING: Jev suggests these skill files for your task; confirm each applies to your actual task before following it:"
 fi
 for index in "${!ALL_MATCHES[@]}"; do

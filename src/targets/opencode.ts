@@ -1,6 +1,20 @@
 import path from "path"
 import { fileURLToPath } from "url"
-import { backupFile, copyDir, ensureDir, pathExists, readJson, readText, writeJson, writeText } from "../utils/files"
+import { realpath } from "fs/promises"
+import {
+  assertSafeDestination,
+  backupFile,
+  copyDir,
+  ensureDir,
+  isWithin,
+  lstatIfExists,
+  pathExists,
+  readJson,
+  readText,
+  writeJson,
+  writeText,
+} from "../utils/files"
+import { requireValidComponentName as requireName } from "../utils/symlink"
 import type { OpenCodeBundle, OpenCodeConfig } from "../types/opencode"
 
 // User keys win on conflict.
@@ -51,52 +65,87 @@ async function mergeOpenCodeConfig(
 
 export async function writeOpenCodeBundle(outputRoot: string, bundle: OpenCodeBundle): Promise<void> {
   const openCodePaths = resolveOpenCodePaths(outputRoot)
+  const root = openCodePaths.root
+  await preflight(openCodePaths, bundle)
   if (bundle.hookSource) {
-    const source = path.resolve(bundle.hookSource.root)
-    const destination = path.join(openCodePaths.supportDir, bundle.hookSource.name)
-    if (destination === source || destination.startsWith(source + path.sep)) {
+    const source = await realpath(path.resolve(bundle.hookSource.root))
+    const destination = path.join(openCodePaths.supportDir, requireName(bundle.hookSource.name))
+    if (isWithin(source, await realpathOfNearest(destination))) {
       throw new Error("Hook installation output must be outside the source plugin")
     }
-    await copyDir(source, path.join(destination, "plugin"))
+    await copyDir(source, path.join(destination, "plugin"), { root })
     const runtime = await readText(fileURLToPath(new URL("../runtime/opencode-hooks.ts", import.meta.url)))
-    await writeText(path.join(destination, "opencode-hooks.ts"), runtime)
+    await writeText(path.join(destination, "opencode-hooks.ts"), runtime, { root })
   }
-  await ensureDir(openCodePaths.root)
+  await ensureDir(root)
 
   const backupPath = await backupFile(openCodePaths.configPath)
   if (backupPath) {
     console.log(`Backed up existing config to ${backupPath}`)
   }
   const merged = await mergeOpenCodeConfig(openCodePaths.configPath, bundle.config)
-  await writeJson(openCodePaths.configPath, merged)
+  await writeJson(openCodePaths.configPath, merged, { root, mode: 0o600 })
 
   const agentsDir = openCodePaths.agentsDir
   for (const agent of bundle.agents) {
-    await writeText(path.join(agentsDir, `${agent.name}.md`), agent.content + "\n")
+    await writeText(path.join(agentsDir, `${requireName(agent.name)}.md`), agent.content + "\n", { root })
   }
 
   for (const commandFile of bundle.commandFiles) {
-    const dest = path.join(openCodePaths.commandDir, `${commandFile.name}.md`)
+    const dest = path.join(openCodePaths.commandDir, `${requireName(commandFile.name)}.md`)
     const cmdBackupPath = await backupFile(dest)
     if (cmdBackupPath) {
       console.log(`Backed up existing command file to ${cmdBackupPath}`)
     }
-    await writeText(dest, commandFile.content + "\n")
+    await writeText(dest, commandFile.content + "\n", { root })
   }
 
   if (bundle.plugins.length > 0) {
     const pluginsDir = openCodePaths.pluginsDir
     for (const plugin of bundle.plugins) {
-      await writeText(path.join(pluginsDir, plugin.name), plugin.content + "\n")
+      await writeText(path.join(pluginsDir, requireName(plugin.name)), plugin.content + "\n", { root })
     }
   }
 
   if (bundle.skillDirs.length > 0) {
     const skillsRoot = openCodePaths.skillsDir
     for (const skill of bundle.skillDirs) {
-      await copyDir(skill.sourceDir, path.join(skillsRoot, skill.name))
+      await copyDir(skill.sourceDir, path.join(skillsRoot, requireName(skill.name)), { root })
     }
   }
+}
+
+// Check every top-level destination before the first write so a refusal leaves no partial install.
+async function preflight(paths: ReturnType<typeof resolveOpenCodePaths>, bundle: OpenCodeBundle): Promise<void> {
+  const root = paths.root
+  await assertSafeDestination(root, paths.configPath)
+  for (const agent of bundle.agents) {
+    await assertSafeDestination(root, path.join(paths.agentsDir, `${requireName(agent.name)}.md`))
+  }
+  for (const commandFile of bundle.commandFiles) {
+    await assertSafeDestination(root, path.join(paths.commandDir, `${requireName(commandFile.name)}.md`))
+  }
+  for (const plugin of bundle.plugins) {
+    await assertSafeDestination(root, path.join(paths.pluginsDir, requireName(plugin.name)))
+  }
+  for (const skill of bundle.skillDirs) {
+    await assertSafeDestination(root, path.join(paths.skillsDir, requireName(skill.name)), "directory")
+  }
+  if (bundle.hookSource) {
+    await assertSafeDestination(root, path.join(paths.supportDir, requireName(bundle.hookSource.name)), "directory")
+  }
+}
+
+async function realpathOfNearest(target: string): Promise<string> {
+  let existing = path.resolve(target)
+  const missing: string[] = []
+  while (!(await lstatIfExists(existing))) {
+    const parent = path.dirname(existing)
+    if (parent === existing) break
+    missing.unshift(path.basename(existing))
+    existing = parent
+  }
+  return path.join(await realpath(existing), ...missing)
 }
 
 export function resolveOpenCodePaths(outputRoot: string) {

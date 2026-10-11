@@ -268,6 +268,7 @@ write_fixture_files() {
 	printf '%s\n' '#!/usr/bin/env bash' "python3 \"\$(dirname \"\$0\")/configure-codex-skill-sources.py\" >/dev/null" >scripts/sync-to-tools.sh
 	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/update-plugin.sh
 	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/test-codex-plugin.sh
+	printf '#!/usr/bin/env bash\nexit 0\n' >scripts/test-release-scripts.sh
 	chmod +x scripts/*.sh
 
 	printf 'raise SystemExit(0)\n' >distillery/scripts/distiller.py

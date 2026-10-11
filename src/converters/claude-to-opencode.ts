@@ -1,4 +1,5 @@
 import { formatFrontmatter } from "../utils/frontmatter"
+import { setOwn } from "../utils/own-property"
 import type {
   ClaudeAgent,
   ClaudeCommand,
@@ -111,22 +112,22 @@ function convertMcp(servers: Record<string, ClaudeMcpServer>): Record<string, Op
   const result: Record<string, OpenCodeMcpServer> = {}
   for (const [name, server] of Object.entries(servers)) {
     if (server.command) {
-      result[name] = {
+      setOwn(result, name, {
         type: "local",
         command: [server.command, ...(server.args ?? [])],
         environment: server.env,
         enabled: true,
-      }
+      })
       continue
     }
 
     if (server.url) {
-      result[name] = {
+      setOwn(result, name, {
         type: "remote",
         url: server.url,
         headers: server.headers,
         enabled: true,
-      }
+      })
     }
   }
   return result
@@ -291,7 +292,7 @@ function applyPermissions(
       if (toolPatterns && toolPatterns.size > 0) {
         const patternPermission: Record<string, "allow" | "deny"> = { "*": "deny" }
         for (const pattern of toolPatterns) {
-          patternPermission[pattern] = "allow"
+          setOwn(patternPermission, pattern, "allow")
         }
         permission[tool] = patternPermission
       } else {
@@ -305,7 +306,7 @@ function applyPermissions(
       if (!toolPatterns || toolPatterns.size === 0) continue
       const patternPermission: Record<string, "allow" | "deny"> = { "*": "deny" }
       for (const pattern of toolPatterns) {
-        patternPermission[pattern] = "allow"
+        setOwn(patternPermission, pattern, "allow")
       }
       permission[tool] = patternPermission
     }
@@ -321,7 +322,7 @@ function applyPermissions(
     for (const pattern of patterns.edit ?? []) combined.add(pattern)
     const combinedPermission: Record<string, "allow" | "deny"> = { "*": "deny" }
     for (const pattern of combined) {
-      combinedPermission[pattern] = "allow"
+      setOwn(combinedPermission, pattern, "allow")
     }
     permission.edit = combinedPermission
     permission.write = combinedPermission
@@ -340,7 +341,7 @@ function parseToolSpec(raw: string): { tool: string | null; pattern?: string } {
   if (!trimmed) return { tool: null }
   const [namePart, patternPart] = trimmed.split("(", 2)
   const name = namePart.trim().toLowerCase()
-  const tool = TOOL_MAP[name] ?? null
+  const tool = Object.hasOwn(TOOL_MAP, name) ? TOOL_MAP[name] : null
   if (!patternPart) return { tool }
   const normalizedPattern = patternPart.endsWith(")")
     ? patternPart.slice(0, -1).trim()

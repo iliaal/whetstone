@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 import subprocess
 import sys
 
@@ -42,10 +43,30 @@ def pages(fetch, initial=None):
 
 
 PAGE = "pageInfo { hasNextPage endCursor }"
-COMMENT = "id author { login } body createdAt url"
-REVIEW = "id author { login } body state submittedAt url"
+AUTHOR = "author { login __typename } authorAssociation"
+COMMENT = "id " + AUTHOR + " body createdAt url"
+REVIEW = "id " + AUTHOR + " body state submittedAt url"
 THREAD_COMMENT = COMMENT + " updatedAt outdated"
 THREAD = "id isResolved isOutdated isCollapsed path line startLine diffSide"
+TRUSTED_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
+ALLOWLIST_ENV = "PR_COMMENT_TRUSTED_LOGINS"
+
+
+def allowlist():
+    entries = os.environ.get(ALLOWLIST_ENV, "").split(",")
+    return {entry.strip().lower().removesuffix("[bot]") for entry in entries if entry.strip()}
+
+
+def annotate(item, allowed):
+    author = item.get("author") or {}
+    login = author.get("login")
+    is_bot = author.get("__typename") == "Bot"
+    association = item.get("authorAssociation") or "NONE"
+    allowlisted = login is not None and login.lower().removesuffix("[bot]") in allowed
+    trusted = allowlisted or (login is not None and not is_bot
+                              and association in TRUSTED_ASSOCIATIONS)
+    return {**item, "author": login or "unknown", "author_association": association,
+            "author_is_bot": is_bot, "trusted": trusted}
 
 
 def main():
@@ -71,6 +92,7 @@ def main():
     if metadata is None:
         raise RuntimeError("Pull request not found")
     author = (metadata.get("author") or {}).get("login")
+    allowed = allowlist()
 
     def connection(name, fields):
         query = (
@@ -96,16 +118,18 @@ def main():
         thread_comments = pages(lambda cursor: graphql(
             query, thread=thread["id"], cursor=cursor
         )["node"]["comments"], initial=thread["comments"])
+        thread_comments = [annotate(item, allowed) for item in thread_comments]
         thread["comments"] = {"totalCount": len(thread_comments), "nodes": thread_comments}
+        thread["trusted"] = bool(thread_comments) and all(item["trusted"] for item in thread_comments)
 
     def conversation(items):
         result = []
         for item in items:
             if not (item.get("body") or "").strip():
                 continue
-            login = (item.get("author") or {}).get("login")
-            result.append({**item, "author": login or "unknown",
-                           "by_pr_author": author is not None and login == author})
+            entry = annotate(item, allowed)
+            result.append({**entry, "by_pr_author": author is not None
+                           and entry["author"] == author})
         return result
 
     unresolved = [{"node": thread} for thread in threads

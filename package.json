@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "citty": "^0.1.6",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.3.2"
   },
   "devDependencies": {
     "bun-types": "^1.0.0"

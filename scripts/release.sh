@@ -7,9 +7,63 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 AI_SKILLS_DIR="$HOME/ai/ai-skills"
+RELEASE_BRANCH="master"
+# Pinned so a compromised or breaking clawhub release cannot run with the
+# registry token. Keep in sync with CLAWHUB_VERSION in publish-clawhub.sh.
+CLAWHUB_VERSION="0.23.3"
+CLAWHUB_CLI=(npx --yes "clawhub@${CLAWHUB_VERSION}")
+
+# Abort unless the repo at $1 has RELEASE_BRANCH checked out, no merge or
+# cherry-pick in progress, and already contains origin/RELEASE_BRANCH, so the
+# release commit lands on top of origin as a fast-forward.
+require_release_branch() {
+	local dir="$1" label="$2" branch
+	if ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+		echo "ERROR: $label ($dir) is not a git repository."
+		exit 1
+	fi
+	branch=$(git -C "$dir" symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+	if [[ "$branch" != "$RELEASE_BRANCH" ]]; then
+		echo "ERROR: $label is on '${branch:-detached HEAD}', not '$RELEASE_BRANCH'. Releases run only from $RELEASE_BRANCH."
+		exit 1
+	fi
+	if git -C "$dir" rev-parse -q --verify MERGE_HEAD >/dev/null || git -C "$dir" rev-parse -q --verify CHERRY_PICK_HEAD >/dev/null; then
+		echo "ERROR: $label has a merge or cherry-pick in progress."
+		exit 1
+	fi
+	git -C "$dir" fetch --quiet origin "$RELEASE_BRANCH" || {
+		echo "ERROR: Could not fetch origin/$RELEASE_BRANCH for $label."
+		exit 1
+	}
+	if ! git -C "$dir" merge-base --is-ancestor FETCH_HEAD HEAD; then
+		echo "ERROR: $label $RELEASE_BRANCH is behind or diverged from origin/$RELEASE_BRANCH. Integrate origin first."
+		exit 1
+	fi
+}
+
+# Push the commit by SHA, not by branch name: `git push origin master` publishes
+# whatever local master holds, which need not be the commit just created. The
+# ls-remote check gates tagging, mirroring, and publication on the remote ref.
+push_release_sha() {
+	local dir="$1" label="$2" sha="$3" remote_sha
+	git -C "$dir" push origin "${sha}:refs/heads/${RELEASE_BRANCH}"
+	remote_sha=$(git -C "$dir" ls-remote origin "refs/heads/${RELEASE_BRANCH}" | awk '{print $1}')
+	if [[ "$remote_sha" != "$sha" ]]; then
+		echo "ERROR: $label origin/$RELEASE_BRANCH is '${remote_sha:-missing}', expected release commit $sha. Stopping before tagging or publication."
+		exit 1
+	fi
+}
 
 # --- Preflight ---
 cd "$ROOT_DIR"
+
+require_release_branch "$ROOT_DIR" "whetstone"
+require_release_branch "$AI_SKILLS_DIR" "ai-skills"
+if [[ -n "$(git -C "$AI_SKILLS_DIR" status --porcelain)" ]]; then
+	echo "ERROR: ai-skills working tree is not clean; the release commits everything there with 'git add -A'."
+	git -C "$AI_SKILLS_DIR" status --short
+	exit 1
+fi
 
 version=$(python3 -c "import json; print(json.load(open('plugins/whetstone/.claude-plugin/plugin.json'))['version'])")
 codex_version=$(python3 -c "import json; print(json.load(open('plugins/whetstone/.codex-plugin/plugin.json'))['version'])")
@@ -74,6 +128,14 @@ bash "$SCRIPT_DIR/test-codex-plugin.sh" || {
 	exit 1
 }
 echo "  Codex plugin regression tests passed"
+
+echo "[Pre-commit] Running release script regression tests..."
+bash "$SCRIPT_DIR/test-release-scripts.sh" >/dev/null || {
+	echo "ERROR: Release script regression tests failed."
+	echo "       Run 'bash scripts/test-release-scripts.sh' to see them."
+	exit 1
+}
+echo "  Release script regression tests passed"
 
 echo "[Pre-commit] Running trigger regression tests..."
 python3 distillery/scripts/distiller.py test-triggers >/dev/null || {
@@ -162,6 +224,7 @@ git add -A -- \
 git add -A -- .claude/skills/ 2>/dev/null || true
 git add -A -- .claude/commands/ 2>/dev/null || true
 git commit -m "$commit_msg"
+release_sha=$(git rev-parse HEAD)
 
 if command -v codex >/dev/null 2>&1; then
 	echo "  Refreshing native Codex plugin before publication..."
@@ -175,8 +238,8 @@ else
 	echo "  No 'codex' on PATH; skipping native Codex plugin refresh."
 fi
 
-git push origin master
-echo "  Pushed to origin/master"
+push_release_sha "$ROOT_DIR" "whetstone" "$release_sha"
+echo "  Pushed $release_sha to origin/$RELEASE_BRANCH"
 
 # --- 2. Sync GitHub repo description ---
 echo "[2/9] Sync repo description..."
@@ -192,7 +255,7 @@ else
 	gh release create "v${version}" \
 		--title "v${version}" \
 		--notes "$release_notes" \
-		--target master
+		--target "$release_sha"
 	echo "  Created release v${version}"
 fi
 
@@ -243,11 +306,12 @@ cd "$AI_SKILLS_DIR"
 if [[ -n "$(git status --porcelain)" ]]; then
 	git add -A
 	git commit -m "sync: v${version} from whetstone plugin"
-	git push origin master
-	echo "  ai-skills pushed"
 else
-	echo "  ai-skills already up to date"
+	echo "  ai-skills has no mirror changes"
 fi
+ai_skills_sha=$(git rev-parse HEAD)
+push_release_sha "$AI_SKILLS_DIR" "ai-skills" "$ai_skills_sha"
+echo "  ai-skills at $ai_skills_sha on origin/$RELEASE_BRANCH"
 
 # Create GitHub release on ai-skills
 if gh release view "v${version}" &>/dev/null; then
@@ -256,7 +320,7 @@ else
 	gh release create "v${version}" \
 		--title "v${version}" \
 		--notes "Synced from whetstone plugin v${version}" \
-		--target master
+		--target "$ai_skills_sha"
 	echo "  ai-skills release v${version} created"
 fi
 cd "$ROOT_DIR"
@@ -267,7 +331,7 @@ cd "$ROOT_DIR"
 # the final summary with an exact resume command.
 echo "[5/9] Publish skills to ClawHub..."
 clawhub_status="published"
-if npx clawhub@latest whoami >/dev/null 2>&1; then
+if "${CLAWHUB_CLI[@]}" whoami >/dev/null 2>&1; then
 	if bash "$SCRIPT_DIR/publish-clawhub.sh"; then
 		echo "  Published to ClawHub"
 	else
@@ -276,7 +340,7 @@ if npx clawhub@latest whoami >/dev/null 2>&1; then
 	fi
 else
 	clawhub_status="skipped-unauth"
-	echo "  WARNING: Not authenticated to ClawHub, skipping. Run: npx clawhub@latest login"
+	echo "  WARNING: Not authenticated to ClawHub, skipping. Run: npx clawhub@${CLAWHUB_VERSION} login"
 fi
 
 # --- 6. Sync to shared skill directories (Agents, Kilocode) ---
@@ -306,7 +370,7 @@ if [[ "$clawhub_status" != "published" ]]; then
 	echo "  ACTION REQUIRED: ClawHub publish did not complete"
 	if [[ "$clawhub_status" == "skipped-unauth" ]]; then
 		echo "    Reason: not authenticated to ClawHub (publish skipped)."
-		echo "    Resume: npx clawhub@latest login && bash scripts/publish-clawhub.sh"
+		echo "    Resume: npx clawhub@${CLAWHUB_VERSION} login && bash scripts/publish-clawhub.sh"
 	else
 		echo "    Reason: publish-clawhub.sh exited non-zero."
 		echo "    Resume: bash scripts/publish-clawhub.sh"

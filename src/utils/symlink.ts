@@ -27,11 +27,16 @@ export async function forceSymlink(source: string, target: string): Promise<void
 /**
  * Reject skill names that could escape the skills directory.
  */
-export function isValidSkillName(name: string): boolean {
-  if (!name || name.length === 0) return false
+export function isValidSkillName(name: unknown): name is string {
+  if (typeof name !== "string" || name.trim().length === 0) return false
   if (name.includes("/") || name.includes("\\")) return false
   if (name.includes("..")) return false
-  if (name.includes("\0")) return false
+  if (/[\u0000-\u001f\u007f]/.test(name)) return false
   if (name === "." || name === "..") return false
   return true
+}
+
+export function requireValidComponentName(name: unknown): string {
+  if (!isValidSkillName(name)) throw new Error(`Invalid component name: ${JSON.stringify(name)}`)
+  return name
 }

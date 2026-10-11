@@ -13,3 +13,9 @@ An alternate-index commit that advances the caller's HEAD while retaining the ol
 ## Publish the actual commit
 
 `git -C <repo> push <remote> HEAD:<branch>` resolves HEAD in that checkout, not the worktree that was edited. Pushing from the main checkout can therefore overwrite the feature branch with the main checkout's commit. `--force-with-lease` checks the remote branch's old value, not which commit HEAD names. Resolve the SHA in the edited checkout, push it explicitly, and confirm the remote ref with `git ls-remote`. Two branches updated to one SHA or an unrelated pushed subject indicate a possible checkout mix-up.
+
+## Shared stash and HEAD
+
+Linked worktrees share one stash stack. `git stash` writes to the common git directory, so a red/green cycle in one worktree can pop and drop a stash another worktree pushed in between. Never stash for red/green here: `git diff > /tmp/red.patch`, `git checkout -- <files>` (worktree-local) for the red run, `git apply /tmp/red.patch` for green. A dropped stash is still recoverable while its commit survives: `git stash store -m <message> <sha>` re-registers the SHA that `Dropped refs/stash@{0} (<sha>)` printed.
+
+A worktree's HEAD is shared mutable state, so answer branch questions from refs. Any other session can check something else out there, which makes `git -C <worktree> rev-parse HEAD` describe a different branch and report a correct push as a mismatch. Refs are shared across every worktree: ask any one of them about the branch by name (`rev-parse <branch>`, `rev-list --count origin/<branch>..<branch>`, `reflog <branch>`).

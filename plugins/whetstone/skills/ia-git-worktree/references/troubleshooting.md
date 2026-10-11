@@ -24,7 +24,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh li
 
 ### .env files missing in worktree?
 
-If a worktree was created without .env files (e.g., via raw `git worktree add`), copy them:
+If a worktree was created without .env files (e.g., via raw `git worktree add`, `--no-env`, or a base that is not a local or `origin` branch), copy them only when the tree holds no third-party code; never copy into a PR or fork review tree. Existing files and symlinks in the worktree are skipped, not overwritten; remove a stale copy first to refresh it:
 
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh copy-env feature-name

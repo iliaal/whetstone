@@ -1,5 +1,5 @@
 import path from "path"
-import { ensureDir, pathExists, readText, writeText } from "./files"
+import { ensureDir, lstatIfExists, readText, writeText } from "./files"
 
 export const CODEX_AGENTS_BLOCK_START = "<!-- BEGIN COMPOUND CODEX TOOL MAP -->"
 export const CODEX_AGENTS_BLOCK_END = "<!-- END COMPOUND CODEX TOOL MAP -->"
@@ -30,15 +30,20 @@ export async function ensureCodexAgentsFile(codexHome: string): Promise<void> {
   const filePath = path.join(codexHome, "AGENTS.md")
   const block = buildCodexAgentsBlock()
 
-  if (!(await pathExists(filePath))) {
-    await writeText(filePath, block + "\n")
+  const info = await lstatIfExists(filePath)
+  if (!info) {
+    await writeText(filePath, block + "\n", { root: codexHome })
+    return
+  }
+  if (info.isSymbolicLink()) {
+    console.warn(`Skipping ${filePath}: it is a symlink, so the Codex tool-map block was not updated.`)
     return
   }
 
   const existing = await readText(filePath)
   const updated = upsertBlock(existing, block)
   if (updated !== existing) {
-    await writeText(filePath, updated)
+    await writeText(filePath, updated, { root: codexHome })
   }
 }
 

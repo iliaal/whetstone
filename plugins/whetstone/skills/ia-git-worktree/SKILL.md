@@ -22,10 +22,12 @@ description: >-
 Never call `git worktree add` directly; always use the `worktree-manager.sh` script.
 
 The script handles critical setup that raw git commands don't:
-1. Copies `.env`, `.env.local`, `.env.test`, etc. from main repo
+1. Copies `.env`, `.env.local`, `.env.test`, etc. from the main checkout, only when the base is the default branch or a local branch that already contains the fetched commit (a branch that exists only on `origin` gets none); it never overwrites or follows an existing file or symlink in the new tree
 2. Ensures `.worktrees` is in `.gitignore`
 3. Creates consistent directory structure
 4. After creation, install dependencies if detected: `package.json` → `npm install`, `composer.json` → `composer install`, `pyproject.toml` → `pip install -e .`, `go.mod` → `go mod download`
+
+**Untrusted bases (PR heads, fork or origin-only branches, third-party code):** create with `--no-env`, never `copy-env` into the tree, and keep credentials out of its commands. Skip installs; if needed, disable lifecycle scripts and plugins (`npm ci --ignore-scripts`, `composer install --no-scripts --no-plugins`) and never `pip install -e .`, which runs the build backend.
 
 All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh <command>`. If `CLAUDE_PLUGIN_ROOT` is unset (non-Claude-Code harness), resolve the script relative to this skill's own directory.
 
@@ -38,7 +40,7 @@ The manager script fetches `<base>` from `origin` into an invocation-private ref
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `create <branch> [from]` | Create worktree + branch (default: from main) | `...worktree-manager.sh create feature-login` |
+| `create [--no-env] <branch> [from]` | Create worktree + branch (default: from main) | `...worktree-manager.sh create feature-login` |
 | `list` / `ls` | List all worktrees with status | `...worktree-manager.sh list` |
 | `switch <name>` / `go` | Print the registered worktree's absolute path; the caller applies it as workdir | `target=$(...worktree-manager.sh switch feature-login)` |
 | `copy-env <name>` | Copy .env files to existing worktree | `...worktree-manager.sh copy-env feature-login` |
@@ -71,8 +73,8 @@ Before any baseline suite or migration, apply `ia-verification-before-completion
 - When a mutation is unavoidable, assert the restore (grep the token back to its original count, plus `git status --short`) rather than trusting `git checkout --`.
 - One checkout has one index: a bare commit includes unrelated staged entries, while `git commit -- <paths>` records complete working-tree files, including caller or peer hunks. Use a pathspec commit only after establishing whole-file ownership of every selected change. For mixed hunks, commit the attributable patch in a clean session-owned checkout while preserving the caller's HEAD, index, and files. Inspect the exact proposed and committed patches, not only filenames or `--stat`; follow [commit-ownership.md](./references/commit-ownership.md).
 - Never use `HEAD:` in a `git -C` push. Resolve the SHA in the edited worktree, push it explicitly, and confirm with `git ls-remote`; a lease cannot catch selection of another checkout's HEAD. Details: [commit-ownership.md](./references/commit-ownership.md).
-- Linked worktrees share one stash stack. `git stash` writes to the common git directory, so a red/green cycle in one worktree can pop and drop a stash another worktree pushed in between. Never stash for red/green here: `git diff > /tmp/red.patch`, `git checkout -- <files>` (worktree-local) for the red run, `git apply /tmp/red.patch` for green. A dropped stash is still recoverable while its commit survives: `git stash store -m <message> <sha>` re-registers the SHA that `Dropped refs/stash@{0} (<sha>)` printed.
-- A worktree's HEAD is shared mutable state, so answer branch questions from refs. Any other session can check something else out there, which makes `git -C <worktree> rev-parse HEAD` describe a different branch and report a correct push as a mismatch. Refs are shared across every worktree: ask any one of them about the branch by name (`rev-parse <branch>`, `rev-list --count origin/<branch>..<branch>`, `reflog <branch>`).
+- Never `git stash` for red/green: linked worktrees share one stash stack. Use the patch-file cycle and stash recovery in [commit-ownership.md](./references/commit-ownership.md).
+- Answer branch questions from refs (`rev-parse <branch>`), not a worktree's HEAD, which other sessions can move; see [commit-ownership.md](./references/commit-ownership.md).
 
 Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persists across calls, so one `cd <repo-root>` for an unrelated reason silently relocates every later command: probe files get written into the shared main tree and run against its bytes, and the tidy-up reflex `git checkout -- <path>` becomes a **write** aimed at the wrong tree. The `git -C` habit does not generalize: interpreters, test runners, linters, and a heredoc `cat >` all take the cwd. Have any probe print the tree it ran in.
 
@@ -81,7 +83,7 @@ Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persi
 
 - `git worktree list` shows the new entry
 - `.worktrees` directory confirmed in `.gitignore`
-- Dependencies installed in the worktree
+- Dependencies installed in the worktree (trusted bases; untrusted bases follow the rules above)
 - Baseline test suite passes in the worktree
 
 

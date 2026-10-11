@@ -113,8 +113,9 @@ def page(name, nodes, cursor=None, next_cursor=None, thread=None):
     return {"args": args, "json": {"data": data}}
 
 
-def comment(identifier, body="feedback", author="reviewer"):
-    return {"id": identifier, "body": body, "author": {"login": author},
+def comment(identifier, body="feedback", author="reviewer", association="MEMBER", kind="User"):
+    return {"id": identifier, "body": body, "author": {"login": author, "__typename": kind},
+            "authorAssociation": association,
             "createdAt": "2026-09-07", "url": "https://example.invalid/comment"}
 
 
@@ -172,6 +173,46 @@ def test_mock_repeated_cursor_fails_closed(tmp_path):
     assert "Pagination did not advance" in result.stderr
 
 
+def test_mock_trust_derives_from_association_bot_type_and_allowlist(tmp_path, monkeypatch):
+    monkeypatch.setenv("PR_COMMENT_TRUSTED_LOGINS", " Allowed-User , coderabbitai[bot]")
+    comments = [comment("owner", association="OWNER"),
+                comment("member", association="MEMBER"),
+                comment("collab", association="COLLABORATOR"),
+                comment("contrib", association="CONTRIBUTOR"),
+                comment("first", association="FIRST_TIME_CONTRIBUTOR"),
+                comment("none", association="NONE"),
+                comment("missing", association=None),
+                comment("bot", author="dependabot", association="MEMBER", kind="Bot"),
+                comment("allowed-bot", author="coderabbitai", association="NONE", kind="Bot"),
+                comment("allowed-user", author="allowed-user", association="NONE"),
+                {**comment("ghost"), "author": None}]
+    mixed = thread("mixed")
+    mixed["comments"]["nodes"] = [comment("t1"), comment("t2", association="NONE")]
+    clean = thread("clean")
+    clean["comments"]["nodes"] = [comment("t3", association="OWNER")]
+    feedback = [page("comments", comments), page("reviews", []),
+                page("reviewThreads", [mixed, clean, thread("empty")])]
+    for response in feedback:
+        response["args"].append("author { login __typename } authorAssociation")
+    result, remaining = run_mock(tmp_path, [metadata(), *feedback])
+    assert result.returncode == 0, result.stderr
+    assert not remaining
+    output = json.loads(result.stdout)
+    trust = {item["id"]: item["trusted"] for item in output["conversation"]["comments"]}
+    assert trust == {"owner": True, "member": True, "collab": True, "contrib": False,
+                     "first": False, "none": False, "missing": False, "bot": False,
+                     "allowed-bot": True, "allowed-user": True, "ghost": False}
+    by_id = {item["id"]: item for item in output["conversation"]["comments"]}
+    assert by_id["bot"]["author_is_bot"] is True
+    assert by_id["contrib"]["author_association"] == "CONTRIBUTOR"
+    assert by_id["missing"]["author_association"] == "NONE"
+    threads = {item["node"]["id"]: item["node"] for item in output["unresolved"]}
+    assert threads["mixed"]["trusted"] is False
+    assert [c["trusted"] for c in threads["mixed"]["comments"]["nodes"]] == [True, False]
+    assert threads["clean"]["trusted"] is True
+    assert threads["empty"]["trusted"] is False
+
+
 def test_mock_repository_detection_and_empty_feedback(tmp_path):
     result, remaining = run_mock(tmp_path, [
         {"args": ["repo", "view", "owner,name"], "json": {"owner": {"login": "owner"}, "name": "repo"}},
@@ -182,3 +223,41 @@ def test_mock_repository_detection_and_empty_feedback(tmp_path):
     assert output["unresolved"] == []
     assert output["conversation"]["comments"] == []
     assert output["cross_invocation"]["signal"] is False
+
+
+def test_resolve_pr_approval_view_shows_staged_unstaged_and_new_files(tmp_path):
+    doc = (HELPER.parents[1] / "ia-resolve-pr.md").read_text()
+    phase = doc.split("## Phase 4", 1)[1]
+    view = re.search(r"```bash\n(.*?)```", phase, re.S)
+    assert view, "Phase 4 must prescribe an executable approval view"
+    assert re.search(r"git commit -m [^`]*-- <approved paths>", phase)
+    assert "git commit -a" in phase and "git add -A" in phase
+
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com",
+           "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=tmp_path, env=env, text=True,
+                              capture_output=True, check=True)
+
+    git("init", "-q")
+    (tmp_path / "staged.txt").write_text("base\n")
+    (tmp_path / "unstaged.txt").write_text("base\n")
+    git("add", ".")
+    git("commit", "-qm", "base")
+    (tmp_path / "staged.txt").write_text("STAGED_CHANGE\n")
+    git("add", "staged.txt")
+    (tmp_path / "unstaged.txt").write_text("UNSTAGED_CHANGE\n")
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "new file.txt").write_text("NEW_FILE_CONTENT\n")
+
+    result = subprocess.run(["bash", "-c", view.group(1)], cwd=tmp_path, env=env,
+                            text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    for marker in ("+STAGED_CHANGE", "+UNSTAGED_CHANGE", "+NEW_FILE_CONTENT", "sub/new file.txt"):
+        assert marker in result.stdout, marker
+
+    git("commit", "-qm", "address review: x", "--", "staged.txt", "sub/new file.txt")
+    committed = git("diff", "--name-only", "HEAD~1", "HEAD").stdout.split("\n")
+    assert sorted(filter(None, committed)) == ["staged.txt", "sub/new file.txt"]

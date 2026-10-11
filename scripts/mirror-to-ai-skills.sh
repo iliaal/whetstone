@@ -7,9 +7,11 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_DIR="$REPO_ROOT/plugins/whetstone/skills"
-TARGET_DIR="$HOME/ai/ai-skills/skills"
+TARGET_REPO="$HOME/ai/ai-skills"
+TARGET_DIR="$TARGET_REPO/skills"
 SOURCE_LICENSE="$REPO_ROOT/LICENSE"
-TARGET_LICENSE="$HOME/ai/ai-skills/LICENSE"
+TARGET_LICENSE="$TARGET_REPO/LICENSE"
+TARGET_BRANCH="master"
 
 DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
@@ -25,6 +27,15 @@ printf "Target: %s\n\n" "$TARGET_DIR"
 if [[ ! -d "$TARGET_DIR" ]]; then
     printf "ERROR: Target directory does not exist: %s\n" "$TARGET_DIR" >&2
     printf "Clone ai-skills repo first: git clone <url> %s\n" "$(dirname "$TARGET_DIR")" >&2
+    exit 1
+fi
+
+# The release commits and pushes whatever this writes, so mirroring onto any
+# branch other than the one release.sh pushes would publish nothing or the wrong tree.
+target_branch=$(git -C "$TARGET_REPO" symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+if [[ "$target_branch" != "$TARGET_BRANCH" ]]; then
+    printf "ERROR: %s is on '%s', not '%s'. Check out %s before mirroring.\n" \
+        "$TARGET_REPO" "${target_branch:-detached HEAD or not a git repo}" "$TARGET_BRANCH" "$TARGET_BRANCH" >&2
     exit 1
 fi
 
