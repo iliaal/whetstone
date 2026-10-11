@@ -102,6 +102,6 @@ Preserve supplied or measured metrics, prices, names, and contact details. Apply
 
 The pattern tables above catch known tells one at a time. These three tests catch the whole class; run them against finished output before shipping.
 
-- **Template test**: swap in completely different content (a different product, different copy, different data). If the layout still makes sense without any structural change, a template was built, not a design. Redo it. A real design carries the fingerprint of its specific content; a template tolerates any payload.
+- **Template test (greenfield pages and apps outside reference-fidelity mode)**: assess whether the palette, typography, and layout fit the subject. If the visual direction could serve an unrelated brief unchanged, revise the generic choices. Skip this gate for supplied references and components matched to an existing design system. Do not treat reusable tables, forms, dashboards, or component systems as failures solely because they support different content.
 - **AI Slop test**: would a stranger glancing at only the first viewport immediately say "an AI made this"? If yes, the committed direction was not committed enough. Push the signature visual choice further until the answer is no.
 - **Content authenticity check**: trace metrics, prices, identities, and contact details to supplied or measured sources. Preserve factual values even when round. Label synthetic demo content explicitly and keep it separate from production claims.

@@ -160,14 +160,14 @@ SKILL_PATTERNS[ia-md-docs]='update.{0,40}readme|(update|init|create|write|refres
 SKILL_TIERS[ia-md-docs]=3
 
 
-SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|steelman|devil.?s.?advocate|\bstrongest counterargument\b|\b(analy[sz]e|examine).{0,20}\bassumptions.{0,25}\b(overturn|invalidate|undermine).{0,20}\bconclusion\b'
+SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|\bsteelman\b|devil.?s.?advocate|\bstrongest counterargument\b|\b(analy[sz]e|examine).{0,20}\bassumptions.{0,25}\b(overturn|invalidate|undermine).{0,20}\bconclusion\b'
 SKILL_TIERS[ia-meta-prompting]=3
 
 SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong|\breflect on.{0,20}\bsession\b'
 SKILL_TIERS[ia-reflect]=3
 
 
-SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|spec)|\bcheck.{0,20}\b(adr|document|spec|plan).{0,20}\b(clarity|completeness)\b'
+SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|\bspec(s|ifications?)?\b)|\bcheck.{0,20}\b(adr|document|spec|plan).{0,20}\b(clarity|completeness)\b'
 SKILL_TIERS[ia-document-review]=3
 
 

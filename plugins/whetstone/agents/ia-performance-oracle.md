@@ -103,7 +103,7 @@ For algorithm or data-processing speedup claims, measure at least three input sh
 
 Default thresholds (calibrate per project):
 - No algorithms worse than O(n log n) without explicit justification
-- All database queries must use appropriate indexes
+- Require database indexes only when representative workload measurements and query plans justify them
 - Memory usage must be bounded and predictable
 - Background jobs should process items in batches when dealing with collections
 

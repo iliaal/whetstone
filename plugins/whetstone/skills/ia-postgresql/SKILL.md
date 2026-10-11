@@ -38,7 +38,7 @@ A spec that says "log the raw response" is asking for byte fidelity, and no text
 
 ## Verify
 
-Run `EXPLAIN (ANALYZE, BUFFERS)` on changed queries with representative data. Investigate unexpected sequential scans and compare actual costs; accept a sequential scan when reading much of a table is cheaper than using an index. Confirm no unindexed FK columns before declaring done.
+Start changed-query inspection with `EXPLAIN`. Run `EXPLAIN (ANALYZE, BUFFERS)` with representative data only when executing the query and its side effects is authorized and safe. For writes, prefer disposable data; use a transaction followed by rollback only when all relevant effects are transactional. Investigate unexpected sequential scans and compare actual costs; accept a sequential scan when reading much of a table is cheaper than using an index. Confirm no unindexed FK columns before declaring done.
 
 ## Task-specific references
 

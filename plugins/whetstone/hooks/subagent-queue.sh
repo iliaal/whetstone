@@ -55,3 +55,17 @@ queue_claim() {
   done
   return 1
 }
+
+queue_discard() {
+  local tool_use_id entry name
+  tool_use_id=$(jq -er '
+    .tool_use_id | select(type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\z"))
+  ' <<<"${INPUT}")
+  shopt -s nullglob
+  for entry in "${QUEUE_DIR}/"*.json; do
+    [[ -f "${entry}" && ! -L "${entry}" ]] || continue
+    name=${entry##*/}
+    [[ "${name#*-}" == "${tool_use_id}.json" ]] || continue
+    rm -f -- "${entry}"
+  done
+}

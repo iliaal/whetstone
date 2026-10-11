@@ -14,3 +14,7 @@
 {"prompt":"Review this code diff for buffer overflows","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Implement the approved plan","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Generate a product idea from scratch","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Read each feature review prompt and perform that review exactly as it specifies; return a JSON verdict for each feature.","expect":false,"source":"audit-2026-10-11-misfires"}
+{"prompt":"Diagnose the incomplete code review: the driver reported a best-effort review with specialist review and triage still unfinished.","expect":false,"source":"audit-2026-10-11-misfires"}
+{"prompt":"Review the specification for gaps before implementation.","expect":true,"source":"audit-2026-10-11-misfires"}
+{"prompt":"Audit these design documents for completeness.","expect":true,"source":"audit-2026-10-11-misfires"}

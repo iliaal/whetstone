@@ -12,7 +12,7 @@ Load this reference when the user asks for a threat model rather than a code sca
    - Data stores → Tampering, Repudiation, Information Disclosure, DoS
    - Data flows → Tampering, Information Disclosure, DoS
 
-   For infrastructure/IAM surfaces, replace STRIDE with checks for excessive grants, lateral identity use, changes outside IaC, access left after migrations, and scope enforcement on automated approval, merge, and write paths.
+   For infrastructure/IAM surfaces, supplement STRIDE with checks for excessive grants, lateral identity use, changes outside IaC, access left after migrations, and scope enforcement on automated approval, merge, and write paths. Record overlapping threats once in the same analysis.
 
    Describe threats that remain relevant after known bugs are fixed. Use past CVEs and security fixes as likelihood evidence, not as the threat itself.
 4. **Risk matrix**: plot each threat by Impact (1-5) x Likelihood (1-5). Score residual likelihood after verified controls. Record owner assertions that would change a score but lack code evidence as unverified open questions. Prioritize by composite score.

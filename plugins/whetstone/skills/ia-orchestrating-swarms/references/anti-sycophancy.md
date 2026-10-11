@@ -26,9 +26,11 @@ A judge told "3.5 passes" anchors on the boundary and drifts scores toward it. T
 
 The expected verdict is the same anchor. Briefing an evaluator with the outcome you anticipate ("we expect nothing here", "this probably duplicates ours") produces confirmation: the reader string-matches against the expectation and stops, missing gaps one abstraction level up. State the question and the comparison basis; hold the prior.
 
-## Keep the judge out of the producer's lineage
+## Distinguish context independence from model diversity
 
-A second opinion is independent only while the evaluating model is neither the producer nor a sibling from the same lineage. A validator chain written as an ordered model list falls back on a transient error to the next entry, which is usually the producer's sibling, so the fallback silently converts an independent review into a self-review. Order the chain by provider lineage, and drop whichever model produced the artifact under review.
+Require fresh context for an independent review, as described above. Model diversity is a separate property: prefer a different model lineage when available and authorized, and disclose shared-lineage correlation limits when using the same family. A single-family harness can still provide context-independent review.
+
+For an explicitly cross-model evaluation, require the evaluator to use a different model lineage from the producer. Exclude the producer's lineage from every fallback choice. If no eligible evaluator is available, report that the cross-model requirement remains unmet; do not silently substitute a same-lineage judge.
 
 ## Judge biases and countermeasures
 

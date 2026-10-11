@@ -29,11 +29,19 @@ Skip for `language`/`reference` skills (no deterministic outcome) and anything
 
 ## 2. The recipe (validated 2026-05-31)
 
+For new runs, use `claude-sonnet-5-5` for the optimizer/judge and
+`claude-haiku-5-5` for the weaker target, confirmed against Anthropic's
+[Sonnet](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) and
+[Haiku](https://platform.claude.com/docs/en/models/haiku-5-5/overview) model IDs
+on 2026-10-11. Recalibrate fixtures for the target; the pilot scores below describe
+the older models. `OPTIMIZER_DEPLOYMENT` and `TARGET_DEPLOYMENT` remain available
+as environment overrides.
+
 1. **Target the model that has the gap, not the strongest one.** Capable models
-   (Sonnet) *saturate* `hard` on tractable bugs — they fix everything and already
+   (Sonnet in the pilot) *saturate* `hard` on tractable bugs — they fix everything and already
    follow the process (soft ≈ 0.78), so there is no room to improve. Optimize for
-   the **weaker model that actually runs the skill** (e.g. `claude-haiku-4-5`
-   subagents): it fixes the bugs but skips the process (soft ≈ 0.17), so the
+   the **weaker model that actually runs the skill** (`claude-haiku-4-5`
+   in the pilot): it fixes the bugs but skips the process (soft ≈ 0.17), so the
    guidance has leverage. Keep the optimizer/judge on Sonnet (`claude_chat`).
 2. **Blend `soft` into the gate.** Set `SKILLOPT_SOFT_WEIGHT` with
    **`λ < 1 / n_val`**. For a process skill this is *required*: the vendored gate
@@ -77,7 +85,7 @@ python fixtures/<skill>/build_fixtures.py --verify
 SKILLOPT_SOFT_WEIGHT=0.15 PYTHONPATH=. python scripts/train.py \
     --config configs/whetstone/default.yaml \
     --cfg-options env.split_dir=fixtures/<skill>/splits env.tasks_root=fixtures/<skill>/tasks \
-    --target_model claude-haiku-4-5 \
+    --target_model claude-haiku-5-5 \
     --num_epochs 2 --batch_size 5 --eval_test false
 ```
 
@@ -115,7 +123,7 @@ headroom or the gate has nothing to optimize.
    defect is subtle (`code-review-hard`). De-saturation is the goal.
 4. **Config** `configs/whetstone/<skill>.yaml` — set `env.skill_name`,
    `env.skill_init` (seed from the real production SKILL.md), the fixture paths,
-   and `target: claude-haiku-4-5`. `/skillopt` resolves it by name.
+   and `target: claude-haiku-5-5`. `/skillopt` resolves it by name.
 
 Verify before any rollout: `build_fixtures.py --verify`, rubric weights = 1.0,
 config paths resolve, `pytest tests/test_whetstone_env.py`. **Onboarded:**

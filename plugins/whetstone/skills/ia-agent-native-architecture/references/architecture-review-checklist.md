@@ -61,7 +61,7 @@ When designing an agent-native system, verify these **before implementation**:
 
 ### Mobile (if applicable)
 - [ ] **Checkpoint/Resume:** Handle iOS app suspension gracefully
-- [ ] **iCloud Storage:** iCloud-first with local fallback for multi-device sync
+- [ ] **iCloud Storage:** Persist workspace identity and backend; reconcile before switching, preserve cached documents when cloud access is unavailable, and distinguish local saves from remote sync. Follow [mobile-storage.md](./mobile-storage.md).
 - [ ] **Cost Awareness:** Model tier selection (Haiku/Sonnet/Opus)
 
 **When designing architecture, explicitly address each checkbox in the plan.**

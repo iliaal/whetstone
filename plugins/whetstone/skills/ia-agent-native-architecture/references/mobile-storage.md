@@ -38,6 +38,8 @@ Apply this backend-independent workspace contract; a native iCloud adapter suppl
 
 The positive path is: create locally, edit offline, reconcile that workspace to the selected sync provider, and continue reading the same documents by stable IDs.
 
+For TypeScript clients, expose native iCloud operations through an application-owned bridge. Return opaque document-root handles tied to the persisted workspace ID and backend. Apple's [container lookup](https://developer.apple.com/documentation/foundation/filemanager/url(forubiquitycontaineridentifier:)) returns no URL when the container cannot be located or iCloud storage is unavailable. Represent that result as unavailable state for the configured workspace; propagate other adapter errors. Do not use a cloud-or-local selector on each open. Resolve research, journal, and experiment paths through the same scoped, revision-aware service.
+
 ### Directory Structure in iCloud
 
 ```
@@ -49,6 +51,10 @@ iCloud Drive/
         │   │   └── 2025-01-15.md     # Syncs across devices
         │   └── agent/
         │       └── 2025-01-15.md     # Agent observations sync too
+        ├── Experiments/
+        │   └── sleep-tracking/
+        │       ├── config.json
+        │       └── log.json
         ├── Research/
         │   └── {bookId}/
         │       ├── full_text.txt
@@ -76,6 +82,8 @@ Use a provider adapter with explicit availability, version, coordination, and co
 3. Write a temporary sibling file, flush it, and atomically replace the destination according to the backend's durability contract. Failures before replacement preserve the old destination. If replacement occurred but its durability receipt failed, mark the attempt unknown and reconcile its content hash and persisted revision before retrying; retain prior versions when the provider supports them.
 4. Propagate both coordination errors and errors inside the writer callback. Report neither as a successful save.
 5. Persist the resulting revision, notify observers, and return a receipt only after replacement succeeds. Local durability and eventual remote sync are separate receipt fields.
+
+For a conflict merge, save the merged document before marking the retained versions resolved. Apple's [version-resolution contract](https://developer.apple.com/documentation/foundation/nsfileversion/isresolved) requires explicit resolution and removal of versions that are no longer useful. Apply the same transaction contract to journal entries and agent observations.
 
 For a database backend, perform the revision comparison and replacement in one transaction. For file backends, all writers must use the same coordination contract; direct editor writes require provider support or conflict detection rather than an assumed lock.
 

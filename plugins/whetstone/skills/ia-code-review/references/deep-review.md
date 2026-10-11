@@ -251,7 +251,6 @@ Include agreement counts only as provenance; cite the evidence that supports eac
 
 - Passive prose changes: single-pass is usually sufficient. Agent instructions, executable examples, and standards changes require review of the behavior they govern; Markdown alone is not a low-risk classification.
 - Mechanical refactors (renames, moves) with no logic changes: single-pass catches drift
-- Single-file changes under 50 lines: multi-agent overhead isn't justified
 - The user explicitly requested a quick review
 
-In these cases, fall back to standard single-pass even if complexity signals triggered.
+Apply these exceptions through [scope-and-mode-selection.md](./scope-and-mode-selection.md). Do not downgrade solely because a diff is short or confined to one file. An explicit `deep` request still forces multi-agent review; `quick` forces single-pass.

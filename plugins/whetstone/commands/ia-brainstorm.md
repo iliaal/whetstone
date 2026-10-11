@@ -45,14 +45,9 @@ Follow the `ia-brainstorming` skill's approach selection, scope confirmation, an
 
 ### Phase 4: Spec Review
 
-Dispatch a fresh subagent to read the design as a builder in the relevant domain without access to the author or interview history. Request only ranked questions whose wrong answer would materially change the build; exclude wording preferences and decisions delegated to implementation. If delegation is unavailable, perform that read directly and disclose the limitation. For flow-heavy designs, offer `ia-spec-flow-analyzer` as an opt-in second lane, capped at 3 review passes.
+Read and follow **Phase 4: Review and Handoff** in the `ia-brainstorming` skill's [design-and-handoff.md](../skills/ia-brainstorming/references/design-and-handoff.md), using AskUserQuestion as this command's question mechanism.
 
-Triage the review questions before asking the user:
-1. Already answered: put the existing answer into the design.
-2. Minor and within delegated scope: decide and label the choice as the agent's decision.
-3. User-owned: collect the remaining questions into one AskUserQuestion round, most consequential first.
-
-Update the design with the answers and preserve unanswered material questions as unresolved. Do not repeat the builder question round. Present the design for user approval before handoff.
+For flow-heavy designs, offer `ia-spec-flow-analyzer` as an opt-in second lane. Cap that lane at 3 review passes.
 
 ### Phase 5: Handoff
 

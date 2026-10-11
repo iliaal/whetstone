@@ -355,25 +355,29 @@ async function writeResearchFile(path: string, content: string, expectedRevision
 
 For complex apps with multiple independent components:
 
-```typescript
+```tsx
+type FeedItem = { bookId: string; content: string; headline: string };
+
 // Shared event bus
 const agentEvents = new EventEmitter();
 
 // Agent tool emits events
-tool("publish_to_feed", async ({ content }) => {
-    const item = await feedService.add(content);
+tool("publish_to_feed", async ({ content }: { content: string }) => {
+    const item: FeedItem = await feedService.add(content);
     agentEvents.emit('feed:new-item', item);
     return { text: "Published" };
 });
 
 // UI components subscribe
 function FeedView() {
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState<FeedItem[]>([]);
 
     useEffect(() => {
-        const handler = (item) => setItems(prev => [...prev, item]);
+        const handler = (item: FeedItem) => setItems(prev => [...prev, item]);
         agentEvents.on('feed:new-item', handler);
-        return () => agentEvents.off('feed:new-item', handler);
+        return () => {
+            agentEvents.off('feed:new-item', handler);
+        };
     }, []);
 
     return <FeedList items={items} />;

@@ -73,13 +73,13 @@ Use the repository's `.mailmap` identity mapping when grouping contributors; `gi
 
 ### Step 6: Change Clustering
 
-Collect complete commit records for files that may change together (co-change analysis):
+Select a bounded commit population independently of candidate paths for co-change analysis:
 
 ```bash
-git log --use-mailmap --full-diff --format='commit %H%nAuthor: %aN <%aE>%nSubject: %s' --name-only --max-count=100 "$REVIEWED_REVISION" -- <path>
+git log --use-mailmap --format='commit %H%nAuthor: %aN <%aE>%nSubject: %s' --name-only --max-count=100 "$REVIEWED_REVISION"
 ```
 
-Bound the sample by commits, not output lines. Declare a maximum changed-file count before ranking; discard commits above it and identified formatting, mass-rename, or dependency-only sweeps. Count each commit's full changed-path set before applying the path filter (`--full-diff` preserves that set). Exclude confirmed bots and noise paths such as lockfiles, CI glue, and editor configuration from the coupling calculation.
+Bound the sample by commits, not output lines. Declare a maximum changed-file count before ranking; discard commits above it and identified formatting, mass-rename, or dependency-only sweeps. Count each commit's full changed-path set before excluding noise paths. Exclude confirmed bots and noise paths such as lockfiles, CI glue, and editor configuration from the coupling calculation. Select candidate pairs after fixing this shared population. Retain commits touching only one member of each pair when calculating its denominator.
 
 Rank pairs using Jaccard similarity: commits touching both files divided by commits touching either file, within the same filtered sample. Report the numerator, denominator, examined range, and exclusions. Treat a high ratio supported by only one commit as weak evidence. Then examine rapid iteration, bug-fix clusters, and likely reasons for the observed coupling.
 

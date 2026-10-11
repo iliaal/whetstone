@@ -28,3 +28,5 @@
 {"prompt":"Rename the variable","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"List repository files","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Explain assumptions in a statistical model","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt":"Promote the note feedback_steelman_reviewer_original_stance.md into the project's response guidelines. Keep the edit terse and avoid duplicating existing advice.","expect":false,"source":"audit-2026-10-11-misfires"}
+{"prompt":"Steelman the reviewer's original objection before deciding whether this fix addresses it.","expect":true,"source":"audit-2026-10-11-misfires"}

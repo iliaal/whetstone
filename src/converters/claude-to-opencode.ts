@@ -141,6 +141,12 @@ function convertHooks(hooks: ClaudeHooks, pluginName: string) {
       console.warn("Warning: skipping Claude SubagentStart hooks: the OpenCode adapter has no subagent-start context equivalent.")
       continue
     }
+    // These events only prune Whetstone's subagent queue, which is unused once the recorder is skipped.
+    if (skipRecorder && (event === "PostToolUseFailure" || event === "PermissionDenied")
+      && matchers.every((m) => m.hooks.every((h) => h.type === "command" && h.command === 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/discard-subagent.sh"'))) {
+      console.warn(`Warning: skipping Whetstone's ${event} queue cleanup: the subagent queue is not used in OpenCode.`)
+      continue
+    }
     if (event !== "PreToolUse" && event !== "PostToolUse") {
       throw new Error(`OpenCode conversion does not support Claude hook event ${event}`)
     }
