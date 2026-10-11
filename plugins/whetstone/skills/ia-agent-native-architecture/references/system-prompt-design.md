@@ -227,15 +227,12 @@ The dispatcher, not prompt memory, atomically claims attempts and persists recei
 <iteration>
 ## Iterating on System Prompts
 
-Prompt-native development means rapid iteration:
-
-1. **Observe** agent behavior in production
-2. **Identify** gaps: "It's not rating video feedback high enough"
-3. **Add guidance**: "Video walkthroughs are gold--always rate them 4-5"
-4. **Deploy** (just edit the prompt file)
-5. **Repeat**
-
-No code changes. No recompilation. Just prose.
+1. **Observe** a concrete production failure and retain a reproducible case.
+2. **Identify** the cause. Separate prompt gaps from tool-schema, retrieval, and model limitations.
+3. **Edit** the responsible rule without duplicating it across prompt layers.
+4. **Compare** old and new prompts on the failing case and a fixed set of previously passing cases. Keep held-out cases unavailable during editing; evaluate them before promotion.
+5. **Deploy** only when the failure is corrected without regressions under the same outcome criteria. Use the behavioral checks in [agent-native-testing.md](./agent-native-testing.md); content snapshots alone cannot prove behavior.
+6. **Stop** an edit loop that oscillates, plateaus, or reveals a non-prompt bottleneck. Address that cause before adding more instructions.
 </iteration>
 
 <checklist>
@@ -250,4 +247,7 @@ No code changes. No recompilation. Just prose.
 - [ ] Tone guidance
 - [ ] Tool usage guidance (when to use each)
 - [ ] Memory/context handling
+- [ ] Required platform behavior survives empty or customized deployer, persona, and AGENTS.md layers
+- [ ] Descriptive sections contain facts; rules sections own directives, with one owner per rule
+- [ ] Prompt edits pass failing-case, regression, and held-out behavioral checks
 </checklist>

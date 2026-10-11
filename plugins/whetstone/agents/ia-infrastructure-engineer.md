@@ -66,6 +66,7 @@ Track and optimize:
 - **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs, keyed by lockfile hash
 - **Parallel execution**: run unit tests, lint, type-check, security scan concurrently
 - **Artifact promotion**: build once, deploy the same artifact to staging → production (never rebuild)
+- **Public web configuration**: for pages intended to be indexed, resolve robots directives, `robots.txt`, canonical URLs, sitemap URLs, and Open Graph URLs at runtime for the deployed host, with origin-only `noindex` rules scoped to the origin hostname behind a reverse proxy. On promotion, smoke-check public production HTML and headers for unintended `noindex`, verify the crawl policy, and confirm absolute URLs use the production host.
 - **Fast feedback**: fail on lint/type errors before running expensive test suites
 - **Resource allocation**: use smaller runners for lint/build, larger for integration tests
 
@@ -112,6 +113,7 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 
 ## Release Orchestration
 
+- **GitHub tag events**: batch tag pushes, creations, and deletions at no more than three tags per operation; GitHub omits their corresponding workflow events above that limit ([event limits](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)). Inspect tag-triggered workflows before pushing. Disclose any publication step, including `npm publish` with OIDC (`id-token: write`), because its triggering tag push also initiates publication. Apply the required publication authorization to that push; do not independently execute publish or approval steps.
 - **Dependency coordination**: if service A depends on service B's new API, deploy B first
 - **Database migrations**: run before code deploy, ensure backward compatibility (expand-contract pattern)
 - **Communication**: auto-notify on deploy start/finish/rollback (Slack, email)

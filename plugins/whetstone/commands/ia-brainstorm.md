@@ -22,7 +22,7 @@ Do not proceed until you have a feature description from the user.
 
 ### Phase 0: Assess Requirements Clarity
 
-Per the `ia-brainstorming` skill Phase 0, evaluate whether brainstorming is needed.
+Use the `ia-brainstorming` skill's **Assess and ground** step to evaluate whether brainstorming is needed.
 
 **If requirements are already clear:**
 Use **AskUserQuestion tool** to suggest: "Your requirements seem detailed enough to proceed directly to planning. Should I run `/ia-plan` instead, or would you like to explore the idea further?"
@@ -37,15 +37,22 @@ Focus on: similar features, established patterns, CLAUDE.md guidance.
 
 **1.2 Collaborative Dialogue**
 
-Use the **AskUserQuestion tool** to ask questions one at a time per the `ia-brainstorming` skill Phase 1.
+Use the **AskUserQuestion tool** with the dialogue guidance in the `ia-brainstorming` skill's **Understand and compare** step.
 
 ### Phase 2-3: Explore and Capture
 
-Per `ia-brainstorming` skill Phases 2-3. Use AskUserQuestion for approach selection. Write the design to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (ensure directory exists). Before moving to Phase 4, resolve any Open Questions via AskUserQuestion and move them to a "Resolved Questions" section.
+Follow the `ia-brainstorming` skill's approach selection, scope confirmation, and design capture steps. Use AskUserQuestion for approach selection. Write the design to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (ensure directory exists). Before moving to Phase 4, resolve any Open Questions via AskUserQuestion and move them to a "Resolved Questions" section.
 
 ### Phase 4: Spec Review
 
-Per the `ia-brainstorming` skill Phase 4, dispatch `ia-spec-flow-analyzer` agent, iterate up to 3 times, then present to user for approval.
+Dispatch a fresh subagent to read the design as a builder in the relevant domain without access to the author or interview history. Request only ranked questions whose wrong answer would materially change the build; exclude wording preferences and decisions delegated to implementation. If delegation is unavailable, perform that read directly and disclose the limitation. For flow-heavy designs, offer `ia-spec-flow-analyzer` as an opt-in second lane, capped at 3 review passes.
+
+Triage the review questions before asking the user:
+1. Already answered: put the existing answer into the design.
+2. Minor and within delegated scope: decide and label the choice as the agent's decision.
+3. User-owned: collect the remaining questions into one AskUserQuestion round, most consequential first.
+
+Update the design with the answers and preserve unanswered material questions as unresolved. Do not repeat the builder question round. Present the design for user approval before handoff.
 
 ### Phase 5: Handoff
 
@@ -75,4 +82,4 @@ Key decisions:
 Next: Run `/ia-plan` when ready to implement.
 ```
 
-The `ia-brainstorming` skill's Hard Gate prohibits code writing during this workflow.
+The `ia-brainstorming` skill's **Scope and interaction** section limits this workflow to exploration and design; do not write implementation code.

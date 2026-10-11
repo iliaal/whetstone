@@ -54,6 +54,7 @@ Automated scans and source inspection establish only the checks they actually pe
 - Skip links to main content
 - No focus traps (except intentional modals with Escape exit)
 - Visible focus indicators on every focusable element
+- For WCAG 2.2 AA, verify focused controls remain at least partly visible beneath sticky headers, footers, and overlays ([2.4.11](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html)). Apply the criterion's notes for user-repositioned and user-opened content before reporting a violation.
 - Custom keyboard shortcuts documented and non-conflicting
 - Scrollable regions (wide data tables, overflow containers) reachable by keyboard: `tabindex="0"` while the content actually overflows, `-1` otherwise so a non-overflowing viewport gets no dead tab stop; re-evaluated on resize and on any ancestor `<details>` toggle
 
@@ -65,6 +66,7 @@ Automated scans and source inspection establish only the checks they actually pe
 - Live regions for dynamic content updates
 - Tables have proper headers and captions
 - Interactive elements have accessible names
+- Check `<html lang>` against the rendered language on every locale route using a valid BCP 47 tag ([3.1.1, A](https://www.w3.org/WAI/WCAG22/Techniques/html/H57)). Mark passages in other languages with `lang`, including language-switcher labels written in their own language; apply the proper-name, technical-term, indeterminate-language, and adopted-vernacular exceptions ([3.1.2, AA](https://www.w3.org/WAI/WCAG22/Understanding/language-of-parts.html)).
 
 ## ARIA Implementation
 
@@ -98,6 +100,10 @@ Automated scans and source inspection establish only the checks they actually pe
 - Validation errors linked to fields via `aria-describedby`
 - Error messages explain what went wrong and how to fix it
 - Logical grouping with `<fieldset>` and `<legend>`
+- For WCAG 2.1/2.2 AA, use appropriate `autocomplete` tokens on fields collecting the user's information whose purpose is covered by [1.3.5](https://www.w3.org/WAI/WCAG22/Understanding/identify-input-purpose.html). Check `type` and `inputmode` separately for a suitable mobile keyboard.
+- For WCAG 2.2 A, reuse earlier entries in the same process through prefilled values or selection; apply the essential, security, and no-longer-valid exceptions before reporting redundant entry ([3.3.7](https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html)).
+- For WCAG 2.2 AA authentication, test password-manager support and paste. A cognitive test needs an alternative method, an assisting mechanism, or the permitted object-recognition or user-provided non-text-content exception ([3.3.8](https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html)).
+- On a rejected submission, preserve entered values and direct focus to an error summary or the first invalid field.
 
 ## Mobile Accessibility
 

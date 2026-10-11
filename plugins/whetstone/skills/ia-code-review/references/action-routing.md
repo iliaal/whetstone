@@ -9,6 +9,8 @@ Load this reference when classifying how each finding's fix should be applied. T
 | `manual` | Actionable hand-off work: the author needs to make a call, rewrite logic, or redesign something (missing validation in an ambiguous code path, performance refactor that needs benchmarking) | Flag with the fix intent; do not auto-apply. |
 | `advisory` | Report-only learning or risk signal (pattern concern, maintenance debt, future-proofing observation) | Record in the "Residual Risks" section. No expected action. |
 
+**Gate relaxations never qualify as `safe_auto`.** Leave the restore-or-keep decision to the owner; headless and spawned runs leave it open without that decision. Confidence describes whether the relaxation was identified correctly, not whether accepting it is justified.
+
 **Conflict-resolution rule**: when multiple agents disagree on tier for the same finding, always take the more conservative route (`safe_auto` → `gated_auto` → `manual` → `advisory` is the escalation direction). Never promote a `gated_auto` to `safe_auto` because one agent classified it loosely; that's how security fixes ship unreviewed.
 
 **Tier decision rule**: if a senior engineer would apply the fix without discussion AND the change doesn't cross a behavior/contract/permission boundary, it's `safe_auto`. When in doubt, escalate to `gated_auto`.

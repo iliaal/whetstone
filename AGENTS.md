@@ -153,10 +153,10 @@ When adding or modifying skills, verify:
 
 - [ ] Imperative/infinitive form (verb-first instructions)
 - [ ] No second person ("you should") — use objective language ("To accomplish X, do Y")
-- [ ] When a skill must block on a user question, name the harness tool — `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex — and fall back to numbered options in chat only when no blocking tool exists. The plugin ships cross-harness (Codex/.agents/.kilocode), so a bare "ask the user" silently degrades to chat off-Claude
+- [ ] When a skill must block on a user question, name the harness tool — `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex — and fall back to numbered options in chat only when no blocking tool exists. For a blocking chat fallback, name the pending decision on the first line and place the question in the final block. The plugin ships cross-harness (Codex/.agents/.kilocode), so a bare "ask the user" silently degrades to chat off-Claude
 - [ ] No bare `/ia-x` slash commands in skill bodies. Only `skills/` ships to Codex/.agents/.kilocode (`.codex-plugin/plugin.json` declares `"skills"` and no commands key), so a slash command printed there resolves to nothing on three of four distribution targets. Reference a sibling component by skill name (`ia-planning`); where a user is genuinely told to invoke something, scope it — "planning (`/ia-plan` in Claude Code)". Descriptive mentions inside a conditional ("when invoked via `/ia-lfg`") are fine
 - [ ] No model-specific workarounds. A step that cannot be justified without naming a model, a model version, or one agent's private tool name is an issue to file, not skill content. The plugin ships to four harnesses across model families, so a step written to route around one model's failure is a tax on every other reader. Describe the capability the step needs, not the mechanism one model happens to require
-- [ ] No literal `$1`-`$9` or `$ARGUMENTS` in a SKILL.md body. Substitution applies to the skill's markdown content and to bash rules in `allowed-tools` frontmatter; it does **not** apply to `references/*.md`. A Postgres placeholder or shell positional written in the body is rewritten before the model sees it — put such examples in a reference file, or use `?`-style placeholders in the body
+- [ ] No literal `$0`-`$9` or `$ARGUMENTS` in a SKILL.md body. Substitution applies to the skill's markdown content and to bash rules in `allowed-tools` frontmatter; it does **not** apply to `references/*.md`. A Postgres placeholder or shell positional written in the body is rewritten before the model sees it — put such examples in a reference file, or use `?`-style placeholders in the body
 
 ### Bundled scripts
 
@@ -335,10 +335,12 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 Only include fields from the official Claude Code spec:
 
 - Required: `name`, `owner`, `plugins`
-- Optional: `metadata` (with description and version)
+- Optional: `metadata` (with description and version), `renames`, `forceRemoveDeletedPlugins`
 - Plugin entries: `name`, `description`, `version`, `author`, `homepage`, `tags`, `source`
 
 Do not add custom fields (`downloads`, `stars`, `rating`, `categories`, etc.).
+
+Keep `renames` as append-only history from former plugin names to current names or `null`. Validate changes with `claude plugin validate .`; see the [official rename and removal documentation](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin).
 
 ## Resources
 

@@ -24,6 +24,7 @@ This command takes a work document (plan or specification) and executes it syste
 
 1. **Read Plan and Clarify**
 
+   - If the argument is an issue reference (`#123` or an issue URL), fetch it through the tracker CLI and state its title before starting work. Ask which issue is intended if the reference is ambiguous.
    - Read the work document completely
    - Review any references or links provided in the plan
    - If anything is unclear or ambiguous, ask clarifying questions now
@@ -213,6 +214,8 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    - Code follows existing patterns
    - Figma designs match (if applicable)
    - No console errors or warnings
+   - Compare the plan's acceptance criteria and done-when sections with `origin/<base>` when that ref contains the plan; otherwise use the plan's first commit on the branch, or report `baseline unavailable`. Ignore checkbox completion marks when identifying criterion edits. Audit the original criteria even when the current plan changed, and disclose those changes as `Acceptance edits:` in the PR Testing section. The introducing commit cannot expose criteria changed before that commit.
+   - Disclose each relaxed test, threshold, or suppression and its reason as `Gate edits:` in the same section, or `none`. Disclosure does not authorize weakening a requirement to obtain a pass.
 
 4. **Prepare Operational Validation Plan** (REQUIRED)
    - Add a `## Post-Deploy Monitoring & Validation` section to the PR description for every change.
@@ -280,6 +283,8 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    ## Testing
    - [Tests added/modified]
    - [Manual testing performed]
+   - Acceptance edits: [criterion changes and baseline used, none, or baseline unavailable]
+   - Gate edits: [relaxed tests, thresholds, or suppressions with reasons, or none]
    - `Code review: reviewed` (agents ran, findings addressed) — or one of the Phase 3 skip phrases verbatim: `Code review: skipped (mechanical diff)` / `Code review: skipped (unavailable)`, each followed by a one-line reason
 
    ## Post-Deploy Monitoring & Validation
@@ -301,6 +306,8 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    - Before an authorized local merge, capture the base commit and preserve the feature branch. Run tests after integration; on failure, reverse the complete integration from the captured base, verify restoration, and keep the feature branch for diagnosis. Follow [Local merge and recovery](../skills/ia-git-worktree/references/worktree-integration.md#local-merge-and-recovery); a tip-only revert does not undo a multi-commit fast-forward.
 
 4. **Notify User**
+   - If completion awaits a user decision, name that decision on the first line and put the question in the final block with nothing after it.
+   - Present any deliverable before its go-ahead question; keep non-blocking follow-ups inline.
    - Summarize what was completed using experiential framing (what the user/end-user can now do, then technical details)
    - State the Phase 3 code-review disposition verbatim (reviewed, or the skip phrase plus its reason)
    - Link to PR (if created)

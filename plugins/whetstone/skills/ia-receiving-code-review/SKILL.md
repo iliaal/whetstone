@@ -27,9 +27,11 @@ Read [evidence-and-disagreement.md](./references/evidence-and-disagreement.md) w
 
 Use the documented dismissal categories with evidence: `FP-ASSUMPTION`, `FP-CONVENTION`, `FP-ALREADY-HANDLED`, and `FP-OUT-OF-SCOPE`. The last means a real concern deferred elsewhere, not a technically false finding. Name its authorized tracking destination or report the follow-up without creating external records.
 
+Use `ACCEPTED-RISK` only for an explicit owner decision to retain a valid, in-scope defect that is rare under supported conditions, recoverable, and disproportionately complex to fix. Exclude security, data loss, money, and persisted-state corruption. State the tradeoff in one line in both the reply and report. In headless mode, escalate the proposed tradeoff; never auto-decline it.
+
 A covering fix must satisfy every precondition of the supposedly subsumed finding. After handling an example, test neighboring functions or variants; check deterministic hard caps before dismissing a failure as unreproducible.
 
-Accept missed bugs, valid edge cases, readability improvements, and better domain evidence. If a pushback proves wrong, state the correction and its reason plainly.
+Accept missed bugs, valid edge cases, readability improvements, and better domain evidence; retain a valid defect only under the `ACCEPTED-RISK` exception above. If a pushback proves wrong, state the correction and its reason plainly.
 
 ## Conditional guidance
 

@@ -23,7 +23,7 @@ When the review target is a branch (not a working-tree diff), the comparison ran
 
 ### Coverage gate
 
-Enumerate changed files **before** exclusions and track each path through `selected -> pending -> covered | failed` or `excluded(reason)` per [scope-resolution.md](./scope-resolution.md). Keep tests and deletions reviewable. Give each selected file one correctness owner; any pending or failed path forces **Not ready**. List exclusions under Residual Risks.
+Enumerate changed files **before** exclusions and track each `(path, change-status)` entry through `selected -> pending -> covered | failed` or `excluded(reason)` per [scope-resolution.md](./scope-resolution.md). Keep tests and deletions reviewable. Give each selected entry one correctness owner; any pending or failed entry forces **Not ready**. List exclusions under Residual Risks.
 
 ## Review Mode Selection
 
@@ -31,7 +31,7 @@ Enumerate changed files **before** exclusions and track each path through `selec
 
 **Exceptions first**: passive prose and mechanical refactors with no behavior change usually need only a single pass. Classify files by their role: agent instructions, configuration, executable examples, and policy/gate definitions remain subject to correctness/security review even in Markdown. A short diff or `.md` extension alone does not override material risk signals.
 
-**Verification-mechanism carve-out:** even when a change stays single-pass by the exceptions above, if it *is* a verification mechanism (CI/CD gate, merge-block check, coverage/lint gate, build/deploy step, or test infra/mock that could mask a real failure), apply the "can this silently false-pass?" lens during the single-pass review: the mechanism can go green while the thing it guards is red. In deep review this same lens runs as a size-independent red-team trigger (see [deep-review.md](./deep-review.md)). A diff that modifies a documented-standards file (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, STYLE.md, lint configs) gets the same treatment: it is not "pure documentation", so apply deep-review's standards-disclosure rule (quote each rule added or loosened and the findings it would suppress in this same diff, which still report) during the single-pass review.
+**Verification-mechanism carve-out:** even when a change stays single-pass by the exceptions above, if it *is* a verification mechanism (CI/CD gate, merge-block check, coverage/lint gate, build/deploy step, or test infra/mock that could mask a real failure), apply the "can this silently false-pass?" lens during the single-pass review: the mechanism can go green while the thing it guards is red. In deep review this same lens runs as a size-independent red-team trigger (see [deep-review.md](./deep-review.md)). A diff that modifies a documented-standards file (including CLAUDE.md, AGENTS.md, CONTRIBUTING.md, STYLE.md, STANDARDS.md, CODING_STANDARDS.md, lint configs, standards discovered under docs, and files named as standards by repo instructions) gets the same treatment: it is not "pure documentation", so apply deep-review's standards-disclosure rule (quote each rule added or loosened and the findings it would suppress in this same diff, which still report) during the single-pass review.
 
 ### Outcome-integrity lens
 

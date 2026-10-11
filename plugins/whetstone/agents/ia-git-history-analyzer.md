@@ -69,15 +69,19 @@ Identify key contributors and their domains. Resolve `REVIEWED_REVISION` to the 
 git shortlog -sn "$REVIEWED_REVISION" -- <path>
 ```
 
+Use the repository's `.mailmap` identity mapping when grouping contributors; `git shortlog` applies it. Exclude confirmed bot accounts such as Dependabot and Renovate before identifying human contributors or inferring owners. Record the excluded identities.
+
 ### Step 6: Change Clustering
 
-Identify files that frequently change together (co-change analysis):
+Collect complete commit records for files that may change together (co-change analysis):
 
 ```bash
-git log --oneline --name-only -- <path> | head -100
+git log --use-mailmap --full-diff --format='commit %H%nAuthor: %aN <%aE>%nSubject: %s' --name-only --max-count=100 "$REVIEWED_REVISION" -- <path>
 ```
 
-Look for: rapid iteration periods vs stable periods, clustering of bug fixes, and files that always change as a group.
+Bound the sample by commits, not output lines. Declare a maximum changed-file count before ranking; discard commits above it and identified formatting, mass-rename, or dependency-only sweeps. Count each commit's full changed-path set before applying the path filter (`--full-diff` preserves that set). Exclude confirmed bots and noise paths such as lockfiles, CI glue, and editor configuration from the coupling calculation.
+
+Rank pairs using Jaccard similarity: commits touching both files divided by commits touching either file, within the same filtered sample. Report the numerator, denominator, examined range, and exclusions. Treat a high ratio supported by only one commit as weak evidence. Then examine rapid iteration, bug-fix clusters, and likely reasons for the observed coupling.
 
 ### Step 7: Synthesize Findings
 
@@ -103,7 +107,7 @@ Combine all evidence into a coherent narrative.
 - [Issue pattern]: [How it was resolved, with commit references]
 
 ### Co-Change Clusters
-- [File A] and [File B] always change together -- [reason]
+- [File A] and [File B]: [shared commits] / [commits touching either] = [Jaccard ratio] in [filtered range] -- [evidenced explanation or labeled inference]
 
 ### Insights for Current Work
 - [Actionable insight based on historical patterns]

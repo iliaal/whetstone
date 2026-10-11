@@ -35,6 +35,8 @@ Agents may solve problems differently each time. Your tests should:
 - Verify the end state, not the path
 - Accept reasonable ranges, not exact values
 - Check for presence of required elements, not exact format
+
+When comparing a hook, skill, or prompt intervention, use [intervention-evaluation.md](./intervention-evaluation.md) to distinguish content effects from interruption, ceiling effects, and run-to-run noise.
 </testing_philosophy>
 
 <can_agent_do_it_test>

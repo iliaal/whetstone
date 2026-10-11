@@ -88,6 +88,8 @@ You will systematically execute these security scans:
 
 5. **Sensitive Data Exposure**
    - Scan for hardcoded credentials, API keys, or secrets in source code
+   - Classify scan inputs by content, using signatures or control bytes rather than filename extensions. Keep minified text in the scan; archives, office documents, PDFs, databases, and keystores need separate inspection.
+   - List files the text scan cannot inspect as `unscanned, open manually`. Report a nonzero or unknown unscanned count as at least a warning. If enumeration stops early, mark the total unknown rather than zero.
    - Verify secrets come from environment variables or secret managers, not config files
    - Check for sensitive data in logs or error messages
    - Verify proper encryption for sensitive data at rest and in transit
@@ -108,6 +110,13 @@ You will systematically execute these security scans:
 ## Audit Deliverable Format
 
 Include an explicit coverage checklist in the report. Load [security-test-coverage.md](../skills/ia-code-review/references/security-test-coverage.md) for relevant authentication, authorization, input, concurrency, session, and output checks. Mark each applicable check verified or uncovered; mark irrelevant checks not applicable with a reason. Emit demonstrated vulnerabilities as `SS-001`, `SS-002`... with CVSS base score/vector, exploit evidence, and a verified remediation or concrete remedy to validate. Keep missing tests and unverified exploit premises in Coverage gaps / Residual Risks; they are not vulnerabilities merely because a test is absent.
+
+For audits beyond a single diff whose finding root needs multiple reading passes:
+
+- Read entry points, authentication, and payment code first; then services and data code; then helpers.
+- Account for every file in the finding root as `covered` (read in full), `skipped`, or `failed`. Name unread files as coverage gaps in the Executive Summary.
+- Keep root-wide conclusions partial while any file remains unread. Do not call the root clean, report no vulnerabilities for it, or claim the audit is complete.
+- If work is partitioned by module, read both sides of each cross-module import together to check trust, interface contracts, and authorization.
 
 ### Required fields per finding
 
@@ -167,4 +176,4 @@ If the security-patterns reference is unavailable, apply OWASP Top 10 checks inl
 
 This agent provides deep security analysis. For general code reviews that include a security check as one step among many, the `ia-code-review` skill handles that broader workflow.
 
-Memory-safety findings are reportable only on `.c/.cc/.cpp/.h/.rs`. When a finding lands in C or C++ and the remediation needs the authoring-side rule rather than the exploit, the `ia-c-systems` and `ia-cpp-systems` skills carry the overflow-checked allocation, lifetime, and undefined-behavior patterns to cite in the fix.
+Gate memory-safety findings on language: C/C++ sources and headers regardless of suffix (including `.hpp/.hh/.hxx/.cxx/.inl/.ipp`), and Rust `unsafe` code. Keep managed-language memory-safety findings excluded unless the code uses unsafe-memory APIs: Node `Buffer.allocUnsafe`/`allocUnsafeSlow` with uninitialized bytes reaching output, Python `ctypes`/`cffi`, or PHP `FFI`. Require a concrete unsafe-memory path and harm, not the API name alone. When a finding lands in C or C++ and the remediation needs the authoring-side rule rather than the exploit, the `ia-c-systems` and `ia-cpp-systems` skills carry the overflow-checked allocation, lifetime, and undefined-behavior patterns to cite in the fix.

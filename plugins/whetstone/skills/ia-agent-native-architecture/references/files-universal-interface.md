@@ -190,11 +190,28 @@ If agents and users write to the same files, you need a conflict model.
 
 Most implementations use **last-write-wins** via atomic writes:
 
-```swift
-try data.write(to: url, options: [.atomic])
+```typescript
+import { randomUUID } from "node:crypto";
+import { open, rename, rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
+async function replaceAtomically(path: string, data: Uint8Array): Promise<void> {
+  const temporary = join(dirname(path), `.${randomUUID()}.tmp`);
+  const handle = await open(temporary, "wx", 0o600);
+  try {
+    try {
+      await handle.writeFile(data);
+    } finally {
+      await handle.close();
+    }
+    await rename(temporary, path);
+  } finally {
+    await rm(temporary, { force: true });
+  }
+}
 ```
 
-This is simple but can lose changes.
+This Node.js example assumes a trusted destination on a POSIX filesystem. The temporary file and destination share a directory, so replacement is atomic. Atomic replacement alone neither checks revisions nor guarantees crash durability. It is simple but can lose changes from concurrent writers.
 
 ### Options
 

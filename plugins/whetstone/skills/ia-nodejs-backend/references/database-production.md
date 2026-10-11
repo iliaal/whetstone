@@ -36,6 +36,7 @@ Always `EXPLAIN ANALYZE` slow queries. Watch for sequential scans on large table
 - **Docker**: multi-stage build using the same supported Node release in builder and runtime, matching the project's `engines` and required APIs (Node 22+ for this skill; for example, `node:22-alpine` while supported). Pin the project's chosen image version or digest; install runtime dependencies with `npm ci --omit=dev`.
 - **Process**: PM2 cluster mode (`instances: 'max'`) or container orchestration
 - **Shutdown**: SIGTERM → stop accepting connections → drain in-flight → close DB pool
+  - Deduplicate signal handling separately from application-initiated shutdown. A SIGTERM listener suppresses Node's default termination; if a signal arrives during `close()`, await the shared shutdown promise and then terminate, rather than returning because shutdown already started. Attempt every resource's teardown even when another fails, with a forced `disconnect()` / `destroy()` fallback when graceful close rejects. Verify both a signal during `close()` and a rejected resource teardown.
 - **Logging**: Pino (structured JSON), not console.log
 - **Health**: `GET /health` returning `{ status: 'ok' }`
 - **Compression**: gzip/brotli via middleware

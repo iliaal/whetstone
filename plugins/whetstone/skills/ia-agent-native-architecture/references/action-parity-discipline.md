@@ -238,33 +238,32 @@ Whatever the user sees, the agent should be able to access.
 
 ### The Problem
 
-```swift
+The examples use application-owned `books` and `analysisRecords` arrays and a `renderAnalysisList` UI adapter.
+
+```typescript
 // UI shows recent analyses in a list
-ForEach(analysisRecords) { record in
-    AnalysisRow(record: record)
-}
+renderAnalysisList(analysisRecords);
 
 // But system prompt only mentions books, not analyses
-let systemPrompt = """
+const systemPrompt = `
 ## Available Books
-\(books.map { $0.title })
-// Missing: recent analyses!
-"""
+${books.map(book => `- ${book.title}`).join("\n")}
+`;
 ```
 
 The user sees their reading journal. The agent doesn't. This creates a disconnect.
 
 ### The Fix
 
-```swift
+```typescript
 // System prompt includes what UI shows
-let systemPrompt = """
+const systemPrompt = `
 ## Available Books
-\(books.map { "- \($0.title)" }.joined(separator: "\n"))
+${books.map(book => `- ${book.title}`).join("\n")}
 
 ## Recent Reading Journal
-\(analysisRecords.prefix(10).map { "- \($0.summary)" }.joined(separator: "\n"))
-"""
+${analysisRecords.slice(0, 10).map(record => `- ${record.summary}`).join("\n")}
+`;
 ```
 
 ### Context Parity Checklist
@@ -284,12 +283,12 @@ For each screen in your app:
 #!/bin/bash
 # pre-commit hook: check for new UI actions without tools
 
-# Find new SwiftUI Button/onTapGesture additions
-NEW_ACTIONS=$(git diff --cached --name-only | xargs grep -l "Button\|onTapGesture")
+# Flag staged additions of web UI action handlers for parity review
+NEW_ACTIONS=$(git diff --cached --unified=0 -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -E '^\+[^+].*(onClick|onSubmit|addEventListener)')
 
 if [ -n "$NEW_ACTIONS" ]; then
     echo "⚠️  New UI actions detected. Did you add corresponding agent tools?"
-    echo "Files: $NEW_ACTIONS"
+    echo "Added lines: $NEW_ACTIONS"
     echo ""
     echo "Checklist:"
     echo "  [ ] Agent tool exists for new action"
@@ -355,7 +354,9 @@ Agent: "I'm not sure what system you're referring to. Could you clarify?"
 
 **Fix:**
 
-```swift
+Here, `tool` is the application's tool-registration adapter, `z` is Zod's schema builder, and `feedService` is the same publishing service used by the UI. Include both prompt strings in the agent's context.
+
+```typescript
 // 1. Add the tool
 tool("publish_to_feed",
     "Publish an insight to the user's reading feed",
@@ -371,18 +372,18 @@ tool("publish_to_feed",
 );
 
 // 2. Update system prompt
-"""
+const capabilityPrompt = `
 ## Your Capabilities
 
-- **Publish to Feed**: Create insights that appear in the Feed tab using `publish_to_feed`.
-  Include a book_id, content, and a punchy headline.
-"""
+- **Publish to Feed**: Create insights that appear in the Feed tab using publish_to_feed.
+  Include bookId, content, and a punchy headline.
+`;
 
 // 3. Add to context injection
-"""
+const feedContext = `
 When the user mentions "the feed" or "reading feed", they mean the Feed tab
-where insights appear. Use `publish_to_feed` to create content there.
-"""
+where insights appear. Use publish_to_feed to create content there.
+`;
 ```
 
 **After:**

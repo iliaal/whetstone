@@ -18,11 +18,13 @@
 
 "Tests pass" and "requirements met" are different claims: re-read the plan or requirements, create a line-by-line checklist, verify each item against the implementation, then report gaps or confirm completion. Passing tests prove the code works, not that the right code was written.
 
+Build the checklist from the plan and later clear corrections in the conversation; a later correction supersedes the earlier item, which stays visible as superseded.
+
 ## Common Claims and Their Proof
 
 | Claim | Required Proof |
 |-------|---------------|
-| "Tests pass" | Test runner output showing 0 failures, exit code 0 |
+| "Tests pass" | Test runner output showing 0 failures, exit code 0, and a positive executed-test count |
 | "Build succeeds" | Build command output with exit code 0 |
 | "Bug is fixed" | Original reproduction case now passes |
 | "Feature complete" | All acceptance criteria verified individually |
@@ -40,6 +42,8 @@ Before marking a deliverable done, classify how it can be verified, then verify 
 | Cross-repo | a file or contract in a sibling repository | the sibling is reachable on disk: check the path exists and holds the expected content; unreachable means unverifiable, cite what to check |
 | External state | DNS record, cloud console setting, OAuth allowlist, secret-manager entry | unverifiable from the tree; name the system and the exact check the user must run |
 | Content shape | a file must follow a convention | in this repo: run the project's validator; elsewhere: cross-repo rules apply |
+
+Distinguish implemented, pushed or merged, deployed, and externally verified delivery states; evidence for an earlier state never proves a later one.
 
 The ledger tracks per-item sweep state; these outcomes classify each deliverable in the final report; a ledger row is `done` only when its deliverable classifies as done or changed. Outcomes are **done**, **partial**, **not done**, **changed** (same goal, different means; say how), or **unverifiable**. A concrete filesystem path is never unverifiable: run the existence check and report done or not done. Code that *handles* a deliverable is not the deliverable; shipping the extractor is not shipping the extracted file. When torn between done and unverifiable, report unverifiable; a confirmation prompt costs seconds, a silently missed deliverable does not.
 

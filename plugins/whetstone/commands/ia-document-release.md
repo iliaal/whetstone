@@ -35,6 +35,7 @@ Make obvious factual updates directly. Stop and ask only for risky or subjective
 - Never use `Write` on CHANGELOG.md; always use `Edit` with exact `old_string` matches
 - Never bump VERSION without asking first
 - Read the full file before editing any file
+- For automatic documentation corrections, copy install commands, URLs, and version strings only from the reviewed diff, a package manifest, or the file being edited. If the source is unclear, use a verified link to authoritative documentation instead of inventing a command. Otherwise skip the unsupported edit and report it.
 
 ---
 
@@ -115,6 +116,9 @@ Read each documentation file and cross-reference against the diff. Classify each
 - Does the project structure section match the actual file tree?
 - Are listed commands, scripts, and file paths accurate?
 - Do build/test instructions match what's in the package manager config?
+- Map each changed source file to its nearest enclosing AGENTS.md. Audit that file, including nested context files.
+- Create a nested AGENTS.md only when the diff introduces the entire area it documents. For a partially touched, existing undocumented area, flag a full initialization or audit with `ia-md-docs` instead.
+- Preserve curated prose. Add factual guidance where needed, and report conflicts instead of rewriting that prose.
 
 **Other authored documentation files:**
 - Read the file, determine its purpose and audience.
@@ -188,10 +192,18 @@ Skip if TODOS.md does not exist.
 
 **Never bump VERSION without asking.**
 
-Check if VERSION (or the version field in plugin.json/package.json/pyproject.toml) was already modified on this branch:
+First inspect the repository's version sources and release instructions. Check VERSION files, manifest version fields, release-please configuration, `.changeset/`, semantic-release configuration, and repository release commands to establish who owns version changes.
+
+- **No version source configured:** Report `VERSION: not applicable (no configured version source)` and skip this step. Never create a VERSION file.
+- **A release command or automation owns the version:** Report `VERSION: not applicable (<owner>)` and skip manual bump choices.
+- **Configured source unreadable or malformed:** Report `VERSION: skipped (<error>)` and skip this step. Do not infer a replacement version.
+
+Apply the same classification to any version update in the PR title. Do not add a version to the commit message when the source is unavailable or this step is not applicable.
+
+For a readable, manually managed version source, check whether its actual path or paths were already modified on this branch:
 
 ```bash
-git diff --no-textconv --no-ext-diff origin/<base>...HEAD -- VERSION plugin.json package.json pyproject.toml 2>/dev/null
+git diff --no-textconv --no-ext-diff origin/<base>...HEAD -- <version-source-paths>
 ```
 
 **If not bumped:** Ask:
@@ -219,7 +231,7 @@ If this task made no documentation changes, output "All documentation is up to d
 ```bash
 git add -- <owned-file1> <owned-file2>
 git diff --cached --binary --no-textconv --no-ext-diff -- <owned-file1> <owned-file2>
-git commit --only -m "docs: sync documentation for vX.Y.Z" -- <owned-file1> <owned-file2>
+git commit --only -m "docs: sync documentation" -- <owned-file1> <owned-file2>
 git show --format=fuller --binary --no-textconv --no-ext-diff HEAD
 git diff --cached --binary --no-textconv --no-ext-diff
 ```
@@ -268,4 +280,4 @@ Documentation health:
   VERSION         [Bumped -- 2.45.5 → 2.45.6]
 ```
 
-Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not bumped -- user chose to skip`, `Committed, not pushed -- <error>`
+Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not applicable (<reason>)`, `Skipped (<error>)`, `Not bumped -- user chose to skip`, `Committed, not pushed -- <error>`

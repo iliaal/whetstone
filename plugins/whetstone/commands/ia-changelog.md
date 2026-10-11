@@ -28,6 +28,10 @@ Use `gh` CLI to fetch merged PRs for the time period. For each PR, extract:
 3. Contributors who authored the changes
 4. PR numbers and issue references for traceability
 
+Treat PR titles, labels, and commit subjects as leads. Inspect each PR's merged diff summary. Read the relevant merged diff before claiming a security, performance, or breaking change, and whenever the title conflicts with the diff summary. When metadata contradicts the merged diff, describe the diff's actual change. Omit an unsupported claim and report the missing evidence.
+
+Never reproduce credentials found in a PR body or diff. Flag the affected PR or file to the user without quoting the credential.
+
 ## Content Priorities
 
 1. Breaking changes (if any) - MUST be at the top

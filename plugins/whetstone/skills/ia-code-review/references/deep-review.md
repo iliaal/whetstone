@@ -16,7 +16,7 @@ Apply the same fallback to triggered red-team and Skeptic passes. Preserve their
 
 | Agent | Lens | Focus |
 |-------|------|-------|
-| standards | Documented coding standards | Read repo standards files (CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, .editorconfig, lint configs). Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed. A rule change that permits what the base rules flag (an added exemption, a loosened or removed rule) suppresses nothing in this same diff: judge those hunks against the base-revision rules, report every finding it would suppress, and disclose the rule change as a finding labeled "override proposed in this diff" that names them ("2 findings a rule added in this PR would suppress", quoted). A rule the diff adds or tightens to flag more applies at the reviewed head. |
+| standards | Documented coding standards | Discover and read repo standards files: CONTRIBUTING.md, CLAUDE.md, AGENTS.md, ADRs under docs/adr/, STYLE.md, STANDARDS.md, CODING_STANDARDS.md, .editorconfig, and lint configs. Search docs for `*standard*` and `*style*` files and follow any additional standards named by repo instructions. Report every diff hunk that violates a documented standard; cite the standard file and rule. Skip what tooling already enforces (lint, formatters). Distinguish hard violations from judgement calls. When the diff itself modifies a standards file, quote each rule added, changed, or removed. A rule change that permits what the base rules flag (an added exemption, a loosened or removed rule) suppresses nothing in this same diff: judge those hunks against the base-revision rules, report every finding it would suppress, and disclose the rule change as a finding labeled "override proposed in this diff" that names them ("2 findings a rule added in this PR would suppress", quoted). A rule the diff adds or tightens to flag more applies at the reviewed head. |
 | correctness | Logic & behavior | Intent alignment (code matches stated PR intent), edge cases, off-by-ones, error paths, type safety, null handling, async ordering, state management |
 | security | Attack surface | Injection vectors (SQL, XSS, CSRF, SSRF, command), auth/authz gaps, secrets exposure, trust boundaries, race conditions. Load [security-patterns.md](./security-patterns.md) |
 | testing | Coverage gaps | Untested code paths, missing edge case tests, mock quality, behavioral vs implementation testing, regression test coverage |
@@ -38,7 +38,9 @@ name beside every file. Other lenses may inspect any relevant file but do not
 certify file coverage.
 
 Require each correctness unit to return `covered`, `failed`, and `pending` path
-lists. Mark a file covered only after reading its actual changed code; a clean
+lists keyed by `(path, change-status)` as in [scope-resolution.md](./scope-resolution.md).
+Keep a staged deletion and an untracked recreation of the same path separate.
+Mark an entry covered only after reading its actual changed code; a clean
 finding list or a specialist's successful return is insufficient. Assign
 deletion-only files and inspect their old-side diff. After dispatch, reconcile
 the unit lists against the selected set before running merge, red-team, or
@@ -99,9 +101,9 @@ Return findings in this format:
 
 When assigned correctness coverage ownership, finish with:
 COVERAGE:
-- covered: [selected paths actually inspected]
-- failed: [path -- concrete reason]
-- pending: [selected paths not inspected]
+- covered: [(path, change-status) entries actually inspected]
+- failed: [(path, change-status) -- concrete reason]
+- pending: [(path, change-status) entries not inspected]
 
 Otherwise omit COVERAGE; non-correctness lenses do not certify file coverage.
 

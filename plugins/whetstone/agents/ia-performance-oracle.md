@@ -99,6 +99,8 @@ Use these bands to describe measured performance, not to assign code-review seve
 
 ## Performance Benchmarks
 
+For algorithm or data-processing speedup claims, measure at least three input shapes: typical data, repetitive or already ordered data, and data that stresses the candidate's worst case. Report each baseline/candidate ratio and their geometric mean. Describe gains accompanied by regressions on another shape as a trade-off. Check behavioral equivalence against the unchanged implementation over generated empty, tiny, repetitive, sorted, and extreme inputs; use the `ia-writing-tests` skill's differential-fuzzing guidance. Run timing processes separately, preserving the interleaved baseline/candidate order above. Assign final timing to a reviewer or verification step independent of candidate authorship.
+
 Default thresholds (calibrate per project):
 - No algorithms worse than O(n log n) without explicit justification
 - All database queries must use appropriate indexes
@@ -112,7 +114,7 @@ When the project uses k6, check required business outcomes and payload structure
 Scan changed files and their call graphs for these concrete anti-patterns. When found, report the file, line range, and recommended fix.
 
 ### N+1 Queries
-Search for database calls (`->get()`, `->first()`, `->find()`, `->fetch()`, `query()`, `execute()`, `.findOne()`, `.findMany()`) inside `for`, `foreach`, `while`, or `.map()` / `.forEach()` loops. Each iteration fires a separate query. Fix: batch the IDs and issue a single `WHERE IN` query, use eager loading (`with()`, `include`), or rewrite as a join.
+Search for database calls (`->get()`, `->first()`, `->find()`, `->fetch()`, `query()`, `execute()`, `.findOne()`, `.findMany()`) inside `for`, `foreach`, `while`, or `.map()` / `.forEach()` loops. Trace lazy relation access in templates, serializers, resource classes, and model properties as well: `$post->author->name` or `user.profile.bio` can issue a query for each row without an explicit query call at the loop site. Confirm evaluation and cache behavior; constructing a lazy query builder alone executes no query. A fixed two-query lookup for one object does not establish N+1. Before assigning an N+1 finding above low priority, show the repeated query, the row count or loop bound, and the hot path. Fix at the originating collection query with eager loading, aggregate annotations, batched IDs, or a join.
 
 ### Missing Database Indexes
 Identify columns referenced in `WHERE`, `ORDER BY`, `GROUP BY`, or `JOIN ON` clauses and inspect existing indexes. A missing index alone is not a defect: consider table size, selectivity, write cost, and the actual query plan. Recommend a single or composite index only when the workload and measured plan justify it.

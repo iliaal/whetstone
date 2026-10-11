@@ -95,3 +95,4 @@ Read the relevant reference before implementing or reviewing the matching behavi
 Existing specialized references, when the corresponding topic applies:
 
 - [durability-and-attestation.md](./references/durability-and-attestation.md).
+- For controlled evaluations of hooks, skills, or prompt rules, read [intervention-evaluation.md](./references/intervention-evaluation.md).

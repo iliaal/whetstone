@@ -7,7 +7,9 @@ Load this reference during the line-by-line review step. Use the category lists 
 - Edge cases (null, empty, boundary values, concurrent access)
 - Error paths (are failures handled or swallowed?)
 - Type safety (implicit conversions, `any` types, unchecked casts)
-- New enum/status/type values: trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff. Missing handler = wrong default at runtime.
+- New enum/status/type values or widened accepted inputs (MIME types, extensions, flags, validator shapes): trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff and verify consumers handle the newly accepted shape. Missing handler = wrong default at runtime.
+- A new cache in front of a guarded or metered call: name every check a hit skips (authorization, quota, consent, rate limit). Verify required checks still run on hits.
+- Static import changed to dynamic import: trace top-level side effects (registrations, route tables, environment validation) and readers that can now run before initialization or see an empty registry.
 - Repeated switches: a diff adding another branch-set (switch/if-chain/map) over a discriminator already switched on elsewhere. Fix is a shared mapping or polymorphic dispatch at the owning layer, not another copy of the branch-set.
 - Sentinel overload: a diff that reuses an existing sentinel (`null`, `undefined`, empty array/object, fallback enum) for a *new* state. If one value now means two things (consumers can't tell "no data" from "data exists but unsummarizable"), require a richer shape or explicit discriminator. "Type-checks and doesn't crash" is not the bar.
 - Dormant constraint: a new condition or filter added to a shared helper whose only current call site does not exercise it. Nothing breaks today and no test can fail; the first caller to use the combination inherits the bug. Require the constraint be documented where the caller sees it, or the unexercised combination rejected outright.
@@ -40,6 +42,7 @@ Load this reference during the line-by-line review step. Use the category lists 
 - Edge cases under pressure: max input size, zero items, first-run-ever, double-click within 100ms, concurrent identical requests
 - Partial completion: operations that can crash mid-way leaving state inconsistent (no rollback, no cleanup)
 - Floor guards: tightening a quality gate is silent, loosening is loud only if someone looks. Flag: a loosened threshold, read by limit type (a minimum loosens by going down: coverage, mutation score, lint level; a maximum loosens by going up: test timeout, size budget, max complexity, `--max-warnings`, max retries, allowed-failure count; when the direction cannot be read from the changed number, report the change rather than assume it tightened), a rule removed from a standards or threshold file, a test weakened (`.skip`, deleted, assertion removed), a new suppression comment (`eslint-disable`, `# noqa`, `@ts-ignore`, `#[allow]`), a stub or empty catch replacing real handling, a new row in a tracked-exceptions list
+- Additional gate-relaxation signals: a snapshot or golden changed without its owning test changing; product behavior branching on test/CI environment values (`NODE_ENV`, `process.env.CI`, `PYTEST_CURRENT_TEST`, `APP_ENV`); added `[skip ci]`, `continue-on-error: true`, `allow_failure: true`, or `--no-verify`. Trace whether each change weakens the gate or substitutes behavior during verification. Group a shared threshold change affecting several tests as one finding. A measurement cited in a comment or commit message is evidence to assess, not grounds to suppress a confirmed relaxation
 
 ## AI-generated code lens
 

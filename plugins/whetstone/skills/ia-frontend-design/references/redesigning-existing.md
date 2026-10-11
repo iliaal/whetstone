@@ -1,5 +1,14 @@
 # Redesigning Existing Interfaces
 
+## Reference-fidelity mode
+
+When the task is to implement a supplied mockup, screenshot, or design frame, treat the reference as an existing design system regardless of repository signal count. Skip the design philosophy and swap test. Let the reference's appearance override generic taste rules and banned-pattern tables. Retain functional, accessibility, and content-authenticity requirements.
+
+1. Transcribe readable visible copy exactly. Flag illegible text or missing assets instead of inventing a replacement silently.
+2. Extract type sizes and weight relationships, heading-to-body and text-to-action gaps, section gutters, component shapes and fills, and semantic color roles.
+3. Resolve unclear details from the visible design language first, then spacing and layout relationships, then the component family. Use generic defaults only where those sources provide no answer.
+4. Compare rendered narrow and wide layouts with the reference. Check for lost hierarchy, compressed spacing, or distinctive compositions flattened into generic rows. Report intentional responsive adaptations and unresolved details.
+
 ## Screenshot Iteration Mode (repair from evidence)
 
 When the entry point is a screenshot plus a complaint ("here's the page, this looks wrong, fix it") rather than a greenfield brief, route by evidence, not by vibe:
@@ -24,4 +33,4 @@ Use the [redesign-audit.md](./redesign-audit.md) checklist (typography, color, l
 
 Work with the existing tech stack. Do not migrate frameworks or styling libraries. Keep changes reviewable and focused: small, targeted improvements over big rewrites. Before importing any new library or writing any styles, check `package.json` for the Tailwind version (v3 vs v4); v4 syntax in a v3 project will break the build.
 
-For a visual-only redesign, inspect the affected interface's behavioral dependencies before changing markup. Preserve route paths, anchor IDs, form field names, analytics event names, and selectors consumed by scripts or tests. Preserve legal and consent wording unless the requested change authorizes its revision. An authorized identifier migration requires updating its consumers. Exercise affected deep links, form submissions, tracked actions, and consent controls after the redesign; a screenshot does not establish that these behaviors still work.
+For a visual-only redesign, inspect the affected interface's behavioral dependencies before changing markup. Preserve route paths, anchor IDs, form field names, analytics event names, and selectors consumed by scripts or tests. Preserve primary navigation labels, the logo/wordmark, and legal and consent wording unless the requested change authorizes their revision. Retain page titles, descriptions, canonical URLs, JSON-LD structured data, and Open Graph/Twitter card metadata. Add redirects when an authorized migration changes routes. An authorized identifier migration requires updating its consumers. Preserve existing focus visibility, alt text, keyboard paths, and contrast. Exercise affected deep links, form submissions, tracked actions, and consent controls after the redesign; a screenshot does not establish that these behaviors still work. Recheck affected metadata and accessibility behavior after layout or template changes.

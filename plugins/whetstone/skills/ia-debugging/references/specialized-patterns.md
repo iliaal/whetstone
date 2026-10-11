@@ -19,6 +19,10 @@ Collects system info, language versions, git state, project files, and environme
 - Resource exhaustion: monitor memory growth, connection pool depletion, file descriptor leaks. Under load: check pool size vs concurrent request count, verify connections are returned on error paths (finally/dispose)
 - Timing-dependent: replace arbitrary `sleep()` with condition-based polling; wait for the actual state, not a duration
 
+For a suspected race, trace each access to the shared state with a monotonic timestamp and actor ID. Force the suspected ordering through a test-only barrier or delay hook that lets another actor enter the vulnerable window; if the original invariant does not fail reliably, the trigger is not yet isolated. Keep the controlled interleaving as the regression case and exercise at least eight concurrent writers where the operation supports them. Assert the actual invariant, such as one winner, an intact row, or a lock released only by its owner. A narrower check-then-act window does not establish a repair.
+
+To measure a flake, choose a fixed run count of at least ten per revision and record failures over total runs on both the base and candidate under matching conditions. Use the comparison to investigate attribution, not to retry until green; zero failures in a bounded sample does not prove the race absent.
+
 ## Performance Regressions
 
 For slow, latency, or throughput symptoms, code reading is not the reproduction step; a numeric measurement is.

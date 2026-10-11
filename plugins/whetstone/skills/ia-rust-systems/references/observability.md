@@ -25,6 +25,7 @@ Load this reference when adding logging, tracing, metrics, or distributed tracin
 
 - `#[tracing::instrument(skip(large_arg), fields(user_id = %user.id))]` on service methods: automatic span creation, structured fields.
 - Skip large args to keep spans lightweight; prefer named fields over stringified args.
+- Never hold a `Span::enter()` guard across `.await`; use `#[instrument]` or `.instrument(span)` so other tasks do not inherit the entered span.
 
 ## Correlation IDs
 

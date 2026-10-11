@@ -27,6 +27,7 @@ Create, list, or update ADRs in the repository's ADR directory (auto-detected; d
 - If input is `list` or empty: scan the detected ADR directory and present existing ADRs with status
 - If input is a title or topic: create a new ADR
 - If input starts with `deprecate`: create a Deprecation ADR (see Argument handling above)
+- If documenting a decision already present in code: use retroactive mode below
 
 ### 2. Choose format
 
@@ -50,6 +51,8 @@ Ask about, using the **AskUserQuestion tool**:
 
 For deprecation ADRs: which ADR is being superseded, why, and whether the replacement or retirement is proposed or accepted. The new record supersedes the original; do not mark the new record deprecated or point it at itself. Leave the accepted original unchanged unless updating its status and backlink is explicitly authorized by the caller.
 
+For retroactive ADRs, separate evidence from code and commit history from inferred intent. Record alternatives found in history, or state "none recorded"; do not invent prior deliberation.
+
 ### 4. Generate the ADR
 
 **Directory**: the detected convention (default `docs/decisions/`; create with `mkdir -p` if needed)
@@ -58,15 +61,17 @@ For deprecation ADRs: which ADR is being superseded, why, and whether the replac
 
 **Lifecycle states**: proposed, accepted, deprecated, superseded
 
+**Retroactive mode**: start with status `proposed (reconstructed)` and the date the record is written. Note that the decision predates the record. Require the decision owner's confirmation before changing the status to `accepted`.
+
 Use the template for the chosen format from [adr-templates.md](../shared-references/adr-templates.md).
 
 ### 5. Review checklist
 
 Before saving:
 - [ ] Context is complete: a reader unfamiliar with the discussion can understand why
-- [ ] Alternatives were genuinely considered (not just the chosen option)
+- [ ] Alternatives are recorded: options genuinely considered for new decisions; alternatives found in history, or "none recorded", for reconstructed decisions
 - [ ] Consequences state real trade-offs, not just benefits
-- [ ] Status is correct (proposed if needs review, accepted if decided)
+- [ ] Status is correct (proposed if needs review, accepted if decided; reconstructed records require owner confirmation before acceptance)
 
 ## Constraints
 

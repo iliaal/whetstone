@@ -33,7 +33,7 @@ trap 'rm -rf -- "${_tmpdir:-}"' EXIT
 - `inherit_errexit` propagates errexit into `$()`  command substitutions
 - Resolve the script's own data files against `SCRIPT_DIR`, never the caller's cwd or `git rev-parse --show-toplevel`. A shared linter invoked from another project's git hook, a cron job, or a wrapper runs with someone else's cwd, so a caller-relative rules path resolves to a file that does not exist: the rule set loads empty, zero violations are found, exit 0. It is a silent no-op, not an error, and running it from inside its own repo passes for the wrong reason. Exercise it once from a scratch directory that is not the script's own tree
 - Always create temp dirs under the EXIT trap: `_tmpdir=$(mktemp -d)`
-- Wrap body in `main() { ... }` with source guard: `[[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"`; enables sourcing for testing
+- Wrap the body in a `main` function. Guard its invocation so direct execution runs it and sourcing only defines functions for testing.
 
 ## Core rules
 

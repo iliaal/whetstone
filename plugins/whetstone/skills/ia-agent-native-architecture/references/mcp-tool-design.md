@@ -587,6 +587,14 @@ Credential presence is necessary but not sufficient authorization for a tool tha
 For local HTTP servers, bind to loopback and validate allowed origins. Also validate parsed `Host` or HTTP authority against the names and ports actually served, even when `Origin` is absent. A local allowlist typically uses `localhost`, `127.0.0.1`, or `[::1]` with the configured port. Reject missing, malformed, or unlisted authority values; do not accept an arbitrary domain because it resolves to loopback. For a reverse proxy, explicitly configure the served names and trust forwarded authority only from that proxy. Test an allowed local request and a foreign Host with no Origin, as well as an invalid Origin. The [MCP transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#security-warning) requires Origin validation; the [Python SDK transport checks](https://github.com/modelcontextprotocol/python-sdk/blob/main/src/mcp/server/transport_security.py) demonstrate the separate Host check. Neither check replaces authentication.
 </principle>
 
+<principle name="long-running-calls">
+## Long-Running and Human-Waiting Calls
+
+Use elicitation for human input instead of polling inside an open call. For long jobs, return a handle with a status tool, or negotiate [MCP task support](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks) with the client. Document the server timeout operators need; progress does not imply an unlimited request lifetime.
+
+In Claude Code v2.1.212+, main-conversation MCP calls move to background tasks after two minutes by default. Subagent and IDE calls do not; non-interactive calls require `CLAUDE_AUTO_BACKGROUND_TASKS=1`. An open elicitation dialog postpones backgrounding. Per-server `timeout` is a hard wall-clock limit in milliseconds that progress notifications do not extend. HTTP requests also have a first-byte timer: the maximum of 60 seconds, the configured tool timeout, and `MCP_TIMEOUT` (the unset tool timeout's default does not enter that comparison). Backgrounding preserves call limits. See [Claude Code's timeout and backgrounding contract](https://code.claude.com/docs/en/mcp#automatic-backgrounding-of-long-tool-calls).
+</principle>
+
 <principle name="tool-naming-multi-server">
 ## Tool Naming for Multi-Server Environments
 
@@ -631,6 +639,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
 - [ ] Error messages include recovery suggestions, not just failure descriptions
 - [ ] List endpoints paginate with `has_more`, `next_offset`, `total_count`
+- [ ] Long jobs return a handle/status tool or negotiate task support; human input uses elicitation, and documented timeouts account for host backgrounding
 - [ ] Bounded or paginated lookups return `incomplete` (distinct from not-found and unique) when a cap or unreadable records cut the scan short
 - [ ] Money-spending or live-external-effect tools require an explicit opt-in separate from credentials and ship a credential-free, labelled dry-run
 - [ ] Caught exceptions raised outside the tool's own code, or splicing in a value the tool received rather than derived, return a fixed generic message plus a correlation identifier; the raw exception text goes to the server log only. The tool's own validation errors, written by the author from values the tool computed, pass through as-is

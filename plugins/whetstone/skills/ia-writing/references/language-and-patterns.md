@@ -43,12 +43,13 @@ Weight detection toward structure: models reproduce sentence *structures* more r
 - Narrator-from-a-distance: "This happens because...", "People tend to...", "Nobody designed this." Put the reader in the room instead.
 - Lazy extremes: every, always, never, everyone, nobody (false authority). Use specifics instead of sweeping claims.
 - Meta-commentary: "Hint:", "Plot twist:", "Spoiler:", "In this section, we'll...", "As we'll see...", "Let me walk you through..."
+- Metadiscourse: redundant significance lines ("The retry count matters more than it seems"), praise of a tool's character ("The tool was honest about the missing result"), and intros that repeat the heading or list ("These four checks carry the review"). Keep signposts that add usable facts, such as "Run these checks in order:"
 - Mannered prose: an idiom or metaphor standing in for a literal phrase ("earns its keep", "a dial worth turning", "does the heavy lifting"). It displays the writer, not the idea, and drags in connotations the writer did not choose. Use the literal phrase.
 - Process narration: steps the writer took that do not change what the reader does next ("First I checked X, then re-ran Y"). Keep the finding or decision; cut the account of how the time was spent.
 - Bare tallies: counts, scorecards, and lists of everything checked with no decision attached ("resolved 11 threads"). Say what was decided and why; if nothing non-routine was decided, say nothing. Counts that are themselves the evidence (tests executed and passed, gate pass/fail, coverage-ledger file counts) stay, stated exact.
 
 **Formatting tells**:
-- No em dashes in delivered prose; restructure the sentence (split, comma, colon, rewrite). En dash only in numeric ranges
+- No em dashes in delivered prose; restructure the sentence (split, comma, colon, rewrite). Do not replace a dash mechanically with a semicolon. En dash only in numeric ranges
 - Mechanical bold on every other phrase
 - Emoji-decorated headers (exception: README section headers; see [README rules](./publication-surfaces.md#readme-rules))
 - Bolded-header bullet lists (**Thing:** explanation of thing)

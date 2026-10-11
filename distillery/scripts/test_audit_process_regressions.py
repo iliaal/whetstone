@@ -32,6 +32,7 @@ def repo(tmp_path):
     git(root, "init", "-b", "main")
     git(root, "config", "user.email", "test@example.invalid")
     git(root, "config", "user.name", "Fixture")
+    git(root, "config", "commit.gpgsign", "false")
     git(root, "config", "core.hooksPath", "/dev/null")
     (root / ".gitignore").write_text(".worktrees\n.env\ncache/\n")
     (root / "tracked").write_text("original")

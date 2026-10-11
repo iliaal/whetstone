@@ -141,7 +141,7 @@ Track mechanical coverage separately from finding quality. Prove only that each 
 
 ### Build the denominator before filtering
 
-After resolving the comparison range, freeze the original changed-file universe from its name-and-status output. Include added, modified, renamed, copied, and deleted paths. Include untracked files in workspace mode. Only then classify each path as `selected` or `excluded(reason)`.
+After resolving the comparison range, freeze the original changed-file universe from its name-and-status output. Include added, modified, renamed, copied, and deleted paths. Include untracked files in workspace mode. Only then classify each `(path, change-status)` entry as `selected` or `excluded(reason)`.
 
 Tests excluded from deep-review size signals are still part of the universe and
 remain selectable. Keep deletion-only changes selectable so removal regressions
@@ -162,37 +162,37 @@ these paths applies to *external dispatch only*; the hard-exclusion list in
 [external-review-subprocess.md](./external-review-subprocess.md) keeps them out
 of any packet that leaves the machine.
 
-Use one disposition per path:
+Use one disposition per `(path, change-status)` entry. In workspace mode, preserve both a staged deletion (`D `) and an untracked recreation (`??`) at the same path: inspect the deletion against HEAD and read the recreated file separately. Neither entry's completed review covers the other.
 
 | Set | Meaning |
 |-----|---------|
-| `changed` | Original pre-filter universe with path, change status, and workspace diff fingerprint when mutable. |
-| `selected` | Files that require a correctness review. |
-| `covered` | Selected files actually inspected by their assigned correctness coverage unit. |
-| `failed` | Selected files not reviewable, with concrete evidence such as timeout, unreadable input, or context exhaustion. |
-| `pending` | Selected files with no terminal disposition yet. |
-| `excluded` | Changed files deliberately outside review, with a reason. |
+| `changed` | Original pre-filter universe keyed by `(path, change-status)`, with a per-entry diff or content fingerprint when mutable. |
+| `selected` | Entries that require a correctness review. |
+| `covered` | Selected entries actually inspected by their assigned correctness coverage unit. |
+| `failed` | Selected entries not reviewable, with concrete evidence such as timeout, unreadable input, or context exhaustion. |
+| `pending` | Selected entries with no terminal disposition yet. |
+| `excluded` | Changed entries deliberately outside review, with a reason. |
 
 For standard reviews, hold the ledger in context. For persisted `/ia-review`
 runs, allocate a unique invocation-owned scratch directory and retain its exact
 path. Store the same top-level arrays there; entries
-carry `path` plus `status`/`fingerprint`, `unit`, or `reason` as applicable.
-Assign every selected file to exactly one correctness unit, even when multiple
+carry `path` and `status` (the change status), plus `fingerprint`, `unit`, or `reason` as applicable.
+Assign every selected entry to exactly one correctness unit, even when multiple
 specialist lenses inspect it.
 
 ### Reconcile before the verdict
 
 For a frozen branch or commit review, reconcile against the original
 name-and-status set. For mutable workspace review, re-enumerate and compare
-per-file diff fingerprints immediately before the verdict; add new or changed
-paths as pending.
+per-entry diff or content fingerprints immediately before the verdict; add new
+or changed entries as pending.
 
 Derive terminal coverage mechanically:
 
-- **complete**: `selected = covered`, with no failed or pending paths.
-- **partial**: at least one selected path is covered and at least one is failed or pending.
-- **failed**: selected paths exist but none received usable coverage, or scope identity became untrustworthy.
-- **skipped**: no files were selected; report that no review verdict was produced.
+- **complete**: `selected = covered`, with no failed or pending entries.
+- **partial**: at least one selected entry is covered and at least one is failed or pending.
+- **failed**: selected entries exist but none received usable coverage, or scope identity became untrustworthy.
+- **skipped**: no entries were selected; report that no review verdict was produced.
 
 Only complete coverage may produce `Ready to merge` or `Ready with fixes`.
 Partial or failed coverage forces `Not ready`, independently of finding count.

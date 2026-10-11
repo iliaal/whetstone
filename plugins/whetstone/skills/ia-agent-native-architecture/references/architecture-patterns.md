@@ -221,51 +221,51 @@ One execution engine, many agent types. All agents use the same orchestrator but
 
 **Implementation:**
 
-```swift
-// All agents use the same orchestrator
-let session = try await AgentOrchestrator.shared.startAgent(
-    config: ResearchAgent.create(book: book),  // Config varies
-    tools: ResearchAgent.tools,                 // Tools vary
-    context: ResearchAgent.context(for: book)   // Context varies
-)
+`AgentOrchestrator` and the tool registry below are application contracts. Implement lifecycle, checkpointing, authorization, and tool execution in the shared orchestrator; inject each agent's configuration.
 
-// Agent types define their own configuration
-struct ResearchAgent {
-    static var tools: [AgentTool] {
-        [
-            FileTools.readFile(),
-            FileTools.writeFile(),
-            WebTools.webSearch(),
-            WebTools.webFetch(),
-        ]
-    }
+```typescript
+type Book = { id: string; title: string; author: string };
+type AgentTool = {
+  name: string;
+  execute(input: unknown): Promise<unknown>;
+};
+type AgentSetup = {
+  config: { name: string };
+  tools: AgentTool[];
+  context: string;
+};
 
-    static func context(for book: Book) -> String {
-        """
-        You are researching "\(book.title)" by \(book.author).
-        Save findings to Documents/Research/\(book.id)/
-        """
-    }
+interface AgentOrchestrator {
+  startAgent(setup: AgentSetup): Promise<{ sessionId: string }>;
 }
 
-struct ChatAgent {
-    static var tools: [AgentTool] {
-        [
-            FileTools.readFile(),
-            FileTools.writeFile(),
-            BookTools.readLibrary(),
-            BookTools.publishToFeed(),  // Chat can publish directly
-            WebTools.webSearch(),
-        ]
-    }
+declare const orchestrator: AgentOrchestrator;
+declare const tools: Record<
+  "readFile" | "writeFile" | "webSearch" | "webFetch" |
+  "readLibrary" | "publishToFeed", AgentTool
+>;
 
-    static func context(library: [Book]) -> String {
-        """
-        You help the user with their reading.
-        Available books: \(library.map { $0.title }.joined(separator: ", "))
-        """
-    }
+function researchAgent(book: Book): AgentSetup {
+  return {
+    config: { name: "research" },
+    tools: [tools.readFile, tools.writeFile, tools.webSearch, tools.webFetch],
+    context: `Research "${book.title}" by ${book.author}.
+Save findings to Documents/Research/${book.id}/`,
+  };
 }
+
+function chatAgent(library: Book[]): AgentSetup {
+  return {
+    config: { name: "chat" },
+    tools: [tools.readFile, tools.writeFile, tools.readLibrary,
+      tools.publishToFeed, tools.webSearch],
+    context: `Help the user with their reading.
+Available books: ${library.map(book => book.title).join(", ")}`,
+  };
+}
+
+declare const book: Book;
+const session = await orchestrator.startAgent(researchAgent(book));
 ```
 
 **Benefits:**
@@ -285,36 +285,29 @@ When agents take actions, the UI should reflect them immediately. The user shoul
 
 Agent writes through the same service the UI observes:
 
-```swift
-// Shared service
-class BookLibraryService: ObservableObject {
-    static let shared = BookLibraryService()
-    @Published var books: [Book] = []
-    @Published var feedItems: [FeedItem] = []
+Use an application-owned store whose `addFeedItem` persists the item, updates its snapshot, and notifies subscribers before resolving. The renderer and tool registration are application adapters; both use the same store instance.
 
-    func addFeedItem(_ item: FeedItem) {
-        feedItems.append(item)
-        persist()
-    }
+```typescript
+type FeedItem = { bookId: string; content: string; headline: string };
+interface BookLibraryService {
+  getFeedItems(): readonly FeedItem[];
+  subscribe(listener: () => void): () => void;
+  addFeedItem(item: FeedItem): Promise<void>;
 }
 
-// Agent tool writes through shared service
-tool("publish_to_feed", async ({ bookId, content, headline }) => {
-    let item = FeedItem(bookId: bookId, content: content, headline: headline)
-    BookLibraryService.shared.addFeedItem(item)  // Same service UI uses
-    return { text: "Published to feed" }
-})
+declare const library: BookLibraryService;
+declare function renderFeed(items: readonly FeedItem[]): void;
 
-// UI observes the same service
-struct FeedView: View {
-    @StateObject var library = BookLibraryService.shared
+async function publishToFeed(item: FeedItem) {
+  await library.addFeedItem(item);
+  return { text: "Published to feed" };
+}
 
-    var body: some View {
-        List(library.feedItems) { item in
-            FeedItemRow(item: item)
-            // Automatically updates when agent adds items
-        }
-    }
+function mountFeed(): () => void {
+  const render = () => renderFeed(library.getFeedItems());
+  const unsubscribe = library.subscribe(render);
+  render();
+  return unsubscribe;
 }
 ```
 
@@ -322,26 +315,39 @@ struct FeedView: View {
 
 For file-based data, watch the file system:
 
-```swift
-class ResearchWatcher: ObservableObject {
-    @Published var files: [URL] = []
-    private var watcher: DirectoryWatcher?
+`ResearchFiles` is an app-defined adapter over the scoped workspace service. Implement provider or filesystem observation behind `subscribe`; return a cleanup function and report observation errors. Register `writeResearchFile` as the tool handler after validating its arguments and caller grants.
 
-    func watch(bookId: String) {
-        let path = documentsURL.appendingPathComponent("Research/\(bookId)")
-
-        watcher = DirectoryWatcher(path: path) { [weak self] in
-            self?.reload(from: path)
-        }
-
-        reload(from: path)
-    }
+```typescript
+interface ResearchFiles {
+  list(bookId: string): Promise<string[]>;
+  subscribe(bookId: string, changed: () => void, failed: (error: unknown) => void): () => void;
+  replace(path: string, content: string, expectedRevision: string | null): Promise<string>;
 }
 
-// Agent writes files
-tool("write_file", { path, content }) -> {
-    writeFile(documentsURL.appendingPathComponent(path), content)
-    // DirectoryWatcher triggers UI update automatically
+declare const files: ResearchFiles;
+declare function renderFiles(paths: string[]): void;
+declare function reportError(error: unknown): void;
+
+function watchResearch(bookId: string): () => void {
+  let active = true;
+  let generation = 0;
+  const reload = async () => {
+    const request = ++generation;
+    try {
+      const paths = await files.list(bookId);
+      if (active && request === generation) renderFiles(paths);
+    } catch (error) {
+      if (active && request === generation) reportError(error);
+    }
+  };
+  const stop = files.subscribe(bookId, () => { void reload(); }, reportError);
+  void reload();
+  return () => { active = false; stop(); };
+}
+
+async function writeResearchFile(path: string, content: string, expectedRevision: string | null) {
+  const revision = await files.replace(path, content, expectedRevision);
+  return { text: "File saved", revision };
 }
 ```
 
@@ -376,18 +382,24 @@ function FeedView() {
 
 **What to avoid:**
 
-```swift
-// BAD: UI doesn't observe agent changes
-// Agent writes to database directly
-tool("publish_to_feed", { content }) {
-    database.insert("feed", content)  // UI doesn't see this
+```typescript
+declare const database: {
+  insert(table: "feed", content: string): Promise<void>;
+  query(table: "feed"): Promise<string[]>;
+};
+declare function renderFeed(items: string[]): void;
+
+async function publishToFeed(content: string) {
+  await database.insert("feed", content);
 }
 
-// UI loads once at startup, never refreshes
-struct FeedView: View {
-    let items = database.query("feed")  // Stale!
+async function mountFeed() {
+  const items = await database.query("feed");
+  renderFeed(items);
 }
 ```
+
+This counterexample loads the feed once and never subscribes to changes. Later tool writes leave the UI stale.
 </pattern>
 
 <pattern name="model-tier-selection">
@@ -406,39 +418,36 @@ Different agents need different intelligence levels. Use the cheapest model that
 
 **Implementation:**
 
-```swift
-enum ModelTier {
-    case fast      // Configured provider model for simple tasks
-    case balanced  // Configured provider model for general work
-    case powerful  // Configured provider model for complex synthesis
-}
+```typescript
+type ModelTier = "fast" | "balanced" | "powerful";
+type AgentTool = { name: string; execute(input: unknown): Promise<unknown> };
+type AgentConfig = {
+  modelTier: ModelTier;
+  tools: AgentTool[];
+  systemPrompt: string;
+};
 
-struct AgentConfig {
-    let modelTier: ModelTier
-    let tools: [AgentTool]
-    let systemPrompt: String
-}
+declare const researchTools: AgentTool[], profileTools: AgentTool[];
+declare const researchPrompt: string, profilePrompt: string;
+declare const readLibrary: AgentTool;
 
-// Research agent: balanced tier
-let researchConfig = AgentConfig(
-    modelTier: .balanced,
-    tools: researchTools,
-    systemPrompt: researchPrompt
-)
+const researchConfig: AgentConfig = {
+  modelTier: "balanced",
+  tools: researchTools,
+  systemPrompt: researchPrompt,
+};
 
-// Profile analysis: powerful tier (complex photo interpretation)
-let profileConfig = AgentConfig(
-    modelTier: .powerful,
-    tools: profileTools,
-    systemPrompt: profilePrompt
-)
+const profileConfig: AgentConfig = {
+  modelTier: "powerful",
+  tools: profileTools,
+  systemPrompt: profilePrompt,
+};
 
-// Quick lookup: fast tier
-let lookupConfig = AgentConfig(
-    modelTier: .fast,
-    tools: [readLibrary],
-    systemPrompt: "Answer quick questions about the user's library."
-)
+const lookupConfig: AgentConfig = {
+  modelTier: "fast",
+  tools: [readLibrary],
+  systemPrompt: "Answer quick questions about the user's library.",
+};
 ```
 
 Resolve tiers through the active provider configuration in [mobile-cost.md](./mobile-cost.md); a tier is not a fixed model ID.

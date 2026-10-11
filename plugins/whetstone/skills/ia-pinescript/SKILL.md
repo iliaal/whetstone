@@ -36,7 +36,8 @@ Check the current [platform limits](https://www.tradingview.com/pine-script-docs
 - Pre-allocate arrays with `array.new<type>(size)` instead of push-and-resize
 - Short-circuit signals: build conditions incrementally, exit early when first condition fails
 - Cache repeated calculations in variables; Pine recalculates every bar
-- Iterate collections with `for item in myArray` (or `for [i, item] in myArray`) instead of `for i = 0 to array.size(...) - 1`; the indexed form re-evaluates the bound each pass and breaks when the loop mutates the array's size
+- Iterate collections with `for item in myArray` (or `for [i, item] in myArray`) instead of `for i = 0 to array.size(...) - 1`; both forms use updated collection sizes on later iterations.
+- For `for...in`, resize arrays or matrices only with the changing iteration bounds in mind. To add or remove map entries, iterate a `map.keys()` snapshot or a `map.copy()` while modifying the original. Avoid directly initializing `var`/`varip` with a loop result: the loop stops after its first iteration. Declare first and assign with `:=`, or return the loop result from a function. See the [Pine v6 loop rules](https://www.tradingview.com/pine-script-docs/language/loops/).
 - Model related values as a user-defined type, not parallel arrays: `type Trade` with `float entry`, `int startBar`, plus `method` functions, stored in one `array<Trade>`. Parallel arrays (`entries`, `startBars`, ...) desync on any missed push/remove and every operation must be repeated per array; one typed array keeps each object's fields together
 
 ## Debugging

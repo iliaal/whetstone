@@ -14,22 +14,28 @@ run() { if [[ "${DRY_RUN:-}" == "1" ]]; then printf '[dry] %s\n' "$*" >&2; else 
 run cp "$src" "$dst"
 ```
 
-**Atomic file write**: run the producer into a temp file, then rename only after it succeeds:
+**Atomic file write**: resolve symlinks before staging beside the destination. Preserve an existing file's owner, group, and mode before replacing it:
 ```bash
 atomic_write() {
-    local target=$1 tmp
+    local target=$1 tmp rc=0
     shift
+    target=$(readlink -f -- "${target}") || return
     tmp=$(mktemp -- "${target}.tmp.XXXXXXXX") || return
-    if "$@" >"$tmp" && mv -fT -- "$tmp" "$target"; then
-        return 0
-    else
-        local rc=$?
-        rm -f -- "$tmp"
-        return "$rc"
+    "$@" >"${tmp}" || rc=$?
+    if ((rc == 0)) && [[ -e "${target}" ]]; then
+        chown --reference="${target}" -- "${tmp}" &&
+            chmod --reference="${target}" -- "${tmp}" || rc=$?
     fi
+    if ((rc == 0)); then
+        mv -fT -- "${tmp}" "${target}" || rc=$?
+    fi
+    rm -f -- "${tmp}"
+    return "${rc}"
 }
 atomic_write /etc/app/config.yml generate_config
 ```
+
+Keep new files at `mktemp`'s private mode (`0600` under a normal umask). Apply ownership before mode because changing ownership can clear special mode bits. If metadata cannot be preserved, return failure without replacing the destination. Use this helper for regular files in trusted directories with serialized writers; preserve ACLs or extended attributes separately when required.
 
 The producer must return nonzero on generation failure; explicitly propagate failures inside shell functions because Bash suppresses `errexit` in this conditional context. Pipeline producers must enable `pipefail`. Do not pipe into this helper: an upstream failure cannot prevent a rename that already happened.
 

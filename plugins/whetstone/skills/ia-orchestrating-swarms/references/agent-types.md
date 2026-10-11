@@ -17,6 +17,8 @@
 
 Inspect the active `Agent` schema for available built-in types; the examples below do not require the Whetstone plugin. Tool restrictions and model defaults can vary by runtime.
 
+Claude Code facts below follow the [subagent documentation](https://code.claude.com/docs/en/sub-agents) checked on 2026-10-11. Explore and Plan omit CLAUDE.md files and the startup git-status snapshot; include applicable project rules in their prompts. Other built-ins and custom agents load both by default. `omitClaudeMd: true` (v2.1.271+) suppresses user, project, and local CLAUDE.md files only; it preserves git status and managed policy except that managed subagents also omit managed policy.
+
 ### Bash
 ```javascript
 Agent({
@@ -34,12 +36,11 @@ Agent({
 Agent({
   subagent_type: "Explore",
   description: "Find API endpoints",
-  prompt: "Find all API endpoints in this codebase. Be very thorough.",
-  model: "haiku"  // Fast and cheap
+  prompt: "Find all API endpoints in this codebase. Be very thorough."
 })
 ```
 - **Tools:** Read-only exploration tools; verify the active type's tool restrictions
-- **Model:** Haiku (optimized for speed)
+- **Model:** Main conversation model by default; when the main model is Fable, the built-in resolves to `opus` on subscriptions, Console, or `ANTHROPIC_BASE_URL` gateways. On Bedrock, Agent Platform, Foundry, Claude Platform on AWS, or Claude apps gateways, it retains the main model.
 - **Best for:** Codebase exploration, file searches, code understanding
 - **Thoroughness levels:** "quick", "medium", "very thorough"
 
@@ -76,7 +77,12 @@ Agent({
 })
 ```
 - **Tools:** Read-only + WebFetch + WebSearch
+- **Model:** Haiku
 - **Best for:** Questions about Claude Code, Agent SDK, Anthropic API
+
+### claude
+
+Use this catch-all for tasks without a specialized type or for dispatched background sessions, where it is the default. It exposes every available subagent tool and follows the normal model-selection order without its own model override.
 
 ### statusline-setup
 ```javascript

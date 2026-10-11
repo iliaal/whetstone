@@ -8,7 +8,7 @@ For full security auditing (OWASP compliance, vulnerability scanning, checklist)
 - **Refresh token**: JWT, 7d expiry, stored in DB (revocable)
 - **Passwords**: bcrypt (10+ rounds) or argon2
 - **Middleware**: extract `Bearer` token → `jwt.verify` → attach `req.user` → `next()`
-- **NestJS: never mark middleware `Scope.TRANSIENT`.** Route-middleware registration skips a transient middleware silently: it never runs, with no error or warning. Before v12.1.0 the skip returned out of the whole `consumer.apply(...)` list, so every middleware listed after it was never mounted either; an `AuthMiddleware` placed after a transient logger left the routes unauthenticated. Enforce authn/authz in a guard, or keep an e2e test that calls a protected route without credentials and asserts 401.
+- **NestJS: never mark middleware `Scope.TRANSIENT`.** Route-middleware registration skips a transient middleware silently: it never runs, with no error or warning. Before v12.1.0 the skip returned out of the whole `consumer.apply(...)` list, so every middleware listed after it was never mounted either; an `AuthMiddleware` placed after a transient logger left the routes unauthenticated. Enforce authn/authz in a guard. Through v12.1.2, register global guards, pipes, interceptors, and filters with default singleton scope or `Scope.REQUEST`, never `Scope.TRANSIENT`: transient global enhancers are silently skipped on HTTP and microservice controllers without request-scoped dependencies; the fix is unreleased after v12.1.2. Keep an e2e test that calls a protected route without credentials and asserts 401.
 - **Authorization**: after auth, check role or resource ownership per request
 - Always return generic "Invalid credentials"; never reveal if user exists
 

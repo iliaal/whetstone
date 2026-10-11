@@ -14,7 +14,7 @@ Match length to change complexity (1 sentence for trivial, full narrative for ar
 
 READMEs are a different surface than blog posts, social posts, or PR descriptions. The general anti-AI-tells rules apply, with these carve-outs:
 
-- **Em dash gate.** `grep -c "—" README.md` must return `0` before commit. Replacements per role: `Term — explanation` → `**Term**: explanation`; `name — qualifier` → `name (qualifier)`; mid-sentence break → two sentences or `;`; `- foo — bar` → `- **foo**: bar`; `Section — note` → `Section: note`.
+- **Em dash gate.** `grep -c "—" README.md` must return `0` before commit. Replacements per role: `Term — explanation` → `**Term**: explanation`; `name — qualifier` → `name (qualifier)`; mid-sentence break → two sentences; `- foo — bar` → `- **foo**: bar`; `Section — note` → `Section: note`.
 - **Emoji headers are normal README idiom.** `## 🚀 Features`, `## 📦 Installation` read as open-source convention, not AI styling; the social-post emoji ban does NOT apply here. At most one per header, never inline in prose.
 - **Plain-text star link, not a markdown URL.** `If this saves you a debugging cycle, ⭐ star it!` reads as a human ask. `[⭐ Star on GitHub](https://...)` reads as marketing chrome.
 - **Hybrid merge on rewrites.** When rewriting an existing README, classify each section: PRESERVE (technical accuracy, version pins, install commands, working code blocks), ADD (missing context), REJECT (AI fluff, marketing voice, padding), FIX (wrong claims, stale versions, broken links). Resist wholesale replacement: the existing technical content is usually correct; the voice is what's wrong.

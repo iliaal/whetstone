@@ -3,7 +3,7 @@
 Load this reference when polishing a design toward premium feel. Small additions that separate polished UI from default generation.
 
 - **`<kbd>` for keyboard shortcuts**: render physical-looking keys: monospace font, `border: 1px solid var(--border)`, 2-4px padding, subtle inset shadow. Never just bolded text.
-- **Faux-OS window chrome for software mockups**: when demoing a UI inside a hero or screenshot, wrap it in a minimalist container with three-circle macOS-style traffic lights (or equivalent). Signals "this is software" without shipping a real screenshot.
+- **Window chrome for product previews**: frame a real product screenshot or functioning component preview with restrained window chrome when useful. Do not fill the frame with fabricated dashboards, terminals, or task lists built from styled divs. Omit the preview when neither a real capture nor a working component is available.
 - **Hero image fade-to-background**: hero background imagery must fade gracefully into the surrounding background (darkening in dark mode, lightening in light mode). Hard crop edges read as template slotting; gradient fade reads as craft.
 - **Banned meta-labels**: never label sections with "SECTION 01", "QUESTION 05", "PART ONE". They read as template scaffolding. If sections need orientation, use descriptive names. If a label is truly needed, use the concept (`// Overview`, `// Data model`), not the index.
 - **Baseline alignment in card groups**: when cards sit in a row (features, pricing, testimonials), pin CTAs to the bottom so buttons form a single horizontal line across the group. Feature lists inside should start at the same Y offset. Tiny 1-2px optical centering on icons inside buttons prevents the "icon floats left of label" drift.

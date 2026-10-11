@@ -12,7 +12,7 @@ For runnable code with those checks available, type-check and unit tests form a 
 | CLI tool | Run the binary with real inputs; check stdout, stderr, exit code. Run from `/tmp` to catch "only works from source" bugs |
 | Infra / IaC (Terraform, Dockerfile, k8s) | `terraform plan` / `docker build` / `kubectl apply --dry-run=server`; review the diff before applying |
 | Database migration | Run migration up, down, then up again against production-shape data |
-| Refactoring (no behavior change) | Full test suite passes unchanged; public API surface diff shows no breakage (`grep` exported identifiers) |
+| Refactoring (no behavior change) | Full test suite passes unchanged; public API surface diff shows no breakage (`grep` exported identifiers); compare observable outputs against the exact pre-edit state as described below |
 | Mechanical or scripted sweep (width-based rewrap, regex pass, in-place edit) | Verify with a parser or compiler (`compileall`, `cargo check`, `tsc --noEmit`, a build), never with the linter's error tally |
 | Library / package update | Run the consumer's test suite against the new version; check for deprecation warnings |
 | Published package or release artifact | Install the published version into a throwaway directory and exercise the API the release added; the working tree shares the source, autoloader, and every uncommitted edit, so it proves nothing about what a consumer receives |
@@ -22,6 +22,8 @@ For runnable code with those checks available, type-check and unit tests form a 
 | Non-runnable changes | `git diff`, confirm the diff matches intent, and state explicitly: "No automated verification available; verified by reading the diff." |
 
 Reading code is not a strategy. If the table has no row for the change, fall back to the Non-runnable row. The principle holds even when no test suite applies: state what was checked and how.
+
+Before behavior-preserving edits, capture relevant endpoint responses, CLI output and exit status, or job artifacts from a throwaway worktree representing the exact pre-edit state. Use the pre-change ref only when it matches that state; otherwise preserve relevant existing uncommitted edits in the baseline copy and verify the copied source. Exercise the same inputs and conditions after the change and diff each captured surface. Normalize only identified nondeterministic fields, such as timestamps or generated IDs, with the same documented rule on both sides; retain relationships and ordering that form part of the contract. Treat unexplained differences as regressions. Use this comparison to establish parity when tests are absent, and report any behavior the capture cannot observe. Preserve the working tree; do not use a stash-based fallback.
 
 A falling lint count is fully compatible with a corrupted file: most linters report only the *first* parse failure per file, so six broken literals surface as one error, six runs in a row, each looking like the last. A width-based rewriter has no parser: it splits string literals into syntax errors and breaks comments mid-clause, and a formatter run afterwards happily reformats prose that no longer says what the author wrote. In-place writes also replace a symlink with a regular file; check `git status --short` for a `T` (typechange) entry after any scripted edit.
 

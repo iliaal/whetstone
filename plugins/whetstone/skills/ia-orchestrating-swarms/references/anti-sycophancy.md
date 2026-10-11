@@ -6,13 +6,19 @@ Load this reference when dispatching judge panels, running parallel reviewers, o
 
 Each independent reviewer or evaluator receives the full task, target artifact, criteria, and operative instructions in fresh context. No implementer session history or prior verdicts until an explicit synthesis phase. In Codex use `fork_turns: "none"`. When running parallel reviewers or evaluators, the orchestrator holds all outputs until every agent has submitted independently, then passes the collected results to a synthesis agent. Implementers continuing their own unit may retain its context.
 
+When judges exchange results through files, assign each judge a separate output directory in its brief. Before synthesis, prohibit reads of sibling output directories and the producer's self-check reports or notes; permit writes only to the judge's own directory.
+
 ## Fresh instances on every re-dispatch round
 
 When re-running reviewers across iterations (QA retry loop, re-review after fixes, multi-round evaluation), spawn a completely fresh agent each round; never reuse the same instance. Reviewers carrying memory from a prior round anchor on their earlier verdicts and miss regressions introduced by the fix. A reviewer who said "this is fine" in round 1 will rationalize back toward that verdict in round 2 even when a bad change has landed. Cold-start applies to every round, not just the first.
 
+Before dismissing a fresh reviewer's apparent false flag, check whether a gap or ambiguity in the brief caused it. Classify findings in this order: brief defect, valid, accepted trade-off, noise. If the brief caused the flag, correct the brief and dispatch a fresh reviewer.
+
 ## Label randomization for judge panels
 
 When multiple candidates are evaluated (e.g., parallel implementations, competing approaches), judges see randomized labels: X/Y/Z, not A/B or "original"/"improved." Re-shuffle labels each evaluation round. This prevents anchoring on position ("A is always the baseline") or naming ("the synthesis must be better").
+
+Freeze the questions before judging multiple candidates in one prompt, then repeat the comparison with candidate order reversed; a changed winner makes the round inconclusive. Inspect broad or near-even verdicts before deciding whether to revise anything; do not rewrite automatically to chase a score.
 
 ## Never reveal the passing threshold to a judge
 
@@ -40,4 +46,4 @@ Structural isolation (the patterns above) does not remove per-judgment biases. N
 
 ## Convergence detection
 
-Track an incumbent (current best candidate). If the same candidate wins N consecutive evaluation rounds (default: 3), stop iterating: the swarm has converged. This prevents infinite iteration on subjective tasks where no clear winner emerges and additional rounds just burn tokens.
+Track an incumbent (current best candidate). If the same candidate wins N consecutive evaluation rounds (default: 3), stop iterating: the swarm has converged; inconclusive comparisons do not count as wins. This prevents infinite iteration on subjective tasks where no clear winner emerges and additional rounds just burn tokens.

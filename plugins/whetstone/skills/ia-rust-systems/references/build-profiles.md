@@ -28,17 +28,14 @@ Keep `panic = "unwind"` when a task boundary or `catch_unwind` must convert a pa
 
 ## Dev-machine compile speedups (.cargo/config.toml)
 
-Cut PR compile time on Linux with mold:
+Cut PR compile time on Linux with mold and Clang installed:
 
 ```toml
-[build]
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
-
 [target.x86_64-unknown-linux-gnu]
+linker = "clang"
 rustflags = [
     "-C", "link-arg=-fuse-ld=mold",
     "-C", "target-cpu=native",   # dev machines only — bakes in CPU features
-    "-Z", "share-generics=y",    # share monomorphizations across crates (nightly)
 ]
 
 [alias]
@@ -46,3 +43,5 @@ t = "nextest run"
 ```
 
 Mold is Linux-only (`lld` on other platforms). `target-cpu=native` is a developer-machine convenience; remove for reproducible CI and distributable binaries.
+
+Keep all required flags for this target, including `--cfg tokio_unstable` when needed, in the same `rustflags` array: [Cargo selects target flags before `build.rustflags`](https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags), without merging the two sources.

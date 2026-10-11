@@ -68,7 +68,7 @@ Font swap (highest ROI, lowest risk) -> Color cleanup -> Hover/active states -> 
 ## Content (9 checks)
 
 1. Generic placeholder names ("John Doe", "Acme Corp", "Lorem ipsum")?
-2. Fake round numbers ($99, 100%, 1,000 users)?
+2. Metrics, prices, or contact details without supplied/measured sources, or synthetic values missing a demo label? Preserve verified values regardless of roundness.
 3. Placeholder company name or brand still present?
 4. Cliched marketing language ("revolutionary", "game-changing")?
 5. Exclamation marks in UI text?

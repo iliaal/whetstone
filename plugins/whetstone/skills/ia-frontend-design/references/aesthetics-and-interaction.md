@@ -5,6 +5,7 @@
 Focus on:
 - **Typography**: choose fonts with character:
   - **Font selection**: avoid Inter, Roboto, Arial, system fonts. Use `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Treat the current reflex "personality" faces (Geist, Outfit, Fraunces, Playfair Display, Cormorant, Space Grotesk, Instrument Serif) as a tell in the display role; several remain fine as body or UI faces. Pair a display font with a refined body font.
+  - **Font loading**: obtain Cabinet Grotesk and Satoshi from their publisher, [Fontshare](https://www.fontshare.com/). Confirm a provider actually hosts a chosen face before generating its stylesheet URL. In Next.js, use [`next/font`](https://nextjs.org/docs/app/getting-started/fonts): `next/font/local` for downloaded files and `next/font/google` for Google Fonts. Otherwise, self-host licensed files through `@font-face` with `font-display: swap`. Check the loaded weights and the actual [rendered fonts](https://developer.chrome.com/docs/devtools/rendering/apply-effects#disable-local-fonts); a computed family declaration alone does not establish which font drew the glyphs.
   - **Headlines**: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust. AI defaults are undersized and timid, lacking presence.
   - **H1 iron rule (2-3 lines max)**: every hero H1 must render in 2-3 lines, never 4-6. The fix is always wider container + smaller font, not the reverse. Minimum container: `max-w-5xl` (wider for longer headlines); adjust font with `clamp(3rem, 5vw, 5.5rem)` so it scales down instead of wrapping. A 6-line heading wall is a catastrophic failure, not a design choice.
   - **Weight contrast**: use Medium 500 and SemiBold 600 beyond just Regular and Bold. Tighten letter-spacing, but no tighter than about -0.04em on display type (crushed tracking is a tell; see [banned-ai-patterns.md](./banned-ai-patterns.md)); reduce line-height.
@@ -33,6 +34,8 @@ LLMs default to "static successful state" output. Cover every state reachable in
 - **Tactile press**: on `:active`, apply `-translate-y-[1px]` or `scale-[0.98]` so clicks feel like a physical push, not a color flicker.
 
 Exercise applicable states, visible focus, and press feedback. Record why any state does not apply. Generating only a successful state is incomplete when loading, emptiness, or failure can actually occur.
+
+**CTA and form contrast:** measure enabled button labels, placeholders, helper text, and error text against their rendered backgrounds. Under [WCAG 2.2 SC 1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html), use at least 4.5:1 for normal text and 3:1 for large text: at least 18pt (24 CSS px), or 14pt (18⅔ CSS px) bold. For ghost buttons over photography or light-on-light CTAs, add a solid fill or scrim when needed to maintain text contrast across image crops and interaction states. Measure the outline separately; a contrasting button border does not establish label contrast. Under [SC 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html), require 3:1 against adjacent colors for visual boundaries needed to identify enabled controls and for author-styled focus indicators. Do not apply that requirement to every decorative border or unmodified browser focus style.
 
 ### Mobile Collapse + Performance Guardrails
 

@@ -16,9 +16,18 @@ Each section covers three things:
 - **mutation**: a tool for confirming one candidate. Scope it to the candidate's
   file; whole-suite runs are too slow to be routine.
 
+For the Python, PHP, and JavaScript reporter commands below, create a fresh
+report directory for each gate invocation with
+`audit_report_dir=$(mktemp -d)`. Keep the gate and census in the same shell and
+pass `"$audit_report_dir/gate.xml"` to both the reporter and
+`python3 <this skill's directory>/scripts/junit_census.py`.
+Record the gate's exit status separately. Read only the report produced by that
+invocation; a missing report means incomplete audit input, never a fallback to
+an earlier report. Use separate directories for concurrent packages and retries.
+
 ## Python
 
-- **junit:** `pytest --junitxml=/tmp/gate.xml`, appended to the gate's pytest command.
+- **junit:** `pytest --junitxml="$audit_report_dir/gate.xml"`, appended to the gate's pytest command.
 - **reach, CLI-driven suites:** in the scratch copy, run
   `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<this skill's directory>/scripts REACH_PROBE_OUT=/tmp/reach.jsonl
   pytest -p pytest_reach_probe <tests>`, then
@@ -48,7 +57,7 @@ Each section covers three things:
 
 ## PHP (PHPUnit, Pest, Laravel)
 
-- **junit:** `vendor/bin/phpunit --log-junit /tmp/gate.xml`; Pest accepts the same
+- **junit:** `vendor/bin/phpunit --log-junit "$audit_report_dir/gate.xml"`; Pest accepts the same
   flag. PHPUnit's junit carries an `assertions` count per test, so `junit_census.py`
   also reports executed tests with zero assertions.
 - **uncollected files:** tests outside the `<testsuite>` directories in `phpunit.xml`,
@@ -63,9 +72,9 @@ Each section covers three things:
 
 ## JavaScript and TypeScript (Vitest, Jest, Playwright)
 
-- **junit:** `vitest run --reporter=junit --outputFile=/tmp/gate.xml`. Jest needs the
+- **junit:** `vitest run --reporter=junit --outputFile="$audit_report_dir/gate.xml"`. Jest needs the
   `jest-junit` reporter. Playwright's `--reporter=junit` prints to stdout
-  unless `PLAYWRIGHT_JUNIT_OUTPUT_FILE=/tmp/gate.xml` (or the reporter's `outputFile`
+  unless `PLAYWRIGHT_JUNIT_OUTPUT_FILE="$audit_report_dir/gate.xml"` (or the reporter's `outputFile`
   config option) names a file. In a pnpm or other
   workspace, run the census per package, or pass several reports.
 - **uncollected files:** Vitest and Jest `include`/`testMatch` globs, and workspace

@@ -119,6 +119,8 @@ Flag critical/high vulnerabilities as blockers. Moderate/low are warnings.
 - `.env` files staged for commit
 - `dangerouslySetInnerHTML`, `eval()`, raw SQL string concatenation
 
+Classify each changed file by its content (magic bytes or control bytes), not its extension. List files the text scan cannot inspect, including archives, office documents, databases, PDFs, and binary key stores, as `unscanned, open manually`; do not exempt minified text bundles. Report the unscanned count as at least a warning when nonzero. If enumeration or reading fails, report the count as unknown and the scan as `ERROR`, never zero or `CLEAN`.
+
 **6c. Auth/authz review**: if the diff touches authentication or authorization code (middleware, guards, policies, permission checks, token handling, session management), flag for manual review. Check that:
 - No auth bypass paths introduced (missing middleware on new routes)
 - Permission checks not weakened or removed

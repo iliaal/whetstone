@@ -38,6 +38,8 @@ To audit whether existing tests detect regressions, use ia-test-audit.
 
 - Reading a clause appended to an existing rule (prompt, policy, spec bullet) in isolation: it reads as an override because it is later, more specific, and under review, but position does not establish precedence. Establish what the complete rule and its definitions already admit, then decide whether the clause clarifies, restricts, or replaces that condition; only explicit replacement wording changes it
 
+- Filing a second exception against the same rule, parser, classifier, allowlist, or permission block: preserve the concrete failures, but redirect the remedy to the representation. Require a restated condition, a changed boundary (a fail-closed allowlist, removal, or an explicit supported limit), or an owner decision instead of another enumerated exception. Keep separate defects distinct
+
 - Filing a finding the author already disclosed: search the change description for the finding's own subject (identifier, rule name, field), not for admission vocabulary such as "limitation" or "unmeasured". Disclosures sit under headings the author chose; a disclosed residue is rated against the disclosure and cited, not presented as discovered
 
 - Filing a gap the finding's own concessions already close: before posting, re-read its hedges and compliments as the author's rebuttal. A hedge ("if X submits the stale value") flags an unverified harm; praise enumerating what the artifact does ("it names the cause and the remedy") often names exactly the content the finding calls missing, and then the finding is already dead
