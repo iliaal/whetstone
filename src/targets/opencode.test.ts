@@ -5,7 +5,7 @@ import { pathToFileURL } from "url"
 import { afterEach, expect, test } from "bun:test"
 import { loadClaudePlugin } from "../parsers/claude"
 import { convertClaudeToOpenCode } from "../converters/claude-to-opencode"
-import { copyDir } from "../utils/files"
+import { copyDir, writeJson, writeText } from "../utils/files"
 import type { OpenCodeBundle } from "../types/opencode"
 import { writeOpenCodeBundle } from "./opencode"
 import { syncToOpenCode } from "../sync/opencode"
@@ -178,3 +178,47 @@ test("OpenCode sync and conversion keep an MCP server named __proto__", async ()
   }, { agentMode: "subagent", inferTemperature: false, permissions: "none" })
   expect(Object.keys(converted.config.mcp ?? {}).sort()).toEqual(["__proto__", "remote"])
 })
+
+for (const command of ["convert", "install"]) {
+  for (const secondary of [false, true]) {
+    test(`bundled CLI ${command} installs standalone hooks as ${secondary ? "secondary" : "primary"} target`, async () => {
+      const root = await mkdtemp(path.join(os.tmpdir(), "whetstone bundled cli "))
+      tempRoots.push(root)
+      const source = path.join(root, "source plugin")
+      const project = path.join(root, "project")
+      await writeJson(path.join(source, ".claude-plugin/plugin.json"), {
+        name: "demo",
+        hooks: { hooks: { PostToolUse: [{ hooks: [{
+          type: "command",
+          command: `test -f "\${CLAUDE_PLUGIN_ROOT}/marker.txt" && printf '%s' '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"Bundled hook ran"}}'`,
+        }] }] } },
+      })
+      await writeText(path.join(source, "marker.txt"), "Bundled resource")
+      const build = await Bun.build({
+        entrypoints: [path.resolve("src/index.ts")],
+        target: "bun",
+        outdir: path.join(root, "standalone"),
+      })
+      expect(build.success).toBe(true)
+      const cli = Bun.spawn([
+        process.execPath, build.outputs[0].path, command, source,
+        "--to", secondary ? "codex" : "opencode",
+        ...(secondary ? ["--also", "opencode"] : []),
+        "--output", project, "--codex-home", path.join(root, ".codex"),
+        "--permissions", "none",
+      ], { cwd: root, stdout: "pipe", stderr: "pipe" })
+      const [exitCode, stdout, stderr] = await Promise.all([
+        cli.exited, new Response(cli.stdout).text(), new Response(cli.stderr).text(),
+      ])
+      expect({ exitCode, stderr }).toEqual({ exitCode: 0, stderr: "" })
+      expect(stdout).toContain(command === "convert" ? "Converted demo to opencode" : "Installed demo to")
+      await rm(source, { recursive: true })
+      const output = secondary ? path.join(project, "opencode") : project
+      const installed = await import(pathToFileURL(path.join(output, ".opencode/plugins/converted-hooks.ts")).href)
+      const hooks = await installed.default({ directory: root })
+      const result = { title: "Result", output: "Completed", metadata: {} }
+      await hooks["tool.execute.after"]({ tool: "read", sessionID: "test", callID: "call", args: {} }, result)
+      expect(result.output).toBe("Completed\n\nBundled hook ran")
+    })
+  }
+}
