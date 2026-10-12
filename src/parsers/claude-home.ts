@@ -57,7 +57,9 @@ async function loadSettingsMcp(
     const content = await fs.readFile(settingsPath, "utf-8")
     const settings = JSON.parse(content) as { mcpServers?: Record<string, ClaudeMcpServer> }
     return settings.mcpServers ?? {}
-  } catch {
-    return {} // File doesn't exist or invalid JSON
+  } catch (error) {
+    // Only an absent optional settings file means there are no MCP servers.
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return {}
+    throw error
   }
 }

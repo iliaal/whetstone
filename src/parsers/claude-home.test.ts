@@ -36,3 +36,21 @@ for (const [target, sync] of [["codex", syncToCodex], ["opencode", syncToOpenCod
     })
   }
 }
+
+for (const settings of [undefined, "{}", '{"mcpServers": {}}']) {
+  test(`Claude home accepts ${settings ?? "missing settings"}`, async () => {
+    const home = await mkdtemp(path.join(process.cwd(), ".whetstone-home-"))
+    tempRoots.push(home)
+    if (settings !== undefined) await writeFile(path.join(home, "settings.json"), settings)
+    expect(await loadClaudeHome(home)).toEqual({ skills: [], mcpServers: {} })
+  })
+}
+
+for (const separator of ["\n", "\n\n"]) {
+  test(`Claude home reports malformed settings with ${separator.length} newline(s)`, async () => {
+    const home = await mkdtemp(path.join(process.cwd(), ".whetstone-home-"))
+    tempRoots.push(home)
+    await writeFile(path.join(home, "settings.json"), `{${separator}"mcpServers":${separator}}`)
+    await expect(loadClaudeHome(home)).rejects.toBeInstanceOf(SyntaxError)
+  })
+}
