@@ -5,6 +5,28 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.1] - 2026-10-12
+
+Patch: fixes for 8 high, 6 medium, and 6 correctness findings from an external security scan of v5.1.0, plus a converter fix for unreadable Claude settings. 2 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
+
+### Changed
+
+- `ia-git-worktree` copies `.env` files only when the base is the default branch or a local branch that already contains the fetched commit, fetches branch bases as `refs/heads` so a same-named tag cannot replace them, never follows a symlink while copying env files, and tells agents to skip install scripts and plugins in untrusted trees.
+- `/ia-resolve-pr` records each comment's `authorAssociation`. Comments from untrusted authors are report-only, and commits and pushes wait for approval of the exact diff.
+- Parallel subagent starts of one agent type each receive the labelled union of the group's skill suggestions. Matching runs when the task is recorded, and discarding an entry takes the queue lock.
+
+### Fixed
+
+- Codex `install`, `convert`, and `sync` merge into `config.toml` between paired managed markers instead of overwriting it, so user settings such as `approval_policy` and `sandbox_mode` survive.
+- The converter validates plugin component names, keeps every write inside the output root, refuses to follow symlinks or a symlinked project `.codex`, and requires source paths to resolve inside the plugin. Config files are written `0600`, TOML keys are quoted safely, and `__proto__` keys stay real entries. `convert` defaults `--permissions` to `none`, matching `install`, and js-yaml moves to 4.3.2.
+- Sync and conversion now fail on an unreadable or invalid Claude `settings.json` instead of treating it as having no MCP servers; only a missing file means none.
+
+### For contributors
+
+- The distiller validates `skillId` and `source` before any `npx` call, source-qualifies staging keys, records each fetched skill's scan verdict, and fails a record when the scanner errors. `npx skills` is pinned to 1.7.0, and `validate-plugin` requires tiktoken.
+- SkillOpt grades in a fresh directory built from a pre-launch snapshot, ignores planted test and config files, flags fixture mutation, requires the JUnit report to list every expected test, and treats a missing pytest as an infrastructure error.
+- `release.sh` requires `master`, pushes the exact release SHA, and verifies it on the remote. ClawHub change detection hashes the whole skill bundle, so this release republishes every skill once. The clawhub CLI is pinned to 0.23.3.
+
 ## [5.1.0] - 2026-10-11
 
 Minor: skill injection moved from rewriting subagent prompts to adding context at subagent start, which clears the plugin directory's `HOOK_GRANTS_PERMISSION` finding. A full reference-repo sync and a scoped audit corrected about 200 recipes, rules, and examples. 20 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands; the hook configuration now declares 4 hook entries.
