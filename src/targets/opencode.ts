@@ -1,5 +1,4 @@
 import path from "path"
-import { fileURLToPath } from "url"
 import { realpath } from "fs/promises"
 import {
   assertSafeDestination,
@@ -10,11 +9,12 @@ import {
   lstatIfExists,
   pathExists,
   readJson,
-  readText,
   writeJson,
   writeText,
 } from "../utils/files"
 import { requireValidComponentName as requireName } from "../utils/symlink"
+// @ts-expect-error Bun's text loader imports TypeScript source as a string.
+import hookRuntime from "../runtime/opencode-hooks.ts" with { type: "text" }
 import type { OpenCodeBundle, OpenCodeConfig } from "../types/opencode"
 
 // User keys win on conflict.
@@ -74,8 +74,8 @@ export async function writeOpenCodeBundle(outputRoot: string, bundle: OpenCodeBu
       throw new Error("Hook installation output must be outside the source plugin")
     }
     await copyDir(source, path.join(destination, "plugin"), { root })
-    const runtime = await readText(fileURLToPath(new URL("../runtime/opencode-hooks.ts", import.meta.url)))
-    await writeText(path.join(destination, "opencode-hooks.ts"), runtime, { root })
+    // Embed the source so a bundled CLI can install hooks outside this checkout.
+    await writeText(path.join(destination, "opencode-hooks.ts"), hookRuntime, { root })
   }
   await ensureDir(root)
 
