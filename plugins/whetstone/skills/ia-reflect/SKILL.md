@@ -81,7 +81,9 @@ Exclude credential values from every persisted item, including explicit `remembe
 
 Before writing, grep the existing memory directory for the item's key terms. On a near-duplicate, update that file instead of adding a second. On a direct contradiction with an entry already on file ("use tabs" when "use spaces" is recorded), do not blind-append; surface both and let the user choose merge, replace, or keep-both. Silent duplicate and contradiction accumulation is the main way a curated memory index rots.
 
-### 5. Skill Audit (if skills were used)
+### 5. Skill Audit (if skills were used or a missed invocation caused friction)
+
+Before proposing skill prose, apply the [skill failure triage](./references/capture-and-routing.md#skill-failure-triage) to distinguish content, routing, placement, and execution defects.
 
 For each skill invoked during the session:
 

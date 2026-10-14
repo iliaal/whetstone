@@ -27,6 +27,8 @@ To measure a flake, choose a fixed run count of at least ten per revision and re
 
 For slow, latency, or throughput symptoms, code reading is not the reproduction step; a numeric measurement is.
 
+Use `ia-verification-before-completion` and its performance-measurement reference to validate the harness, completed work, failures, comparison objective, and load-generator capacity before relying on the baseline or a claimed gain.
+
 - Establish a baseline before touching anything: time the same input, in the same environment, across N runs. That baseline is the failing test for a perf bug; it stands in for Step 1's reproduction and Step 6's pass/fail check.
 - Attribute before optimizing: a profiler run or per-stage timing that shows where the time actually goes. A hot-spot guess is a hypothesis, not evidence; optimizing an unmeasured suspect is shotgun debugging with extra steps.
 - If the slowness is a regression, bisect commits against the measurement (rerun the baseline at each candidate commit), not by reading diffs for code that looks expensive.

@@ -32,7 +32,7 @@ Inspect an existing plan before overwriting it. Continue the same work in place;
 ## Conditional guidance
 
 - For vague goals, a proposed mechanism disguised as an objective, or choosing planning depth, read [goal-definition.md](./references/goal-definition.md).
-- For a full plan, template, test discovery, source pointers, or plan-quality review, read [plan-format.md](./references/plan-format.md). Preserve exact specification values and name concrete paths or commands in every task.
+- For a full plan, template, test discovery, source pointers, interface choices, or plan-quality review, read [plan-format.md](./references/plan-format.md). Preserve exact specification values and name concrete paths or commands in every task.
 - When decomposing phases, setting ownership, or deciding what needs clarification, read [task-design.md](./references/task-design.md). Respect existing user choices and project constraints before selecting technical details. Escalate materially different outcomes or authority gaps; routine implementation choices stay with the implementer.
 - For vertical slicing, checkpoints, reference semantics, phase posture, or delegated execution, read [execution-and-methodology.md](./references/execution-and-methodology.md).
 - When starting multi-phase work or resuming after a gap, read [operational-patterns.md](./references/operational-patterns.md) for recovery, context checks, and error handling.
