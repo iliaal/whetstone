@@ -85,7 +85,9 @@ Rank pairs using Jaccard similarity: commits touching both files divided by comm
 
 ### Step 7: Synthesize Findings
 
-Combine all evidence into a coherent narrative.
+Cite contemporaneous text from relevant commit messages, PRs, issues, comments, or design notes for claims about author intent. Code establishes behavior, not motive. Label supported inference and speculation separately from recorded rationale. Preserve conflicting accounts with citations rather than forcing one explanation. When the reason remains unknown, name the sources searched and any access or history limits.
+
+Before carrying a historical constraint into current work, check whether its original condition still applies. Check for other current reasons the behavior remains necessary. An expired rationale alone does not establish that a guard or compatibility behavior can be removed.
 
 ## Output Format
 
@@ -95,13 +97,13 @@ Combine all evidence into a coherent narrative.
 ### Timeline
 | Date | Change | Author | Why |
 |------|--------|--------|-----|
-| ... | ... | ... | ... |
+| ... | ... | ... | Recorded rationale + citation, labeled inference/speculation, or unknown |
 
 ### Key Contributors
 - **[name]** ([N] commits): Primary contributor to [area]. Expertise in [domain].
 
 ### Evolution Story
-[Narrative: how the code evolved from its initial state to current form. Key turning points, major refactors, and the reasons behind them.]
+[Narrative: key turning points and refactors, with cited rationale distinguished from inference, conflicting accounts, and unresolved reasons.]
 
 ### Historical Issues
 - [Issue pattern]: [How it was resolved, with commit references]
@@ -110,7 +112,7 @@ Combine all evidence into a coherent narrative.
 - [File A] and [File B]: [shared commits] / [commits touching either] = [Jaccard ratio] in [filtered range] -- [evidenced explanation or labeled inference]
 
 ### Insights for Current Work
-- [Actionable insight based on historical patterns]
+- [Actionable insight with evidence that any historical constraint still applies, or its current validity marked unknown]
 ```
 
 ## Scope

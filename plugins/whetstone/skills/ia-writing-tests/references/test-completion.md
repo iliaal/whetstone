@@ -11,7 +11,13 @@
 
 ## Rationalization Table
 
-If about to skip, defer, or argue against writing a test for any reason, STOP and load [rationalization-table.md](./rationalization-table.md) first. Thirteen common excuses with their counter-truths. When arguing against writing a test, the argument is probably lost.
+Before skipping or deferring a test, load [rationalization-table.md](./rationalization-table.md). Distinguish a missing test seam from the excuses listed there.
+
+## No reachable seam for the actual trigger
+
+Use the missing-seam exception from ia-debugging only when a test cannot exercise the bug as it actually triggered, such as a production-data defect, a hardware dependency, or a race without a reproducible interleaving. For a race, first attempt a test-only controlled interleaving. Retain the test only if it reproduces the actual trigger. Keep cheap, reachable regression tests. Expense, deadline, or difficulty alone does not establish a missing seam. A test that cannot reach the trigger is not regression proof.
+
+Record the missing seam and the discriminating verification actually run. State the behavior each check exercised and its observed result. Distinguish narrower evidence from no evidence for the original defect. If the original trigger remains unverified, report that limit and do not claim the bug repaired. Preserve user acceptance criteria and repository-required gates; the exception does not waive them or authorize interface changes solely to manufacture a test seam.
 
 ## Verify
 
@@ -27,7 +33,7 @@ Before considering tests complete:
 - [ ] Snapshot, golden, fixture, and generated-expectation changes were reviewed semantically rather than regenerated to obtain green
 - [ ] Tests are independent: no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
 - [ ] Tests run fast enough to run frequently (< 30 seconds for unit suite)
-- [ ] Bug fix tests reproduce the original bug
+- [ ] Bug fix tests reproduce the original trigger, or the missing seam and actual verification limits are reported under the exception above
 - [ ] Mutation check run: mentally mutate the code (wrong constant, flipped branch, dropped side effect, empty/default return) and confirm some test fails for each
 
 ## Integration

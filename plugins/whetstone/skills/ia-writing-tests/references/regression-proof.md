@@ -6,6 +6,8 @@ Tests-first answer "what should this do?"; tests-after answer "what does this do
 
 ### Bug fixes: prove-it pattern
 
+Apply this pattern when a test can reach the actual bug trigger. If no such seam exists, follow the missing-seam rules in [test-completion.md](./test-completion.md). A passing test of a different path does not prove the original defect repaired.
+
 1. Write a test that reproduces the bug
 2. **Run it and watch it fail**: confirm it fails for the right reason. A test that fails due to a typo or import error hasn't captured the bug. The failure message should describe the buggy behavior.
 3. Apply the fix

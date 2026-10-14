@@ -1,11 +1,11 @@
 # Rationalization Table
 
-Load this reference when you catch yourself arguing against writing a test. Each rationalization below is the excuse; the reality column is why the excuse is wrong.
+Load this reference before arguing against a needed test. These counterarguments apply when a test can reach the behavior under test. For a demonstrated missing seam for the actual bug trigger, follow [test-completion.md](./test-completion.md). Expense, deadline, or difficulty alone does not qualify.
 
 | Rationalization | Reality |
 |----------------|---------|
 | "This is too simple to need tests" | Simple code still breaks. Tests document expected behavior. |
-| "I manually tested it" | Manual testing is ephemeral: it can't be re-run, it proves nothing to the next person |
+| "I manually tested it" | Record what the check exercised and its result. Manual verification does not replace a cheap, reachable regression test or a required gate. |
 | "Tests will slow me down" | Debugging without tests slows you down more. Tests catch bugs at write time instead of production. |
 | "I'll add tests later" | Later never comes. The context you have now is gone later. |
 | "The tests would just test the framework" | Then you're not testing your logic. Find the logic and test that. |

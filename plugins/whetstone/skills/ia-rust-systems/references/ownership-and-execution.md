@@ -18,6 +18,8 @@ Split by crate role:
 
 ## Ownership Discipline
 
+Before synchronizing concurrent writers, identify the invariant that needs shared mutable state. For independent facts, consider separately owned records or task results combined at the read boundary when the read semantics permit mixed generations. For coupled decisions, serialize the whole check-and-update operation through a transaction, lock, or single-writer actor. When readers need a consistent multi-record view, coordinate reads with writes or read one immutable snapshot. A single writer or separate records alone do not make multi-record reads atomic.
+
 - Take `&str` over `&String`, `&[T]` over `&Vec<T>` in function signatures; this accepts more call sites for free.
 - Return owned (`String`, `Vec<T>`) from constructors and public APIs. Borrow in hot paths where lifetimes are obvious.
 - Reach for `Arc<T>` only when sharing across threads. Single-threaded sharing uses `Rc<T>` or references.

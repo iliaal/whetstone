@@ -47,7 +47,9 @@ retry() { local n=0 max=5 delay=1; until "$@"; do ((++n>=max)) && return 1; slee
 retry curl -fsSL "$url"
 ```
 
-**Script locking**: prevent concurrent runs:
+**Choose ownership before locking.** Identify the invariant that requires concurrent writers to share one mutable object. For independent facts, consider one file per owner and combine records when reading, provided mixed generations are acceptable. For coupled decisions, serialize the whole check-and-update operation through a lock, transaction, or single writer. For a consistent multi-file view, coordinate readers with writers or pin one immutable published generation for the entire read. A single writer and individually atomic replacements do not by themselves provide an atomic snapshot across files.
+
+**Script locking**: when concurrent runs must be serialized:
 ```bash
 exec 9>/var/lock/"${0##*/}".lock
 flock -n 9 || { printf 'Already running\n' >&2; exit 1; }
