@@ -8,7 +8,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh\"",
             "timeout": 5,
-            "statusMessage": "Recording subagent skill context..."
+            "statusMessage": "Whetstone: record subagent skill context"
           }
         ]
       }
@@ -45,7 +45,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-start.sh\"",
             "timeout": 5,
-            "statusMessage": "Adding relevant skill context..."
+            "statusMessage": "Whetstone: add relevant skill context"
           }
         ]
       }
