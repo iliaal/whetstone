@@ -125,11 +125,9 @@ def main() -> int:
         print(f"No skill pairs at or above Jaccard {args.threshold}.")
         return 0
 
-    cross_tier_hits = 0
+    cross_tier_hits = sum(not same_tier for _, _, _, same_tier, _ in pairs)
     for score, a, b, same_tier, shared in pairs[:args.top]:
         tag = " [same-tier]" if same_tier else " [CROSS-TIER]"
-        if not same_tier:
-            cross_tier_hits += 1
         shown = ", ".join(shared[:8]) + ("..." if len(shared) > 8 else "")
         print(f"  {score:.2f}{tag}  {a} <-> {b}")
         print(f"        shared: {shown}")
