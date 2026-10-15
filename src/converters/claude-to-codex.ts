@@ -116,9 +116,15 @@ function transformContentForCodex(body: string): string {
     .replace(/~\/\.claude\//g, "~/.codex/")
     .replace(/\.claude\//g, ".codex/")
 
-  // The required role suffix keeps email addresses from matching.
   const agentRefPattern = /@([a-z][a-z0-9-]*-(?:agent|reviewer|researcher|analyst|specialist|oracle|sentinel|guardian|strategist))/gi
-  result = result.replace(agentRefPattern, (_match, agentName: string) => {
+  result = result.replace(agentRefPattern, (match, agentName: string, offset: number, input: string) => {
+    const previous = input[offset - 1] ?? ""
+    // An attached local part is an email, not an agent mention. Require a domain continuation
+    // for punctuation local parts so Markdown emphasis such as _@code-reviewer_ still converts.
+    const attachedWord = /[a-z0-9.+-]/i.test(previous)
+    const attachedPunctuation = /[!#$%&'*+\/=?^_`{|}~"-]/.test(previous)
+    const domainContinues = /^[a-z0-9-]*\.[a-z0-9-]+/i.test(input.slice(offset + match.length))
+    if (attachedWord || (attachedPunctuation && domainContinues)) return match
     const skillName = normalizeName(agentName)
     return `$${skillName} skill`
   })
