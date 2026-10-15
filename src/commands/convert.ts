@@ -71,7 +71,7 @@ export default defineCommand({
       throw new Error(`Unknown permissions mode: ${permissions}`)
     }
 
-    const plugin = await loadClaudePlugin(String(args.source))
+    const plugin = await loadClaudePlugin(expandHome(String(args.source)))
     const outputRoot = resolveOutputRoot(args.output)
     const codexHome = resolveTargetHome(args.codexHome, path.join(os.homedir(), ".codex"))
 
