@@ -18,15 +18,22 @@ export async function backupFile(filePath: string): Promise<string | null> {
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
-  const backupPath = `${filePath}.bak.${timestamp}`
+  const backupBase = `${filePath}.bak.${timestamp}`
   const source = await fs.open(filePath, constants.O_RDONLY | constants.O_NOFOLLOW)
   try {
     const content = await source.readFile()
-    await fs.writeFile(backupPath, content, { flag: "wx", mode: 0o600 })
+    for (let suffix = 0; ; suffix += 1) {
+      const backupPath = suffix === 0 ? backupBase : `${backupBase}.${suffix}`
+      try {
+        await fs.writeFile(backupPath, content, { flag: "wx", mode: 0o600 })
+        return backupPath
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err
+      }
+    }
   } finally {
     await source.close()
   }
-  return backupPath
 }
 
 export async function pathExists(filePath: string): Promise<boolean> {
