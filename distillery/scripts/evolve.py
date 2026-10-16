@@ -9,6 +9,7 @@ Usage (called from distiller.py):
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -20,13 +21,12 @@ def _split_skill(skill_text):
     """Split SKILL.md into frontmatter and body.
     Returns (frontmatter_str, body_str). Frontmatter includes the --- delimiters.
     """
-    if not skill_text.startswith("---"):
+    match = re.match(r"\A(---[ \t]*\r?\n.*?^---[ \t]*)(?:\r?\n|\Z)",
+                     skill_text, re.DOTALL | re.MULTILINE)
+    if not match:
         return "", skill_text
-    parts = skill_text.split("---", 2)
-    if len(parts) < 3:
-        return "", skill_text
-    frontmatter = f"---{parts[1]}---"
-    body = parts[2].lstrip("\n")
+    frontmatter = match.group(1)
+    body = skill_text[match.end():].lstrip("\r\n")
     return frontmatter, body
 
 
