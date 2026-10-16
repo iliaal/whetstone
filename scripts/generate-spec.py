@@ -27,13 +27,13 @@ CLASS_BLURBS = {
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
-    if not text.startswith("---"):
+    match = re.match(r"\A---[ \t]*\r?\n(.*?)^---[ \t]*(?:\r?\n|\Z)",
+                     text, re.DOTALL | re.MULTILINE)
+    if not match:
         return {}, text
-    parts = text.split("---", 2)
-    if len(parts) < 3:
-        return {}, text
+    frontmatter = match.group(1)
     fm = {}
-    for line in parts[1].splitlines():
+    for line in frontmatter.splitlines():
         m = re.match(r"^([a-z-]+):\s*(.*)$", line)
         if not m:
             continue
@@ -41,9 +41,9 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
         if val.startswith(">-"):
             continue
         fm[key] = val.strip(" '\"")
-    body = parts[2].strip()
+    body = text[match.end():].strip()
     if "description" not in fm:
-        m = re.search(r"^description:\s*>-?\s*\n((?:  .*\n?)+)", parts[1], re.MULTILINE)
+        m = re.search(r"^description:\s*>-?\s*\n((?:  .*\n?)+)", frontmatter, re.MULTILINE)
         if m:
             fm["description"] = " ".join(ln.strip() for ln in m.group(1).splitlines() if ln.strip())
     return fm, body
