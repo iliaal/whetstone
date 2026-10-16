@@ -2,8 +2,6 @@
 
 Claude Code plugin for PHP/React/Python/JavaScript/TypeScript workflows. Includes the plugin (agents, commands, skills, hooks), a skill distillery, and a CLI for cross-tool conversion.
 
-When you see a `<session-commands>` tag in hook context, briefly list those commands to the user at the start of your first response.
-
 ## Repository structure
 
 ```
@@ -50,9 +48,12 @@ whetstone/
 - Hyphens for all file naming (agents, skills, commands).
 - Agents omit `model:` unless overriding (e.g., `model: haiku`).
 - Agents reference skills (one-directional); skills stay generic and portable.
-- **Read before claiming "new"**: Before presenting sync/improvement findings, read the target skill to verify the pattern isn't already covered. Saves round-trips.
+- **Read before claiming "new"**: Before presenting sync/improvement findings, read the target's body, not its description or frontmatter, to verify the pattern isn't already covered. A description that disagrees with its body is itself a finding.
+- **Check the consumer's contract, not a proxy.** Before calling a reference, identifier, or absence verified, check it against what reads it: the Agent tool resolves plugin agents as `whetstone:ia-<name>`, not the `agents/*.md` filename stem; a link must cover the routed topic, not just resolve; an absence claim needs a case-insensitive grep for two or three spellings (the citation-artifact rule is spelled `[OAICITE]`). Existing working callsites are the ground truth; a lone divergent form is an error. `validate-plugin`, `test-triggers`, and cross-ref validation do not check `subagent_type` values.
 - **Present changes one at a time** for review decisions. Batch presentation only when explicitly asked.
 - **No off-stack content**: Skip or replace code examples, references, and patterns for languages/frameworks the team doesn't use (Ruby/Rails, Java, Swift, etc.). Use PHP, Python, or TypeScript equivalents. Generic SQL or framework-agnostic examples are fine when no specific stack fits.
+- **Discipline sections duplicate on purpose.** The `## Discipline` sections in language skills (`ia-php-laravel`, `ia-python-services`, `ia-nodejs-backend`, `ia-react-frontend`, `ia-rust-systems`, `ia-cpp-systems`) repeat shared rules because each skill ships standalone to users without this file. Do not flag them as cross-skill duplication.
+- **Code-quality and writing principles belong in the language-specific coding skills, not in planning or meta skills.** Planning skills govern workflow; coding skills govern how code gets written.
 - **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/whetstone/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `git grep -n '~/ai/\|/home/' -- plugins/` before shipping to catch stragglers. Search tracked files only: a plain `grep -rn` also walks gitignored build artifacts (`evals/results/`, `__pycache__/`) that never ship, so it reports stragglers that do not exist. The tracked hits that remain are the `SPEC.md` lines documenting this rule.
 
 ## Versioning
@@ -139,6 +140,7 @@ When adding or modifying skills, verify:
 - [ ] `description:` describes *when* to invoke the skill (trigger conditions); never *how* the skill proceeds step-by-step. Restating the body's procedure in the description causes Claude to follow the description and skip the skill content.
 - [ ] `description:` sentence 1 names the distinctive mechanism (what a sibling skill would not produce), not a category label ("code review", "optimization loops"). Route neighbors with "Use `<sibling>` for <that job>" rather than restating their scope. Quoted-utterance or slash-name catalogs belong only in descriptions of user-invoked skills.
 - [ ] No `disable-model-invocation: true` on a skill that another skill or command invokes through an explicit `Skill()` call; the flag makes that call fail (`cannot be used with Skill tool`). Tighten the description's trigger instead.
+- [ ] `description:` stays at or under 80 tokens; `validate-plugin` flags skills and agents over it as HIGH. Two or three appended trigger phrases are enough to cross it, so re-run `python3 distillery/scripts/distiller.py validate-plugin` after any description edit.
 
 **Description-as-shortcut failure mode:** a description that summarizes the procedure gets *followed* instead of the body being *read*. Observed case: a skill with a two-stage flowchart (spec-compliance review, then quality review) described as "code review between tasks" ran one review, not two. A description of the form "does X, then Y, then Z" is a procedure shortcut; keep process in the body.
 
@@ -176,17 +178,17 @@ Avoid `${CLAUDE_SKILL_DIR}`: it is empty outside Claude Code, and every skill he
 - [ ] **Success criteria** — how the agent knows the skill completed correctly
 - [ ] **Constraints** — what the skill must NOT do, stop conditions, boundaries
 - [ ] **Procedural content** — numbered steps with action verbs, not just declarative rules
-- [ ] **Optimal length** — SKILL.md body 2K-8K chars ideal. >15K hurts (-2.9pp). Overflow → `references/`
+- [ ] **Optimal length** — SKILL.md body 2K-8K chars ideal. >15K hurts (-2.9pp). Overflow → `references/`, chosen by when content is read, not by size: move cold-path material (handoff steps, theory, reference-implementation guidance) behind a link and keep decision gates and checklists inline, because a gate behind a Read does not fire. Landing slightly over 15K beats moving a gate out.
 
 ### Quick Validation
 
 ```bash
 # Check for unlinked references in a skill
-grep -E '`(references|assets|scripts)/[^`]+`' skills/*/SKILL.md
+grep -E '`(references|assets|scripts)/[^`]+`' plugins/whetstone/skills/*/SKILL.md
 # Should return nothing if all refs are properly linked
 
 # Check description format - should describe what + when
-grep -E '^description:' skills/*/SKILL.md
+grep -E '^description:' plugins/whetstone/skills/*/SKILL.md
 ```
 
 ## Common tasks
@@ -345,9 +347,9 @@ Keep `renames` as append-only history from former plugin names to current names 
 ## Resources
 
 - [Skills Reference](https://code.claude.com/docs/en/skills) -- master reference for skill frontmatter, features, and constraints
-- [Plugin Documentation](https://code.claude.com/en/docs/claude-code/plugins)
-- [Plugin Marketplace Documentation](https://code.claude.com/en/docs/claude-code/plugin-marketplaces)
-- [Plugin Reference](https://code.claude.com/en/docs/claude-code/plugins-reference)
+- [Plugin Documentation](https://code.claude.com/docs/en/plugins)
+- [Plugin Marketplace Documentation](https://code.claude.com/docs/en/plugin-marketplaces)
+- [Plugin Reference](https://code.claude.com/docs/en/plugins-reference)
 
 <!-- BEGIN beads-managed (br v6) -->
 ## Beads ledger (`br`)

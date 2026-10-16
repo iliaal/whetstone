@@ -181,7 +181,11 @@ silently supply gated scores.
    outputs; it cannot demonstrate candidate behavior or generalization.
 3. `distiller.py test-triggers` — confirm activation is unchanged (content edit,
    not an activation edit).
-4. Run a Codex Flow A cycle — it is a behavior-affecting edit to a shipped skill.
+4. Gate proportionately. A behavior-affecting edit to a shipped skill gets a Codex
+   Flow A cycle. A low-risk doc-guidance line needs only `validate-plugin`,
+   `test-triggers`, and a human read, not a full Codex cycle.
+   Extract the optimizer's insight and integrate it into the skill; do not paste its
+   raw diff, which can duplicate content it could not see.
 5. Commit the SKILL.md change; `/release` ships it later.
 
 ## 7. Cost
