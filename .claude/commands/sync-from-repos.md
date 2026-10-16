@@ -47,7 +47,7 @@ cd ~/ai/repos && bash pull-all.sh
 
 If `pull-all.sh` doesn't exist, `git pull` each repo directory individually.
 
-Launch `harvest-sessions` as a background subagent in parallel with Phase 2. This refreshes eval data so `discover-signals` (Phase 6) and `/audit-plugin` both operate on current session data.
+Launch `harvest-sessions` as a background subagent in parallel with Phase 2. This refreshes eval data so `analyze-outcomes` (Phase 6) and `/audit-plugin` both operate on current session data.
 
 Use the absolute script path — the `cd ~/ai/repos` above leaves the shell outside the plugin repo, so a repo-relative `distillery/...` path would not resolve:
 
@@ -263,7 +263,7 @@ python3 distillery/scripts/distiller.py analyze-outcomes
 
 **analyze-outcomes**: Surfaces (skill, project) pairs where negative rate exceeds the global average by >10pp. Cross-reference anomalies against project-type constraints in `skill-patterns.sh` -- if a domain skill is consistently negative in a project whose type doesn't match, recommend adding a `SKILL_PROJECT_TYPES` entry to prevent injection.
 
-This runs after sync (not during audit) because both analyses benefit from the broadest possible session scan, and any new patterns or constraint recommendations need to be in place before the audit runs.
+This runs after sync (not during audit) because the analysis benefits from the broadest possible session scan, and any new patterns or constraint recommendations need to be in place before the audit runs.
 
 ## Phase 7: Post-sync audit
 
