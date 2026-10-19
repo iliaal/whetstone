@@ -2847,6 +2847,31 @@ def _extract_injected_skills(prompt_text):
     return skills
 
 
+_BATCHED_INJECTION_MARKER = "Several tasks of this agent type started together"
+
+
+def _hook_injection_text(obj):
+    """Return the SubagentStart additionalContext text carried by an attachment
+    record, or None.
+
+    The hook's stdout is also echoed in a hook_success attachment; only the
+    hook_additional_context record is read so one injection counts once.
+    """
+    attachment = obj.get("attachment")
+    if not isinstance(attachment, dict):
+        return None
+    if attachment.get("type") != "hook_additional_context":
+        return None
+    if attachment.get("hookEvent") not in (None, "SubagentStart"):
+        return None
+    content = attachment.get("content")
+    if isinstance(content, list):
+        return "\n".join(c for c in content if isinstance(c, str))
+    if isinstance(content, str):
+        return content
+    return None
+
+
 def _strip_injection_header(prompt_text):
     """Remove the BEFORE STARTING block from a prompt, returning the actual task."""
     m = _SKILL_INJECTION_RE.search(prompt_text)
@@ -3168,6 +3193,7 @@ def _parse_session(jsonl_path):
       - is_subagent: bool
       - turns: list of {role, content_text, tool_calls, timestamp}
       - injected_skills: list of {skill, version} (subagents only)
+      - injection_batched: bool, injection listed skills for several queued tasks
       - task_prompt: str (the actual task, with injection header stripped)
       - signal: "positive" | "negative" | "ambiguous"
       - git_branch: str or None
@@ -3178,6 +3204,7 @@ def _parse_session(jsonl_path):
     git_branch = None
     claude_version = None
     models = []
+    hook_injections = []
     is_subagent = "subagents" in str(jsonl_path)
 
     with open(jsonl_path) as f:
@@ -3196,6 +3223,11 @@ def _parse_session(jsonl_path):
                 continue
 
             msg_type = obj.get("type", "")
+            if msg_type == "attachment":
+                hook_text = _hook_injection_text(obj)
+                if hook_text and _SKILL_INJECTION_RE.search(hook_text):
+                    hook_injections.append(hook_text)
+                continue
             if msg_type not in ("user", "assistant"):
                 continue
 
@@ -3289,13 +3321,31 @@ def _parse_session(jsonl_path):
             project = parts[i + 1]
             break
 
-    # Detect injected skills from first user message (subagent traces)
+    # Injected skills arrive as a SubagentStart hook_additional_context
+    # attachment (5.1.0+) or, in older traces, as a header prepended to the
+    # first user message.
     injected_skills = []
     task_prompt = ""
+    injection_text = ""
     first_user = next((t for t in turns if t["role"] == "user"), None)
+    if hook_injections:
+        injection_text = hook_injections[0]
+        seen = set()
+        for text in hook_injections:
+            for info in _extract_injected_skills(text):
+                if info["skill"] not in seen:
+                    seen.add(info["skill"])
+                    injected_skills.append(info)
+    elif first_user:
+        injection_text = first_user["content_text"]
+        injected_skills = _extract_injected_skills(injection_text)
     if first_user:
-        injected_skills = _extract_injected_skills(first_user["content_text"])
         task_prompt = _strip_injection_header(first_user["content_text"])
+    # A batched start receives the union of skills matched for every queued
+    # prompt of the same agent type; the text does not say which belong here.
+    injection_batched = bool(injected_skills) and any(
+        _BATCHED_INJECTION_MARKER in t for t in (hook_injections or [injection_text])
+    )
 
     # Classify success signal from user messages. Scan only typed text —
     # tool results masquerade as user messages and carry skill/quoted text.
@@ -3315,6 +3365,7 @@ def _parse_session(jsonl_path):
         "is_subagent": is_subagent,
         "turns": turns,
         "injected_skills": injected_skills,
+        "injection_batched": injection_batched,
         "task_prompt": task_prompt,
         "signal": signal,
         "git_branch": git_branch,
@@ -3425,6 +3476,7 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
         "files_skipped": 0,
         "secrets_detected": 0,
         "subagent_with_skills": 0,
+        "batched_injection_excluded": 0,
         "signals": {"positive": 0, "negative": 0, "ambiguous": 0},
     }
 
@@ -3446,6 +3498,12 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
             stats["secrets_detected"] += 1
 
         stats["signals"][parsed["signal"]] += 1
+
+        # Batched injections cannot be attributed to this subagent's task, so
+        # they are excluded rather than credited to every skill in the union.
+        if parsed.get("injection_batched"):
+            stats["batched_injection_excluded"] += 1
+            continue
 
         # For subagent traces with injected skills, create per-skill examples
         if parsed["injected_skills"]:
@@ -3520,6 +3578,8 @@ def harvest_sessions(project_filter=None, skill_filter=None, min_turns=3, includ
         print(f"  Excluded {synthetic_count} synthetic self-play examples (SkillOpt rollouts / judge calls)", file=sys.stderr)
     if maintenance_count:
         print(f"  Excluded {maintenance_count} plugin-maintenance misfire examples (sync/audit/distillery tasks)", file=sys.stderr)
+    if stats["batched_injection_excluded"]:
+        print(f"  Excluded {stats['batched_injection_excluded']} batched-injection subagent traces (skills not attributable to one task)", file=sys.stderr)
 
     return {
         "stats": stats,

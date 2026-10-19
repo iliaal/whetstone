@@ -3660,6 +3660,159 @@ class TestHarvestSessions:
         assert distiller.harvest_sessions() == {"error": "no projects directory"}
 
 
+_SINGLE_HEADER = ("BEFORE STARTING: These skill files matched your task description; "
+                  "confirm each applies to your actual task, then read and follow it:")
+_BATCHED_HEADER = ("BEFORE STARTING: Several tasks of this agent type started together, so "
+                   "these skill files matched one or more of them, not necessarily yours. "
+                   "Confirm each applies to your actual task; read and follow only those that do:")
+
+
+def _subagent_start_context(skills, header=_SINGLE_HEADER, version="5.1.1"):
+    lines = [header]
+    lines += [f"- /home/u/.claude/plugins/cache/iliaal-marketplace/whetstone/{version}"
+              f"/skills/{s}/SKILL.md" for s in skills]
+    lines.append("If you cannot read the files, proceed with your best judgment.")
+    return "\n".join(lines)
+
+
+def _attachment(kind, text):
+    if kind == "hook_success":
+        stdout = json.dumps({"hookSpecificOutput": {
+            "hookEventName": "SubagentStart", "additionalContext": text}})
+        att = {"type": "hook_success", "hookName": "SubagentStart:opus-high",
+               "hookEvent": "SubagentStart", "content": "", "stdout": stdout,
+               "exitCode": 0}
+    else:
+        att = {"type": "hook_additional_context", "content": [text],
+               "hookName": "SubagentStart", "hookEvent": "SubagentStart"}
+    return {"type": "attachment", "isSidechain": True, "attachment": att,
+            "sessionId": "s1", "timestamp": "2026-10-14T00:41:37Z"}
+
+
+class TestSubagentStartInjection:
+    """Since 5.1.0 the plugin injects skills through SubagentStart
+    additionalContext, stored as a role-less attachment record. The parser must
+    read it, keep the legacy first-user-message path, and not treat the
+    attachment as a user turn."""
+
+    def _write(self, tmp_path, records, project="-home-u-app", sid="s1", agent="agent-a"):
+        path = tmp_path / "projects" / project / sid / "subagents" / f"{agent}.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as fh:
+            for r in records:
+                fh.write(json.dumps(r) + "\n")
+        return path
+
+    def _user(self, text):
+        return {"type": "user", "sessionId": "s1", "version": "2.1.296",
+                "timestamp": "2026-10-14T00:41:36Z",
+                "message": {"role": "user", "content": text}}
+
+    def _assistant(self, text):
+        return {"type": "assistant", "sessionId": "s1",
+                "message": {"role": "assistant", "model": "claude-opus-4-8",
+                            "content": [{"type": "text", "text": text}]}}
+
+    def test_attachment_only_injection_detected(self, tmp_path):
+        task = "Review the Rust ledger change for correctness."
+        p = self._write(tmp_path, [
+            self._user(task),
+            _attachment("hook_additional_context",
+                        _subagent_start_context(["ia-code-review", "ia-rust-systems"])),
+            self._assistant("Reviewed; one finding."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["injected_skills"] == [
+            {"skill": "ia-code-review", "version": "5.1.1"},
+            {"skill": "ia-rust-systems", "version": "5.1.1"},
+        ]
+        assert parsed["injection_batched"] is False
+        assert parsed["task_prompt"] == task
+        # The attachment is not a turn: one user + one assistant.
+        assert [t["role"] for t in parsed["turns"]] == ["user", "assistant"]
+        assert not any("BEFORE STARTING" in t["content_text"] for t in parsed["turns"])
+        assert parsed["signal"] == "ambiguous"
+
+    def test_legacy_first_user_message_injection_still_detected(self, tmp_path):
+        task = "Add a CSV export subcommand."
+        header = _subagent_start_context(["ia-python-services"], version="5.0.1")
+        p = self._write(tmp_path, [
+            self._user(f"{header}\n\n{task}"),
+            self._assistant("Added it."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["injected_skills"] == [{"skill": "ia-python-services", "version": "5.0.1"}]
+        assert parsed["injection_batched"] is False
+        assert parsed["task_prompt"] == task
+
+    def test_hook_success_duplicate_not_double_counted(self, tmp_path):
+        text = _subagent_start_context(["ia-meta-prompting"])
+        p = self._write(tmp_path, [
+            self._user("Stress-test the rollout plan."),
+            _attachment("hook_success", text),
+            _attachment("hook_additional_context", text),
+            self._assistant("Done."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["injected_skills"] == [{"skill": "ia-meta-prompting", "version": "5.1.1"}]
+        assert len(parsed["turns"]) == 2
+
+    def test_hook_success_alone_is_not_an_injection(self, tmp_path):
+        p = self._write(tmp_path, [
+            self._user("Stress-test the rollout plan."),
+            _attachment("hook_success", _subagent_start_context(["ia-meta-prompting"])),
+            self._assistant("Done."),
+        ])
+        assert distiller._parse_session(p)["injected_skills"] == []
+
+    def test_batched_header_flagged(self, tmp_path):
+        p = self._write(tmp_path, [
+            self._user("Review the PHP extension."),
+            _attachment("hook_additional_context", _subagent_start_context(
+                ["ia-c-systems", "ia-python-services"], header=_BATCHED_HEADER)),
+            self._assistant("Done."),
+        ])
+        parsed = distiller._parse_session(p)
+        assert parsed["injection_batched"] is True
+        assert {i["skill"] for i in parsed["injected_skills"]} == {"ia-c-systems", "ia-python-services"}
+
+    def test_harvest_attributes_attachment_injection_and_excludes_batched(self, tmp_path, monkeypatch):
+        projects = tmp_path / "projects"
+        eval_dir = tmp_path / ".eval-data"
+        manifest = tmp_path / ".skill-versions.json"
+        manifest.write_text(json.dumps({
+            "model_baseline_prefixes": ["claude-opus-4-8"],
+            "skills": {s: {"content_changed": "5.0.0", "pattern_changed": "5.0.0"}
+                       for s in ("ia-code-review", "ia-c-systems", "ia-python-services")},
+        }))
+        monkeypatch.setattr(distiller, "CLAUDE_PROJECTS_DIR", projects)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", eval_dir)
+        monkeypatch.setattr(distiller, "MANIFEST_PATH", manifest)
+        followup = self._user("thanks that works")
+        self._write(tmp_path, [
+            self._user("Review the widget diff."),
+            _attachment("hook_success", _subagent_start_context(["ia-code-review"])),
+            _attachment("hook_additional_context", _subagent_start_context(["ia-code-review"])),
+            self._assistant("Reviewed."), followup,
+        ], sid="sess-single", agent="agent-1")
+        self._write(tmp_path, [
+            self._user("Review the PHP extension."),
+            _attachment("hook_additional_context", _subagent_start_context(
+                ["ia-c-systems", "ia-python-services"], header=_BATCHED_HEADER)),
+            self._assistant("Reviewed."), followup,
+        ], sid="sess-batch", agent="agent-2")
+        result = distiller.harvest_sessions()
+        assert result["skills"]["ia-code-review"]["count"] == 1
+        assert "ia-c-systems" not in result["skills"]
+        assert "ia-python-services" not in result["skills"]
+        assert result["stats"]["batched_injection_excluded"] == 1
+        rows = [json.loads(l) for l in
+                (eval_dir / "ia-code-review" / "sessions.jsonl").read_text().splitlines()]
+        assert rows[0]["skill_version"] == "5.1.1"
+        assert rows[0]["task_input"] == "Review the widget diff."
+        assert rows[0]["turn_count"] == 3
+
+
 class TestParseSemver:
     def test_full_semver(self):
         assert distiller._parse_semver("2.50.0") == (2, 50, 0)
