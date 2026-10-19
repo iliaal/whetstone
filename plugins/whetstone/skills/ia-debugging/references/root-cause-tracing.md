@@ -106,4 +106,4 @@ Analyze stack traces from instrumentation to find the pattern (same test? same p
 
 ## Key Principle
 
-Never fix just where the error appears unless the legitimacy test places the defect there. Trace back to find the original trigger. After finding the source, also add defense-in-depth validation at each layer the data passes through (see [defense-in-depth.md](./defense-in-depth.md)).
+Never fix just where the error appears unless the legitimacy test places the defect there. Trace back to find the original trigger. When the state should never exist, after fixing its source check whether another reachable path can still construct it, and add guards only for distinct reachable failure classes (see [defense-in-depth.md](./defense-in-depth.md)).

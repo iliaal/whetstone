@@ -1,7 +1,7 @@
 # Mutation probes and repairs
 
 Read before running a focused mutation to confirm a finding, before changing any test
-or production code, and before proposing deletion of a production seam. The
+or production code, and before proposing deletion of a production seam or a test. The
 evidence-status labels and scratch-copy rule in `SKILL.md` step 4 still apply.
 
 ## Focused mutation procedure

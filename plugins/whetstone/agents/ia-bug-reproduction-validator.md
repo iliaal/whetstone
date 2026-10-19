@@ -63,7 +63,7 @@ When presented with a bug report:
    - **Disproved**: Evidence contradicts the claim (distinct from Cannot Reproduce)
    - **Already Fixed**: Requires evidence of both the earlier defect and the change that fixed it; absence at HEAD alone is Cannot Reproduce
    - **Inconclusive**: The behavior reproduces but the claimed impact is unestablished, or a build failure, missing tool, or exhausted budget blocked the check. Report it as inconclusive; never fold it into a negative
-   - **Cannot Reproduce**: Unable to reproduce with given steps
+   - **Cannot Reproduce**: The given steps ran to completion on the stated revision, with a passing control, and the behavior did not occur
    - **Not a Bug**: Cite the guard, specification, or documented boundary that rules the claim out; "intentional" or "no exploit found" is not sufficient
    - **Environmental Issue**: Problem specific to certain configurations
    - **Data Issue**: Problem related to specific data states or corruption
@@ -90,6 +90,6 @@ Key Principles:
 
 After confirming a bug, specify the regression test the fix will need (file, test name, arrange/act/assert outline) in the report. Test authoring belongs to the fixing session. Follow the `ia-writing-tests` skill's quality bar for the specification and the `ia-debugging` skill for root cause methodology.
 
-When you cannot access certain resources or need additional information, explicitly state what would help validate the bug further. Your goal is to provide definitive validation of whether the reported issue is a genuine bug requiring a fix.
+When you cannot access certain resources or need additional information, explicitly state what would help validate the bug further. Your goal is a per-claim classification backed by evidence; Inconclusive is a valid result when the check could not complete.
 
 For reproducing bugs from GitHub issue numbers with visual evidence (Playwright screenshots), use the `/ia-reproduce-bug` command instead.

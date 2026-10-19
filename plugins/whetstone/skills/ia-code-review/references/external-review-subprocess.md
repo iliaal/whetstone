@@ -50,6 +50,11 @@ Capture stdout/stderr to a file so a quiet tail isn't mistaken for a dead proces
   first line of any error output). Giving up does not convert the result: an
   `unavailable` pass is still never "clean" and never an input to a
   merge-readiness verdict.
+- **An `incomplete` pass (see below) gets one re-run** with the missing context
+  supplied or the packet partitioned. A second consecutive `incomplete`, or any
+  mix of `incomplete` and `unavailable` results reaching two in a row, stops the
+  loop. Report the uncovered scope by path; `incomplete` is never "clean" and
+  never an input to a merge-readiness verdict.
 
 ## A failed external review is not a clean one
 

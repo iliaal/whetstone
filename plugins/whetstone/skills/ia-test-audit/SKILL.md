@@ -139,5 +139,5 @@ Report reviewed scope and selection method alongside findings. Separate confirme
 findings, unresolved candidates, and retained counterexamples. Do not count every
 missing obligation as a separate bad test. State commands not run and reasons.
 
-Before proposing deletion of a production seam, or when changes are authorized, or when
+Before proposing deletion of a production seam or a test, or when changes are authorized, or when
 authoring a new test, read [mutation-and-repair.md](./references/mutation-and-repair.md).

@@ -23,7 +23,7 @@ Use agents when concurrent work, independent review, or isolated context improve
 
 ## Failure and review rules
 
-Never retry an unchanged prompt after a blocker. Supply missing context, change supported model or evidence, split oversized work, or escalate a faulty specification. After a crash inspect owned files first: a clean tree permits an ordinary retry; a dirty tree permits exactly one verify-and-continue relaunch. A second crash of that worker is a hard stop.
+Never retry an unchanged prompt after a blocker. Supply missing context, change supported model or evidence, split oversized work, or escalate a faulty specification. After a crash, resume the same agent once where the harness supports it; otherwise, or if resuming fails, inspect owned files: a clean tree permits an ordinary retry; a dirty tree permits exactly one verify-and-continue relaunch. A second crash of that worker, resumed or relaunched, is a hard stop.
 
 Use `DONE` only for verified completion. `DONE_WITH_CONCERNS` names residual risks or verified partial delivery and its gap; `BLOCKED` names the blocker; `NEEDS_CONTEXT` names missing information. No status converts partial work into completion.
 

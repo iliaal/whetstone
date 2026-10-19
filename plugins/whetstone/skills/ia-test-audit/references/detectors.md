@@ -38,4 +38,6 @@ syntax. Reconcile omissions with the inventory before proceeding.
 Treat REDUNDANT/SUBSUMED/FOLD/PARAMETRIZE detector groups as separate consolidation
 leads, not findings. Inspect setup and contract differences before merging. Preserve
 distinct risks across unit, integration, and end-to-end layers. Report deletions and
-LOC only when deletion or consolidation is part of the requested work.
+LOC only when deletion or consolidation is part of the requested work. Apply the
+test-deletion bar in [mutation-and-repair.md](./mutation-and-repair.md) before
+recommending removal.
