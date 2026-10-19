@@ -3667,25 +3667,35 @@ def _parse_judge_response(text):
                 break
             except json.JSONDecodeError:
                 continue
-    if data is None:
+    if not isinstance(data, dict):
         return None
 
-    try:
-        correctness = max(0, min(10, int(data.get("correctness", 0))))
-        procedure = max(0, min(10, int(data.get("procedure_following", 0))))
-        conciseness = max(0, min(10, int(data.get("conciseness", 0))))
-        # Normalize to 0-1 and compute weighted composite
-        c, p, co = correctness / 10, procedure / 10, conciseness / 10
-        composite = 0.5 * c + 0.3 * p + 0.2 * co
-        return {
-            "correctness": correctness,
-            "procedure_following": procedure,
-            "conciseness": conciseness,
-            "composite": round(composite, 3),
-            "notes": data.get("notes", ""),
-        }
-    except (json.JSONDecodeError, ValueError, TypeError):
+    # A missing dimension is unknown, not a zero score, and a verdict without
+    # its justification cannot be audited; both are parse failures.
+    values = {}
+    for key in ("correctness", "procedure_following", "conciseness"):
+        raw = data.get(key)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            return None
+        if raw != raw or raw in (float("inf"), float("-inf")):
+            return None
+        values[key] = max(0, min(10, int(raw)))
+    notes = data.get("notes")
+    if not isinstance(notes, str) or not notes.strip():
         return None
+
+    correctness = values["correctness"]
+    procedure = values["procedure_following"]
+    conciseness = values["conciseness"]
+    c, p, co = correctness / 10, procedure / 10, conciseness / 10
+    composite = 0.5 * c + 0.3 * p + 0.2 * co
+    return {
+        "correctness": correctness,
+        "procedure_following": procedure,
+        "conciseness": conciseness,
+        "composite": round(composite, 3),
+        "notes": notes,
+    }
 
 
 def _find_skill_path(name):
@@ -5420,6 +5430,8 @@ def comparison_score(manifest, verdicts):
         if not isinstance(data, dict) or any(type(data.get(k)) is not int or not 0 <= data[k] <= 10 for k in dimensions):
             raise ValueError("judge must return all three integer scores in 0..10")
         scores = _parse_judge_response(json.dumps(data))
+        if scores is None:
+            raise ValueError("judge must return nonblank notes with its scores")
         pairs.setdefault(task["case_id"], {})[task["variant"]] = scores
     rows = [{"case_id": case_id, **pair,
              "delta": round(pair["candidate"]["composite"] - pair["baseline"]["composite"], 3)}

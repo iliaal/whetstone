@@ -84,7 +84,8 @@ def paired_execution(tmp_path):
 def comparison_verdicts(judges):
     return [{**{k: task[k] for k in ("task_id", "output_sha256", "rubric_sha256")},
              "run_id": judges["run_id"],
-             "response": {"correctness": 10, "procedure_following": 10, "conciseness": 10}}
+             "response": {"correctness": 10, "procedure_following": 10, "conciseness": 10,
+                          "notes": "Meets every criterion."}}
             for task in judges["tasks"]]
 
 
@@ -210,7 +211,10 @@ def test_comparison_rejects_missing_duplicate_and_mutated_records(paired_executi
 
 @pytest.mark.parametrize("field,value", [("output_sha256", "wrong"), ("rubric_sha256", "wrong"),
                                         ("response", {"correctness": 10}),
-                                        ("response", {"correctness": True, "procedure_following": 5, "conciseness": 5})])
+                                        ("response", {"correctness": True, "procedure_following": 5, "conciseness": 5}),
+                                        ("response", {"correctness": 9, "procedure_following": 9, "conciseness": 9}),
+                                        ("response", {"correctness": 9, "procedure_following": 9, "conciseness": 9,
+                                                      "notes": " \t\r\n"})])
 def test_comparison_rejects_unbound_or_invalid_verdicts(paired_execution, field, value):
     manifest, outputs, _ = paired_execution
     judges = distiller.comparison_emit_judges(manifest, outputs)
@@ -2891,7 +2895,8 @@ class TestDspyAggregation:
 
     def _verdict(self, idx, signal, c, p, co):
         return {"index": idx, "signal": signal, "session_id": f"s{idx}", "skill_version": "1",
-                "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co})}
+                "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co,
+                                         "notes": "justified"})}
 
     def test_composite_math(self):
         # composite = 0.5*C/10 + 0.3*P/10 + 0.2*Co/10; C=8,P=7,Co=9 -> 0.79
@@ -2925,6 +2930,61 @@ class TestDspyAggregation:
         assert r.get("error") == "no valid scores"
 
 
+class TestParseJudgeResponse:
+    """A judge reply missing a dimension or its justification is unknown, not a
+    zero score; scoring it as 0 drags means down and can flip rankings."""
+
+    FULL = {"correctness": 8, "procedure_following": 7, "conciseness": 9, "notes": "Covers the task."}
+
+    def test_complete_reply_scores(self):
+        r = distiller._parse_judge_response(json.dumps(self.FULL))
+        assert r["composite"] == 0.79
+        assert r["notes"] == "Covers the task."
+
+    def test_fenced_and_embedded_replies_score(self):
+        assert distiller._parse_judge_response("```json\n" + json.dumps(self.FULL) + "\n```")["composite"] == 0.79
+        assert distiller._parse_judge_response("thinking... " + json.dumps(self.FULL) + " done")["composite"] == 0.79
+
+    @pytest.mark.parametrize("reply", [
+        {},
+        {"correctness": 9, "notes": "partial"},
+        {"correctness": 9, "procedure_following": 9, "notes": "partial"},
+        {"procedure_following": 9, "conciseness": 9, "notes": "partial"},
+    ])
+    def test_missing_dimension_is_parse_failure(self, reply):
+        assert distiller._parse_judge_response(json.dumps(reply)) is None
+
+    @pytest.mark.parametrize("key", ["correctness", "procedure_following", "conciseness"])
+    @pytest.mark.parametrize("value", ["9", None, True, [9], {"v": 9}, "NaN"])
+    def test_non_numeric_dimension_is_parse_failure(self, key, value):
+        reply = {**self.FULL, key: value}
+        assert distiller._parse_judge_response(json.dumps(reply)) is None
+
+    def test_nan_dimension_is_parse_failure(self):
+        assert distiller._parse_judge_response(
+            '{"correctness": NaN, "procedure_following": 7, "conciseness": 9, "notes": "x"}') is None
+
+    @pytest.mark.parametrize("notes", [None, "", "  ", " \t\r\n", 5])
+    def test_blank_or_missing_notes_is_parse_failure(self, notes):
+        reply = {k: v for k, v in self.FULL.items() if k != "notes"}
+        if notes is not None:
+            reply["notes"] = notes
+        assert distiller._parse_judge_response(json.dumps(reply)) is None
+
+    @pytest.mark.parametrize("text", ["[1, 2]", "5", '"correctness"', "null"])
+    def test_non_object_json_is_parse_failure(self, text):
+        assert distiller._parse_judge_response(text) is None
+
+    def test_partial_verdict_counts_as_error_not_zero(self):
+        manifest = TestDspyAggregation()._manifest("positive", "positive")
+        verdicts = [{"index": 0, "response": json.dumps(self.FULL)},
+                    {"index": 1, "response": json.dumps({"correctness": 9})}]
+        r = distiller.dspy_score_from_verdicts("x", verdicts, manifest=manifest)
+        assert r["summary"]["count"] == 1
+        assert r["summary"]["errors"] == 1
+        assert r["summary"]["mean_composite"] == 0.79
+
+
 class TestDspyVerdictBinding:
     """A judge sub-agent echoes index/signal/session_id back; the report's buckets
     and count must come from the emitted manifest, never the verdict's self-report."""
@@ -2934,7 +2994,8 @@ class TestDspyVerdictBinding:
 
     def _verdict(self, idx, c=8, p=7, co=9, **extra):
         return {"index": idx, **extra,
-                "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co})}
+                "response": json.dumps({"correctness": c, "procedure_following": p, "conciseness": co,
+                                         "notes": "justified"})}
 
     def test_signal_taken_from_task_not_verdict(self):
         # Judge claims "positive"; the emitted task says negative.
@@ -4261,7 +4322,8 @@ class TestDspyEvalSkillFileOverride:
         verdicts_file = self.tmp / "verdicts.json"
         verdicts_file.write_text(json.dumps([
             {"index": t["index"],
-             "response": json.dumps({"correctness": 8, "procedure_following": 7, "conciseness": 9})}
+             "response": json.dumps({"correctness": 8, "procedure_following": 7, "conciseness": 9,
+                                     "notes": "justified"})}
             for t in emitted["tasks"]]))
         return tasks_file, verdicts_file
 

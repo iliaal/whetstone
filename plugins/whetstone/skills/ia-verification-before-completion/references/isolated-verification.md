@@ -6,7 +6,7 @@ When the change is high-stakes (touches shared modules consumed elsewhere) or th
 
 1. Resolve the base and enumerate exact repository-relative file paths, including deleted paths, both sides of renames, and selected untracked files. Do not use directory or glob selections.
 2. Choose the snapshot source. Leave `owned_patch` empty only when every base-to-current difference in each selected file is owned; this mode captures current bytes, including committed, staged, unstaged, and selected untracked work. It does not verify a staged-only or PR-head scope.
-3. For mixed owned/caller hunks or another selected revision, prepare an owned-only checkout at the base, apply the inspected owned hunks there, and copy only the selected new-file bytes. Stage the explicit files in that scratch checkout and export its reviewed binary `git diff --cached --no-textconv --no-ext-diff --binary <base> -- <paths>` to a private patch file. Set `owned_patch` to that absolute path. Inspect the patch against the requested scope before using it; a whole-file diff from the dirty caller is not an owned patch.
+3. For mixed owned/caller hunks or another selected revision, prepare an owned-only checkout at the base, apply the inspected owned hunks there, and copy only the selected new-file bytes. Stage the explicit files in that scratch checkout and export its reviewed binary `git diff --cached --no-textconv --no-ext-diff --binary --src-prefix=a/ --dst-prefix=b/ <base> -- <paths>` to a private patch file. Set `owned_patch` to that absolute path. Inspect the patch against the requested scope before using it; a whole-file diff from the dirty caller is not an owned patch.
 4. Materialize the snapshot using a separate index and a detached worktree. Check the expected tree and actual file content before running verification. Neither snapshot mode writes the caller's files or index.
 
 This recipe requires Git, Bash, and Python 3. Fill the base, exact paths, optional reviewed patch, and build/test commands before running:
@@ -39,7 +39,7 @@ else
     snapshot_git add --all --force -- "${owned_paths[@]}"
 fi
 expected_tree=$(snapshot_git write-tree)
-snapshot_git diff --cached --no-textconv --no-ext-diff --binary "$verify_base" -- "${owned_paths[@]}" > "$scratch_root/owned.patch"
+snapshot_git diff --cached --no-textconv --no-ext-diff --binary --src-prefix=a/ --dst-prefix=b/ "$verify_base" -- "${owned_paths[@]}" > "$scratch_root/owned.patch"
 
 git -C "$repo_root" worktree add --detach "$verify_dir" "$verify_base"
 if [[ -s "$scratch_root/owned.patch" ]]; then

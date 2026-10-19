@@ -101,6 +101,8 @@ This command takes a work document (plan or specification) and executes it syste
      - Evaluate for incremental commit (see below)
    ```
 
+   **Blocking decision mid-run**: When a task needs a user decision, leave it pending and continue with every task that does not depend on that decision (check the dependencies recorded in TaskCreate). Raise all blocking questions together once only dependent tasks remain, since the user may be away. In pipeline mode, return them to the parent instead.
+
    **System-Wide Test Check**: Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
 
    **IMPORTANT**: Always update the original plan document by checking off completed items. Use the Edit tool to change `- [ ]` to `- [x]` for each task you finish. This keeps the plan as a living document showing progress and ensures no checkboxes are left unchecked.

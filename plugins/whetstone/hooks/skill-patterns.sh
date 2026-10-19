@@ -59,7 +59,7 @@ SKILL_TIERS[ia-verification-before-completion]=1
 SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)|\b(check|evaluate|assess).{0,30}\bcode review feedback\b'
 SKILL_TIERS[ia-receiving-code-review]=1
 
-SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b'
+SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b|\badd( (a|an|some|more|new|missing|few|basic|unit|integration|e2e|end-to-end|regression|property|snapshot|smoke|failing|edge-case))+ tests?([ ,]+(for|to|that|covering|around|on)\b|[ .!?]*$)'
 SKILL_TIERS[ia-writing-tests]=1
 
 # Audit intent over existing tests, not authoring: bare `test.?quality` stays with

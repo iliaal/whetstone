@@ -42,6 +42,8 @@ Anything in any source with no corresponding test is a coverage gap: implemented
 
 For each acceptance criterion, include at least one discriminating case that a naive wrong implementation would fail. Prefer the negative, boundary, or state-transition case that separates the intended contract from a hard-coded happy path. Do not add a meaningless negative-case quota when one strong case already distinguishes the behavior.
 
+**Settle paths need a kind × action matrix.** When records carry a kind plus a pending status that an owner action resolves (proposals, holds, approvals, moderation queues, invitations), enumerate every kind × action cell and derive each cell's expected resulting row from what the kind means, not from what the code does: a deactivate keeps the row with its flag off, a same-claim replace keeps it, only a remove deletes it. Give each cell a test that settles that exact kind and asserts the stored row. A sibling kind's test through the same function does not cover the cell, and neither does a test that checks only the status field or mocks the store; a branch that sends several kinds down one destructive path is the typical escape.
+
 **Make the fixture adversarial on the axis under test.** Realistic sample data carries globally unique ids, distinct values, and non-overlapping keys, which is exactly what lets a wrong implementation pass. If the contract is a composite key, build a fixture where every child id collides across parents; if it is ordering, give every item the same timestamp. The right fixture is the one a naive implementation cannot survive, not the one that looks most like production. The default fixture also tends to select the container's fast internal representation: sequential keys, short strings, and small maps take a packed or inline layout, so the restructure or rehash path never executes. When a change touches a container's internals, build one case whose keys, size, or contents force the alternate representation, and confirm it fails without the fix.
 
 **An assertion of absence is discriminating only once it has been made to fail.** A test asserting that nothing was written to the shared path, nothing leaked into the production channel, or the fallback was never taken passes identically whether or not the guard works. Plant the forbidden violation and watch that specific assertion fail before trusting it (mechanics under Red-Green-Refactor).
@@ -69,6 +71,7 @@ For API/web projects, aim for ~80% unit / ~15% integration / ~5% E2E; adjust for
 - **Unit**: fast, isolated, one behavior per test, no database/network/filesystem. The cheap, fast-feedback foundation.
 - **Integration**: verify component boundaries against real dependencies (real test database, wired services, queue producer + consumer). Catches the wiring bugs mocks hide.
 - **E2E**: critical user paths through the real system only (signup, checkout, core workflow). Every E2E test must justify its maintenance cost.
+- **Contract**: when a client and a server are built and tested separately, two green suites prove nothing about compatibility, because each side checks itself against its own DTOs, fixtures, or mocks. Validate the provider's actual serialized response or message against the shared machine-readable schema (OpenAPI, JSON Schema, a Zod or Pydantic export) rather than its internal type, covering names, types, nullability, enum values, error envelopes, and large integer IDs. Generate or validate the consumer's types, mocks, and fixtures from that same schema; a stale generated type or hand-shaped mock is not coverage. Change the schema first, regenerate consumer assets, then rerun the provider tests, and keep at least one real cross-boundary path or record its absence as a gap.
 
 ### Name tests by expected behavior
 
@@ -112,6 +115,8 @@ For every feature, consider:
 - Concurrent access (if applicable)
 - Error paths (network failure, timeout, permission denied)
 - Unicode and special characters in string inputs
+
+Write invalid-input cases as single-fault probes: for each documented rule of a field (allowed characters, format, sign, range, arity), one case breaks only that rule while satisfying every other, and the test asserts that the rejection names that rule. An input that violates two rules is still rejected when one validator is missing, so it proves neither.
 
 ### Silent failure coverage
 

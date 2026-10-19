@@ -38,7 +38,7 @@ Extract or generate at ingress middleware, attach to the root span, propagate vi
 
 ## Distributed Tracing
 
-`tracing-opentelemetry` exports spans to Jaeger/Tempo/Honeycomb/Datadog. Gate the OpenTelemetry subscriber behind a feature flag to keep dev/test builds fast.
+`tracing-opentelemetry` exports spans to Jaeger/Tempo/Honeycomb/Datadog. Gate the OpenTelemetry subscriber behind a feature flag to keep dev/test builds fast. Give every exporting layer its own filter (`otel_layer.with_filter(EnvFilter::new("info"))`): with the filter attached per layer as above, a layer added without one receives every span and event from every dependency, which raises export cost and can ship span fields the log filter would have dropped.
 
 ## Live Task Introspection (tokio-console)
 

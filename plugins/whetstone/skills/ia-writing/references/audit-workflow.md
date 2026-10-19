@@ -58,7 +58,7 @@ End the audit record with `— END AUDIT: [n] issues found —`. If zero, record
 
 ```
 1. [FALSE-AGENCY] para 3: "the codebase resists change" -- name who finds it hard to change
-2. [BINARY-CONTRAST] para 5: "Not speed. Clarity." -- state "Clarity matters" directly
+2. [BINARY-CONTRAST] para 5: "Not speed. Clarity." -- drop the fragment pair; state the claim it carried with the draft's supporting fact (the reason clarity won)
 3. [OAICITE] para 8: "[oai_citation:1]" -- remove artifact, add real citation or delete claim
 4. [REF-BUG] footnotes: [3] referenced in text but missing from reference list
 — END AUDIT: 4 issues found —

@@ -16,7 +16,7 @@ Clarify what to build before planning how to implement it.
 
 Produce exploration and a design, not implementation. Obtain approval before interactive handoff. Enable headless mode only when the caller explicitly delegates non-interactive execution and its decision scope; `disable-model-invocation` is selection metadata, not approval. Replace headless confirmations with stated conservative assumptions. Return material decisions without a safe authorized default unresolved. Never label inferred choices user-approved or infer implementation, commit, or publication authority from this skill.
 
-Use the active question mechanism for material questions: AskUserQuestion in Claude Code (load via ToolSearch `select:AskUserQuestion` when needed), request_user_input in Codex where supported, otherwise chat. Return missing decisions to the parent from an unattended worker.
+Ask open interview questions as plain chat text and end the turn to wait for the answer; a menu anchors the user to the agent's framing. Use a blocking menu tool only for menu-shaped choices with two to four real options (the Blindspot Pass, approach selection, the skip-to-planning offer, approvals, or a stuck or "you pick" user): AskUserQuestion in Claude Code (load via ToolSearch `select:AskUserQuestion` when needed), request_user_input in Codex where supported, otherwise numbered options in chat with the pending decision named on the first line. Return missing decisions to the parent from an unattended worker.
 
 ## Process
 

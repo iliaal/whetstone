@@ -4,7 +4,7 @@
 
 After triaging all feedback:
 
-1. **Clarify**: resolve material ambiguity before implementing affected or dependent items. Continue independent clear fixes where safe
+1. **Clarify**: resolve material ambiguity before implementing affected or dependent items. Ask first, then continue clear fixes that are independent as defined in [Handling Unclear Feedback](./feedback-triage.md#handling-unclear-feedback)
 2. **Blocking issues**: fix things that break functionality
 3. **Simple fixes**: quick wins that are clearly correct
 4. **Complex fixes**: changes that need careful implementation

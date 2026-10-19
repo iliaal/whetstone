@@ -31,7 +31,7 @@ Before considering tests complete:
 - [ ] Every absence or isolation assertion was proven able to fail: the forbidden violation was planted with a run-unique value and that specific assertion failed
 - [ ] Tests assert on outcomes, not implementation details
 - [ ] Snapshot, golden, fixture, and generated-expectation changes were reviewed semantically rather than regenerated to obtain green
-- [ ] Tests are independent: no shared mutable state between tests. If tests pass individually but fail together, use bisection to find the polluter (run one-by-one in isolation until the offending test is found)
+- [ ] Tests are independent: no shared mutable state between tests. If tests pass individually but fail together, recover the failing order and bisect the predecessors together with the victim in one process (see the test-pollution section of ia-debugging root-cause tracing). Running files one at a time in isolation never reproduces an in-process leak such as a module singleton, unrestored mock, or global timer; use a per-file artifact scan only when the pollution leaves a file behind
 - [ ] Tests run fast enough to run frequently (< 30 seconds for unit suite)
 - [ ] Bug fix tests reproduce the original trigger, or the missing seam and actual verification limits are reported under the exception above
 - [ ] Mutation check run: mentally mutate the code (wrong constant, flipped branch, dropped side effect, empty/default return) and confirm some test fails for each

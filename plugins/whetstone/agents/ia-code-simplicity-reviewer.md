@@ -39,6 +39,7 @@ When reviewing code:
    - Challenge every interface, base class, and abstraction layer
    - Recommend inlining code that's only used once
    - Flag premature generalizations and over-engineered solutions
+   - Flag a package added in the manifest diff to do a job the standard library, the platform, or an existing repo helper already does; name the replacement. A dependency the team has standardized on is not a finding
 
 4. **Scan for the six over-production traps**, named failure modes that recur in LLM-written diffs. For each, name the trap in the finding so the author recognizes the pattern:
    - **While-I'm-here**: edits to unrelated files or functions that "seemed worth cleaning up" but weren't in the task. Recommend splitting into a separate change.

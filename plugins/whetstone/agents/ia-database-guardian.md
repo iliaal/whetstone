@@ -140,6 +140,7 @@ Validate that specific migration code matches production reality. Prevent swappe
 - [ ] Is the code path behind a feature flag or environment variable?
 - [ ] If we need to revert, how do we restore the data? Is there a snapshot/backfill procedure?
 - [ ] Are manual scripts written as idempotent migration scripts with SELECT verification?
+- [ ] Is a one-off data repair (rewriting rows judged wrong, not a backfill the schema change requires) explicit and preview-first? It needs its own command or flag and a dry run that lists the affected rows before any write. Flag a repair that runs by default, one that writes without a preview, and one reachable from a migration, upgrade, or startup path, where it runs unreviewed on every environment, including those whose data was never wrong. Deterministic backfills a schema change requires stay in the migration (see Backfill strategy).
 
 ### 6. Structural Refactors & Code Search
 

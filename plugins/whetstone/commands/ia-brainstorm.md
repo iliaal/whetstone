@@ -37,15 +37,15 @@ Focus on: similar features, established patterns, CLAUDE.md guidance.
 
 **1.2 Collaborative Dialogue**
 
-Use the **AskUserQuestion tool** with the dialogue guidance in the `ia-brainstorming` skill's **Understand and compare** step.
+Follow the dialogue guidance in the `ia-brainstorming` skill's **Understand and compare** step. Ask open interview questions as plain chat text and end the turn for the answer; use **AskUserQuestion** only when a question is menu-shaped with 2-4 real options (Blindspot Pass, or a stuck or "you pick" user).
 
 ### Phase 2-3: Explore and Capture
 
-Follow the `ia-brainstorming` skill's approach selection, scope confirmation, and design capture steps. Use AskUserQuestion for approach selection. Write the design to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (ensure directory exists). Before moving to Phase 4, resolve any Open Questions via AskUserQuestion and move them to a "Resolved Questions" section.
+Follow the `ia-brainstorming` skill's approach selection, scope confirmation, and design capture steps. Use AskUserQuestion for approach selection. Write the design to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` (ensure directory exists). Before moving to Phase 4, resolve any Open Questions (open ones as plain chat text; AskUserQuestion only for 2-4 real options) and move them to a "Resolved Questions" section.
 
 ### Phase 4: Spec Review
 
-Read and follow **Phase 4: Review and Handoff** in the `ia-brainstorming` skill's [design-and-handoff.md](../skills/ia-brainstorming/references/design-and-handoff.md), using AskUserQuestion as this command's question mechanism.
+Read and follow **Phase 4: Review and Handoff** in the `ia-brainstorming` skill's [design-and-handoff.md](../skills/ia-brainstorming/references/design-and-handoff.md), asking open questions as plain chat text and using AskUserQuestion only for menu-shaped choices such as approval.
 
 For flow-heavy designs, offer `ia-spec-flow-analyzer` as an opt-in second lane. Cap that lane at 3 review passes.
 

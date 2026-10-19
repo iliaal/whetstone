@@ -12,6 +12,9 @@ Assign one job to each channel and never mix them:
 
 Write errors to stdout as well when the tool fails, in the same JSON shape (`{"error": {"code": "...", "message": "...", "hint": "..."}}`), so the parser has one path.
 
+- **State side effects in every error from a mutating command**: `none`, `partial`, `complete`, or `unknown`. For `unknown`, name how to reconcile before retrying (a status command or an idempotency key) and bound the retries before escalation; a blind retry after a partial write double-applies. A usage error rejected before any work needs only `code`, `message`, and `hint`.
+- **Never block on a prompt when stdin is not a TTY.** Fail fast with a usage error that names the non-interactive alternative (`--yes`, a flag, or an env var); an unattended caller otherwise hangs until its timeout.
+
 ## Output mode detection
 
 Detect a TTY on stdout. Interactive terminal: human formatting, color, tables. Non-interactive: JSON, no color, no spinners. Make both overridable: `--format json|text` wins over detection, and honor `NO_COLOR` for the human mode. An agent that must pass `--json` to every call will forget once; the default has to be safe for it.

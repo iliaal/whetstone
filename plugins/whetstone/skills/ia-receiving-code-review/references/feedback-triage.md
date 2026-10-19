@@ -24,8 +24,9 @@ Triage all feedback first (see [Implementation order](./fix-and-handoff.md#imple
 
 When feedback is ambiguous or incomplete:
 
-- **Stop**: do not implement anything unclear
-- Clarify ALL unclear items before implementing ANY of them (they may be related)
+- **Stop**: do not implement anything unclear, or anything an unclear item could change
+- Ask all clarifications together, before starting any other work, because unclear items may be related to each other and to clear ones
+- Continue a clear item while the answers are pending only when it is independent: no plausible reading of any unclear item touches the same code path, invariant, or file. When in doubt, it is not independent
 - Ask specific questions: "Are you suggesting X or Y?" not "Can you elaborate?"
 - If the reviewer's intent is clear but the technical approach is wrong, say so
 

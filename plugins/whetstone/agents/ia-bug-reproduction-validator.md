@@ -40,6 +40,8 @@ When presented with a bug report:
 
 3. **Validation Methodology**:
    - Run the reproduction steps at least twice to ensure consistency
+   - Run a benign control input through the same steps; a reproduction that fails on every input is not a confirmation
+   - Treat a version or commit named in the report as a claim about that revision; state which revision was checked and never attribute the result silently to the other
    - Test edge cases around the reported issue
    - Check if the issue occurs under different conditions or inputs
    - Verify against the codebase's intended behavior (check tests, documentation, comments)
@@ -56,17 +58,20 @@ When presented with a bug report:
    Follow the `ia-debugging` skill's Root Cause Analysis methodology: trace backward from symptom through the call chain, differential analysis (compare working vs broken state), regression hunting with `git bisect`, and evidence-based documentation with `file:line` references. For intermittent issues, follow the skill's guidance on race conditions and resource exhaustion. If root cause is ambiguous, use the skill's Competing Hypotheses escalation protocol. Always document findings; never skip root cause investigation.
 
 6. **Bug Classification**:
-   After reproduction attempts, classify the issue as:
+   Assess each claim in the report separately, and judge the observed behavior apart from its interpretation (that it is a bug, or has security impact). After reproduction attempts, classify each claim as:
    - **Confirmed Bug**: Successfully reproduced with clear deviation from expected behavior
+   - **Disproved**: Evidence contradicts the claim (distinct from Cannot Reproduce)
+   - **Already Fixed**: Requires evidence of both the earlier defect and the change that fixed it; absence at HEAD alone is Cannot Reproduce
+   - **Inconclusive**: The behavior reproduces but the claimed impact is unestablished, or a build failure, missing tool, or exhausted budget blocked the check. Report it as inconclusive; never fold it into a negative
    - **Cannot Reproduce**: Unable to reproduce with given steps
-   - **Not a Bug**: Behavior is actually correct per specifications
+   - **Not a Bug**: Cite the guard, specification, or documented boundary that rules the claim out; "intentional" or "no exploit found" is not sufficient
    - **Environmental Issue**: Problem specific to certain configurations
    - **Data Issue**: Problem related to specific data states or corruption
    - **User Error**: Incorrect usage or misunderstanding of features
 
 7. **Output Format**:
    Provide a structured report including:
-   - **Reproduction Status**: Confirmed/Cannot Reproduce/Not a Bug
+   - **Reproduction Status**: The classification from step 6, per claim, with the revision checked
    - **Steps Taken**: Detailed list of what you did to reproduce
    - **Findings**: What you discovered during investigation
    - **Root Cause**: The specific code, configuration, or condition causing the issue (always investigate; never skip this)

@@ -16,7 +16,7 @@ Start with open-ended questions; use multiple choice only in the Blindspot Pass 
 
 **Architecture-first ordering:** When several questions remain, ask the ones whose answers would change the *architecture* first: data model shape, service boundaries, sync vs. async, auth model, storage engine. A question whose answer only affects a label, copy string, or default value can wait or take a reasonable default. Front-loading architecture-changing questions means a redirect lands before the design is built around a wrong assumption, not after.
 
-**Question clustering:** When probing a single dimension (e.g., data model, auth flow), ask 2-3 related questions together using AskUserQuestion's multi-question support. Switch to one-at-a-time when jumping between dimensions.
+**Question clustering:** When probing a single dimension (e.g., data model, auth flow), ask 2-3 related open questions together in one plain chat message, then end the turn for the answers. Switch to one-at-a-time when jumping between dimensions.
 
 **Completeness assessment:** Track which dimensions have been explored. Before proposing to move to Phase 2, assess coverage and signal confidence: "We've covered purpose, users, and constraints well. Data flow and failure modes are still thin. What's still missing before we compare approaches?"
 

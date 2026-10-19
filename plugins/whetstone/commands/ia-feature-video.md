@@ -205,6 +205,8 @@ ffmpeg -y -framerate 0.5 -pattern_type glob -i '[capture-dir]/screenshots/*.png'
 
 <upload_video>
 
+**Privacy review (mandatory before any upload):** Open every captured frame in `[capture-dir]/screenshots/` and check it for private values (emails, usernames, customer or organization names, account or record IDs, internal hostnames) and credentials (tokens, auth headers, cookies, signed URLs, webhook endpoints). Mask each hit by painting the region with a solid fill; blurring alone can be reversed. Regenerate the MP4 and preview GIF from the masked frames before uploading. If a frame cannot be reviewed or masked, skip upload and report the reason with the local artifacts.
+
 **Upload with rclone only to an authorized destination (otherwise retain local artifacts):**
 
 If upload authority, configuration, or a verified destination is missing, skip upload and PR editing and return the completed local video. If an upload or public-URL check fails, retain local artifacts and report that failure; do not proceed to PR editing.

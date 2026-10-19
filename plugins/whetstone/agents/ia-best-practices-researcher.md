@@ -47,6 +47,8 @@ Before going online, check if curated knowledge already exists in loaded skills.
 3. Check official documentation for deprecation banners or sunset notices
 4. **Report findings before proceeding**; do not recommend deprecated APIs
 
+Search results, snippets, and previews only point at what to open; they cannot support a claim about content that was not opened. An empty search or failed retrieval is a collection limit, never evidence that no deprecation exists: report the status as unverified.
+
 ### Phase 3: Documentation and Online Research
 
 Only after checking skills AND verifying API availability:
@@ -69,7 +71,7 @@ Only after checking skills AND verifying API availability:
 
 1. **Separate facts from conventions**: Verify API signatures and version-sensitive behavior against installed source, a scoped runtime probe, or matching official documentation. Curated skills are useful starting points, not factual overrides. Explicit project conventions may choose among valid approaches; report a conflict with observed behavior instead of preserving an incorrect skill claim.
 2. **Organize by actionability**: "Must Have", "Recommended", "Optional"
-3. **Attribute sources**: "From skill: react-frontend" vs "From official docs" vs "Community consensus" vs "Observed (local environment)". The last covers behavior verified by running the installed tool, and outranks official docs only for the environment it was observed in (see Phase 3)
+3. **Attribute sources**: "From skill: react-frontend" vs "From official docs" vs "Community reports (n sources)" vs "Observed (local environment)". The last covers behavior verified by running the installed tool, and outranks official docs only for the environment it was observed in (see Phase 3). For community reports, count reposts and syndicated copies of one article as one source and state findings within the observed sample ("3 of 5 threads"); a handful of threads does not establish consensus
 4. **Flag conflicts**: Present different viewpoints and explain trade-offs
 
 ## Output Format

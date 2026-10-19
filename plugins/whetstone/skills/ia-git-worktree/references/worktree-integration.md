@@ -48,7 +48,7 @@ Discarding is never offered as an option. Delete the branch and worktree only wh
 
    ```bash
    rollback_patch=$(mktemp)
-   git diff --binary --no-ext-diff --no-textconv "$integration_head" "$integration_base" -- > "$rollback_patch"
+   git diff --binary --no-ext-diff --no-textconv --src-prefix=a/ --dst-prefix=b/ "$integration_head" "$integration_base" -- > "$rollback_patch"
    git apply --check --index "$rollback_patch"
    git apply --index "$rollback_patch"
    git diff --cached --binary --no-ext-diff --no-textconv
@@ -56,6 +56,8 @@ Discarding is never offered as an option. Delete the branch and worktree only wh
    git commit -m "Revert failed feature integration"
    git diff --exit-code "$integration_base" HEAD --
    ```
+
+   The explicit prefixes keep the patch applicable under a user's `diff.noprefix` or `diff.srcPrefix`/`diff.dstPrefix` config, which would otherwise make `git apply` strip the wrong path component and fail at the moment recovery is needed.
 
 5. Inspect the exact rollback commit, rerun the applicable checks, and report the recovery result. Do not claim restoration until the tree matches the captured base and checks have completed. Keep the feature branch for diagnosis.
 

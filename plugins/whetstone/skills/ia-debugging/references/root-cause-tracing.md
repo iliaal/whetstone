@@ -4,6 +4,8 @@ Bugs often manifest deep in the call stack. The instinct is to fix where the err
 
 **Core principle:** Trace backward through the call chain until you find the original trigger, then fix at the source.
 
+**Legitimacy test:** first ask whether the state that triggered the symptom is one the system may legitimately be in (an empty list, a null the contract allows, a reconnect mid-request). If it is, the code that broke on it is the root cause and handling the state there is the fix; do not walk upstream to "fix" a valid producer or add validation that rejects a valid state. If the state should never exist, a check at the crash site hides the bug behind a guard, retry, swallowed error, clamped value, or discarded state; trace what produced it.
+
 ## When to Use
 
 - Error happens deep in execution (not at entry point)
@@ -104,4 +106,4 @@ Analyze stack traces from instrumentation to find the pattern (same test? same p
 
 ## Key Principle
 
-Never fix just where the error appears. Trace back to find the original trigger. After finding the source, also add defense-in-depth validation at each layer the data passes through (see [defense-in-depth.md](./defense-in-depth.md)).
+Never fix just where the error appears unless the legitimacy test places the defect there. Trace back to find the original trigger. After finding the source, also add defense-in-depth validation at each layer the data passes through (see [defense-in-depth.md](./defense-in-depth.md)).

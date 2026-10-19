@@ -48,6 +48,15 @@ proposing deletion of a production seam. They are not prerequisites for reportin
 weak assertion. Public APIs, plugins, reflection, and dynamic registration can be live
 without an obvious local caller. No-callers search alone does not prove dead code.
 
+Deleting a test has its own bar. Recommend it only after observing the test pass; a
+failing or unrunnable test is a possible defect lead, never a deletion candidate. Name
+the remaining test that covers the same ground, or show the test asserts nothing that
+could fail. Never delete the sole guard of a public API, protocol, config or schema,
+migration or storage format, security behavior, or release contract, and never delete
+a test only for being slow, static, or close to the implementation. Read a dependency's
+source or types before judging a test that claims its behavior. The test that proved
+the current change stays untouched in the same pass.
+
 Handle detector consolidation groups per [detectors.md](./detectors.md).
 
 When authoring a new test, answer the same six trace questions in `SKILL.md` step 2. A

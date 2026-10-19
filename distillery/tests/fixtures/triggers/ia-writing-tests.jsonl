@@ -15,3 +15,8 @@
 {"prompt":"Run the existing suite","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Write production code only","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Explain how the function works","expect":false,"source":"audit-2026-09-07"}
+{"prompt":"Add unit tests for this function","expect":true,"source":"sync-2026-10-19"}
+{"prompt":"Add a unit test for splitCents","expect":true,"source":"sync-2026-10-19"}
+{"prompt":"Add some integration tests for the checkout flow","expect":true,"source":"sync-2026-10-19"}
+{"prompt":"Add logging to the test runner","expect":false,"source":"sync-2026-10-19"}
+{"prompt":"Address the test failures in CI","expect":false,"source":"sync-2026-10-19"}

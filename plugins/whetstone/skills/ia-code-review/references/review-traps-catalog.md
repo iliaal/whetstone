@@ -248,6 +248,8 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Fix:** before excluding a path from review, check whether this repository has modified it, not just where it lives. Never file a finding whose location exists only behind a gitlink; trace host-bridge reachability into unmodified third-party code instead, and treat a known upstream issue there as prior art, not a new finding.
 
+A gitlink bump (`Subproject commit A` to `B`, mode `160000`) is the opposite case: the diff reviews the host's pin and its integration, not the upstream code the pin pulls in. Report the old and new SHAs and the `.gitmodules` URL, then either review `A..B` in a separate checkout of the submodule or list that range as unreviewed scope. A one-line pin diff is never "clean" for the commits it imports.
+
 ## Destructive replace on an empty result
 
 **Trap:** a sync, import, or report job that deletes existing rows then reinserts from a source response, reviewed only for whether the reinsert logic is correct. The delete step is treated as safe because "if the source has zero rows, the reinsert is correctly empty too."
