@@ -5,6 +5,38 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.2] - 2026-10-19
+
+Patch: a reference-repo sync and its follow-up audit corrected or added guidance in 23 skills, 4 agents, and 3 commands, session harvesting reads SubagentStart skill injections again, and five converter and script fixes landed. 15 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
+
+### Added
+
+- `ia-verification-before-completion` gained a performance-measurement reference covering completed work, error rates, load-generator limits, comparison objectives, scale checks, and attribution limits; `ia-debugging` routes to it.
+
+### Changed
+
+- `ia-code-review` grades config-level CORS wildcards with credentials (Starlette/FastAPI `allow_origins=["*"]`, npm `cors({ origin: true })`) as origin reflection, flags trailing-newline anchors in Python and PHP validators, hidden code in comment-only hunks (U+2028, a `//` comment ending in `\`, bidi controls), and multer's unbounded `fieldNestingDepth` (2.2.0+) and `fieldArrayIndexLimit` (2.3.0+). External reviews that report coverage gaps are incomplete, not clean, and get one re-run before the loop stops. Gitlink bumps report the imported range, and settle flows need a kind-by-action test matrix.
+- `ia-nodejs-backend` rewrites the NestJS scoped-enhancer rule with exact version boundaries through v12.2.0, warns that a scoped `APP_FILTER` misses middleware and body-parse errors on every version, and covers the SSE error bypass and `ValidationPipe` input echo.
+- `ia-php-laravel` explains how a failed queue push strands a `ShouldBeUnique` lock, requires a finite `uniqueFor`, notes synchronous Mercure publishing from v13.36.0, and marks fixes that shipped in v13.35.0 and v13.36.0 as released.
+- `ia-debugging` adds a legitimacy test: when the triggering state is valid, the code that broke on it is the root cause.
+- `ia-writing-tests` adds contract tests against the shared schema, single-fault invalid-input cases, and order-preserving bisection for test polluters. `ia-test-audit` sets a bar for deleting a test.
+- `ia-receiving-code-review` asks all clarifications first and continues only clear items that no reading of an unclear item could touch.
+- `ia-writing` gains a proofread and point-edit mode that changes only clear errors or the named span.
+- `ia-frontend-design` checks H1 line count at phone width, adds dashboard delta rules, keeps group boundaries in data-dense UIs, and lists conflicts between a supplied mockup and an existing token system before writing styles.
+- `ia-brainstorming` asks open interview questions as plain chat and keeps the question tool for choices with two to four real options; `/ia-brainstorm` and `/ia-plan` follow it.
+- `ia-agent-native-architecture` corrects its sed command-gate rule (label and branch-target tokens also end at whitespace), pins every parsed `git diff` against user config, and adds side-effect state and non-TTY rules for agent-facing CLIs. `ia-git-worktree` and `ia-verification-before-completion` pin their patch recipes the same way.
+- `ia-orchestrating-swarms` resumes a crashed agent once before relaunching and treats an orchestrator message as not user consent. `ia-reflect` counts recurrence only from user and tool records that do not reproduce instruction files, and exempts explicit reusable user corrections. `ia-planning` derives unresolved interface contracts from caller interactions. `ia-rust-systems` gives every OpenTelemetry exporter its own filter. `ia-linux-bash-scripting` covers coordinated reads of shared state.
+- `ia-python-services` no longer triggers on prompts that only mention `python` near an unrelated `cli` path.
+- The database guardian, bug-reproduction validator, best-practices researcher, code-simplicity reviewer, and git-history analyzer agents gained data-repair, per-claim outcome, evidence-labelling, needless-dependency, and recorded-intent rules. `/ia-work` finishes independent tasks before asking a blocking question, and `/ia-feature-video` reviews every frame for private values before upload.
+- Codex shows Whetstone's hooks by name.
+
+### Fixed
+
+- Session harvesting reads SubagentStart `hook_additional_context` records, so harvest, misfire, outcome, and budget metrics include 5.1.x sessions again; batched injections that cannot be attributed are excluded.
+- The distiller judge parser treats missing or non-numeric scores and blank notes as parse failures instead of scoring them 0.
+- The converter expands home-relative source paths, keeps email addresses intact during Codex agent-reference conversion, and preserves backups when timestamps collide.
+- `check-trigger-overlap.py` counts every overlap before limiting the displayed pairs, and `generate-spec.py` preserves inline separators.
+
 ## [5.1.1] - 2026-10-12
 
 Patch: fixes for 8 high, 6 medium, and 6 correctness findings from an external security scan of v5.1.0, plus a converter fix for unreadable Claude settings. 2 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
