@@ -38,7 +38,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
         if not m:
             continue
         key, val = m.group(1), m.group(2).strip()
-        if val.startswith(">-"):
+        if val == ">" or val.startswith(">-"):
             continue
         fm[key] = val.strip(" '\"")
     body = text[match.end():].strip()
