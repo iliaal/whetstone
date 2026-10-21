@@ -38,6 +38,35 @@ class FrontmatterBoundaryTests(unittest.TestCase):
         self.assertEqual(metadata["class"], "workflow")
         self.assertEqual(body, "# Procedure")
 
+    def test_folded_description_without_chomping_indicator(self):
+        for newline in ("\n", "\r\n"):
+            with self.subTest(newline=repr(newline)):
+                text = newline.join([
+                    "---", "name: ia-example", "description: >",
+                    "  Inspect --- then", "  validate.", "class: workflow",
+                    "---", "# Procedure",
+                ])
+                metadata, body = GENERATOR.parse_frontmatter(text)
+                self.assertEqual(metadata["description"], "Inspect --- then validate.")
+                self.assertEqual(metadata["class"], "workflow")
+                self.assertEqual(body, "# Procedure")
+
+    def test_cli_renders_folded_description_without_chomping_indicator(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            shutil.copyfile(SCRIPT, root / SCRIPT.name)
+            skill = root / "plugins/whetstone/skills/ia-example"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text(
+                "---\nname: ia-example\ndescription: >\n"
+                "  Inspect input then\n  validate it.\nclass: workflow\n---\n# Procedure\n",
+                encoding="utf-8")
+            result = subprocess.run([sys.executable, SCRIPT.name], cwd=root,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            output = (skill / "SPEC.md").read_text(encoding="utf-8")
+            self.assertIn("Inspect input then validate it.", output)
+
     def test_only_standalone_delimiters_form_frontmatter(self):
         for text in ("---not a delimiter\nname: ia-example\n---\nBody",
                      "---\nname: ia-example --- still metadata\nBody",
