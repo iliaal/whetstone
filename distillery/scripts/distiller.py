@@ -925,7 +925,7 @@ def count_tokens(text):
         return 0
     enc = _token_encoder()
     if enc is not None:
-        return len(enc.encode(text))
+        return len(enc.encode_ordinary(text))
     return round(len(text) / 4.0)
 
 
@@ -6838,3 +6838,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
