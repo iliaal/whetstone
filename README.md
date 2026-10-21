@@ -112,7 +112,7 @@ bash scripts/sync-to-tools.sh --dry-run    # preview changes
 
 ## 🛠️ The workflow
 
-Five commands form a loop: explore the problem, plan the solution, build it, review it, document what you learned. Each pass makes the next one faster because solutions accumulate as searchable docs.
+The core workflow is to explore the problem, plan the solution, build it, and review it.
 
 | Command | What it does |
 |---------|-------------|
