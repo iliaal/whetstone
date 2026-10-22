@@ -153,7 +153,7 @@ def generate() -> dict:
             bundle_changed = version
 
         pattern_changed = prev.get("pattern_changed", version)
-        if pattern_hash is not None and prev_pattern_hash != pattern_hash:
+        if prev_pattern_hash != pattern_hash:
             pattern_changed = version
 
         entry = {
@@ -164,6 +164,9 @@ def generate() -> dict:
         }
         if pattern_hash is not None:
             entry["pattern_hash"] = pattern_hash
+        # Removal changes trigger behavior too. Preserve its timestamp while
+        # the pattern stays absent, without inventing history for new skills.
+        if pattern_hash is not None or prev_pattern_hash is not None or "pattern_changed" in prev:
             entry["pattern_changed"] = pattern_changed
 
         skills[skill_name] = entry
