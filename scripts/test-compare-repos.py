@@ -45,6 +45,37 @@ class RepositoryDiscoveryTests(unittest.TestCase):
             (repo / ".git").mkdir()
         return repo
 
+    def test_same_name_of_different_kind_is_reported_as_gap(self):
+        for local_kind, external_kind in (("skills", "agents"), ("agents", "skills")):
+            with self.subTest(local_kind=local_kind):
+                name = "alpha" if local_kind == "skills" else "bravo"
+                local_file = f"{name}/SKILL.md" if local_kind == "skills" else f"{name}.md"
+                external_file = f"{name}/SKILL.md" if external_kind == "skills" else f"{name}.md"
+                self.write(self.checkout, f"plugins/whetstone/{local_kind}/ia-{local_file}")
+                repo = self.root / name
+                self.write(repo, f"{external_kind}/{external_file}")
+                (repo / ".git").mkdir()
+                output = self.root / f"{name}.md"
+                for args in ((repo,), ("--report-only",)):
+                    result = self.run_cli("--type", external_kind, "--output", output, *args)
+                    report = output.read_text(encoding="utf-8")
+                    self.assertIn(f"| {external_kind[:-1]} | {name} |", report)
+                    self.assertIn("Gaps: 1 unmatched external components", result.stdout)
+
+    def test_same_kind_prefixed_name_is_not_reported_as_gap(self):
+        for kind in ("skills", "agents"):
+            with self.subTest(kind=kind):
+                name = "same-" + kind
+                relative = f"{name}/SKILL.md" if kind == "skills" else f"{name}.md"
+                self.write(self.checkout, f"plugins/whetstone/{kind}/ia-{relative}")
+                repo = self.root / name
+                self.write(repo, f"{kind}/{relative}")
+                (repo / ".git").mkdir()
+                output = self.root / f"{name}.md"
+                result = self.run_cli("--type", kind, "--output", output, repo)
+                self.assertIn("Gaps: 0 unmatched external components", result.stdout)
+                self.assertIn(f"| ia-{name} | {name} |", output.read_text(encoding="utf-8"))
+
     def test_direct_agents_repository_is_cataloged(self):
         repo = self.make_agents_repo()
         result = self.run_cli("--catalog", repo)

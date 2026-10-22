@@ -300,7 +300,7 @@ def find_unmatched(
     threshold: float = 0.15,
 ) -> list[Component]:
     """Find external components with no match in our plugin."""
-    our_names = {strip_ia_prefix(c.name) for c in our_components}
+    our_names = {(c.kind, strip_ia_prefix(c.name)) for c in our_components}
     unmatched = []
     for ext in external_components:
         best_sim = 0.0
@@ -309,7 +309,7 @@ def find_unmatched(
                 continue
             sim = combined_similarity(ours, ext)
             best_sim = max(best_sim, sim)
-        if best_sim < threshold and strip_ia_prefix(ext.name) not in our_names:
+        if best_sim < threshold and (ext.kind, strip_ia_prefix(ext.name)) not in our_names:
             unmatched.append(ext)
     return unmatched
 
