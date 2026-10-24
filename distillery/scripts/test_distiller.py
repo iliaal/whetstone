@@ -134,6 +134,52 @@ def test_comparison_snapshots_reference_closure_and_candidate_fallback(tmp_path)
         distiller._check_comparison_bundles({"bundles": {"candidate": bundle}})
 
 
+@pytest.mark.parametrize("example", [
+    "`[example](missing.md)`",
+    "```markdown\n[example](missing.md)\n```",
+    "    [example](missing.md)\n",
+    "<!-- [example](missing.md) -->",
+    "---\ndescription: '[example](missing.md)'\n---\nBody",
+])
+def test_snapshot_ignores_markdown_link_examples(tmp_path, example):
+    body = tmp_path / "SKILL.md"
+    body.write_text(example)
+    bundle = distiller._snapshot_comparison_skill(body, body)
+    assert Path(bundle["skill_path"]).read_text() == example
+    assert len(bundle["files"]) == 1
+
+
+@pytest.mark.parametrize("link,filename", [
+    ("[guide][detail]\n\n[detail]: guide.md", "guide.md"),
+    ("[guide][]\n\n[guide]: guide.md", "guide.md"),
+    ("[guide]\n\n[guide]: guide.md", "guide.md"),
+    ("[guide](<guide with spaces.md>)", "guide with spaces.md"),
+    (r"[guide](guide\(detail\).md)", "guide(detail).md"),
+    ("[guide](guide(detail).md)", "guide(detail).md"),
+    ("![diagram][image]\n\n[image]: diagram.svg", "diagram.svg"),
+])
+def test_snapshot_follows_commonmark_dependencies(tmp_path, link, filename):
+    body = tmp_path / "SKILL.md"
+    body.write_text(link)
+    (tmp_path / filename).write_text("Frozen dependency")
+    bundle = distiller._snapshot_comparison_skill(body, body)
+    frozen = Path(bundle["skill_path"]).parent
+    assert (frozen / filename).read_text() == "Frozen dependency"
+    assert len(bundle["files"]) == 2
+
+
+def test_snapshot_follows_nested_reference_links_and_rejects_missing_target(tmp_path):
+    body = tmp_path / "SKILL.md"
+    body.write_text("[guide][detail]\n\n[detail]: guide.md")
+    (tmp_path / "guide.md").write_text("[data][payload]\n\n[payload]: data.json")
+    with pytest.raises(ValueError, match="missing skill dependency"):
+        distiller._snapshot_comparison_skill(body, body)
+    (tmp_path / "data.json").write_text('{"answer":42}')
+    bundle = distiller._snapshot_comparison_skill(body, body)
+    assert (Path(bundle["skill_path"]).parent / "data.json").read_text() == '{"answer":42}'
+    assert len(bundle["files"]) == 3
+
+
 @pytest.mark.parametrize("link", ["../", "../private.txt", "/etc/passwd", "./other/"])
 def test_snapshot_rejects_dependencies_outside_resource_boundary(tmp_path, link):
     skill = tmp_path / "skill"

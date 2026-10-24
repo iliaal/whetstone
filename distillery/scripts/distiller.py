@@ -5319,7 +5319,7 @@ def _snapshot_comparison_skill(path, fallback):
         files[relative] = {"sha256": hashlib.sha256(data).hexdigest(), "mode": mode}
         if source.suffix.lower() != ".md":
             continue
-        for link in _re.findall(r"\]\(<?([^\s)>]+)>?(?:\s+[^)]*)?\)", data.decode("utf-8")):
+        for link in link_targets(data.decode("utf-8")):
             parsed = urllib.parse.urlsplit(link)
             if parsed.scheme or parsed.netloc or not parsed.path:
                 continue
