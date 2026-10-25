@@ -3958,6 +3958,11 @@ def build_golden(skill_name, top_n=20, auto=False):
             # Label: auto-assign from signal, or "review" for human annotation
             "label": ex.get("signal", "ambiguous") if auto else "review",
         }
+        # Golden judges need the same structural evidence as session judges.
+        # Preserve absence for legacy harvests rather than inventing clean traces.
+        for field in ("repeated_calls", "completion_claims"):
+            if field in ex:
+                candidate[field] = ex[field]
         candidates.append(candidate)
 
     skill_eval_dir = EVAL_DATA_DIR / skill_name

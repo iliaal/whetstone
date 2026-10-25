@@ -4410,6 +4410,49 @@ class TestBuildAndApproveGolden:
             for r in rows:
                 f.write(json.dumps(r) + "\n")
 
+    @pytest.mark.parametrize("auto", [False, True], ids=["reviewed", "auto"])
+    @pytest.mark.parametrize("evidence", [
+        {},
+        {"repeated_calls": {"groups": []},
+         "completion_claims": {"claims": 0, "unverified": 0, "examples": []}},
+        {"repeated_calls": {"thresholds": {"edit": 2}, "groups": [
+            {"tool": "Edit", "count": 3, "key": "widget.py", "flagged": True}]},
+         "completion_claims": {"claims": 1, "unverified": 1,
+                               "examples": ["All tests pass."]}},
+        {"repeated_calls": None, "completion_claims": None},
+        {"repeated_calls": {"groups": []}},
+        {"completion_claims": {"claims": 1, "unverified": 0}},
+    ], ids=["legacy", "clean", "flagged", "null", "repeats-only", "claims-only"])
+    def test_golden_preserves_trace_evidence_for_judges(self, auto, evidence):
+        example = {
+            "task_input": "widget calibration harness needs tuning",
+            "agent_output": "adjusted the widget harness calibration " * 30,
+            "signal": "positive", "session_id": "trace-evidence", **evidence,
+        }
+        _write_session_examples(self.eval_dir, "widget-skill", [example])
+        original = distiller.dspy_emit_tasks("widget-skill", dataset="sessions")
+        distiller.build_golden("widget-skill", top_n=1, auto=auto)
+        candidates_path = self.eval_dir / "widget-skill" / "candidates.jsonl"
+        candidates = [json.loads(line) for line in candidates_path.read_text().splitlines()]
+        for field in ("repeated_calls", "completion_claims"):
+            assert (field in candidates[0]) == (field in evidence)
+            if field in evidence:
+                assert candidates[0][field] == evidence[field]
+        if not auto:
+            candidates[0]["label"] = "negative"
+            self._write_candidates(candidates)
+            distiller.approve_golden("widget-skill")
+        golden_path = self.eval_dir / "widget-skill" / "golden.jsonl"
+        golden = json.loads(golden_path.read_text())
+        assert golden["signal"] == ("positive" if auto else "negative")
+        for field in ("repeated_calls", "completion_claims"):
+            assert (field in golden) == (field in evidence)
+            if field in evidence:
+                assert golden[field] == evidence[field]
+        emitted = distiller.dspy_emit_tasks("widget-skill", dataset="golden")
+        assert emitted["count"] == original["count"] == 1
+        assert emitted["tasks"][0]["prompt"] == original["tasks"][0]["prompt"]
+
     def test_approve_overwrites_signal_with_label(self):
         # CR-005: a reviewer flipping the label must land in `signal` (what all
         # downstream consumers read), not just `label`.
