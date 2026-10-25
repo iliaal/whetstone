@@ -29,10 +29,14 @@ fi
 
 mkdir -p "$PLAN_DIR"
 
-if [ -f .gitignore ]; then
-    grep -qxF '.plan/' .gitignore 2>/dev/null || echo '.plan/' >> .gitignore
-else
-    echo '.plan/' > .gitignore
+if ! grep -qxF '.plan/' .gitignore 2>/dev/null; then
+    if [[ -s .gitignore ]]; then
+        ignore_last_byte=$(tail -c 1 .gitignore)
+        if [[ -n "${ignore_last_byte}" ]]; then
+            printf '\n' >>.gitignore
+        fi
+    fi
+    printf '%s\n' '.plan/' >>.gitignore
 fi
 
 cat > "$PLAN_DIR/task_plan.md" << EOF

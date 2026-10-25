@@ -26,12 +26,20 @@ assistant: "Let me use the git-history-analyzer agent to investigate the histori
 
 Identify the files, directories, or code patterns to investigate. Ask the user if the scope is unclear.
 
+Set `REQUESTED_REVISION` to the caller's selected revision as data, or use `HEAD` when none was supplied. Resolve it before querying history:
+
+```bash
+REVIEWED_REVISION=$(git rev-parse --verify --end-of-options "${REQUESTED_REVISION:-HEAD}^{commit}")
+```
+
+Stop if resolution fails. Record the resolved commit. Read historical file contents with `git show "$REVIEWED_REVISION:<path>"` and derive paths and line ranges from that tree, not the working copy.
+
 ### Step 2: File Evolution Timeline
 
 For each file of interest, run via the Bash tool:
 
 ```bash
-git log --follow --oneline -20 -- <file>
+git log --follow --oneline -20 "$REVIEWED_REVISION" -- <file>
 ```
 
 Extract: major refactorings, renames, and significant changes. Note the dates and commit messages.
@@ -41,7 +49,7 @@ Extract: major refactorings, renames, and significant changes. Note the dates an
 For specific code sections that need explanation:
 
 ```bash
-git blame -w -C -C -C <file>
+git blame -w -C -C -C "$REVIEWED_REVISION" -- <file>
 ```
 
 The `-w` ignores whitespace, `-C -C -C` follows code movement across files. Identify who wrote each section and when.
@@ -51,19 +59,19 @@ The `-w` ignores whitespace, `-C -C -C` follows code movement across files. Iden
 Search for when specific patterns were introduced or removed:
 
 ```bash
-git log -S"pattern" --oneline -- <path>
+git log -S"pattern" --oneline "$REVIEWED_REVISION" -- <path>
 ```
 
 Also search commit messages for recurring themes:
 
 ```bash
-git log --grep="fix" --oneline -- <path>
-git log --grep="refactor" --oneline -- <path>
+git log --grep="fix" --oneline "$REVIEWED_REVISION" -- <path>
+git log --grep="refactor" --oneline "$REVIEWED_REVISION" -- <path>
 ```
 
 ### Step 5: Contributor Mapping
 
-Identify key contributors and their domains. Resolve `REVIEWED_REVISION` to the caller's reviewed commit, or record the current HEAD when no revision was supplied:
+Identify key contributors and their domains at the same reviewed commit:
 
 ```bash
 git shortlog -sn "$REVIEWED_REVISION" -- <path>
@@ -88,6 +96,8 @@ Rank pairs using Jaccard similarity: commits touching both files divided by comm
 Cite contemporaneous text from relevant commit messages, PRs, issues, comments, or design notes for claims about author intent. Code establishes behavior, not motive. Label supported inference and speculation separately from recorded rationale. Preserve conflicting accounts with citations rather than forcing one explanation. When the reason remains unknown, name the sources searched and any access or history limits.
 
 Before carrying a historical constraint into current work, check whether its original condition still applies. Check for other current reasons the behavior remains necessary. An expired rationale alone does not establish that a guard or compatibility behavior can be removed.
+
+Label any present-day constraint check or caller-requested current-state comparison separately from the historical findings. Record the comparison's revision and workspace state.
 
 ## Output Format
 

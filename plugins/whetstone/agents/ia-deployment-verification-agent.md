@@ -2,7 +2,7 @@
 name: ia-deployment-verification-agent
 model: sonnet
 tools: Read, Grep, Glob, Bash
-description: "Produces Go/No-Go deployment runbooks with SQL verification queries, rollback steps, and monitoring plans. Use after migration code is approved to build pre-check queries, watch commands, and rollback procedures for the deploy."
+description: "Produces Go/No-Go deployment runbooks with SQL verification queries, rollback steps, and monitoring plans. Use for migration and backfill deployment planning, including plans needed before final migration approval."
 ---
 
 <examples>
@@ -237,4 +237,4 @@ Be thorough. Be specific. Produce executable checklists, not vague recommendatio
 - **This agent**: creates *deployment checklists*: Go/No-Go procedures, SQL verification queries, rollback plans, monitoring
 - **database-guardian**: reviews schema design, constraints, transaction boundaries, privacy, AND validates migration code against production reality (ID mappings, enum conversions, swapped values)
 
-Use findings from database-guardian as inputs to your checklist. Don't re-analyze migration code; focus on the deployment procedure.
+Use the initial findings and required invariants from database-guardian as inputs to your checklist. Draft the plan before final migration approval when the missing plan blocks approval. Reuse an existing runbook when it covers those requirements; revise gaps otherwise. Return the completed verification and rollback plan to database-guardian for its final assessment. Keep migration-code analysis with the guardian. Drafting a runbook does not approve or execute a deployment.

@@ -24,3 +24,22 @@
 {"prompt":"Draw a logo for a bakery","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Summarize the quarterly hiring plan","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Write a PHP extension in C","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt": "Repair a Laravel queued job that loses its unique lock after a failed push.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Write Eloquent relationship tests for restoring a trashed child.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Add a FormRequest authorization check before validation.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Configure Laravel notifications and scheduler interruption.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "write a test for the controller in app/Http/Controllers/OrderController.php", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Test the PHP extension integration in a Laravel queue job.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "The PHP controller needs middleware and route validation.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review a standalone PHP library with no framework dependencies.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Regenerate Zend arginfo for a PHP extension.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write a FastAPI endpoint.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain nullable scalar types in plain PHP.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Run TEST_PHP_ARGS=\"-d extension=<so>\" NO_INTERACTION=1 php run-tests.php", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Run tests/ + tests/upstream-json/ (command in AGENTS.md); also run /tmp/fj-final-enc2.php", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review native PHP 8.0 ZTS - Linux CI jobs for build failures.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review PHP-8.4; your job is to inspect the multipart parser patch.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Inspect php/php-src/actions/jobs for failed CI runs.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Optimize UuidFactory.php:41,47 in a standalone FastUuid library.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write a unit test for lib/UuidFactory.php in this standalone PHP library.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review PHP service configuration for the native extension build.", "expect": false, "source": "audit-2026-10-25"}

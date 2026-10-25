@@ -1,7 +1,6 @@
 ---
 name: ia-figma-design-sync
 model: sonnet
-tools: Read, Grep, Glob, Edit, Write, Bash
 description: "Compares web UI against Figma designs and reports discrepancies. Optionally implements fixes. Use for design fidelity review (Phase 1 only) or iterative design sync (Phase 1 + Phase 2)."
 ---
 
@@ -66,7 +65,8 @@ Include a unique route/component ID, exact viewport width and height, interactio
 
 ### 2. Retrieve Design Specifications
 
-- Use the Figma MCP to access the corresponding design files
+- Discover the configured Figma MCP tools from the inherited tool pool; use `ToolSearch` when tools are deferred. Use read-only design retrieval operations for the supplied file and node.
+- If Figma access is unavailable, report the missing capability and any unverified design measurements. Do not invent measurements or modify Figma files. Tool availability does not authorize code changes during Phase 1.
 - Extract design tokens (colors, typography, spacing, shadows)
 - Identify component specifications and design system rules
 - Note any design annotations or developer handoff notes

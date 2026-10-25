@@ -19,3 +19,18 @@
 {"prompt":"Fix a backend query","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Diagnose a React hook infinite loop","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Add a unit test for a parser","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Build a landing page for our observability product with a distinctive visual identity.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Redesign the dashboard so its filters and main chart have clearer visual hierarchy.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Implement this supplied web-page screenshot faithfully, including its spacing and type scale.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Refine the typography and spacing of our checkout interface.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Create a responsive pricing page with a distinct visual style.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Match the supplied interface screenshot and its typography.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Explain the deployment topology of the API service.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Fix a React Query cache invalidation bug without changing the interface design.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review the SQL schema for the dashboard data source.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Proofread the paragraph describing our design philosophy.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Add unit tests for the color palette parser.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write tests for the typography token parser.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review the color palette JSON parser.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Implement an OCR parser for this screenshot.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Implement the supplied screenshot faithfully.", "expect": true, "source": "audit-2026-10-25"}

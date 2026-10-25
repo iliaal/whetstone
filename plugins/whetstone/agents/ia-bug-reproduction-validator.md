@@ -40,7 +40,9 @@ When presented with a bug report:
 
 3. **Validation Methodology**:
    - Run the reproduction steps at least twice to ensure consistency
-   - Run a benign control input through the same steps; a reproduction that fails on every input is not a confirmation
+   - For input-sensitive claims, run a benign control input through the same steps
+   - For startup or input-independent failures, use a passing unaffected revision, known-good configuration, or independently validated harness control. Establish the expected behavior and exclude a broken reproduction setup before confirming the reported symptom
+   - Record the control and its outcome. Classify the claim as Inconclusive when no discriminating control is available
    - Treat a version or commit named in the report as a claim about that revision; state which revision was checked and never attribute the result silently to the other
    - Test edge cases around the reported issue
    - Check if the issue occurs under different conditions or inputs

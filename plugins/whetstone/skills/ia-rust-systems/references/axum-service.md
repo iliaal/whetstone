@@ -92,7 +92,7 @@ impl IntoResponse for AppError {
 ## Handlers
 
 ```rust
-#[tracing::instrument(skip(state), fields(user_id))]
+#[tracing::instrument(skip_all, fields(user_id))]
 pub async fn get_user(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
@@ -105,7 +105,7 @@ pub async fn get_user(
 
 - Handlers take extractors first, body last. Extractors run in order; the body extractor must be last (it consumes the request).
 - Return `Result<Json<T>, AppError>` for JSON endpoints, `Result<impl IntoResponse, AppError>` for flexible responses.
-- Use `#[tracing::instrument(skip(state))]` on every handler; skip the state so secrets don't land in logs.
+- Use `#[tracing::instrument(skip_all)]` on every handler. Record only explicitly permitted non-sensitive fields. The example assumes the logging policy permits `user_id`; otherwise omit that field and its `record` call.
 
 ## Validation
 
@@ -146,15 +146,15 @@ pub fn router(state: AppState) -> Router {
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
-                .layer(TimeoutLayer::new(Duration::from_secs(30)))
                 .layer(CorsLayer::permissive())
+                .layer(TimeoutLayer::new(Duration::from_secs(30)))
                 .into_inner(),
         )
         .with_state(state)
 }
 ```
 
-Middleware order: tracing → timeout → rate limit → auth → CORS → handler. Tracing *outside* the timeout so you see timed-out requests.
+For browser-facing routes, use `ServiceBuilder` order: tracing → CORS → timeout → rate limit → auth → handler. Keep tracing outside the timeout to observe timed-out requests. Keep CORS outside auth and other layers that return HTTP errors so preflight can complete without credentials and error responses receive CORS headers. Continue authenticating actual application requests.
 
 ## Graceful Shutdown
 

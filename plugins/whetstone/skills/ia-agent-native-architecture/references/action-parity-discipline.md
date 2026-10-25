@@ -56,7 +56,9 @@ Maintain a structured map of UI actions to agent tools:
 Status meanings:
 - ✅ Done: Tool exists and is documented in system prompt
 - ⚠️ Missing: UI action exists but no agent equivalent
-- 🚫 N/A: User-only action (e.g., biometric auth, camera capture)
+- 🚫 N/A: User-only action covered by a separately reviewed exclusion (e.g., biometric auth, camera capture)
+
+Keep exclusions in a separate owner-reviewed file keyed by UI action, with a reason and review reference. An `N/A` map value does not authorize its own exclusion. Keep excluded actions in the full UI inventory.
 </capability_mapping>
 
 <parity_workflow>
@@ -310,22 +312,34 @@ fi
 
 ### Automated Parity Testing
 
+Load `loadReviewedParityExclusions()` from the separately reviewed exclusion file, not by filtering `N/A` rows. Load `getUIActions()` from the UI inventory independently of the capability map so deleting a row cannot hide a gap. Each exclusion record contains nonempty `reason` and `reviewRef` fields.
+
 ```typescript
 // parity.test.ts
 describe('Action Parity', () => {
   const capabilityMap = loadCapabilityMap();
+  const exclusions = loadReviewedParityExclusions();
+
+  test('map covers the complete UI inventory', () => {
+    expect(Object.keys(capabilityMap).sort()).toEqual([...getUIActions()].sort());
+  });
+
+  for (const [action, exclusion] of Object.entries(exclusions)) {
+    test(`${action} has a current reviewed exclusion`, () => {
+      expect(capabilityMap[action]).toBe('N/A');
+      expect(exclusion.reason.trim()).not.toBe('');
+      expect(exclusion.reviewRef.trim()).not.toBe('');
+    });
+  }
 
   for (const [action, toolName] of Object.entries(capabilityMap)) {
-    test(`${action} has an explicit mapping`, () => {
-      expect(toolName).not.toBe('N/A');
-      expect(toolName).not.toBe('');
-    });
-
-    test(`${action} has agent tool: ${toolName}`, () => {
+    test(`${action} has a capability or reviewed exclusion`, () => {
+      if (toolName === 'N/A') {
+        expect(Object.hasOwn(exclusions, action)).toBe(true);
+        return;
+      }
+      expect(toolName.trim()).not.toBe('');
       expect(agentTools.map(t => t.name)).toContain(toolName);
-    });
-
-    test(`${toolName} is documented in system prompt`, () => {
       expect(systemPrompt).toContain(toolName);
     });
   }

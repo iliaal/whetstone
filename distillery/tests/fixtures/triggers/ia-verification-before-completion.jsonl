@@ -14,3 +14,17 @@
 {"prompt":"Brainstorm a new feature","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Explain a language construct","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"List files in this directory","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Verify the implementation before marking it done.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Check that tests pass before committing this change.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Verify this branch is ready to merge.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Before handing off the package, verify the installed CLI actually works.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Confirm tests pass before pushing this branch.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Verify the package works before handing off to the user.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Explain how DNS verification works.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write a password verification function.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Plan a future release process.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Summarize the documentation for this CLI.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain email verification before committing to a vendor.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write the domain verification handler.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Before handing off the TLS connection, verify the peer certificate.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Verify user identity before handing off an account.", "expect": false, "source": "audit-2026-10-25"}

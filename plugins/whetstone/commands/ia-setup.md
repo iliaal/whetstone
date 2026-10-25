@@ -25,13 +25,13 @@ Before running, display: "Compound Engineering -- checking your environment..."
 Run the bundled script. Do not perform manual dependency checks; the script handles CLI probes, alt-name resolution, and install hints in one pass.
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh --version VERSION
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh" --version VERSION
 ```
 
 Or without version if Step 1 could not determine it:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh"
 ```
 
 Display the script's output to the user verbatim.
@@ -45,7 +45,9 @@ Parse the output. Two possible states:
 
 ### Step 4: Offer Installation for Missing Tools
 
-The script prints the recommended install command under each missing tool. Present the missing tools to the user using `AskUserQuestion` (load the schema via `ToolSearch` with `select:AskUserQuestion` if not already loaded) as a multiSelect with all items pre-selected. Use the install command from the script output as the description.
+The script labels executable hints `Install command:` and URL-only guidance `Manual instructions:`. Report manual guidance separately; never execute a URL as a shell command. If the user requests help with a manual route, read the upstream instructions and determine a concrete command for the current platform before requesting execution approval.
+
+Offer tools with an `Install command:` hint using `AskUserQuestion` (load the schema via `ToolSearch` with `select:AskUserQuestion` if not already loaded) as a multiSelect with all items pre-selected. Use the exact command after the label as the description. If no executable hint is available, continue to Phase 2 after reporting the unresolved dependencies and affected capabilities.
 
 For each selected tool, in order:
 
@@ -61,7 +63,7 @@ For each selected tool, in order:
        description: "I'll install manually"
    ```
 
-2. If approved, run the command via `Bash`. After it completes, verify with `command -v <tool>`.
+2. If the exact command is approved, run it via `Bash`. After it completes, verify with `command -v <tool>`. A selection or approval of manual guidance does not authorize a later command.
 3. If verification succeeds, report success.
 4. If verification fails, display the upstream URL from the script output as fallback and continue to the next tool.
 

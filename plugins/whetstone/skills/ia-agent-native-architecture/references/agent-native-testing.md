@@ -46,6 +46,29 @@ For each UI feature, write a test prompt and verify the agent can accomplish it.
 
 ### Template
 
+Give each test a fresh application workspace and reset service mocks between tests. Research fixtures contain a `question`, immutable `sources` with stable citation IDs and source text, and an independently reviewed `supportedExample`. Configure search/fetch adapters to serve those sources through the agent's normal tools. Use a unique destination per invocation; `readFile` must fail when that artifact is absent.
+
+Implement `gradeResearch({ content, question, sources })` with an independent semantic grader or human-reviewed rubric. Return `{ answersQuestion, claimsSupported }`: require a useful answer to the requested question and citations whose source text supports every material research claim. Do not grade from keywords, length, tool calls, or the agent's completion claim. Accept different wording and layouts. Validate the grader with the positive and negative controls below before relying on its verdicts. These fixture tests do not establish live-source behavior.
+
+Use this assertion in capability, end-to-end, and recovery tests:
+
+```typescript
+type ResearchFixture = {
+  question: string;
+  sources: readonly { id: string; text: string }[];
+  supportedExample: string;
+};
+
+async function verifyResearchArtifact(path: string, fixture: ResearchFixture): Promise<string> {
+  const content = await fileService.readFile(path);
+  expect(content.trim()).not.toBe('');
+  expect(await gradeResearch({
+    content, question: fixture.question, sources: fixture.sources,
+  })).toEqual({ answersQuestion: true, claimsSupported: true });
+  return content;
+}
+```
+
 ```typescript
 describe('Agent Capability Tests', () => {
   test('Agent can add a book to library', async () => {
@@ -74,17 +97,31 @@ describe('Agent Capability Tests', () => {
   });
 
   test('Agent can search and save research', async () => {
-    await libraryService.addBook({ id: "book_456", title: "Moby Dick" });
+    const fixture = researchFixtures.whaleSymbolism;
+    const bookId = `book-${crypto.randomUUID()}`;
+    const destination = `Research/${bookId}/${crypto.randomUUID()}.md`;
+    await libraryService.addBook({ id: bookId, title: "Moby Dick" });
 
-    const result = await agent.chat("Research whale symbolism in Moby Dick");
+    await agent.chat(`${fixture.question} Save sourced findings to ${destination}.`);
 
-    // Verify files were created
-    const files = await fileService.listFiles("Research/book_456/");
-    expect(files.length).toBeGreaterThan(0);
+    await verifyResearchArtifact(destination, fixture);
+  });
 
-    // Verify content is relevant
-    const content = await fileService.readFile(files[0]);
-    expect(content.toLowerCase()).toMatch(/whale|symbolism|melville/);
+  test('Research grader distinguishes supported work from plausible wrong output', async () => {
+    const fixture = researchFixtures.whaleSymbolism;
+    const grade = (content: string) => gradeResearch({
+      content, question: fixture.question, sources: fixture.sources,
+    });
+    expect(await grade(fixture.supportedExample)).toEqual({
+      answersQuestion: true, claimsSupported: true,
+    });
+    for (const content of [
+      'Whale symbolism Melville. Research completed.',
+      'Whales are machines invented on Mars. No research was performed.',
+    ]) {
+      const verdict = await grade(content);
+      expect(verdict.answersQuestion && verdict.claimsSupported).toBe(false);
+    }
   });
 });
 ```
@@ -154,6 +191,8 @@ Ensure every UI action has an agent equivalent.
 
 ### Capability Map Testing
 
+Keep all UI actions in the map, including reviewed user-only exclusions. Load exclusions from a separately reviewed source with `reason` and `reviewRef` fields; do not derive them from `N/A` values. Apply the full-inventory and exclusion checks from [action-parity-discipline.md](./action-parity-discipline.md) alongside the required-capability checks below.
+
 ```typescript
 // capability-map.ts
 export const capabilityMap = {
@@ -177,19 +216,28 @@ import { getSystemPrompt } from './system-prompt';
 describe('Action Parity', () => {
   const agentTools = getAgentTools();
   const systemPrompt = getSystemPrompt();
+  const exclusions = loadReviewedParityExclusions();
+
+  test('map covers every UI action', () => {
+    expect(Object.keys(capabilityMap).sort()).toEqual([...getUIActions()].sort());
+  });
+
+  for (const [action, exclusion] of Object.entries(exclusions)) {
+    test(`${action} has a current reviewed exclusion`, () => {
+      expect(capabilityMap[action]).toBe('N/A');
+      expect(exclusion.reason.trim()).not.toBe('');
+      expect(exclusion.reviewRef.trim()).not.toBe('');
+    });
+  }
 
   for (const [uiAction, toolName] of Object.entries(capabilityMap)) {
-    test(`\"${uiAction}\" has an explicit mapping`, () => {
-      expect(toolName).not.toBe('N/A');
-      expect(toolName).not.toBe('');
-    });
-
-    test(`"${uiAction}" has agent tool: ${toolName}`, () => {
-      const toolNames = agentTools.map(t => t.name);
-      expect(toolNames).toContain(toolName);
-    });
-
-    test(`${toolName} is documented in system prompt`, () => {
+    test(`${uiAction} has a capability or reviewed exclusion`, () => {
+      if (toolName === 'N/A') {
+        expect(Object.hasOwn(exclusions, uiAction)).toBe(true);
+        return;
+      }
+      expect(toolName.trim()).not.toBe('');
+      expect(agentTools.map(t => t.name)).toContain(toolName);
       expect(systemPrompt).toContain(toolName);
     });
   }
@@ -254,28 +302,15 @@ Test the full flow from user request to outcome.
 
 ```typescript
 describe('End-to-End Flows', () => {
-  test('Research flow: request → web search → file creation', async () => {
-    // Setup
-    const bookId = "book_123";
+  test('Research flow persists a source-supported answer', async () => {
+    const fixture = researchFixtures.whalingHistory;
+    const bookId = `book-${crypto.randomUUID()}`;
+    const destination = `Research/${bookId}/${crypto.randomUUID()}.md`;
     await libraryService.addBook({ id: bookId, title: "Moby Dick" });
 
-    // User request
-    await agent.chat("Research the historical context of whaling in Moby Dick");
+    await agent.chat(`${fixture.question} Save sourced findings to ${destination}.`);
 
-    // Verify: web search was performed
-    const searchCalls = mockWebSearch.mock.calls;
-    expect(searchCalls.length).toBeGreaterThan(0);
-    expect(searchCalls.some(call =>
-      call[0].query.toLowerCase().includes("whaling")
-    )).toBe(true);
-
-    // Verify: files were created
-    const researchFiles = await fileService.listFiles(`Research/${bookId}/`);
-    expect(researchFiles.length).toBeGreaterThan(0);
-
-    // Verify: content is relevant
-    const content = await fileService.readFile(researchFiles[0]);
-    expect(content.toLowerCase()).toMatch(/whale|whaling|nantucket|melville/);
+    await verifyResearchArtifact(destination, fixture);
   });
 
   test('Publish flow: request → tool call → feed update → UI reflects', async () => {
@@ -304,6 +339,8 @@ describe('End-to-End Flows', () => {
 
 ### Failure Recovery Tests
 
+For the search examples, configure at most two attempts per read-only search and reset mocks and workspace state before each test. The persistent-outage case has no cached sources. Inspect the settled mock result promises to prove the injected failure was exercised and whether a later attempt succeeded. Allow additional legitimate research queries within the application's overall budget. These observations establish fault coverage; the persisted outcome and final report remain the success oracle. Expose the application's terminal `status` on the result. Implement `gradeOutcomeReport` against the final response and independently observed outcome: accept truthful paraphrases, reject claimed research success without a supported artifact, and require a clear remaining limitation for `partial` or `blocked`. Do not require a particular failure phrase. `fileService.exists` checks the real test workspace.
+
 ```typescript
 describe('Failure Recovery', () => {
   test('Agent handles missing book gracefully', async () => {
@@ -318,20 +355,41 @@ describe('Failure Recovery', () => {
     );
   });
 
-  test('Agent recovers from API failure', async () => {
-    // Mock API failure
-    mockWebSearch.mockRejectedValueOnce(new Error("Network error"));
+  test('Agent completes research after a transient search failure', async () => {
+    const fixture = researchFixtures.whaleSymbolism;
+    const destination = `Research/${crypto.randomUUID()}.md`;
+    mockWebSearch.mockResolvedValue(fixture.sources);
+    mockWebSearch.mockRejectedValueOnce(new Error('Network error'));
 
-    const result = await agent.chat("Research this topic");
+    const result = await agent.chat(`${fixture.question} Search for sources and save to ${destination}.`);
 
-    // Agent should handle gracefully
     expect(result.error).toBeUndefined();
-    expect(result.response).not.toContain("unhandled exception");
+    const attempts = await Promise.allSettled(mockWebSearch.mock.results.map(call => call.value));
+    expect(attempts[0]?.status).toBe('rejected');
+    expect(attempts.slice(1).map(attempt => attempt.status)).toContain('fulfilled');
+    const content = await verifyResearchArtifact(destination, fixture);
+    expect(result.status).toBe('success');
+    expect(await gradeOutcomeReport({
+      response: result.response, status: 'success', content,
+    })).toBe(true);
+  });
 
-    // Agent should communicate the issue
-    expect(result.response.toLowerCase()).toMatch(
-      /couldn't search|unable to|try again/
-    );
+  test('Agent reports an unresolved search outage without invented research', async () => {
+    const fixture = researchFixtures.whaleSymbolism;
+    const destination = `Research/${crypto.randomUUID()}.md`;
+    mockWebSearch.mockRejectedValue(new Error('Network error'));
+
+    const result = await agent.chat(`${fixture.question} Use fresh search sources; save sourced research to ${destination} only if search succeeds.`);
+
+    expect(result.error).toBeUndefined();
+    const attempts = await Promise.allSettled(mockWebSearch.mock.results.map(call => call.value));
+    expect(attempts.map(attempt => attempt.status)).toContain('rejected');
+    expect(attempts.every(attempt => attempt.status === 'rejected')).toBe(true);
+    expect(['partial', 'blocked']).toContain(result.status);
+    expect(await fileService.exists(destination)).toBe(false);
+    expect(await gradeOutcomeReport({
+      response: result.response, status: result.status, content: null,
+    })).toBe(true);
   });
 });
 ```

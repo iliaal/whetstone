@@ -28,7 +28,7 @@ Load this reference when reviewing a Dockerfile, docker-compose setup, or contai
 - Resource limits: always set CPU and memory limits to prevent noisy-neighbor issues
 - Drop ambient privilege at runtime: `security_opt: ["no-new-privileges:true"]`, `cap_drop: [ALL]` (add back only the capabilities actually needed), and a finite `pids_limit` so a fork bomb inside the container cannot exhaust host PIDs
 - Pair `--read-only` with an explicit writable `tmpfs` for scratch paths, mounted `noexec` and owned by the runtime uid. A read-only root filesystem with a writable, executable scratch mount buys little
-- Default the network off (`network_mode: none`) for anything that does not need egress, and add access through a visibly named service or profile. Never make network reach an environment-variable default that a misconfigured deploy switches on silently
+- Use `network_mode: none` only for workloads needing neither ingress nor egress. For serving workloads, retain the network attachment required for ingress and enforce outbound restrictions separately. Make network access explicit through a visibly named service or profile. Never make network reach an environment-variable default that a misconfigured deploy switches on silently
 
 ## Graceful Shutdown
 

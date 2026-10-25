@@ -217,7 +217,7 @@ type AgentCheckpoint = {
   version: 1;
   sessionId: string;
   agentType: string;
-  messages: JSONValue[];
+  messages: Message[];
   iterationCount: number;
   tasks: AgentTask[];
   customState: { [key: string]: JSONValue };
@@ -243,7 +243,7 @@ function encodeCheckpoint(checkpoint: AgentCheckpoint): string {
 }
 ```
 
-Use the preceding `AgentTask` type. Accept only schema-validated JSON values at runtime; reject unsupported versions, non-finite numbers, cycles, and missing fields rather than coercing them into a valid-looking checkpoint. Persist encoded bytes by atomic replacement and propagate errors. A stale checkpoint is retained for reconciliation and explicit user disposition, not silently replayed or deleted. Reconcile every durable attempt before running remaining effects; follow [mobile-execution.md](./mobile-execution.md).
+Use the preceding `AgentTask` type and the `Message` union in Unified Agent Orchestrator below. Preserve assistant tool-call IDs, names, and inputs and each result's matching call ID in checkpoint JSON. Accept only schema-validated JSON values at runtime; reject unsupported versions, non-finite numbers, cycles, and missing fields rather than coercing them into a valid-looking checkpoint. Persist encoded bytes by atomic replacement and propagate errors. A stale checkpoint is retained for reconciliation and explicit user disposition, not silently replayed or deleted. Reconcile every durable attempt before running remaining effects; follow [mobile-execution.md](./mobile-execution.md).
 
 ### Resume Flow
 
@@ -376,7 +376,7 @@ Assume the orchestrator may truncate early messages. Important context should be
 
 ### Implementation Strategies
 
-Use application adapters for token estimation and summarization. Keep tool-call/result pairs together when partitioning history:
+Use application adapters for token estimation and summarization. Partition history only between complete assistant-call/result groups. Keep retained groups unchanged, including IDs, names, and inputs. Retain an in-flight group verbatim until its durable attempts are reconciled; summarize only completed older groups. A summary is context, not a replacement call record to replay.
 
 ```typescript
 function compactContext<M>(
@@ -417,15 +417,16 @@ Don't try to hold everything in memory. Write it down.
 One execution engine, many agent types. All agents use the same orchestrator with different configurations.
 
 ```typescript
-interface Message {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string;
+interface ToolCall {
+  id: string;
+  name: string;
+  input: JSONValue;
 }
 
-interface ToolCall {
-  name: string;
-  input: unknown;
-}
+type Message =
+  | { role: "system" | "user"; content: string }
+  | { role: "assistant"; content: string; toolCalls: ToolCall[] }
+  | { role: "tool"; content: string; toolCallId: string; name: string };
 
 interface ModelResponse {
   content: string;
@@ -451,6 +452,7 @@ class AgentOrchestrator {
       messages: Message[],
     ) => Promise<ModelResponse>,
     private executeToolCall: (call: ToolCall) => Promise<ToolResult>,
+    private saveMessages: (messages: readonly Message[]) => Promise<void>,
   ) {}
 
   async run(config: AgentConfig, userMessage: string): Promise<AgentResult> {
@@ -458,16 +460,43 @@ class AgentOrchestrator {
       { role: "system", content: config.systemPrompt },
       { role: "user", content: userMessage },
     ];
+    await this.saveMessages(messages);
 
     for (let iteration = 0; iteration < config.maxIterations; iteration += 1) {
       const response = await this.generateResponse(config, messages);
-      messages.push({ role: "assistant", content: response.content });
+      const knownIds = new Set(messages.flatMap(message =>
+        message.role === "assistant" ? message.toolCalls.map(call => call.id) : []
+      ));
+      for (const call of response.toolCalls) {
+        if (!call.id || knownIds.has(call.id)) throw new Error("Invalid tool-call ID");
+        knownIds.add(call.id);
+      }
+      messages.push({
+        role: "assistant",
+        content: response.content,
+        toolCalls: structuredClone(response.toolCalls),
+      });
+      await this.saveMessages(messages);
 
-      for (const toolCall of response.toolCalls) {
+      for (const [index, toolCall] of response.toolCalls.entries()) {
         const result = await this.executeToolCall(toolCall);
-        messages.push({ role: "tool", content: JSON.stringify(result) });
+        messages.push({
+          role: "tool", toolCallId: toolCall.id, name: toolCall.name,
+          content: JSON.stringify(result),
+        });
+        await this.saveMessages(messages);
 
         if (!result.shouldContinue) {
+          for (const skipped of response.toolCalls.slice(index + 1)) {
+            messages.push({
+              role: "tool", toolCallId: skipped.id, name: skipped.name,
+              content: JSON.stringify({
+                success: false, output: "Not executed: the run stopped.",
+                shouldContinue: true,
+              }),
+            });
+          }
+          await this.saveMessages(messages);
           return {
             status: result.terminalStatus,
             output: result.output,
@@ -495,6 +524,8 @@ class AgentOrchestrator {
 }
 ```
 
+The provider adapter must return stable tool-call IDs and map the complete `Message` union to its assistant-call and tool-result fields. Validate names, JSON inputs, and response shapes at that boundary. Implement `saveMessages` with the checkpoint service: encode a snapshot of the complete messages, persist it durably, and propagate failure before the next action. The loop saves assistant calls before dispatching effects and their correlated results after the executor durably records outcomes; restore those same messages from checkpoints. Results for unexecuted calls in a terminal batch explicitly report that they did not run. Never infer call identity from result text or keep essential history only in adapter closure state.
+
 Have the tool executor validate and persist runtime results before returning this type. Preserve the terminal status in persistence and UI labels. A reply without a completion signal remains `responded`. Save a checkpoint before returning `partial` with `turn_limit`; exhaustion remains unfinished. Wrap action boundaries with the cooperative cancellation and cleanup lifecycle above.
 
 ### Benefits
@@ -514,6 +545,7 @@ Have the tool executor validate and persist runtime results before returning thi
 - [ ] No heuristic completion detection
 - [ ] Tool results include `shouldContinue` flag
 - [ ] Terminal statuses survive orchestration and checkpoint restore
+- [ ] Assistant calls and correlated results retain IDs, names, and inputs through provider translation, checkpoints, and compaction
 - [ ] `success` requires application-observed acceptance evidence
 - [ ] Terminal reports cover exactly the application's criterion set and compute unmet IDs
 - [ ] Cancellation persists its lifecycle, cleanup outcome, and outstanding effects

@@ -73,9 +73,11 @@ This command takes a work document (plan or specification) and executes it syste
    - You want to keep the default branch clean while experimenting
    - You plan to switch between branches frequently
 
-3. **Create Todo List**
+3. **Create Task Tracking**
    - Record the initial working-tree and staged diffs before editing. Distinguish caller changes, peer changes, and the invocation's owned changes; keep the original index intact.
-   - Use TaskCreate to break plan into actionable tasks
+   - Inspect the available tools once. If TaskCreate, TaskUpdate, and TaskList are available, use them as the task tracker. Otherwise, use the input plan when it is a writable local file. For an issue, URL, or read-only input, create a local tracker under the repository's existing planning/scratch convention or the harness scratch directory, and record its path. Keep stable task IDs, status, dependencies, blockers, and verification evidence in the selected tracker. Do not enable tools or change session settings.
+   - Preserve the input's acceptance criteria in the selected tracker. A local tracker does not authorize edits to a remote issue or a read-only source.
+   - Break the plan into actionable tasks in the selected tracker
    - Include dependencies between tasks
    - Prioritize based on what needs to be done first
    - Include testing and quality check tasks
@@ -89,25 +91,25 @@ This command takes a work document (plan or specification) and executes it syste
 
    ```
    while (tasks remain):
-     - Mark task as in_progress via TaskUpdate
+     - Record task as in_progress in the selected tracker
      - Read any referenced files from the plan
      - Look for similar patterns in codebase
      - Implement following existing conventions
      - Write tests for new functionality
      - Run System-Wide Test Check (see below)
      - Run tests after changes
-     - Mark task as completed via TaskUpdate
-     - Mark off the corresponding checkbox in the plan file ([ ] → [x])
+     - Record task as completed with verification evidence in the selected tracker
+     - Mark off the corresponding checkbox in the writable input plan or selected local tracker ([ ] → [x]), when one is used
      - Evaluate for incremental commit (see below)
    ```
 
-   **Blocking decision mid-run**: When a task needs a user decision, leave it pending and continue with every task that does not depend on that decision (check the dependencies recorded in TaskCreate). Raise all blocking questions together once only dependent tasks remain, since the user may be away. In pipeline mode, return them to the parent instead.
+   **Blocking decision mid-run**: When a task needs a user decision, leave it pending and continue with every task that does not depend on that decision (check dependencies in the selected tracker). Raise all blocking questions together once only dependent tasks remain, since the user may be away. In pipeline mode, return them to the parent instead.
 
    **Interrupted execution:** After a restart or a tool call with no recorded result, verify the active checkout. Before retrying a mutation, reconcile its outcome against local files and commits or the affected resource's authoritative remote status. A missing result leaves the outcome unknown. Verify an observed completed effect before continuing from it. Retry only when authoritative evidence rules out a pending or completed effect, or verified idempotency guarantees make replay safe. If the outcome remains unresolved, report it as unknown. Continue independent tasks while reconciliation is pending.
 
    **System-Wide Test Check**: Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
 
-   **IMPORTANT**: Always update the original plan document by checking off completed items. Use the Edit tool to change `- [ ]` to `- [x]` for each task you finish. This keeps the plan as a living document showing progress and ensures no checkboxes are left unchecked.
+   **Plan progress:** Update completed checkboxes in the original plan when it is a writable local file. For an issue, URL, or read-only input, record completion in the selected tracker. Preserve the source acceptance criteria; updating local progress does not authorize remote edits.
 
 2. **Incremental Commits**
 
@@ -170,7 +172,7 @@ This command takes a work document (plan or specification) and executes it syste
    - Repeat until implementation matches design
 
 6. **Track Progress**
-   - Keep task list updated (TaskUpdate) as you complete tasks
+   - Keep the selected tracker updated as tasks complete
    - Note any blockers or unexpected discoveries
    - Create new tasks if scope expands
    - Keep user informed of major milestones using **experiential framing**:
@@ -212,13 +214,13 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    A self-assessment does not close this gate. "I already reviewed it as I wrote it" and "the findings were applied during implementation" are the implementer judging their own work, which is what the review exists to avoid. If the diff is large enough to want a worktree and multiple lenses, hand it to `/ia-review` and record that as the receipt.
 
 3. **Final Validation**
-   - All tasks marked completed (TaskList)
+   - All tasks completed with verification evidence; inspect the selected tracker (TaskList or the recorded local progress file)
    - All tests pass
    - Linting passes
    - Code follows existing patterns
    - Figma designs match (if applicable)
    - No console errors or warnings
-   - Compare the plan's acceptance criteria and done-when sections with `origin/<base>` when that ref contains the plan; otherwise use the plan's first commit on the branch, or report `baseline unavailable`. Ignore checkbox completion marks when identifying criterion edits. Audit the original criteria even when the current plan changed, and disclose those changes as `Acceptance edits:` in the PR Testing section. The introducing commit cannot expose criteria changed before that commit.
+   - Compare a local plan's acceptance criteria and done-when sections with `origin/<base>` when that ref contains the plan; otherwise use the plan's first commit on the branch, or report `baseline unavailable`. For issue, URL, or read-only input, compare against the source criteria preserved at intake in the selected tracker. Ignore checkbox completion marks when identifying criterion edits. Audit the original criteria even when the current plan changed, and disclose those changes as `Acceptance edits:` in the PR Testing section. The introducing commit cannot expose criteria changed before that commit.
    - Disclose each relaxed test, threshold, or suppression and its reason as `Gate edits:` in the same section, or `none`. Disclosure does not authorize weakening a requirement to obtain a pass.
 
 4. **Prepare Operational Validation Plan** (REQUIRED)
@@ -265,7 +267,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
 2. **Update Plan Status**
 
-   If the input document has YAML frontmatter with a `status` field, update it to `completed`:
+   If the input is a writable local plan with YAML frontmatter containing `status`, update it to `completed` after all acceptance criteria pass. Otherwise, record completion in the selected tracker without modifying the remote or read-only source:
    ```
    status: active  →  status: completed
    ```
@@ -329,7 +331,7 @@ For swarm execution, follow the `ia-orchestrating-swarms` skill.
 Before creating PR, verify:
 
 - [ ] All clarifying questions asked and answered
-- [ ] All tasks marked completed (TaskList)
+- [ ] All tasks completed with verification evidence in the selected tracker (TaskList or the recorded local progress file)
 - [ ] Tests pass (run project's test command)
 - [ ] Linting passes (run project's lint command)
 - [ ] Code follows existing patterns

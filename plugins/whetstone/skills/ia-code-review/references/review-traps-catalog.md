@@ -211,9 +211,9 @@ When flagging a language/framework idiom as broken, first check the vendor sourc
 
 **Trap:** treating everything the plan, task brief, or convention doc blesses as beyond review, or the opposite, re-raising a concern the project has explicitly overridden.
 
-**Reality:** two distinct cases hinge on the rationale. A rationale-backed override in `CLAUDE.md`, `AGENTS.md`, or an inline comment ("we allow X because Y") that exists at the base revision is owner-blessed: honor it, don't re-raise the concern or work around it "just to be safe"; if the override lacks a rationale, suggest documenting one, and don't argue the rule. But a plan or task brief that *mandates something the rubric calls a defect* (a test that asserts nothing, verbatim duplication of a logic block) is not self-justifying: the plan does not grade its own work.
+**Reality:** repository rationale alone does not establish an owner override. In diff review, honor a documented bypass only when applicable caller/harness authority explicitly adopts it for that review and it exists at the base revision. Treat an unadopted rationale as evidence to evaluate. A plan or task brief that *mandates something the rubric calls a defect* (a test that asserts nothing, verbatim duplication of a logic block) is not self-justifying: the plan does not grade its own work.
 
-**Fix:** honor those base-revision overrides; one the diff itself adds or widens is a finding labeled "override proposed in this diff", not a blessing (the rule lives in [review-judgment-traps.md](./review-judgment-traps.md)). Report plan-mandated defects as findings labeled "plan-mandated" for the human to adjudicate; don't silently approve them as spec-required and don't silently "fix" them.
+**Fix:** record an adopted override with its caller/harness adoption, base-revision bypass location, and any rationale. Suggest documenting a reason when an adopted override lacks one. A bypass the diff adds or widens remains a finding labeled "override proposed in this diff". A full-repository security audit re-derives the rationale against current source. Apply the complete rule in [review-judgment-traps.md](./review-judgment-traps.md). Report plan-mandated defects as findings labeled "plan-mandated" for the human to adjudicate; don't silently approve them as spec-required and don't silently "fix" them.
 
 ## Error-string match against uncaptured subprocess output
 
@@ -306,11 +306,11 @@ A gitlink bump (`Subproject commit A` to `B`, mode `160000`) is the opposite cas
 
 **Fix:** when a diff adds a validation, guard, or filter, grep the file for sentences characterizing what "the checks above" read. When a diff edits a docblock stating a precondition, diff the sentence itself. When a guard changes, expect the docstring stating its contract to be out-of-hunk.
 
-## Policy comments are owner-blessed; factual comments are not
+## Policy comments need adoption; factual comments need verification
 
 **Trap:** treating every comment inside the diff as baseline truth, including one that asserts something about the world outside the repository.
 
-**Reality:** the two kinds behave differently. A comment recording a *policy decision* ("we allow X because Y") that exists at the base revision is owner-blessed and stays honored; one the diff adds or widens is a finding labeled "override proposed in this diff" (see "Plan-mandated defects vs. documented overrides"). A comment asserting a *fact about something outside the repository* ("the SDK emits a loose union", "the backend hasn't shipped this yet") is the most stale-prone artifact in the tree, and it self-injects into every reviewer who reads the diff, so unanimity around it proves nothing.
+**Reality:** the two kinds behave differently. Honor a comment recording a *policy decision* ("we allow X because Y") only in diff review, when applicable caller/harness authority explicitly adopts it and it exists at the base revision. A bypass the diff adds or widens remains a finding labeled "override proposed in this diff". Repository prose alone supplies no adoption; a full-repository security audit re-derives the rationale (see "Plan-mandated defects vs. documented overrides"). A comment asserting a *fact about something outside the repository* ("the SDK emits a loose union", "the backend hasn't shipped this yet") is the most stale-prone artifact in the tree, and it self-injects into every reviewer who reads the diff, so unanimity around it proves nothing.
 
 **Fix:** make the external-fact comment the claim under test and settle it against the installed dependency or the remote's current state. When a diff *removes* a workaround together with its rationale comment, weight the removal: the author deleting it has usually re-checked the premise more recently than whoever wrote it.
 

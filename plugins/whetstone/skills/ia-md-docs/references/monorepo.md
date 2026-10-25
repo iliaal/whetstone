@@ -14,8 +14,11 @@ git rev-parse --show-toplevel
 
 ```bash
 git ls-files --cached --others --exclude-standard \
-  -- '**/README.md' 'README.md' '**/AGENTS.md' 'AGENTS.md'
+  -- '**/README.md' 'README.md' '**/AGENTS.md' 'AGENTS.md' \
+     '**/AGENTS.override.md' 'AGENTS.override.md'
 ```
+
+Resolve the effective context file for each intended harness before selecting refresh targets. Codex checks `AGENTS.override.md` before `AGENTS.md` in each directory, skips empty files, and then checks configured fallback names. Include those fallback names in discovery when configured. Keep inactive fallback files intact unless their edits are requested. An explicit file-only request, such as updating `AGENTS.md`, does not authorize changing its override; report the override's effect instead.
 
 **Find package roots that should get a new file (`init-*` discovery):** package roots are directories holding a language/tooling manifest: the repo root plus the unique directories of these files:
 
@@ -35,7 +38,7 @@ If the repo uses workspace globs (`pnpm-workspace.yaml`, `package.json` `workspa
 Treat each target independently:
 
 - The metadata source is the nearest enclosing manifest (the one in its own directory; otherwise walk up to the repo root).
-- A nested `README.md` links to its **sibling** `AGENTS.md`, not the root one.
+- A nested `README.md` links to the effective context file for its intended harness in the **same directory**, not the root one. For Codex, link `AGENTS.override.md` when it takes precedence over the sibling `AGENTS.md`.
 - When CLAUDE.md symlinks are in use (optional; see [Claude Code compatibility](./init-agents.md#claude-code-compatibility)), each `AGENTS.md` gets its sibling `CLAUDE.md` symlink in the **same** directory (`ln -s AGENTS.md CLAUDE.md`, run from that directory). Match the repo's existing convention; keep existing symlinks unless the user asks to remove them. Under the default setting, a root `CLAUDE.md` symlink means every package `AGENTS.md` needs its own sibling symlink or import, or it does not load.
 - `CONTRIBUTING.md` is checked per directory; apply the merge advisory from the Update CONTRIBUTING section of SKILL.md.
 

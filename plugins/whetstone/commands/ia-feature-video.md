@@ -47,7 +47,7 @@ Parse the input:
 - First argument: PR number or "current" (defaults to current branch's PR)
 - Second argument: Base URL. When omitted, resolve the port from the project instead of assuming 3000, and use the result as `[base-url]` in the capture steps below:
   ```bash
-  echo "http://localhost:$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)"
+  echo "http://localhost:$(bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port")"
   ```
 
 ```bash
@@ -235,9 +235,16 @@ rclone ls "$UPLOAD_PATH/"
 VIDEO_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/[capture-id]/feature-demo.mp4"
 PREVIEW_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/[capture-id]/feature-demo-preview.gif"
 
-# Require HTTP 200 for both URLs; stop if either fails
-curl -I "$VIDEO_URL" | head -n 1 | grep -q ' 200 ' || exit 1
-curl -I "$PREVIEW_URL" | head -n 1 | grep -q ' 200 ' || exit 1
+# Require a direct HTTP 200 for both URLs; redirects remain unverified.
+for artifact_url in "$VIDEO_URL" "$PREVIEW_URL"; do
+  http_status=$(curl --disable --head --silent --show-error \
+    --connect-timeout 10 --max-time 30 --output /dev/null \
+    --write-out '%{http_code}' -- "$artifact_url") || exit "$?"
+  if [[ "$http_status" != 200 ]]; then
+    printf 'Public artifact check failed: HTTP %s for %s\n' "$http_status" "$artifact_url" >&2
+    exit 1
+  fi
+done
 ```
 
 </upload_video>

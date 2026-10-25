@@ -8,7 +8,9 @@ Use `eslint-plugin-better-tailwindcss` for automated class validation:
 - `enforce-canonical-classes`: normalizes shorthand
 - `no-duplicate-classes`: removes redundant entries
 - `no-deprecated-classes`: catches v3 classes removed in v4
-- `useSortedClasses`: enforces canonical class order; configure `attributes: ["classList"]` and `functions: ["clsx", "cva", "cn", "tv", "tw"]` to cover JSX utility functions
+- `enforce-consistent-class-order`: enforces class order through `better-tailwindcss/enforce-consistent-class-order` in the ESLint configuration
+
+Match configuration to the installed plugin version's [class-order rule](https://github.com/schoero/eslint-plugin-better-tailwindcss/blob/main/docs/rules/enforce-consistent-class-order.md) and [settings](https://github.com/schoero/eslint-plugin-better-tailwindcss/blob/main/docs/settings/settings.md). Use the built-in selectors for supported JSX attributes and utility functions. For custom locations such as `classList` or a project-specific helper, extend the defaults with the documented [`selectors` configuration](https://github.com/schoero/eslint-plugin-better-tailwindcss/blob/main/docs/configuration/advanced.md#selectors); retain `getDefaultSelectors()` when adding selectors.
 
 
 ## Class Merging

@@ -15,3 +15,18 @@
 {"prompt":"List simplification opportunities without editing","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Design new behavior","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Write a release announcement","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Refactor the invoice handler while preserving its behavior.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Simplify this deeply nested parser.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Remove dead code from the feature flag module.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Produce an analysis-only simplification report for these functions.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Clean up the code without changing its public API.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Simplify the nested dispatch function without changing behavior.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Simplify this product announcement for nontechnical readers.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Refactor this press-release paragraph into plainer language.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write tests for the parser.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review this PR for privilege escalation.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Delete the old deployment environment.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Refactor this customer email into shorter paragraphs.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Refactor src/invoice.php while preserving behavior.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Refactor release-notes.md into clearer sentences.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Refactor the middleware to remove duplication.", "expect": true, "source": "audit-2026-10-25"}

@@ -6,7 +6,16 @@ Assertion oracles that can report success without observing failure, moved from 
 
 **Symptom:** the assertion reports "absent" for a string plainly present in a manual run. Under `set -o pipefail` the pipeline's status is the *writer's*: `grep -q` exits on first match and closes the pipe, so the producer dies of SIGPIPE and the pipeline fails **because the assertion matched**. Independently, a command that legitimately exits non-zero (a refusal path, a status code that is part of the contract) fails the pipeline regardless of the match. Either way the false negative reads as a behavioral finding and sends you into the production code.
 
-**Fix:** capture, then match. `out=$(cmd 2>&1)` on one line, `grep -q 'needle' <<<"$out"` on the next; never put the command and the matcher in one pipeline. Two adjacent shapes to avoid in assertions: `grep -c` prints `0` *and* exits 1, so `grep -c p f || printf 0` emits `0\n0`; and `cmd && x || y` is not if-then-else: `y` also runs when `x` fails.
+**Fix:** capture the output and exit status before matching. Set `expected_status` to the command's exact contract: zero for success or its documented refusal code. Preserve an expected nonzero exit under `set -e`:
+
+```bash
+rc=0
+out=$(cmd 2>&1) || rc=$?
+test "$rc" -eq "$expected_status" || exit 1
+grep -q 'needle' <<<"$out"
+```
+
+Never put the command and matcher in one pipeline or discard the command's status with `|| true`. Two adjacent shapes to avoid in assertions: `grep -c` prints `0` *and* exits 1, so `grep -c p f || printf 0` emits `0\n0`; and `cmd && x || y` is not if-then-else: `y` also runs when `x` fails.
 
 ## A comparison oracle that fails open
 

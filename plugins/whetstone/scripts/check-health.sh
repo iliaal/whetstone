@@ -11,8 +11,8 @@ set -o pipefail
 #   name        -- primary command to probe with `command -v`
 #   alt         -- alternative command name (checked if name absent); empty if none
 #   tier        -- recommended (counted toward issues) | optional (info only)
-#   install_apt -- apt-compatible install command (empty if not available via apt)
-#   install_brew-- brew install command (empty if not available via brew)
+#   install_apt -- apt-compatible install command or manual-instructions URL
+#   install_brew-- brew install command or manual-instructions URL
 #   url         -- upstream project URL (always shown as fallback)
 # To add a dependency: append one line. No other changes needed.
 
@@ -21,6 +21,7 @@ deps=(
   "git||recommended|sudo apt install -y git|brew install git|https://git-scm.com/downloads"
   "gh||recommended|https://github.com/cli/cli/blob/trunk/docs/install_linux.md|brew install gh|https://cli.github.com"
   "jq||recommended|sudo apt install -y jq|brew install jq|https://jqlang.github.io/jq/"
+  "flock||recommended|sudo apt install -y util-linux||https://github.com/util-linux/util-linux"
   "python3|python|recommended|sudo apt install -y python3|brew install python@3|https://www.python.org/downloads/"
   "claude||recommended|npm install -g @anthropic-ai/claude-code|npm install -g @anthropic-ai/claude-code|https://claude.com/claude-code"
   # Optional: Node toolchain (needed to install claude CLI and run skills CLI)
@@ -103,6 +104,7 @@ section "Tools  ${rec_ok}/${rec_total} required, ${opt_ok}/${opt_total} optional
 
 render_row() {
   local tier="$1"
+  local install_hint
   for result in "${results[@]}"; do
     IFS='|' read -r name resolved row_tier status install_apt install_brew url <<< "$result"
     [ "$row_tier" = "$tier" ] || continue
@@ -119,12 +121,22 @@ render_row() {
         warn "$name"
         issues=$((issues + 1))
       fi
-      if [ "$has_apt" = "yes" ] && [ -n "$install_apt" ]; then
-        detail "$install_apt"
-      elif [ "$has_brew" = "yes" ] && [ -n "$install_brew" ]; then
-        detail "$install_brew"
+      if [[ ${name} == flock ]]; then
+        detail "Automatic skill injection unavailable: flock is missing."
       fi
-      detail "$url"
+      install_hint=${url}
+      if [[ ${has_apt} == yes && -n ${install_apt} ]]; then
+        install_hint=${install_apt}
+      elif [[ ${has_brew} == yes && -n ${install_brew} ]]; then
+        install_hint=${install_brew}
+      fi
+      case "${install_hint}" in
+        http://* | https://*) detail "Manual instructions: ${install_hint}" ;;
+        *) detail "Install command: ${install_hint}" ;;
+      esac
+      if [[ ${install_hint} != "${url}" ]]; then
+        detail "Project: ${url}"
+      fi
     fi
   done
 }

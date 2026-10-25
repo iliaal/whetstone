@@ -11,29 +11,39 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-CURRENT_ROOT=$(git rev-parse --show-toplevel)
 COMMON_DIR=$(realpath -- "$(git rev-parse --git-common-dir)")
 CURRENT_GIT_DIR=$(realpath -- "$(git rev-parse --git-dir)")
-if [[ "$CURRENT_GIT_DIR" == "$COMMON_DIR" ]]; then
-  GIT_ROOT="$CURRENT_ROOT"
-elif [[ -f "$COMMON_DIR/whetstone-main-root" ]]; then
-  IFS= read -r GIT_ROOT < "$COMMON_DIR/whetstone-main-root"
+COMMON_BARE=$(git --git-dir="${COMMON_DIR}" rev-parse --is-bare-repository)
+CURRENT_BARE=$(git rev-parse --is-bare-repository)
+if [[ "${CURRENT_BARE}" == true ]]; then
+  CURRENT_ROOT="${COMMON_DIR}"
 else
-  IFS= read -r main_record < <(git worktree list --porcelain)
-  GIT_ROOT=${main_record#worktree }
+  CURRENT_ROOT=$(git rev-parse --show-toplevel)
 fi
-[[ "$(git -C "$GIT_ROOT" rev-parse --show-toplevel)" == "$GIT_ROOT" ]] || {
-  echo "Error: main checkout unavailable; run create from the main checkout first" >&2
-  exit 1
-}
-ROOT_COMMON_DIR=$(git -C "$GIT_ROOT" rev-parse --git-common-dir)
-if [[ "$ROOT_COMMON_DIR" != /* ]]; then
-  ROOT_COMMON_DIR="$GIT_ROOT/$ROOT_COMMON_DIR"
+if [[ "${COMMON_BARE}" == true ]]; then
+  GIT_ROOT="${COMMON_DIR}"
+else
+  if [[ "$CURRENT_GIT_DIR" == "$COMMON_DIR" ]]; then
+    GIT_ROOT="$CURRENT_ROOT"
+  elif [[ -f "$COMMON_DIR/whetstone-main-root" ]]; then
+    IFS= read -r GIT_ROOT < "$COMMON_DIR/whetstone-main-root"
+  else
+    IFS= read -r main_record < <(git worktree list --porcelain)
+    GIT_ROOT=${main_record#worktree }
+  fi
+  [[ "$(git -C "$GIT_ROOT" rev-parse --show-toplevel)" == "$GIT_ROOT" ]] || {
+    echo "Error: main checkout unavailable; run create from the main checkout first" >&2
+    exit 1
+  }
+  ROOT_COMMON_DIR=$(git -C "$GIT_ROOT" rev-parse --git-common-dir)
+  if [[ "$ROOT_COMMON_DIR" != /* ]]; then
+    ROOT_COMMON_DIR="$GIT_ROOT/$ROOT_COMMON_DIR"
+  fi
+  [[ "$(realpath -- "$ROOT_COMMON_DIR")" == "$COMMON_DIR" ]] || {
+    echo "Error: cannot resolve the main worktree safely" >&2
+    exit 1
+  }
 fi
-[[ "$(realpath -- "$ROOT_COMMON_DIR")" == "$COMMON_DIR" ]] || {
-  echo "Error: cannot resolve the main worktree safely" >&2
-  exit 1
-}
 WORKTREE_DIR="$GIT_ROOT/.worktrees"
 
 resolve_worktree() {
@@ -51,14 +61,27 @@ resolve_worktree() {
 }
 
 ensure_gitignore() {
-  if ! grep -q "^\.worktrees$" "$GIT_ROOT/.gitignore" 2>/dev/null; then
-    echo ".worktrees" >> "$GIT_ROOT/.gitignore"
+  local last_byte
+  [[ "${COMMON_BARE}" == false ]] || return 0
+  if ! grep -qxF '.worktrees' "${GIT_ROOT}/.gitignore" 2>/dev/null; then
+    if [[ -s "${GIT_ROOT}/.gitignore" ]]; then
+      last_byte=$(tail -c 1 -- "${GIT_ROOT}/.gitignore") || return 1
+      if [[ -n "${last_byte}" ]]; then
+        printf '\n' >>"${GIT_ROOT}/.gitignore"
+      fi
+    fi
+    printf '%s\n' '.worktrees' >>"${GIT_ROOT}/.gitignore"
   fi
 }
 
 copy_env_files() {
   local worktree_path="$1"
   local source name dest tmp copied=0 skipped=0
+
+  if [[ "${COMMON_BARE}" == true ]]; then
+    echo "Error: bare repositories have no main checkout for environment files" >&2
+    return 1
+  fi
 
   echo -e "${BLUE}Copying environment files...${NC}"
 
@@ -158,6 +181,9 @@ create_worktree() {
   done
   local branch_name="${args[0]:-}"
   local from_branch="${args[1]:-main}"
+  if [[ "${COMMON_BARE}" == true ]]; then
+    copy_env=0
+  fi
 
   if [[ -z "$branch_name" ]]; then
     echo -e "${RED}Error: Branch name required${NC}"
@@ -232,7 +258,9 @@ create_worktree() {
 
   mkdir -p "$WORKTREE_DIR"
   ensure_gitignore
-  printf '%s\n' "$GIT_ROOT" > "$COMMON_DIR/whetstone-main-root"
+  if [[ "${COMMON_BARE}" == false ]]; then
+    printf '%s\n' "$GIT_ROOT" > "$COMMON_DIR/whetstone-main-root"
+  fi
 
   echo -e "${BLUE}Creating worktree...${NC}"
   git worktree add -b "$branch_name" "$worktree_path" "$base_sha"
@@ -247,7 +275,9 @@ create_worktree() {
     echo "Set WORKTREE_SESSION_ID before create to enable session-owned cleanup." >&2
   fi
 
-  if [[ "$copy_env" == 0 ]]; then
+  if [[ "${COMMON_BARE}" == true ]]; then
+    echo -e "${YELLOW}Skipped .env copy: bare repository has no main checkout${NC}"
+  elif [[ "${copy_env}" == 0 ]]; then
     echo -e "${YELLOW}Skipped .env copy (--no-env)${NC}"
   elif [[ "$env_trusted" == 1 ]]; then
     copy_env_files "$worktree_path"
@@ -391,6 +421,11 @@ Commands:
                                       (if name omitted, uses current worktree)
   cleanup | clean <name> [...]        Remove named clean worktrees owned by WORKTREE_SESSION_ID
   help                                Show this help message
+
+Bare Repositories:
+  - Create worktrees in <common-git-directory>/.worktrees/<branch-name>
+  - No main checkout exists: create never copies env files; copy-env refuses
+  - Ownership, path checks, and cleanup safeguards remain enabled
 
 Environment Files:
   - On create, copies .env, .env.local, .env.test, etc. only when from-branch

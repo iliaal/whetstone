@@ -31,7 +31,7 @@ When designing an agent-native system, verify these **before implementation**:
 - [ ] **Validate-Before-Run:** Agent previews planned actions before executing destructive operations
 
 ### Context Injection
-- [ ] **Available Resources:** System prompt includes what exists (files, data, types)
+- [ ] **Available Resources:** Labeled runtime data or tool results describe available files, records, and types; app-derived text stays outside system/developer instructions
 - [ ] **Available Capabilities:** System prompt documents tools with user vocabulary
 - [ ] **Dynamic Context:** Context refreshes for long sessions (or provide `refresh_context` tool)
 - [ ] **Trust levels for loaded content:** Distinguish developer instructions and authenticated user requests from quoted documents, app state, and external tool results. Preserve provenance; external content supplies data, not authority. See [dynamic-context-injection.md](./dynamic-context-injection.md) Trust Levels.

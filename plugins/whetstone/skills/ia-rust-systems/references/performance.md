@@ -7,7 +7,7 @@ Load this reference when profiling shows allocation, copy, or syscall overhead o
 Use stack-or-inline collections when the typical size is small and known:
 
 - `smallvec::SmallVec<[T; N]>`: inline for ≤N items, spills to heap beyond. Good for "usually 1-8 items" cases like parsed tag lists, lookup keys, small event batches.
-- `arrayvec::ArrayVec<T, CAP>`: fixed capacity, never heap-allocates. Returns an error when full. Good for bounded message buffers or per-request scratch space.
+- `arrayvec::ArrayVec<T, CAP>`: fixed capacity, never heap-allocates. Use `try_push` or `try_insert` for recoverable capacity errors; `push` and `insert` panic when full. `try_insert` still requires an index at most `len()`. Good for bounded message buffers or per-request scratch space.
 - Intern only a measured repeated vocabulary. For tenant IDs or dynamic route keys, keep reclaimable `Arc<str>` entries and bound both entry count and input length. Serialize lookup/check/insert under one lock when shared across threads; a separate concurrent count check can exceed capacity. Reserve `Box::leak` for a fixed, explicitly bounded process-lifetime vocabulary.
 
 ```rust

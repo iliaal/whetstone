@@ -36,7 +36,11 @@ if [ -z "$port" ]; then
     # Read the dependency keys, not the whole file: a script argument or a description
     # mentioning a framework name is not a dependency on it.
     deps=$(jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]' package.json 2>/dev/null) || deps=""
-    if printf '%s\n' "$deps" | grep -qxE 'vite|astro|@sveltejs/kit|nuxt'; then
+    if printf '%s\n' "${deps}" | grep -qx 'astro'; then
+        port=4321
+    elif printf '%s\n' "${deps}" | grep -qx 'nuxt'; then
+        port=3000
+    elif printf '%s\n' "${deps}" | grep -qxE 'vite|@sveltejs/kit'; then
         port=5173
     else
         port=3000

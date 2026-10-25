@@ -353,10 +353,14 @@ async function writeResearchFile(path: string, content: string, expectedRevision
 
 **Pattern 3: Event Bus (Cross-Component)**
 
-For complex apps with multiple independent components:
+For an append-only feed with multiple independent components, load persisted items and subscribe to new ones. The shared `feedService` assigns stable IDs, persists each item before `add` resolves, and exposes `getItems(): Promise<readonly FeedItem[]>`. Emit events after persistence. Merge by ID so an item present in both the snapshot and a concurrent event appears once. Use the shared-store pattern or explicit update/delete events for mutable feeds. `reportError` is the application's visible error-reporting adapter.
 
 ```tsx
-type FeedItem = { bookId: string; content: string; headline: string };
+type FeedItem = { id: string; bookId: string; content: string; headline: string };
+
+function mergeFeedItems(snapshot: readonly FeedItem[], recent: readonly FeedItem[]): FeedItem[] {
+    return [...new Map([...snapshot, ...recent].map(item => [item.id, item])).values()];
+}
 
 // Shared event bus
 const agentEvents = new EventEmitter();
@@ -373,9 +377,16 @@ function FeedView() {
     const [items, setItems] = useState<FeedItem[]>([]);
 
     useEffect(() => {
-        const handler = (item: FeedItem) => setItems(prev => [...prev, item]);
+        let active = true;
+        const handler = (item: FeedItem) => setItems(prev => mergeFeedItems(prev, [item]));
         agentEvents.on('feed:new-item', handler);
+        void feedService.getItems().then(snapshot => {
+            if (active) setItems(recent => mergeFeedItems(snapshot, recent));
+        }).catch(error => {
+            if (active) reportError(error);
+        });
         return () => {
+            active = false;
             agentEvents.off('feed:new-item', handler);
         };
     }, []);

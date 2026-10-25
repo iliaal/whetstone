@@ -10,7 +10,7 @@ Never satisfy a worktree's gitignored dependency directory with a symlink to ano
 Before creating worktrees, detect the execution context:
 
 1. **Worktree support and permissions?** Inspect the installed `git worktree` commands and effective permissions before choosing a workflow. Check whether permitted operations allow writes to both the destination and repository administration data, resolving the common directory with `git rev-parse --git-common-dir`. Environment variables and path prefixes alone do not establish that worktrees are unavailable. Preserve requested isolation. If an isolated checkout is unavailable, serialize only in an exclusively owned checkout when that satisfies the task; otherwise report the limitation. Do not switch branches in a shared checkout as a fallback.
-2. **Bare repo?** If `git rev-parse --is-bare-repository` returns true, worktrees are the only way to have a working directory. Adjust paths accordingly.
+2. **Bare repo?** If `git rev-parse --is-bare-repository` returns true, use the manager's normal `create --no-env <branch> <base>` command. The destination is `<common-git-directory>/.worktrees/<branch>`. Confirm that location against the resolved common Git directory. The manager preserves path, base-commit, ownership, and cleanup checks from the bare repository or its linked checkouts. Creation never copies environment files, and `copy-env` refuses because no main checkout exists. No `.gitignore` or main-checkout marker is written in the bare repository.
 
 Adapt the workflow to the detected context rather than failing with a generic error.
 

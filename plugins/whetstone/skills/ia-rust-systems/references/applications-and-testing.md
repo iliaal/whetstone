@@ -17,7 +17,7 @@ See [cli-tools.md](./cli-tools.md) for config layering, logging setup, progress 
 - Handlers return `Result<impl IntoResponse, AppError>`. Implement `IntoResponse` for `AppError` to centralize error → status mapping.
 - Validate input at the boundary: `axum::extract::Json<T>` where `T: Deserialize + Validate` (use `validator` crate). Internal services trust input was validated.
 - Share state via `State<Arc<AppState>>`, not globals, not `lazy_static`.
-- Middleware via `tower::ServiceBuilder`: tracing → timeout → auth → CORS → handler. Order matters.
+- For browser-facing routes, order `tower::ServiceBuilder` layers as tracing → CORS → timeout → auth → handler. CORS must handle credential-free preflight and add headers to auth errors; actual application requests still require authentication.
 - **Resilience layers** (outbound clients, shared services): combine `LoadShed` + `ConcurrencyLimit` for backpressure, not unbounded queueing; full tower stack in [production-resilience.md](./production-resilience.md).
 
 See [axum-service.md](./axum-service.md) for project layout, extractors, error types, graceful shutdown, and OpenAPI generation.

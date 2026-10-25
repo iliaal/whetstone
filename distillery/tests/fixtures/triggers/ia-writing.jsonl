@@ -24,3 +24,15 @@
 {"prompt":"Rewrite these paragraphs for clarity","expect":true,"source":"audit-2026-10-03"}
 {"prompt":"Rewrite this sentence to make it clearer","expect":true,"source":"audit-2026-10-03"}
 {"prompt":"Remove AI slop from these blog posts","expect":true,"source":"audit-2026-10-03"}
+{"prompt": "Rewrite this incident report to preserve caveats but remove filler.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Draft a concise commit body for the retry fix.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Proofread this customer email and preserve British spelling.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Flag AI tells in this draft without rewriting it.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Write an MR description for this authorization change.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Edit the commit message to explain the behavior change.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Write a PHP serializer for this model.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review this migration plan for missing constraints.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Audit the test suite for weak assertions.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Generate a Markdown parser in TypeScript.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Inspect citation links in the API reference for HTTP failures.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write the commit message parser in Rust.", "expect": false, "source": "audit-2026-10-25"}

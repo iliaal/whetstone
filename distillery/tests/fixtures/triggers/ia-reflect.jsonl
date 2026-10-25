@@ -14,3 +14,16 @@
 {"prompt":"Implement the next feature","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Review this function for correctness","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Explain reflection in JavaScript","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Run a retrospective on this debugging session.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review lessons learned from the failed implementation.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Audit what went well or wrong in this session.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Reflect on this session and propose improvements.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review session effectiveness and identify repeated mistakes.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Audit this session for repeated mistakes.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Diagnose what went wrong with the live payment endpoint.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Implement a reflection helper for PHP properties.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review this pull request for correctness.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Plan the next release.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write a summary of this architecture document.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Investigate what went wrong with the current HTTP request.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review the session expiry code for authentication defects.", "expect": false, "source": "audit-2026-10-25"}

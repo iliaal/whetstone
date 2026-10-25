@@ -14,3 +14,16 @@
 {"prompt":"Build a calendar grid in CSS","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Fix a SQL query","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Write a release note","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Design a system prompt and app-state message boundary for our customer-support assistant.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Build an MCP server that exposes inventory discovery and paginated tools.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Design a shared workspace where the assistant and user edit the same files.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Design durable human approval for an agent-drafted email so concurrent workers cannot double-send it.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Define JSON output, exit codes, and noninteractive behavior for a CLI used by agents.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Design approval boundaries for an assistant that sends email.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review the circular imports between the billing and notification services.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Add a React form for editing customer profiles.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Rewrite the wording of this deployment runbook.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain how PHP generators use memory.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Coordinate three reviewers to inspect the database migration.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Define exit codes for a Linux backup CLI.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Design a shared workspace for two human editors.", "expect": false, "source": "audit-2026-10-25"}

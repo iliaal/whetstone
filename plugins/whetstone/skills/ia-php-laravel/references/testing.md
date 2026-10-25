@@ -65,17 +65,19 @@ public static function titleLengthProvider(): array
 
 ## Running Tests
 
-For large test suites, call PHPUnit directly to avoid artisan's memory overhead:
+For large serial test suites, call PHPUnit directly to avoid artisan's memory overhead. Use Laravel's runner for parallel database-backed suites:
 
 ```bash
 ./vendor/bin/phpunit                              # all tests (direct, lower memory)
 ./vendor/bin/phpunit --filter=PostTest             # by name
-./vendor/bin/paratest --processes=auto   # parallel via ParaTest (what artisan test --parallel wraps)
+php artisan test --parallel                       # Laravel runner with per-worker test databases
 ./vendor/bin/phpunit --coverage-text               # coverage report; no threshold flag
 
 php artisan test                                   # small suites or quick runs
 php -d memory_limit=1G artisan test                # if artisan needed on large suites
 ```
+
+Direct ParaTest is appropriate only when the project supplies and verifies an equivalent parallel bootstrap and per-worker database isolation. ParaTest's `TEST_TOKEN` alone does not enable Laravel's database setup callbacks. Configure disposable test databases before either runner starts.
 
 Enforce the 80% target through the project's coverage gate. Native PHPUnit has no `--min` option; if using Laravel's coverage wrapper, confirm `php artisan test --help` supports `--coverage --min=80` and allow for Artisan's memory overhead.
 

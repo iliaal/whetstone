@@ -28,3 +28,15 @@
 {"prompt":"Add a new configuration flag","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Review the incident report describing a failure","expect":false,"source":"audit-2026-09-07-boundary"}
 {"prompt":"The regression tests cover intermittent errors","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt": "Diagnose why the queue worker hangs after the second job.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Troubleshoot this intermittent deadlock in our service.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Fix the regression that makes the checkout test fail.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Investigate this stack trace and identify the root cause.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Diagnose the worker deadlock after shutdown.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Repair the regression in invoice validation.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Write documentation for the API error codes.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Design a new retry policy for a proposed queue service.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Audit whether these existing tests assert meaningful behavior.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Build a static mockup of the error page.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Document hang detection and deadlock prevention.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review regression test coverage for the previous fix.", "expect": false, "source": "audit-2026-10-25"}

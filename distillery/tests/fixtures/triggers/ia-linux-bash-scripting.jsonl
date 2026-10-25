@@ -8,3 +8,16 @@
 {"prompt": "write a Python CLI for log parsing", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "convert this bash logic into a Node.js script", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
 {"prompt": "rewrite this in Go", "expect": false, "added_in": "3.0.3", "source": "tier1-floor-backfill"}
+{"prompt": "Write a bash script that preserves a subprocess exit code.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Fix the shellcheck warnings in deploy.sh.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review this Bash atomic config replacement helper.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Create a cron shell script with flock locking.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Harden a Linux shell CLI's flag parser.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review this Bash function for safe option parsing.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Write a Python command line tool.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review a Dockerfile's Node dependency layer.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain how to use Bash history interactively.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Implement a Rust CLI with clap.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review the screenplay for the Linux documentary.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain shell history expansion in an interactive terminal.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review these Bash helpers.", "expect": true, "source": "audit-2026-10-25"}

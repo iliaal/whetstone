@@ -18,3 +18,18 @@
 {"prompt":"Execute the already approved plan","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Fix this misspelled word","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Review this finished plan for clarity","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Create an implementation plan for importing account history.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Break the migration into phases with verification and exit criteria.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Prepare a durable plan so this multi-phase feature can resume next session.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Deepen the existing plan where API contracts are unresolved.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Split the implementation into phases with acceptance criteria.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Rewrite the SQL query plan to use the new index.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Review the completed patch for authorization defects.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Run the already documented migration command.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain the AWS enterprise support plan.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write a SQL query plan explanation for the slow join.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Create a query plan using the new index.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Rewrite the SQL query plan to change the join order.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Plan the database migration.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Plan a new feature.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Explain the SQL query plan for this request.", "expect": false, "source": "audit-2026-10-25"}

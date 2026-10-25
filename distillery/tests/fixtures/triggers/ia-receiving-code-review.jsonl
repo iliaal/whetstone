@@ -14,3 +14,17 @@
 {"prompt":"Review this code from scratch","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Create a new pull request","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Write a parser","expect":false,"source":"audit-2026-09-07"}
+{"prompt": "Address the reviewer feedback on this pull request.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "The reviewer says to add retries; verify whether that suggestion is correct.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Respond to these PR review comments with evidence.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Implement the reviewer's requested null checks if they are necessary.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Push back on the review feedback claiming this function is unused.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "The reviewer requests a guard around this null result.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Review this new pull request for security defects.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write a new retry helper for HTTP requests.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Explain what peer review means.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Audit the existing tests for mocked-away subjects.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Resolve this merge conflict in package.json.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Write reviewer guidelines for the next code review.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "The reviewers requested null checks.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "The reviewer commented that this lock is redundant.", "expect": true, "source": "audit-2026-10-25"}

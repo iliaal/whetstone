@@ -28,7 +28,7 @@ declare -A SKILL_NEGATIVE
 
 # --- Tier 1: Methodology (process/approach skills) ---
 
-SKILL_PATTERNS[ia-planning]='plan.*(feature|task|sprint|this|implement|approach|phase|change|refactor|migration)|break.?down.*(feature|task)|implementation.?plan|(create|make|need|start|write|draft|let.?s).*plan|vertical.?slice|\b(record|plan|identify).{0,20}\barchitecture decisions.{0,20}\bbefore coding\b'
+SKILL_PATTERNS[ia-planning]='\bplan +(((the|this|our|a|an|how to|for) +){1,2}([a-z0-9-]+ +){0,3})?(implementation|features?|tasks?|sprints?|approach|phases?|changes?|refactor|migration)\b|break.?down.{0,40}\b(feature|task)\b|implementation.?plan|\b(create|make|need|start|write|draft|deepen|prepare|refine)\b +((a|an|the|this|our|existing|durable|implementation|multi-phase|migration|project|feature|release|sprint|rollout) +){0,5}plan\b|let.?s +plan\b|vertical.?slice|\b(record|plan|identify).{0,20}\barchitecture decisions.{0,20}\bbefore coding\b|\b(break|split|divide|decompose)\b.{0,30}\b(feature|task|migration|implementation)\b.{0,30}\b(phases|steps|tasks|slices)\b'
 SKILL_TIERS[ia-planning]=1
 
 # Intent-anchored symptoms: bare `crash(es)`, unbounded `why.*fail`, and
@@ -36,9 +36,9 @@ SKILL_TIERS[ia-planning]=1
 # rubrics ("why it's wrong (concrete failure)"), and test-coverage reviews ("missing
 # regression test"). Hence `debug\s` (skips `debugging/foo-crash.md` path lists);
 # `why\s+<aux>` question form (rubric "why it's/why-real" lacks the aux); crash needs
-# a subject/temporal anchor; regression needs a break-symptom, not "test/fix". Plain
-# groups only: PCRE `(?:...)` is not ERE.
-SKILL_PATTERNS[ia-debugging]='debug(ging)?\s.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+((the|this)\s+)?bug|why\s+(is|are|was|were|does|did|do|isn.t|doesn.t|won.t|can.t|would|might).{0,30}(fail|crash|broke|error|hang|wrong|null|undefined|throw|freeze|not.?work)|(server|service|app|process|function|test|page|binary|worker|browser|daemon|program|script|query|request|keeps?|still|randomly|intermittent|production|prod|deploy).{0,15}crash(ed|ing|es)?|crash(ed|ing|es).{0,25}(after|when|on.?start|in.?prod|randomly|intermittent|during|deploy|repeatedly|every)|troubleshoot|(analyz|read|paste|inspect|got|this|following).{0,15}stack.?trace|broken.?test|test.{0,10}broken|flaky.?test|regression.{0,15}(bug|broke|broken|fail|introduced|caused)|unexpected.?behav|\b(diagnos|investigat)[a-z]*.{0,30}\b(failure|regression|crash|error|bug)\b'
+# a subject/temporal anchor. Regression needs a break-symptom or an explicit repair
+# verb, not a test-coverage mention. Plain groups only: PCRE `(?:...)` is not ERE.
+SKILL_PATTERNS[ia-debugging]='debug(ging)?\s.{0,30}(error|bug|fail|crash|issue|broken|problem|trace|stack|regression)|fix\s+((the|this)\s+)?bug|why\s+(is|are|was|were|does|did|do|isn.t|doesn.t|won.t|can.t|would|might).{0,30}(fail|crash|broke|error|hang|wrong|null|undefined|throw|freeze|not.?work)|(server|service|app|process|function|test|page|binary|worker|browser|daemon|program|script|query|request|keeps?|still|randomly|intermittent|production|prod|deploy).{0,15}crash(ed|ing|es)?|crash(ed|ing|es).{0,25}(after|when|on.?start|in.?prod|randomly|intermittent|during|deploy|repeatedly|every)|troubleshoot|(analyz|read|paste|inspect|got|this|following).{0,15}stack.?trace|broken.?test|test.{0,10}broken|flaky.?test|regression.{0,15}(bug|broke|broken|fail|introduced|caused)|unexpected.?behav|\b(diagnos|investigat)[a-z]*.{0,30}\b(failure|regression|crash|error|bug|hang(s|ing)?|deadlocks?|freez(e|es|ing))\b|\b(fix|repair|resolve)\b.{0,20}\bregression\b'
 SKILL_TIERS[ia-debugging]=1
 
 # Bounded gaps + word anchors: unbounded `review.*code` / `audit.*code` spans
@@ -47,16 +47,16 @@ SKILL_TIERS[ia-debugging]=1
 SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bpatch(es)?\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu|\breview.{0,30}\bpull request\b'
 SKILL_TIERS[ia-code-review]=1
 
-SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\brefactor\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b'
+SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\b(refactor|simplif[a-z]*)\b.{0,50}\b(code|functions?|methods?|modules?|classes|class|parsers?|handlers?|implementation|data pipeline|services?|components?|router|middleware)\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b|\brefactor\b.{0,50}\.(php|py|rs|[cm]?[jt]sx?|c|h|cpp|hpp)\b'
 SKILL_TIERS[ia-simplifying-code]=1
 
 SKILL_PATTERNS[ia-brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.{0,40}(approach|idea|option|feature)|compare.{0,30}approach|clarify.{0,30}(requirement|ambigu)|vague.{0,30}(idea|feature|requirement)'
 SKILL_TIERS[ia-brainstorming]=1
 
-SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,15}(commit|push|pr|merge|complet)|mark.{0,15}(done|complet)|ready.?to.?merge|claim.{0,30}(fixed|done|complete)|\bverify.{0,20}\bfix.{0,30}\bdeclaring.{0,10}\bdone\b'
+SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,15}(commit|push|pr|merge|complet)|mark.{0,15}(done|complet)|ready.?to.?merge|claim.{0,30}(fixed|done|complete)|\bverify.{0,20}\bfix.{0,30}\bdeclaring.{0,10}\bdone\b|\b(check|verify|confirm)\b.{0,35}\btests? (actually )?pass\b.{0,20}\bbefore (committ|push|merg)|\bbefore (handing off|handoff|hand-off)\b.{0,30}\b(package|cli|binary|implementation|feature|patch|fix|change|branch|build|release)\b.{0,30}\b(verify|check|confirm)\b|\b(verify|check|confirm)\b.{0,30}\b(package|cli|binary|implementation|feature|patch|fix|change|branch|build|release)\b.{0,40}\bbefore (handing off|handoff|hand-off)\b'
 SKILL_TIERS[ia-verification-before-completion]=1
 
-SKILL_PATTERNS[ia-receiving-code-review]='reviewer.{0,20}(said|suggest|comment|flag|asked)|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)|\b(check|evaluate|assess).{0,30}\bcode review feedback\b'
+SKILL_PATTERNS[ia-receiving-code-review]='\breviewers?\b.{0,20}\b(said|says?|suggest[a-z]*|comment(s|ed|ing)?|flag[a-z]*|asked|requests?|requested)\b|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)|\b(check|evaluate|assess).{0,30}\bcode review feedback\b'
 SKILL_TIERS[ia-receiving-code-review]=1
 
 SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b|\badd( (a|an|some|more|new|missing|few|basic|unit|integration|e2e|end-to-end|regression|property|snapshot|smoke|failing|edge-case))+ tests?([ ,]+(for|to|that|covering|around|on)\b|[ .!?]*$)'
@@ -73,10 +73,10 @@ SKILL_TIERS[ia-test-audit]=1
 
 # --- Tier 2: Domain/Language (language/framework-specific) ---
 
-# Bounded gaps + \.php\b: unbounded `test.*(...).*\.php` spans multi-KB prompts and
-# `\.php` matches inside `.phpt`, injecting into php-src / extension C tasks the
-# description explicitly excludes.
-SKILL_PATTERNS[ia-php-laravel]='laravel|eloquent|\bblade\b|\bartisan\b|\bphp\b.{0,20}(controller|model|service|middleware|migration|queue|job|route|facade|factory|seeder)|feature.?test.{0,60}\.php\b|unit.?test.{0,60}\.php\b|test.{0,40}(controller|model|service|action|job|command|endpoint).{0,60}\.php\b|\bformrequest\b.{0,20}\b(authorization|validation|rule)\b'
+# Generic PHP tests, jobs, and factories also occur in native extensions and
+# standalone libraries. Require framework names, controller/middleware context,
+# or controller-test paths; keep .php bounded so .phpt remains outside this skill.
+SKILL_PATTERNS[ia-php-laravel]='\blaravel\b|\beloquent\b|\bblade\b|\bartisan\b|\bphp\b.{0,20}\bcontrollers?\b.{0,40}\b(middleware|routes?|requests?)\b|\bphp\b.{0,20}\b(middleware|routes?)\b.{0,40}\bcontrollers?\b|\btest(s|ing)?\b.{0,80}(app/http/controllers/[a-z0-9_/]+\.php\b|tests/feature/[a-z0-9_/]*controller[a-z0-9_]*\.php\b)|\bformrequest\b.{0,20}\b(authorization|validation|rule)\b'
 SKILL_TIERS[ia-php-laravel]=2
 
 # React-intent required near .tsx/.jsx: bare `\bjsx\b|\btsx\b` fires on any .tsx path
@@ -130,7 +130,7 @@ SKILL_TIERS[ia-postgresql]=2
 SKILL_PATTERNS[ia-terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'
 SKILL_TIERS[ia-terraform]=2
 
-SKILL_PATTERNS[ia-linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script'
+SKILL_PATTERNS[ia-linux-bash-scripting]='bash.?script|shell.?script|linux.?automation|system.?script|cron.?job|deployment.?script|\bshellcheck\b|\b(review|fix|harden|write|create|implement)\b.{0,35}\b(bash|shell)\b.{0,40}\b(helpers?|clis?|parsers?|scripts?|functions?)\b'
 SKILL_TIERS[ia-linux-bash-scripting]=2
 
 SKILL_PATTERNS[ia-pinescript]='pine.?script|pinescript|tradingview.{0,30}\b(pine|indicators?|strateg(y|ies)|charts?|scripts?)\b|\bindicator\b.{0,20}(pine|trading.?view)|\bstrategy\b.{0,20}(pine|trading.?view)|\.pine\b|\btradingview\b.{0,20}\brepainting\b'
@@ -141,16 +141,16 @@ SKILL_TIERS[ia-pinescript]=2
 # `\bui\b` word-bounds the token; `(design|build)\s` requires a space so CamelCase
 # file names like `BuildDashboardProviders.ts` do not fire; the `frontend.*` and
 # `ai.?generated.*` spans are bounded.
-SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build)\s.{0,20}(web.?component|web.?page|landing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|color.?palette|visual.?identity|\bredesign.{0,30}\bpage layout\b'
+SKILL_PATTERNS[ia-frontend-design]='frontend.{0,25}(design|redesign|aesthetic|interface|styling)|\bui\b.{0,25}(design|redesign|build|layout|mockup|screen)|(design|redesign|build|create)\s.{0,20}(web.?component|web.?page|landing.?page|pricing.?page|dashboard|hero.?section)|design.{0,20}too.?generic|ai.?generated.{0,20}(design|look|ui)|\b(design|choose|pick|refine|adjust|create)\b.{0,25}\bcolor palette\b|visual.?identity|\bredesign.{0,30}\bpage layout\b|\b(implement|recreate|match|replicate)\b.{0,40}\b(web.?page|page|ui|interface|design) screenshot\b|\b(refine|adjust|improve)\b.{0,30}\b(typography|spacing|type scale|visual hierarchy)\b.{0,35}\b(page|interface|screen|layout|dashboard|website|checkout)\b|\b(implement|recreate|match|replicate)\b.{0,40}\bscreenshot\b.{0,20}\b(faithfully|fidelity|pixel|spacing|typography|layout)\b'
 SKILL_TIERS[ia-frontend-design]=2
 
 
-SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?(tool|server)|self.?modif|agent.?(native|loop|hook)|prompt.?native|pretooluse|posttooluse|\bdesign.{0,20}\bsystem prompt.{0,30}\bfile-editing agent\b'
+SKILL_PATTERNS[ia-agent-native-architecture]='autonomous.?agent|mcp.?(tool|server)|self.?modif|agent.?(native|loop|hook)|prompt.?native|pretooluse|posttooluse|\bdesign.{0,20}\bsystem prompt.{0,30}\bfile-editing agent\b|\b(design|build|define|review|architect)\b.{0,40}\b(system prompts?|shared workspace|human approvals?|approval (boundaries|flows?|workflow))\b.{0,65}\b(agents?|assistants?)\b|\b(define|design|build|adapt)\b.{0,100}\bcli\b.{0,25}\b(used by|for|consumed by) agents?\b'
 SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
 
-SKILL_PATTERNS[ia-writing]='\brewrite\b.{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|readme|descriptions?|wording)\b|\brewrite +((the|this|our|my) +)?((implementation|migration|project|release|sprint|rollout|feature) +)?plan\b|humanize|improve.*text|fix.*(tone|wording)|proofread|\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b.{0,60}(remove.{0,20}ai.?(language|tell|slop)|ai[- ]?slop)|remove.{0,20}ai.?(language|tell|slop).{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b|\b(is|was) this ai[- ]?slop\b|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|\bwrite\b.{0,60}(pull.?request|\bplan\b)'
+SKILL_PATTERNS[ia-writing]='\brewrite\b.{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|reports?|readme|descriptions?|wording)\b|\brewrite +((the|this|our|my) +)?((implementation|migration|project|release|sprint|rollout|feature) +)?plan\b|humanize|improve.*text|fix.*(tone|wording)|proofread|\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b.{0,60}(remove.{0,20}ai.?(language|tell|slop)|ai[- ]?slop)|remove.{0,20}ai.?(language|tell|slop).{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b|\b(is|was) this ai[- ]?slop\b|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|\bwrite\b.{0,60}(pull.?request|\bplan\b)|\b(write|draft|rewrite|edit|polish)\b.{0,30}\b(commit (body|bodies|message)|mr description|merge request description)([.!?]*$| +(for|to|about|with|that|which|so|explaining|describing)\b)'
 SKILL_TIERS[ia-writing]=3
 
 # Intent-anchored: bare `claude\.md` fires on any prompt citing CLAUDE.md as
@@ -163,7 +163,7 @@ SKILL_TIERS[ia-md-docs]=3
 SKILL_PATTERNS[ia-meta-prompting]='/think|/verify|/adversarial|argue.?against|what.?could.?break|deep.?review|meta.?prompt|(^| )/(premortem|confidence|edge|assumptions|blindspot|tensions|flip)\b|stress.?test|\bsteelman\b|devil.?s.?advocate|\bstrongest counterargument\b|\b(analy[sz]e|examine).{0,20}\bassumptions.{0,25}\b(overturn|invalidate|undermine).{0,20}\bconclusion\b'
 SKILL_TIERS[ia-meta-prompting]=3
 
-SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong|\breflect on.{0,20}\bsession\b'
+SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?learned|what.?went.?wrong.{0,30}\b(last|previous|completed|finished)\b.{0,20}\b(deployment|session|sprint|release|migration)\b|\breflect on.{0,20}\bsession\b|\b(audit|review)\b.{0,55}\b(session|sprint)\b.{0,35}\b(effectiveness|mistakes|lessons|improvements|went (well|wrong))\b|\b(audit|review)\b.{0,40}\b(went (well|wrong)|lessons|mistakes)\b.{0,35}\b(session|sprint)\b'
 SKILL_TIERS[ia-reflect]=3
 
 

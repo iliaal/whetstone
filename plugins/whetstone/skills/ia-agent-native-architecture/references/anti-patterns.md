@@ -41,7 +41,7 @@ prompt: "Rate importance 1-5 based on actionability, store feedback, notify if >
 User: "Write something about Catherine the Great in my feed"
 Agent: "What feed? I don't understand what system you're referring to."
 ```
-Fix: Inject available resources, capabilities, and vocabulary into system prompt.
+Fix: Supply resource records and discovered capability inventories as labeled runtime data or tool results. Keep developer-authored tool definitions and vocabulary in trusted instructions. Follow [dynamic-context-injection.md](./dynamic-context-injection.md) for the provider-channel boundary.
 
 **Orphan UI actions**: User can do something through the UI that the agent can't achieve. Fix: maintain parity.
 

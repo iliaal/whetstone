@@ -41,7 +41,7 @@ Record the source checkout, intended commit, and any workspace changes before ca
 REPRO_REPO=$(git rev-parse --show-toplevel)
 REPRO_HEAD=$(git rev-parse --verify 'HEAD^{commit}')
 git status --short
-PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
+PORT=$(bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port")
 BASE_URL="http://localhost:$PORT"
 ```
 

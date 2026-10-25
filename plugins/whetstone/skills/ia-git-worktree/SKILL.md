@@ -21,9 +21,9 @@ description: >-
 
 Never call `git worktree add` directly; always use the `worktree-manager.sh` script.
 
-The script handles critical setup that raw git commands don't:
+The manager handles setup:
 1. Copies `.env`, `.env.local`, `.env.test`, etc. from the main checkout, only when the base is the default branch or a local branch that already contains the fetched commit (a branch that exists only on `origin` gets none); it never overwrites or follows an existing file or symlink in the new tree
-2. Ensures `.worktrees` is in `.gitignore`
+2. Ensures `.worktrees` is in the main checkout's `.gitignore`
 3. Creates consistent directory structure
 4. After creation, install dependencies if detected: `package.json` → `npm install`, `composer.json` → `composer install`, `pyproject.toml` → `pip install -e .`, `go.mod` → `go mod download`
 
@@ -53,7 +53,7 @@ Cleanup refuses the current checkout, another session's tree, and tracked, untra
 
 ## Safety Verification
 
-Before creating a worktree, verify the worktree directory is gitignored:
+With a main checkout, verify `.worktrees` is ignored before creation:
 
 ```bash
 # Verify .worktrees is ignored (should output ".worktrees")
@@ -82,7 +82,7 @@ Use `env -C <worktree> <cmd>` for every command, never `cd`. A shell's cwd persi
 ## Verify
 
 - `git worktree list` shows the new entry
-- `.worktrees` directory confirmed in `.gitignore`
+- `.worktrees` is ignored, or inside the bare common directory
 - Dependencies installed in the worktree (trusted bases; untrusted bases follow the rules above)
 - Baseline test suite passes in the worktree
 

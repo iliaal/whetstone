@@ -684,7 +684,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] For external APIs where agent should have full access, use dynamic discovery
 - [ ] Include a `list_*` or `discover_*` tool for each API surface
 - [ ] Use string inputs (not enums) when the API validates
-- [ ] Inject available capabilities into system prompt at runtime
+- [ ] Supply discovered capability inventories as labeled runtime data or tool results; keep trusted static tool definitions in system/developer instructions
 - [ ] Only use static tool mapping if intentionally limiting agent scope
 
 **CRUD Completeness:**
