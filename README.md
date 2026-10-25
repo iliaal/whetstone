@@ -201,7 +201,7 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 
 | Agent | Description |
 |-------|------------|
-| [ia-accessibility-tester](plugins/whetstone/agents/ia-accessibility-tester.md) | WCAG 2.1 audit across keyboard navigation, screen reader compatibility, contrast ratios, ARIA attributes, and form accessibility. For compliance checks before launch. |
+| [ia-accessibility-tester](plugins/whetstone/agents/ia-accessibility-tester.md) | WCAG 2.1/2.2 audit across keyboard navigation, screen reader compatibility, contrast ratios, ARIA attributes, and form accessibility. For compliance checks before launch. |
 | [ia-architecture-strategist](plugins/whetstone/agents/ia-architecture-strategist.md) | Evaluates architectural soundness, design pattern compliance, and structural consistency. For service additions, refactors, or codebase pattern audits. |
 | [ia-cloud-architect](plugins/whetstone/agents/ia-cloud-architect.md) | Analyzes infrastructure against Well-Architected Framework principles: cost optimization, scalability, disaster recovery across AWS, Azure, and GCP. |
 | [ia-code-simplicity-reviewer](plugins/whetstone/agents/ia-code-simplicity-reviewer.md) | Produces a simplification report (no code changes) identifying YAGNI violations and over-engineering. For post-implementation analysis. |
@@ -231,7 +231,7 @@ Specialized subagents dispatched by the main agent or by workflow commands. Each
 | Agent | Description |
 |-------|------------|
 | [ia-bug-reproduction-validator](plugins/whetstone/agents/ia-bug-reproduction-validator.md) | Reproduces bug reports and identifies root causes without applying fixes. Validates whether reports are genuine bugs before engineers invest. |
-| [ia-deployment-verification-agent](plugins/whetstone/agents/ia-deployment-verification-agent.md) | Generates Go/No-Go deployment runbooks with SQL verification queries, rollback procedures, and monitoring plans for high-risk changes. Runs after database-guardian validates migration code. |
+| [ia-deployment-verification-agent](plugins/whetstone/agents/ia-deployment-verification-agent.md) | Generates Go/No-Go deployment runbooks with SQL verification queries, rollback procedures, and monitoring plans for high-risk changes, including plans needed before final migration approval. |
 | [ia-infrastructure-engineer](plugins/whetstone/agents/ia-infrastructure-engineer.md) | Full deployment-lifecycle coverage: CI/CD pipelines (blue-green, canary, rolling, feature flags), Docker and containerization, observability stacks (metrics/logs/traces), and incident management. Not for DB migration verification (use deployment-verification-agent). |
 | [ia-pr-comment-resolver](plugins/whetstone/agents/ia-pr-comment-resolver.md) | Implements a single pre-triaged PR comment where the action is already agreed on. For mechanical fixes, not judgment calls. |
 
@@ -266,7 +266,7 @@ All commands carry the `ia-` prefix to avoid collisions with Claude Code built-i
 | `/ia-changelog` | Build changelogs from recent merges. |
 | `/ia-reproduce-bug` | Reproduce bugs using logs and console output. |
 | `/ia-report-bug` | Report a bug in the plugin. |
-| `/ia-agent-native-audit` | Run agent-native architecture review with scored principles. |
+| `/ia-agent-native-audit` | Assess structural coverage and behavioral evidence for agent-native principles. |
 
 ## Design
 

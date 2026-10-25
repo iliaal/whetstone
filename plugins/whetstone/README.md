@@ -6,10 +6,10 @@ AI-powered development tools that get smarter with every use. Make each unit of 
 
 | Component | Count |
 |-----------|-------|
-| Agents | 19 |
-| Commands | 22 |
-| Skills | 32 |
-| Hooks | 1 |
+| Agents | 18 |
+| Commands | 19 |
+| Skills | 29 |
+| Hooks | 4 |
 | MCP Servers | 1 |
 
 ## Agents
@@ -20,7 +20,7 @@ All agent files live flat under `agents/`. Categories below are editorial: group
 
 | Agent | Description |
 |-------|-------------|
-| [`ia-accessibility-tester`](agents/ia-accessibility-tester.md) | WCAG 2.1 accessibility audit: keyboard, screen reader, contrast, ARIA, forms |
+| [`ia-accessibility-tester`](agents/ia-accessibility-tester.md) | WCAG 2.1/2.2 accessibility audit: keyboard, screen reader, contrast, ARIA, forms |
 | [`ia-architecture-strategist`](agents/ia-architecture-strategist.md) | Architecture, design patterns, naming conventions, and structural integrity |
 | [`ia-cloud-architect`](agents/ia-cloud-architect.md) | Cloud infrastructure review, cost optimization, DR, migration strategies |
 | [`ia-code-simplicity-reviewer`](agents/ia-code-simplicity-reviewer.md) | Final pass for simplicity and minimalism |
@@ -30,7 +30,7 @@ All agent files live flat under `agents/`. Categories below are editorial: group
 | [`ia-security-sentinel`](agents/ia-security-sentinel.md) | Security audits and vulnerability assessments |
 | [`ia-spec-flow-analyzer`](agents/ia-spec-flow-analyzer.md) | Analyze user flows and identify gaps in specifications |
 
-### Research (4)
+### Research (3)
 
 | Agent | Description |
 |-------|-------------|
@@ -73,7 +73,7 @@ All workflow commands use the `ia-` prefix to avoid collisions with built-in com
 | Command | Description |
 |---------|-------------|
 | `/ia-lfg` | Full autonomous engineering workflow (plan, build, review, ship). Use `--swarm` for parallel execution |
-| `/ia-agent-native-audit` | Run agent-native architecture review with scored principles |
+| `/ia-agent-native-audit` | Assess structural coverage and behavioral evidence for agent-native principles |
 | `/ia-deepen-plan` | Enhance plans with parallel research agents for each section |
 | `/ia-changelog` | Create engaging changelogs for recent merges |
 | `/ia-report-bug` | Report a bug in the plugin |

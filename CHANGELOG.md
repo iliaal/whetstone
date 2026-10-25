@@ -5,6 +5,36 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.3] - 2026-10-25
+
+Patch: 30 reference-repository improvements and 45 audit fixes strengthened review coverage, runtime guidance, browser verification, and skill routing. Nine earlier commits corrected comparison, manifest, distillery, and documentation behavior. 11 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
+
+### Changed
+
+- `ia-code-review` separated staged and unstaged review coverage, retrieved every PR discussion channel and page, and required caller adoption before honoring repository-defined policy exceptions. It also added parser-agreement checks, Bun startup isolation, and Claude credential-file exclusions for external review.
+- `ia-agent-native-architecture` preserved tool-call identity through checkpoints and compaction, separated runtime data from trusted instructions, followed MCP discovery cursors, and strengthened parity and recovery tests. Architecture audits separated structural coverage from evidence of emergent capability or improvement over time.
+- `ia-php-laravel` added guidance for expanded input-key limits, reused object identities in `once()`, `Http::batch()` failure accounting, relation restore writes, PostgreSQL cache-lock contention, and associative-array bypasses in scalar `Rule::anyOf()` alternatives. Parallel database tests retained Laravel's per-worker isolation.
+- `ia-nodejs-backend` covered client-safe transport errors and incomplete-download signaling. `ia-postgresql` required whole-transaction retries and accounted for PostgreSQL 18 skip scans. `ia-python-services` isolated user-level uv settings while preserving repository configuration.
+- `ia-verification-before-completion` required final frontend checks against a fresh production build.
+- `ia-md-docs` recognized effective Codex override files and nested guidance. `ia-reflect` deduplicated inherited evidence by originating incident.
+- `/ia-test-browser` retained console evidence and distinct captures, verified submitted record identities, and exercised virtualized collections beyond the initial viewport. `/ia-feature-video` checked the encoded MP4 and GIF before local handoff or upload.
+- `/ia-work` supported local tracking when task tools were unavailable and reconciled interrupted mutations before replay.
+
+### Fixed
+
+- `ia-git-worktree` supported bare repositories while retaining ownership and cleanup safeguards. Its manager and `ia-planning` preserved existing ignore entries when `.gitignore` lacked a trailing newline.
+- `ia-c-systems` corrected claims about function-specific optimization and what a clean sanitizer run proves. `ia-rust-systems` corrected CORS ordering, tracing field exposure, capacity errors, and retry boundaries.
+- `ia-react-frontend` corrected asynchronous-effect tests and Tailwind class-order configuration. `ia-test-audit` required a failing control to establish that type assertions run; `ia-writing-tests` preserved the tested command's exit status before matching output.
+- Skill routing narrowed unrelated matches for `ia-php-laravel`, `ia-planning`, `ia-simplifying-code`, and `ia-reflect`, and expanded missed requests for debugging, frontend design, review feedback, verification, shell scripting, agent architecture, and writing. Added 155 trigger regression cases.
+- Migration review ran initial database analysis, deployment planning, and final database assessment in order. Historical analysis stayed pinned to the requested revision, and Figma review could discover its configured MCP tools.
+- Setup checks detected missing `flock` and distinguished install commands from manual instructions. Browser helpers corrected Astro and Nuxt ports, handled plugin paths containing spaces, and rejected failed or redirected artifact URLs.
+
+### For contributors
+
+- Comparison tooling recognized agents-only Git repositories, kept differently typed names distinct in gap reports, and followed CommonMark dependencies when snapshotting skills.
+- Skill evolution preserved complete frontmatter, token counting accepted literal tokenizer markers, and manifest generation retained trigger-removal history.
+- SPEC generation handled folded descriptions without a chomping indicator and retained its executable entry point. README tables and counts matched shipped components and the current workflow.
+
 ## [5.1.2] - 2026-10-19
 
 Patch: a reference-repo sync and its follow-up audit corrected or added guidance in 23 skills, 4 agents, and 3 commands, session harvesting reads SubagentStart skill injections again, and five converter and script fixes landed. 15 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
