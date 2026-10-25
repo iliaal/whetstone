@@ -9,7 +9,7 @@ import sys
 import zipfile
 
 
-def package_files(repo_root: Path) -> dict[str, bytes]:
+def package_files(repo_root: Path) -> dict[str, tuple[bytes, int]]:
     plugin_root = repo_root / "plugins/whetstone"
     source_manifest = json.loads((plugin_root / ".codex-plugin/plugin.json").read_text())
     manifest = {
@@ -28,26 +28,31 @@ def package_files(repo_root: Path) -> dict[str, bytes]:
         raise ValueError("Public short description exceeds 30 characters")
 
     tracked = subprocess.run(
-        ["git", "ls-files", "-z", "--", "plugins/whetstone/skills/"],
+        ["git", "ls-files", "--stage", "-z", "--", "plugins/whetstone/skills/"],
         cwd=repo_root,
         check=True,
         capture_output=True,
         timeout=30,
     ).stdout.decode("utf-8").split("\0")
     files = {
-        ".codex-plugin/plugin.json": (json.dumps(manifest, indent=2) + "\n").encode(),
-        "assets/whetstone.svg": (repo_root / "packaging/openai/whetstone.svg").read_bytes(),
-        "LICENSE": (plugin_root / "LICENSE").read_bytes(),
+        ".codex-plugin/plugin.json": ((json.dumps(manifest, indent=2) + "\n").encode(), 0o100644),
+        "assets/whetstone.svg": ((repo_root / "packaging/openai/whetstone.svg").read_bytes(), 0o100644),
+        "LICENSE": ((plugin_root / "LICENSE").read_bytes(), 0o100644),
     }
-    for relative in tracked:
-        if not relative:
+    for record in tracked:
+        if not record:
             continue
+        metadata, relative = record.split("\t", 1)
+        mode, _, stage = metadata.split()
         path = repo_root / relative
         if path.name == "SPEC.md":
             continue
+        if stage != "0" or mode not in {"100644", "100755"}:
+            raise ValueError(f"Skill resource must be a regular file without index conflicts: {relative}")
         if path.is_symlink() or not path.is_file():
             raise ValueError(f"Skill resource must be a regular file: {relative}")
-        files[path.relative_to(plugin_root).as_posix()] = path.read_bytes()
+        # Use Git modes, not checkout permissions, to keep archives reproducible.
+        files[path.relative_to(plugin_root).as_posix()] = (path.read_bytes(), int(mode, 8))
     if not any(name.endswith("/SKILL.md") for name in files):
         raise ValueError("Package has no tracked skills")
     return files
@@ -57,10 +62,11 @@ def build_archive(repo_root: Path, output: Path) -> int:
     files = package_files(repo_root)
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "x", compression=zipfile.ZIP_DEFLATED) as archive:
-        for name, contents in sorted(files.items()):
+        for name, (contents, mode) in sorted(files.items()):
             entry = zipfile.ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
             entry.compress_type = zipfile.ZIP_DEFLATED
-            entry.external_attr = 0o100644 << 16
+            entry.create_system = 3  # Unix permissions, including when built on Windows.
+            entry.external_attr = mode << 16
             archive.writestr(entry, contents)
     return sum(name.endswith("/SKILL.md") for name in files)
 
