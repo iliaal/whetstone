@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 import distiller
+import markdown_links
 from markdown_links import broken_local_links, markdown_anchors
 
 
@@ -249,3 +250,44 @@ def test_bash_gate_resolves_plugin_readme_root_relative_link(validation_repo):
         capture_output=True, text=True, timeout=20,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("heading", ["# Real\n", ""])
+@pytest.mark.parametrize("multiple", [False, True])
+def test_same_document_anchors_are_computed_once(tmp_path, monkeypatch, heading, multiple):
+    text = heading + "[one](#real)"
+    if multiple:
+        text += " [two](#absent) [again](#real) [empty](#)"
+    calls = []
+    original = markdown_links.markdown_anchors
+
+    def counted(value):
+        calls.append(value)
+        return original(value)
+
+    monkeypatch.setattr(markdown_links, "markdown_anchors", counted)
+    expected = [("#absent", "missing fragment")] if multiple else []
+    if not heading:
+        expected.insert(0, ("#real", "missing fragment"))
+    assert broken_local_links(text, tmp_path) == expected
+    assert calls == [text]
+
+
+def test_same_document_anchor_cache_is_lazy_and_per_call(tmp_path, monkeypatch):
+    calls = []
+    original = markdown_links.markdown_anchors
+
+    def counted(value):
+        calls.append(value)
+        return original(value)
+
+    monkeypatch.setattr(markdown_links, "markdown_anchors", counted)
+    cache = {}
+    assert broken_local_links("[empty](#) [remote](https://example.com/#real)", tmp_path, cache) == []
+    assert calls == []
+    first = "# First\n[one](#first) [two](#second)"
+    second = "# Second\n[one](#first) [two](#second)"
+    assert broken_local_links(first, tmp_path, cache) == [("#second", "missing fragment")]
+    assert broken_local_links(second, tmp_path, cache) == [("#first", "missing fragment")]
+    assert calls == [first, second]
+    assert cache == {}

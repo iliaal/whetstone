@@ -100,6 +100,7 @@ def broken_local_links(text, base_dir, anchor_cache=None, repo_root=None):
     cache = anchor_cache if anchor_cache is not None else {}
     repo_root = repo_root or REPO_ROOT
     broken = []
+    local_anchors = None
     for target in link_targets(text):
         parts = urlsplit(target)
         if parts.scheme or parts.netloc:
@@ -107,8 +108,11 @@ def broken_local_links(text, base_dir, anchor_cache=None, repo_root=None):
         path = unquote(parts.path)
         fragment = unquote(parts.fragment)
         if not path:
-            if fragment and fragment not in markdown_anchors(text):
-                broken.append((target, "missing fragment"))
+            if fragment:
+                if local_anchors is None:
+                    local_anchors = markdown_anchors(text)
+                if fragment not in local_anchors:
+                    broken.append((target, "missing fragment"))
             continue
         if "." not in Path(path).name and "/" not in path:
             continue
