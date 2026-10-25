@@ -201,11 +201,13 @@ ffmpeg -y -framerate 0.5 -pattern_type glob -i '[capture-dir]/screenshots/*.png'
 
 </record_walkthrough>
 
-### 6. Upload the Video
+### 6. Review Artifacts and Upload
 
 <upload_video>
 
 **Privacy review (mandatory before any upload):** Open every captured frame in `[capture-dir]/screenshots/` and check it for private values (emails, usernames, customer or organization names, account or record IDs, internal hostnames) and credentials (tokens, auth headers, cookies, signed URLs, webhook endpoints). Mask each hit by painting the region with a solid fill; blurring alone can be reversed. Regenerate the MP4 and preview GIF from the masked frames before uploading. If a frame cannot be reviewed or masked, skip upload and report the reason with the local artifacts.
+
+**Final-artifact review (required for local handoff and upload):** After the final encode, including any privacy re-encode, inspect a decoded frame from each planned shot in both the MP4 and preview GIF. Verify shot order, the visible result, and readability at each artifact's encoded dimensions. Check the actual shot durations against the text and interaction shown. Correct unreadable, missing, or mistimed shots. After a correction, re-encode the affected artifacts. Repeat the review after re-encoding. Require both artifacts to pass before marking the local capture complete or uploading. If either artifact cannot be inspected, report capture as partial. Skip upload when artifact review is incomplete.
 
 **Upload with rclone only to an authorized destination (otherwise retain local artifacts):**
 

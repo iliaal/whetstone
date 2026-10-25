@@ -82,6 +82,12 @@ an earlier report. Use separate directories for concurrent packages and retries.
   workspace, run the census per package, or pass several reports.
 - **uncollected files:** Vitest and Jest `include`/`testMatch` globs, and workspace
   packages whose `test` script is missing or ends in `|| true`, silently drop tests.
+- **type assertions:** Vitest's `expectTypeOf` and `assertType` are [compile-time checks](https://vitest.dev/guide/testing-types.html).
+  A green runtime-only run does not prove them. Verify that a blocking gate enables
+  Vitest typechecking or runs a compiler that includes the assertion files. Inspect
+  the applicable tsconfig and, for Vitest typechecking, `typecheck.include`.
+  In the isolated audit copy, change one expected type to an incompatible type.
+  Require that same gate to fail on the type mismatch.
 - **reach:** change a bare `.toThrow()` to `.toThrow(/expected message/)`, or
   `console.log` the rejected error. For request tests, log the response body beside
   the status assertion.

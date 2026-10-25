@@ -103,6 +103,8 @@ This command takes a work document (plan or specification) and executes it syste
 
    **Blocking decision mid-run**: When a task needs a user decision, leave it pending and continue with every task that does not depend on that decision (check the dependencies recorded in TaskCreate). Raise all blocking questions together once only dependent tasks remain, since the user may be away. In pipeline mode, return them to the parent instead.
 
+   **Interrupted execution:** After a restart or a tool call with no recorded result, verify the active checkout. Before retrying a mutation, reconcile its outcome against local files and commits or the affected resource's authoritative remote status. A missing result leaves the outcome unknown. Verify an observed completed effect before continuing from it. Retry only when authoritative evidence rules out a pending or completed effect, or verified idempotency guarantees make replay safe. If the outcome remains unresolved, report it as unknown. Continue independent tasks while reconciliation is pending.
+
    **System-Wide Test Check**: Before marking a task done, run the blast-radius check from the `ia-verification-before-completion` skill's [system-wide-test-check.md](../skills/ia-verification-before-completion/references/system-wide-test-check.md). Skip for leaf-node changes with no callbacks or state persistence.
 
    **IMPORTANT**: Always update the original plan document by checking off completed items. Use the Edit tool to change `- [ ]` to `- [x]` for each task you finish. This keeps the plan as a living document showing progress and ensures no checkboxes are left unchecked.
@@ -235,19 +237,17 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
 
    Capture screenshots when they provide meaningful visual verification or review context. Keep them local unless the caller authorized an upload destination and audience; a private UI change does not imply publication to a public image host.
 
-   **Step 1: Start dev server** (if not running)
-   ```bash
-   npm run dev  # Run in background
-   ```
+   **Step 1: Use the verified final-build server**
+
+   For a frontend with a build step, reuse the fresh production build verified in Phase 2.5. If final browser verification is still needed, run the repository's documented local build and preview/start commands. For a frontend without a build step, use its documented local server command. Verify that the running server/build represents the intended checkout and changes. Record the literal base URL as `[verified-base-url]`, the build mode, and the commands used. Development servers remain suitable during iteration. If a production build cannot be served locally, report the tested mode and unverified production-build coverage. Use only authorized local configuration; this step does not authorize configuration changes or deployment.
 
    **Step 2: Capture screenshots with agent-browser CLI**
    ```bash
-   PORT=$(bash ${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port)
-   agent-browser open "http://localhost:$PORT/[route]"
+   agent-browser open "[verified-base-url]/[route]"
    agent-browser snapshot -i
    agent-browser screenshot output.png
    ```
-   Resolve the port rather than assuming 3000: Vite and SvelteKit default to 5173, and `PORT=` in `.env` overrides either.
+   Use the verified server URL for capture rather than inferring a development-server port.
    Run `agent-browser --help` for full CLI usage.
 
    **Step 3: Upload screenshots only when authorized**

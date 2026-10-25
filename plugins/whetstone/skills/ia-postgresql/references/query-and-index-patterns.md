@@ -10,7 +10,7 @@
 | BRIN | Large tables with natural ordering (timestamps, serial IDs) |
 
 **Index rules:**
-- Composite: equality-predicate columns first, then the range/sort column, max 3-4 columns. A leading range column stops the B-tree from navigating on anything after it. "Most selective first" is the myth version; selectivity only breaks ties among equality columns
+- Composite: equality-predicate columns first, then the range/sort column, max 3-4 columns. Later keys still filter index entries. PostgreSQL 18+ may also use [skip scans](https://www.postgresql.org/docs/18/indexes-multicolumn.html) to navigate with later constraints when repeated searches across leading-key groups are cheaper. Inspect the actual plan before treating a suffix as unusable or adding another index. "Most selective first" is the myth version; selectivity only breaks ties among equality columns
 - Partial: `WHERE status = 'active'` is smaller, faster, and constrains *only* the rows matching the predicate. A plain unique index likewise constrains only rows whose key columns are all non-NULL, since NULLs compare as distinct unless the index is `NULLS NOT DISTINCT`. So a "prevent duplicates" index validated against the new write path enforces nothing against an existing writer that leaves a key column NULL or writes rows the predicate excludes, and the dedup the migration promises is leaky for exactly those rows. Audit every writer of the table, not the one in the diff
 - Covering: `INCLUDE (col)` avoids heap lookup
 - Expression: `ON (lower(email))` for function-based WHERE

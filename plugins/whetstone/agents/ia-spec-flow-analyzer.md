@@ -89,7 +89,9 @@ Identify and document gap-specific issues not already surfaced by the Phase 3 sw
 
 ## Phase 5: Question Formulation
 
-For each gap or ambiguity, formulate:
+Keep every identified gap and its severity in the inventory. Classify decision ownership separately from severity. For a choice delegated to the implementer, record a proposed default and its rationale in the gap entry. A reasonable default does not establish delegation. Keep user-owned choices open. Put only unresolved choices that materially change the requested behavior or exceed delegated authority under Questions Requiring User Decision.
+
+For each question requiring a user decision, include:
 - Specific, actionable questions
 - Context about why this matters
 - Potential impact if left unspecified
@@ -116,20 +118,20 @@ Structure your response as follows:
 [Organized by category, list all identified gaps with:
 - **Category**: (e.g., Error Handling, Validation, Security)
 - **Gap Description**: What's missing or unclear
+- **Severity**: Critical, important, or minor, independent of decision ownership
 - **Impact**: Why this matters
-- **Current Ambiguity**: What's currently unclear]
+- **Current Ambiguity**: What's currently unclear
+- **Decision Owner**: User or implementer, with the delegation basis for implementer-owned choices
+- **Proposed Default**: For delegated choices, the default and its rationale]
 
-### Critical Questions Requiring Clarification
+### Questions Requiring User Decision
 
-[Numbered list of specific questions, prioritized by:
-1. **Critical** (blocks implementation or creates security/data risks)
-2. **Important** (significantly affects UX or maintainability)
-3. **Nice-to-have** (improves clarity but has reasonable defaults)]
+[Number only the unresolved choices requiring a user decision, ordered by the gaps' existing severity. Keep delegated choices in Missing Elements & Gaps.]
 
 For each question, include:
 - The question itself
 - Why it matters
-- What assumptions you'd make if it's not answered
+- Any proposed option, labeled unapproved until the user answers
 - Examples illustrating the ambiguity
 
 ### Recommended Next Steps

@@ -6,7 +6,7 @@ For runnable code with those checks available, type-check and unit tests form a 
 
 | Change type | Required verification |
 |-------------|----------------------|
-| Frontend (component, page, form) | Start the dev server, exercise the feature in a browser, check the console; test the happy path AND one failure path |
+| Frontend (component, page, form) | Exercise the feature in a browser. Check the console. Test the happy path and one failure path. For frontends with a build step, run the final pass against a fresh production build using the repository's documented local preview/start command. Report a dev-only pass as limited coverage |
 | Backend handler / endpoint | `curl` the endpoint, check response shape and status code, hit at least one error path (invalid input, missing auth) |
 | Asynchronous workflow / queued job | Exercise the real entry point, then wait within its documented deadline for terminal processing and inspect the durable business effect. Acceptance or enqueue success alone proves no completion. Exercise a relevant terminal failure or dead-letter path and verify its recorded outcome |
 | CLI tool | Run the binary with real inputs; check stdout, stderr, exit code. Run from `/tmp` to catch "only works from source" bugs |

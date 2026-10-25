@@ -53,13 +53,15 @@ Conduct visual comparisons between Figma designs and live implementations. Produ
 
 Record the emitted absolute path as `[capture-dir]` and substitute it literally in later tool calls; shell variables do not persist between calls. Save any requested report under that directory.
 
+Include a unique route/component ID, exact viewport width and height, interaction state, and iteration in every screenshot and diagnostic filename. Increment the iteration when repeating that combination. Retain every variant. Record the actual dimensions and state beside each path in the report.
+
    ```bash
    agent-browser open [url]
    agent-browser snapshot -i
-   agent-browser screenshot "[capture-dir]/initial.png"
+   agent-browser screenshot "[capture-dir]/[component-id]-[width]x[height]-initial-[iteration].png"
    # For hover states:
    agent-browser hover @e1
-   agent-browser screenshot "[capture-dir]/hover-state.png"
+   agent-browser screenshot "[capture-dir]/[component-id]-[width]x[height]-hover-[iteration].png"
    ```
 
 ### 2. Retrieve Design Specifications

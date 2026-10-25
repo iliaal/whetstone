@@ -52,9 +52,18 @@ report rather than committing or pushing on top of an unknown state.
 This governs the *comparison range* for a branch review, distinct from the
 file-selection chain in the main skill. When the review target is a branch (not a
 working-tree diff), run base-branch resolution first; the file-selection
-fallbacks are for in-progress local work, where `git diff HEAD` is the correct
-command. Do not stitch the two: a branch review needs the merge-base, not the
-working-tree delta.
+fallbacks are for in-progress local work. A branch review needs its resolved base
+and head, not the working-tree delta.
+
+For local scope covering staged and unstaged work, freeze the caller's selected
+base, defaulting to HEAD. Capture `git diff --cached --no-textconv --no-ext-diff <base>`
+and `git diff --no-textconv --no-ext-diff` separately. Label the patches
+base-to-index and index-to-working-tree. Read context from the corresponding
+index or working-tree version. Include selected untracked contents separately.
+`git diff <base>` is only the net summary: an unstaged restoration can
+hide a defect still in the index. Derive status and coverage from the same
+transitions as the captured patches. Retain a caller's staged-only,
+working-tree-only, or explicit-file scope; do not add another version to it.
 
 When reviewing a branch (no specific files given), resolve the requested target
 before deriving the base. Set `TARGET_REF` to the caller's exact branch/ref; use
@@ -162,11 +171,11 @@ these paths applies to *external dispatch only*; the hard-exclusion list in
 [external-review-subprocess.md](./external-review-subprocess.md) keeps them out
 of any packet that leaves the machine.
 
-Use one disposition per `(path, change-status)` entry. In workspace mode, preserve both a staged deletion (`D `) and an untracked recreation (`??`) at the same path: inspect the deletion against HEAD and read the recreated file separately. Neither entry's completed review covers the other.
+Use one disposition per `(path, change-status)` entry. In local scope covering both transitions, qualify each change status with base-to-index or index-to-working-tree. A tracked file modified in both transitions needs both versions reviewed, even when its working-tree content matches the base. Preserve a staged deletion and an untracked recreation (`??`) at the same path: inspect the deletion against the selected base and read the recreated file separately. Reviewing one version does not cover the other.
 
 | Set | Meaning |
 |-----|---------|
-| `changed` | Original pre-filter universe keyed by `(path, change-status)`, with a per-entry diff or content fingerprint when mutable. |
+| `changed` | Original pre-filter universe keyed by `(path, change-status)`, with the transition included in local change statuses and a per-entry diff or content fingerprint when mutable. |
 | `selected` | Entries that require a correctness review. |
 | `covered` | Selected entries actually inspected by their assigned correctness coverage unit. |
 | `failed` | Selected entries not reviewable, with concrete evidence such as timeout, unreadable input, or context exhaustion. |
@@ -176,16 +185,16 @@ Use one disposition per `(path, change-status)` entry. In workspace mode, preser
 For standard reviews, hold the ledger in context. For persisted `/ia-review`
 runs, allocate a unique invocation-owned scratch directory and retain its exact
 path. Store the same top-level arrays there; entries
-carry `path` and `status` (the change status), plus `fingerprint`, `unit`, or `reason` as applicable.
+carry `path` and `status` (including the local transition), plus `fingerprint`, `unit`, or `reason` as applicable.
 Assign every selected entry to exactly one correctness unit, even when multiple
 specialist lenses inspect it.
 
 ### Reconcile before the verdict
 
 For a frozen branch or commit review, reconcile against the original
-name-and-status set. For mutable workspace review, re-enumerate and compare
-per-entry diff or content fingerprints immediately before the verdict; add new
-or changed entries as pending.
+name-and-status set. For mutable workspace review, re-enumerate each selected
+transition separately. Compare per-entry diff or content fingerprints immediately
+before the verdict; add new or changed entries as pending.
 
 Derive terminal coverage mechanically:
 

@@ -64,7 +64,7 @@ Track and optimize:
 ### Pipeline Optimization
 
 - **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs, keyed by lockfile hash
-- **Parallel execution**: run unit tests, lint, type-check, security scan concurrently
+- **Parallel execution**: run unit tests, lint, type-checks, and security scans concurrently only when writes to generated files, caches, and fixtures are isolated. Run suites that replace or rebuild shared artifacts after conflicting workers finish. Give checks with wall-clock budgets an uncontended lane.
 - **Artifact promotion**: build once, deploy the same artifact to staging → production (never rebuild)
 - **Public web configuration**: for pages intended to be indexed, resolve robots directives, `robots.txt`, canonical URLs, sitemap URLs, and Open Graph URLs at runtime for the deployed host, with origin-only `noindex` rules scoped to the origin hostname behind a reverse proxy. On promotion, smoke-check public production HTML and headers for unintended `noindex`, verify the crawl policy, and confirm absolute URLs use the production host.
 - **Fast feedback**: fail on lint/type errors before running expensive test suites

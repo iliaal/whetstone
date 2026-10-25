@@ -18,6 +18,8 @@ UPDATE accounts SET balance = balance + CASE id
 WHERE id IN (1, 2);
 ```
 
+**Transaction retries:** On SQLSTATE `40001`, roll back the top-level transaction. Retry the [complete transaction](https://www.postgresql.org/docs/18/mvcc-serialization-failure-handling.html), including every read and the application decisions that choose statements and values. Retrying only the failed statement can reuse stale inputs; a savepoint retry at `REPEATABLE READ` or `SERIALIZABLE` retains the transaction snapshot. Bound retries with backoff and jitter. Use the same retry boundary for `40P01` deadlocks. Correct inconsistent lock order. Keep non-idempotent external effects outside replayable transaction work.
+
 **Foreign-key row locks cut both ways.** Inserting a child row takes `FOR KEY SHARE` on the parent row it references, and the row-lock conflict table gives `FOR KEY SHARE` exactly one conflicting mode: `FOR UPDATE`. Two opposite consequences follow, and only the order distinguishes them:
 
 - Lock the parent, *then* insert the child: concurrent creators serialize, because the second transaction's `FOR UPDATE` waits on the first transaction's `KEY SHARE`.

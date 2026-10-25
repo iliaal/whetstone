@@ -31,7 +31,7 @@ This command tests affected pages in a real browser, catching issues that unit t
 ## Prerequisites
 
 <requirements>
-- Local development server running (e.g., `npm run dev`, `php artisan serve`)
+- Local application server running in the mode required by the check (development for iteration; production build for final frontend verification)
 - agent-browser CLI installed (see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md))
 - Git repository with changes to test
 </requirements>
@@ -109,11 +109,13 @@ Build a list of URLs to test based on the mapping.
 
 <check_server>
 
+For final verification of a frontend with a build step, produce a fresh production build with the repository's documented local build command. Serve that build with the documented local preview/start command. Run the affected-route checks against that server. Development-server runs remain valid during iteration. Record the build mode and build/start commands. If the production build cannot be served locally, mark production-build coverage unverified. Return PARTIAL for final verification with that gap. This requirement does not authorize obtaining credentials, configuration changes, or deployment.
+
 Before navigation, bind the server to the selected target. Inspect its process command and working directory, then verify that checkout's SHA and any scoped working-tree changes match the target. For a server serving generated assets, also establish that its running build was produced from that content (build metadata or a fresh scoped build/restart); matching the checkout alone is insufficient. Record the evidence and base URL. A responsive port does not establish revision identity.
 
 For a different branch or PR, use an isolated target checkout and its server when authorized; do not switch or reset the user's working tree. If the running source/build identity cannot be established, return PARTIAL with revision coverage unverified and the missing setup action. Do not report that target as passing. Repeat the binding check after source changes, a rebuild, a restart, or a port change.
 
-Resolve the dev-server port from the bound checkout and actual server configuration rather than assuming 3000. The port resolver may provide a candidate when run from that checkout; verify it against the server process/build before use. Record the verified URL as `[verified-base-url]` and substitute it literally in every navigation block. Do not rediscover a port from the caller's working directory or rely on variables persisting between tool calls.
+Resolve the server port from the bound checkout and actual server configuration rather than assuming 3000. The port resolver may provide a candidate when run from that checkout; verify it against the server process/build before use. Record the verified URL as `[verified-base-url]` and substitute it literally in every navigation block. Do not rediscover a port from the caller's working directory or rely on variables persisting between tool calls.
 
 Verify the local server is accessible:
 
@@ -126,9 +128,9 @@ If server is not running, inform user:
 ```markdown
 **Server not running**
 
-Please start your development server:
-- Node/Next.js: `npm run dev`
-- PHP: `php artisan serve`
+Start the application with the repository's documented local command for the required mode:
+- Final frontend verification with a build step: build, then preview/start the production build.
+- Iteration or an application without a frontend build step: use the documented local server command.
 
 Then run `/ia-test-browser` again.
 ```
@@ -146,11 +148,11 @@ CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/test-browser.XXXXXXXX")
 printf '%s\n' "$CAPTURE_DIR"
 ```
 
-Record the emitted absolute path as `[capture-dir]` and substitute it literally in later calls. Save screenshots, console evidence, and any requested report beneath that directory with distinct route/action names. Retain artifacts for the caller; never overwrite or delete caller-provided or concurrent artifacts.
+Record the emitted absolute path as `[capture-dir]` and substitute it literally in later calls. Save screenshots, console evidence, and any requested report beneath that directory. Name every screenshot and diagnostic file with a unique route/component ID, exact viewport width and height, interaction state, and iteration: `[route-id]-[width]x[height]-[state-id]-[iteration]`. Include the action in the state ID when needed to distinguish interactions. Increment the iteration when repeating that combination. Record the actual dimensions and state beside each retained path. Retain every variant. Never overwrite or delete caller-provided or concurrent artifacts.
 
 For each affected route, use agent-browser CLI commands (NOT Chrome MCP):
 
-Collect preflight console/page errors before clearing them and label that evidence separately. Clear the buffers before each route navigation, then collect them after navigation and each critical interaction. Use distinct evidence filenames such as `[capture-dir]/[route-id]-[action-id]-console.json`. If the installed CLI lacks these commands or collection fails, mark the corresponding log check unverified rather than report zero errors.
+Collect preflight console/page errors before clearing them. Label preflight evidence with the current page's route ID, dimensions, `preflight` state, and iteration. Clear the buffers before each route navigation, then collect them after navigation and each critical interaction. Use the same capture identity for the matching console and page-error files. If the installed CLI lacks these commands or collection fails, mark the corresponding log check unverified rather than report zero errors.
 
 **Step 1: Navigate and capture snapshot**
 ```bash
@@ -158,8 +160,8 @@ agent-browser console --clear
 agent-browser errors --clear
 agent-browser open "[verified-base-url]/[route]"
 agent-browser snapshot -i
-agent-browser console --json > "[capture-dir]/[route-id]-navigation-console.json"
-agent-browser errors > "[capture-dir]/[route-id]-navigation-errors.txt"
+agent-browser console --json > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-console.json"
+agent-browser errors > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-errors.txt"
 ```
 
 **Step 2: For headed mode (visual debugging)**
@@ -177,23 +179,28 @@ agent-browser --headed snapshot -i
 - For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.
 
 **Step 4: Test critical interactions**
+
+Choose the expected result from the actual flow before the action. When creation or editing is the behavior under test, enter a value unique to this invocation and action in the authorized test environment. Assert that exact value in the resulting record after submission; an earlier record or an unsaved input does not prove the action succeeded. Reusable prerequisite records remain valid when creating or editing them is not the behavior under test.
+
 ```bash
 agent-browser click @e1  # Use ref from snapshot
 agent-browser wait "[expected-result-selector]"
 agent-browser get text "[result-selector]"
 agent-browser snapshot -i
-agent-browser console --json > "[capture-dir]/[route-id]-[action-id]-console.json"
-agent-browser errors > "[capture-dir]/[route-id]-[action-id]-errors.txt"
+agent-browser console --json > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-console.json"
+agent-browser errors > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-errors.txt"
 ```
 
-Choose the expected result from the actual flow before the action. Inspect collected messages and page errors; a screenshot with no visible error is not console evidence. Retain error severity, text, and the route/action that produced it. Report relevant runtime errors as findings even when the page looks normal.
+Inspect collected messages and page errors; a screenshot with no visible error is not console evidence. Retain error severity, text, and the route/action that produced it. Report relevant runtime errors as findings even when the page looks normal.
 
 Exercise reversible controls through initial state, changed state, and return to initial state. Scripted state injection may prepare or inspect a test, but signoff interactions must use actual clicks and typing.
 
+For an affected finite virtualized collection, use enough records to exceed the viewport. Scroll the actual collection from the beginning to a middle record, the final record, and back to the beginning. Verify the expected record identities without missing or duplicated rows. Check row placement for unexpected gaps or overlap. Exercise one row action after scrolling to confirm that a recycled row still acts on the correct record. An initial screenshot or the current DOM row count does not prove that the full collection is reachable.
+
 **Step 5: Take screenshots**
 ```bash
-agent-browser screenshot "[capture-dir]/[route-id]-viewport.png"
-agent-browser screenshot --full "[capture-dir]/[route-id]-full.png"
+agent-browser screenshot "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-viewport.png"
+agent-browser screenshot --full "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-full.png"
 ```
 
 Use the viewport capture as signoff evidence; the full-page capture supplies secondary context and cannot establish that required content is visible in the viewport.
@@ -238,7 +245,7 @@ Did it work correctly?
 When a test fails:
 
 1. **Document the failure:**
-   - Screenshot the error state: `agent-browser screenshot "[capture-dir]/[route-id]-[action-id]-error.png"`
+   - Screenshot the error state: `agent-browser screenshot "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-error.png"`
    - Note the exact reproduction steps
 
 2. **Interactive mode: ask how to proceed.** In a read-only pipeline run, return the failure as a finding; implementation remains with the parent:
@@ -281,6 +288,8 @@ After all tests complete, present summary:
 
 **Test Scope:** PR #[number] / [branch name]
 **Server:** [base-url]
+**Build mode and commands:** [production/development/no frontend build step; build and server commands]
+**Production-build coverage:** [verified / unverified with reason / not applicable]
 **Target:** [SHA and scoped working-tree content identity, if applicable]
 **Served revision evidence:** [checkout/process/build evidence, or unverified]
 
@@ -296,7 +305,7 @@ After all tests complete, present summary:
 ### Browser Logs
 - Console errors: [observed count, or unverified with reason]
 - Page errors: [observed count, or unverified with reason]
-- Evidence: [route/action, relevant messages, and retained log paths]
+- Evidence: [route/action, exact viewport dimensions, state, iteration, relevant messages, and retained log paths]
 
 ### Human Verifications: [count]
 - OAuth flow: Confirmed
@@ -310,10 +319,10 @@ After all tests complete, present summary:
 
 ### Result: [PASS / FAIL / PARTIAL]
 
-**Artifacts:** [invocation-owned capture/report paths]
+**Artifacts:** [invocation-owned paths with route/component, exact viewport dimensions, state, and iteration for each capture]
 ```
 
-Report PARTIAL when required revision, runtime, log, layout, or human verification remains unverified. Never substitute zero or PASS for an unavailable check.
+Report PARTIAL when required revision, production-build, runtime, log, layout, or human verification remains unverified. Never substitute zero or PASS for an unavailable check.
 
 </test_summary>
 

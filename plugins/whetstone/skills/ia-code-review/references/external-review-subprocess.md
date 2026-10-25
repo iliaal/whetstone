@@ -103,6 +103,8 @@ local review. The set:
   in `_rsa` or `_ed25519`
 - `.netrc`, `.npmrc`, `.pypirc`, `.dockercfg`, `.pgpass`, `.git-credentials`
 - a file named exactly `credentials` (the AWS and gcloud CLI convention)
+- Claude Code's exact basenames `.credentials.json` and `.claude.json` at any
+  path depth; these can contain sign-in tokens, saved API keys, or MCP server secrets
 
 Decide on the path alone; never read the file's content to make the call. For a
 rename or copy, test the old path as well as the new one: a file moved away from

@@ -47,6 +47,14 @@ shadows it and executes on import. Run helper snippets with `python3 -I`
 environment variables are ignored, and the user site directory is skipped), or
 run them from outside the tree with absolute paths.
 
+For a reviewer-owned Bun helper, disable checkout startup inputs: `.env` files
+load automatically, and `bunfig.toml` can preload code before an absolute-path
+helper runs. On POSIX, use
+`bun --no-env-file --config=/dev/null /absolute/trusted-helper.ts`, or select a
+trusted configuration. These flags do not clear inherited environment variables
+or isolate imported code. Project tests and scripts still require the execution
+preflight above.
+
 ## Delegated specialists
 
 Give analysis specialists only the context tools required to read, search, and

@@ -8,10 +8,18 @@ Read for a standalone review whose scope or review mode is not already fixed by 
 
 When no specific files are given, resolve scope via this fallback chain:
 1. User-specified files/directories (explicit request)
-2. Session-modified files (`git diff --name-only`, unstaged + staged)
-3. All uncommitted files (`git diff --name-only HEAD`)
+2. Session-modified files, attributed from session records rather than Git alone
+3. All uncommitted files
 4. Untracked files (`git ls-files --others --exclude-standard`), often the most review-worthy
 5. **Zero files → stop.** Ask what to review (ask channel above).
+
+For local scope covering staged and unstaged changes, enumerate both
+`git diff --cached --no-textconv --no-ext-diff --name-status <selected-base>`
+and `git diff --no-textconv --no-ext-diff --name-status`. Use the caller's frozen
+base, defaulting to HEAD. Add selected untracked files. Keep each transition's
+status and fingerprint separate; a net diff can hide an index defect undone in
+the working tree. Retain any caller-selected version or file boundary. Capture
+the corresponding patches as described in [scope-resolution.md](./scope-resolution.md).
 
 Exclusions: apply the canonical list in [scope-resolution.md](./scope-resolution.md); that file owns which categories drop out and which stay selected. Do not keep a local copy of the categories here.
 
@@ -23,11 +31,11 @@ When the review target is a branch (not a working-tree diff), the comparison ran
 
 ### Coverage gate
 
-Enumerate changed files **before** exclusions and track each `(path, change-status)` entry through `selected -> pending -> covered | failed` or `excluded(reason)` per [scope-resolution.md](./scope-resolution.md). Keep tests and deletions reviewable. Give each selected entry one correctness owner; any pending or failed entry forces **Not ready**. List exclusions under Residual Risks.
+Enumerate changed files **before** exclusions and track each `(path, change-status)` entry through `selected -> pending -> covered | failed` or `excluded(reason)` per [scope-resolution.md](./scope-resolution.md). Qualify local change statuses by their transition so index and working-tree versions remain distinct. Keep tests and deletions reviewable. Give each selected entry one correctness owner; any pending or failed entry forces **Not ready**. List exclusions under Residual Risks.
 
 ## Review Mode Selection
 
-**Run this BEFORE reading the full diff.** Use metadata only (`git diff --stat`, file list from scope resolution); reading the diff first creates analysis momentum that bypasses mode selection.
+**Run this BEFORE reading the full diff.** Use metadata only (`--stat` and the file list for the selected transitions or frozen range); reading the diff first creates analysis momentum that bypasses mode selection. For local scope covering both transitions, include both in line totals and count each path once for file/directory signals.
 
 **Exceptions first**: passive prose and mechanical refactors with no behavior change usually need only a single pass. Classify files by their role: agent instructions, configuration, executable examples, and policy/gate definitions remain subject to correctness/security review even in Markdown. A short diff or `.md` extension alone does not override material risk signals.
 
@@ -53,7 +61,7 @@ Apply these checks to tests, validators, CI gates, specifications, golden files,
 | Database migrations | any |
 | API surface changes (public endpoints, exported interfaces) | any |
 
-**Test file exclusion:** filter test paths out of the size signals with `git diff --stat -- ':!tests/' ':!*.test.*' ':!*.spec.*' ':!*_test.*'` and report both totals: "450 lines changed (280 excluding tests)."
+**Test file exclusion:** apply `-- ':!tests/' ':!*.test.*' ':!*.spec.*' ':!*_test.*'` to each selected diff's `--stat` command. Report both totals: "450 lines changed (280 excluding tests)."
 
 **3+ signals → deep review.** Inform the user, then dispatch parallel specialist agents per [deep-review.md](./deep-review.md). Pass the diff to agents; do NOT read it first. **Stop here and skip the Review Process section.**
 

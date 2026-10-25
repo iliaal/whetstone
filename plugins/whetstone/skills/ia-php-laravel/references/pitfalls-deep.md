@@ -29,6 +29,12 @@ In `chunkById + json_decode + mutate + json_encode + update`, the window between
 
 Migrations default to `public $withinTransaction = true`: on Postgres/SQLite all of `up()` runs in one outer transaction. A per-row `DB::transaction()` loop inside a data backfill therefore creates nested savepoints, not independent commits: each inner "commit" merely releases a savepoint, nothing is durable until `up()` returns, and row locks accumulate for the whole run. One mid-loop failure rolls back every prior row. MySQL auto-commits DDL, so the flag is a no-op there.
 
+## Database cache locks inside PostgreSQL transactions
+
+When database-backed `Cache::lock()` shares the application's PostgreSQL transaction connection, contention can abort that transaction. Implementations without framework PR #62114, including v13.38.0, catch a duplicate insert and then attempt an update on the aborted transaction. Catching the PHP exception does not restore the transaction. Inspect `DatabaseLock::acquire()` for conflict-tolerant insertion. Test both a held lock and an expired lock inside a real transaction, including a successful query afterward.
+
+On affected versions, acquire the lock before opening the business transaction, or choose a separate lock store/connection deliberately. Keep the lock held through commit or rollback. Set a finite TTL long enough to cover the transaction. A separate connection changes lock visibility and lifetime semantics; verify those semantics before relying on the separation.
+
 ## Eloquent pitfalls
 
 ### CastsAttributes get() cache merges back through save()
@@ -92,6 +98,10 @@ Property visibility and names are also part of the payload contract: `Serializes
 The process driver passes `'__LARAVEL_CONTEXT' => json_encode(Context::dehydrate())` as an env var to every pooled child process. `dehydrate()` does keep hidden values under a separate `hidden` key (`['data' => ..., 'hidden' => ...]`), but `ProcessDriver` JSON-encodes the whole array into one env var with no filtering, so hidden values travel with the visible ones regardless of the split. Any same-uid process can read that value from `/proc/<pid>/environ` for the child's lifetime, and it shows up in `ps e` too, so a credential stashed via `Context::addHidden()` leaks well beyond the job that set it. Applies from the 13.x context-propagation fix onward; keep credentials out of Context for concurrency work and resolve them inside the closure from config or a secret manager, or use the synchronous driver where the threat model requires it.
 
 ## Validation pitfalls
+
+### Rule::anyOf() scalar alternatives can accept associative arrays
+
+When every `Rule::anyOf()` alternative requires a string, keep `string` outside the union. In affected implementations including v13.38.0, `['x' => 1]` can pass `['required', Rule::anyOf([['string', 'email'], ['string', 'alpha_dash', 'min:6']])]`: the inner scalar rules target missing key `0` and are skipped. Confirm the installed `AnyOf` contains framework PR #62171's paired rule/value wrapping. Test associative-array rejection alongside a valid string. When an alternative intentionally accepts arrays, keep that branch valid. Add a passing array regression for that union instead of an outer `string` constraint.
 
 ### validated() drops unruled nested array keys
 

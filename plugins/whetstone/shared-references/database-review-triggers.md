@@ -53,3 +53,7 @@ Patterns like `UPDATE ... SET attributes = :attributes WHERE id = :id` where `:a
 ## Enum case added without mirroring in a paired enum
 
 When a migration or code change adds a new case to enum A, grep for `Rule::enum(A::class)` AND `A::class` cast references, AND grep for any sibling enum with overlapping cases. Nothing in the type system protects paired enums: a validator accepting the new case and a cast rejecting it on read produces post-deploy write-then-read crashes.
+
+## Persisting fallback state after a failed load
+
+Inspect load-error handlers and any autosave or shutdown writes that consume their fallback state. A timeout, permission denial, or decode error does not establish that a record is absent. Keep load failure distinct from confirmed absence. Block writes from empty or default fallback state until the existing record loads successfully or an explicit reset is authorized. Test a forced load failure followed by autosave or shutdown against an existing non-default record. Assert that persisted data remains unchanged.
