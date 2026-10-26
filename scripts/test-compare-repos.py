@@ -76,6 +76,54 @@ class RepositoryDiscoveryTests(unittest.TestCase):
                 self.assertIn("Gaps: 0 unmatched external components", result.stdout)
                 self.assertIn(f"| ia-{name} | {name} |", output.read_text(encoding="utf-8"))
 
+    def test_distinct_same_name_overlaps_survive_report_deduplication(self):
+        layouts = (
+            ("cross-kind", ("skills/ia-review/SKILL.md", "agents/ia-review.md"),
+             ("skills/review/SKILL.md", "agents/review.md"), 2),
+            ("external-paths", ("agents/ia-review.md",),
+             ("agents/quality/review.md", "agents/security/review.md"), 2),
+            ("local-paths", ("agents/quality/ia-review.md", "agents/security/ia-review.md"),
+             ("agents/review.md",), 2),
+        )
+        for name, local_paths, external_paths, expected_count in layouts:
+            with self.subTest(layout=name):
+                # Isolate each layout while retaining the CLI's real scanner.
+                plugin = self.checkout / "plugins/whetstone"
+                shutil.rmtree(plugin)
+                repo = self.root / name
+                (repo / ".git").mkdir(parents=True)
+                for index, relative in enumerate(local_paths):
+                    self.write(plugin, relative, "# Review\n" * (index + 2))
+                for index, relative in enumerate(external_paths):
+                    self.write(repo, relative, "# Review\n" * (index + 4))
+                output = self.root / f"{name}.md"
+                for args in ((repo,), ("--report-only",)):
+                    self.run_cli("--output", output, *args)
+                    report = output.read_text(encoding="utf-8")
+                    table = report.split("## Overlapping Components", 1)[1].split(
+                        "### High-Similarity", 1)[0]
+                    rows = [line for line in table.splitlines()
+                            if line.startswith("| ia-review | review |")]
+                    self.assertEqual(len(rows), expected_count, report)
+                    self.assertEqual(len(set(rows)), expected_count, report)
+                    self.assertIn(f"## Overlapping Components ({expected_count} matches)", report)
+                    self.assertIn(f"- Overlapping matches: {expected_count}", report)
+
+    def test_repeated_repository_keeps_report_match_counts_consistent(self):
+        self.write(self.checkout, "plugins/whetstone/agents/ia-review.md", "# Review\n")
+        repo = self.root / "repeated"
+        self.write(repo, "agents/review.md", "# Review\n")
+        (repo / ".git").mkdir()
+        output = self.root / "repeated.md"
+        for args in ((repo, repo), ("--report-only",)):
+            self.run_cli("--output", output, *args)
+            report = output.read_text(encoding="utf-8")
+            self.assertIn("## Overlapping Components (1 matches)", report)
+            self.assertIn("- Overlapping matches: 1", report)
+            self.assertIn("- High-similarity (>=0.50): 1", report)
+            self.assertEqual(report.count("| ia-review | review |"), 1)
+            self.assertEqual(report.count("- **ia-review** vs **review**"), 1)
+
     def test_direct_agents_repository_is_cataloged(self):
         repo = self.make_agents_repo()
         result = self.run_cli("--catalog", repo)
