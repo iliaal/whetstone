@@ -80,17 +80,26 @@ def render_spec(skill: str, fm: dict, body: str, klass: str, ref_count: int,
             return "<!-- to fill in: representative phrasings -->"
         return "\n".join(f"  - \"{q}\"" for q in items)
 
+    # A starter spec records verification work, not results: this generator
+    # samples fixtures and counts references but does not run validation.
     coverage_rows = [
-        ("Trigger fixtures", "complete",
-         f"distillery/tests/fixtures/triggers/{skill}.jsonl (>=5 should_trigger, >=5 should_not_trigger)"),
-        ("Hook regex pattern", "complete",
-         f"plugins/whetstone/hooks/skill-patterns.sh (`SKILL_PATTERNS[{skill}]`)"),
+        ("Trigger fixtures", "unknown",
+         f"Add or review distillery/tests/fixtures/triggers/{skill}.jsonl "
+         f"(>=5 should_trigger, >=5 should_not_trigger), then test with "
+         f"`python3 distillery/scripts/distiller.py test-triggers --skill {skill}` and record the result."),
+        ("Hook regex pattern", "unknown",
+         f"Confirm `SKILL_PATTERNS[{skill}]` in plugins/whetstone/hooks/skill-patterns.sh, "
+         f"then test with `python3 distillery/scripts/distiller.py test-triggers --skill {skill}` "
+         "and record the result."),
         ("Reference architecture",
-         "complete" if ref_count > 0 else "n/a",
-         f"{ref_count} file(s) under references/" if ref_count else "no references; SKILL.md is self-contained"),
+         "unknown" if ref_count > 0 else "n/a",
+         f"Review {ref_count} file(s) under references/ and validate their routing from SKILL.md."
+         if ref_count else "no Markdown files under references/"),
         ("Real-usage signal",
-         "<!-- populated by harvest-sessions when sessions exist -->",
-         f"distillery/.eval-data/{skill}/ (created by harvest-sessions)"),
+         "unknown",
+         f"Collect real-usage evidence with `python3 distillery/scripts/distiller.py "
+         f"harvest-sessions --skill {skill}`, then review distillery/.eval-data/{skill}/ "
+         "and record coverage or remaining gaps."),
     ]
     coverage_table = "\n".join(f"| {dim} | {status} | {ev} |" for dim, status, ev in coverage_rows)
 
