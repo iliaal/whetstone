@@ -1105,7 +1105,7 @@ The release bundles the prefix rename with a heavy sync + audit pass: 19 new ref
 
 - **`workflows:` command namespace**: the 6 commands (`brainstorm`, `plan`, `work`, `review`, `compound`, `document-release`) moved from `commands/workflows/` to flat `commands/` with `ia-` prefix.
 - **security-sentinel Operational Guidelines vague bullets**: "Always assume worst-case" and "Don't just find problems" removed; redundant with Adversarial Pass and Remediation Roadmap.
-- **Sync log at `~/ai/wiki/tools/compound-engineering-sync-log.md`**: relocated to `docs/audit/audit-log.md` (in-repo, gitignored operational log).
+- **Compound-engineering sync log**: relocated to `docs/audit/audit-log.md` (in-repo, gitignored operational log).
 
 ## [2.56.1] - 2026-04-18
 
