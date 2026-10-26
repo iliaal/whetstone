@@ -77,6 +77,44 @@ class OpenAIArchiveTests(unittest.TestCase):
         self.assertEqual((self.plugin / ".codex-plugin/plugin.json").read_bytes(), before)
         self.assertEqual(secret.read_text(), "private sentinel")
 
+    def test_archive_preserves_git_modes_not_checkout_permissions(self):
+        executable = "plugins/whetstone/skills/ia-demo/scripts/run helper\t.sh"
+        helper = self.write(executable, "#!/bin/sh\nprintf 'packaged helper\\n'\n")
+        self.git("add", "--", executable)
+        self.git("update-index", "--chmod=+x", "--", executable)
+        helper.chmod(0o644)
+        ordinary = self.plugin / "skills/ia-demo/scripts/helper.py"
+        ordinary.chmod(0o755)
+        output = self.root / "submission.zip"
+        PACKAGE.build_archive(self.root, output)
+        with zipfile.ZipFile(output) as archive:
+            for entry in archive.infolist():
+                with self.subTest(name=entry.filename):
+                    expected = 0o100755 if entry.filename.endswith("run helper\t.sh") else 0o100644
+                    self.assertEqual(entry.create_system, 3)
+                    self.assertEqual(entry.external_attr >> 16, expected)
+        helper.chmod(0o755)
+        ordinary.chmod(0o644)
+        second = self.root / "second.zip"
+        PACKAGE.build_archive(self.root, second)
+        self.assertEqual(output.read_bytes(), second.read_bytes())
+
+    def test_unsupported_index_entries_do_not_create_archive(self):
+        relative = "plugins/whetstone/skills/ia-demo/scripts/helper.py"
+        blob = self.git("rev-parse", f":{relative}").stdout.decode().strip()
+        for mode, stage in (("120000", "0"), ("100644", "1")):
+            with self.subTest(mode=mode, stage=stage):
+                self.git("update-index", "--force-remove", "--", relative)
+                subprocess.run(
+                    ["git", "update-index", "--index-info"], cwd=self.root,
+                    input=f"{mode} {blob} {stage}\t{relative}\n".encode(),
+                    check=True, capture_output=True, timeout=30,
+                )
+                output = self.root / "submission.zip"
+                with self.assertRaisesRegex(ValueError, "regular file without index conflicts"):
+                    PACKAGE.build_archive(self.root, output)
+                self.assertFalse(output.exists())
+
     def test_existing_destination_is_preserved(self):
         output = self.write("submission.zip", "existing user artifact")
         with self.assertRaises(FileExistsError):
