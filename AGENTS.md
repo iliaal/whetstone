@@ -54,7 +54,7 @@ whetstone/
 - **No off-stack content**: Skip or replace code examples, references, and patterns for languages/frameworks the team doesn't use (Ruby/Rails, Java, Swift, etc.). Use PHP, Python, or TypeScript equivalents. Generic SQL or framework-agnostic examples are fine when no specific stack fits.
 - **Discipline sections duplicate on purpose.** The `## Discipline` sections in language skills (`ia-php-laravel`, `ia-python-services`, `ia-nodejs-backend`, `ia-react-frontend`, `ia-rust-systems`, `ia-cpp-systems`) repeat shared rules because each skill ships standalone to users without this file. Do not flag them as cross-skill duplication.
 - **Code-quality and writing principles belong in the language-specific coding skills, not in planning or meta skills.** Planning skills govern workflow; coding skills govern how code gets written.
-- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/whetstone/` must be self-contained and runnable by a stranger — no references to `~/ai/wiki/`, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in `~/ai/wiki/`, embed enough actionable content inline that the skill works without the wiki; do not leave pointer lines like "see the wiki at ..." in published files. Use `git grep -n '~/ai/\|/home/' -- plugins/` before shipping to catch stragglers. Search tracked files only: a plain `grep -rn` also walks gitignored build artifacts (`evals/results/`, `__pycache__/`) that never ship, so it reports stragglers that do not exist. The tracked hits that remain are the `SPEC.md` lines documenting this rule.
+- **No personal-machine paths in plugin files.** The plugin is published externally (mirrored to ai-skills, shipped to ClawHub, synced to `.agents`/`.codex`/`.kilocode`). Anything under `plugins/whetstone/` must be self-contained and runnable by a stranger — no references to `~/...` or `/home/<user>/...` paths into personal notes, `~/ai/repos/`, `/home/ilia/`, private Linear/Slack/Grafana URLs, or any other path specific to one machine or org. If a pattern's deep reference lives in personal notes, embed enough actionable content inline that the skill works without them; do not leave pointer lines like "see the wiki at ..." in published files. Use `git grep -n '~/ai/\|/home/' -- plugins/` before shipping to catch stragglers. Search tracked files only: a plain `grep -rn` also walks gitignored build artifacts (`evals/results/`, `__pycache__/`) that never ship, so it reports stragglers that do not exist. The tracked hits that remain are the `SPEC.md` lines documenting this rule.
 
 ## Versioning
 
@@ -356,8 +356,8 @@ Keep `renames` as append-only history from former plugin names to current names 
 
 This repo is onboarded to the central `br` ledger. A PATH wrapper routes every
 `br` call from here into a private store under `~/ai/beads/<slug>/`; this work tree
-carries **no** `.beads` artifacts (do not create any). Full protocol lives in
-`~/ai/wiki/tools/beads-review-ledger.md`.
+carries **no** `.beads` artifacts (do not create any). The full protocol is
+documented separately.
 
 **Allowed commands** (the wrapper denies everything else): `create update comments
 close reopen list show count stats search where info`, `doctor health`,

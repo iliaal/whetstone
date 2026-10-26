@@ -2321,12 +2321,12 @@ class TestParseCoverageMatrix:
 
 class TestFindHelpers:
     def test_machine_paths_caught(self):
-        text = "see ~/ai/wiki/foo.md and /home/ilia/repos/x"
+        text = "see ~/ai/notes/foo.md and /home/ilia/repos/x"
         hits = distiller._find_machine_paths(text)
         assert len(hits) >= 1
 
     def test_machine_paths_inside_inline_backticks_skipped(self):
-        text = "Don't use `~/ai/wiki/foo.md` -- the gate forbids it."
+        text = "Don't use `~/ai/notes/foo.md` -- the gate forbids it."
         hits = distiller._find_machine_paths(text)
         assert hits == []
 
