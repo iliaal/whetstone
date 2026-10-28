@@ -365,19 +365,27 @@ def generate_report(
     lines.append("")
 
     # Overlaps
-    filtered_matches = [m for m in matches if not filter_kind or m.ours.kind == filter_kind]
+    filtered_matches = []
+    seen = set()
+    for m in matches:
+        if filter_kind and m.ours.kind != filter_kind:
+            continue
+        # Names are not identities: skills and agents can share a name,
+        # and recursively scanned agents can share a filename stem.
+        key = (
+            m.ours.kind, m.ours.repo, m.ours.path,
+            m.theirs.kind, m.theirs.repo, m.theirs.path,
+        )
+        if key not in seen:
+            seen.add(key)
+            filtered_matches.append(m)
     lines.append(f"## Overlapping Components ({len(filtered_matches)} matches)")
     lines.append("")
 
     if filtered_matches:
         lines.append("| Ours | Theirs | Repo | Sim | Our Lines | Their Lines | Ratio |")
         lines.append("|------|--------|------|----:|----------:|------------:|------:|")
-        seen = set()
         for m in filtered_matches:
-            key = (m.ours.name, m.theirs.name, m.theirs.repo)
-            if key in seen:
-                continue
-            seen.add(key)
             lines.append(
                 f"| {m.ours.name} | {m.theirs.name} | {m.theirs.repo} "
                 f"| {m.similarity:.2f} | {m.ours.line_count} | {m.theirs.line_count} "
