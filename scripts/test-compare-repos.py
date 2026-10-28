@@ -45,6 +45,42 @@ class RepositoryDiscoveryTests(unittest.TestCase):
             (repo / ".git").mkdir()
         return repo
 
+    def test_nonfinite_thresholds_fail_before_scanning_or_writing(self):
+        repo = self.make_agents_repo()
+        output = self.root / "comparison.md"
+        self.write(self.checkout, ".compare-cache/ours.json", "ours sentinel\n")
+        self.write(self.checkout, ".compare-cache/external.json", "external sentinel\n")
+        output.write_text("report sentinel\n", encoding="utf-8")
+        tracked = [output, *sorted((self.checkout / ".compare-cache").iterdir())]
+        before = {path: path.read_bytes() for path in tracked}
+        for value in ("nan", "NaN", "+nan", "-nan", "inf", "+inf", "-inf",
+                      "Infinity", "-Infinity", "1e999", "-1e999"):
+            for mode in ((str(repo),), ("--report-only",), ("--catalog", str(repo))):
+                with self.subTest(value=value, mode=mode):
+                    result = subprocess.run(
+                        [sys.executable, str(self.script), f"--threshold={value}",
+                         "--output", str(output), *mode], cwd=self.root,
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn("--threshold must be finite", result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertNotIn("Scanning", result.stderr)
+                    self.assertEqual({path: path.read_bytes() for path in tracked}, before)
+
+    def test_finite_thresholds_keep_existing_matching_semantics(self):
+        self.write(self.checkout, "plugins/whetstone/agents/ia-review.md", "# Review\n")
+        repo = self.root / "matching"
+        self.write(repo, "agents/review.md", "# Review\n")
+        (repo / ".git").mkdir()
+        output = self.root / "comparison.md"
+        for value, count in (("-1", 2), ("0", 2), ("0.15", 1), ("0.9999999999999999", 1),
+                             ("1", 1), ("1.0000000000000002", 0), ("2", 0)):
+            for mode in ((repo,), ("--report-only",)):
+                with self.subTest(value=value, mode=mode):
+                    result = self.run_cli(f"--threshold={value}", "--output", output, *mode)
+                    self.assertIn(f"Overlaps: {count} total", result.stdout)
+
     def test_same_name_of_different_kind_is_reported_as_gap(self):
         for local_kind, external_kind in (("skills", "agents"), ("agents", "skills")):
             with self.subTest(local_kind=local_kind):
