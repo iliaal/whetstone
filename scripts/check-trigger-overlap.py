@@ -32,6 +32,7 @@ skills).
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import sys
 from itertools import combinations
@@ -86,7 +87,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--threshold", type=float, default=0.10,
-                        help="Minimum Jaccard to report (default: 0.10). whetstone's "
+                        help="Finite minimum Jaccard to report (default: 0.10). whetstone's "
                              "triggers are well-separated; 0.10 surfaces genuine "
                              "near-neighbors, higher values quickly go empty.")
     parser.add_argument("--top", type=int, default=25,
@@ -97,6 +98,9 @@ def main() -> int:
     parser.add_argument("--strict", action="store_true",
                         help="Exit 1 if any cross-tier pair meets the threshold")
     args = parser.parse_args()
+
+    if not math.isfinite(args.threshold):
+        parser.error("--threshold must be finite")
 
     if not args.patterns.is_file():
         print(f"ERROR: patterns file not found: {args.patterns}", file=sys.stderr)

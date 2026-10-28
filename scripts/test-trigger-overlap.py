@@ -53,6 +53,29 @@ class TriggerOverlapTests(unittest.TestCase):
                 self.assertEqual(result.returncode, expected_status, result.stdout + result.stderr)
                 self.assertIn(f"{expected_count} cross-tier pair(s) at/above threshold", result.stdout)
 
+    def test_nonfinite_thresholds_are_argument_errors(self):
+        for strict in (False, True):
+            for threshold in ("nan", "NaN", "+nan", "-nan", "inf", "+inf", "-inf",
+                              "Infinity", "-Infinity", "1e309", "-1e309"):
+                with self.subTest(strict=strict, threshold=threshold):
+                    args = [f"--threshold={threshold}"]
+                    if strict:
+                        args.append("--strict")
+                    result = self.run_report(*args)
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("error: --threshold must be finite", result.stderr)
+
+    def test_finite_extremes_keep_existing_threshold_semantics(self):
+        for threshold, status, matches in (("-1e308", 1, True), ("0", 1, True),
+                                           ("1", 0, True), ("1.1", 0, False),
+                                           ("1e308", 0, False)):
+            with self.subTest(threshold=threshold):
+                result = self.run_report("--strict", f"--threshold={threshold}", "--top", "0")
+                self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+                self.assertEqual(result.stderr, "")
+                self.assertEqual("No skill pairs" not in result.stdout, matches)
+
     def test_strict_accepts_no_matches(self):
         result = self.run_report("--strict", "--threshold", "1.1")
         self.assertEqual(result.returncode, 0, result.stderr)
