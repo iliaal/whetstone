@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -531,6 +532,8 @@ def main() -> None:
         help="Output file path (default: reports/comparison-YYYY-MM-DD.md)",
     )
     args = parser.parse_args()
+    if not math.isfinite(args.threshold):
+        parser.error("--threshold must be finite")
 
     filter_kind = {"skills": "skill", "agents": "agent"}.get(args.type) if args.type else None
 
