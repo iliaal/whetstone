@@ -2282,6 +2282,41 @@ class TestRecordCheckBudget:
         assert regressions == []
 
 
+@pytest.mark.parametrize("mode", [["foo"], ["--check-all"]])
+@pytest.mark.parametrize("cap", ["nan", "NaN", "inf", "+inf", "-inf", "Infinity"])
+def test_budget_cli_rejects_nonfinite_before_check(monkeypatch, mode, cap):
+    check = mock.Mock(return_value=0)
+    monkeypatch.setattr(distiller, "check_budget_cli", check)
+    monkeypatch.setattr(sys, "argv", ["distiller.py", "budget", *mode, f"--ratio-cap={cap}"])
+    with pytest.raises(SystemExit) as exit_info:
+        distiller.main()
+    assert exit_info.value.code == 2
+    check.assert_not_called()
+
+
+@pytest.mark.parametrize("mode,skill", [(["foo"], "foo"), (["--check-all"], None)])
+@pytest.mark.parametrize("cap", [-2.0, 0.0, 0.5, 1.0, 2.0, 10.0, 1e300])
+def test_budget_cli_preserves_finite_caps(monkeypatch, mode, skill, cap):
+    check = mock.Mock(return_value=1)
+    monkeypatch.setattr(distiller, "check_budget_cli", check)
+    monkeypatch.setattr(sys, "argv", ["distiller.py", "budget", *mode, f"--ratio-cap={cap}"])
+    with pytest.raises(SystemExit) as exit_info:
+        distiller.main()
+    assert exit_info.value.code == 1
+    check.assert_called_once_with(skill, cap, distiller.BUDGET_DEFAULT_MIN_PRIOR_TURNS,
+                                  distiller.BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY)
+
+
+def test_budget_record_ignores_unused_ratio_cap(monkeypatch):
+    record = mock.Mock(return_value=0)
+    monkeypatch.setattr(distiller, "record_budget", record)
+    monkeypatch.setattr(sys, "argv", ["distiller.py", "budget", "foo", "--record", "--ratio-cap=nan"])
+    with pytest.raises(SystemExit) as exit_info:
+        distiller.main()
+    assert exit_info.value.code == 0
+    record.assert_called_once_with("foo")
+
+
 class TestParseCoverageMatrix:
     def test_extracts_rows(self):
         spec = """## Coverage
