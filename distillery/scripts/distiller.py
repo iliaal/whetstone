@@ -4652,6 +4652,8 @@ def check_budget_cli(skill_name=None, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
     """CLI dispatcher: scan one or all skills with budget.json, report regressions."""
     if skill_name:
         skill_dirs = [EVAL_DATA_DIR / skill_name]
+    elif not EVAL_DATA_DIR.exists():
+        skill_dirs = []
     else:
         skill_dirs = sorted(p for p in EVAL_DATA_DIR.iterdir()
                             if p.is_dir() and (p / "budget.json").exists())

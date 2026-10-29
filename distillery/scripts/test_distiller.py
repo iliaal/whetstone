@@ -2216,6 +2216,35 @@ class TestRecordCheckBudget:
             for s in sessions:
                 f.write(json.dumps(s) + "\n")
 
+    @pytest.mark.parametrize("exists", [False, True])
+    @pytest.mark.parametrize("skill", [None, "missing"])
+    def test_check_cli_without_baselines(self, monkeypatch, capsys, exists, skill):
+        root = self.eval_dir / "eval-data"
+        if exists:
+            root.mkdir()
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", root)
+        assert distiller.check_budget_cli(skill) == 0
+        report = json.loads(capsys.readouterr().out)
+        assert report == {
+            "all_passed": True,
+            "skills": [] if skill is None else [{"skill": skill, "status": "no_baseline"}],
+        }
+        assert root.exists() is exists
+
+    @pytest.mark.parametrize("turn_count,status,exit_code", [(6, "ok", 0), (11, "regression", 1)])
+    def test_check_cli_existing_baselines(self, capsys, turn_count, status, exit_code):
+        self._write_sessions("foo", [
+            {"turn_count": turn_count, "tools_used": ["Read"]},
+        ])
+        (self.eval_dir / "foo" / "budget.json").write_text(json.dumps({
+            "turn_count": {"mean": 5.0}, "tool_variety": {"mean": 1.0},
+        }))
+        (self.eval_dir / "unrecorded").mkdir()
+        assert distiller.check_budget_cli(ratio_cap=2.0) == exit_code
+        report = json.loads(capsys.readouterr().out)
+        assert report["all_passed"] is (exit_code == 0)
+        assert [(item["skill"], item["status"]) for item in report["skills"]] == [("foo", status)]
+
     def test_record_writes_baseline(self):
         self._write_sessions("foo", [
             {"turn_count": 5, "tools_used": ["Read", "Edit"]},
