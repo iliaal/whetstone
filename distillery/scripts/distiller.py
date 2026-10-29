@@ -6,6 +6,7 @@ import ast
 import datetime as _dt
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -6791,6 +6792,8 @@ def main():
                 print("Error: --record requires a skill name.", file=sys.stderr)
                 sys.exit(2)
             sys.exit(record_budget(args.name))
+        if not math.isfinite(args.ratio_cap):
+            parser.error("--ratio-cap must be finite")
         if args.check_all:
             sys.exit(check_budget_cli(None, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety))
         # Default: --check on a single skill
