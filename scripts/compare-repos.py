@@ -525,7 +525,7 @@ def main() -> None:
         "--threshold",
         type=float,
         default=0.15,
-        help="Similarity threshold for matches (default: 0.15)",
+        help="Finite similarity threshold for matches (default: 0.15)",
     )
     parser.add_argument(
         "--output",
