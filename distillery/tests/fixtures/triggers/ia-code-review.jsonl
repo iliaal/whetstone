@@ -24,3 +24,5 @@
 {"prompt":"please review this patch before it lands","expect":true,"source":"sync-2026-09-26"}
 {"prompt":"Write a commit message for this pasted diff","expect":false,"source":"sync-2026-09-26","note":"pasted diff, but the ask is a commit message, not a review"}
 {"prompt":"Apply this patch to the config loader","expect":false,"source":"sync-2026-09-26"}
+{"prompt":"check whether the merge preview build still renders the diff panel","expect":false,"source":"word-boundary-2026-10-31","note":"'preview' contains 'review'; no review is requested"}
+{"prompt":"before we merge, can you review the diff for this branch","expect":true,"source":"word-boundary-2026-10-31","note":"standalone 'review' near diff/merge still fires after the leading \\b"}

@@ -44,7 +44,7 @@ SKILL_TIERS[ia-debugging]=1
 # Bounded gaps + word anchors: unbounded `review.*code` / `audit.*code` spans
 # multi-KB prompts and fires on codebases whose domain noun is "audit"
 # (AuditControllerTest, audit.enabled).
-SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bpatch(es)?\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu|\breview.{0,30}\bpull request\b'
+SKILL_PATTERNS[ia-code-review]='\breview.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bpatch(es)?\b|\bmerge\b)|\bcode.?review|\baudit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|\bcritiqu|\breview.{0,30}\bpull request\b'
 SKILL_TIERS[ia-code-review]=1
 
 SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.{0,40}code|polish.{0,40}code|\b(refactor|simplif[a-z]*)\b.{0,50}\b(code|functions?|methods?|modules?|classes|class|parsers?|handlers?|implementation|data pipeline|services?|components?|router|middleware)\b|declutter|reduce.?complexity|remove.{0,40}(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b|\brefactor\b.{0,50}\.(php|py|rs|[cm]?[jt]sx?|c|h|cpp|hpp)\b'

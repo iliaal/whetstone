@@ -142,8 +142,12 @@ def _is_synthetic_session(project, task_input=""):
 
 # Plugin-maintenance context. A skill injected into a sync/audit/distillery task
 # is a misfire, not usage, and such sessions dominate this repo's harvested data.
-# Mirrors the IS_MAINT_CONTEXT detector in plugins/whetstone/hooks/skill-matcher.sh;
-# keep the two in sync.
+# Deliberately broader than IS_MAINT_CONTEXT in plugins/whetstone/hooks/skill-matcher.sh:
+# the hook only suppresses SKILL_MAINT_SUPPRESS skills and must still inject for
+# real edits ("fix the bug in distiller.py"), so it limits distiller.py to a
+# `^run ... analyze-misfires|diagnose-negatives` line. Eval data excludes any task
+# that mentions distiller.py. Every hook marker must stay covered here; unlike the
+# hook, this pattern is case-sensitive.
 _MAINTENANCE_TASK_PATTERN = _re.compile(
     r"plugins/whetstone/(?:skills|agents|commands)/"
     r"|distiller\.py"
@@ -159,8 +163,8 @@ _MAINTENANCE_TASK_PATTERN = _re.compile(
 
 def _is_maintenance_task(task_input):
     """True if the task is plugin-maintenance (sync/audit/distillery), where any
-    skill injection is a misfire rather than organic usage. See
-    skill-matcher.sh for the canonical definition this mirrors."""
+    skill injection is a misfire rather than organic usage. A superset of the
+    hook's IS_MAINT_CONTEXT; see the comment on _MAINTENANCE_TASK_PATTERN."""
     return bool(task_input and _MAINTENANCE_TASK_PATTERN.search(task_input))
 
 # Secret patterns — compiled once, used to scrub content before writing eval data.

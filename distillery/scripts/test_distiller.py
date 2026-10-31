@@ -2936,7 +2936,53 @@ class TestSyntheticSessionFilter:
 class TestMaintenanceTaskFilter:
     """Exclude plugin-maintenance misfires (sync/audit/distillery tasks) from eval data.
 
-    Mirrors the injection hook's detector (inject-skills.sh:50)."""
+    Superset of the hook's IS_MAINT_CONTEXT (skill-matcher.sh prompt_context):
+    every prompt the hook treats as maintenance is excluded, and so is any
+    distiller.py mention the hook deliberately leaves alone."""
+
+    @staticmethod
+    def _hook_is_maint(prompt):
+        script = 'source "$1" && prompt_context "$2" && "$IS_MAINT_CONTEXT"'
+        result = subprocess.run(
+            ["bash", "-c", script, "_", str(distiller.PLUGIN_DIR / "hooks" / "skill-matcher.sh"), prompt],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert result.returncode in (0, 1), result.stderr
+        return result.returncode == 0
+
+    def test_hook_maintenance_prompts_are_excluded_from_eval_data(self):
+        for prompt in [
+            "Edit plugins/whetstone/skills/ia-debugging/SKILL.md to add a rule",
+            "tighten plugins/whetstone/agents/ia-kieran-reviewer.md",
+            "update the trigger regex in skill-patterns.sh",
+            "/sync-from-repos scan reference repos",
+            "Run /audit-plugin on the modified skills",
+            "/analyze-misfires ia-planning",
+            "/diagnose-negatives ia-planning",
+            "/evolve-skill ia-debugging",
+            "/eval-skills and rank candidates",
+            "Context first.\nrun python3 distillery/scripts/distiller.py analyze-misfires --min-examples 30",
+            "run python3 distillery/scripts/distiller.py diagnose-negatives ia-code-review",
+        ]:
+            assert self._hook_is_maint(prompt), f"hook should flag: {prompt!r}"
+            assert distiller._is_maintenance_task(prompt), f"eval filter should flag: {prompt!r}"
+
+    def test_distiller_mentions_excluded_even_where_hook_still_injects(self):
+        for prompt in [
+            "Fix the bug in distiller.py Python CLI service",
+            "Patch distiller.py to fix the harvest filter",
+            "Explain why distiller.py analyze-misfires is slow\nrun it later",
+        ]:
+            assert not self._hook_is_maint(prompt), f"hook should still inject for: {prompt!r}"
+            assert distiller._is_maintenance_task(prompt), f"eval filter should flag: {prompt!r}"
+
+    def test_real_work_flagged_by_neither(self):
+        for prompt in [
+            "Review this PR for SQL injection in app/Http/Controllers/UserController.php",
+            "Debug why the checkout endpoint returns 500 under load",
+        ]:
+            assert not self._hook_is_maint(prompt)
+            assert not distiller._is_maintenance_task(prompt)
 
     def test_maintenance_tasks_detected(self):
         for task in [
