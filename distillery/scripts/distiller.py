@@ -3208,7 +3208,8 @@ def _parse_session(jsonl_path):
       - session_id: str
       - project: str (directory name)
       - is_subagent: bool
-      - turns: list of {role, content_text, tool_calls, timestamp}
+      - turns: list of {role, content_text, tool_calls, timestamp, message_id}
+      - agent_type: str or None (subagents only, from the sibling .meta.json)
       - injected_skills: list of {skill, version} (subagents only)
       - injection_batched: bool, injection listed skills for several queued tasks
       - task_prompt: str (the actual task, with injection header stripped)
@@ -3323,6 +3324,7 @@ def _parse_session(jsonl_path):
                 "tool_calls": tool_calls,
                 "tool_results": tool_results,
                 "timestamp": timestamp,
+                "message_id": msg.get("id"),
             })
 
     if not turns:
@@ -3380,6 +3382,7 @@ def _parse_session(jsonl_path):
         "session_id": session_id or jsonl_path.stem,
         "project": project,
         "is_subagent": is_subagent,
+        "agent_type": _subagent_type(jsonl_path) if is_subagent else None,
         "turns": turns,
         "injected_skills": injected_skills,
         "injection_batched": injection_batched,
@@ -3392,6 +3395,37 @@ def _parse_session(jsonl_path):
     }
 
 
+def _subagent_type(jsonl_path):
+    """agentType from the agent-<id>.meta.json written beside a subagent transcript, or None."""
+    try:
+        meta = json.loads(Path(jsonl_path).with_suffix(".meta.json").read_text())
+    except (OSError, ValueError):
+        return None
+    agent_type = meta.get("agentType") if isinstance(meta, dict) else None
+    return agent_type if isinstance(agent_type, str) and agent_type else None
+
+
+def _count_assistant_turns(turns):
+    """Assistant API messages, not transcript records.
+
+    The transcript writes one record per content block (thinking, text, each
+    tool_use), all sharing the message's id, so counting records inflates turns
+    by however many blocks a model emits per message. Records without an id
+    count individually.
+    """
+    ids = set()
+    unidentified = 0
+    for turn in turns:
+        if turn["role"] != "assistant":
+            continue
+        message_id = turn.get("message_id")
+        if message_id:
+            ids.add(message_id)
+        else:
+            unidentified += 1
+    return len(ids) + unidentified
+
+
 def _build_eval_example(parsed_session):
     """Convert a parsed session into a compact eval example for a skill.
 
@@ -3402,9 +3436,13 @@ def _build_eval_example(parsed_session):
     and completion_claims (claims made without tool evidence).
     """
     output_parts = []
-    tools_used = set()
     total_len = 0
     max_output = 15000
+
+    # Tool counts span the whole session; the output excerpt below stops at
+    # max_output and would undercount long sessions.
+    assistant_calls = [tc["tool"] for turn in parsed_session["turns"]
+                       if turn["role"] == "assistant" for tc in turn["tool_calls"]]
 
     for turn in parsed_session["turns"]:
         if total_len >= max_output:
@@ -3416,8 +3454,6 @@ def _build_eval_example(parsed_session):
                 chunk = text[:4000]
                 output_parts.append(chunk)
                 total_len += len(chunk)
-            for tc in turn["tool_calls"]:
-                tools_used.add(tc["tool"])
         elif turn["role"] == "user" and turn.get("tool_results"):
             # Tool results contain the real work product (file contents,
             # bash output, grep results) that show what the agent actually did
@@ -3434,11 +3470,14 @@ def _build_eval_example(parsed_session):
         "task_input": _scrub_text(parsed_session["task_prompt"][:5000]),
         "agent_output": _scrub_text(agent_output[:max_output]),
         "signal": parsed_session["signal"],
-        "tools_used": sorted(tools_used),
+        "tools_used": sorted(set(assistant_calls)),
+        "tool_call_count": len(assistant_calls),
         "repeated_calls": _repeated_call_groups(parsed_session["turns"]),
         "completion_claims": _unverified_completion_claims(parsed_session["turns"]),
         "injected_skills": parsed_session["injected_skills"],
         "turn_count": len(parsed_session["turns"]),
+        "assistant_turns": _count_assistant_turns(parsed_session["turns"]),
+        "agent_type": parsed_session.get("agent_type"),
         "project": parsed_session["project"],
         "session_id": parsed_session["session_id"],
         "claude_version": parsed_session["claude_version"],
@@ -4498,16 +4537,29 @@ def _validate_diagnosis_finding(finding):
 
 # --- Budget regression detection (gstack/test/helpers/eval-store.ts pattern) ---
 #
-# Track per-skill resource budgets (turn count, tool variety) over time so silent
-# bloat from refactors gets caught. Baseline lives at <skill>/budget.json. Compare
-# current aggregates against it; flag if ratio > cap AND baseline >= floor.
+# Track per-skill resource budgets (assistant turns, tool variety) over time so
+# silent bloat from refactors gets caught. Baseline lives at <skill>/budget.json,
+# split into one stratum per subagent type: an opus-high review trace and an
+# opus-medium lookup trace do different amounts of work under the same skill, so
+# a shift in the agent mix must not read as skill bloat.
 #
-# Floors avoid noise on small baselines (a 2x increase from 1 to 2 turns is not
-# a regression; a 2x increase from 10 to 20 is).
+# A baseline is only comparable to data gathered under the same skill content,
+# model baseline, and metric definition; any mismatch is stale_baseline, never a
+# ratio. A metric regresses when both its mean and p50 ratios exceed the cap
+# (one heavy session moves the mean but not the median) and the baseline mean
+# clears the metric's floor (a 2x increase from 1 to 2 is noise).
 
+BUDGET_METRIC_VERSION = 2
 BUDGET_DEFAULT_RATIO_CAP = 2.0
 BUDGET_DEFAULT_MIN_PRIOR_TURNS = 3
-BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY = 5
+# Per-session distinct-tool counts sit between 1 and 4 for most skills; a floor
+# above that range disables the metric, a floor of 2 still skips single-tool
+# baselines where one extra tool doubles the ratio.
+BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY = 2
+BUDGET_MIN_BASELINE_SAMPLES = 20
+BUDGET_METRICS = ("assistant_turns", "tool_variety")
+BUDGET_EXIT_REGRESSION = 1
+BUDGET_EXIT_UNUSABLE_BASELINE = 3
 
 
 def _percentile(values, pct):
@@ -4546,15 +4598,49 @@ def _load_skill_sessions(skill_name, fresh_only=True):
     return rows
 
 
+def _load_budget_sessions(skill_name, manifest):
+    """Fresh rows, re-checked against the current manifest.
+
+    Staleness flags are written at harvest time; a skill edited after the last
+    harvest leaves rows flagged fresh that predate the content a new baseline
+    would be fingerprinted with.
+    """
+    rows = _load_skill_sessions(skill_name, fresh_only=True)
+    if not manifest:
+        return rows
+    fresh = []
+    for row in rows:
+        stale = _is_example_stale(row, skill_name, manifest)
+        if not (stale["content_stale"] or stale["pattern_stale"] or stale["model_stale"]):
+            fresh.append(row)
+    return fresh
+
+
+def _budget_summary(values):
+    ordered = sorted(values)
+    return {
+        "mean": round(sum(ordered) / len(ordered), 2) if ordered else 0,
+        "p50": round(_percentile(ordered, 50), 2),
+        "p95": round(_percentile(ordered, 95), 2),
+    }
+
+
 def _compute_budget_metrics(sessions):
-    """Aggregate turn_count and tool variety across sessions. Returns dict or None."""
+    """Aggregate assistant_turns and tool variety across sessions. Returns dict or None.
+
+    Rows without assistant_turns predate the metric and are skipped rather than
+    approximated from turn_count, which counts transcript records.
+    """
     turns = []
     tool_variety = []
     for s in sessions:
+        raw = s.get("assistant_turns")
+        if raw is None or isinstance(raw, bool):
+            continue
         try:
-            turns.append(int(s.get("turn_count") or 0))
+            turns.append(int(raw))
         except (ValueError, TypeError):
-            pass
+            continue
         tools_field = s.get("tools_used")
         if isinstance(tools_field, str):
             try:
@@ -4565,108 +4651,262 @@ def _compute_budget_metrics(sessions):
             tool_variety.append(len(tools_field))
     if not turns:
         return None
-    turns_sorted = sorted(turns)
-    variety_sorted = sorted(tool_variety) if tool_variety else [0]
     return {
-        "sample_size": len(sessions),
-        "turn_count": {
-            "mean": round(sum(turns) / len(turns), 2),
-            "p50": round(_percentile(turns_sorted, 50), 2),
-            "p95": round(_percentile(turns_sorted, 95), 2),
-        },
-        "tool_variety": {
-            "mean": round(sum(tool_variety) / len(tool_variety), 2) if tool_variety else 0,
-            "p50": round(_percentile(variety_sorted, 50), 2),
-            "p95": round(_percentile(variety_sorted, 95), 2),
-        },
+        "sample_size": len(turns),
+        "assistant_turns": _budget_summary(turns),
+        "tool_variety": _budget_summary(tool_variety),
     }
 
 
-def record_budget(skill_name):
-    """Record current budget aggregates as the new baseline at <skill>/budget.json."""
-    sessions = _load_skill_sessions(skill_name, fresh_only=True)
+def _compute_budget_strata(sessions):
+    """Budget metrics per agent_type stratum; rows without an agent type share the "" key."""
+    groups = defaultdict(list)
+    for s in sessions:
+        groups[s.get("agent_type") or ""].append(s)
+    strata = {}
+    for key in sorted(groups):
+        metrics = _compute_budget_metrics(groups[key])
+        if metrics is not None:
+            strata[key] = metrics
+    return strata
+
+
+def _manifest_model_prefixes(manifest):
+    prefixes = manifest.get("model_baseline_prefixes")
+    if prefixes is None:
+        legacy = manifest.get("model_baseline_prefix")
+        prefixes = [legacy] if legacy else []
+    return sorted(prefixes)
+
+
+def _budget_fingerprint(skill_name):
+    """What a baseline must match to stay comparable: content hash, model prefixes, metric version."""
+    try:
+        manifest = _load_skill_manifest() or {}
+    except (json.JSONDecodeError, OSError):
+        manifest = {}
+    skills = manifest.get("skills") or {}
+    entry = skills.get(skill_name) or skills.get(f"ia-{skill_name}") or {}
+    return {
+        "manifest": manifest,
+        "skill_content_hash": entry.get("content_hash"),
+        "skill_pattern_hash": entry.get("pattern_hash"),
+        "model_baseline_prefixes": _manifest_model_prefixes(manifest),
+        "metric_version": BUDGET_METRIC_VERSION,
+    }
+
+
+def _baseline_stale_reasons(baseline, fingerprint):
+    reasons = []
+    if not fingerprint["skill_content_hash"]:
+        reasons.append("content_hash: skill missing from manifest, comparability undecidable")
+    elif baseline.get("skill_content_hash") != fingerprint["skill_content_hash"]:
+        reasons.append("content_hash: skill content changed since the baseline was recorded")
+    recorded_prefixes = baseline.get("model_baseline_prefixes")
+    if not isinstance(recorded_prefixes, list) or sorted(recorded_prefixes) != fingerprint["model_baseline_prefixes"]:
+        reasons.append("model_prefixes: manifest model_baseline_prefixes differ from the baseline's")
+    if baseline.get("metric_version") != BUDGET_METRIC_VERSION:
+        reasons.append(f"metric_version: baseline has {baseline.get('metric_version')!r}, "
+                       f"current is {BUDGET_METRIC_VERSION}")
+    return reasons
+
+
+def record_budget(skill_name, min_samples=BUDGET_MIN_BASELINE_SAMPLES):
+    """Record per-agent_type budget aggregates as the new baseline at <skill>/budget.json.
+
+    Only strata with at least min_samples fresh rows are recorded; when none
+    qualifies the existing baseline is left untouched.
+    """
+    fingerprint = _budget_fingerprint(skill_name)
+    if not fingerprint["skill_content_hash"]:
+        print(f"Refusing to record budget for '{skill_name}': no content_hash in {MANIFEST_PATH.name}, "
+              "so the baseline could not be checked for staleness. Run scripts/generate-manifest.py.",
+              file=sys.stderr)
+        return 1
+    sessions = _load_budget_sessions(skill_name, fingerprint["manifest"])
     if not sessions:
         print(f"No fresh sessions for '{skill_name}'. Run harvest-sessions first.", file=sys.stderr)
         return 1
-    metrics = _compute_budget_metrics(sessions)
-    if metrics is None:
-        print(f"Could not compute metrics for '{skill_name}' (no usable turn_count values).", file=sys.stderr)
+    strata = _compute_budget_strata(sessions)
+    if not strata:
+        print(f"Could not compute metrics for '{skill_name}' (no rows carry assistant_turns; "
+              "re-run harvest-sessions).", file=sys.stderr)
+        return 1
+    recorded = {k: v for k, v in strata.items() if v["sample_size"] >= min_samples}
+    insufficient = {k: v["sample_size"] for k, v in strata.items() if v["sample_size"] < min_samples}
+    if not recorded:
+        counts = ", ".join(f"{k or '<none>'}={n}" for k, n in insufficient.items())
+        print(f"Refusing to record budget for '{skill_name}': no agent_type stratum has "
+              f">= {min_samples} fresh samples ({counts}).", file=sys.stderr)
         return 1
 
-    skill_versions = _read_manifest_for_skill(skill_name)
     payload = {
         "recorded_at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
         "skill_name": skill_name,
-        "skill_content_hash": skill_versions.get("content_hash"),
-        "skill_pattern_hash": skill_versions.get("pattern_hash"),
+        "skill_content_hash": fingerprint["skill_content_hash"],
+        "skill_pattern_hash": fingerprint["skill_pattern_hash"],
+        "model_baseline_prefixes": fingerprint["model_baseline_prefixes"],
+        "metric_version": BUDGET_METRIC_VERSION,
         "fresh_only": True,
-        **metrics,
+        "min_baseline_samples": min_samples,
+        "strata": recorded,
+        "insufficient_strata": insufficient,
     }
     out_path = EVAL_DATA_DIR / skill_name / "budget.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, indent=2) + "\n")
-    print(f"Recorded budget for {skill_name}: turns mean={metrics['turn_count']['mean']} (n={metrics['sample_size']})")
+    print(f"Recorded budget for {skill_name}:")
+    for key, metrics in recorded.items():
+        print(f"  {key or '<none>'}: assistant_turns mean={metrics['assistant_turns']['mean']} "
+              f"p50={metrics['assistant_turns']['p50']} (n={metrics['sample_size']})")
+    for key, n in insufficient.items():
+        print(f"  {key or '<none>'}: not recorded (n={n} < {min_samples})")
     print(f"  -> {out_path}")
     return 0
 
 
 def _read_manifest_for_skill(skill_name):
     """Best-effort read of the per-skill content/pattern hashes from the manifest."""
-    manifest_path = DISTILLERY_DIR / ".skill-versions.json"
-    if not manifest_path.exists():
+    if not MANIFEST_PATH.exists():
         return {}
     try:
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(MANIFEST_PATH.read_text())
     except (json.JSONDecodeError, OSError):
         return {}
     skills = manifest.get("skills") or {}
     return skills.get(skill_name) or skills.get(f"ia-{skill_name}") or {}
 
 
-def check_budget(skill_name, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
-                 min_prior_turns=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
-                 min_prior_tool_variety=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY):
-    """Compare current aggregates against the recorded baseline. Returns (regressions, current_metrics)."""
-    baseline_path = EVAL_DATA_DIR / skill_name / "budget.json"
-    if not baseline_path.exists():
-        return None, None  # no baseline yet
-    try:
-        baseline = json.loads(baseline_path.read_text())
-    except (json.JSONDecodeError, OSError) as exc:
-        print(f"  {skill_name}: baseline unreadable ({exc})", file=sys.stderr)
-        return None, None
+def _ratio(current, prior):
+    if prior:
+        return current / prior
+    return math.inf if current > 0 else 0.0
 
-    sessions = _load_skill_sessions(skill_name, fresh_only=True)
-    if not sessions:
-        return None, None
-    current = _compute_budget_metrics(sessions)
-    if current is None:
-        return None, None
 
+def _stratum_regressions(prior, current, ratio_cap, floors):
     regressions = []
-    for metric, floor in (("turn_count", min_prior_turns), ("tool_variety", min_prior_tool_variety)):
-        prior_mean = (baseline.get(metric) or {}).get("mean", 0)
-        cur_mean = current[metric]["mean"]
-        if prior_mean < floor:
-            continue  # below floor: noise, not signal
-        if prior_mean == 0:
+    for metric in BUDGET_METRICS:
+        prior_stats = prior.get(metric) or {}
+        prior_mean = prior_stats.get("mean", 0)
+        if prior_mean <= 0 or prior_mean < floors[metric]:
             continue
-        ratio = cur_mean / prior_mean
-        if ratio > ratio_cap:
+        mean_ratio = _ratio(current[metric]["mean"], prior_mean)
+        prior_p50 = prior_stats.get("p50")
+        # A baseline without p50 cannot show the shift is confined to a tail,
+        # so the mean alone decides.
+        p50_ratio = mean_ratio if prior_p50 is None else _ratio(current[metric]["p50"], prior_p50)
+        if mean_ratio > ratio_cap and p50_ratio > ratio_cap:
             regressions.append({
                 "metric": metric,
                 "baseline_mean": prior_mean,
-                "current_mean": cur_mean,
-                "ratio": round(ratio, 2),
+                "current_mean": current[metric]["mean"],
+                "ratio": round(mean_ratio, 2),
+                "baseline_p50": prior_p50,
+                "current_p50": current[metric]["p50"],
+                "p50_ratio": round(p50_ratio, 2) if math.isfinite(p50_ratio) else None,
                 "ratio_cap": ratio_cap,
             })
-    return regressions, current
+    return regressions
+
+
+def _positive_int(value):
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"must be >= 1, got {number}")
+    return number
+
+
+def check_budget(skill_name, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
+                 min_prior_turns=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
+                 min_prior_tool_variety=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY,
+                 min_samples=BUDGET_MIN_BASELINE_SAMPLES):
+    """Compare current per-stratum aggregates against the recorded baseline.
+
+    Returns a dict whose "status" is one of: no_baseline, unreadable_baseline,
+    stale_baseline (with "reasons"), no_data, regression, ok,
+    insufficient_baseline, or new_stratum, in that precedence among strata;
+    "strata" carries the per-agent_type detail.
+    """
+    baseline_path = EVAL_DATA_DIR / skill_name / "budget.json"
+    if not baseline_path.exists():
+        return {"status": "no_baseline"}
+    try:
+        baseline = json.loads(baseline_path.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        return {"status": "unreadable_baseline", "error": str(exc)}
+    if not isinstance(baseline, dict):
+        return {"status": "unreadable_baseline", "error": "baseline is not a JSON object"}
+
+    fingerprint = _budget_fingerprint(skill_name)
+    reasons = _baseline_stale_reasons(baseline, fingerprint)
+    baseline_strata = baseline.get("strata")
+    if not reasons and not isinstance(baseline_strata, dict):
+        reasons.append("metric_version: baseline has no per-agent_type strata")
+    if reasons:
+        return {"status": "stale_baseline", "reasons": reasons,
+                "recorded_at": baseline.get("recorded_at")}
+
+    current_strata = _compute_budget_strata(_load_budget_sessions(skill_name, fingerprint["manifest"]))
+    if not current_strata:
+        return {"status": "no_data"}
+
+    floors = {"assistant_turns": min_prior_turns, "tool_variety": min_prior_tool_variety}
+    insufficient_recorded = baseline.get("insufficient_strata") or {}
+    strata = []
+    for key in sorted(set(current_strata) | set(baseline_strata)):
+        current = current_strata.get(key)
+        prior = baseline_strata.get(key)
+        entry = {"agent_type": key, "current_sample_size": current["sample_size"] if current else 0}
+        if current is None:
+            entry["status"] = "no_current_data"
+            entry["baseline_sample_size"] = prior.get("sample_size")
+        elif prior is None:
+            if key in insufficient_recorded:
+                entry["status"] = "insufficient_baseline"
+                entry["baseline_sample_size"] = insufficient_recorded[key]
+            else:
+                entry["status"] = "new_stratum"
+        else:
+            prior_n = prior.get("sample_size") or 0
+            entry["baseline_sample_size"] = prior_n
+            regressions = _stratum_regressions(prior, current, ratio_cap, floors)
+            if prior_n < min_samples:
+                entry["status"] = "insufficient_baseline"
+                if regressions:
+                    entry["advisory_regressions"] = regressions
+            elif regressions:
+                entry["status"] = "regression"
+                entry["regressions"] = regressions
+            else:
+                entry["status"] = "ok"
+        strata.append(entry)
+
+    # A compared stratum outranks the warning: strata too small to record stay
+    # small for every skill whose usage is dominated by one or two agent types,
+    # and labelling all of those skills insufficient would bury the ok/regression
+    # signal. The per-stratum entries keep the warning visible.
+    result = {"status": "no_data", "strata": strata}
+    statuses = {e["status"] for e in strata}
+    for status in ("regression", "ok", "insufficient_baseline", "new_stratum"):
+        if status in statuses:
+            result["status"] = status
+            break
+    insufficient = [e["agent_type"] for e in strata if e["status"] == "insufficient_baseline"]
+    if insufficient:
+        result["insufficient_strata"] = insufficient
+    return result
 
 
 def check_budget_cli(skill_name=None, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
                      min_prior_turns=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
-                     min_prior_tool_variety=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY):
-    """CLI dispatcher: scan one or all skills with budget.json, report regressions."""
+                     min_prior_tool_variety=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY,
+                     min_samples=BUDGET_MIN_BASELINE_SAMPLES):
+    """CLI dispatcher: scan one or all skills with budget.json and print a JSON report.
+
+    Exit 1 on any regression; otherwise exit 3 when a baseline is stale or
+    unreadable (it must be re-recorded before it can pass); otherwise 0.
+    insufficient_baseline, new_stratum, and no_data are reported but do not fail.
+    """
     if skill_name:
         skill_dirs = [EVAL_DATA_DIR / skill_name]
     elif not EVAL_DATA_DIR.exists():
@@ -4674,29 +4914,26 @@ def check_budget_cli(skill_name=None, ratio_cap=BUDGET_DEFAULT_RATIO_CAP,
     else:
         skill_dirs = sorted(p for p in EVAL_DATA_DIR.iterdir()
                             if p.is_dir() and (p / "budget.json").exists())
-    any_regression = False
     report = []
     for skill_dir in skill_dirs:
-        name = skill_dir.name
-        if not (skill_dir / "budget.json").exists():
-            report.append({"skill": name, "status": "no_baseline"})
-            continue
-        regressions, current = check_budget(name, ratio_cap, min_prior_turns, min_prior_tool_variety)
-        if regressions is None:
-            report.append({"skill": name, "status": "no_data"})
-            continue
-        if regressions:
-            any_regression = True
-            report.append({
-                "skill": name,
-                "status": "regression",
-                "regressions": regressions,
-                "current_sample_size": current["sample_size"],
-            })
-        else:
-            report.append({"skill": name, "status": "ok", "current_sample_size": current["sample_size"]})
-    print(json.dumps({"all_passed": not any_regression, "skills": report}, indent=2))
-    return 1 if any_regression else 0
+        result = check_budget(skill_dir.name, ratio_cap, min_prior_turns, min_prior_tool_variety, min_samples)
+        report.append({"skill": skill_dir.name, **result})
+    statuses = [item["status"] for item in report]
+    unusable = [s for s in statuses if s in ("stale_baseline", "unreadable_baseline")]
+    if "regression" in statuses:
+        exit_code = BUDGET_EXIT_REGRESSION
+    elif unusable:
+        exit_code = BUDGET_EXIT_UNUSABLE_BASELINE
+    else:
+        exit_code = 0
+    print(json.dumps({
+        "all_passed": exit_code == 0,
+        "status_counts": dict(sorted(Counter(statuses).items())),
+        "stratum_status_counts": dict(sorted(Counter(
+            e["status"] for item in report for e in item.get("strata", [])).items())),
+        "skills": report,
+    }, indent=2))
+    return exit_code
 
 
 def _diagnose_load(skill_name, max_examples, include_stale):
@@ -6430,8 +6667,27 @@ def build_parser():
     diag_mode.add_argument("--format-result", action="store_true", help="Sub-agent path: turn a sub-agent's JSON response (--response) into the report")
     p_diag.add_argument("--response", default=None, help="Sub-agent response for --format-result (inline, or @path to a file)")
 
-    # budget — record/check per-skill resource budget (turn count + tool variety)
-    p_budget_check = sub.add_parser("budget", help="Record or check per-skill resource budget (catches silent skill bloat)")
+    # budget — record/check per-skill resource budget (assistant turns + tool variety)
+    p_budget_check = sub.add_parser(
+        "budget", help="Record or check per-skill resource budget (catches silent skill bloat)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Compare per-agent_type assistant_turns and tool_variety against <skill>/budget.json.\n\n"
+            "Per-skill status in check modes:\n"
+            "  regression             mean AND p50 ratio above --ratio-cap in a stratum (fails, exit 1,\n"
+            "                         which takes precedence over exit 3)\n"
+            "  stale_baseline         content hash, model prefixes, or metric version differ from the\n"
+            "                         baseline; re-record it (fails, exit 3)\n"
+            "  unreadable_baseline    budget.json cannot be parsed (fails, exit 3)\n"
+            "  insufficient_baseline  a stratum baseline has fewer than --min-samples rows; a\n"
+            "                         data-volume warning, not a regression (does not fail)\n"
+            "  new_stratum            agent type absent from the baseline (informational)\n"
+            "  no_data                no fresh rows to compare (informational)\n"
+            "  ok                     every compared stratum within the cap; smaller strata may still\n"
+            "                         carry insufficient_baseline (listed per stratum)\n\n"
+            "--record writes only strata with at least --min-samples fresh rows and refuses when none has."
+        ),
+    )
     p_budget_check.add_argument("name", nargs="?", help="Skill name (required for --record; omit for --check-all)")
     mode = p_budget_check.add_mutually_exclusive_group()
     mode.add_argument("--record", action="store_true", help="Record current aggregates as the new baseline")
@@ -6440,9 +6696,12 @@ def build_parser():
     p_budget_check.add_argument("--ratio-cap", type=float, default=BUDGET_DEFAULT_RATIO_CAP,
                                 help=f"Regression threshold; must be finite in check modes, ignored by --record (default: {BUDGET_DEFAULT_RATIO_CAP}x baseline)")
     p_budget_check.add_argument("--min-prior-turns", type=int, default=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
-                                help=f"Floor: skip turn_count check if baseline mean < N (default: {BUDGET_DEFAULT_MIN_PRIOR_TURNS})")
+                                help=f"Floor: skip assistant_turns check if baseline mean < N (default: {BUDGET_DEFAULT_MIN_PRIOR_TURNS})")
     p_budget_check.add_argument("--min-prior-tool-variety", type=int, default=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY,
                                 help=f"Floor: skip tool_variety check if baseline mean < N (default: {BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY})")
+    p_budget_check.add_argument("--min-samples", type=_positive_int, default=BUDGET_MIN_BASELINE_SAMPLES,
+                                help=f"Rows a stratum needs to be recorded, and below which a recorded stratum "
+                                     f"is insufficient_baseline (default: {BUDGET_MIN_BASELINE_SAMPLES})")
 
     # evolve
     p_evolve = sub.add_parser("evolve", help="Run DSPy GEPA optimization on a skill (outputs diff for review)")
@@ -6807,16 +7066,18 @@ def main():
             if not args.name:
                 print("Error: --record requires a skill name.", file=sys.stderr)
                 sys.exit(2)
-            sys.exit(record_budget(args.name))
+            sys.exit(record_budget(args.name, args.min_samples))
         if not math.isfinite(args.ratio_cap):
             parser.error("--ratio-cap must be finite")
         if args.check_all:
-            sys.exit(check_budget_cli(None, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety))
+            sys.exit(check_budget_cli(None, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety,
+                                      args.min_samples))
         # Default: --check on a single skill
         if not args.name:
             print("Error: budget requires a skill name (or --check-all).", file=sys.stderr)
             sys.exit(2)
-        sys.exit(check_budget_cli(args.name, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety))
+        sys.exit(check_budget_cli(args.name, args.ratio_cap, args.min_prior_turns, args.min_prior_tool_variety,
+                                  args.min_samples))
 
     elif args.command == "evolve":
         from evolve import evolve_skill

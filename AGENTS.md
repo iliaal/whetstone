@@ -287,7 +287,7 @@ python3 distillery/scripts/distiller.py analyze-outcomes [--min-examples 5] [--i
 # Direct (claude -p, billed) OR sub-agent: --emit-prompt -> dispatch 1 sub-agent -> --format-result --response @<file>
 python3 distillery/scripts/distiller.py diagnose-negatives <skill> [--max-examples 10] [--include-stale] [--emit-prompt | --format-result --response @<file>]
 
-# Record or check per-skill resource budget (turn count + tool variety; catches silent skill bloat)
+# Record or check per-skill resource budget (assistant turns + tool variety per agent type; catches silent skill bloat; exit 1 regression, 3 stale baseline)
 python3 distillery/scripts/distiller.py budget <skill> --record       # baseline current aggregates
 python3 distillery/scripts/distiller.py budget <skill>                # check vs baseline (default)
 python3 distillery/scripts/distiller.py budget --check-all            # scan every skill with a baseline

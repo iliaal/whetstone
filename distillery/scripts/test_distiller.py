@@ -2167,25 +2167,25 @@ class TestPercentile:
 class TestComputeBudgetMetrics:
     def test_aggregates_turns_and_variety(self):
         sessions = [
-            {"turn_count": 5, "tools_used": ["Read", "Edit", "Bash"]},
-            {"turn_count": 7, "tools_used": ["Read", "Bash"]},
-            {"turn_count": 3, "tools_used": ["Read"]},
+            {"assistant_turns": 5, "tools_used": ["Read", "Edit", "Bash"]},
+            {"assistant_turns": 7, "tools_used": ["Read", "Bash"]},
+            {"assistant_turns": 3, "tools_used": ["Read"]},
         ]
         m = distiller._compute_budget_metrics(sessions)
         assert m["sample_size"] == 3
-        assert m["turn_count"]["mean"] == 5.0
+        assert m["assistant_turns"]["mean"] == 5.0
         assert m["tool_variety"]["mean"] == 2.0
 
     def test_stringified_tools_list_parsed(self):
         sessions = [
-            {"turn_count": 4, "tools_used": "['Read', 'Edit']"},
-            {"turn_count": 4, "tools_used": "['Read']"},
+            {"assistant_turns": 4, "tools_used": "['Read', 'Edit']"},
+            {"assistant_turns": 4, "tools_used": "['Read']"},
         ]
         m = distiller._compute_budget_metrics(sessions)
         assert m["tool_variety"]["mean"] == 1.5
 
     def test_missing_tools_field_handled(self):
-        sessions = [{"turn_count": 5}, {"turn_count": 7, "tools_used": ["Read"]}]
+        sessions = [{"assistant_turns": 5}, {"assistant_turns": 7, "tools_used": ["Read"]}]
         m = distiller._compute_budget_metrics(sessions)
         assert m is not None
         assert m["sample_size"] == 2
@@ -2196,18 +2196,87 @@ class TestComputeBudgetMetrics:
 
     def test_invalid_turn_count_skipped(self):
         sessions = [
-            {"turn_count": "not-a-number", "tools_used": ["Read"]},
-            {"turn_count": 5, "tools_used": ["Read"]},
+            {"assistant_turns": "not-a-number", "tools_used": ["Read"]},
+            {"assistant_turns": 5, "tools_used": ["Read"]},
         ]
         m = distiller._compute_budget_metrics(sessions)
-        assert m["turn_count"]["mean"] == 5.0
+        assert m["sample_size"] == 1
+        assert m["assistant_turns"]["mean"] == 5.0
+
+    def test_record_count_rows_not_approximated(self):
+        # Rows harvested before assistant_turns existed only carry turn_count,
+        # a transcript-record count; they must not stand in for the new metric.
+        assert distiller._compute_budget_metrics([{"turn_count": 40, "tools_used": ["Read"]}]) is None
+
+
+class TestAssistantTurns:
+    def _subagent_file(self, tmp_path, records, meta=None):
+        d = tmp_path / "projects" / "proj" / "sess" / "subagents"
+        d.mkdir(parents=True)
+        p = d / "agent-abc.jsonl"
+        p.write_text("".join(json.dumps(r) + "\n" for r in records))
+        if meta is not None:
+            (d / "agent-abc.meta.json").write_text(json.dumps(meta))
+        return p
+
+    @staticmethod
+    def _block(msg_id, block):
+        message = {"role": "assistant", "model": "claude-opus-5-5", "content": [block]}
+        if msg_id is not None:
+            message["id"] = msg_id
+        return {"type": "assistant", "sessionId": "s1", "message": message}
+
+    def _records(self, second_id="msg_2"):
+        use = {"type": "tool_use", "name": "Read", "input": {"file_path": "/srv/a.py"}}
+        return [
+            {"type": "user", "sessionId": "s1", "message": {"role": "user", "content": "Fix the bug."}},
+            self._block("msg_1", {"type": "thinking", "thinking": "plan"}),
+            self._block("msg_1", {"type": "text", "text": "Reading."}),
+            self._block("msg_1", use),
+            self._block("msg_1", dict(use, name="Grep")),
+            self._block(second_id, {"type": "text", "text": "Done."}),
+        ]
+
+    def test_records_sharing_a_message_id_count_once(self, tmp_path):
+        p = self._subagent_file(tmp_path, self._records(), meta={"agentType": "opus-high", "description": "x"})
+        ex = distiller._build_eval_example(distiller._parse_session(p))
+        assert ex["turn_count"] == 6
+        assert ex["assistant_turns"] == 2
+        assert ex["tool_call_count"] == 2
+        assert ex["tools_used"] == ["Grep", "Read"]
+        assert ex["agent_type"] == "opus-high"
+
+    def test_records_without_id_count_individually(self, tmp_path):
+        p = self._subagent_file(tmp_path, self._records(second_id=None) + [
+            self._block(None, {"type": "text", "text": "Also this."}),
+        ])
+        ex = distiller._build_eval_example(distiller._parse_session(p))
+        assert ex["assistant_turns"] == 3
+        assert ex["agent_type"] is None  # no meta.json beside the transcript
 
 
 class TestRecordCheckBudget:
+    CONTENT_HASH = "h-current"
+    PREFIXES = ["claude-opus-5-5"]
+
     @pytest.fixture(autouse=True)
     def _isolate_eval_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", tmp_path)
-        self.eval_dir = tmp_path
+        self.eval_dir = tmp_path / "eval"
+        self.eval_dir.mkdir()
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", self.eval_dir)
+        manifest = tmp_path / "skill-versions.json"
+        entry = {"content_hash": self.CONTENT_HASH, "pattern_hash": "p",
+                 "content_changed": "1.0.0", "pattern_changed": "1.0.0"}
+        manifest.write_text(json.dumps({
+            "model_baseline_prefixes": self.PREFIXES,
+            "skills": {"foo": entry, "nope": entry},
+        }))
+        monkeypatch.setattr(distiller, "MANIFEST_PATH", manifest)
+
+    @staticmethod
+    def _row(turns, tools=("Read",), agent="opus-medium"):
+        return {"assistant_turns": turns, "tools_used": list(tools), "agent_type": agent,
+                "skill_version": "1.0.0", "model_id": "claude-opus-5-5"}
 
     def _write_sessions(self, skill, sessions):
         d = self.eval_dir / skill
@@ -2215,6 +2284,27 @@ class TestRecordCheckBudget:
         with open(d / "sessions.jsonl", "w") as f:
             for s in sessions:
                 f.write(json.dumps(s) + "\n")
+
+    @staticmethod
+    def _stats(mean, p50=None):
+        return {"mean": mean, "p50": mean if p50 is None else p50, "p95": mean}
+
+    def _write_baseline(self, strata, skill="foo", **overrides):
+        baseline = {
+            "skill_content_hash": self.CONTENT_HASH,
+            "model_baseline_prefixes": self.PREFIXES,
+            "metric_version": distiller.BUDGET_METRIC_VERSION,
+            "strata": strata,
+            "insufficient_strata": {},
+        }
+        baseline.update(overrides)
+        d = self.eval_dir / skill
+        d.mkdir(exist_ok=True)
+        (d / "budget.json").write_text(json.dumps(baseline))
+
+    def _stratum(self, turns, variety=1.0, n=20, turns_p50=None):
+        return {"sample_size": n, "assistant_turns": self._stats(turns, turns_p50),
+                "tool_variety": self._stats(variety)}
 
     @pytest.mark.parametrize("exists", [False, True])
     @pytest.mark.parametrize("skill", [None, "missing"])
@@ -2227,18 +2317,16 @@ class TestRecordCheckBudget:
         report = json.loads(capsys.readouterr().out)
         assert report == {
             "all_passed": True,
+            "status_counts": {} if skill is None else {"no_baseline": 1},
+            "stratum_status_counts": {},
             "skills": [] if skill is None else [{"skill": skill, "status": "no_baseline"}],
         }
         assert root.exists() is exists
 
-    @pytest.mark.parametrize("turn_count,status,exit_code", [(6, "ok", 0), (11, "regression", 1)])
-    def test_check_cli_existing_baselines(self, capsys, turn_count, status, exit_code):
-        self._write_sessions("foo", [
-            {"turn_count": turn_count, "tools_used": ["Read"]},
-        ])
-        (self.eval_dir / "foo" / "budget.json").write_text(json.dumps({
-            "turn_count": {"mean": 5.0}, "tool_variety": {"mean": 1.0},
-        }))
+    @pytest.mark.parametrize("turns,status,exit_code", [(6, "ok", 0), (11, "regression", 1)])
+    def test_check_cli_existing_baselines(self, capsys, turns, status, exit_code):
+        self._write_sessions("foo", [self._row(turns)])
+        self._write_baseline({"opus-medium": self._stratum(5.0)})
         (self.eval_dir / "unrecorded").mkdir()
         assert distiller.check_budget_cli(ratio_cap=2.0) == exit_code
         report = json.loads(capsys.readouterr().out)
@@ -2246,69 +2334,151 @@ class TestRecordCheckBudget:
         assert [(item["skill"], item["status"]) for item in report["skills"]] == [("foo", status)]
 
     def test_record_writes_baseline(self):
-        self._write_sessions("foo", [
-            {"turn_count": 5, "tools_used": ["Read", "Edit"]},
-            {"turn_count": 7, "tools_used": ["Read", "Edit", "Bash"]},
-        ])
-        rc = distiller.record_budget("foo")
-        assert rc == 0
+        self._write_sessions("foo", [self._row(5, ("Read", "Edit")) for _ in range(10)]
+                             + [self._row(7, ("Read", "Edit", "Bash")) for _ in range(10)])
+        assert distiller.record_budget("foo") == 0
         baseline = json.loads((self.eval_dir / "foo" / "budget.json").read_text())
-        assert baseline["sample_size"] == 2
-        assert baseline["turn_count"]["mean"] == 6.0
+        assert baseline["skill_content_hash"] == self.CONTENT_HASH
+        assert baseline["model_baseline_prefixes"] == self.PREFIXES
+        assert baseline["metric_version"] == distiller.BUDGET_METRIC_VERSION
+        stratum = baseline["strata"]["opus-medium"]
+        assert stratum["sample_size"] == 20
+        assert stratum["assistant_turns"]["mean"] == 6.0
+        assert distiller.check_budget("foo")["status"] == "ok"
 
     def test_record_no_sessions_exits_nonzero(self):
-        rc = distiller.record_budget("nope")
-        assert rc != 0
+        assert distiller.record_budget("nope") != 0
+
+    def test_record_below_min_samples_refused(self, capsys):
+        self._write_baseline({"opus-medium": self._stratum(5.0)})
+        before = (self.eval_dir / "foo" / "budget.json").read_text()
+        self._write_sessions("foo", [self._row(5) for _ in range(19)])
+        assert distiller.record_budget("foo") == 1
+        assert "opus-medium=19" in capsys.readouterr().err
+        assert (self.eval_dir / "foo" / "budget.json").read_text() == before
+        assert distiller.record_budget("foo", min_samples=19) == 0
+
+    def test_record_keeps_only_sufficient_strata(self):
+        self._write_sessions("foo", [self._row(5) for _ in range(20)]
+                             + [self._row(40, agent="opus-high") for _ in range(5)])
+        assert distiller.record_budget("foo") == 0
+        baseline = json.loads((self.eval_dir / "foo" / "budget.json").read_text())
+        assert list(baseline["strata"]) == ["opus-medium"]
+        assert baseline["insufficient_strata"] == {"opus-high": 5}
+        result = distiller.check_budget("foo")
+        assert {e["agent_type"]: e["status"] for e in result["strata"]} == {
+            "opus-high": "insufficient_baseline", "opus-medium": "ok"}
+        assert result["status"] == "ok"
+        assert result["insufficient_strata"] == ["opus-high"]
+
+    @pytest.mark.parametrize("override,reason", [
+        ({"skill_content_hash": "h-old"}, "content_hash"),
+        ({"model_baseline_prefixes": ["claude-opus-4-7"]}, "model_prefixes"),
+        ({"metric_version": 1}, "metric_version"),
+    ])
+    def test_stale_baseline_not_compared(self, capsys, override, reason):
+        self._write_sessions("foo", [self._row(50) for _ in range(20)])
+        self._write_baseline({"opus-medium": self._stratum(5.0)}, **override)
+        result = distiller.check_budget("foo")
+        assert result["status"] == "stale_baseline"
+        assert [r.split(":")[0] for r in result["reasons"]] == [reason]
+        assert "strata" not in result
+        assert distiller.check_budget_cli("foo") == distiller.BUDGET_EXIT_UNUSABLE_BASELINE
+        report = json.loads(capsys.readouterr().out)
+        assert report["all_passed"] is False
+        assert report["status_counts"] == {"stale_baseline": 1}
+
+    def test_legacy_flat_baseline_is_stale(self):
+        # The pre-strata shape: no metric_version, no model prefixes, turn_count metric.
+        self._write_sessions("foo", [self._row(5)])
+        (self.eval_dir / "foo" / "budget.json").write_text(json.dumps({
+            "skill_content_hash": self.CONTENT_HASH, "sample_size": 4,
+            "turn_count": {"mean": 12.25, "p50": 6.5}, "tool_variety": {"mean": 1.25, "p50": 1.0},
+        }))
+        result = distiller.check_budget("foo")
+        assert result["status"] == "stale_baseline"
+        assert {r.split(":")[0] for r in result["reasons"]} == {"model_prefixes", "metric_version"}
+
+    def test_skill_missing_from_manifest_is_stale(self, monkeypatch, tmp_path):
+        self._write_sessions("foo", [self._row(5)])
+        self._write_baseline({"opus-medium": self._stratum(5.0)})
+        empty = tmp_path / "empty.json"
+        empty.write_text(json.dumps({"model_baseline_prefixes": self.PREFIXES, "skills": {}}))
+        monkeypatch.setattr(distiller, "MANIFEST_PATH", empty)
+        assert distiller.check_budget("foo")["status"] == "stale_baseline"
+        assert distiller.record_budget("foo") == 1
+
+    def test_regression_exit_takes_precedence_over_stale(self, capsys):
+        self._write_sessions("foo", [self._row(20)])
+        self._write_baseline({"opus-medium": self._stratum(5.0)})
+        self._write_sessions("bar", [self._row(5)])
+        self._write_baseline({"opus-medium": self._stratum(5.0)}, skill="bar", metric_version=1)
+        assert distiller.check_budget_cli() == distiller.BUDGET_EXIT_REGRESSION
+        report = json.loads(capsys.readouterr().out)
+        assert report["status_counts"] == {"regression": 1, "stale_baseline": 1}
+
+    def test_insufficient_baseline_warns_without_failing(self, capsys):
+        self._write_sessions("foo", [self._row(30) for _ in range(5)])
+        self._write_baseline({"opus-medium": self._stratum(5.0, n=8)})
+        assert distiller.check_budget_cli("foo") == 0
+        report = json.loads(capsys.readouterr().out)
+        assert report["all_passed"] is True
+        assert report["stratum_status_counts"] == {"insufficient_baseline": 1}
+        (item,) = report["skills"]
+        assert item["status"] == "insufficient_baseline"
+        (stratum,) = item["strata"]
+        assert stratum["baseline_sample_size"] == 8
+        assert [r["metric"] for r in stratum["advisory_regressions"]] == ["assistant_turns"]
 
     def test_check_floor_skips_low_baseline(self):
-        # Baseline aggregates below the floor; check should bail out without flagging.
-        baseline = {
-            "sample_size": 3,
-            "turn_count": {"mean": 2.0, "p50": 2.0, "p95": 2.0},
-            "tool_variety": {"mean": 4.0, "p50": 4.0, "p95": 4.0},
-        }
-        d = self.eval_dir / "foo"
-        d.mkdir()
-        (d / "budget.json").write_text(json.dumps(baseline))
-        # Baseline below floor for both metrics -> no regressions even with 5x growth.
-        self._write_sessions("foo", [
-            {"turn_count": 12, "tools_used": ["A", "B", "C", "D"]} for _ in range(3)
-        ])
-        regressions, current = distiller.check_budget("foo")
-        assert regressions == []
-        assert current is not None
+        # Both baseline means below their floors: 5x growth is noise, not signal.
+        self._write_baseline({"opus-medium": self._stratum(2.0, variety=1.0)})
+        self._write_sessions("foo", [self._row(12, ("A", "B", "C", "D", "E")) for _ in range(3)])
+        result = distiller.check_budget("foo")
+        assert result["status"] == "ok"
+        assert result["strata"][0]["current_sample_size"] == 3
 
     def test_check_ratio_cap_triggers(self):
-        baseline = {
-            "sample_size": 5,
-            "turn_count": {"mean": 5.0, "p50": 5.0, "p95": 5.0},
-            "tool_variety": {"mean": 6.0, "p50": 6.0, "p95": 6.0},
-        }
-        d = self.eval_dir / "foo"
-        d.mkdir()
-        (d / "budget.json").write_text(json.dumps(baseline))
-        # Current mean ~11 vs baseline 5 -> ratio 2.2, exceeds 2.0 cap.
-        self._write_sessions("foo", [
-            {"turn_count": 11, "tools_used": ["A", "B", "C", "D", "E", "F"]} for _ in range(5)
-        ])
-        regressions, current = distiller.check_budget("foo", ratio_cap=2.0)
-        assert any(r["metric"] == "turn_count" for r in regressions)
-        assert current["turn_count"]["mean"] == 11.0
+        self._write_baseline({"opus-medium": self._stratum(5.0, variety=1.0)})
+        self._write_sessions("foo", [self._row(11) for _ in range(5)])
+        result = distiller.check_budget("foo", ratio_cap=2.0)
+        assert result["status"] == "regression"
+        (regression,) = result["strata"][0]["regressions"]
+        assert regression["metric"] == "assistant_turns"
+        assert regression["current_mean"] == 11.0
+        assert regression["p50_ratio"] == 2.2
 
     def test_check_within_ratio_passes(self):
-        baseline = {
-            "sample_size": 5,
-            "turn_count": {"mean": 5.0, "p50": 5.0, "p95": 5.0},
-            "tool_variety": {"mean": 6.0, "p50": 6.0, "p95": 6.0},
-        }
-        d = self.eval_dir / "foo"
-        d.mkdir()
-        (d / "budget.json").write_text(json.dumps(baseline))
-        self._write_sessions("foo", [
-            {"turn_count": 6, "tools_used": ["A", "B", "C", "D", "E", "F"]} for _ in range(5)
-        ])
-        regressions, current = distiller.check_budget("foo", ratio_cap=2.0)
-        assert regressions == []
+        self._write_baseline({"opus-medium": self._stratum(5.0, variety=1.0)})
+        self._write_sessions("foo", [self._row(6) for _ in range(5)])
+        assert distiller.check_budget("foo", ratio_cap=2.0)["status"] == "ok"
+
+    def test_mean_up_with_flat_p50_is_not_regression(self):
+        # One 200-turn outlier triples the mean; the median session is unchanged.
+        self._write_baseline({"opus-medium": self._stratum(10.0)})
+        self._write_sessions("foo", [self._row(10) for _ in range(9)] + [self._row(200)])
+        result = distiller.check_budget("foo", ratio_cap=2.0)
+        assert result["status"] == "ok"
+        self._write_sessions("foo", [self._row(25) for _ in range(10)])
+        assert distiller.check_budget("foo", ratio_cap=2.0)["status"] == "regression"
+
+    def test_strata_compare_only_like_agent_types(self):
+        # Pooled, the opus-high traces would put the mean at 27.5 vs 5.0.
+        self._write_baseline({"opus-medium": self._stratum(5.0)})
+        self._write_sessions("foo", [self._row(5) for _ in range(10)]
+                             + [self._row(50, agent="opus-high") for _ in range(10)])
+        result = distiller.check_budget("foo", ratio_cap=2.0)
+        assert result["status"] == "ok"
+        assert {e["agent_type"]: e["status"] for e in result["strata"]} == {
+            "opus-high": "new_stratum", "opus-medium": "ok"}
+
+    def test_tool_variety_regression_fires_above_floor(self):
+        assert distiller.BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY == 2
+        self._write_baseline({"opus-medium": self._stratum(10.0, variety=2.0)})
+        self._write_sessions("foo", [self._row(10, ("A", "B", "C", "D", "E")) for _ in range(5)])
+        result = distiller.check_budget("foo", ratio_cap=2.0)
+        assert result["status"] == "regression"
+        assert [r["metric"] for r in result["strata"][0]["regressions"]] == ["tool_variety"]
 
 
 @pytest.mark.parametrize("mode", [["foo"], ["--check-all"]])
@@ -2333,17 +2503,30 @@ def test_budget_cli_preserves_finite_caps(monkeypatch, mode, skill, cap):
         distiller.main()
     assert exit_info.value.code == 1
     check.assert_called_once_with(skill, cap, distiller.BUDGET_DEFAULT_MIN_PRIOR_TURNS,
-                                  distiller.BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY)
+                                  distiller.BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY,
+                                  distiller.BUDGET_MIN_BASELINE_SAMPLES)
 
 
 def test_budget_record_ignores_unused_ratio_cap(monkeypatch):
     record = mock.Mock(return_value=0)
     monkeypatch.setattr(distiller, "record_budget", record)
-    monkeypatch.setattr(sys, "argv", ["distiller.py", "budget", "foo", "--record", "--ratio-cap=nan"])
+    monkeypatch.setattr(sys, "argv", ["distiller.py", "budget", "foo", "--record", "--ratio-cap=nan",
+                                      "--min-samples=7"])
     with pytest.raises(SystemExit) as exit_info:
         distiller.main()
     assert exit_info.value.code == 0
-    record.assert_called_once_with("foo")
+    record.assert_called_once_with("foo", 7)
+
+
+@pytest.mark.parametrize("value", ["0", "-3"])
+def test_budget_cli_rejects_nonpositive_min_samples(monkeypatch, value):
+    record = mock.Mock(return_value=0)
+    monkeypatch.setattr(distiller, "record_budget", record)
+    monkeypatch.setattr(sys, "argv", ["distiller.py", "budget", "foo", "--record", f"--min-samples={value}"])
+    with pytest.raises(SystemExit) as exit_info:
+        distiller.main()
+    assert exit_info.value.code == 2
+    record.assert_not_called()
 
 
 class TestParseCoverageMatrix:

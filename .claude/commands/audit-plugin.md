@@ -60,7 +60,7 @@ The output is a structured JSON report with inventory counts and per-component f
 
 `test-triggers` runs the regex regression suite. Include any failing skills as HIGH severity.
 
-`budget --check-all` compares each skill's recorded turn-count/tool-variety baseline against current aggregates and surfaces silent skill bloat. Advisory only — do not block on it, but include any flagged skills as MEDIUM findings in the Phase 3 table (it currently surfaces real findings).
+`budget --check-all` compares each skill's recorded baseline (assistant turns and tool variety, per agent type) against current aggregates and surfaces silent skill bloat. Exit 1 is a `regression`; exit 3 is a `stale_baseline` (skill content, model baseline, or metric version changed since recording; re-record with `budget <skill> --record` once a stratum has 20+ fresh rows). `insufficient_baseline`, `new_stratum`, and `no_data` are informational. Advisory only — do not block on it, but include `regression` and `stale_baseline` skills as MEDIUM findings in the Phase 3 table.
 
 ## Phase 1b: PluginEval scoring
 
