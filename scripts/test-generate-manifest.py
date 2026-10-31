@@ -43,10 +43,11 @@ class TriggerHistoryTests(unittest.TestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
 
-    def generate(self, version, pattern=None):
+    def generate(self, version, pattern=None, negative=None):
         self.plugin.write_text(json.dumps({"version": version}), encoding="utf-8")
         self.patterns.write_text(
-            f"SKILL_PATTERNS[ia-example]='{pattern}'\n" if pattern is not None else "",
+            (f"SKILL_PATTERNS[ia-example]='{pattern}'\n" if pattern is not None else "")
+            + (f"SKILL_NEGATIVE[ia-example]='{negative}'\n" if negative is not None else ""),
             encoding="utf-8",
         )
         manifest = MANIFEST.generate()
@@ -97,6 +98,43 @@ class TriggerHistoryTests(unittest.TestCase):
         self.assert_staleness(restored, "3.0.0", False)
         unchanged = self.generate("4.0.0", "example")
         self.assertEqual(unchanged["skills"]["ia-example"]["pattern_changed"], "3.0.0")
+
+    def test_significant_regex_whitespace_invalidates_older_examples(self):
+        cases = (
+            ("review code", "review  code", "review code"),
+            ("review code", "review\tcode", "review code"),
+            ("review code", " review code", "review code"),
+            ("review code", "review code ", "review code"),
+            ("review[ ]code", "review[\t]code", "review code"),
+        )
+        for negative in (False, True):
+            for before, after, prompt in cases:
+                with self.subTest(negative=negative, before=before, after=after):
+                    self.manifest.unlink(missing_ok=True)
+                    # Exercise the same ERE matcher used by the injection hook.
+                    for pattern, expected in ((before, 0), (after, 1)):
+                        matched = subprocess.run(
+                            ["grep", "-Eq", "--", pattern], input=prompt + "\n",
+                            text=True, capture_output=True, check=False,
+                        )
+                        self.assertEqual(matched.returncode, expected, matched.stderr)
+
+                    def generate(version, expression, negative=negative):
+                        return self.generate(
+                            version, "review" if negative else expression,
+                            expression if negative else None,
+                        )
+
+                    initial = generate("1.0.0", before)
+                    changed = generate("2.0.0", after)
+                    entry = changed["skills"]["ia-example"]
+                    self.assertNotEqual(entry["pattern_hash"], initial["skills"]["ia-example"]["pattern_hash"])
+                    self.assertEqual(entry["pattern_changed"], "2.0.0")
+                    self.assert_staleness(changed, "1.0.0", True)
+                    self.assert_staleness(changed, "2.0.0", False)
+                    unchanged = generate("3.0.0", after)
+                    self.assertEqual(unchanged["skills"]["ia-example"]["pattern_changed"], "2.0.0")
+                    self.assert_staleness(unchanged, "2.0.0", False)
 
 
 if __name__ == "__main__":
