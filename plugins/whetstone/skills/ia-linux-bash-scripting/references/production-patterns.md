@@ -44,8 +44,10 @@ The producer must return nonzero on generation failure; explicitly propagate fai
 **Retry with backoff:**
 ```bash
 retry() { local n=0 max=5 delay=1; until "$@"; do ((++n>=max)) && return 1; sleep $delay; ((delay*=2)); done; }
-retry curl -fsSL "$url"
+retry curl -fsSL --connect-timeout 30 --max-time 300 "$url"
 ```
+
+Bound every network call inside `retry`: without `--connect-timeout` and `--max-time`, curl on a stalled connection never exits, so `retry` never receives a status to act on.
 
 **Choose ownership before locking.** Identify the invariant that requires concurrent writers to share one mutable object. For independent facts, consider one file per owner and combine records when reading, provided mixed generations are acceptable. For coupled decisions, serialize the whole check-and-update operation through a lock, transaction, or single writer. For a consistent multi-file view, coordinate readers with writers or pin one immutable published generation for the entire read. A single writer and individually atomic replacements do not by themselves provide an atomic snapshot across files.
 

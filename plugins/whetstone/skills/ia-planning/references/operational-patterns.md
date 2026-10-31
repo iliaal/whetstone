@@ -10,7 +10,7 @@
 | Image/PDF evidence must survive the turn | Record only the deciding observation under the affected phase |
 | Resuming after gap | Read .plan/task_plan.md, run `git diff --stat`, and reconcile actual vs planned state |
 | Just wrote a file | Don't re-read it (still in context) |
-| Error occurred | Log to .plan/task_plan.md, read relevant files for state |
+| Error occurred | Log the error class and location to .plan/task_plan.md, redacting secrets, tokens, and credentials even when they appear verbatim in the output read; then read relevant files for state |
 
 **Cut first vs protect.**
 

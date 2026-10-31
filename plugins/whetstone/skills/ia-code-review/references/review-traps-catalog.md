@@ -40,7 +40,7 @@ Concrete review-reasoning failure modes harvested from real Codex cycle disagree
 
 **Reality:** memory-based recall of project conventions is unreliable, including from reviewers who have read the docs before. Rules that were obvious in the convention doc slip through review.
 
-**Fix:** for every diff, identify which area it touches (DB migration, audit trail, routing, auth), open the matching convention doc first, and scan for applicable rules. Treat it like a checklist: rule → check diff → either dismiss or flag. Only after that pre-flight, open the diff.
+**Fix:** for every diff, identify which area it touches (DB migration, audit trail, routing, auth), open the matching convention doc first, and scan for applicable rules. A nested CLAUDE.md or AGENTS.md applies only to files in its directory subtree; skip its rules for files outside it. Treat it like a checklist: rule → check diff → either dismiss or flag. Only after that pre-flight, open the diff.
 
 ## Speculative future-design findings on greenfield code
 

@@ -50,7 +50,7 @@ Where the registry is meant to accept both, dispatch explicitly (`inspect.iscoro
 - `asyncio.Queue` for producer-consumer
 - `asyncio.Lock` when coroutines share mutable state
 - Never block the event loop: `asyncio.to_thread(sync_fn)` for sync libs, `aiohttp`/`httpx.AsyncClient` for HTTP
-- Handle `CancelledError`: always re-raise after cleanup
+- Handle `CancelledError`: always re-raise after cleanup. It derives from `BaseException` (3.8+), so `except Exception` never sees it: a hand-written transaction wrapper that rolls back only in `except Exception` returns a mid-transaction connection to the pool on timeout or cancellation. Use the driver's transaction context manager (`asyncpg` `conn.transaction()`, SQLAlchemy `AsyncSession.begin()`), or roll back in `finally` unless a `committed` flag was set
 - Async generators (`async for`) for streaming/pagination
 
 **multiprocessing** for CPU-bound:

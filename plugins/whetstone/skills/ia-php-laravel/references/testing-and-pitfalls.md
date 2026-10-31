@@ -58,7 +58,7 @@ Real production pitfalls, invisible to PHPStan and feature tests alone. Mechanis
 - **`$model->relation->field ?: $fallback`** warns on a null relation and `HandleExceptions` turns the warning into a 500; `??` and `isset()` suppress it, so `$a->b->c ?? 'x'` is safe and the Elvis form is not. Fix with `?->`.
 - **`distinct` at two wildcard levels** compares the whole payload, not per-parent ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **`Exists` / `Unique` self-skip after any message**, so `bail` does not protect the query, and the exposed value is the rule's SCOPE argument ([pitfalls-deep.md](./pitfalls-deep.md)).
-- **`DB::afterCommit`** prevents run-on-rollback; it does NOT retry a post-commit failure ([pitfalls-deep.md](./pitfalls-deep.md)).
+- **`DB::afterCommit`** prevents run-on-rollback, except through v13.38.0 when the COMMIT itself fails (callbacks then run on a later commit or retry); it does NOT retry a post-commit failure ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **An observer writing a model the caller also holds** leaves a stale in-memory copy that the caller's later `save()` re-clobbers ([pitfalls-deep.md](./pitfalls-deep.md)).
 - **`Collection::unique()`** compares loosely, so `"00123"` and `"123"` collapse and a dedup or merge guard silently drops data; use `uniqueStrict()`.
 - **`QueryException::getMessage()`** interpolates raw bindings plus host and database into the message.

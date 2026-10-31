@@ -4,7 +4,8 @@ class: discipline
 description: >-
   Simplifies, polishes, and declutters code without changing behavior. Use when
   asked to simplify, clean up, refactor, declutter, remove dead code or AI slop,
-  or improve readability, including analysis-only simplification reports.
+  or improve readability, including analysis-only simplification reports and
+  code pasted inline.
 ---
 
 # Simplifying Code

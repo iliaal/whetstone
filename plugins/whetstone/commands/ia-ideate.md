@@ -24,7 +24,7 @@ Generate 10-15 improvement ideas across categories:
 - **Security**: hardening, audit gaps, dependency vulnerabilities
 - **Features**: user-facing improvements grounded in existing patterns
 
-Each idea: one sentence describing what changes, one sentence describing the expected impact.
+Each idea: one sentence describing what changes, one sentence describing the expected impact, and an **Evidence** line citing a `path:line` with the quoted line, which the agent itself read in this run. A scan summary or subagent report orients but is not citable; when an idea rests only on one, read the line before citing it.
 
 **Ideation lenses.** After generating category-based ideas, force divergent thinking by running each lens against the codebase:
 
@@ -65,7 +65,7 @@ Save to `docs/ideation/YYYY-MM-DD-ideation.md` (create directory if needed). Pre
 
 ## Constraints
 
-- Ideas must be grounded in the actual codebase, not generic advice
+- Ideas must be grounded in the actual codebase, not generic advice: every surviving idea cites at least one `path:line` read in this run, never a scan summary or subagent report alone
 - No ideas that require information you don't have (user metrics, business priorities)
 - No ideas that duplicate ongoing work (check recent branches, PRs)
 - If the codebase is small or well-maintained, it's fine to return fewer than 5 ideas

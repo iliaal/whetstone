@@ -119,6 +119,8 @@ Flag critical/high vulnerabilities as blockers. Moderate/low are warnings.
 - `.env` files staged for commit
 - `dangerouslySetInnerHTML`, `eval()`, raw SQL string concatenation
 
+Print only file names or `file:line` from the secret scan, never the matched line: a match echoed to the terminal puts the live value into tool output and the session transcript. Use `git diff --cached -i -G'<pattern>' --name-only`, or `git grep --cached -n -I -i -E '<pattern>' -- <files> | cut -d: -f1,2`, and treat each hit as "inspect this location", not as text to quote.
+
 Classify each changed file by its content (magic bytes or control bytes), not its extension. List files the text scan cannot inspect, including archives, office documents, databases, PDFs, and binary key stores, as `unscanned, open manually`; do not exempt minified text bundles. Report the unscanned count as at least a warning when nonzero. If enumeration or reading fails, report the count as unknown and the scan as `ERROR`, never zero or `CLEAN`.
 
 **6c. Auth/authz review**: if the diff touches authentication or authorization code (middleware, guards, policies, permission checks, token handling, session management), flag for manual review. Check that:

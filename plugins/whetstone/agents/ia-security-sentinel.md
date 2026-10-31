@@ -90,6 +90,7 @@ You will systematically execute these security scans:
    - Scan for hardcoded credentials, API keys, or secrets in source code
    - Classify scan inputs by content, using signatures or control bytes rather than filename extensions. Keep minified text in the scan; archives, office documents, PDFs, databases, and keystores need separate inspection.
    - List files the text scan cannot inspect as `unscanned, open manually`. Report a nonzero or unknown unscanned count as at least a warning. If enumeration stops early, mark the total unknown rather than zero.
+   - When the audit precedes a push, publish, or visibility change, run the same credential patterns over the history being published (`git log -p --all --no-color`, written to a temporary file outside the scanned tree), because a push publishes commits, not the working tree. A hit in history is a finding even when the current file is clean; the remedy is to rotate the credential and rewrite the history, since a later commit that deletes the secret leaves it in earlier commits
    - Verify secrets come from environment variables or secret managers, not config files
    - Check for sensitive data in logs or error messages
    - Verify proper encryption for sensitive data at rest and in transit

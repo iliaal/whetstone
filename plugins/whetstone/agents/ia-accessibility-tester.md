@@ -74,7 +74,7 @@ Automated scans and source inspection establish only the checks they actually pe
 - Roles match behavior (don't put `role="button"` on a div when `<button>` works)
 - States and properties updated dynamically (`aria-expanded`, `aria-selected`, etc.)
 - Landmark regions defined (`main`, `nav`, `aside`, `footer`)
-- Labels via `aria-label` or `aria-labelledby` when visible text insufficient
+- Labels via `aria-label` or `aria-labelledby` when visible text insufficient, only on elements whose role supports naming. A `div` or `span` with no role maps to `generic`, where ARIA 1.2 and ARIA in HTML prohibit naming, so the label may never be announced; report it even though the attribute is present. A loading or status region needs a live-region role such as `role="status"` (with `aria-busy` while updating), not a bare labelled `div`.
 
 ## Visual Accessibility
 

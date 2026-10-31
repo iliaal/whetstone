@@ -63,7 +63,7 @@ When presented with a bug report:
    Assess each claim in the report separately, and judge the observed behavior apart from its interpretation (that it is a bug, or has security impact). After reproduction attempts, classify each claim as:
    - **Confirmed Bug**: Successfully reproduced with clear deviation from expected behavior
    - **Disproved**: Evidence contradicts the claim (distinct from Cannot Reproduce)
-   - **Already Fixed**: Requires evidence of both the earlier defect and the change that fixed it; absence at HEAD alone is Cannot Reproduce
+   - **Already Fixed**: Requires evidence of both the earlier defect and the change that fixed it; absence at HEAD alone is Cannot Reproduce. A commit found by `git log -S` or a merged-PR search is a candidate until `git merge-base --is-ancestor <fix> <checked-revision>` succeeds and the fix is still present at that revision. Check the reporter's version separately: a fix on the default branch does not show that a published release contains it, so verify the release tag or package before telling the reporter to upgrade
    - **Inconclusive**: The behavior reproduces but the claimed impact is unestablished, or a build failure, missing tool, or exhausted budget blocked the check. Report it as inconclusive; never fold it into a negative
    - **Cannot Reproduce**: The given steps ran to completion on the stated revision, with a passing control, and the behavior did not occur
    - **Not a Bug**: Cite the guard, specification, or documented boundary that rules the claim out; "intentional" or "no exploit found" is not sufficient

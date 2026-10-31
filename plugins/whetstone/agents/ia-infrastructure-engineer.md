@@ -55,7 +55,7 @@ Track and optimize:
 1. **Source**: trigger on push/PR, fetch dependencies
 2. **Build**: compile/bundle, cache dependencies between runs
 3. **Test**: unit → integration → e2e (fail fast, cheapest tests first)
-4. **Security**: dependency audit, SAST scan, secret detection
+4. **Security**: dependency audit, SAST scan, secret detection. A gate is enforced only if its exact CI command is shown to fail: run it against a known violation (must fail), a clean control (must pass), and a forced scanner error or empty scan set (must fail), plus a below-threshold finding (must pass) when it gates on severity. Some scanners exit 0 on findings by default: `semgrep scan` needs `--error`, and the axe CLI (`@axe-core/cli`) needs `--exit`.
 5. **Artifact**: build container image or package, tag with commit SHA
 6. **Deploy staging**: auto-deploy, run smoke tests
 7. **Deploy production**: require approval gate or auto-promote after staging soak

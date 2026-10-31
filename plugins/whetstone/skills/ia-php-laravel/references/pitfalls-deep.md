@@ -4,7 +4,7 @@ Extended mechanics and alternative patterns for the Common Pitfalls section of S
 
 ## `DB::afterCommit`: closing the post-commit-failure half
 
-`DB::afterCommit($closure)` prevents external work (S3, search index, third-party webhook) from running when the transaction rolls back. It does NOT retry the external op when it fails after commit: the closure runs once, exceptions bubble out of the response cycle, the operation drops, and the DB row now advertises a state the external system doesn't reflect.
+`DB::afterCommit($closure)` prevents external work (S3, search index, third-party webhook) from running when the transaction rolls back. Through v13.38.0 that guarantee fails when the COMMIT statement itself fails (deferred constraint violation, serialization failure, dropped connection): the callbacks stay registered and run after the next commit on that connection, or twice when `DB::transaction()` retries. Framework PR #62206 (released in v13.39.0) discards them; on older versions make the callbacks idempotent, and test by forcing a COMMIT-time failure (a `DEFERRABLE INITIALLY DEFERRED` violation on PostgreSQL), committing an unrelated transaction, and asserting the callback never ran. It does NOT retry the external op when it fails after commit: the closure runs once, exceptions bubble out of the response cycle, the operation drops, and the DB row now advertises a state the external system doesn't reflect.
 
 Closing patterns:
 
@@ -31,7 +31,7 @@ Migrations default to `public $withinTransaction = true`: on Postgres/SQLite all
 
 ## Database cache locks inside PostgreSQL transactions
 
-When database-backed `Cache::lock()` shares the application's PostgreSQL transaction connection, contention can abort that transaction. Implementations without framework PR #62114, including v13.38.0, catch a duplicate insert and then attempt an update on the aborted transaction. Catching the PHP exception does not restore the transaction. Inspect `DatabaseLock::acquire()` for conflict-tolerant insertion. Test both a held lock and an expired lock inside a real transaction, including a successful query afterward.
+When database-backed `Cache::lock()` shares the application's PostgreSQL transaction connection, contention can abort that transaction. Implementations without framework PR #62114 (released in v13.39.0), including v13.38.0, catch a duplicate insert and then attempt an update on the aborted transaction. Catching the PHP exception does not restore the transaction. Inspect `DatabaseLock::acquire()` for conflict-tolerant insertion. Test both a held lock and an expired lock inside a real transaction, including a successful query afterward.
 
 On affected versions, acquire the lock before opening the business transaction, or choose a separate lock store/connection deliberately. Keep the lock held through commit or rollback. Set a finite TTL long enough to cover the transaction. A separate connection changes lock visibility and lifetime semantics; verify those semantics before relying on the separation.
 
@@ -65,13 +65,17 @@ It survives review because the intent is idempotency, the match key is correct, 
 
 `save()` writes only the dirty attributes, and dirtiness compares the in-memory value against `$original`, the snapshot taken when the model was loaded, not the current row. Assigning `true` to a model that was loaded as `true` produces an empty dirty set, so the column is left out of the UPDATE entirely and there is no `WHERE` clause that could detect the row moved underneath. Adding row locks to the *other* writers makes it more deterministic rather than less: the unlocked writer computes its dirty set before any lock exists, blocks, then resumes exactly where its column has already been dropped from the statement. Locking some writers of a row and not others is a scheduler for the bug. Fix: `refresh()` or `lockForUpdate()` before the compare, or write a conditional UPDATE carrying the expected prior value in its `WHERE`.
 
+### Object JSON casts store unencodable values silently
+
+The plain `array`/`json` casts throw `JsonEncodingException` on data `json_encode()` rejects, such as malformed UTF-8. Through v13.38.0, `AsArrayObject`, `AsCollection`, `AsFluent`, `AsEncryptedArrayObject`, `AsEncryptedCollection`, and `$model->{'col->path'}` writes skip that check and silently overwrite the whole column, losing existing keys. From v13.39.0 (framework PRs #62175 and #62203) they throw at assignment, before `save()`, so import or mass-fill paths that used to "succeed" start failing. Normalize or reject invalid encoding before assignment; on affected versions, test that a row with existing keys round-trips after the write, and on v13.39.0+ expect the exception.
+
 ## Queue pitfalls
 
 ### ShouldBeUnique silently discards, does not guarantee
 
 `ShouldBeUnique` interface to prevent duplicate processing: it is a de-duplication hint, not an at-least-once guarantee. When the lock is already held the dispatch is **silently discarded**: no job queued, no exception, no log line, and `dispatch()` returns normally. Where the skip is user-visible (a re-clicked "regenerate report" that produces nothing), check the lock before dispatching and surface the state. A `Illuminate\Queue\Events\UniqueJobSkipped` event ships from v13.25.0; confirm the installed version before listening for it.
 
-The lock can also be stranded with no job running. `PendingDispatch` acquires the unique lock before pushing to the queue, and before v13.37.0 a push that throws (Redis or SQS down) never released it; a unique queued listener had the same defect on a failed push (fixed v13.37.0) and on a rolled-back transaction (fixed v13.36.0), and `Schedule::job()` of a unique job strands it on a failed push through v13.37.0 (fixed on the `13.x` branch, unreleased as of v13.37.0). `uniqueFor` defaults to `0`, which on the Redis store means a lock with no expiry (the database store falls back to 24 hours), so one transient queue outage silently discards every later dispatch for that key. On every version, give unique jobs a finite `uniqueFor` (or `#[UniqueFor]`) longer than the job's worst-case queue wait plus runtime, and test it: dispatch against a connection whose `push()` throws, dispatch again, and assert the second job is queued.
+The lock can also be stranded with no job running. `PendingDispatch` acquires the unique lock before pushing to the queue, and before v13.37.0 a push that throws (Redis or SQS down) never released it; a unique queued listener had the same defect on a failed push (fixed v13.37.0) and on a rolled-back transaction (fixed v13.36.0), and `Schedule::job()` of a unique job strands it on a failed push through v13.37.0 (fixed in v13.38.0 by framework PR #62083). `uniqueFor` defaults to `0`, which on the Redis store means a lock with no expiry (the database store falls back to 24 hours), so one transient queue outage silently discards every later dispatch for that key. On every version, give unique jobs a finite `uniqueFor` (or `#[UniqueFor]`) longer than the job's worst-case queue wait plus runtime, and test it: dispatch against a connection whose `push()` throws, dispatch again, and assert the second job is queued.
 
 ### WithoutOverlapping lock key includes the job class
 
@@ -101,7 +105,7 @@ The process driver passes `'__LARAVEL_CONTEXT' => json_encode(Context::dehydrate
 
 ### Rule::anyOf() scalar alternatives can accept associative arrays
 
-When every `Rule::anyOf()` alternative requires a string, keep `string` outside the union. In affected implementations including v13.38.0, `['x' => 1]` can pass `['required', Rule::anyOf([['string', 'email'], ['string', 'alpha_dash', 'min:6']])]`: the inner scalar rules target missing key `0` and are skipped. Confirm the installed `AnyOf` contains framework PR #62171's paired rule/value wrapping. Test associative-array rejection alongside a valid string. When an alternative intentionally accepts arrays, keep that branch valid. Add a passing array regression for that union instead of an outer `string` constraint.
+When every `Rule::anyOf()` alternative requires a string, keep `string` outside the union. In affected implementations including v13.38.0, `['x' => 1]` can pass `['required', Rule::anyOf([['string', 'email'], ['string', 'alpha_dash', 'min:6']])]`: the inner scalar rules target missing key `0` and are skipped. Confirm the installed `AnyOf` contains framework PR #62171's paired rule/value wrapping (released in v13.39.0). Test associative-array rejection alongside a valid string. When an alternative intentionally accepts arrays, keep that branch valid. Add a passing array regression for that union instead of an outer `string` constraint.
 
 ### validated() drops unruled nested array keys
 

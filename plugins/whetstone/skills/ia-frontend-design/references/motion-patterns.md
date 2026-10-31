@@ -32,6 +32,8 @@ translate-y-16 opacity-0
 translate-y-0 opacity-100
 ```
 
+Ship content visible by default: never author `opacity-0` in the markup. Scope the hidden start state to a class the script adds (for example `.motion-ready` on `<html>`, with `.motion-ready .reveal { opacity: 0; transform: translateY(4rem) }`) only after the IntersectionObserver is set up, so a script error, a crawler, or slow hydration still renders every heading and CTA. Start scale entries at 0.85 or higher, never `scale(0)`, and stagger within one section rather than across the page.
+
 ## IntersectionObserver Mandate
 
 Use `IntersectionObserver` for scroll reveals. Never use `window.addEventListener('scroll')`; scroll listeners fire continuously and cause reflows. IntersectionObserver is declarative and only fires when elements cross thresholds.

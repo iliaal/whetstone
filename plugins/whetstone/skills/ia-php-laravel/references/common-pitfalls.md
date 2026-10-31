@@ -118,7 +118,7 @@ Lazy invalidation (`unset` the key, re-query on the next read) is rollback-safe 
 
 ### once() can confuse replaced objects whose IDs are reused
 
-PHP can reuse `spl_object_id()` after an object is destroyed. In implementations without framework PR #62121, including v13.38.0, `once()` can return a previous object's result when the receiver survives but a directly captured argument object is replaced at the same callsite. Confirm the installed `Once` checks captured-object weak references before returning cached values. Otherwise avoid this memoization pattern. Test successive short-lived argument objects on one receiver. `HasOnceHash` uses a separate explicit key contract.
+PHP can reuse `spl_object_id()` after an object is destroyed. In implementations without framework PR #62121 (released in v13.39.0), including v13.38.0, `once()` can return a previous object's result when the receiver survives but a directly captured argument object is replaced at the same callsite. Confirm the installed `Once` checks captured-object weak references before returning cached values. Otherwise avoid this memoization pattern. Test successive short-lived argument objects on one receiver. `HasOnceHash` uses a separate explicit key contract.
 
 For custom identity caches, use objects as `WeakMap` keys rather than storing only their IDs. An immutable domain key is another option when paired with an explicit invalidation policy.
 
@@ -146,7 +146,7 @@ Fix with an early-return idempotency guard at the top of `up()`: `if (Schema::ha
 
 ### Http::batch() can report success for Laravel request exceptions
 
-In affected versions including v13.38.0, `Batch` checks Guzzle's exception class but misses `Illuminate\Http\Client\RequestException` results from `throw()` or retry exhaustion. Those failures can leave `failedRequests` at zero and run `then`; ordinary failed responses are already counted. Confirm the installed implementation contains framework PR #62120's handling of both exception classes.
+In affected versions including v13.38.0, `Batch` checks Guzzle's exception class but misses `Illuminate\Http\Client\RequestException` results from `throw()` or retry exhaustion. Those failures can leave `failedRequests` at zero and run `then`; ordinary failed responses are already counted. Confirm the installed implementation contains framework PR #62120's handling of both exception classes (released in v13.39.0).
 
 Until fixed, gate success side effects on the expected result count/keys and every result being an `Illuminate\Http\Client\Response` acceptable under the application's contract. Perform that check before the side effect, including inside `then` if the callback performs it. Neither `then` nor `hasFailures()` alone establishes success. Test ordinary HTTP failure, thrown HTTP failure, retry exhaustion, and transport failure.
 
