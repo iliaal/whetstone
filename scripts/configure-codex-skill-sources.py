@@ -48,11 +48,13 @@ def render_block(paths: list[Path]) -> str:
         "# Disable the same sources reached through ~/.agents/skills to avoid duplicates.",
     ]
     for path in paths:
+        # TOML requires Unicode scalars, not JSON surrogate pairs; DEL must stay escaped.
+        encoded = json.dumps(str(path), ensure_ascii=False).replace(chr(127), "\\u007f")
         lines.extend(
             [
                 "",
                 "[[skills.config]]",
-                f"path = {json.dumps(str(path))}",
+                f"path = {encoded}",
                 "enabled = false",
             ]
         )
