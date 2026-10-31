@@ -30,3 +30,5 @@
 {"prompt": "Refactor src/invoice.php while preserving behavior.", "expect": true, "source": "audit-2026-10-25"}
 {"prompt": "Refactor release-notes.md into clearer sentences.", "expect": false, "source": "audit-2026-10-25"}
 {"prompt": "Refactor the middleware to remove duplication.", "expect": true, "source": "audit-2026-10-25"}
+{"prompt": "Simplify this, keep the behavior identical:\n\nfunction isActive($u) {\n    if ($u->status === 'active') {\n        return true;\n    } else {\n        return false;\n    }\n}", "expect": true, "source": "multiline-matcher-2026-10-31"}
+{"prompt": "Audit the decoder for memory-safety bugs.\n\nCheck the cleanup path after a bailout.\nCite file:line for each finding and include the vulnerable code.", "expect": false, "source": "multiline-matcher-2026-10-31"}

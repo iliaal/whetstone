@@ -13,3 +13,5 @@
 {"prompt": "READ-ONLY analysis - the worktree is shared with other work, do not modify files", "expect": false, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "run git worktree add for a review branch", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
 {"prompt": "list the worktrees and prune the stale ones", "expect": true, "added_in": "4.1.5", "source": "harvest-misfire-2026-07"}
+{"prompt": "Fix lane for bead app-123.\n\n**Setup**\n- Worktree: /srv/app/.worktrees/fix-123, branch fix/123. Edit only there.", "expect": false, "source": "multiline-matcher-2026-10-31"}
+{"prompt": "Merge the PR once checks pass.\nClean up branch/worktree, fast-forward clones if clean.", "expect": true, "source": "multiline-matcher-2026-10-31"}

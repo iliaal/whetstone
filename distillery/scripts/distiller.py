@@ -1752,15 +1752,31 @@ def _load_skill_negative(name, patterns_file=None):
     return m.group(1) if m else None
 
 
+_HOOK_WHITESPACE_RUN = _re.compile(r"[\t\n\r\v\f ]+")
+
+
+def _trigger_haystack(text):
+    """The records the hook's grep sees for one lowercased prompt.
+
+    Mirrors prompt_context in skill-matcher.sh: command substitution drops
+    trailing newlines, grep tests each line separately, and one extra line holds
+    the whole prompt with whitespace runs collapsed (`tr -s`) so keyword spans
+    can cross line breaks.
+    """
+    text = text.rstrip("\n")
+    return text.split("\n") + [_HOOK_WHITESPACE_RUN.sub(" ", text)]
+
+
 def _trigger_fires(pattern, negative, text):
     """Whether a skill fires: positive matches and suppression does not.
 
     Single source of truth for the firing rule, so should_trigger and
     should_not_trigger cannot drift apart. Mirrors the hook's two greps.
     """
-    if not _re.search(pattern, text):
+    haystack = _trigger_haystack(text)
+    if not any(_re.search(pattern, record) for record in haystack):
         return False
-    if negative and _re.search(negative, text):
+    if negative and any(_re.search(negative, record) for record in haystack):
         return False
     return True
 

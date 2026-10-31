@@ -47,7 +47,7 @@ SKILL_TIERS[ia-debugging]=1
 SKILL_PATTERNS[ia-code-review]='review.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bpatch(es)?\b|\bmerge\b)|code.?review|audit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|critiqu|\breview.{0,30}\bpull request\b'
 SKILL_TIERS[ia-code-review]=1
 
-SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.*code|polish.*code|\b(refactor|simplif[a-z]*)\b.{0,50}\b(code|functions?|methods?|modules?|classes|class|parsers?|handlers?|implementation|data pipeline|services?|components?|router|middleware)\b|declutter|reduce.?complexity|remove.*(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b|\brefactor\b.{0,50}\.(php|py|rs|[cm]?[jt]sx?|c|h|cpp|hpp)\b'
+SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.{0,40}code|polish.{0,40}code|\b(refactor|simplif[a-z]*)\b.{0,50}\b(code|functions?|methods?|modules?|classes|class|parsers?|handlers?|implementation|data pipeline|services?|components?|router|middleware)\b|declutter|reduce.?complexity|remove.{0,40}(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b|\brefactor\b.{0,50}\.(php|py|rs|[cm]?[jt]sx?|c|h|cpp|hpp)\b'
 SKILL_TIERS[ia-simplifying-code]=1
 
 SKILL_PATTERNS[ia-brainstorming]='brainstorm|help.?me.?think|what.?should.?we.?build|explore.{0,40}(approach|idea|option|feature)|compare.{0,30}approach|clarify.{0,30}(requirement|ambigu)|vague.{0,30}(idea|feature|requirement)'
@@ -56,10 +56,10 @@ SKILL_TIERS[ia-brainstorming]=1
 SKILL_PATTERNS[ia-verification-before-completion]='verif\w*\s.{0,20}(complet|pass|success)|completion.?claim|fresh.?evidence|verify.?before.{0,15}(commit|push|pr|merge|complet)|mark.{0,15}(done|complet)|ready.?to.?merge|claim.{0,30}(fixed|done|complete)|\bverify.{0,20}\bfix.{0,30}\bdeclaring.{0,10}\bdone\b|\b(check|verify|confirm)\b.{0,35}\btests? (actually )?pass\b.{0,20}\bbefore (committ|push|merg)|\bbefore (handing off|handoff|hand-off)\b.{0,30}\b(package|cli|binary|implementation|feature|patch|fix|change|branch|build|release)\b.{0,30}\b(verify|check|confirm)\b|\b(verify|check|confirm)\b.{0,30}\b(package|cli|binary|implementation|feature|patch|fix|change|branch|build|release)\b.{0,40}\bbefore (handing off|handoff|hand-off)\b'
 SKILL_TIERS[ia-verification-before-completion]=1
 
-SKILL_PATTERNS[ia-receiving-code-review]='\breviewers?\b.{0,20}\b(said|says?|suggest[a-z]*|comment(s|ed|ing)?|flag[a-z]*|asked|requests?|requested)\b|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.*(suggestion|feedback)|push.?back.*review|respond.*(review|feedback)|\b(check|evaluate|assess).{0,30}\bcode review feedback\b'
+SKILL_PATTERNS[ia-receiving-code-review]='\breviewers?\b.{0,20}\b(said|says?|suggest[a-z]*|comment(s|ed|ing)?|flag[a-z]*|asked|requests?|requested)\b|pr.?comment|mr.?comment|address.{0,30}(review|feedback)|implement.{0,40}(suggestion|feedback)|push.?back.{0,40}review|respond.{0,40}(review|feedback)|\b(check|evaluate|assess).{0,30}\bcode review feedback\b'
 SKILL_TIERS[ia-receiving-code-review]=1
 
-SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.*(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b|\badd( (a|an|some|more|new|missing|few|basic|unit|integration|e2e|end-to-end|regression|property|snapshot|smoke|failing|edge-case))+ tests?([ ,]+(for|to|that|covering|around|on)\b|[ .!?]*$)'
+SKILL_PATTERNS[ia-writing-tests]='writ.{0,25}(test|spec)|add.?test|test.?quality|test.?anti.?pattern|mock.{0,40}(bad|wrong|instead)|test.?discipline|\badd.{0,20}\bregression tests?\b|\bimprove.{0,20}\bassertion quality\b|\badd( (a|an|some|more|new|missing|few|basic|unit|integration|e2e|end-to-end|regression|property|snapshot|smoke|failing|edge-case))+ tests?([ ,]+(for|to|that|covering|around|on)\b|[ .!?]*$)'
 SKILL_TIERS[ia-writing-tests]=1
 
 # Audit intent over existing tests, not authoring: bare `test.?quality` stays with
@@ -83,16 +83,16 @@ SKILL_TIERS[ia-php-laravel]=2
 # mention, e.g. reviews of `Avatar.tsx` (paths also contain "components", so a noun
 # anchor doesn't help). `\b[jt]sx\b` needs a runtime SYMPTOM (rendering/broken/error/
 # crash), which path noise lacks; `react.*test` / `hook.*component` spans are bounded.
-SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test|tailwind|@theme.*token|@utility.*css|class.?variance|\bcva\b|utility.?class|dark.?mode.*css|\b(react|frontend)\b.{0,40}\b(locales?|translations?)\b|\b(locales?|translations?)\b.{0,40}\b(react|frontend)\b'
+SKILL_PATTERNS[ia-react-frontend]='react.{0,15}(component|hook|state|context|render|jsx|tsx|router|prop)|next\.?js|react.{0,20}test|\b[jt]sx\b.{0,20}(rendering|re-?render|broken|error|crash|blank|not.?updat|infinite.?loop|undefined)|\bhook[s]?\b.{0,20}component|vitest|component.?test|hook.?test|\brtl\b|testing.?library|snapshot.?test|tailwind|@theme.{0,40}token|@utility.{0,40}css|class.?variance|\bcva\b|utility.?class|dark.?mode.{0,40}css|\b(react|frontend)\b.{0,40}\b(locales?|translations?)\b|\b(locales?|translations?)\b.{0,40}\b(react|frontend)\b'
 SKILL_TIERS[ia-react-frontend]=2
 
-SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.*(server|endpoint|route|api)|\bfastify\b|node\.?js.*(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,40}\b(express|node(\.?js)?)\b|\b(express|node(\.?js)?)\b.{0,40}\bmiddleware\b'
+SKILL_PATTERNS[ia-nodejs-backend]='\bexpress\b.{0,40}(server|endpoint|route|api)|\bfastify\b|node\.?js.{0,40}(backend|server|api)|server.?side.?typescript|\bnestjs?\b|\bhono\b|\bkoa\b|\btrpc\b|\bbun\b.{0,20}(server|http|api)|\bmiddleware\b.{0,40}\b(express|node(\.?js)?)\b|\b(express|node(\.?js)?)\b.{0,40}\bmiddleware\b'
 SKILL_TIERS[ia-nodejs-backend]=2
 
-SKILL_PATTERNS[ia-python-services]='\bfastapi\b|\bpython3?\b.{0,40}\b(cli|service|services|backend|api)\b|async.*python|\bruff\b|\basyncio\b|\bty\b.{0,20}\bpyproject\.toml\b|\b(implement|build|write|configure|test)\b.{0,20}\bclick\b.{0,20}\b(command|cli|option|subcommand)\b|\buv +(add|sync|lock|run)\b|\buv\b.{0,25}\b(dependencies|dependency|pyproject\.toml)\b|\b(dependencies|dependency)\b.{0,30}\bpyproject\.toml\b|\bpyproject\.toml\b.{0,30}\b(dependencies|dependency)\b'
+SKILL_PATTERNS[ia-python-services]='\bfastapi\b|\bpython3?\b.{0,40}\b(cli|service|services|backend|api)\b|async.{0,40}python|\bruff\b|\basyncio\b|\bty\b.{0,20}\bpyproject\.toml\b|\b(implement|build|write|configure|test)\b.{0,20}\bclick\b.{0,20}\b(command|cli|option|subcommand)\b|\buv +(add|sync|lock|run)\b|\buv\b.{0,25}\b(dependencies|dependency|pyproject\.toml)\b|\b(dependencies|dependency)\b.{0,30}\bpyproject\.toml\b|\bpyproject\.toml\b.{0,30}\b(dependencies|dependency)\b'
 SKILL_TIERS[ia-python-services]=2
 
-SKILL_PATTERNS[ia-rust-systems]='(write|review|refactor|debug|fix|implement|design|structure|optimi[sz]e|port|migrate|test)\b[^.]{0,40}\brust\b|\brust\b.{0,30}(cli|service|binary|workspace|backend|api|server|handler|async|tokio|axum)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.*(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.*rust|\bcrates?\.io\b|\bcrate\b.{0,25}\bworkspace\b|\bworkspace\b.{0,25}\bcrates?\b'
+SKILL_PATTERNS[ia-rust-systems]='(write|review|refactor|debug|fix|implement|design|structure|optimi[sz]e|port|migrate|test)\b[^.]{0,40}\brust\b|\brust\b.{0,30}(cli|service|binary|workspace|backend|api|server|handler|async|tokio|axum)|async\s+rust|\bcargo\b.{0,20}(build|test|clippy|nextest|workspace|toml|deny)|\bclippy\b|\btokio\b|\baxum\b|\bclap\b.{0,40}(derive|parser|subcommand)|\bthiserror\b|\banyhow\b|cargo\.toml|\brustfmt\b|cargo-nextest|rust-toolchain|JoinSet|\bserde\b.{0,40}rust|\bcrates?\.io\b|\bcrate\b.{0,25}\bworkspace\b|\bworkspace\b.{0,25}\bcrates?\b'
 SKILL_TIERS[ia-rust-systems]=2
 
 # C vs C++ disambiguation has no lookahead available (the hook matches with `grep -qE`
@@ -150,7 +150,7 @@ SKILL_TIERS[ia-agent-native-architecture]=2
 
 # --- Tier 3: Supporting/Workflow ---
 
-SKILL_PATTERNS[ia-writing]='\brewrite\b.{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|reports?|readme|descriptions?|wording)\b|\brewrite +((the|this|our|my) +)?((implementation|migration|project|release|sprint|rollout|feature) +)?plan\b|humanize|improve.*text|fix.*(tone|wording)|proofread|\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b.{0,60}(remove.{0,20}ai.?(language|tell|slop)|ai[- ]?slop)|remove.{0,20}ai.?(language|tell|slop).{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b|\b(is|was) this ai[- ]?slop\b|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|\bwrite\b.{0,60}(pull.?request|\bplan\b)|\b(write|draft|rewrite|edit|polish)\b.{0,30}\b(commit (body|bodies|message)|mr description|merge request description)([.!?]*$| +(for|to|about|with|that|which|so|explaining|describing)\b)'
+SKILL_PATTERNS[ia-writing]='\brewrite\b.{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|reports?|readme|descriptions?|wording)\b|\brewrite +((the|this|our|my) +)?((implementation|migration|project|release|sprint|rollout|feature) +)?plan\b|humanize|improve.{0,40}text|fix.{0,40}(tone|wording)|proofread|\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b.{0,60}(remove.{0,20}ai.?(language|tell|slop)|ai[- ]?slop)|remove.{0,20}ai.?(language|tell|slop).{0,40}\b(paragraphs?|sentences?|text|prose|copy|drafts?|emails?|posts?|articles?|documents?|descriptions?)\b|\b(is|was) this ai[- ]?slop\b|ai.?(writing|text).?tell|ai[- ]?tells\b|ai[- ]?(sounding|written)|(reads?|sounds?).{0,15} (like|as) (an? )?ai\b|\bpr.?description\b|\bwrite\b.{0,60}(pull.?request|\bplan\b)|\b(write|draft|rewrite|edit|polish)\b.{0,30}\b(commit (body|bodies|message)|mr description|merge request description)([.!?]*$| +(for|to|about|with|that|which|so|explaining|describing)\b)'
 SKILL_TIERS[ia-writing]=3
 
 # Intent-anchored: bare `claude\.md` fires on any prompt citing CLAUDE.md as
@@ -167,7 +167,7 @@ SKILL_PATTERNS[ia-reflect]='/reflect|session.?review|retrospective|lessons.?lear
 SKILL_TIERS[ia-reflect]=3
 
 
-SKILL_PATTERNS[ia-document-review]='(refine|polish|review|audit).{0,40}(brainstorm|plan|document|adr|\bspec(s|ifications?)?\b)|\bcheck.{0,20}\b(adr|document|spec|plan).{0,20}\b(clarity|completeness)\b'
+SKILL_PATTERNS[ia-document-review]='\b(refine|polish|review|audit)( +[a-z0-9-]+){0,4} +(brainstorm|plan|document|adr|spec(s|ifications?)?\b)|\bcheck.{0,20}\b(adr|document|spec|plan).{0,20}\b(clarity|completeness)\b'
 SKILL_TIERS[ia-document-review]=3
 
 
@@ -181,7 +181,7 @@ SKILL_TIERS[ia-orchestrating-swarms]=3
 
 # Management-intent only: bare `worktree` matches location mentions ("the worktree
 # at /path/to/checkout"). A management verb near the noun is required.
-SKILL_PATTERNS[ia-git-worktree]='\b(create|add|new|set.?up|make|remove|clean|prune|switch|list)\b.{0,30}worktrees?|worktrees?.{0,25}(add|create|remove|prune|cleanup|list|switch)\b|parallel.?development'
+SKILL_PATTERNS[ia-git-worktree]='\b(create|add|new|set.?up|make|remove|clean|prune|switch|list)\b([ /]+[a-z0-9-]+){0,4}[ /]+worktrees?|worktrees?.{0,25}(add|create|remove|prune|cleanup|list|switch)\b|parallel.?development'
 SKILL_TIERS[ia-git-worktree]=3
 
 

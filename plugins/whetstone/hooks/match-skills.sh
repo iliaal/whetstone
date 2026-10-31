@@ -68,7 +68,7 @@ if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ENTRIES[@]} -eq 1 && ${#ALL_MATCHES[@]} -l
     [[ -f "$PLUGIN_ROOT/skills/$skill_name/SKILL.md" ]] || continue
     [[ " ${ALL_MATCHES[*]-} " == *" $skill_name "* ]] && continue
     if [[ -n "${SKILL_NEGATIVE[$skill_name]+x}" ]] &&
-      grep -qE "${SKILL_NEGATIVE[$skill_name]}" <<<"$PROMPT_LOWER" 2>/dev/null; then
+      prompt_matches "${SKILL_NEGATIVE[$skill_name]}"; then
       continue
     fi
     if $IS_MAINT_CONTEXT && [[ -n "${SKILL_MAINT_SUPPRESS[$skill_name]+x}" ]]; then

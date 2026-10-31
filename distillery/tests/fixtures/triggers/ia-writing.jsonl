@@ -36,3 +36,4 @@
 {"prompt": "Generate a Markdown parser in TypeScript.", "expect": false, "source": "audit-2026-10-25"}
 {"prompt": "Inspect citation links in the API reference for HTTP failures.", "expect": false, "source": "audit-2026-10-25"}
 {"prompt": "Write the commit message parser in Rust.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "Fix the parser crash in src/lexer.c.\n\nKeep the existing error wording.", "expect": false, "source": "multiline-matcher-2026-10-31"}

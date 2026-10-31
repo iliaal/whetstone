@@ -20,3 +20,4 @@
 {"prompt":"Add some integration tests for the checkout flow","expect":true,"source":"sync-2026-10-19"}
 {"prompt":"Add logging to the test runner","expect":false,"source":"sync-2026-10-19"}
 {"prompt":"Address the test failures in CI","expect":false,"source":"sync-2026-10-19"}
+{"prompt": "Add unit tests\n\n```php\nfunction isActive(User $u): bool {\n    return $u->status === 'active';\n}\n```", "expect": true, "source": "multiline-matcher-2026-10-31"}

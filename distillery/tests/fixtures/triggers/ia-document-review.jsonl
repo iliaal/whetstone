@@ -18,3 +18,4 @@
 {"prompt":"Diagnose the incomplete code review: the driver reported a best-effort review with specialist review and triage still unfinished.","expect":false,"source":"audit-2026-10-11-misfires"}
 {"prompt":"Review the specification for gaps before implementation.","expect":true,"source":"audit-2026-10-11-misfires"}
 {"prompt":"Audit these design documents for completeness.","expect":true,"source":"audit-2026-10-11-misfires"}
+{"prompt": "Review the branch.\n\nChange: the plan rows now skip the gate.", "expect": false, "source": "multiline-matcher-2026-10-31"}
