@@ -75,7 +75,7 @@ This command takes a work document (plan or specification) and executes it syste
 
 3. **Create Task Tracking**
    - Record the initial working-tree and staged diffs before editing. Distinguish caller changes, peer changes, and the invocation's owned changes; keep the original index intact.
-   - Inspect the available tools once. If TaskCreate, TaskUpdate, and TaskList are available, use them as the task tracker. Otherwise, use the input plan when it is a writable local file. For an issue, URL, or read-only input, create a local tracker under the repository's existing planning/scratch convention or the harness scratch directory, and record its path. Make the tracker's first line its input identity: the issue URL or plan path plus the base commit. Before resuming from an existing tracker, confirm that line matches the current input; a mismatched tracker is another input's progress, so leave it untouched and start a fresh tracker rather than reusing it or creating a duplicate for the same input. Keep stable task IDs, status, dependencies, blockers, and verification evidence in the selected tracker. Do not enable tools or change session settings.
+   - Inspect the available tools once. If TaskCreate, TaskUpdate, and TaskList are available, use them as the task tracker. Otherwise, use the input plan when it is a writable local file. For an issue, URL, or read-only input, create a local tracker under the repository's existing planning/scratch convention or the harness scratch directory, and record its path. Make that local tracker's first line its input identity: the issue URL or plan path plus the base commit. Before resuming from an existing tracker, confirm that line matches the current input; a mismatched tracker is another input's progress, so leave it untouched and start a fresh tracker rather than reusing it or creating a duplicate for the same input. Keep stable task IDs, status, dependencies, blockers, and verification evidence in the selected tracker. Do not enable tools or change session settings.
    - Preserve the input's acceptance criteria in the selected tracker. A local tracker does not authorize edits to a remote issue or a read-only source.
    - Break the plan into actionable tasks in the selected tracker
    - Include dependencies between tasks
@@ -209,7 +209,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    This step is not optional. It closes one of two ways, and both the PR template's Testing section and the Phase 4 Notify User summary have to say which:
 
    - **Reviewed**: agents ran, findings presented, criticals addressed or explicitly accepted with a reason.
-   - **Skipped**, with one of these stated verbatim plus a one-line reason: `Code review: skipped (mechanical diff)` only when nothing the diff touches is executed or loaded (code, configuration, dependency resolution, generated artifacts, or instruction text), such as a formatting sweep or a comment-only edit; change size is not the test, and a lockfile bump or generated-file refresh changes what runs, so it gets reviewed; `Code review: skipped (unavailable)` when no independent review capability is available.
+   - **Skipped**, with one of these stated verbatim plus a one-line reason: `Code review: skipped (mechanical diff)` only when nothing the diff touches is executed or loaded (code, configuration, dependency resolution, generated artifacts, or instruction text), such as a comment-only edit or a formatting sweep outside whitespace-significant files (Python, YAML, Makefile); judge by what runs, never by size; `Code review: skipped (unavailable)` when no independent review capability is available.
 
    A self-assessment does not close this gate. "I already reviewed it as I wrote it" and "the findings were applied during implementation" are the implementer judging their own work, which is what the review exists to avoid. If the diff is large enough to want a worktree and multiple lenses, hand it to `/ia-review` and record that as the receipt.
 
@@ -289,7 +289,7 @@ Invoke the `ia-verification-before-completion` skill via an explicit Skill tool 
    - [Manual testing performed]
    - Acceptance edits: [criterion changes and baseline used, none, or baseline unavailable]
    - Gate edits: [relaxed tests, thresholds, or suppressions with reasons, or none]
-   - `Code review: reviewed` (agents ran, findings addressed) — or one of the Phase 3 skip phrases verbatim: `Code review: skipped (mechanical diff)` / `Code review: skipped (unavailable)`, each followed by a one-line reason
+   - `Code review: reviewed` (agents ran, findings addressed) — or one of the Phase 3 skip phrases verbatim: `Code review: skipped (mechanical diff)` (Phase 3 criterion: nothing touched is executed or loaded) / `Code review: skipped (unavailable)`, each followed by a one-line reason
 
    ## Post-Deploy Monitoring & Validation
    - **What to monitor**: [logs, metrics, dashboards]

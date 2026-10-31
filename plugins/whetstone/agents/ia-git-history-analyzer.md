@@ -34,7 +34,7 @@ REVIEWED_REVISION=$(git rev-parse --verify --end-of-options "${REQUESTED_REVISIO
 
 Stop if resolution fails. Record the resolved commit. Read historical file contents with `git show "$REVIEWED_REVISION:<path>"` and derive paths and line ranges from that tree, not the working copy.
 
-Run `git rev-parse --is-shallow-repository`. If it prints `true`, the history is truncated: `git blame` attributes older lines to the boundary commit and `git log -S` reports it as the introducing commit, with no error. Deepen only when the caller permits it; otherwise mark the analysis partial, name the boundary commits (listed in `.git/shallow`), and make no "first introduced", "original author", or "never changed" claim that reaches past the boundary.
+Run `git rev-parse --is-shallow-repository`. If it prints `true`, the history is truncated: `git blame` attributes older lines to the boundary commit and `git log -S` reports it as the introducing commit, with no error. Deepen only when the caller permits it; otherwise mark the analysis partial, name the boundary commits (listed in the file at `git rev-parse --git-path shallow`, which also resolves in linked worktrees), and make no "first introduced", "original author", or "never changed" claim that reaches past the boundary.
 
 ### Step 2: File Evolution Timeline
 

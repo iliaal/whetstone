@@ -119,7 +119,7 @@ Flag critical/high vulnerabilities as blockers. Moderate/low are warnings.
 - `.env` files staged for commit
 - `dangerouslySetInnerHTML`, `eval()`, raw SQL string concatenation
 
-Print only file names or `file:line` from the secret scan, never the matched line: a match echoed to the terminal puts the live value into tool output and the session transcript. Use `git diff --cached -i -G'<pattern>' --name-only`, or `git grep --cached -n -I -i -E '<pattern>' -- <files> | cut -d: -f1,2`, and treat each hit as "inspect this location", not as text to quote.
+Print only file names or `file:line` from the secret scan, never the matched line: a match echoed to the terminal puts the live value into tool output and the session transcript. Scan the selected scope, not always the index. In `pre-commit` mode, use `git diff --cached -i -G'<pattern>' --name-only`, or `git grep --cached -n -I -i -E '<pattern>' -- <files> | cut -d: -f1,2`. In `pre-pr` mode, use `git diff -i -G'<pattern>' --name-only <merge-base-sha> <head-sha>`, or `git grep -n -I -i -E '<pattern>' <head-sha> -- <files> | cut -d: -f2,3` (a revision grep prefixes each hit with `<head-sha>:`). Treat each hit as "inspect this location", not as text to quote.
 
 Classify each changed file by its content (magic bytes or control bytes), not its extension. List files the text scan cannot inspect, including archives, office documents, databases, PDFs, and binary key stores, as `unscanned, open manually`; do not exempt minified text bundles. Report the unscanned count as at least a warning when nonzero. If enumeration or reading fails, report the count as unknown and the scan as `ERROR`, never zero or `CLEAN`.
 

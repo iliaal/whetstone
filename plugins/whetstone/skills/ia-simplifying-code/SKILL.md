@@ -78,6 +78,8 @@ For analysis-only reports, distinguish available evidence from checks required a
 
 For analysis-only requests, report each target's location, proposed change, rationale, behavior risk, and required verification. Label proposals as unimplemented.
 
+For code pasted inline with no file path, return the revised snippet and a brief note of what changed instead of editing files.
+
 After applying simplifications, report:
 - **Scope touched**: files and functions modified
 - **Key simplifications**: what changed and why (one line each)

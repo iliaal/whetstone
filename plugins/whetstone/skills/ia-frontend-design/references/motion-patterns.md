@@ -26,13 +26,15 @@ Animate exclusively via `transform` and `opacity`. Never animate `top`, `left`, 
 
 Combine Y translation and opacity for scroll entry, within the transform/opacity policy:
 
+The classes below are the start and end states the script applies after it adds `.motion-ready`; they are not markup to author:
+
 ```
 translate-y-16 opacity-0
   resolving to
 translate-y-0 opacity-100
 ```
 
-Ship content visible by default: never author `opacity-0` in the markup. Scope the hidden start state to a class the script adds (for example `.motion-ready` on `<html>`, with `.motion-ready .reveal { opacity: 0; transform: translateY(4rem) }`) only after the IntersectionObserver is set up, so a script error, a crawler, or slow hydration still renders every heading and CTA. Start scale entries at 0.85 or higher, never `scale(0)`, and stagger within one section rather than across the page.
+Ship content visible by default: never author `opacity-0` in the markup. Scope the hidden start state to a class the script adds (for example `.motion-ready` on `<html>`, with `.motion-ready .reveal { opacity: 0; transform: translateY(4rem) }`) only after the IntersectionObserver is set up, so a script error, a crawler, or slow hydration still renders every heading and CTA. Start scale entries at 0.85 or higher, never `scale(0)`, and stagger scroll reveals within one section rather than across the page.
 
 ## IntersectionObserver Mandate
 

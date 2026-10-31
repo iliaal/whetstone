@@ -61,7 +61,7 @@ When user selects "Create Issue", detect their project tracker from CLAUDE.md:
 
    Use the title and type from Step 2 (already in context - no need to re-read the file).
 
-   Resolve the target first with `gh repo view --json nameWithOwner`: `gh` creates issues in the configured default repository, which in a fork clone can be the upstream parent. If the resolved repository is not the user's, confirm the target through a blocking question before posting, because the plan becomes public in that repository. Pass the confirmed name explicitly:
+   Resolve the target first with `gh repo view --json nameWithOwner`: `gh` creates issues in the configured default repository, which in a fork clone can be the upstream parent. Compare it with the `origin` remote: `gh repo view "$(git remote get-url origin)" --json nameWithOwner,isFork,parent`. If the resolved repository differs from origin's `nameWithOwner`, including when origin `isFork` and its `parent` (`owner.login`/`name`) is the resolved target, confirm the target through a blocking question before posting, because the plan becomes public in that repository. Pass the confirmed name explicitly:
 
    ```bash
    gh issue create --repo <owner/name> --title "<type>: <title>" --body-file <plan_path>

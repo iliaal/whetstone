@@ -39,8 +39,9 @@ certify file coverage. When split, list every changed caller/callee contract
 whose ends fall in different units, and add one overlapping integration unit
 that receives both changed ends plus the contract owner's source, with each
 contract named as an obligation to certify; the overlap is outside the
-disjointness rule. Cross-unit contracts without an integration unit, or an
-uncertified obligation, force `Not ready`.
+disjointness rule. The integration unit's overlapping paths add obligation
+certification only; each path's coverage is still credited to its owning unit
+during reconcile.
 
 Require each correctness unit to return `covered`, `failed`, and `pending` path
 lists keyed by `(path, change-status)` as in [scope-resolution.md](./scope-resolution.md).
@@ -49,7 +50,8 @@ Mark an entry covered only after reading its actual changed code; a clean
 finding list or a specialist's successful return is insufficient. Assign
 deletion-only files and inspect their old-side diff. After dispatch, reconcile
 the unit lists against the selected set before running merge, red-team, or
-Skeptic passes. Partial correctness coverage forces a `Not ready` verdict.
+Skeptic passes. Partial correctness coverage, a cross-unit contract without an integration
+unit, or an uncertified obligation forces a `Not ready` verdict.
 
 ### Stack routing
 
@@ -191,7 +193,7 @@ For each finding, attempt one of:
 Per finding, return one of:
 - DISPROVED — concrete counter-evidence (file:line of the upstream guard, doc URL, passing test name). Drop or demote to advisory. When the finding belongs to a protected-subject class in severity-and-confidence.md, a test result clears the bar only by naming its revision, configuration, trigger, assertion, and observed result; a bare test name or a generally passing suite is not disproof there, so return HELD instead.
 - WEAKENED — partial counter-evidence. State which premise or impact changed; reassess confidence and severity separately.
-- HELD — no counter-evidence found. Keep as-is. HELD means the disproof attempt failed, not that new supporting evidence was found.
+- HELD — no counter-evidence found. Keep as-is.
 
 DO NOT invent counter-evidence. If you cannot find a real upstream guard, doc citation, or covering test, return HELD. Inventing a phantom guard is worse than letting a false positive through — the author then ignores a real bug because "the Skeptic disproved it."
 

@@ -126,7 +126,7 @@ async ({ key }) => {
 <design_template>
 ## Tool Design Template
 
-The examples in this file use the Claude Agent SDK's in-process server (`createSdkMcpServer`, `tool` with raw-shape schemas). A standalone server uses the MCP TypeScript SDK instead; check its current major before starting. At time of writing, v2 (`@modelcontextprotocol/server`) is the stable line: it requires Zod `^4.2.0` and takes `z.object(...)` schemas (raw shapes survive only as deprecated overloads), while v1 (`@modelcontextprotocol/sdk`) receives only bug and security fixes. Start new servers on v2; when migrating, keep v1 and v2 imports on opposite sides of a process or transport boundary, because objects from one major must not flow into the other.
+The examples in this file use the Claude Agent SDK's in-process server (`createSdkMcpServer`, `tool` with raw-shape schemas). A standalone server uses the MCP TypeScript SDK instead; check the latest major before starting. Since its 2026-07-27 release, v2 (`@modelcontextprotocol/server`) is the stable line: it requires Zod `^4.2.0` and takes `z.object(...)` schemas (raw shapes survive only as deprecated overloads), while v1 (`@modelcontextprotocol/sdk`) receives only bug and security fixes. Start new servers on v2; when migrating, keep v1 and v2 imports on opposite sides of a process or transport boundary, because objects from one major must not flow into the other.
 
 Require `storage.get` to return `undefined` only for a missing key; stored `null`, `false`, `0`, and empty strings remain valid values.
 
@@ -652,7 +652,7 @@ Run the eval in CI. Scoring is binary per question: exact string match or fail. 
 
 **What the eval catches that unit tests don't:**
 - Vague tool descriptions that cause the agent to call the wrong tool
-- Missing `outputSchema` fields that force the agent to parse error-prone text
+- Tools whose results are always structured but declare no `outputSchema`, which forces the agent to parse error-prone text (tools with a text-only mode declare none, per Structured Output)
 - Pagination that works for page 1 but breaks on page 3
 - Error messages that don't surface the recovery path, so the agent gives up
 
