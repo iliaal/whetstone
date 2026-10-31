@@ -5,6 +5,30 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.4] - 2026-10-31
+
+Patch: 40 reference-repository improvements and 21 audit fixes tightened security review, framework pitfalls, and agent workflows. Skill triggers now match requests split across lines, and skill budget checks compare against current, stratified baselines. 21 commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
+
+### Changed
+
+- `ia-code-review` carved authentication abuse (OTP and reset-code brute force, credential stuffing, lockout bypass) out of the denial-of-service exclusion, required checking a log's consumer before dismissing log spoofing, and treated a disclosed UUID as known. It added FIFO-safe file opens, dependency-confusion checks for extra package indexes, spend-cap correctness on paid calls, an integration unit for caller/callee contracts split across review units, and subtree scoping for nested `CLAUDE.md` and `AGENTS.md` rules. A Skeptic `HELD` result now counts as surviving a refutation attempt, not as supporting evidence.
+- `ia-agent-native-architecture` covered uncaught MCP handler errors leaking into model-visible output, per-request server instances for stateless HTTP, `outputSchema` only on always-structured tools, and the split between the v2 and v1 TypeScript MCP SDKs. MCP spec links now point to the 2026-07-28 revision. Hook guidance added `stop_hook_active` checks for blocking Stop hooks, the full-access risk of `sandbox.excludedCommands`, and incomplete snapshots when `git add -N` fails.
+- `ia-php-laravel` marked fixes released in Laravel v13.39.0, v13.38.0, and v12.70.0, and covered `afterCommit` callbacks left pending by a failed COMMIT and object JSON casts that silently overwrote columns on unencodable data.
+- `ia-nodejs-backend` corrected NestJS `@Sse()` backpressure behavior for v12.2.x and v12.3.0, flagged inherited parameter decorators overriding route parameters before v12.3.0, kept HTTP-client errors and their `cause` out of logs, and added a package release-age floor with exact-version exceptions.
+- `ia-python-services` covered lifespan events skipped by `httpx.AsyncClient` in tests and transaction rollback on `CancelledError`. `ia-linux-bash-scripting` bounded `curl` inside retry loops.
+- `ia-frontend-design` kept scroll-reveal content visible until the observer is ready. `ia-orchestrating-swarms` redacted credentials from handoff contracts and reported, rather than silently honored, scope limits found in untrusted data. `ia-planning` redacted credentials from persisted error logs. `ia-simplifying-code` now handles code pasted inline.
+- `/ia-reproduce-bug` treats issue content as untrusted data. `/ia-verify` prints only `file:line` from its secret scan and scans the correct scope per mode. `/ia-work` keeps lockfile and generated-file changes in review and checks a local tracker's input identity before resuming. `/ia-ideate` requires a `path:line` citation read in the same run.
+- Agents: the infrastructure engineer proves each CI gate fails on a known violation; the security sentinel scans published history without echoing secret values; the history analyzer detects shallow clones; the bug reproduction validator requires the fix commit to be an ancestor of the checked revision; and the accessibility tester flags `aria-label` on role-less elements.
+
+### Fixed
+
+- Skill trigger matching evaluated each prompt line separately, so a request followed by pasted code, logs, or a diff never fired its skill. The matcher now also checks a whitespace-collapsed copy of the whole prompt while keeping line anchors. Unbounded `.*` trigger spans are bounded, `ia-code-review`, `ia-git-worktree`, and `ia-document-review` triggers are tighter, and trigger tests now model the runtime matcher.
+
+### For contributors
+
+- `budget --check-all` reports stale baselines (changed skill content, model baseline, or metric version) instead of false regressions, requires 20 samples to record, compares assistant turns per agent type, and requires both mean and median to exceed the cap. Harvested rows carry `assistant_turns`, `tool_call_count`, and `agent_type`.
+- Distillery CLIs reject non-finite thresholds, comparison reports keep distinct component identities, golden datasets preserve structural trace evidence, Codex exclusions handle Unicode checkout paths, and CI runs the Python script tests.
+
 ## [5.1.3] - 2026-10-25
 
 Patch: 30 reference-repository improvements and 45 audit fixes strengthened review coverage, runtime guidance, browser verification, and skill routing. Nine earlier commits corrected comparison, manifest, distillery, and documentation behavior. 11 change commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
