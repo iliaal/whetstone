@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -53,3 +54,33 @@ def test_cli_preserves_config_and_unicode_paths(tmp_path):
     assert config.read_bytes() == first
     subprocess.run([*command, '--remove'], check=True, capture_output=True)
     assert config.read_text(encoding='utf-8') == original
+
+
+@pytest.mark.parametrize('remove', [False, True], ids=['configure', 'remove'])
+@pytest.mark.parametrize('dry_run', [False, True], ids=['write', 'dry-run'])
+def test_cli_reads_utf8_config_in_ascii_locale(tmp_path, remove, dry_run):
+    home = tmp_path / 'codex'
+    home.mkdir()
+    config = home / 'config.toml'
+    original = 'model = "café-🛠"\n'
+    block = MODULE.render_block([Path('/existing/🛠/SKILL.md')])
+    initial = MODULE.replace_managed_block(original, block) if remove else original
+    config.write_text(initial, encoding='utf-8')
+    # Disable Python's UTF-8 mode and locale coercion, while keeping stdout UTF-8.
+    env = {**os.environ, 'LC_ALL': 'C', 'LANG': 'C', 'PYTHONUTF8': '0',
+           'PYTHONCOERCECLOCALE': '0', 'PYTHONIOENCODING': 'utf-8'}
+    command = [sys.executable, str(SCRIPT), '--codex-home', str(home)]
+    if remove:
+        command.append('--remove')
+    if dry_run:
+        command.append('--dry-run')
+    result = subprocess.run(command, env=env, check=True, capture_output=True)
+    expected = original if remove else MODULE.replace_managed_block(
+        original, MODULE.render_block(MODULE.skill_paths(SCRIPT.resolve().parent.parent)))
+    if dry_run:
+        assert result.stdout.decode('utf-8') == expected
+        assert config.read_bytes() == initial.encode('utf-8')
+    else:
+        assert config.read_bytes() == expected.encode('utf-8')
+        subprocess.run(command, env=env, check=True, capture_output=True)
+        assert config.read_bytes() == expected.encode('utf-8')

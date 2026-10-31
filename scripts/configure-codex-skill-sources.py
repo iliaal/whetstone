@@ -121,7 +121,7 @@ def main() -> None:
             raise SystemExit(f"refusing to replace dangling config symlink: {config_link}") from exc
     else:
         config_path = config_link
-    current = config_path.read_text() if config_path.exists() else ""
+    current = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
     updated = (
         remove_managed_block(current)
         if args.remove
