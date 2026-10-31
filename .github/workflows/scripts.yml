@@ -1,0 +1,52 @@
+name: Script regression checks
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "scripts/**"
+      - "distillery/**"
+      - "plugins/whetstone/**"
+      - ".github/workflows/scripts.yml"
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "distillery/**"
+      - "plugins/whetstone/**"
+      - ".github/workflows/scripts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scripts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-tests:
+    name: Python script tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --disable-pip-version-check \
+            pytest==8.4.2 -r distillery/requirements.txt
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+      - name: Run pytest suites
+        run: python -m pytest -q -p no:cacheprovider distillery/scripts scripts
+      # pytest only collects test_*.py; these unittest scripts use hyphenated names.
+      - name: Run unittest scripts
+        run: |
+          for test in scripts/test-*.py; do
+            echo "::group::$test"
+            python "$test"
+            echo "::endgroup::"
+          done
+      - name: Run trigger regression tests
+        run: python distillery/scripts/distiller.py test-triggers
