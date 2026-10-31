@@ -73,9 +73,8 @@ def _sha256_bundle(skill_dir: Path) -> str:
 
 
 def _sha256_string(text: str) -> str:
-    """SHA256 hex digest of a normalized string (whitespace-collapsed)."""
-    normalized = re.sub(r"\s+", " ", text.strip())
-    return hashlib.sha256(normalized.encode()).hexdigest()
+    """Hash exact regex text: repeated, edge and tab whitespace can change matches."""
+    return hashlib.sha256(text.encode()).hexdigest()
 
 
 def _extract_pattern_block(skill_name: str, patterns_content: str) -> str | None:
