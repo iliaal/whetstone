@@ -6422,7 +6422,7 @@ def build_parser():
     mode.add_argument("--check", action="store_true", help="Compare current aggregates against the baseline (default mode)")
     mode.add_argument("--check-all", action="store_true", help="Check every skill that has a recorded baseline")
     p_budget_check.add_argument("--ratio-cap", type=float, default=BUDGET_DEFAULT_RATIO_CAP,
-                                help=f"Regression threshold (default: {BUDGET_DEFAULT_RATIO_CAP}x baseline)")
+                                help=f"Regression threshold; must be finite in check modes, ignored by --record (default: {BUDGET_DEFAULT_RATIO_CAP}x baseline)")
     p_budget_check.add_argument("--min-prior-turns", type=int, default=BUDGET_DEFAULT_MIN_PRIOR_TURNS,
                                 help=f"Floor: skip turn_count check if baseline mean < N (default: {BUDGET_DEFAULT_MIN_PRIOR_TURNS})")
     p_budget_check.add_argument("--min-prior-tool-variety", type=int, default=BUDGET_DEFAULT_MIN_PRIOR_TOOL_VARIETY,
