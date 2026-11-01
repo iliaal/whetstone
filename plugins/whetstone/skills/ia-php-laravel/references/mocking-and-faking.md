@@ -237,9 +237,13 @@ Available time units: `seconds()`, `minutes()`, `hours()`, `days()`, `weeks()`, 
 
 `Mail::fake()` records mailables without building them, so `assertSent`/`assertQueued` never compiles the Blade view. A renamed view variable, a dropped `Content::with()` key, or a `Storage::disk()->url()` on an unconfigured disk all pass CI and throw on the first real send. Force a render: assert on `(new TheMailable(...))->render()`, or call `$mail->assertSeeInHtml(...)` inside the assertion closure, which renders as a side effect. When a mailable or its template changes, confirm at least one test forces a render; "there is a test for this email" is not "the template compiles".
 
+## Mail::fake() never fires MessageSending
+
+`MailFake` records each mailable in its own list and never calls `Mailer::send()`, so `MessageSending` and `MessageSent` never fire. A listener that cancels or rewrites outbound mail (an inactive-recipient block, header stamping) never runs under the fake, and `assertQueued(fn ($m) => $m->hasTo(...))` proves recipient selection, not delivery: a blocked recipient still shows as queued. Test the listener directly: configure the `array` mailer, send for real, and assert on the messages its transport recorded (or their absence).
+
 ## Mail::fake() vs Notification::fake(): different dispatch surfaces
 
-`Mail::fake()` swaps the transport; `Notification::fake()` swaps the whole dispatcher. Under `Mail::fake()` the notification pipeline still runs: channels resolve, `send()` executes, and `NotificationSending` / `NotificationSent` fire, so listeners on those events run. Under `Notification::fake()` nothing dispatches and neither event fires. Switching a test from one to the other to use `assertSentTo()` silently stops every `NotificationSent` listener, so an assertion on that listener's side effect either fails or passes vacuously. When a diff moves a side effect onto such a listener, audit every test asserting it: assert what the caller itself sets under the fake, and cover the listener separately by constructing `new NotificationSent(...)` and calling `handle()`.
+`Mail::fake()` swaps the mail manager for a recording `MailFake`; `Notification::fake()` swaps the whole dispatcher. Under `Mail::fake()` the notification pipeline still runs: channels resolve, `send()` executes, and `NotificationSending` / `NotificationSent` fire, so listeners on those events run. Under `Notification::fake()` nothing dispatches and neither event fires. Switching a test from one to the other to use `assertSentTo()` silently stops every `NotificationSent` listener, so an assertion on that listener's side effect either fails or passes vacuously. When a diff moves a side effect onto such a listener, audit every test asserting it: assert what the caller itself sets under the fake, and cover the listener separately by constructing `new NotificationSent(...)` and calling `handle()`.
 
 ## throttle middleware and cache.limiter
 

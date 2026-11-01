@@ -9,6 +9,8 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now()
 RETURNING *;
 ```
 
+The conflict target must restate a partial or expression unique index: `ON CONFLICT ((coalesce(a, 'x')), b) WHERE pred`. A bare column list matches only a plain unique index or constraint, which is why ORM upserts that emit a column list fail against these indexes with `no unique or exclusion constraint matching the ON CONFLICT specification`.
+
 **Deadlock prevention**: acquire locks in deterministic order:
 ```sql
 SELECT * FROM accounts WHERE id IN (1, 2) ORDER BY id FOR UPDATE;

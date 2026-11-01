@@ -4,9 +4,11 @@ Mechanism and fix for the one-line entries in SKILL.md's Common Pitfalls list, p
 
 ## Model events and observers
 
-### Query-builder update() bypasses the event layer
+### Query-builder update() and delete() bypass the event layer
 
 `Model::query()->where(...)->update([...])` and `Relation::update()` are query-builder writes: no model events fire, so observers, `Auditable` traits and `static::saving` / `static::updating` hooks are all bypassed. Anything those hooks enforce (an audit row, a search-index sync, a derived-column refresh) is silently void on that path. Fix: `lockForUpdate()` + `save()` inside a transaction keeps events firing; take the raw mass update only with an explicit `// intentionally bypasses <Observer>` comment naming what is skipped.
+
+The same holds for `Model::query()->where(...)->delete()`: a mass delete fires no `deleting`/`deleted` events, so cleanup an observer owns (stored files, polymorphic satellite rows) is skipped, and the external objects are orphaned with nothing pointing at them. Delete per row, or delete the file paths explicitly in the same job.
 
 ### FK cascades and the Eloquent event layer are different layers
 
@@ -21,6 +23,10 @@ When a change adds a delete path on a parent, answer both: do the children die b
 ### Observer deleting() cleanup at parent scope nukes siblings
 
 `Storage::deleteDirectory($parent->uploadPath)` in a child's `deleting()` observer wipes storage for every sibling while their rows still point at the deleted keys. Detection: when a single-row `delete()` has an observer, check whether each hook operates at row scope or parent scope. Fix: scope the cleanup to the row's own paths, or move it to an Action that knows the sibling count.
+
+### An updating() observer without a dirty-guard fires on unrelated writes
+
+An `updating()` hook that rewrites state (promoting a placeholder row's status, recomputing a derived column) runs on every `save()`/`update()` of the model, not only the write it was written for. A flag-only or sort-order `update()` then silently moves a placeholder row to a satisfied status. Gate the hook on `isDirty('<triggering field>')`, or use `updateQuietly()` for the unrelated write, and test with events on, because `withoutEvents()` hides it.
 
 ### BelongsToMany pivot writes fire no model events without using()
 
@@ -49,6 +55,10 @@ Probe resource serialisation through the parent's `resolve($request)`. `json_enc
 `JsonResource::toArray()` returns `$this->resource->toArray()` (every non-hidden model attribute), so `$data = parent::toArray($request)` reads as "this serialises the whole model, and a newly added sensitive column leaks unless it is in `$hidden`". That holds only when the resource extends `JsonResource` or `ResourceCollection` **directly**. When it extends another resource, `parent::` is that resource's `toArray()`, which is usually an explicit field whitelist that never touches the new column, and the attribute is not serialised at all, regardless of `$hidden`.
 
 `parent::` is a call up the class hierarchy, not a synonym for the framework default. Resolve the `extends` chain to the class that actually extends `JsonResource` and read that class's `toArray()`; if any ancestor returns an explicit array literal, the spread stops there. Confirm with a grep for the column name across the resource directory; zero hits is dispositive. The inverse mistake is just as real, so the rule is symmetric: read the resolved `toArray()`, never infer it from the base class name.
+
+### $hidden only affects toArray() and toJson()
+
+`$hidden` filters model serialisation (`toArray()`, `toJson()`, and anything built on them) and nothing else. `getAttributes()`, `getDirty()` and `getOriginal()` return raw attributes, and audit packages build old/new values from them, so a hidden PII field still lands in the audit row on every write that touches it. laravel-auditing honours `$hidden` only in strict mode (`audit.strict`, default `false`). Exclude the field explicitly (`$auditExclude` in laravel-auditing) and assert it is absent from the stored audit row, not from the API response.
 
 ## Validation and request shape
 
@@ -121,6 +131,10 @@ Lazy invalidation (`unset` the key, re-query on the next read) is rollback-safe 
 PHP can reuse `spl_object_id()` after an object is destroyed. In implementations without framework PR #62121 (released in v13.39.0), including v13.38.0, `once()` can return a previous object's result when the receiver survives but a directly captured argument object is replaced at the same callsite. Confirm the installed `Once` checks captured-object weak references before returning cached values. Otherwise avoid this memoization pattern. Test successive short-lived argument objects on one receiver. `HasOnceHash` uses a separate explicit key contract.
 
 For custom identity caches, use objects as `WeakMap` keys rather than storing only their IDs. An immutable domain key is another option when paired with an explicit invalidation policy.
+
+### config([...]) at runtime is process-wide
+
+`config(['feature.gate' => false])` writes the one config repository the process holds; nothing scopes it to the current command or job. A command that flips a gate leaks the new value to its caller when run through `Artisan::call()`, and to every later job in the same `queue:work` process. Save the old value and restore it in `finally`.
 
 ## Deploy and boot
 

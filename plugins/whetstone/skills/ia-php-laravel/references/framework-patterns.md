@@ -37,6 +37,7 @@ Use when applicable, with no explanatory comments for these in generated code:
 - Scoped route model binding to prevent cross-tenant access: `Route::scopeBindings()->group(fn() => ...)`
 - `Route::model('conversation', AiConversation::class)` for custom binding resolution
 - API resource routes: `Route::apiResource('posts', PostController::class)` gives index/store/show/update/destroy without create/edit
+- **`Route::apiResource()` registers all five actions whether or not the controller implements them.** A missing `show()` makes `GET /posts/{post}` a 500, not a 404. Restrict with `->only()`/`->except()` and check `php artisan route:list --path=posts` against the controller's methods.
 - **Laravel 12 `route:cache` serializes closure actions instead of throwing `LogicException: Uses Closure`**, so a closure capturing `$this` from a service provider drags the bound container into the cached payload. It balloons but still terminates; unbounded blowup needs a real reference cycle. Fix: an invokable controller, or `use ($var)` instead of `$this`. Full mechanism in [common-pitfalls.md](./common-pitfalls.md).
 
 

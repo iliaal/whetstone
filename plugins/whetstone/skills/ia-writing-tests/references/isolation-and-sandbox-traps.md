@@ -43,3 +43,9 @@ Checks whose result is decided by the harness, the sandbox, or the surrounding e
 **Symptom:** the suite points `HOME`, `TMPDIR`, or a state-root variable at a temp directory and concludes the code under test is sandboxed. The relocation only redirects paths derived from that variable *at call time*; anything anchored to the executable's own location, a compile-time constant, or the current uid still resolves to the real one. The fixture is green either way, because reading the real file usually succeeds; the tell is absent by construction.
 
 **Fix:** enumerate the anchors (the running binary's neighbours, baked build-time paths, uid-derived paths, literal `/tmp/` prefixes) and pin each with a planted decoy plus a positive control. Run the suite a second time against *installed* binaries in a real install layout: a build-tree-only run cannot observe any defect whose trigger is the install layout, and no amount of fixture review closes that gap.
+
+## A resident-peak bound that counts first-touch pages
+
+**Symptom:** a test asserts that peak resident memory stays under a bound, but the first call in a fresh process faults in executable and library pages. The same tree passes on one runner and fails on another.
+
+**Fix:** run the operation once with a tiny input, reset the peak, then measure. Confirm the bound fails on a mutant that restores the guarded allocation. Where resident size stays ambiguous, compare virtual size: it moves with a real allocation and not with first-touch faults.

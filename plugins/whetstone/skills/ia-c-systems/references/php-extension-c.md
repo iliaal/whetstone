@@ -25,7 +25,7 @@ php -d extension=modules/<ext>.so -r '...'   # ad-hoc probe
 
 On a host carrying more than one PHP install, run `phpize` from the exact install the extension will load into, never whichever one is first on `PATH`. It bakes the thread-safety model, the module API number, and the include paths into the generated build system, and handing `--with-php-config` to `./configure` afterwards does not undo any of that. The build then succeeds and only `dlopen` fails, reporting an undefined TSRM symbol for a ZTS mismatch or a module API message for a version mismatch. Recover with `make distclean`, then re-run `phpize` and `php-config` from the same prefix.
 
-Tests are `.phpt`: `--TEST--`, optional `--SKIPIF--`, `--FILE--`, then `--EXPECT--` or `--EXPECTF--`. Prefer `--EXPECTF--` with `%d`/`%s` wherever output carries addresses, paths, or floats.
+Tests are `.phpt`: `--TEST--`, optional `--SKIPIF--`, `--FILE--`, then `--EXPECT--` or `--EXPECTF--`. Prefer `--EXPECTF--` with `%d`/`%s` wherever output carries addresses, paths, or floats. Use `%0` in `--EXPECTF--` to match an embedded NUL byte. `--EXPECT--` has no escape for it and matches one only through a raw NUL in the test file, which makes git and most editors treat the file as binary.
 
 ## Arginfo is generated, never hand-written
 
@@ -61,7 +61,8 @@ PHP_FUNCTION(ext_encode)
 - `RETURN_THROWS()` expands to a valueless `return`, so it is valid **only** in a void Zend handler. A `zend_result` helper that throws returns `FAILURE` (or its declared failure value) instead, and the handler translates that into `RETURN_THROWS()` at the boundary.
 - After calling into userland (a callback, a magic method, `zend_call_function`), check three things in order: the call's own `zend_result`, then `EG(exception)`, then that the result zval is not `IS_UNDEF`. `zend_call_function` can return `FAILURE` without setting an exception, and it initializes the result to `IS_UNDEF`, so an exception check alone lets an undefined value through to be consumed or destroyed.
 - Internal helpers return `zend_result`. Reserve `bool` for genuine predicates.
-- A failed allocation does not return in the extension model: `emalloc` bails out with a fatal error. Do not write a NULL check that cannot fire. `pemalloc(size, 1)` does **not** restore a NULL return either, since it forwards to `__zend_malloc`, which calls `zend_out_of_memory()` on failure. When a recoverable, checkable allocation failure is genuinely required, drop to plain `malloc`/`free`. Use `safe_emalloc(nmemb, size, offset)` for the multiply-then-add case, which is about overflow-checked sizing, not recoverable failure.
+- An `emalloc`-family call never returns NULL, so do not write a NULL check that cannot fire. A real `malloc` failure terminates the process; an overflowing size bails out with a fatal error, or aborts the process where `ZEND_HAS_OOM()` is defined. `pemalloc(size, 1)` does **not** restore a NULL return either, since it forwards to `__zend_malloc`, which calls `zend_out_of_memory()` on failure. When a recoverable, checkable allocation failure is genuinely required, drop to plain `malloc`/`free`. Use `safe_emalloc(nmemb, size, offset)` for the multiply-then-add case, which is about overflow-checked sizing, not recoverable failure.
+- Crossing `memory_limit` may not stop execution. Where `ZEND_HAS_OOM()` is defined, the engine queues the fatal and keeps returning memory up to a hard limit, and crossing that exits the process with no shutdown functions. Check `ZEND_HAS_OOM()` after each allocating step of any loop whose count comes from input, and again before returning success. Unwind through the normal failure return without throwing or warning, because the queued fatal discards both. Size input-declared presizes with the fallible allocators (`safe_femalloc`, `fecalloc`, `zend_hash_real_finit`), which return failure past the limit instead of memory, wrapped in `#ifdef ZEND_HAS_OOM`.
 
 ## Macros that declare locals
 
@@ -97,7 +98,7 @@ The bare `catch (...)` is required: `catch (const std::exception &)` alone still
 - `zend_string` is refcounted: `zend_string_copy` to take a reference, `zend_string_release` to drop one. Interned strings have refcount handling of their own, so never `efree` a `zend_string` directly.
 - `zval` ownership: `ZVAL_COPY` takes a reference, `ZVAL_COPY_VALUE` does not. `zval_ptr_dtor` on anything owned.
 - A limit enforced by the request allocator counts only allocations that went through it. Bytes a bundled C library takes from `malloc(3)` are invisible to `memory_limit`, to the debug allocator, and to `memory_get_usage`, and no in-tree call installs an allocator hook for the XML stack. So any claim that `memory_limit` bounds an input-driven allocation is wrong wherever the bytes came from libxml, libxslt, GD, libzip, or ICU; the cap has to sit at the trust boundary, with an operating-system limit behind it. Parse and transform stages bypass it entirely, and only the copy back into a PHP string is ever counted.
-- `RSHUTDOWN` is too early when the executor's own value teardown is what re-populates the container. A request-scoped table drained there can be refilled by a hook that runs afterwards, and `MSHUTDOWN` then reads memory the request pool has already released, which surfaces only under the tracked allocator because ordinary fast shutdown skips the per-value teardown entirely. `post_deactivate` is the hook that runs after the last producer and before the pool is freed. Destroy and reinitialize each table there rather than only draining it, so a re-entrant hook on a bailout path always meets a valid empty table instead of a half-freed one, and free the payloads first where the table carries no element destructor.
+- `RSHUTDOWN` is too early when the executor's own value teardown is what re-populates the container. A request-scoped table drained there can be refilled by a hook that runs afterwards, and `MSHUTDOWN` then reads memory the request pool has already released, which surfaces only under the tracked allocator because ordinary fast shutdown skips the per-value teardown entirely. `post_deactivate` is the hook that runs after the last producer and before the pool is freed. Destroy and reinitialize each table there rather than only draining it, so a re-entrant hook on a bailout path always meets a valid empty table instead of a half-freed one, and free the payloads first where the table carries no element destructor. `post_deactivate` runs after the object store is freed: destroy tables there, but never `OBJ_RELEASE`, `zval_ptr_dtor`, or `zend_fcc_dtor` a request object there or in SAPI deactivation. Those objects are already gone, so the call is a use-after-free, not a leak fix.
 
 **Sanitizers need the Zend allocator disabled.** The pooling MM hides leaks and overflows from both ASan and Valgrind:
 
@@ -107,6 +108,8 @@ USE_ZEND_ALLOC=0 php ...          # with an -fsanitize=address build
 ```
 
 This cuts one way only. A **clean** run with the pooling allocator enabled proves nothing, because the pool hides request leaks and allocator-local heap errors. A **positive** report is still a real finding: stack overflows, plain `malloc` misuse, invalid accesses that escape the pool, and unrelated UB all report accurately either way. Never dismiss a hit on the grounds that Zend MM was on.
+
+`USE_ZEND_ALLOC=0` alone also disables `memory_limit`, so every test expecting "Allowed memory size exhausted" fails with empty output or a timeout. Add `USE_TRACKED_ALLOC=1`, which `run-tests.php --asan` sets, before blaming the patch.
 
 ## Custom objects
 
@@ -124,6 +127,7 @@ typedef struct {
 - A custom `create_object` without a matching `clone_obj` handler, or with `clone_obj` left pointing at the default, corrupts the heap on `clone`. Set it explicitly, including to NULL when cloning must be rejected.
 - An abstract internal base is worth giving sentinel handlers that fail loudly, rather than leaving inherited ones that assume a concrete layout. Confirm the reachable paths against the engine version in use before relying on any specific one.
 - A `MINIT` that resolves another extension's class needs `ZEND_MOD_REQUIRED("<ext>")` in a `zend_module_dep` array on the module entry, with `STANDARD_MODULE_HEADER_EX`. The engine orders `MINIT` calls from that array only; `PHP_ADD_EXTENSION_DEP` in `config.m4` is a configure-time consistency check on Unix. With only the `config.m4` line, the extension works while ini load order happens to put the dependency first and fatals at startup when its own name sorts earlier in `conf.d`.
+- Check the result of `object_init_ex()` whenever the class entry can come from userland. On an abstract class, interface, trait, or enum, or when the class's constant expressions fail to evaluate, it throws, sets the zval to NULL with no object, and returns `FAILURE`; any `Z_<obj>_P` access afterwards offsets from a NULL object pointer and crashes.
 
 ## Module globals
 

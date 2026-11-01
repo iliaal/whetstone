@@ -34,6 +34,12 @@ Extended rationale, fix ladders, and mechanics for the longer items: [anti-patte
 
 **Fix:** inject the sleep boundary and assert the policy: the exact delay requested, the cap applied (6000 becomes 5000), and the ordering (the wait resolves before the dependent call). Keep a real-timer test only where integration with the runtime timer is itself the contract, and then use a monotonic clock with a documented tolerance, never a one-millisecond lower bound.
 
+### Asserting complexity through a timing ratio
+
+**Symptom:** the test times the operation at size N and 2N and fails above a 2.5x ratio. That leaves 25% headroom over linear, and host load alone pushes linear code past it.
+
+**Fix:** use a 4x size step with an 8x cutoff, take the fastest of several CPU-time samples (load only adds time), and keep an absolute ceiling beside the ratio. Pair it with a deterministic test that counts calls or iterations, which carries the complexity claim without any clock.
+
 ### Re-running a flaky test to green
 
 **Symptom:** A test fails intermittently and the response is re-run until it passes. Each re-run silences a detector: the flake is a real race, ordering dependency, or shared-state bug in the test or the code.

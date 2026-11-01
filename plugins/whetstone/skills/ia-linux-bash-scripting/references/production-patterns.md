@@ -57,6 +57,18 @@ exec 9>/var/lock/"${0##*/}".lock
 flock -n 9 || { printf 'Already running\n' >&2; exit 1; }
 ```
 
+**A singleton daemon started by an ensure script must start inside the lock and drop the lock fd.** Two callers that both pass a `pgrep` check each start a server; one can unlink the other's socket and then exit. Hold the `flock` across both the check and the start, and launch the daemon with `9>&-` so it does not keep the lock open for its whole life:
+```bash
+exec 9>/var/lock/mydaemon.lock
+flock 9
+if ! pgrep -x mydaemon >/dev/null; then
+  mydaemon --socket "$sock" 9>&- &
+  for _ in {1..50}; do [[ -S "$sock" ]] && break; sleep 0.1; done
+fi
+exec 9>&-
+```
+Write the `if` form: in `pgrep … || mydaemon … &` the `&` backgrounds the whole list, so the subshell running it keeps fd 9 open until the daemon exits. Wait for the socket before releasing the lock, or the next caller can run its `pgrep` before the forked child has exec'd under the daemon's name.
+
 **Idempotent operations**: safe to rerun:
 ```bash
 ensure_dir()  { [[ -d "$1" ]] || mkdir -p -- "$1"; }

@@ -89,7 +89,7 @@ When verified behavior contradicts the finding's premise, drop the finding. Repo
 ## PHP (.php)
 
 - Trace coercion, loose comparison, and truthiness only where they change the intended result under the supported PHP version and actual caller. Treat absent `declare(strict_types=1)` as a standards question unless a concrete failure is shown; scalar argument strictness comes from the calling file.
-- Distinguish missing keys, explicit `null`, `false`, `0`, and `"0"` when the contract does. Check whether `isset()`, `empty()`, or a nullable/false-returning API collapses states the consumer needs to distinguish.
+- Distinguish missing keys, explicit `null`, `false`, `0`, and `"0"` when the contract does. Check whether `isset()`, `empty()`, or a nullable/false-returning API collapses states the consumer needs to distinguish. Bare `array_filter()` drops every falsy value (`null`, `''`, `'0'`, `0`, `false`, `[]`), so a diff-triggered sync built on it never sends a clear; filter unchanged keys instead.
 - Check reuse of a by-reference `foreach` variable after the loop; a retained alias can overwrite the final element. Confirm a subsequent write and whether `unset()` breaks the alias first.
 - Compare array union (`+`), `array_merge()`, and unpacking against the required key precedence and numeric-key behavior; demonstrate the value lost, replaced, or reindexed.
 - Follow resource, lock, and transaction ownership through failure paths. Require a lifecycle consequence before reporting missing cleanup; distinguish request-shutdown cleanup from long-running workers and established ownership transfer.

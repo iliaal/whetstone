@@ -33,6 +33,8 @@ Return a `permissionDecision` to control whether a tool call proceeds:
 - **ask**: escalate to user confirmation
 - **defer**: pause a single-tool, non-interactive `-p` run without executing the call; the caller receives `stop_reason: "tool_deferred"`. Interactive sessions and multi-tool batches ignore defer
 
+**Block gate bypasses with `deny`, not `ask`.** Hooks from settings files also fire on tool calls inside subagents, where the parent session does not see each call. `ask` only routes the call to a permission prompt: a `-p` run has nobody to answer it, `bypassPermissions` mode skips permission prompts, and in auto mode the classifier can still act on some flagged calls first, so the outcome depends on the mode. `deny` prevents the call without relying on a prompt.
+
 Use PreToolUse to enforce invariants on structured tool input: block built-in `Edit`/`Write` calls to protected paths (for Bash, see below), require confirmation for destructive operations, or inject validation before specific tools run.
 
 Check both the supplied path and its resolved target in a protected-path hook. For a new file, resolve the nearest existing parent and append the remaining components. Treat resolution errors, including dangling symlinks and permission failures, as protected. Treat an existing regular file with `nlink > 1` as protected because another name may reach the same data. Permit exceptions only through explicit operator policy. These checks describe the hook's own logic; do not assume host permission rules resolve paths identically or that a preflight check prevents concurrent path replacement.
@@ -141,6 +143,8 @@ Contains team-wide policy: approval gates for destructive tools, audit logging, 
 Use personal settings for local additions; do not assume that omitting an inherited hook disables it. Keep the file git-ignored. Project-relative commands above assume the scripts exist in that project; plugin handlers should use the plugin's runtime root for bundled scripts.
 
 **Disable behavior:** Native configuration has no per-hook `enabled` field. Remove an optional handler from its defining settings, or implement a documented environment switch in that handler. Do not expose an override for mandatory authorization checks. `disableAllHooks` is the native global switch. A custom configuration file needs an explicit loader; Claude Code does not load arbitrary paths. See the [hook configuration reference](https://code.claude.com/docs/en/hooks#configuration).
+
+**An agent whose cwd is inside an untrusted checkout runs that checkout's hooks and env.** In the Agent SDK, omitting `setting_sources` (`settingSources` in TypeScript) is equivalent to `["user", "project", "local"]`: the project and local sources load `<cwd>/.claude/settings.json` and `settings.local.json` (hooks, env) plus CLAUDE.md and CLAUDE.local.md from the cwd and every parent. A hook command runs as a harness process, not as a tool call, so the tool allowlist does not constrain it. When scanning untrusted code, pass `setting_sources=[]` (or `["user"]`), or keep the cwd outside the target and pass the target as a path. Managed policy settings, `~/.claude.json`, and auto memory load regardless of this option. See [settingSources](https://code.claude.com/docs/en/agent-sdk/claude-code-features#control-filesystem-settings-with-settingsources).
 
 ## Async Hooks
 

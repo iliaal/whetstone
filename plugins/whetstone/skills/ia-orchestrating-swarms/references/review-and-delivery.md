@@ -6,6 +6,8 @@
 
 **Split recall from precision across agents, and keep precision context out of the finder.** Handing a discovery agent mitigating context (the validating caller, the guard one layer up, a prior "this is fine" verdict) trains it to self-censor, and a dropped candidate is unrecoverable. Give the finder the target and the discovery queries only, let it over-produce, then route every candidate to a separate verifier that starts from "assume this is wrong" and has the tool access to fetch the caller itself.
 
+**When two reviewers check one patch, split breadth from semantic depth.** One audits every caller, the symmetric paths, and the conventions; the other lists the failure modes the patch introduces, state changes made before an error check, and cleanup hazards. A caller audit cannot see an argument mutated before the throw.
+
 ### Delivery and credit discipline
 
 Keep open implementation units tied to runnable capability; a coordination or validation unit must name the capability it gates. Make closable units vertical: implementation and its tests ship together, and a stub that merely type-checks is not delivered capability. Only the role holding closure authority closes shared work. After each wave, compare runnable units delivered against coordination, review, and governance rounds consumed: orchestration activity growing while the deliverable count stays flat means freeze the machinery and redirect the next wave to the deliverable. Full rules: [orchestration-patterns.md](./orchestration-patterns.md) (Delivery and credit discipline).

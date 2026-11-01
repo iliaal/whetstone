@@ -65,6 +65,12 @@ Never put the command and matcher in one pipeline or discard the command's statu
 
 **Fix:** express the oracle in the oldest supported dialect, and run any new test once against a floor build before pushing.
 
+## A skip keyed on a version number
+
+**Symptom:** backports and vendor builds change behavior without changing the version, so the test runs where the capability is missing or skips where it exists.
+
+**Fix:** probe the behavior itself, such as a function's existence or a child process that exhibits the behavior, and skip on the probe.
+
 ## A smoke input that does not exercise a budget
 
 **Symptom:** a trivial payload passes under a size, time, or token limit that production-shaped input exhausts, so the limit is never reached and the green run gets read as capacity.

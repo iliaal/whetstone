@@ -17,6 +17,8 @@ Treat fewer words as an optimization signal, not an acceptance criterion. Before
 
 A fact any flow might need belongs in the always-loaded context file, not in the one sub-document whose flow needs it today; a cross-cutting convention recorded only as a comment at one call site is invisible at the next. Put the shared fact in the file every session loads, and enforce a cross-site rule at the shared initialization point rather than restating it per site.
 
+Keep instructions that name machine-local tools out of a tracked AGENTS.md in a team or public repo. Put them in an untracked context file, such as `CLAUDE.local.md`. That file must import `@AGENTS.md`: a `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` in the working directory or above it stops Claude Code from loading AGENTS.md by default (see [init-agents.md](./init-agents.md#claude-code-compatibility)).
+
 
 ## Context File Hierarchy
 

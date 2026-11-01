@@ -4,6 +4,8 @@
 
 Never satisfy a worktree's gitignored dependency directory with a symlink to another checkout's. Generated autoloaders and module resolvers compute the application base directory from the *real* location of their own files, so the link resolves back into the donor tree and every first-party class or module loads from there: your worktree's edits never execute, new files appear as "not found", and config comes from the other tree's `.env`. Give the worktree a real directory: `cp -al <donor>/vendor "$WT/vendor"` (hard links: same inodes, near-zero disk, correct base dir) for a read-only harness, or a full dereferencing copy / real install whenever anything will write into it, because with hard links a package-manager write edits the donor too. Assert it once rather than assuming: print the resolved file path of one first-party symbol and confirm it names the worktree.
 
+Give each worktree its own build output directory. Build tools name workspace-member artifacts without the checkout path, so worktrees that share one target (`CARGO_TARGET_DIR`, a shared `build/`) overwrite each other's artifacts; the result is a stale binary or a compile error about code the current worktree does not contain. To keep the cache saving across worktrees, use a compiler cache whose hashing ignores the checkout path.
+
 
 ## Environment Detection
 
