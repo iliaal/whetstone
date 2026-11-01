@@ -5,10 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
+import sys
 import tempfile
 import tomllib
-
+from pathlib import Path
 
 BEGIN_MARKER = "# BEGIN WHETSTONE CODEX SKILL SOURCE EXCLUSIONS"
 END_MARKER = "# END WHETSTONE CODEX SKILL SOURCE EXCLUSIONS"
@@ -130,7 +130,7 @@ def main() -> None:
     tomllib.loads(updated)
 
     if args.dry_run:
-        print(updated, end="")
+        sys.stdout.buffer.write(updated.encode("utf-8"))
         return
     if updated != current:
         atomic_write(config_path, updated)

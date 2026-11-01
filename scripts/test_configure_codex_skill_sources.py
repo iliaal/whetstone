@@ -1,4 +1,5 @@
 import importlib.util
+import locale
 import os
 import shutil
 import subprocess
@@ -84,3 +85,37 @@ def test_cli_reads_utf8_config_in_ascii_locale(tmp_path, remove, dry_run):
         assert config.read_bytes() == expected.encode('utf-8')
         subprocess.run(command, env=env, check=True, capture_output=True)
         assert config.read_bytes() == expected.encode('utf-8')
+
+
+@pytest.mark.parametrize('remove', [False, True], ids=['configure', 'remove'])
+@pytest.mark.parametrize('locale_name', ['ascii', 'de_DE.iso88591'])
+def test_dry_run_emits_utf8_bytes(tmp_path, remove, locale_name):
+    home = tmp_path / 'codex'
+    home.mkdir()
+    config = home / 'config.toml'
+    original = 'model = "café-🛠"\n'
+    initial = MODULE.replace_managed_block(
+        original, MODULE.render_block([Path('/existing/🛠/SKILL.md')])) if remove else original
+    config.write_text(initial, encoding='utf-8')
+    env = {key: value for key, value in os.environ.items() if not key.startswith('PYTHON')}
+    if locale_name == 'ascii':
+        # Exercise ASCII stdout even on hosts where Python coerces C to UTF-8.
+        env.update(LC_ALL='C', PYTHONUTF8='0', PYTHONCOERCECLOCALE='0')
+    else:
+        previous = locale.setlocale(locale.LC_CTYPE)
+        try:
+            locale.setlocale(locale.LC_CTYPE, locale_name)
+        except locale.Error:
+            pytest.skip()  # The parametrized real locale is not installed.
+        finally:
+            locale.setlocale(locale.LC_CTYPE, previous)
+        # A real non-UTF-8 locale with Python's default encoding settings.
+        env['LC_ALL'] = locale_name
+    command = [sys.executable, str(SCRIPT), '--codex-home', str(home), '--dry-run']
+    if remove:
+        command.append('--remove')
+    result = subprocess.run(command, env=env, check=True, capture_output=True)
+    expected = original if remove else MODULE.replace_managed_block(
+        original, MODULE.render_block(MODULE.skill_paths(SCRIPT.resolve().parent.parent)))
+    assert result.stdout == expected.encode('utf-8')
+    assert config.read_bytes() == initial.encode('utf-8')
