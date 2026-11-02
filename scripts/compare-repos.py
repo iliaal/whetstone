@@ -601,7 +601,10 @@ def main() -> None:
         save_catalog(external_components, CACHE_DIR / "external.json")
 
     if args.catalog:
+        # Filter display only; the complete cache supports later --type choices.
         for c in sorted(external_components, key=lambda x: (x.repo, x.kind, x.name)):
+            if filter_kind and c.kind != filter_kind:
+                continue
             kind_marker = "S" if c.kind == "skill" else "A"
             print(f"[{kind_marker}] {c.repo}/{c.name} ({c.line_count} lines)")
             if c.description:
