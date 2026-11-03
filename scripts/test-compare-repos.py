@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for comparison CLI repository discovery (stdlib only)."""
+"""Regression tests for comparison CLI discovery and filtering (stdlib only)."""
 
 import json
 from pathlib import Path
@@ -44,6 +44,22 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         if versioned:
             (repo / ".git").mkdir()
         return repo
+
+    def test_catalog_type_filters_display_without_narrowing_cache(self):
+        repo = self.root / "mixed"
+        self.write(repo, "skills/build/SKILL.md", "# Build\n")
+        self.write(repo, "agents/reviewer.md", "# Review\n")
+        agent = "[A] mixed/reviewer (1 lines)\n"
+        skill = "[S] mixed/build (1 lines)\n"
+        for kind, expected in (("skills", skill), ("agents", agent), (None, agent + skill)):
+            for mode in ((repo,), ("--report-only",)):
+                with self.subTest(kind=kind, mode=mode):
+                    options = ("--type", kind) if kind else ()
+                    result = self.run_cli("--catalog", *options, *mode)
+                    self.assertEqual(result.stdout, expected)
+                    cache = self.checkout / ".compare-cache/external.json"
+                    self.assertEqual({c["kind"] for c in json.loads(cache.read_text())},
+                                     {"skill", "agent"})
 
     def test_nonfinite_thresholds_fail_before_scanning_or_writing(self):
         repo = self.make_agents_repo()
