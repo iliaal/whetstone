@@ -80,7 +80,7 @@ def jaccard(a: set[str], b: set[str]) -> float:
     if not a or not b:
         return 0.0
     union = a | b
-    return len(a & b) / len(union) if union else 0.0
+    return len(a & b) / len(union)
 
 
 def main() -> int:
