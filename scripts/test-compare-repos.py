@@ -181,6 +181,7 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         repo = self.make_agents_repo("repos/agent-only")
         alias = self.root / "alias"
         alias.symlink_to(repo, target_is_directory=True)
+        (parent / "linked").symlink_to(repo, target_is_directory=True)
         output = self.root / "comparison.md"
         for paths in ((repo, repo), (repo, alias), (parent, repo)):
             with self.subTest(paths=paths):
@@ -190,7 +191,7 @@ class RepositoryDiscoveryTests(unittest.TestCase):
                 self.assertIn("Gaps: 2 unmatched external components", result.stdout)
                 cache = self.checkout / ".compare-cache/external.json"
                 self.assertEqual(len(json.loads(cache.read_text())), 2)
-                for mode in ((repo, repo), ("--report-only",)):
+                for mode in (("--report-only",), paths):
                     catalog = self.run_cli("--catalog", *mode)
                     self.assertEqual(catalog.stdout.count("[A] agent-only/reviewer"), 1)
                     self.assertEqual(catalog.stdout.count("[A] agent-only/tester"), 1)
@@ -305,4 +306,3 @@ class RepositoryDiscoveryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
