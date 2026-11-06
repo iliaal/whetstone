@@ -588,6 +588,11 @@ def main() -> None:
                     if sub.is_dir() and not sub.name.startswith("."):
                         repo_paths.append(sub)
 
+        unique_paths: dict[Path, Path] = {}
+        for path in repo_paths:
+            unique_paths.setdefault(path.resolve(), path)
+        repo_paths = list(unique_paths.values())
+
         external_components: list[Component] = []
         for repo_path in repo_paths:
             print(f"Scanning {repo_path.name}...", file=sys.stderr)
@@ -653,3 +658,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
