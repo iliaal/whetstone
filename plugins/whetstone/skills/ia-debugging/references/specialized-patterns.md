@@ -49,6 +49,8 @@ When a CI check fails on a PR or branch:
 
 1. **Fetch logs**: `gh run view <run_id> --log` (extract run ID from the checks URL). If `detailsUrl` points to a non-GitHub provider (Buildkite, CircleCI), don't attempt to fetch logs; report the URL and let the user investigate.
 2. **Classify the failure**: build error (compilation/dependency), test failure (which test, what assertion), lint/type error (which rule, which file), timeout (which step exceeded limits), or infrastructure (runner OOM, network, flaky service).
+   - **Check the provider before blaming the setup.** When a run stays queued without a runner, status commands disagree, the API returns 5xx, or a push does not start a workflow, query the provider's status API (GitHub: `curl -fsS https://www.githubstatus.com/api/v2/summary.json`).
+     If an open incident or a non-operational component matches the symptom, report its name, components, and update time, and retry after mitigation instead of changing workflows, configuration, or credentials. A clear status page does not prove a local cause; continue local diagnosis.
 3. **Reproduce locally**: run the same command from the CI config (`cat .github/workflows/*.yml` to find it). A local pass is a comparison result, not proof of an environmental cause; compare inputs, revision, configuration, timing, and build state.
 4. **Fix and verify**: fix the issue, then suggest re-running the relevant checks: `gh pr checks <pr> --watch` or `gh run rerun <run_id> --failed`.
 

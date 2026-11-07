@@ -132,6 +132,8 @@ Make all clear, factual updates using the Edit tool.
 
 For each file modified, output a one-line summary of **what specifically changed**: not "Updated README.md" but "README.md: added document-release to commands table, updated count from 19 to 20."
 
+Before committing, check each added or changed sentence that states a command, flag, path, default, count, limit, price, or security property against the source at HEAD, and cite the `file:line` or command output that supports it. Revert any such claim with no supporting source, or move it to Step 4 as a question. These edits postdate the code review, so apply this check to every doc sentence written in Steps 3 through 8 (including Step 4 answers and Step 6 fixes; Step 5 wording-only polish is exempt), rerun it just before Step 9, and list the total under `Post-review doc claims checked` in the Step 9 summary.
+
 **Never auto-update:**
 - README introduction or project positioning
 - Architecture philosophy or design rationale
@@ -278,6 +280,7 @@ Documentation health:
   CHANGELOG.md    [Voice polished -- 2 entries]
   AGENTS.md       [Current]
   VERSION         [Bumped -- 2.45.5 → 2.45.6]
+  Post-review doc claims checked: 2 (README.md count 20 -> commands/ listing; CONTRIBUTING.md setup command -> package.json:8)
 ```
 
 Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not applicable (<reason>)`, `Skipped (<error>)`, `Not bumped -- user chose to skip`, `Committed, not pushed -- <error>`

@@ -42,7 +42,7 @@ Resolve two parameters first and open the Executive Summary (Reporting Protocol 
 1. **Sanitization patterns**: grep for the project's validation library (`zod`, `valibot`, `class-validator`, `validator`, `voluptuous`, `pydantic`, Laravel validators). Which boundary uses it? Controllers? Middleware? Service layer?
 2. **Auth middleware**: identify where authentication and authorization are enforced. Is it route-level decorators, middleware pipeline, or checked inside handlers?
 3. **Secret storage**: environment variables? Secret manager? Parameter store? Note where secrets are read.
-4. **Existing security headers**: helmet, secure-headers, custom middleware. Note the baseline.
+4. **Existing security headers**: helmet, secure-headers, custom middleware. Note the baseline. When nginx serves the app, read headers per effective `location`: a `server`, `location`, or `if` block that declares any `add_header` inherits none from its parent level, so one added `Cache-Control` drops HSTS, CSP, and frame headers on that route. Accept repeated headers in the child block, a shared `include` file, or `add_header_inherit merge;` (nginx 1.29.3+) as the fix.
 5. **Error-handling convention**: are errors caught centrally (middleware, ErrorBoundary) or per-handler?
 
 Record this baseline before Phase 1. Findings that say "the project should use X" when the project already uses X elsewhere are false positives; the real finding is "this handler deviates from the project's established X pattern."

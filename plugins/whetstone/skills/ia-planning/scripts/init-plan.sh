@@ -2,14 +2,28 @@
 # init-plan.sh: scaffold a durable task plan
 # Usage: bash init-plan.sh [task-name] [--force]
 #
-# Creates .plan/task_plan.md
-# Adds .plan/ to .gitignore if not present
+# Creates .plan/task_plan.md at the repository root of the working
+# directory (the working directory itself outside a repository)
+# Adds .plan/ to that root's .gitignore if not present
 # Refuses to overwrite a task_plan.md that still has unchecked tasks
 # unless --force is given.
 
 set -euo pipefail
 
-PLAN_DIR=".plan"
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)
+SKILL_ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
+# Check the working directory too: a skill installed inside a git checkout
+# resolves ROOT to that checkout's root, which lies outside SKILL_ROOT.
+for dir in "$(pwd -P)/" "$ROOT/"; do
+    case "$dir" in
+        "$SKILL_ROOT"/*)
+            echo "ERROR: run from the project working tree, not the skill directory ($SKILL_ROOT)." >&2
+            exit 2
+            ;;
+    esac
+done
+PLAN_DIR="$ROOT/.plan"
+GITIGNORE="$ROOT/.gitignore"
 FORCE=0
 TASK_NAME="Unnamed Task"
 for arg in "$@"; do
@@ -29,14 +43,14 @@ fi
 
 mkdir -p "$PLAN_DIR"
 
-if ! grep -qxF '.plan/' .gitignore 2>/dev/null; then
-    if [[ -s .gitignore ]]; then
-        ignore_last_byte=$(tail -c 1 .gitignore)
+if ! grep -qxF '.plan/' "$GITIGNORE" 2>/dev/null; then
+    if [[ -s "$GITIGNORE" ]]; then
+        ignore_last_byte=$(tail -c 1 "$GITIGNORE")
         if [[ -n "${ignore_last_byte}" ]]; then
-            printf '\n' >>.gitignore
+            printf '\n' >>"$GITIGNORE"
         fi
     fi
-    printf '%s\n' '.plan/' >>.gitignore
+    printf '%s\n' '.plan/' >>"$GITIGNORE"
 fi
 
 cat > "$PLAN_DIR/task_plan.md" << EOF
@@ -80,4 +94,4 @@ EOF
 
 echo "Created ${PLAN_DIR}/ with:"
 echo "  - task_plan.md"
-echo "Added .plan/ to .gitignore"
+echo "Added .plan/ to ${GITIGNORE}"

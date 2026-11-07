@@ -74,13 +74,13 @@ Automated scans and source inspection establish only the checks they actually pe
 - Roles match behavior (don't put `role="button"` on a div when `<button>` works)
 - States and properties updated dynamically (`aria-expanded`, `aria-selected`, etc.)
 - Landmark regions defined (`main`, `nav`, `aside`, `footer`)
-- Labels via `aria-label` or `aria-labelledby` when visible text insufficient, only on elements whose role supports naming. A `div` or `span` with no role maps to `generic`, where ARIA 1.2 and ARIA in HTML prohibit naming, so the label may never be announced; report it even though the attribute is present. A loading or status region needs a live-region role such as `role="status"` (with `aria-busy` while updating), not a bare labelled `div`.
+- Labels via `aria-label` or `aria-labelledby` when visible text insufficient, only on elements whose role supports naming. A `div` or `span` with no role maps to `generic`, where ARIA 1.2 and ARIA in HTML prohibit naming, so the label may never be announced; report it even though the attribute is present. A loading or status region needs a live-region role such as `role="status"` (with `aria-busy` while updating), not a bare labelled `div`. Render that region (empty) on mount and change only its text: assistive technologies generally announce only changes inside an already-registered live region, so `{loading && <div role="status">Loading</div>}` mounts the region with its message and is often not announced; the same holds for `role="alert"`, so render an empty alert container first as well. Reserve `role="status"` for content that updates, not static badges.
 
 ## Visual Accessibility
 
 - Color is never the sole indicator of meaning
 - Text resizable to 200% without loss of content
-- Animations respect `prefers-reduced-motion`
+- Animations respect `prefers-reduced-motion`; auto-starting motion that lasts more than 5 seconds beside other content has a pause, stop, or hide control ([2.2.2, A](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html)), which reduced-motion handling does not replace
 - Sufficient contrast in both light and dark themes
 - Layout stable: no unexpected shifts on interaction
 

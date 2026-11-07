@@ -101,6 +101,10 @@ Property visibility and names are also part of the payload contract: `Serializes
 
 The process driver passes `'__LARAVEL_CONTEXT' => json_encode(Context::dehydrate())` as an env var to every pooled child process. `dehydrate()` does keep hidden values under a separate `hidden` key (`['data' => ..., 'hidden' => ...]`), but `ProcessDriver` JSON-encodes the whole array into one env var with no filtering, so hidden values travel with the visible ones regardless of the split. Any same-uid process can read that value from `/proc/<pid>/environ` for the child's lifetime, and it shows up in `ps e` too, so a credential stashed via `Context::addHidden()` leaks well beyond the job that set it. Applies from the 13.x context-propagation fix onward; keep credentials out of Context for concurrency work and resolve them inside the closure from config or a secret manager, or use the synchronous driver where the threat model requires it.
 
+### `Concurrency::run()` trusts task stdout as its result channel before v13.40.0
+
+From v12.55.0 through v13.39.0 the process driver truncates child output at the first gzip magic bytes (`\x1f\x8b`), then decodes and unserializes the result. A task that writes attacker-influenced text to stdout (`echo`, `dump()`, a `stdout` log channel) can therefore forge the result and trigger a deserialization gadget chain in the parent process. v13.40.0 (framework PR #62297) signs the result with a per-task HMAC key and ignores unsigned output; no 12.x release carries the fix. On affected versions, upgrade, or make every task return its value without writing to stdout, or use the `sync` driver for tasks that touch user input. Test with a task that echoes `{"successful":true}` followed by `\x1f\x8b` and assert that the returned value is the task's own.
+
 ## Validation pitfalls
 
 ### Rule::anyOf() scalar alternatives can accept associative arrays

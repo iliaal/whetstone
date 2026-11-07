@@ -38,7 +38,7 @@ Answer whichever you know; leave blanks for the rest.
 
 **Question Techniques:**
 
-1. **Start with open-ended questions.** Ask "How should users be notified?" Reserve multiple-choice questions for the Blindspot Pass and approach selection.
+1. **Start with open-ended questions.** Ask "How should users be notified?" Reserve multiple-choice questions for the Blindspot Pass, approach selection, and a decision whose options the evidence already names (a surfaced conflict between two requirements, a fork the code forces), with two to four options asked per the `ia-brainstorming` question rules; for that decision, present each option concretely with its trade-off and the recommended pick rather than an open "which one?". Keep questions about purpose, users, and success open.
 2. **Start broad, then narrow.** Core purpose → users → constraints.
 3. **Validate assumptions and probe success early.** "I'm assuming users are logged in. Correct?" / "How will you know this is working?"
 

@@ -238,3 +238,47 @@ def test_ordinary_repository_still_copies_trusted_env(tmp_path, git_env):
     assert (checkout / ".env").read_bytes() == (repo / ".env").read_bytes()
     assert (checkout / ".env").stat().st_mode & 0o777 == 0o600
     assert (repo / ".git/whetstone-main-root").read_text().strip() == str(repo)
+
+
+def test_planner_refuses_skill_directory_inside_a_repository(tmp_path, git_env):
+    repo = make_repo(tmp_path / "repo", git_env)
+    skill = repo / "plugins/skills/ia-planning"
+    (skill / "scripts").mkdir(parents=True)
+    script = skill / "scripts/init-plan.sh"
+    script.write_bytes(PLANNER.read_bytes())
+
+    for cwd in [skill, skill / "scripts"]:
+        refused = run(cwd, git_env, "bash", str(script), "task", check=False)
+        assert refused.returncode == 2, refused.stdout + refused.stderr
+        assert "not the skill directory" in refused.stderr
+    assert not (repo / ".plan").exists()
+    assert not (skill / ".plan").exists()
+    assert not (repo / ".gitignore").exists()
+
+
+def test_planner_subdirectory_rerun_keeps_unchecked_root_plan(tmp_path, git_env):
+    repo = make_repo(tmp_path / "repo", git_env)
+    run(repo, git_env, "bash", str(PLANNER), "first")
+    plan = repo / ".plan/task_plan.md"
+    original = plan.read_bytes()
+    nested = repo / "src/module"
+    nested.mkdir(parents=True)
+
+    refused = run(nested, git_env, "bash", str(PLANNER), "second", check=False)
+    assert refused.returncode == 1, refused.stdout + refused.stderr
+    assert "unchecked tasks" in refused.stderr
+    assert plan.read_bytes() == original
+    assert not (nested / ".plan").exists()
+
+    run(nested, git_env, "bash", str(PLANNER), "second", "--force")
+    assert plan.read_text().startswith("# Plan: second\n")
+    assert not (nested / ".plan").exists()
+
+
+def test_planner_outside_repository_uses_working_directory(tmp_path, git_env):
+    outside = tmp_path / "plain"
+    outside.mkdir()
+    env = dict(git_env, GIT_CEILING_DIRECTORIES=str(tmp_path))
+    run(outside, env, "bash", str(PLANNER), "task")
+    assert (outside / ".plan/task_plan.md").read_text().startswith("# Plan: task\n")
+    assert (outside / ".gitignore").read_bytes() == b".plan/\n"

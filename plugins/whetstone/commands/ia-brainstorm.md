@@ -37,7 +37,7 @@ Focus on: similar features, established patterns, CLAUDE.md guidance.
 
 **1.2 Collaborative Dialogue**
 
-Follow the dialogue guidance in the `ia-brainstorming` skill's **Understand and compare** step. Ask open interview questions as plain chat text and end the turn for the answer; use **AskUserQuestion** only when a question is menu-shaped with 2-4 real options (Blindspot Pass, or a stuck or "you pick" user).
+Follow the dialogue guidance in the `ia-brainstorming` skill's **Understand and compare** step. Ask open interview questions as plain chat text and end the turn for the answer; use **AskUserQuestion** only when a question is menu-shaped with 2-4 real options (Blindspot Pass, a conflict or code-forced fork whose options the evidence names, or a stuck or "you pick" user).
 
 ### Phase 2-3: Explore and Capture
 

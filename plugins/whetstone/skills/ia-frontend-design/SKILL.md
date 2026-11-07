@@ -80,7 +80,7 @@ Most items below are observable only in a rendered viewport, not in the diff. Wh
 - Measure CTA/form text and necessary control/focus contrast, including image backgrounds and changed states; use the thresholds in [aesthetics-and-interaction.md](./references/aesthetics-and-interaction.md)
 - Reachable loading, empty, and error states exercised; focus and press feedback checked for changed controls. Record non-applicable states for synchronous links, toggles, or accordions instead of inventing async behavior.
 - No animation of `top`/`left`/`width`/`height` (transform/opacity only)
-- Non-essential motion suppressed under `prefers-reduced-motion: reduce`
+- Non-essential motion suppressed under `prefers-reduced-motion: reduce`, with every reveal target, counter, and loop resting at its finished visible state there (emulate it, for example `agent-browser set media reduced-motion`); where scripts can be disabled, confirm headings and CTAs still render, otherwise mark the no-script check unverified
 - Grain/noise filters only on fixed `pointer-events-none` layers
 - Interactive/animated components isolated as leaf `'use client'` components (Next.js App Router)
 - For greenfield pages/screens, list invented branding, copy, placeholder assets, and mock data in the completion report; name one replacement constant, token, or module for each item and keep repeated uses tied to it

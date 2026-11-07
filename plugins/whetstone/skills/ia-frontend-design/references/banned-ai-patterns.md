@@ -66,6 +66,7 @@ Observed as of 2026-08. Treat as a dated list of over-used combinations, not a p
 | `rounded-2xl` / `rounded-3xl` on containers, cards, and sections | Bubbly, toy-like feel | Reserve large radii for small interactive elements; use tighter radii for containers |
 | Generic stock imagery | Placeholder feel | Contextual photos, SVG illustrations, or abstract graphics suited to the domain |
 | Fabricated product UI assembled from styled divs, including invented version or sync footers inside the preview | Implies a product surface or state that the preview cannot demonstrate | Use a real screenshot or functioning component preview; put optional window chrome around that evidence, or omit the preview |
+| Form that shows success without sending (submit handler swallows the event, `action="#"`, success copy set on click) | Every real submission is silently lost while the page looks finished | Show success only after the endpoint responds; without an endpoint, use a reserved `.example` `mailto:` stand-in with no success state and list it in the completion report |
 | Floating gradient blobs as background | Overused AI aesthetic | Noise textures, mesh gradients, geometric patterns |
 | Custom mouse cursors (`cursor: url(...)`) | Novelty that signals template code | Use system cursors; reserve custom cursors for drawing tools or games |
 | shadcn/ui components left in generic default state | Identifiably "template starter kit" | Customize colors, spacing, and radii to match the design system |

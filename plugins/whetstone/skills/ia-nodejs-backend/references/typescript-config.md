@@ -22,9 +22,11 @@ tsconfig essentials:
 }
 ```
 
-ESM-first: set `"type": "module"` in package.json.
+ESM-first: set `"type": "module"` in package.json. Detect the entry module with `import.meta.main` (Node v24.2.0+ or v22.18.0+). Never compare `import.meta.url` with `pathToFileURL(process.argv[1])`: Node resolves the main module's symlinks but leaves `argv[1]` as invoked, so through an npm `.bin` shim or any symlinked install the check is false and the CLI exits 0 having done nothing. On older Node, compare `realpathSync(fileURLToPath(import.meta.url))` with `realpathSync(process.argv[1])`, and run the installed bin once before release.
 
 Dev: `tsx watch src/server.ts` | Build: `tsc` | Node 22.18+/23.6+: type stripping on by default; Node 22.6-22.17/23.0-23.5: `--experimental-strip-types` for scripts
+
+NestJS and other decorator-DI frameworks read constructor types from `emitDecoratorMetadata`, which tsx and esbuild never emit: through NestJS v12.4.0 every dependency without `@Inject()` is silently `undefined`, and later versions only log a warning. For such apps, run and test with `tsc` or SWC with `emitDecoratorMetadata` enabled, or name every constructor dependency with `@Inject()`, and verify with a startup test that calls one injected service.
 
 Type stripping only erases syntax, so a TypeScript construct with runtime semantics fails at Node startup instead of at build time: enum declarations, namespaces/modules carrying runtime code, constructor parameter properties, and non-ECMAScript `import =` / `export =` assignments are the confirmed offenders. Enable `erasableSyntaxOnly` in tsconfig to catch them at `tsc` type-check time instead of at `node` runtime.
 

@@ -40,6 +40,8 @@ env -C "$main_checkout" git status --short
 
 Supply explicit names and the `WORKTREE_SESSION_ID` set before creation. Do not reuse another session's token. Preserve any dirty, untracked, or ignored files, including copied environment files and dependencies; arrange their disposition under user authority before retrying. A locked tree remains protected by Git. A clean tree from this session can be removed after confirming no process uses it.
 
+Do not reach for `git worktree prune` to clear a stale entry after a linked worktree has run agent or third-party code. Code in a linked worktree can write the shared Git directory, and prune follows a symlink planted at `$(git rev-parse --git-common-dir)/worktrees` or at any entry inside it, then deletes the contents of the directory it points to (observed on Git 2.56.0 with both forms). List that directory with `ls -la` first, remove every symlink there with `unlink` (never `rm -r`, and never a trailing slash on the link name), and only then prune. `git worktree remove` refused a swapped-in symlink entry in the same test and left its target intact.
+
 ### Tree-scanning tests fail with phantom offenders?
 
 A worktree under `.worktrees/` is a full second checkout inside the repository. `.gitignore` hides it from Git, not from a test that walks the tree with `rglob` or `find`, so a hygiene test reports offenders that repeat known-good files under the worktree prefix, and CI never reproduces the failure. Check `git worktree list` before debugging one. Remove only this session's clean trees through the manager, or run the suite from a checkout that contains no nested worktree; for parallel suites, create the worktrees outside the repository.

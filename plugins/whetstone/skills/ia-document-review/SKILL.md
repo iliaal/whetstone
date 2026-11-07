@@ -54,6 +54,8 @@ Based on the document's content, activate specialized review perspectives. Scan 
 
 Activate a lens when ANY of its signals match. Most documents trigger 1-2 lenses; brainstorm notes may trigger none. When a lens is active, weave its checks into the assessment and evaluation steps rather than running it as a separate pass.
 
+Vocabulary signals activate the Security lens; judge it by what named files and handlers do. Report each path the plan names or newly exposes, including existing code or a stub, that leads to lost money, a breach, or corrupted data unprevented.
+
 
 ## Step 4: Evaluate
 

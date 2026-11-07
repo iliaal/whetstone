@@ -2,7 +2,7 @@
 
 Apply the deep interview protocol on top of the baseline questions above. Assumption probing and contradiction tracking always run. Research-backed challenges and second-order effects run when the scope warrants it (multi-system changes, infrastructure decisions, technology selection).
 
-Start with open-ended questions; use multiple choice only in the Blindspot Pass and approach selection.
+Start with open-ended questions; use multiple choice only in the Blindspot Pass, approach selection, and a conflict or code-forced fork whose two to four options the evidence already names.
 
 **Assumption probing:** After each substantive answer, identify what the user assumed but didn't state. "You described X. Are you assuming Y is already in place?" Surface hidden dependencies and unstated constraints.
 
@@ -22,7 +22,7 @@ Start with open-ended questions; use multiple choice only in the Blindspot Pass 
 
 ## Rigor Probes for Ambiguous Gaps
 
-When a user answer leaves a gap on evidence, specificity, counterfactual, or attachment, fire ONE open-ended probe per gap, *not* a multiple-choice menu (exception: territory the user can't evaluate, where menus are the right tool; see Blindspot Pass below). Menus signal which axes the agent thinks matter, biasing the user toward those axes; open-ended forces actual observation:
+When a user answer leaves a gap on evidence, specificity, counterfactual, or attachment, fire ONE open-ended probe per gap, *not* a multiple-choice menu (exceptions: territory the user can't evaluate, where menus are the right tool, see Blindspot Pass below; and a surfaced conflict or code-forced fork whose options the evidence already names). Menus signal which axes the agent thinks matter, biasing the user toward those axes; open-ended forces actual observation:
 
 - **Evidence:** "What's the most concrete thing someone's already done about this? Paid for it, built a workaround, quit a tool over it?"
 - **Specificity:** "Can you name a team you've actually watched hit this, or are you reasoning?"

@@ -69,4 +69,6 @@ Apply these checks to tests, validators, CI gates, specifications, golden files,
 
 **0-1 signals → standard review.** Proceed to Review Process below.
 
+**Consequence trace within standard review.** When the standard pass traces, from the changed code or the code it newly calls, a credible failure with material consequence (money moved twice or wrongly, access granted or data disclosed wrongly, persistent data corrupted or lost, or an irreversible external effect), suggest deep review the same way as the 2-signal case: ask through the same channel and cite the traced scenario as the reason. The trace must come from code behavior; path names, keywords, and diff size are not trace evidence, although security-sensitive paths still count as signals in the table above.
+
 Override: `deep` forces multi-agent, `quick` forces single-pass.

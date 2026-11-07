@@ -28,6 +28,8 @@ Load this reference when running a security audit. Before filing any finding, fi
 
 State confidence from the evidence: reproduced, supported by a traced path, or unresolved. Numeric scores, when the caller requires them, are uncalibrated judgment labels, not probabilities. Main findings need a concrete failure path and supporting evidence; consequential unresolved candidates belong in Residual Risks with the missing check. Neither a high score nor reviewer agreement substitutes for proof.
 
+A finding that rests on a missing limit or unsafe default in a standard library, dependency, or tool requires evidence of that behavior at the version the project resolves (lockfile or vendored copy): its cited source path and lines, that version's documentation, or a reproduction against that version under the project's own configuration. A remembered default, documentation for another version, or a PoC that configures the dependency itself does not establish the deployed behavior. When none is available, record the premise under Residual Risks and do not file the finding.
+
 ## Severity gates
 
 - **Medium findings** must be obvious and concrete (specific input, specific sink, specific harm). "Consider adding validation" without a failure mode belongs in advisory notes, not Medium findings.

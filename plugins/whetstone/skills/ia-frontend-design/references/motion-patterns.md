@@ -48,6 +48,8 @@ Never use `useState` for continuous or magnetic hover animations. `useState` tri
 
 Keep CSS/compositor animation in CSS; continuous animation alone does not cause React renders or require a Client Component. Isolate input-driven motion or state-driven frame work as a small client leaf and use motion values instead of React state for continuous updates. Add `React.memo` only when profiling identifies avoidable renders with stable props. Verify animation continuity rather than assuming every parent render resets it.
 
+Give any motion that starts automatically, runs longer than 5 seconds, and shares the screen with other content (marquees, card loops, animated backgrounds, auto-advancing carousels) a visible, keyboard-operable pause or stop control (WCAG 2.2.2, Level A); `prefers-reduced-motion` handling does not replace it. A paused loop stays paused until the user resumes it.
+
 ## Grain and Noise Filters
 
 Apply grain/noise filters only to fixed, `pointer-events-none` pseudo-elements. Never apply them to scrolling containers: the filter recalculates on every scroll frame, causing severe performance degradation.

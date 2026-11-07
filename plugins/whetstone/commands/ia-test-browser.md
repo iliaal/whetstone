@@ -111,7 +111,7 @@ Build a list of URLs to test based on the mapping.
 
 For final verification of a frontend with a build step, produce a fresh production build with the repository's documented local build command. Serve that build with the documented local preview/start command. Run the affected-route checks against that server. Development-server runs remain valid during iteration. Record the build mode and build/start commands. If the production build cannot be served locally, mark production-build coverage unverified. Return PARTIAL for final verification with that gap. This requirement does not authorize obtaining credentials, configuration changes, or deployment.
 
-Before navigation, bind the server to the selected target. Inspect its process command and working directory, then verify that checkout's SHA and any scoped working-tree changes match the target. For a server serving generated assets, also establish that its running build was produced from that content (build metadata or a fresh scoped build/restart); matching the checkout alone is insufficient. Record the evidence and base URL. A responsive port does not establish revision identity.
+Before navigation, bind the server to the selected target. Inspect its process command and working directory, then verify that checkout's SHA and any scoped working-tree changes match the target. For a server serving generated assets, also establish that its running build was produced from that content (build metadata or a fresh scoped build/restart); matching the checkout alone is insufficient. Record the evidence and base URL. A responsive port does not establish revision identity. Also record the data backend the server uses (dev proxy target, API base URL, session origin). A local URL whose API reaches a production or shared backend is that environment: perform creation, editing, or deletion there only with explicit approval for the specific action, and otherwise mark the interaction unverified.
 
 For a different branch or PR, use an isolated target checkout and its server when authorized; do not switch or reset the user's working tree. If the running source/build identity cannot be established, return PARTIAL with revision coverage unverified and the missing setup action. Do not report that target as passing. Repeat the binding check after source changes, a rebuild, a restart, or a port change.
 
@@ -177,10 +177,11 @@ agent-browser --headed snapshot -i
 - No error messages visible
 - Forms have expected fields
 - For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.
+- Search the served bundle and changed source for automation-detection branches (`navigator.webdriver`, headless user-agent tests, `__playwright`, `callPhantom`). A branch that alters rendering or flow makes the pass PARTIAL: report the affected route as PARTIAL with the branch location; a headless pass does not cover the user path. Never add such a branch to clear a check.
 
 **Step 4: Test critical interactions**
 
-Choose the expected result from the actual flow before the action. When creation or editing is the behavior under test, enter a value unique to this invocation and action in the authorized test environment. Assert that exact value in the resulting record after submission; an earlier record or an unsaved input does not prove the action succeeded. Reusable prerequisite records remain valid when creating or editing them is not the behavior under test.
+Choose the expected result from the actual flow before the action. When creation or editing is the behavior under test, enter a value unique to this invocation and action in the authorized test environment (the data backend recorded during server binding, not a production or shared backend reached through a local URL without that approval). Assert that exact value in the resulting record after submission; an earlier record or an unsaved input does not prove the action succeeded. Reusable prerequisite records remain valid when creating or editing them is not the behavior under test.
 
 ```bash
 agent-browser click @e1  # Use ref from snapshot

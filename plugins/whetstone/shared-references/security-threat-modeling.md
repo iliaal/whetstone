@@ -15,8 +15,8 @@ Load this reference when the user asks for a threat model rather than a code sca
    For infrastructure/IAM surfaces, supplement STRIDE with checks for excessive grants, lateral identity use, changes outside IaC, access left after migrations, and scope enforcement on automated approval, merge, and write paths. Record overlapping threats once in the same analysis.
 
    Describe threats that remain relevant after known bugs are fixed. Use past CVEs and security fixes as likelihood evidence, not as the threat itself.
-4. **Risk matrix**: plot each threat by Impact (1-5) x Likelihood (1-5). Score residual likelihood after verified controls. Record owner assertions that would change a score but lack code evidence as unverified open questions. Prioritize by composite score.
-5. **Focus paths**: 5-15 repo-relative file paths that merit deeper review, each with a one-sentence reason tied to the threat model.
+4. **Risk matrix**: plot each threat by Impact (1-5) x Likelihood (1-5). Score residual likelihood after verified controls. Count a control only when it blocks, rejects, or raises; record a control that only logs, alerts, or emits a metric as monitoring, and do not let it lower residual likelihood. Exception: for Repudiation threats, an append-only audit log outside the actor's write access is the control and counts; the monitoring rule still applies to every other category. Record owner assertions that would change a score but lack code evidence as unverified open questions. Prioritize by composite score.
+5. **Focus paths**: 5-15 repo-relative file paths that merit deeper review, each with a one-sentence reason tied to the threat model. Group focus paths by the trust level of their input, and include code that parses untrusted input, holds unsafe or native code, or crosses a language or network boundary.
 6. **Coverage check**: account for every entry point in at least one threat's attack surface or in a reasoned deprioritization row.
 
 ## Output format
