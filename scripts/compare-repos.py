@@ -69,18 +69,36 @@ _FM_RE = re.compile(r"\A---\s*\n(.*?\n)---\s*\n", re.DOTALL)
 
 
 def parse_frontmatter(text: str) -> dict:
-    """Minimal YAML frontmatter parser — handles simple key: value pairs."""
+    """Parse simple fields, flattening folded scalars for catalog display."""
     m = _FM_RE.match(text)
     if not m:
         return {}
     result = {}
-    for line in m.group(1).splitlines():
+    lines = m.group(1).splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        indent = len(line) - len(line.lstrip())
         line = line.strip()
+        index += 1
         if not line or line.startswith("#"):
             continue
         if ":" in line:
             key, _, val = line.partition(":")
-            val = val.strip().strip('"').strip("'")
+            val = val.strip()
+            if re.fullmatch(r">[+-]?(?:\s+#.*)?", val):
+                # Consume the body before parsing another field: a colon in
+                # description prose is not a new frontmatter key.
+                parts = []
+                while index < len(lines):
+                    part = lines[index]
+                    if part.strip() and len(part) - len(part.lstrip()) <= indent:
+                        break
+                    parts.append(part.strip())
+                    index += 1
+                val = " ".join(part for part in parts if part)
+            else:
+                val = val.strip('"').strip("'")
             result[key.strip()] = val
     return result
 

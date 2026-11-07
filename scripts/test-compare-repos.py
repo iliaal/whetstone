@@ -45,6 +45,53 @@ class RepositoryDiscoveryTests(unittest.TestCase):
             (repo / ".git").mkdir()
         return repo
 
+    def test_folded_descriptions_survive_scanning_cache_and_report(self):
+        description = "Review changes: inspect code. description: keep this text."
+        repo = self.root / "folded"
+        for marker in (">", ">-", ">+", ">- # folded description"):
+            for newline in ("\n", "\r\n"):
+                with self.subTest(marker=marker, newline=repr(newline)):
+                    content = newline.join([
+                        "---", "name: review", f"description: {marker}",
+                        "  Review changes: inspect code.",
+                        "  description: keep this text.", "class: discipline",
+                        "---", "# Review", "",
+                    ])
+                    self.write(repo, "skills/review/SKILL.md", content)
+                    self.write(repo, "agents/review.md", content)
+                    for args in ((repo,), ("--report-only",)):
+                        result = self.run_cli("--catalog", *args)
+                        self.assertEqual(result.stdout.count("    " + description + "\n"), 2)
+                        cache = self.checkout / ".compare-cache/external.json"
+                        self.assertEqual([c["description"] for c in json.loads(cache.read_text())],
+                                         [description, description])
+                        output = self.root / "folded.md"
+                        self.run_cli("--output", output, *args)
+                        self.assertEqual(output.read_text().count(description), 2)
+
+    def test_folded_descriptions_stop_at_same_indentation(self):
+        repo = self.root / "indented"
+        for body, expected in (("    First paragraph.\n\n    Second paragraph.\n",
+                                "First paragraph. Second paragraph."), ("", "")):
+            with self.subTest(body=body):
+                self.write(repo, "skills/review/SKILL.md",
+                           "---\n  description: >-\n" + body
+                           + "  name: review\n---\n# Review\n")
+                self.run_cli("--catalog", repo)
+                cache = self.checkout / ".compare-cache/external.json"
+                self.assertEqual(json.loads(cache.read_text())[0]["description"], expected)
+
+    def test_inline_descriptions_keep_existing_catalog_text(self):
+        repo = self.root / "inline"
+        for value, expected in (("Review changes.", "Review changes."),
+                                ('"Review: changes."', "Review: changes."),
+                                ("'>'", ">"), ('">-"', ">-")):
+            with self.subTest(value=value):
+                self.write(repo, "skills/review/SKILL.md",
+                           f"---\ndescription: {value}\nname: review\n---\n# Review\n")
+                result = self.run_cli("--catalog", repo)
+                self.assertIn("    " + expected + "\n", result.stdout)
+
     def test_catalog_type_filters_display_without_narrowing_cache(self):
         repo = self.root / "mixed"
         self.write(repo, "skills/build/SKILL.md", "# Build\n")
