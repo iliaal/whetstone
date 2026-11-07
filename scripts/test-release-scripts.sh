@@ -214,6 +214,56 @@ test_manifest_and_publish_bundle_detection() {
 	pass "$start" "generate-manifest migrates a pre-bundle manifest by republishing every skill once"
 }
 
+# A rerun after a partial ClawHub failure must count versions the registry
+# already holds as skipped, including one still in moderation: inspect reports
+# it missing while publish rejects it as existing. A real error still fails.
+test_publish_existing_versions() {
+	local start=$FAILURES
+	local root="$TMP_ROOT/publish" bin="$TMP_ROOT/publish-bin" out rc
+	make_manifest_fixture "$root" "2.0.0"
+	mkdir -p "$bin"
+	cat >"$bin/npx" <<'FAKE'
+#!/usr/bin/env bash
+shift 2
+case "$1" in
+	whoami) exit 0 ;;
+	inspect)
+		if [[ "$2" == compound-eng-alpha ]]; then
+			printf '{"version":{"version":"%s"}}\n' "$4"
+			exit 0
+		fi
+		printf 'Error: Version not found\n' >&2
+		exit 1
+		;;
+	publish)
+		if [[ "$FAKE_PUBLISH" == broken ]]; then
+			printf 'Error: Skill upload ticket is missing, used, or expired\n' >&2
+			exit 1
+		fi
+		printf 'Error: Version %s already exists. Increment the version number and try again.\n' "$8" >&2
+		exit 1
+		;;
+esac
+exit 1
+FAKE
+	chmod +x "$bin/npx"
+
+	rc=0
+	out=$(PATH="$bin:$PATH" bash "$root/scripts/publish-clawhub.sh" --force 2>&1) || rc=$?
+	((rc == 0)) || fail "publish rerun over existing versions exited $rc: $out"
+	[[ "$out" == *"exists       ia-alpha"* ]] || fail "inspect did not detect the live version: $out"
+	[[ "$out" == *"ia-beta → compound-eng-beta ... exists (v2.0.0)"* ]] || fail "moderation-pending version not counted as existing: $out"
+	[[ "$out" == *"Failed:    0"* ]] || fail "existing versions counted as failures: $out"
+	pass "$start" "publish-clawhub.sh counts live and moderation-pending versions as existing, not failed"
+
+	start=$FAILURES
+	rc=0
+	out=$(FAKE_PUBLISH=broken PATH="$bin:$PATH" bash "$root/scripts/publish-clawhub.sh" --force 2>&1) || rc=$?
+	((rc == 1)) || fail "a genuine publish error exited $rc instead of 1: $out"
+	[[ "$out" == *"Failed:    1"* ]] || fail "a genuine publish error was not counted: $out"
+	pass "$start" "publish-clawhub.sh still fails on a genuine publish error"
+}
+
 test_release_aborts_off_master
 test_release_aborts_detached
 test_release_aborts_behind_origin
@@ -224,6 +274,7 @@ mkdir -p "$TMP_ROOT/release-bin"
 printf '#!/usr/bin/env bash\nprintf "npx must not run in dry-run\\n" >&2\nexit 99\n' >"$TMP_ROOT/release-bin/npx"
 chmod +x "$TMP_ROOT/release-bin/npx"
 test_manifest_and_publish_bundle_detection
+test_publish_existing_versions
 
 if ((FAILURES > 0)); then
 	printf '%d release-script test(s) failed\n' "$FAILURES" >&2

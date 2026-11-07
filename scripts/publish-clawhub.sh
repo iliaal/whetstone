@@ -109,8 +109,8 @@ publish_skill() {
     fi
 
     local inspect_output
-    if inspect_output=$("${CLAWHUB_CLI[@]}" inspect "$slug" 2>&1); then
-        if [[ "$inspect_output" == *"$VERSION"* ]]; then
+    if inspect_output=$("${CLAWHUB_CLI[@]}" inspect "$slug" --version "$VERSION" --json 2>/dev/null); then
+        if jq -e --arg v "$VERSION" '.version.version == $v' <<<"$inspect_output" >/dev/null 2>&1; then
             printf "  %-12s %s → %s (v%s)\n" "exists" "$skill_name" "$slug" "$VERSION"
             skipped=$((skipped + 1))
             return
@@ -134,7 +134,9 @@ publish_skill() {
             printf "ok\n"
             published=$((published + 1))
             return
-        elif [[ "$output" == *"Version already exists"* ]]; then
+        # The CLI names the version ("Version 5.1.5 already exists"). An upload
+        # still in moderation is invisible to inspect but already exists here.
+        elif [[ "$output" == *"Version already exists"* || "$output" == *"Version ${VERSION} already exists"* ]]; then
             printf "exists (v%s)\n" "$VERSION"
             skipped=$((skipped + 1))
             return
