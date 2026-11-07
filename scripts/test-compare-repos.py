@@ -176,6 +176,39 @@ class RepositoryDiscoveryTests(unittest.TestCase):
             self.assertEqual(report.count("| ia-review | review |"), 1)
             self.assertEqual(report.count("- **ia-review** vs **review**"), 1)
 
+    def test_duplicate_repository_paths_are_scanned_once(self):
+        parent = self.root / "repos"
+        repo = self.make_agents_repo("repos/agent-only")
+        alias = self.root / "alias"
+        alias.symlink_to(repo, target_is_directory=True)
+        (parent / "linked").symlink_to(repo, target_is_directory=True)
+        output = self.root / "comparison.md"
+        for paths in ((repo, repo), (repo, alias), (parent, repo)):
+            with self.subTest(paths=paths):
+                result = self.run_cli("--output", output, *paths)
+                self.assertEqual(result.stderr.count("Scanning agent-only..."), 1)
+                self.assertIn("External: 0 skills, 2 agents", result.stdout)
+                self.assertIn("Gaps: 2 unmatched external components", result.stdout)
+                cache = self.checkout / ".compare-cache/external.json"
+                self.assertEqual(len(json.loads(cache.read_text())), 2)
+                for mode in (("--report-only",), paths):
+                    catalog = self.run_cli("--catalog", *mode)
+                    self.assertEqual(catalog.stdout.count("[A] agent-only/reviewer"), 1)
+                    self.assertEqual(catalog.stdout.count("[A] agent-only/tester"), 1)
+                report = self.run_cli("--report-only", "--output", output)
+                self.assertIn("Gaps: 2 unmatched external components", report.stdout)
+                self.assertIn("## Unmatched External Components (2 items)",
+                              output.read_text())
+
+    def test_distinct_repositories_with_same_name_are_not_deduplicated(self):
+        first = self.make_agents_repo("first/shared")
+        second = self.make_agents_repo("second/shared")
+        result = self.run_cli("--catalog", first, second)
+        self.assertEqual(result.stdout.count("[A] shared/reviewer"), 2)
+        self.assertEqual(result.stdout.count("[A] shared/tester"), 2)
+        cache = self.checkout / ".compare-cache/external.json"
+        self.assertEqual(len(json.loads(cache.read_text())), 4)
+
     def test_direct_agents_repository_is_cataloged(self):
         repo = self.make_agents_repo()
         result = self.run_cli("--catalog", repo)
