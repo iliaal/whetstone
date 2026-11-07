@@ -81,6 +81,35 @@ class TriggerOverlapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("No skill pairs", result.stdout)
 
+    def test_regex_escapes_do_not_prefix_trigger_words(self):
+        for pattern in (r"\breview\b \bcode\b", r"review\scode",
+                        r"review\Scode", r"review\wcode", r"review\Wcode",
+                        r"\Breview\Bcode", r"\bthe\b \breview\b \bcode\b"):
+            with self.subTest(pattern=pattern):
+                patterns = (f"SKILL_PATTERNS[alpha]='{pattern}'\n"
+                            "SKILL_PATTERNS[beta]='review code'\n")
+                result = self.run_report("--strict", "--threshold", "1", patterns=patterns)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("1.00 [CROSS-TIER]  alpha <-> beta", result.stdout)
+                self.assertIn("shared: code, review", result.stdout)
+
+    def test_escaped_backslash_preserves_following_literal_word(self):
+        for word, expected_status in (("breview", 1), ("review", 0)):
+            with self.subTest(word=word):
+                patterns = (r"SKILL_PATTERNS[alpha]='\\breview'" + "\n"
+                            f"SKILL_PATTERNS[beta]='{word}'\n")
+                result = self.run_report("--strict", "--threshold", "1", patterns=patterns)
+                self.assertEqual(result.returncode, expected_status, result.stdout + result.stderr)
+                if expected_status:
+                    self.assertIn("shared: breview", result.stdout)
+
+    def test_escaped_punctuation_keeps_neighboring_trigger_words(self):
+        patterns = (r"SKILL_PATTERNS[alpha]='review\.code\+patch'" + "\n"
+                    "SKILL_PATTERNS[beta]='review code patch'\n")
+        result = self.run_report("--strict", "--threshold", "1", patterns=patterns)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("shared: code, patch, review", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,6 +41,7 @@ from pathlib import Path
 PATTERN_RE = re.compile(r"^SKILL_PATTERNS\[([a-z0-9-]+)\]='(.*)'\s*$")
 TIER_RE = re.compile(r"^SKILL_TIERS\[([a-z0-9-]+)\]=(\d+)\s*$")
 TOKEN_RE = re.compile(r"[a-z]{3,}")
+ESCAPE_RE = re.compile(r"\\(?:\\|[bBsSwW])")
 
 # Regex-structural words and routing-generic stopwords that carry no
 # skill-distinguishing signal. Kept conservative on purpose.
@@ -55,10 +56,11 @@ STOPWORDS = frozenset({
 def extract_tokens(pattern: str) -> set[str]:
     """Literal alphabetic tokens in a trigger regex, minus noise and stopwords.
 
-    Regex metacharacters contribute no [a-z]{3,} runs (\\b, \\s, .{0,30},
-    (?:...) all lack 3+ letter sequences), so a simple letter-run scan over
-    the lowercased pattern recovers the literal trigger words.
+    Separate regex escapes from adjacent words before scanning: otherwise
+    \\breview becomes "breview" instead of "review". Consume escaped backslashes
+    too, so a literal backslash followed by "breview" keeps that whole word.
     """
+    pattern = ESCAPE_RE.sub(" ", pattern)
     return {t for t in TOKEN_RE.findall(pattern.lower()) if t not in STOPWORDS}
 
 
