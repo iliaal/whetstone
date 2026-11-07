@@ -200,6 +200,18 @@ def scan_agents_dir(agents_dir: Path, repo_name: str) -> list[Component]:
     return components
 
 
+def has_repo_layout(path: Path, *, include_agents: bool = True) -> bool:
+    """Recognize supported layouts without requiring a Git checkout."""
+    return (
+        (path / ".claude-plugin").exists()
+        or ((path / "skills").is_dir() and any((path / "skills").glob("*/SKILL.md")))
+        or (include_agents and (path / "agents").is_dir()
+            and any(item.is_file() for item in (path / "agents").rglob("*.md")))
+        or ((path / "plugins").is_dir() and any((path / "plugins").rglob("plugin.json")))
+        or (path / "categories").is_dir()
+    )
+
+
 def scan_repo(repo_path: Path) -> list[Component]:
     """Auto-detect repo structure and scan for all components."""
     repo_name = repo_path.name
@@ -589,16 +601,11 @@ def main() -> None:
             if len(git_dirs) >= 2:
                 is_repo = False
             else:
-                has_plugin_marker = (p / ".claude-plugin").exists()
-                has_skills = (p / "skills").is_dir() and list((p / "skills").glob("*/SKILL.md"))
                 # A collection of archives can itself have a repo named agents.
-                # Require a Git marker before treating this as a root agents/ layout.
-                has_agents = (p / ".git").exists() and (p / "agents").is_dir() and any(
-                    agent.is_file() for agent in (p / "agents").rglob("*.md")
-                )
-                has_plugins = (p / "plugins").is_dir() and list((p / "plugins").rglob("plugin.json"))
-                has_categories = (p / "categories").is_dir()
-                is_repo = has_plugin_marker or has_skills or has_agents or has_plugins or has_categories
+                # Prefer that interpretation if agents/ has its own repo layout;
+                # a root Git marker disambiguates a subgroup named agents instead.
+                allow_agents = (p / ".git").exists() or not has_repo_layout(p / "agents")
+                is_repo = has_repo_layout(p, include_agents=allow_agents)
             if is_repo:
                 repo_paths.append(p)
             else:

@@ -278,6 +278,37 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         self.assertIn("| agent | tester | 4 | Review changes. |", report)
         self.assertIn("External: 0 skills, 2 agents", result.stdout)
 
+    def test_direct_agent_archives_survive_catalog_cache_and_report(self):
+        for name, paths in (
+            ("archive", ("agents/reviewer.md", "agents/quality/tester.md")),
+            ("nested-archive", ("agents/quality/reviewer.md",)),
+        ):
+            with self.subTest(layout=name):
+                repo = self.root / name
+                for path in paths:
+                    self.write(repo, path)
+                expected = {(name, "agent", path) for path in paths}
+                output = self.root / f"{name}.md"
+                for args in ((repo,), ("--report-only",)):
+                    self.run_cli("--catalog", *args)
+                    catalog = json.loads((self.checkout / ".compare-cache/external.json").read_text())
+                    self.assertEqual({(c["repo"], c["kind"], c["path"]) for c in catalog}, expected)
+                    result = self.run_cli("--type", "agents", "--output", output, *args)
+                    self.assertIn(f"External: 0 skills, {len(paths)} agents", result.stdout)
+                    self.assertIn(f"- **{name}**: 0 skills, {len(paths)} agents", output.read_text())
+
+    def test_versioned_repository_keeps_agents_named_subgroup(self):
+        for marker in ("directory", "file"):
+            with self.subTest(marker=marker):
+                repo = self.root / marker
+                self.write(repo, "agents/agents/reviewer.md")
+                if marker == "directory":
+                    (repo / ".git").mkdir()
+                else:
+                    self.write(repo, ".git", "gitdir: ../main/.git/worktrees/agents\n")
+                result = self.run_cli("--catalog", repo)
+                self.assertEqual(result.stdout, f"[A] {marker}/reviewer (4 lines)\n    Review changes.\n")
+
     def test_direct_repository_with_only_nested_agents_is_cataloged(self):
         repo = self.root / "nested-agents"
         self.write(repo, "agents/quality/reviewer.md")
@@ -332,6 +363,29 @@ class RepositoryDiscoveryTests(unittest.TestCase):
                 if name == "plugin":
                     self.write(repo, "plugins/example/.claude-plugin/plugin.json", "{}\n")
                 self.assertIn(expected + " (4 lines)", self.run_cli("--catalog", repo).stdout)
+
+    def test_archive_parent_with_repository_named_agents_uses_child_layout(self):
+        for layout, path, expected in (
+            ("agents", "agents/quality/reviewer.md", "[A] agents/reviewer"),
+            ("skills", "skills/build/SKILL.md", "[S] agents/build"),
+            ("plugin", "plugins/example/agents/reviewer.md", "[A] agents/example/reviewer"),
+            ("categories", "categories/quality/reviewer.md", "[A] agents/quality/reviewer"),
+        ):
+            with self.subTest(layout=layout):
+                parent = self.root / layout
+                self.write(parent / "agents", path)
+                if layout == "plugin":
+                    self.write(parent / "agents", "plugins/example/.claude-plugin/plugin.json", "{}\n")
+                for sibling in (False, True):
+                    with self.subTest(sibling=sibling):
+                        if sibling:
+                            self.write(parent, "other/skills/build/SKILL.md")
+                        result = self.run_cli("--catalog", parent)
+                        entries = [line for line in result.stdout.splitlines() if line.startswith("[")]
+                        wanted = [expected + " (4 lines)"]
+                        if sibling:
+                            wanted.append("[S] other/build (4 lines)")
+                        self.assertEqual(entries, wanted)
 
     def test_empty_agents_directory_does_not_hide_child_repositories(self):
         parent = self.root / "repos"
