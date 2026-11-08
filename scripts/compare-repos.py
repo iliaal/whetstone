@@ -200,6 +200,18 @@ def scan_agents_dir(agents_dir: Path, repo_name: str) -> list[Component]:
     return components
 
 
+def has_repo_layout(path: Path, *, include_agents: bool = True) -> bool:
+    """Recognize supported layouts without requiring a Git checkout."""
+    return (
+        (path / ".claude-plugin").exists()
+        or ((path / "skills").is_dir() and any((path / "skills").glob("*/SKILL.md")))
+        or (include_agents and (path / "agents").is_dir()
+            and any(item.is_file() for item in (path / "agents").rglob("*.md")))
+        or ((path / "plugins").is_dir() and any((path / "plugins").rglob("plugin.json")))
+        or (path / "categories").is_dir()
+    )
+
+
 def scan_repo(repo_path: Path) -> list[Component]:
     """Auto-detect repo structure and scan for all components."""
     repo_name = repo_path.name
@@ -589,18 +601,32 @@ def main() -> None:
             if len(git_dirs) >= 2:
                 is_repo = False
             else:
-                has_plugin_marker = (p / ".claude-plugin").exists()
-                has_skills = (p / "skills").is_dir() and list((p / "skills").glob("*/SKILL.md"))
-                # A collection of archives can itself have a repo named agents.
-                # Require a Git marker before treating this as a root agents/ layout.
-                has_agents = (p / ".git").exists() and (p / "agents").is_dir() and any(
-                    agent.is_file() for agent in (p / "agents").rglob("*.md")
+                # A collection may have an unsupported repo named agents with
+                # only README files. Use sibling repo evidence in that case,
+                # but retain direct agent archives with bundled example repos.
+                agents_dir = p / "agents"
+                has_agent_files = any(item.is_file() and item.name.lower() != "readme.md"
+                                      for item in agents_dir.rglob("*.md"))
+                allow_agents = (p / ".git").exists() or not (
+                    (agents_dir / ".git").exists() or has_repo_layout(agents_dir)
+                    or (not has_agent_files
+                        and any((sub / ".git").exists() or has_repo_layout(sub)
+                                for sub in p.iterdir()
+                                if sub.is_dir() and not sub.name.startswith(".")))
                 )
-                has_plugins = (p / "plugins").is_dir() and list((p / "plugins").rglob("plugin.json"))
-                has_categories = (p / "categories").is_dir()
-                is_repo = has_plugin_marker or has_skills or has_agents or has_plugins or has_categories
+                is_repo = has_repo_layout(p, include_agents=allow_agents)
             if is_repo:
                 repo_paths.append(p)
+                # With only an unversioned agent layout, real agent files do not
+                # disambiguate a direct archive from a collection with siblings.
+                # Keep both rather than silently dropping either catalog.
+                if (not (p / ".git").exists() and allow_agents and has_agent_files
+                        and not has_repo_layout(p, include_agents=False)):
+                    repo_paths.extend(
+                        sub for sub in sorted(p.iterdir())
+                        if sub.is_dir() and sub.name != "agents"
+                        and not sub.name.startswith(".") and has_repo_layout(sub)
+                    )
             else:
                 for sub in sorted(p.iterdir()):
                     if sub.is_dir() and not sub.name.startswith("."):
