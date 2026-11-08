@@ -13,7 +13,7 @@ export function parseFrontmatter(raw: string): FrontmatterResult {
 
   let endIndex = -1
   for (let i = 1; i < lines.length; i += 1) {
-    if (lines[i].trim() === "---") {
+    if (lines[i].trimEnd() === "---") {
       endIndex = i
       break
     }

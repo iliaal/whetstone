@@ -5,6 +5,7 @@ import { afterEach, expect, test } from "bun:test"
 import { loadClaudePlugin } from "./claude"
 import { convertClaudeToOpenCode } from "../converters/claude-to-opencode"
 import { renderCodexConfig } from "../targets/codex"
+import { parseFrontmatter } from "../utils/frontmatter"
 
 const tempRoots: string[] = []
 
@@ -288,4 +289,30 @@ test("loadClaudePlugin keeps a hook event named __proto__ as data", async () => 
 
   expect(Object.keys(plugin.hooks!.hooks)).toEqual(["__proto__"])
   expect(Object.getPrototypeOf(plugin.hooks!.hooks)).toBe(Object.prototype)
+})
+
+test("conversion keeps block-scalar separators out of agent and command instructions", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo" }))
+  const source = "---\nname: ia-demo\ndescription: |\n  before\n  ---\n  after\n---\nDo the work.\n"
+  for (const dir of ["agents", "commands", "skills/ia-demo"]) {
+    await mkdir(path.join(root, dir), { recursive: true })
+    await writeFile(path.join(root, dir, dir.startsWith("skills/") ? "SKILL.md" : "ia-demo.md"), source)
+  }
+  const plugin = await loadClaudePlugin(root)
+  for (const component of [...plugin.agents, ...plugin.commands, ...plugin.skills]) {
+    expect(component.description).toBe("before\n---\nafter\n")
+  }
+  expect(plugin.agents[0].body).toBe("Do the work.")
+  expect(plugin.commands[0].body).toBe("Do the work.")
+  const bundle = convertClaudeToOpenCode(plugin, {
+    agentMode: "subagent", inferTemperature: false, permissions: "none",
+  })
+  for (const content of [bundle.agents[0].content, bundle.commandFiles[0].content]) {
+    const converted = parseFrontmatter(content)
+    expect(converted.body.trim()).toBe("Do the work.")
+    expect(converted.data.description).toBe("before\n---\nafter\n")
+  }
 })
