@@ -458,7 +458,89 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         self.write(repo, "examples/skills/build/SKILL.md")
         self.assertEqual(self.run_cli("--catalog", repo).stdout,
                          "[A] archive/README (1 lines)\n"
-                         "[A] archive/reviewer (4 lines)\n    Review changes.\n")
+                         "[A] archive/reviewer (4 lines)\n    Review changes.\n"
+                         "[S] examples/build (4 lines)\n    Review changes.\n")
+
+    def test_real_parent_agents_keep_each_supported_sibling_layout(self):
+        for layout, path, sibling_repo, kind, name in (
+            ("agents", "agents/tester.md", "other", "agent", "tester"),
+            ("skills", "skills/build/SKILL.md", "other", "skill", "build"),
+            ("plugin", "plugins/example/agents/tester.md", "other/example", "agent", "tester"),
+            ("categories", "categories/quality/tester.md", "other/quality", "agent", "tester"),
+        ):
+            for marker in ("archive", "directory", "file"):
+                with self.subTest(layout=layout, marker=marker):
+                    parent = self.root / f"{layout}-{marker}"
+                    self.write(parent, "agents/flat.md")
+                    self.write(parent / "other", path)
+                    if layout == "plugin":
+                        self.write(parent / "other", "plugins/example/.claude-plugin/plugin.json", "{}\n")
+                    if marker == "directory":
+                        (parent / "other/.git").mkdir()
+                    elif marker == "file":
+                        self.write(parent, "other/.git", "gitdir: ../../main/.git/worktrees/other\n")
+                    expected = {(parent.name, "agent", "flat"), (sibling_repo, kind, name)}
+                    output = self.root / "mixed.md"
+                    for args in ((parent,), ("--report-only",)):
+                        self.run_cli("--catalog", *args)
+                        catalog = json.loads((self.checkout / ".compare-cache/external.json").read_text())
+                        self.assertEqual({(c["repo"], c["kind"], c["name"]) for c in catalog}, expected)
+                        result = self.run_cli("--output", output, *args)
+                        skills = int(kind == "skill")
+                        self.assertIn(f"External: {skills} skills, {2 - skills} agents", result.stdout)
+                        report = output.read_text()
+                        self.assertIn(f"- **{parent.name}**: 0 skills, 1 agents", report)
+                        self.assertIn(f"- **other**: {skills} skills, {1 - skills} agents", report)
+
+    def test_ambiguous_archive_siblings_are_filtered_and_deduplicated(self):
+        parent = self.root / "archive"
+        self.write(parent, "agents/flat.md")
+        self.write(parent, "other/skills/build/SKILL.md")
+        self.write(parent, ".hidden/skills/private/SKILL.md")
+        self.write(parent, "unsupported/README.md")
+        (parent / "linked").symlink_to(parent / "other", target_is_directory=True)
+        result = self.run_cli("--catalog", "--type", "skills", parent, parent / "other")
+        self.assertEqual(result.stdout, "[S] linked/build (4 lines)\n    Review changes.\n")
+        catalog = json.loads((self.checkout / ".compare-cache/external.json").read_text())
+        self.assertEqual({(c["kind"], c["name"]) for c in catalog},
+                         {("agent", "flat"), ("skill", "build")})
+        self.assertEqual(len(catalog), 2)
+        self.assertEqual(self.run_cli("--catalog", "--type", "agents", "--report-only").stdout,
+                         "[A] archive/flat (4 lines)\n    Review changes.\n")
+
+    def test_versioned_parent_real_agents_do_not_scan_bundled_sibling_layouts(self):
+        for marker in ("directory", "file"):
+            with self.subTest(marker=marker):
+                parent = self.root / marker
+                self.write(parent, "agents/flat.md")
+                self.write(parent, "other/skills/build/SKILL.md")
+                if marker == "directory":
+                    (parent / ".git").mkdir()
+                else:
+                    self.write(parent, ".git", "gitdir: ../main/.git/worktrees/parent\n")
+                self.assertEqual(self.run_cli("--catalog", parent).stdout,
+                                 f"[A] {marker}/flat (4 lines)\n    Review changes.\n")
+
+    def test_parent_non_agent_layout_keeps_direct_repository_interpretation(self):
+        for layout, path, expected in (
+            ("skills", "skills/build/SKILL.md", {("archive", "skill", "build")}),
+            ("plugin", "plugins/example/agents/tester.md", {("archive/example", "agent", "tester")}),
+            ("categories", "categories/agents/tester.md", {("archive/agents", "agent", "tester")}),
+            ("manifest", ".claude-plugin/plugin.json", set()),
+        ):
+            with self.subTest(layout=layout):
+                parent = self.root / layout / "archive"
+                self.write(parent, "agents/flat.md")
+                self.write(parent, path)
+                if layout == "plugin":
+                    self.write(parent, "plugins/example/.claude-plugin/plugin.json", "{}\n")
+                self.write(parent, "other/skills/example/SKILL.md")
+                for args in ((parent,), ("--report-only",)):
+                    self.run_cli("--catalog", *args)
+                    catalog = json.loads((self.checkout / ".compare-cache/external.json").read_text())
+                    self.assertEqual({(c["repo"], c["kind"], c["name"]) for c in catalog},
+                                     expected | {("archive", "agent", "flat")})
+                    self.assertEqual(len(catalog), len(expected) + 1)
 
     def test_child_git_marker_identifies_unsupported_repository_without_siblings(self):
         for marker in ("directory", "file"):

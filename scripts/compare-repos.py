@@ -605,10 +605,11 @@ def main() -> None:
                 # only README files. Use sibling repo evidence in that case,
                 # but retain direct agent archives with bundled example repos.
                 agents_dir = p / "agents"
+                has_agent_files = any(item.is_file() and item.name.lower() != "readme.md"
+                                      for item in agents_dir.rglob("*.md"))
                 allow_agents = (p / ".git").exists() or not (
                     (agents_dir / ".git").exists() or has_repo_layout(agents_dir)
-                    or (not any(item.is_file() and item.name.lower() != "readme.md"
-                                for item in agents_dir.rglob("*.md"))
+                    or (not has_agent_files
                         and any((sub / ".git").exists() or has_repo_layout(sub)
                                 for sub in p.iterdir()
                                 if sub.is_dir() and not sub.name.startswith(".")))
@@ -616,6 +617,16 @@ def main() -> None:
                 is_repo = has_repo_layout(p, include_agents=allow_agents)
             if is_repo:
                 repo_paths.append(p)
+                # With only an unversioned agent layout, real agent files do not
+                # disambiguate a direct archive from a collection with siblings.
+                # Keep both rather than silently dropping either catalog.
+                if (not (p / ".git").exists() and allow_agents and has_agent_files
+                        and not has_repo_layout(p, include_agents=False)):
+                    repo_paths.extend(
+                        sub for sub in sorted(p.iterdir())
+                        if sub.is_dir() and sub.name != "agents"
+                        and not sub.name.startswith(".") and has_repo_layout(sub)
+                    )
             else:
                 for sub in sorted(p.iterdir()):
                     if sub.is_dir() and not sub.name.startswith("."):
