@@ -601,10 +601,18 @@ def main() -> None:
             if len(git_dirs) >= 2:
                 is_repo = False
             else:
-                # A collection of archives can itself have a repo named agents.
-                # Prefer that interpretation if agents/ has its own repo layout;
-                # a root Git marker disambiguates a subgroup named agents instead.
-                allow_agents = (p / ".git").exists() or not has_repo_layout(p / "agents")
+                # A collection may have an unsupported repo named agents with
+                # only README files. Use sibling repo evidence in that case,
+                # but retain direct agent archives with bundled example repos.
+                agents_dir = p / "agents"
+                allow_agents = (p / ".git").exists() or not (
+                    (agents_dir / ".git").exists() or has_repo_layout(agents_dir)
+                    or (not any(item.is_file() and item.name.lower() != "readme.md"
+                                for item in agents_dir.rglob("*.md"))
+                        and any((sub / ".git").exists() or has_repo_layout(sub)
+                                for sub in p.iterdir()
+                                if sub.is_dir() and not sub.name.startswith(".")))
+                )
                 is_repo = has_repo_layout(p, include_agents=allow_agents)
             if is_repo:
                 repo_paths.append(p)
