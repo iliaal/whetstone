@@ -1895,6 +1895,45 @@ class TestEvalTriggers:
         result = distiller.eval_triggers("my-skill", queries, patterns_file=str(patterns_file))
         assert result["metrics"]["accuracy"] == 1.0
 
+    @pytest.mark.parametrize("quote", ["'", '"'])
+    @pytest.mark.parametrize("prefix", ["# ", " \t# "])
+    @pytest.mark.parametrize("array", ["SKILL_PATTERNS", "SKILL_NEGATIVE"])
+    def test_commented_assignments_do_not_affect_evaluation(self, tmp_path, quote, prefix, array):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        content = (f"SKILL_PATTERNS[my-skill]={quote}review{quote}\n"
+                   f"SKILL_NEGATIVE[my-skill]={quote}review{quote}\n")
+        patterns_file.write_text(content.replace(array + "[", prefix + array + "["))
+        queries = {"should_trigger": ["review"], "should_not_trigger": ["unrelated"]}
+        if array == "SKILL_PATTERNS":
+            with pytest.raises(SystemExit, match="1"):
+                distiller.eval_triggers("my-skill", queries, patterns_file=patterns_file)
+        else:
+            result = distiller.eval_triggers("my-skill", queries, patterns_file=patterns_file)
+            assert result["metrics"]["true_positives"] == 1
+            assert result["metrics"]["true_negatives"] == 1
+
+    @pytest.mark.parametrize("quote", ["'", '"'])
+    @pytest.mark.parametrize("comments", [False, True])
+    def test_indented_active_assignments_preserve_literals(self, tmp_path, quote, comments):
+        patterns_file = tmp_path / "skill-patterns.sh"
+        active = (f" \tSKILL_PATTERNS[my-skill]={quote}review#tag  code{quote} # comment\n"
+                  f" \tSKILL_NEGATIVE[my-skill]={quote}skip#tag{quote} # comment\n")
+        if comments:
+            active = (
+                "# SKILL_PATTERNS[my-skill]='old'\n"
+                "# SKILL_NEGATIVE[my-skill]='review'\n"
+                + active
+                + '# SKILL_PATTERNS[my-skill]="later"\n'
+                '# SKILL_NEGATIVE[my-skill]="review"\n'
+            )
+        patterns_file.write_text(active)
+        queries = {"should_trigger": ["review#tag  code"],
+                   "should_not_trigger": ["old", "later", "review#tag  code skip#tag"]}
+        result = distiller.eval_triggers("my-skill", queries, patterns_file=patterns_file)
+        assert result["pattern"] == "review#tag  code"
+        assert result["metrics"]["true_positives"] == 1
+        assert result["metrics"]["true_negatives"] == 3
+
     def test_missing_pattern_exits(self):
         queries = {"should_trigger": ["x"], "should_not_trigger": []}
         with pytest.raises(SystemExit):

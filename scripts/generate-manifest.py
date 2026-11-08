@@ -84,16 +84,16 @@ def _extract_pattern_block(skill_name: str, patterns_content: str) -> str | None
     suppression change alters which prompts fire the skill just as a positive
     change does, and staleness filtering keys off this hash.
     """
-    m = re.search(rf"SKILL_PATTERNS\[{re.escape(skill_name)}\]='([^']+)'", patterns_content)
+    m = re.search(rf"^[ \t]*SKILL_PATTERNS\[{re.escape(skill_name)}\]='([^']+)'", patterns_content, re.MULTILINE)
     if not m:
-        m = re.search(rf'SKILL_PATTERNS\[{re.escape(skill_name)}\]="([^"]+)"', patterns_content)
+        m = re.search(rf'^[ \t]*SKILL_PATTERNS\[{re.escape(skill_name)}\]="([^"]+)"', patterns_content, re.MULTILINE)
     if not m:
         return None
     pattern = m.group(1)
 
-    n = re.search(rf"SKILL_NEGATIVE\[{re.escape(skill_name)}\]='([^']+)'", patterns_content)
+    n = re.search(rf"^[ \t]*SKILL_NEGATIVE\[{re.escape(skill_name)}\]='([^']+)'", patterns_content, re.MULTILINE)
     if not n:
-        n = re.search(rf'SKILL_NEGATIVE\[{re.escape(skill_name)}\]="([^"]+)"', patterns_content)
+        n = re.search(rf'^[ \t]*SKILL_NEGATIVE\[{re.escape(skill_name)}\]="([^"]+)"', patterns_content, re.MULTILINE)
     return f"{pattern}\x00!{n.group(1)}" if n else pattern
 
 
