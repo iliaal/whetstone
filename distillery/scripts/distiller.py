@@ -1733,9 +1733,9 @@ def _load_skill_pattern(name, patterns_file=None):
     if not path.exists():
         return None
     content = path.read_text()
-    m = _re.search(rf"SKILL_PATTERNS\[{_re.escape(name)}\]='([^']+)'", content)
+    m = _re.search(rf"^[ \t]*SKILL_PATTERNS\[{_re.escape(name)}\]='([^']+)'", content, _re.MULTILINE)
     if not m:
-        m = _re.search(rf'SKILL_PATTERNS\[{_re.escape(name)}\]="([^"]+)"', content)
+        m = _re.search(rf'^[ \t]*SKILL_PATTERNS\[{_re.escape(name)}\]="([^"]+)"', content, _re.MULTILINE)
     return m.group(1) if m else None
 
 
@@ -1750,9 +1750,9 @@ def _load_skill_negative(name, patterns_file=None):
     if not path.exists():
         return None
     content = path.read_text()
-    m = _re.search(rf"SKILL_NEGATIVE\[{_re.escape(name)}\]='([^']+)'", content)
+    m = _re.search(rf"^[ \t]*SKILL_NEGATIVE\[{_re.escape(name)}\]='([^']+)'", content, _re.MULTILINE)
     if not m:
-        m = _re.search(rf'SKILL_NEGATIVE\[{_re.escape(name)}\]="([^"]+)"', content)
+        m = _re.search(rf'^[ \t]*SKILL_NEGATIVE\[{_re.escape(name)}\]="([^"]+)"', content, _re.MULTILINE)
     return m.group(1) if m else None
 
 

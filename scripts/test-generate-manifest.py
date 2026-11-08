@@ -99,6 +99,44 @@ class TriggerHistoryTests(unittest.TestCase):
         unchanged = self.generate("4.0.0", "example")
         self.assertEqual(unchanged["skills"]["ia-example"]["pattern_changed"], "3.0.0")
 
+    def test_commenting_assignment_records_trigger_change(self):
+        for quote in ("'", '"'):
+            for prefix in ("# ", " \t# "):
+                for array in ("SKILL_PATTERNS", "SKILL_NEGATIVE"):
+                    with self.subTest(quote=quote, prefix=prefix, array=array):
+                        self.manifest.unlink(missing_ok=True)
+                        initial = self.generate("1.0.0", "review", "blocked")
+                        self.plugin.write_text('{"version": "2.0.0"}', encoding="utf-8")
+                        active = (f"SKILL_PATTERNS[ia-example]={quote}review{quote}\n"
+                                  f"SKILL_NEGATIVE[ia-example]={quote}blocked{quote}\n")
+                        commented = active.replace(array + "[", prefix + array + "[")
+                        self.patterns.write_text(commented, encoding="utf-8")
+                        changed = MANIFEST.generate()
+                        entry = changed["skills"]["ia-example"]
+                        self.assertNotEqual(entry.get("pattern_hash"),
+                                            initial["skills"]["ia-example"]["pattern_hash"])
+                        self.assertEqual(entry["pattern_changed"], "2.0.0")
+                        self.assert_staleness(changed, "1.0.0", True)
+                        self.assert_staleness(changed, "2.0.0", False)
+                        if array == "SKILL_PATTERNS":
+                            self.assertNotIn("pattern_hash", entry)
+                        else:
+                            self.assertEqual(entry["pattern_hash"], MANIFEST._sha256_string("review"))
+
+    def test_comments_do_not_shadow_indented_active_assignments(self):
+        for quote in ("'", '"'):
+            with self.subTest(quote=quote):
+                content = (
+                    "# SKILL_PATTERNS[ia-example]='old'\n"
+                    "# SKILL_NEGATIVE[ia-example]='old-negative'\n"
+                    f" \tSKILL_PATTERNS[ia-example]={quote}review#tag  code{quote} # comment\n"
+                    f" \tSKILL_NEGATIVE[ia-example]={quote}skip#tag{quote} # comment\n"
+                    '# SKILL_PATTERNS[ia-example]="later"\n'
+                    '# SKILL_NEGATIVE[ia-example]="later-negative"\n'
+                )
+                self.assertEqual(MANIFEST._extract_pattern_block("ia-example", content),
+                                 "review#tag  code\x00!skip#tag")
+
     def test_significant_regex_whitespace_invalidates_older_examples(self):
         cases = (
             ("review code", "review  code", "review code"),
