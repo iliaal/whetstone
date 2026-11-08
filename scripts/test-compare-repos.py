@@ -2,6 +2,7 @@
 """Regression tests for comparison CLI discovery and filtering (stdlib only)."""
 
 import json
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,6 +12,54 @@ import unittest
 
 
 SCRIPT = Path(__file__).with_name("compare-repos.py")
+
+
+class BlockScalarTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.parse = staticmethod(runpy.run_path(str(SCRIPT))["parse_frontmatter"])
+
+    def test_all_block_headers_keep_body_keys_inside_description(self):
+        for style in ("|", ">"):
+            for indicator in ("", *map(str, range(1, 10))):
+                for chomp in ("", "+", "-"):
+                    for suffix in {indicator + chomp, chomp + indicator}:
+                        for comment in ("", " # display text"):
+                            for newline in ("\n", "\r\n"):
+                                for blank in ([], [""]):
+                                    marker = style + suffix + comment
+                                    with self.subTest(marker=marker, newline=newline, blank=blank):
+                                        indent = " " * int(indicator or 2)
+                                        raw = newline.join([
+                                            "---", "name: original", f"description: {marker}",
+                                            indent + "Review code.", *blank,
+                                            indent + "description: preserve this text.",
+                                            indent + "name: still prose.",
+                                            "class: discipline", "---", "",
+                                        ])
+                                        self.assertEqual(self.parse(raw), {
+                                            "name": "original",
+                                            "description": "Review code. description: preserve this text. name: still prose.",
+                                            "class": "discipline",
+                                        })
+
+    def test_quoted_and_non_header_values_keep_existing_interpretation(self):
+        for value in ('"|"', "'|2-'", '">+2"', "| prose", "> prose", "|0", ">10", "|++", "|-+", "|2-#text"):
+            with self.subTest(value=value):
+                self.assertEqual(self.parse(
+                    f"---\nname: original\ndescription: {value}\nclass: discipline\n---\n"
+                ), {"name": "original", "description": value.strip('\"').strip("'"), "class": "discipline"})
+
+    def test_empty_and_indented_block_fields_stop_at_sibling(self):
+        for marker in ("|", "|2-", "|-2", ">2+", ">+2"):
+            for prefix in ("", "  "):
+                for body, expected in (("", ""), ("\n", ""),
+                                       (prefix + "  First.\n\n" + prefix + "  Second.\n", "First. Second.")):
+                    with self.subTest(marker=marker, prefix=prefix, body=body):
+                        self.assertEqual(self.parse(
+                            "---\n" + prefix + f"description: {marker}\n" + body
+                            + prefix + "name: sibling\n---\n"
+                        ), {"description": expected, "name": "sibling"})
 
 
 class RepositoryDiscoveryTests(unittest.TestCase):
@@ -45,10 +94,11 @@ class RepositoryDiscoveryTests(unittest.TestCase):
             (repo / ".git").mkdir()
         return repo
 
-    def test_folded_descriptions_survive_scanning_cache_and_report(self):
+    def test_block_descriptions_survive_scanning_cache_and_report(self):
         description = "Review changes: inspect code. description: keep this text."
         repo = self.root / "folded"
-        for marker in (">", ">-", ">+", ">- # folded description"):
+        for marker in (">", ">-", ">+", ">- # folded description",
+                       "|", "|-", "|+", "|2", "|2-", "|-2", ">2+", ">+2 # folded"):
             for newline in ("\n", "\r\n"):
                 with self.subTest(marker=marker, newline=repr(newline)):
                     content = newline.join([
