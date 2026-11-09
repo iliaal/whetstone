@@ -38,3 +38,26 @@ test("frontmatter omits undefined fields and leaves metadata-free bodies alone",
   expect(formatFrontmatter({}, "Body\n")).toBe("Body\n")
   expect(formatFrontmatter({ description: undefined }, "Body\n")).toBe("Body\n")
 })
+
+for (const newline of ["\n", "\r\n"]) {
+  test.each(["|", ">"])(`frontmatter keeps indented separators in %s scalars (${JSON.stringify(newline)})`, (style) => {
+    const raw = [
+      "---", `description: ${style}`, "  before", "  ---", "  after",
+      "enabled: true", "--- \t", "Run the command.", "",
+    ].join(newline)
+    expect(parseFrontmatter(raw)).toEqual({
+      data: { description: style === "|" ? "before\n---\nafter\n" : "before --- after\n", enabled: true },
+      body: "Run the command.\n",
+    })
+  })
+}
+
+test("an indented separator does not close otherwise unterminated frontmatter", () => {
+  const raw = "---\ndescription: |\n  before\n  ---\n  after\n"
+  expect(parseFrontmatter(raw)).toEqual({ data: {}, body: raw })
+})
+
+
+test.each(["---", "--- \t"])("frontmatter accepts a closing delimiter at EOF: %j", (delimiter) => {
+  expect(parseFrontmatter(`---\nname: demo\n${delimiter}`)).toEqual({ data: { name: "demo" }, body: "" })
+})
