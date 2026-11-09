@@ -324,7 +324,9 @@ function applyPermissions(
 function parseToolSpec(raw: string): { tool: string | null; pattern?: string } {
   const trimmed = raw.trim()
   if (!trimmed) return { tool: null }
-  const [namePart, patternPart] = trimmed.split("(", 2)
+  const open = trimmed.indexOf("(")
+  const namePart = open === -1 ? trimmed : trimmed.slice(0, open)
+  const patternPart = open === -1 ? "" : trimmed.slice(open + 1)
   const name = namePart.trim().toLowerCase()
   const tool = Object.hasOwn(TOOL_MAP, name) ? TOOL_MAP[name] : null
   if (!patternPart) return { tool }

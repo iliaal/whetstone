@@ -50,6 +50,12 @@ test("Bash normalization and write/edit pattern union remain intact", () => {
   expect(config.permission?.edit).toEqual(combined)
 })
 
+test("parenthesized patterns keep every character inside the outer tool call", () => {
+  const config = permissions(["Bash(php -r 'echo phpversion();')", "Read(docs/(draft)/*)"])
+  expect(config.permission?.bash).toEqual({ "*": "deny", "php -r 'echo phpversion();'": "allow" })
+  expect(config.permission?.read).toEqual({ "*": "deny", "docs/(draft)/*": "allow" })
+})
+
 test("literal wildcard and prototype-like patterns remain own allowlist entries", () => {
   const config = permissions(["Read(*)", "Read(__proto__)", "Read(constructor)", "Read(toString)"])
   expect(config.permission?.read).toEqual(Object.fromEntries(
