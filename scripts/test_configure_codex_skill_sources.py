@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import locale
 import os
 import shutil
@@ -119,3 +120,30 @@ def test_dry_run_emits_utf8_bytes(tmp_path, remove, locale_name):
         original, MODULE.render_block(MODULE.skill_paths(SCRIPT.resolve().parent.parent)))
     assert result.stdout == expected.encode('utf-8')
     assert config.read_bytes() == initial.encode('utf-8')
+
+
+@pytest.mark.parametrize('kind', ['basic-multiline', 'literal-multiline', 'single-line'])
+@pytest.mark.parametrize('remove', [False, True], ids=['configure', 'remove'])
+@pytest.mark.parametrize('dry_run', [False, True], ids=['write', 'dry-run'])
+def test_cli_refuses_managed_markers_inside_toml_values(tmp_path, kind, remove, dry_run):
+    home = tmp_path / 'codex'
+    home.mkdir()
+    config = home / 'config.toml'
+    example = f"Keep this example:\n{MODULE.BEGIN_MARKER}\nexample\n{MODULE.END_MARKER}\n"
+    if kind == 'single-line':
+        value = json.dumps(example)
+    else:
+        quote = chr(34) * 3 if kind == 'basic-multiline' else chr(39) * 3
+        value = quote + '\n' + example + quote
+    original = f'instructions = {value}\nmodel = "existing-model"\n'.encode('utf-8')
+    tomllib.loads(original.decode('utf-8'))
+    config.write_bytes(original)
+    command = [sys.executable, str(SCRIPT), '--codex-home', str(home)]
+    if remove:
+        command.append('--remove')
+    if dry_run:
+        command.append('--dry-run')
+    result = subprocess.run(command, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert 'markers' in result.stderr
+    assert config.read_bytes() == original

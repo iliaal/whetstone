@@ -62,15 +62,29 @@ def render_block(paths: list[Path]) -> str:
     return "\n".join(lines)
 
 
-def replace_managed_block(text: str, block: str) -> str:
+def managed_block_bounds(text: str) -> tuple[int, int] | None:
     begin_count = text.count(BEGIN_MARKER)
     end_count = text.count(END_MARKER)
     if begin_count != end_count or begin_count > 1:
         raise ValueError("config.toml has an incomplete or duplicated Whetstone managed block")
+    if begin_count == 0:
+        return None
 
-    if begin_count == 1:
-        start = text.index(BEGIN_MARKER)
-        end = text.index(END_MARKER, start) + len(END_MARKER)
+    start = text.index(BEGIN_MARKER)
+    end = text.index(END_MARKER, start)
+    # A marker inside a TOML string leaves an incomplete value before its offset.
+    for offset in (start, end):
+        try:
+            tomllib.loads(text[:offset])
+        except tomllib.TOMLDecodeError as exc:
+            raise ValueError("Whetstone managed block markers must be outside TOML values") from exc
+    return start, end + len(END_MARKER)
+
+
+def replace_managed_block(text: str, block: str) -> str:
+    bounds = managed_block_bounds(text)
+    if bounds is not None:
+        start, end = bounds
         return f"{text[:start].rstrip()}\n\n{block}{text[end:].lstrip()}"
 
     if not text:
@@ -79,15 +93,11 @@ def replace_managed_block(text: str, block: str) -> str:
 
 
 def remove_managed_block(text: str) -> str:
-    begin_count = text.count(BEGIN_MARKER)
-    end_count = text.count(END_MARKER)
-    if begin_count != end_count or begin_count > 1:
-        raise ValueError("config.toml has an incomplete or duplicated Whetstone managed block")
-    if begin_count == 0:
+    bounds = managed_block_bounds(text)
+    if bounds is None:
         return text
 
-    start = text.index(BEGIN_MARKER)
-    end = text.index(END_MARKER, start) + len(END_MARKER)
+    start, end = bounds
     before = text[:start].rstrip()
     after = text[end:].lstrip()
     if before and after:
