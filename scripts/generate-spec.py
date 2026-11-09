@@ -27,25 +27,36 @@ CLASS_BLURBS = {
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
+    """Extract simple fields, flattening block scalars for starter-spec prose."""
     match = re.match(r"\A---[ \t]*\r?\n(.*?)^---[ \t]*(?:\r?\n|\Z)",
                      text, re.DOTALL | re.MULTILINE)
     if not match:
         return {}, text
     frontmatter = match.group(1)
     fm = {}
-    for line in frontmatter.splitlines():
+    lines = frontmatter.splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        index += 1
         m = re.match(r"^([a-z-]+):\s*(.*)$", line)
         if not m:
             continue
         key, val = m.group(1), m.group(2).strip()
-        if val == ">" or val.startswith(">-"):
-            continue
-        fm[key] = val.strip(" '\"")
+        if (re.fullmatch(r"[|>](?:[1-9][+-]?|[+-][1-9]?)?(?:\s+#.*)?", val)
+                or (key == "description" and not val)):
+            parts = []
+            while index < len(lines):
+                part = lines[index]
+                if part.strip() and not part.startswith((" ", "\t")):
+                    break
+                parts.append(part.strip())
+                index += 1
+            val = " ".join(part for part in parts if part)
+        else:
+            val = val.strip(" '\"")
+        fm[key] = val
     body = text[match.end():].strip()
-    if "description" not in fm:
-        m = re.search(r"^description:\s*>-?\s*\n((?:  .*\n?)+)", frontmatter, re.MULTILINE)
-        if m:
-            fm["description"] = " ".join(ln.strip() for ln in m.group(1).splitlines() if ln.strip())
     return fm, body
 
 
@@ -206,11 +217,6 @@ def main() -> None:
         text = skill_md.read_text(encoding="utf-8")
         fm, body = parse_frontmatter(text)
         klass = fm.get("class", "generic")
-        if not fm.get("description"):
-            full = re.search(r"description:\s*(?:>-?\s*)?\n((?:  [^\n]+\n?)+)", text)
-            if full:
-                fm["description"] = " ".join(ln.strip() for ln in full.group(1).splitlines() if ln.strip())
-
         pos, neg = load_fixture_samples(skill_dir.name)
         ref_count = detect_refs(skill_dir)
         spec = render_spec(skill_dir.name, fm, body, klass, ref_count, pos, neg)
