@@ -4813,6 +4813,13 @@ def _stratum_regressions(prior, current, ratio_cap, floors):
     return regressions
 
 
+def _nonnegative_int(value):
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError(f"must be >= 0, got {number}")
+    return number
+
+
 def _positive_int(value):
     number = int(value)
     if number < 1:
@@ -6599,7 +6606,7 @@ def build_parser():
 
     # discover-signals
     p_discover = sub.add_parser("discover-signals", help="Surface unmatched user messages that may indicate new negative patterns")
-    p_discover.add_argument("--top", type=int, default=30, help="Number of top candidate patterns to show (default: 30)")
+    p_discover.add_argument("--top", type=_nonnegative_int, default=30, help="Number of top candidate patterns to show (must be >= 0; default: 30)")
 
     # dspy-eval
     p_eval = sub.add_parser("dspy-eval", help="Retrospectively assess recorded traces; does not measure skill changes")
@@ -6635,7 +6642,7 @@ def build_parser():
     # build-golden
     p_golden = sub.add_parser("build-golden", help="Build golden eval dataset from harvested sessions")
     p_golden.add_argument("name", help="Skill name")
-    p_golden.add_argument("--top", type=int, default=20, help="Number of candidates to select (default: 20)")
+    p_golden.add_argument("--top", type=_nonnegative_int, default=20, help="Number of candidates to select (must be >= 0; default: 20)")
     p_golden.add_argument("--auto", action="store_true", help="Auto-label from signal (skip human review)")
 
     # approve-golden
