@@ -69,7 +69,7 @@ _FM_RE = re.compile(r"\A---\s*\n(.*?\n)---\s*\n", re.DOTALL)
 
 
 def parse_frontmatter(text: str) -> dict:
-    """Parse simple fields, flattening folded scalars for catalog display."""
+    """Parse simple fields, flattening block scalars for catalog display."""
     m = _FM_RE.match(text)
     if not m:
         return {}
@@ -86,7 +86,7 @@ def parse_frontmatter(text: str) -> dict:
         if ":" in line:
             key, _, val = line.partition(":")
             val = val.strip()
-            if re.fullmatch(r">[+-]?(?:\s+#.*)?", val):
+            if re.fullmatch(r"[|>](?:[1-9][+-]?|[+-][1-9]?)?(?:\s+#.*)?", val):
                 # Consume the body before parsing another field: a colon in
                 # description prose is not a new frontmatter key.
                 parts = []
