@@ -35,6 +35,19 @@ class TriggerOverlapTests(unittest.TestCase):
                 self.assertIn("2 cross-tier pair(s) at/above threshold out of 3 total.", result.stdout)
                 self.assertEqual(result.stdout.count(" <-> "), min(top, 3))
 
+    def test_negative_display_limits_are_argument_errors(self):
+        for strict in (False, True):
+            for top in (-1, -3, -1000000):
+                for threshold in ("0.1", "1.1"):
+                    with self.subTest(strict=strict, top=top, threshold=threshold):
+                        args = ["--top", str(top), "--threshold", threshold]
+                        if strict:
+                            args.append("--strict")
+                        result = self.run_report(*args)
+                        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                        self.assertEqual(result.stdout, "")
+                        self.assertIn("error: --top must be non-negative", result.stderr)
+
     def test_advisory_reports_all_matches_without_failing(self):
         result = self.run_report("--top", "1")
         self.assertEqual(result.returncode, 0, result.stderr)
