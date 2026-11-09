@@ -93,13 +93,16 @@ def main() -> int:
                              "triggers are well-separated; 0.10 surfaces genuine "
                              "near-neighbors, higher values quickly go empty.")
     parser.add_argument("--top", type=int, default=25,
-                        help="Max pairs to print (default: 25)")
+                        help="Non-negative maximum pairs to print (default: 25)")
     parser.add_argument("--patterns", type=Path,
                         default=Path(__file__).resolve().parent.parent
                         / "plugins" / "whetstone" / "hooks" / "skill-patterns.sh")
     parser.add_argument("--strict", action="store_true",
                         help="Exit 1 if any cross-tier pair meets the threshold")
     args = parser.parse_args()
+
+    if args.top < 0:
+        parser.error("--top must be non-negative")
 
     if not math.isfinite(args.threshold):
         parser.error("--threshold must be finite")
