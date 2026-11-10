@@ -5378,3 +5378,200 @@ class TestExtractEvolvedBody:
         state = {"signature": {"instructions": self.BODY}, "demos": []}
         out = evolve._extract_evolved_body(_FakeOptimized(state), self.BODY)
         assert out == self.BODY
+
+
+class TestCountLimits:
+    # Exercise every CLI mode, including modes that do not consume the limit:
+    # an explicitly invalid option must fail before reading or dispatching work.
+    @pytest.fixture(params=[
+        (["scan-injection"], "--max-files", None, 0),
+        (["scan-injection", "--judge"], "--max-files", None, 0),
+        (["scan-injection", "--emit-tasks"], "--max-files", None, 0),
+        (["scan-injection", "--write-attestation"], "--max-files", None, 0),
+        (["scan-injection", "--verify-attestation"], "--max-files", None, 0),
+        (["test-semantic"], "--max-tests", None, 0),
+        (["diagnose-negatives", "widget"], "--max-examples", 10, 1),
+        (["diagnose-negatives", "widget", "--emit-prompt"], "--max-examples", 10, 1),
+        (["diagnose-negatives", "widget", "--format-result"], "--max-examples", 10, 1),
+        (["dspy-eval", "widget"], "--max-examples", 20, 1),
+        (["dspy-eval", "widget", "--emit-tasks"], "--max-examples", 20, 1),
+        (["dspy-eval", "widget", "--score-from-verdicts", "[]"], "--max-examples", 20, 1),
+        (["compare-skill", "widget", "--emit-tasks"], "--max-examples", 20, 1),
+        (["compare-skill", "widget", "--outputs", "outputs.json"], "--max-examples", 20, 1),
+        (["compare-skill", "widget", "--score-from-verdicts", "verdicts.json"], "--max-examples", 20, 1),
+    ], ids=["scan", "scan-judge", "scan-emit", "scan-write", "scan-verify", "semantic",
+            "diagnose", "diagnose-emit", "diagnose-format", "dspy", "dspy-emit",
+            "dspy-score", "compare-emit", "compare-outputs", "compare-score"])
+    def command(self, request):
+        return request.param
+
+    @pytest.mark.parametrize("value", [-100, -2, -1, "1.5", "many", ""])
+    @pytest.mark.parametrize("joined", [False, True], ids=["separate", "equals"])
+    def test_invalid_cli_limits_fail_before_dispatch(self, command, value, joined,
+                                                     monkeypatch, capsys):
+        argv, option, _, minimum = command
+        handlers = []
+        for name in ("scan_injection", "injection_judge_tasks", "write_injection_attestation",
+                     "verify_injection_attestation", "test_semantic", "diagnose_negatives",
+                     "diagnose_emit_prompt", "diagnose_format_result", "dspy_eval",
+                     "dspy_emit_tasks", "dspy_score_from_verdicts", "comparison_emit_tasks",
+                     "comparison_emit_judges", "comparison_score"):
+            handler = mock.Mock(side_effect=AssertionError("invalid limit reached handler"))
+            monkeypatch.setattr(distiller, name, handler)
+            handlers.append(handler)
+        flags = [f"{option}={value}"] if joined else [option, str(value)]
+        monkeypatch.setattr(sys, "argv", ["distiller.py", *argv, *flags])
+        with pytest.raises(SystemExit) as error:
+            distiller.main()
+        assert error.value.code == 2
+        assert all(not handler.called for handler in handlers)
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert option in captured.err
+        if isinstance(value, int):
+            assert f"must be >= {minimum}" in captured.err
+
+    @pytest.mark.parametrize("value", [None, 0, 1, 2, 100])
+    @pytest.mark.parametrize("joined", [False, True], ids=["separate", "equals"])
+    def test_cli_boundaries_and_defaults(self, command, value, joined, capsys):
+        argv, option, default, minimum = command
+        flags = [] if value is None else ([f"{option}={value}"] if joined else [option, str(value)])
+        parser = distiller.build_parser()
+        if value == 0 and minimum == 1:
+            with pytest.raises(SystemExit) as error:
+                parser.parse_args([*argv, *flags])
+            assert error.value.code == 2
+            assert f"{option}: must be >= 1" in capsys.readouterr().err
+        else:
+            parsed = parser.parse_args([*argv, *flags])
+            assert getattr(parsed, option[2:].replace("-", "_")) == (default if value is None else value)
+
+    @pytest.mark.parametrize("value", [-100, -2, -1])
+    def test_direct_optional_limits_reject_before_io(self, value, monkeypatch):
+        enumerate_files = mock.Mock(side_effect=AssertionError("must reject before enumerating"))
+        monkeypatch.setattr(distiller, "_iter_corpus_files", enumerate_files)
+        with pytest.raises(ValueError, match="max_files must be nonnegative"):
+            distiller.scan_injection(max_files=value, judge=True)
+        enumerate_files.assert_not_called()
+        with pytest.raises(ValueError, match="max_tests must be nonnegative"):
+            distiller.test_semantic(max_tests=value, fixtures_path="missing-fixtures.jsonl")
+
+    @pytest.mark.parametrize("value", [-100, -2, -1, 0])
+    @pytest.mark.parametrize("name", ["diagnose_negatives", "diagnose_emit_prompt", "diagnose_format_result"])
+    def test_direct_diagnosis_limits_reject_before_io(self, value, name, monkeypatch):
+        find_skill = mock.Mock(side_effect=AssertionError("must reject before reading sessions"))
+        monkeypatch.setattr(distiller, "_find_skill_path", find_skill)
+        kwargs = {"response_text": "{}"} if name == "diagnose_format_result" else {}
+        with pytest.raises(ValueError, match="max_examples must be positive"):
+            getattr(distiller, name)("widget", max_examples=value, **kwargs)
+        find_skill.assert_not_called()
+
+    @pytest.mark.parametrize("limit,expected", [(None, 3), (0, 3), (1, 1), (2, 2), (3, 3), (4, 3)])
+    @pytest.mark.parametrize("judge", [False, True])
+    def test_scan_unlimited_and_positive_limits(self, tmp_path, monkeypatch, limit, expected, judge):
+        for i in range(3):
+            (tmp_path / f"{i}.md").write_text(f"# Fixture {i}\nOrdinary documentation.\n")
+        judge_request = mock.Mock(return_value={"status": "ok", "response": '{"verdict":"clean"}'})
+        monkeypatch.setattr(distiller, "_claude_cli_request", judge_request)
+        report = distiller.scan_injection(paths=[str(tmp_path)], max_files=limit, judge=judge)
+        assert report["files_scanned"] == expected
+        assert report["passed"]
+        assert judge_request.call_count == (expected if judge else 0)
+
+    @pytest.mark.parametrize("limit,expected", [(None, 3), (0, 3), (1, 1), (2, 2), (3, 3), (4, 3)])
+    def test_semantic_unlimited_and_positive_limits(self, tmp_path, monkeypatch, limit, expected):
+        fixtures = tmp_path / "fixtures.jsonl"
+        rows = [{"prompt": f"fixture {i}", "should_trigger": ["ia-debugging"] if i == 2 else []}
+                for i in range(3)]
+        fixtures.write_text("".join(json.dumps(row) + "\n" for row in rows))
+        hook = mock.Mock(return_value=subprocess.CompletedProcess([], 0, "", ""))
+        monkeypatch.setattr(distiller.subprocess, "run", hook)
+        report = distiller.test_semantic(max_tests=limit, fixtures_path=fixtures)
+        assert report["summary"]["total"] == expected
+        assert [r["prompt"] for r in report["results"]] == [r["prompt"] for r in rows[:expected]]
+        assert report["summary"]["skills_with_fixtures"] == 1  # Coverage is never capped.
+        assert report["all_passed"] == (expected < 3)
+        assert hook.call_count == 2 * expected
+
+    @pytest.mark.parametrize("limit,expected", [(1, 1), (2, 2), (3, 3), (4, 3), (10, 3)])
+    @pytest.mark.parametrize("name", ["diagnose_negatives", "diagnose_emit_prompt", "diagnose_format_result"])
+    def test_diagnosis_positive_limits(self, tmp_path, monkeypatch, limit, expected, name):
+        skill = tmp_path / "SKILL.md"
+        skill.write_text("# Widget calibration\nCalibrate widgets.")
+        monkeypatch.setattr(distiller, "_find_skill_path", lambda _: skill)
+        monkeypatch.setattr(distiller, "_load_skill_manifest", lambda: {})
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", tmp_path)
+        rows = [{"signal": "negative", "task_input": f"Calibrate widget {i}", "session_id": f"session-{i}"}
+                for i in range(3)]
+        _write_session_examples(tmp_path, "widget", rows)
+        response = '{"summary":"fixture diagnosis","findings":[]}'
+        judge = mock.Mock(return_value={"status": "ok", "response": response})
+        monkeypatch.setattr(distiller, "_claude_cli_request", judge)
+        kwargs = {"response_text": response} if name == "diagnose_format_result" else {}
+        report = getattr(distiller, name)("widget", max_examples=limit, include_stale=True, **kwargs)
+        assert report["count" if name == "diagnose_emit_prompt" else "analyzed"] == expected
+        assert judge.call_count == (1 if name == "diagnose_negatives" else 0)
+        if name != "diagnose_format_result":
+            prompt = report["prompt"] if name == "diagnose_emit_prompt" else judge.call_args.args[0]
+            assert prompt.count("--- CASE ") == expected
+
+    @pytest.mark.parametrize("value", [-100, -2, -1])
+    @pytest.mark.parametrize("mode", ["signals", "review", "auto"])
+    def test_direct_top_limits_reject_before_io(self, value, mode, monkeypatch):
+        projects = mock.Mock()
+        projects.exists.side_effect = AssertionError("must reject before reading projects")
+        monkeypatch.setattr(distiller, "CLAUDE_PROJECTS_DIR", projects)
+        find_skill = mock.Mock(side_effect=AssertionError("must reject before reading skill"))
+        monkeypatch.setattr(distiller, "_find_skill_path", find_skill)
+        with pytest.raises(ValueError, match="top_n must be nonnegative"):
+            if mode == "signals":
+                distiller.discover_signals(top_n=value)
+            else:
+                distiller.build_golden("widget", top_n=value, auto=mode == "auto")
+        projects.exists.assert_not_called()
+        find_skill.assert_not_called()
+
+    @pytest.mark.parametrize("limit,expected", [(0, 0), (1, 1), (2, 2), (3, 3), (4, 3)])
+    def test_signal_top_zero_and_positive_limits(self, tmp_path, monkeypatch, limit, expected):
+        project = tmp_path / "project"
+        project.mkdir()
+        (project / "sessions.jsonl").write_text("".join(json.dumps({
+            "type": "user", "message": {"role": "user", "content": text},
+        }) + "\n" for text in ("hint-one message", "hint-two message", "hint-three message")))
+        monkeypatch.setattr(distiller, "CLAUDE_PROJECTS_DIR", tmp_path)
+        monkeypatch.setattr(distiller, "_NEGATIVE_SIGNAL_PATTERNS", distiller._re.compile(r"never-matches"))
+        monkeypatch.setattr(distiller, "_CANDIDATE_NEGATIVE_HINTS", distiller._re.compile(r"hint-\w+"))
+        report = distiller.discover_signals(top_n=limit)
+        assert report["distinct_hints"] == 3
+        assert len(report["top_candidates"]) == expected
+
+    @pytest.mark.parametrize("limit,expected", [(0, 0), (1, 1), (2, 2), (3, 3), (4, 3)])
+    @pytest.mark.parametrize("auto", [False, True])
+    def test_golden_top_zero_and_positive_limits(self, tmp_path, monkeypatch, limit, expected, auto):
+        skill = tmp_path / "SKILL.md"
+        skill.write_text("---\nname: widget\ndescription: Widget calibration harness tuning diagnostics\n---\n")
+        monkeypatch.setattr(distiller, "_find_skill_path", lambda _: skill)
+        monkeypatch.setattr(distiller, "EVAL_DATA_DIR", tmp_path)
+        rows = [{"signal": signal, "task_input": "widget calibration harness tuning diagnostics",
+                 "agent_output": f"adjusted widget {i}", "session_id": f"session-{i}"}
+                for i, signal in enumerate(["positive", "negative", "ambiguous"])]
+        _write_session_examples(tmp_path, "widget", rows)
+        distiller.build_golden("widget", top_n=limit, auto=auto)
+        candidates = (tmp_path / "widget" / "candidates.jsonl").read_text().splitlines()
+        assert len(candidates) == expected
+        golden = tmp_path / "widget" / "golden.jsonl"
+        assert golden.exists() == auto
+        if auto:
+            assert len(golden.read_text().splitlines()) == expected
+
+    @pytest.mark.parametrize("value", [-100, -2, -1, 0])
+    @pytest.mark.parametrize("kind", ["dspy", "compare"])
+    def test_existing_positive_helper_limits_reject_before_io(self, value, kind, monkeypatch):
+        find_skill = mock.Mock(side_effect=AssertionError("must reject before reading skill"))
+        monkeypatch.setattr(distiller, "_find_skill_path", find_skill)
+        with pytest.raises(ValueError, match="max_examples must be positive"):
+            if kind == "dspy":
+                distiller._dspy_load_and_sample("widget", "sessions", value)
+            else:
+                distiller.comparison_emit_tasks("widget", "candidate", "dataset", "rubric", value)
+        find_skill.assert_not_called()

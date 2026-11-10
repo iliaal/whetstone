@@ -2581,12 +2581,15 @@ def test_semantic(max_tests=None, fixtures_path=None):
     TMPDIR with its optional project_files markers.
 
     Args:
-        max_tests: limit number of fixtures (offline; no API cost)
+        max_tests: nonnegative fixture limit; None or 0 runs all (offline; no API cost)
         fixtures_path: override path to semantic-triggers.jsonl
 
     Returns dict with per-test results and overall pass/fail.
     """
     import tempfile
+
+    if max_tests is not None and max_tests < 0:
+        raise ValueError("max_tests must be nonnegative")
 
     fpath = Path(fixtures_path) if fixtures_path else SEMANTIC_FIXTURES_PATH
     if not fpath.exists():
@@ -3686,6 +3689,8 @@ def discover_signals(top_n=30):
 
     Returns dict with candidate patterns and example messages for human review.
     """
+    if top_n < 0:
+        raise ValueError("top_n must be nonnegative")
     if not CLAUDE_PROJECTS_DIR.exists():
         return {"error": "no projects directory"}
 
@@ -3938,6 +3943,8 @@ def build_golden(skill_name, top_n=20, auto=False):
 
     Returns summary dict.
     """
+    if top_n < 0:
+        raise ValueError("top_n must be nonnegative")
     skill_path = _find_skill_path(skill_name)
     if not skill_path:
         print(f"Error: skill '{skill_name}' not found", file=sys.stderr)
@@ -4951,6 +4958,8 @@ def _diagnose_load(skill_name, max_examples, include_stale):
     """Load skill text + sampled negative sessions. Shared by the direct and
     sub-agent paths. Hard-exits on missing skill/sessions; returns a dict with
     skill_text, negatives, relevant_negatives, sample (sample empty if no negatives)."""
+    if max_examples < 1:
+        raise ValueError("max_examples must be positive")
     skill_path = _find_skill_path(skill_name)
     if not skill_path:
         print(f"Error: skill '{skill_name}' not found", file=sys.stderr)
@@ -6251,7 +6260,10 @@ def scan_injection(paths=None, judge=False, model="sonnet", max_files=None,
 
     Gate: passed = no HIGH deterministic findings and no 'malicious' verdicts.
     --strict additionally fails on MEDIUM findings and 'suspicious' verdicts.
+    max_files must be nonnegative; None or 0 scans all selected files.
     """
+    if max_files is not None and max_files < 0:
+        raise ValueError("max_files must be nonnegative")
     scope = "paths" if paths else "corpus"
     files = _expand_paths(paths) if paths else _iter_corpus_files()
     if changed_since:
@@ -6574,7 +6586,7 @@ def build_parser():
 
     # test-semantic
     p_ts = sub.add_parser("test-semantic", help="Run skill-injection hook tests (deterministic, drives PreToolUse and SubagentStart; no API cost)")
-    p_ts.add_argument("--max-tests", type=int, default=None, help="Limit number of tests")
+    p_ts.add_argument("--max-tests", type=_nonnegative_int, default=None, help="Limit number of tests (must be >= 0; 0 or omitted runs all)")
     p_ts.add_argument("--fixtures", default=None, help="Path to semantic-triggers.jsonl")
 
     # validate-plugin
@@ -6586,7 +6598,7 @@ def build_parser():
     p_si.add_argument("paths", nargs="*", help="Files/dirs to scan (default: full plugin corpus). Use for ingestion gating.")
     p_si.add_argument("--judge", action="store_true", help="Add Tier-2 LLM-judge semantic verdict (costs tokens)")
     p_si.add_argument("--model", default="sonnet", help="Judge model (default: sonnet)")
-    p_si.add_argument("--max-files", type=int, default=None, help="Cap number of files scanned/judged")
+    p_si.add_argument("--max-files", type=_nonnegative_int, default=None, help="Cap number of files scanned/judged (must be >= 0; 0 or omitted scans all)")
     p_si.add_argument("--changed-since", default=None, help="Restrict scan to .md files changed since this git ref (e.g. last release tag)")
     p_si.add_argument("--strict", action="store_true", help="Also fail on MEDIUM findings and 'suspicious' verdicts (use at ingestion)")
     p_si.add_argument("--emit-tasks", action="store_true", help="Emit per-file judge prompts as JSON for sub-agent dispatch (no LLM call); with --changed-since scopes to changed files, without it the full corpus")
@@ -6612,7 +6624,7 @@ def build_parser():
     p_eval = sub.add_parser("dspy-eval", help="Retrospectively assess recorded traces; does not measure skill changes")
     p_eval.add_argument("name", help="Skill name (e.g., 'planning', 'code-review')")
     p_eval.add_argument("--dataset", default="sessions", help="Dataset: 'sessions', 'golden', or path to JSONL (default: sessions)")
-    p_eval.add_argument("--max-examples", type=int, default=20, help="Max examples to score (default: 20)")
+    p_eval.add_argument("--max-examples", type=_positive_int, default=20, help="Max examples to score (must be >= 1; default: 20)")
     p_eval.add_argument("--model", default=None, help=f"Override eval model (default depends on backend)")
     p_eval.add_argument("--skill-file", default=None,
                         help="Use this retrospective rubric instead of the live skill; does not re-execute the historical task")
@@ -6636,7 +6648,7 @@ def build_parser():
     p_compare.add_argument("--baseline", help="Baseline SKILL.md (default: live skill)")
     p_compare.add_argument("--dataset", help="Self-contained JSONL cases: case_id, task_input, acceptance_criteria")
     p_compare.add_argument("--rubric", help="Fixed independent judging rubric file")
-    p_compare.add_argument("--max-examples", type=int, default=20)
+    p_compare.add_argument("--max-examples", type=_positive_int, default=20, help="Max cases to compare (must be >= 1; default: 20)")
     p_compare.add_argument("--manifest", help="Frozen execution/judgment manifest JSON file")
 
     # build-golden
@@ -6670,7 +6682,7 @@ def build_parser():
     # diagnose-negatives
     p_diag = sub.add_parser("diagnose-negatives", help="Analyze negative-signal sessions to find failure patterns and suggest skill fixes")
     p_diag.add_argument("name", help="Skill name")
-    p_diag.add_argument("--max-examples", type=int, default=10, help="Max negative examples to analyze (default: 10)")
+    p_diag.add_argument("--max-examples", type=_positive_int, default=10, help="Max negative examples to analyze (must be >= 1; default: 10)")
     p_diag.add_argument("--include-stale", action="store_true", help="Include examples from before the skill was last changed")
     # Mutually exclusive sub-agent modes: emit the prompt, or format a response.
     diag_mode = p_diag.add_mutually_exclusive_group()
