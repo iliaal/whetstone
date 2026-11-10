@@ -306,6 +306,38 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         cache = self.checkout / ".compare-cache/external.json"
         self.assertEqual(len(json.loads(cache.read_text())), 4)
 
+    def test_same_named_repositories_keep_all_report_matches(self):
+        for kind, relative in (("agents", "review.md"), ("skills", "review/SKILL.md")):
+            # Keep each layout isolated; matching component paths and display
+            # names must not collapse two different repository roots.
+            shutil.rmtree(self.checkout / "plugins/whetstone")
+            self.write(self.checkout, f"plugins/whetstone/{kind}/ia-{relative}", "# Review\n")
+            first = self.root / kind / "first/shared"
+            second = self.root / kind / "second/shared"
+            output = self.root / "shared.md"
+            for same_content in (False, True):
+                self.write(first, f"{kind}/{relative}", "# Review\n" * 2)
+                self.write(second, f"{kind}/{relative}", "# Review\n" * (2 if same_content else 3))
+                for selection in (None, "skills", "agents"):
+                    options = ("--type", selection) if selection else ()
+                    count = 2 if selection in (None, kind) else 0
+                    for args in ((first, second), ("--report-only",)):
+                        with self.subTest(kind=kind, same_content=same_content,
+                                          selection=selection, mode=args):
+                            result = self.run_cli(*options, "--output", output, *args)
+                            report = output.read_text(encoding="utf-8")
+                            # The CLI summary remains an unfiltered scan summary.
+                            self.assertIn("Overlaps: 2 total, 2 high-similarity", result.stdout)
+                            self.assertIn(f"## Overlapping Components ({count} matches)", report)
+                            self.assertIn(f"- Overlapping matches: {count}", report)
+                            self.assertIn(f"- High-similarity (>=0.50): {count}", report)
+                            self.assertEqual(report.count("| ia-review | review | shared |"), count)
+                            self.assertEqual(report.count("- **ia-review** vs **review** (shared)"), count)
+                            if count:
+                                self.assertIn("| ia-review | review | shared | 1.00 | 1 | 2 | 2.0x |", report)
+                                if not same_content:
+                                    self.assertIn("| ia-review | review | shared | 1.00 | 1 | 3 | 3.0x |", report)
+
     def test_direct_agents_repository_is_cataloged(self):
         repo = self.make_agents_repo()
         result = self.run_cli("--catalog", repo)
