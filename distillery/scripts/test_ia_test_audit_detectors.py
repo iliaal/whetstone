@@ -184,6 +184,78 @@ class DetectorCliTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn("unmatched pattern (no eligible files): nope/", result.stderr)
 
+    def test_reporters_reject_negative_limits_before_reading_input(self):
+        self.write("app.py", 'raise ValueError("amount must be a positive integer")\n')
+        self.write_junit("test_a")
+        for script, inputs in (
+            ("guard_pins.py", (("--src", "app.py"), ("--src", "missing.py"))),
+            ("junit_census.py", (("r.xml",), ("missing.xml",))),
+        ):
+            for args in inputs:
+                for value in ("-1", "-3", "-999"):
+                    for option in (("--limit", value), (f"--limit={value}",)):
+                        with self.subTest(script=script, args=args, option=option):
+                            result = self.run_detector(script, *args, *option)
+                            self.assertEqual(result.returncode, 2, result.stderr)
+                            self.assertIn("--limit must be non-negative", result.stderr)
+                            self.assertEqual(result.stdout, "")
+                            self.assertNotIn("unmatched pattern", result.stderr)
+                            self.assertNotIn("cannot read", result.stderr)
+
+    def test_guard_limit_preserves_totals_and_bounds_detail_rows(self):
+        messages = [f"guard {i:02d} requires a positive value" for i in range(65)]
+        self.write("app.py", "".join(f'raise ValueError("{message}")\n' for message in messages))
+        for limit in (None, 0, 1, 2, 60, 70):
+            with self.subTest(limit=limit):
+                options = [] if limit is None else ["--limit", str(limit)]
+                result = self.run_detector("guard_pins.py", "--src", "app.py", *options)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("65 distinct guard literals in 1 source files; 65 contain", result.stdout)
+                self.assertIn("   65  app.py", result.stdout)
+                expected_limit = 60 if limit is None else limit
+                rows = result.stdout.split(f"== first {expected_limit} unpinned\n", 1)[1].splitlines()
+                self.assertEqual(
+                    rows,
+                    [f"app.py:{i + 1}  {message}" for i, message in enumerate(messages[:expected_limit])],
+                )
+
+    def test_census_limit_preserves_totals_and_bounds_each_detail_section(self):
+        cases = "".join(
+            f'<testcase name="skip_{i:02d}"><skipped message="reason_{i:02d}"/></testcase>'
+            f'<testcase name="zero_{i:02d}" assertions="0"/>'
+            for i in range(25)
+        )
+        self.write("r.xml", f"<testsuite>{cases}</testsuite>")
+        for i in range(125):
+            self.write(f"test_unseen_{i:03d}.py", "")
+        for limit in (None, 0, 1, 2, 20, 30):
+            with self.subTest(limit=limit):
+                options = [] if limit is None else ["--limit", str(limit)]
+                result = self.run_detector("junit_census.py", "r.xml", "--test-files", "test_*.py", *options)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("testcases 50  skipped 25  failed/errored 0", result.stdout)
+                self.assertIn("skip reasons (25 distinct)", result.stdout)
+                self.assertIn("zero assertions (25)", result.stdout)
+                self.assertIn("never mentioned by any report (125 of 125)", result.stdout)
+                expected_limit = 20 if limit is None else limit
+                lines = result.stdout.splitlines()
+                self.assertEqual(
+                    [line.strip() for line in lines if line.startswith("    1  reason_")],
+                    [f"1  reason_{i:02d}" for i in range(min(25, expected_limit))],
+                )
+                self.assertEqual(
+                    [line.strip() for line in lines if line.startswith("         e.g. skip_")],
+                    [f"e.g. skip_{i:02d}" for i in range(min(25, expected_limit))],
+                )
+                self.assertEqual(
+                    [line.strip() for line in lines if line.startswith("  zero_")],
+                    [f"zero_{i:02d}" for i in range(min(25, expected_limit))],
+                )
+                self.assertEqual(
+                    [line.strip() for line in lines if line.startswith("  test_unseen_")],
+                    [f"test_unseen_{i:03d}.py" for i in range(min(125, expected_limit * 5))],
+                )
+
     def run_reach_probe(self, env):
         self.write(
             "test_cli.py",

@@ -66,8 +66,13 @@ def main() -> int:
         metavar="GLOB",
         help="glob (repeatable, ** allowed) of test files expected to be collected",
     )
-    parser.add_argument("--limit", type=int, default=20, help="rows shown per section")
+    parser.add_argument(
+        "--limit", type=int, default=20,
+        help="detail row limit (non-negative; 0 hides details; unseen files use 5x)",
+    )
     args = parser.parse_args()
+    if args.limit < 0:
+        parser.error("--limit must be non-negative")
 
     total = skipped = failed = 0
     skips: dict[str, list[str]] = defaultdict(list)
