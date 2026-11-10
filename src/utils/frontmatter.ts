@@ -7,7 +7,8 @@ export type FrontmatterResult = {
 
 export function parseFrontmatter(raw: string): FrontmatterResult {
   const lines = raw.split(/\r?\n/)
-  if (lines.length === 0 || lines[0].trim() !== "---") {
+  // Like the closing delimiter, the opener must start in column zero; only a UTF-8 BOM may precede it.
+  if (lines.length === 0 || lines[0].replace(/^\uFEFF/, "").trimEnd() !== "---") {
     return { data: {}, body: raw }
   }
 
