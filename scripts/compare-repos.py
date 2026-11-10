@@ -396,20 +396,9 @@ def generate_report(
     lines.append("")
 
     # Overlaps
-    filtered_matches = []
-    seen = set()
-    for m in matches:
-        if filter_kind and m.ours.kind != filter_kind:
-            continue
-        # Names are not identities: skills and agents can share a name,
-        # and recursively scanned agents can share a filename stem.
-        key = (
-            m.ours.kind, m.ours.repo, m.ours.path,
-            m.theirs.kind, m.theirs.repo, m.theirs.path,
-        )
-        if key not in seen:
-            seen.add(key)
-            filtered_matches.append(m)
+    # Discovery already deduplicates resolved repository paths. Display names
+    # and relative component paths can still coincide across distinct repos.
+    filtered_matches = [m for m in matches if not filter_kind or m.ours.kind == filter_kind]
     lines.append(f"## Overlapping Components ({len(filtered_matches)} matches)")
     lines.append("")
 
