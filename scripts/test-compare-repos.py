@@ -94,6 +94,50 @@ class RepositoryDiscoveryTests(unittest.TestCase):
             (repo / ".git").mkdir()
         return repo
 
+    def test_catalog_and_report_paths_resolve_from_repository_roots(self):
+        layouts = (
+            ("skill", "skills/{name}/SKILL.md", "root-skill"),
+            ("agent", "agents/nested/{name}.md", "root-agent"),
+            ("skill", "plugins/first/skills/{name}/SKILL.md", "plugin-skill"),
+            ("agent", "plugins/first/agents/nested/{name}.md", "plugin-agent"),
+            ("skill", "plugins/second plugin/skills/{name}/SKILL.md", "plugin-skill"),
+            ("agent", "plugins/second plugin/agents/{name}.md", "plugin-agent"),
+            ("agent", "categories/review team/nested/{name}.md", "category-agent"),
+        )
+        repo = self.root / "external repo"
+        expected = {"ours": {}, "external": {}}
+        # Keep the same names in multiple plugins: paths, not names, identify files.
+        for kind, template, name in layouts:
+            for label, root, prefix in (("ours", self.checkout, "ia-"),
+                                        ("external", repo, "")):
+                relative = template.format(name=prefix + name)
+                self.write(root, relative, "---\ndescription: Review changes.\n---\n# Review\n")
+                expected[label][relative] = (kind, prefix + name)
+        expected["ours"]["plugins/whetstone/agents/ia-local.md"] = ("agent", "ia-local")
+        output = self.root / "paths.md"
+        for mode in ((repo,), ("--report-only",)):
+            for filter_kind in (None, "skills", "agents"):
+                with self.subTest(mode=mode, filter_kind=filter_kind):
+                    flags = ("--type", filter_kind) if filter_kind else ()
+                    self.run_cli("--output", output, *flags, *mode)
+                    report = output.read_text(encoding="utf-8")
+                    for label, root, caption in (("ours", self.checkout, "Our"),
+                                                  ("external", repo, "Their")):
+                        cache = self.checkout / ".compare-cache" / f"{label}.json"
+                        components = json.loads(cache.read_text())
+                        self.assertEqual({c["path"]: (c["kind"], c["name"])
+                                          for c in components}, expected[label])
+                        self.assertEqual(len(components), len(expected[label]))
+                        for relative, (kind, name) in expected[label].items():
+                            self.assertTrue((root / relative).is_file(), relative)
+                            if name == "ia-local":
+                                continue  # No high-similarity external counterpart.
+                            path_line = f"  - {caption} path: `{relative}`\n"
+                            if filter_kind is None or kind + "s" == filter_kind:
+                                self.assertIn(path_line, report)
+                            else:
+                                self.assertNotIn(path_line, report)
+
     def test_block_descriptions_survive_scanning_cache_and_report(self):
         description = "Review changes: inspect code. description: keep this text."
         repo = self.root / "folded"
