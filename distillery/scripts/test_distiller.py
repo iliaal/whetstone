@@ -4678,6 +4678,64 @@ class TestTraceSignalsReachTheJudge:
         assert "1 of 1" in prompt
 
 
+class TestTopCliLimits:
+    @pytest.fixture(params=[
+        (["discover-signals"], "discover_signals", 30),
+        (["build-golden", "widget-skill"], "build_golden", 20),
+        (["build-golden", "widget-skill", "--auto"], "build_golden", 20),
+    ], ids=["signals", "review-candidates", "auto-golden"])
+    def command(self, request, monkeypatch):
+        argv, name, default = request.param
+        handler = mock.Mock(return_value={})
+        monkeypatch.setattr(distiller, name, handler)
+        return argv, handler, default
+
+    @pytest.mark.parametrize("value", [-1, -2, -100])
+    @pytest.mark.parametrize("joined", [False, True], ids=["separate", "equals"])
+    def test_negative_top_rejected_before_dispatch(self, command, value, joined,
+                                                  monkeypatch, capsys):
+        argv, handler, _ = command
+        option = [f"--top={value}"] if joined else ["--top", str(value)]
+        monkeypatch.setattr(sys, "argv", ["distiller.py", *argv, *option])
+        with pytest.raises(SystemExit) as error:
+            distiller.main()
+        assert error.value.code == 2
+        handler.assert_not_called()  # Do not scan sessions or overwrite eval files.
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "--top" in captured.err
+        assert "must be >= 0" in captured.err
+
+    @pytest.mark.parametrize("value", ["1.5", "many", ""])
+    def test_noninteger_top_still_rejected(self, command, value, monkeypatch, capsys):
+        argv, handler, _ = command
+        monkeypatch.setattr(sys, "argv", ["distiller.py", *argv, f"--top={value}"])
+        with pytest.raises(SystemExit) as error:
+            distiller.main()
+        assert error.value.code == 2
+        handler.assert_not_called()
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "--top" in captured.err
+
+    @pytest.mark.parametrize("value", [None, 0, 1, 2])
+    @pytest.mark.parametrize("joined", [False, True], ids=["separate", "equals"])
+    def test_nonnegative_top_and_defaults_preserved(self, command, value, joined,
+                                                    monkeypatch, capsys):
+        argv, handler, default = command
+        option = [] if value is None else ([f"--top={value}"] if joined else ["--top", str(value)])
+        monkeypatch.setattr(sys, "argv", ["distiller.py", *argv, *option])
+        distiller.main()
+        expected = default if value is None else value
+        if argv[0] == "discover-signals":
+            handler.assert_called_once_with(expected)
+        else:
+            handler.assert_called_once_with("widget-skill", expected, "--auto" in argv)
+        captured = capsys.readouterr()
+        assert json.loads(captured.out) == {}
+        assert captured.err == ""
+
+
 class TestBuildAndApproveGolden:
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path, monkeypatch):
