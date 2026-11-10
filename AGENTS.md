@@ -1,5 +1,9 @@
 # Whetstone
 
+## Code ownership
+
+This codebase is yours: what it's for and how it's built are your call, and you'll keep building on it. Merge duplicated code and fix defects next to code you touch. Changes to existing user-visible behavior remain suggestions unless requested.
+
 Claude Code plugin for PHP/React/Python/JavaScript/TypeScript workflows. Includes the plugin (agents, commands, skills, hooks), a skill distillery, and a CLI for cross-tool conversion.
 
 ## Repository structure
