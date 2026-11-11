@@ -61,3 +61,12 @@ test("an indented separator does not close otherwise unterminated frontmatter", 
 test.each(["---", "--- \t"])("frontmatter accepts a closing delimiter at EOF: %j", (delimiter) => {
   expect(parseFrontmatter(`---\nname: demo\n${delimiter}`)).toEqual({ data: { name: "demo" }, body: "" })
 })
+
+test.each([" ---", "    ---", "\t---"])("an indented opener is body text, not frontmatter: %j", (opener) => {
+  const raw = `${opener}\nname: [\n---\nBody\n`
+  expect(parseFrontmatter(raw)).toEqual({ data: {}, body: raw })
+})
+
+test.each(["---", "\uFEFF---", "--- \t"])("frontmatter opens at column zero: %j", (opener) => {
+  expect(parseFrontmatter(`${opener}\nname: demo\n---\nBody\n`)).toEqual({ data: { name: "demo" }, body: "Body\n" })
+})
