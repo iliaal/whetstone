@@ -88,8 +88,13 @@ def main() -> int:
     parser.add_argument(
         "--exclude", action="append", default=[], metavar="REGEX", help="skip literals matching"
     )
-    parser.add_argument("--limit", type=int, default=60, help="unpinned rows printed")
+    parser.add_argument(
+        "--limit", type=int, default=60,
+        help="unpinned rows printed (non-negative; 0 hides detail rows)",
+    )
     args = parser.parse_args()
+    if args.limit < 0:
+        parser.error("--limit must be non-negative")
 
     pattern_files = [(pattern, expand([pattern])) for pattern in [*args.src, *args.tests]]
     unmatched = [pattern for pattern, names in pattern_files if not names]
