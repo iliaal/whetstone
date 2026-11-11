@@ -213,7 +213,7 @@ def has_repo_layout(path: Path, *, include_agents: bool = True) -> bool:
 
 
 def scan_repo(repo_path: Path) -> list[Component]:
-    """Auto-detect repo structure and scan for all components."""
+    """Scan supported layouts, recording paths relative to the repository root."""
     repo_name = repo_path.name
     components = []
 
@@ -228,8 +228,11 @@ def scan_repo(repo_path: Path) -> list[Component]:
             if not plugin_dir.is_dir():
                 continue
             plugin_name = f"{repo_name}/{plugin_dir.name}"
-            components.extend(scan_skills_dir(plugin_dir / "skills", plugin_name))
-            components.extend(scan_agents_dir(plugin_dir / "agents", plugin_name))
+            plugin_components = scan_skills_dir(plugin_dir / "skills", plugin_name)
+            plugin_components.extend(scan_agents_dir(plugin_dir / "agents", plugin_name))
+            for component in plugin_components:
+                component.path = str(plugin_dir.relative_to(repo_path) / component.path)
+            components.extend(plugin_components)
 
     # Structure 3: categories/<name>/<agent>.md (awesome-claude-code-subagents)
     categories_dir = repo_path / "categories"
@@ -237,7 +240,10 @@ def scan_repo(repo_path: Path) -> list[Component]:
         for cat_dir in sorted(categories_dir.iterdir()):
             if not cat_dir.is_dir():
                 continue
-            components.extend(scan_agents_dir(cat_dir, f"{repo_name}/{cat_dir.name}"))
+            category_components = scan_agents_dir(cat_dir, f"{repo_name}/{cat_dir.name}")
+            for component in category_components:
+                component.path = str(categories_dir.relative_to(repo_path) / component.path)
+            components.extend(category_components)
 
     return components
 
