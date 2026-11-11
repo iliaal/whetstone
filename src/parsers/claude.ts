@@ -193,25 +193,33 @@ function parseAllowedTools(value: unknown): string[] | undefined {
   return undefined
 }
 
-// Split on commas outside parentheses so patterns like Bash(jq .a,.b) stay whole.
-// Unbalanced input keeps the plain comma split.
+// Split on commas outside matched parentheses so patterns like Bash(jq .a,.b) stay
+// whole. An entry holding an unmatched "(" or ")" keeps the plain comma split.
 function splitToolList(value: string): string[] {
+  const unmatched = new Set<number>()
+  const open: number[] = []
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === "(") open.push(i)
+    else if (value[i] === ")" && open.pop() === undefined) unmatched.add(i)
+  }
+  for (const i of open) unmatched.add(i)
+
   const items: string[] = []
   let depth = 0
   let start = 0
-  for (let i = 0; i < value.length; i++) {
+  let malformed = false
+  for (let i = 0; i <= value.length; i++) {
     const ch = value[i]
-    if (ch === "(") depth++
-    else if (ch === ")") {
-      if (depth === 0) return value.split(",")
-      depth--
-    } else if (ch === "," && depth === 0) {
-      items.push(value.slice(start, i))
+    if (i === value.length || (ch === "," && depth === 0)) {
+      const entry = value.slice(start, i)
+      if (malformed) for (const piece of entry.split(",")) items.push(piece)
+      else items.push(entry)
       start = i + 1
-    }
+      malformed = false
+    } else if (unmatched.has(i)) malformed = true
+    else if (ch === "(") depth++
+    else if (ch === ")") depth--
   }
-  if (depth !== 0) return value.split(",")
-  items.push(value.slice(start))
   return items
 }
 
