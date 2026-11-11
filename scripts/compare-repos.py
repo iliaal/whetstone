@@ -340,13 +340,18 @@ def find_unmatched(
     our_names = {(c.kind, strip_ia_prefix(c.name)) for c in our_components}
     unmatched = []
     for ext in external_components:
+        if (ext.kind, strip_ia_prefix(ext.name)) in our_names:
+            continue
         best_sim = 0.0
         for ours in our_components:
             if ours.kind != ext.kind:
                 continue
             sim = combined_similarity(ours, ext)
             best_sim = max(best_sim, sim)
-        if best_sim < threshold and (ext.kind, strip_ia_prefix(ext.name)) not in our_names:
+            # Only existence matters here; overlaps retain the full ranking.
+            if best_sim >= threshold:
+                break
+        if best_sim < threshold:
             unmatched.append(ext)
     return unmatched
 
