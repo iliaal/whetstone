@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regression tests for trigger-history generation and eval staleness."""
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -59,6 +60,104 @@ class TriggerHistoryTests(unittest.TestCase):
             distiller._is_example_stale({"skill_version": version}, "ia-example", manifest),
             {"content_stale": False, "pattern_stale": pattern_stale, "model_stale": False},
         )
+
+    def test_bundle_hashes_preserve_git_inventory_and_refresh_between_calls(self):
+        self.plugin.write_text('{"version": "1.0.0"}', encoding="utf-8")
+        (self.root / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        expected = {}
+        for name in ("ia-example", "ia-example-more", "ia-spaced name"):
+            skill = self.skills / name
+            skill.mkdir(exist_ok=True)
+            files = {
+                "SKILL.md": f"# {name}\n".encode(),
+                "references/space name.md": b"reference\n",
+                "assets/tab\tline\n\u00e9.bin": b"\x00\xffbinary",
+                "tracked.ignored": b"tracked despite ignore rule\n",
+                "untracked.txt": b"new reference\n",
+            }
+            for rel, data in files.items():
+                target = skill / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+            subprocess.run(
+                ["git", "-C", str(self.root), "add", "-f", "--",
+                 str(skill / "SKILL.md"), str(skill / "tracked.ignored")], check=True,
+            )
+            deleted = skill / "deleted.txt"
+            deleted.write_text("deleted tracked file", encoding="utf-8")
+            subprocess.run(["git", "-C", str(self.root), "add", "--", str(deleted)], check=True)
+            deleted.unlink()
+            (skill / "artifact.ignored").write_text("not published", encoding="utf-8")
+            expected[name] = files
+
+        # Files outside a direct skill directory must not enter another bundle.
+        (self.skills / "README.md").write_text("skill index", encoding="utf-8")
+        (self.skills / "no-skill").mkdir()
+        (self.skills / "no-skill" / "reference.md").write_text("no SKILL.md", encoding="utf-8")
+        (self.root / "unrelated.txt").write_text("outside skills", encoding="utf-8")
+
+        def assert_bundles(manifest):
+            self.assertEqual(set(manifest["skills"]), set(expected))
+            for name, files in expected.items():
+                digest = hashlib.sha256()
+                for rel, data in sorted(files.items()):
+                    encoded = rel.encode()
+                    digest.update(len(encoded).to_bytes(8, "big") + encoded)
+                    digest.update(len(data).to_bytes(8, "big") + data)
+                self.assertEqual(manifest["skills"][name]["bundle_hash"], digest.hexdigest())
+
+        initial = MANIFEST.generate()
+        assert_bundles(initial)
+        self.manifest.write_text(json.dumps(initial), encoding="utf-8")
+        self.plugin.write_text('{"version": "2.0.0"}', encoding="utf-8")
+
+        changed = self.skills / "ia-example"
+        (changed / "new.md").write_bytes(b"new\n")
+        expected["ia-example"]["new.md"] = b"new\n"
+        (changed / "untracked.txt").unlink()
+        del expected["ia-example"]["untracked.txt"]
+        (changed / "references/space name.md").write_bytes(b"updated\n")
+        expected["ia-example"]["references/space name.md"] = b"updated\n"
+        # Ignore an existing untracked file; tracked ignored files remain included.
+        (self.root / ".gitignore").write_text("*.ignored\nuntracked.txt\n", encoding="utf-8")
+        for name in ("ia-example-more", "ia-spaced name"):
+            del expected[name]["untracked.txt"]
+        refreshed = MANIFEST.generate()
+        assert_bundles(refreshed)
+        for entry in refreshed["skills"].values():
+            self.assertEqual(entry["bundle_changed"], "2.0.0")
+            self.assertEqual(entry["content_changed"], "1.0.0")
+
+        self.manifest.write_text(json.dumps(refreshed), encoding="utf-8")
+        self.plugin.write_text('{"version": "3.0.0"}', encoding="utf-8")
+        unchanged = MANIFEST.generate()
+        assert_bundles(unchanged)
+        self.assertEqual(unchanged["skills"], refreshed["skills"])
+
+    def test_generation_inventories_skills_once_per_call(self):
+        for name in ("ia-second", "ia-third"):
+            skill = self.skills / name
+            skill.mkdir()
+            (skill / "SKILL.md").write_text(f"# {name}\n", encoding="utf-8")
+        with patch.object(MANIFEST.subprocess, "run", autospec=True, side_effect=subprocess.run) as run:
+            self.generate("1.0.0")
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(run.call_args.args[0][-1], "skills")
+            self.generate("2.0.0")
+            self.assertEqual(run.call_count, 2)
+
+    def test_empty_skill_inventory_does_not_require_git(self):
+        (self.skills / "ia-example" / "SKILL.md").unlink()
+        with patch.object(MANIFEST.subprocess, "run", autospec=True, side_effect=subprocess.run) as run:
+            self.assertEqual(self.generate("1.0.0")["skills"], {})
+            run.assert_not_called()
+
+    def test_ignored_bundle_keeps_empty_hash_without_another_git_call(self):
+        (self.root / ".gitignore").write_text("skills/\n", encoding="utf-8")
+        with patch.object(MANIFEST.subprocess, "run", autospec=True, side_effect=subprocess.run) as run:
+            entry = self.generate("1.0.0")["skills"]["ia-example"]
+            self.assertEqual(entry["bundle_hash"], hashlib.sha256().hexdigest())
+            self.assertEqual(run.call_count, 1)
 
     def test_removal_records_change_and_keeps_older_examples_stale(self):
         self.generate("1.0.0", "example")
