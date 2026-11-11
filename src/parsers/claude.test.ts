@@ -316,3 +316,23 @@ test("conversion keeps block-scalar separators out of agent and command instruct
     expect(converted.data.description).toBe("before\n---\nafter\n")
   }
 })
+
+test("string allowed-tools keeps commas inside tool patterns", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await mkdir(path.join(root, "commands"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo" }))
+  await writeFile(
+    path.join(root, "commands", "ia-demo.md"),
+    "---\nname: ia-demo\nallowed-tools: \"Bash(jq -r .a,.b), Read, Write(src/{a,b}.ts)\"\n---\nDo the work.\n",
+  )
+  const plugin = await loadClaudePlugin(root)
+  expect(plugin.commands[0].allowedTools).toEqual(["Bash(jq -r .a,.b)", "Read", "Write(src/{a,b}.ts)"])
+  const bundle = convertClaudeToOpenCode(plugin, {
+    agentMode: "subagent", inferTemperature: false, permissions: "from-commands",
+  })
+  expect(bundle.config.permission?.bash).toEqual({ "*": "deny", "jq -r .a,.b": "allow" })
+  expect(bundle.config.permission?.read).toBe("allow")
+  expect(bundle.config.permission?.write).toEqual({ "*": "deny", "src/{a,b}.ts": "allow" })
+})

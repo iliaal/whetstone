@@ -186,12 +186,33 @@ function parseAllowedTools(value: unknown): string[] | undefined {
     return value.map((item) => String(item))
   }
   if (typeof value === "string") {
-    return value
-      .split(/,/)
+    return splitToolList(value)
       .map((item) => item.trim())
       .filter(Boolean)
   }
   return undefined
+}
+
+// Split on commas outside parentheses so patterns like Bash(jq .a,.b) stay whole.
+// Unbalanced input keeps the plain comma split.
+function splitToolList(value: string): string[] {
+  const items: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i]
+    if (ch === "(") depth++
+    else if (ch === ")") {
+      if (depth === 0) return value.split(",")
+      depth--
+    } else if (ch === "," && depth === 0) {
+      items.push(value.slice(start, i))
+      start = i + 1
+    }
+  }
+  if (depth !== 0) return value.split(",")
+  items.push(value.slice(start))
+  return items
 }
 
 async function resolveComponentDirs(
