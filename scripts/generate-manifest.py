@@ -61,10 +61,12 @@ def _bundle_files(skill_dir: Path) -> list[str]:
     return sorted(p for p in paths if (REPO_ROOT / p).is_file())
 
 
-def _sha256_bundle(skill_dir: Path) -> str:
+def _sha256_bundle(skill_dir: Path, files: list[str] | None = None) -> str:
     """SHA256 over the sorted (skill-relative path, file bytes) pairs of a skill bundle."""
     h = hashlib.sha256()
-    for rel in _bundle_files(skill_dir):
+    if files is None:
+        files = _bundle_files(skill_dir)
+    for rel in files:
         data = (REPO_ROOT / rel).read_bytes()
         name = Path(rel).relative_to(skill_dir.relative_to(REPO_ROOT)).as_posix().encode()
         h.update(len(name).to_bytes(8, "big") + name)
@@ -121,6 +123,7 @@ def generate() -> dict:
         patterns_content = PATTERNS_FILE.read_text()
 
     skills = {}
+    bundle_files: dict[str, list[str]] | None = None
     for skill_dir in sorted(SKILLS_DIR.iterdir()):
         if not skill_dir.is_dir():
             continue
@@ -130,8 +133,17 @@ def generate() -> dict:
         if not skill_file.exists():
             continue
 
+        # Inventory once per generation, not once per skill. Keep it local so
+        # later calls still see added, removed, and newly ignored files.
+        if bundle_files is None:
+            bundle_files = {}
+            skills_prefix = SKILLS_DIR.relative_to(REPO_ROOT)
+            for rel in _bundle_files(SKILLS_DIR):
+                name = Path(rel).relative_to(skills_prefix).parts[0]
+                bundle_files.setdefault(name, []).append(rel)
+
         content_hash = _sha256_file(skill_file)
-        bundle_hash = _sha256_bundle(skill_dir)
+        bundle_hash = _sha256_bundle(skill_dir, bundle_files.get(skill_name, []))
 
         pattern_text = _extract_pattern_block(skill_name, patterns_content)
         pattern_hash = _sha256_string(pattern_text) if pattern_text else None
