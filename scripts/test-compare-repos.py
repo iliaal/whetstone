@@ -14,6 +14,57 @@ import unittest
 SCRIPT = Path(__file__).with_name("compare-repos.py")
 
 
+class UnmatchedTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        module = runpy.run_path(str(SCRIPT))
+        cls.component = module["Component"]
+        cls.find_unmatched = staticmethod(module["find_unmatched"])
+
+    def make(self, name, *, kind="skill", keywords=()):
+        return self.component(kind=kind, name=name, repo="fixture", path=name,
+                              keywords=list(keywords))
+
+    def test_similarity_match_can_appear_anywhere_in_local_catalog(self):
+        external = self.make("release-guide", keywords=["deploy", "deploy"])
+        match = self.make("ia-publish-guide", keywords=["deploy"])
+        unrelated = self.make("database", keywords=["sql"])
+        wrong_kind = self.make("release-guide", kind="agent", keywords=["deploy"])
+        # Name Jaccard 1/3 and keyword Jaccard 1 give a score of 0.6.
+        for ours in ([match, unrelated, wrong_kind], [unrelated, wrong_kind, match]):
+            for threshold, expected in ((0.15, []), (0.6, []),
+                                        (0.6000000000000001, [external])):
+                with self.subTest(ours=ours, threshold=threshold):
+                    self.assertEqual(self.find_unmatched([external], ours, threshold), expected)
+
+    def test_exact_name_exemption_is_kind_scoped_even_above_maximum_score(self):
+        ours = [self.make("ia-review", keywords=["local"])]
+        exact = self.make("review", keywords=["external"])
+        wrong_kind = self.make("review", kind="agent")
+        different_case = self.make("Review")
+        self.assertEqual(self.find_unmatched([exact, wrong_kind, different_case], ours, 2),
+                         [wrong_kind, different_case])
+
+    def test_empty_and_wrong_kind_catalogs_keep_zero_score_boundary(self):
+        external = self.make("review")
+        for ours in ([], [self.make("review", kind="agent")]):
+            for threshold in (-1, 0, 0.15, 2):
+                with self.subTest(ours=ours, threshold=threshold):
+                    self.assertEqual(self.find_unmatched([external], ours, threshold),
+                                     [external] if threshold > 0 else [])
+
+    def test_unmatched_order_duplicates_and_later_mutations_are_preserved(self):
+        first = self.make("first", keywords=["missing"])
+        last = self.make("last", keywords=["present"])
+        ours = self.make("local", keywords=["present"])
+        external = [first, last, first]
+        self.assertEqual(self.find_unmatched(external, [ours]), [first, first])
+        ours.keywords[:] = ["missing"]
+        self.assertEqual(self.find_unmatched(external, [ours]), [last])
+        ours.name = "ia-last"
+        self.assertEqual(self.find_unmatched(external, [ours]), [])
+
+
 class BlockScalarTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
