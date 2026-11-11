@@ -336,3 +336,23 @@ test("string allowed-tools keeps commas inside tool patterns", async () => {
   expect(bundle.config.permission?.read).toBe("allow")
   expect(bundle.config.permission?.write).toEqual({ "*": "deny", "src/{a,b}.ts": "allow" })
 })
+
+test("malformed allowed-tools entry does not split commas in its neighbors", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "whetstone-parser-"))
+  tempRoots.push(root)
+  await mkdir(path.join(root, ".claude-plugin"), { recursive: true })
+  await mkdir(path.join(root, "commands"), { recursive: true })
+  await writeFile(path.join(root, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "demo" }))
+  await writeFile(
+    path.join(root, "commands", "ia-open.md"),
+    "---\nname: ia-open\nallowed-tools: \"Read(, Bash(jq -r .a,.b), Write\"\n---\nDo the work.\n",
+  )
+  await writeFile(
+    path.join(root, "commands", "ia-stray.md"),
+    "---\nname: ia-stray\nallowed-tools: \"Read), Bash(jq -r .a,.b)\"\n---\nDo the work.\n",
+  )
+  const plugin = await loadClaudePlugin(root)
+  const byName = Object.fromEntries(plugin.commands.map((c) => [c.name, c.allowedTools]))
+  expect(byName["ia-open"]).toEqual(["Read(", "Bash(jq -r .a,.b)", "Write"])
+  expect(byName["ia-stray"]).toEqual(["Read)", "Bash(jq -r .a,.b)"])
+})
