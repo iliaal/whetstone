@@ -2345,22 +2345,18 @@ def validate_plugin(component_filter=None):
         if item["description"]:
             descriptions[item["name"]] = set(re.findall(r'\b[a-z]{3,}\b', item["description"].lower()))
 
-    checked_pairs = set()
     for name_a, words_a in descriptions.items():
         if component_filter and name_a != component_filter:
             continue
         for name_b, words_b in descriptions.items():
+            # Dictionary keys are unique; lexical order visits each pair once.
             if name_a >= name_b:
                 continue
-            pair = (name_a, name_b)
-            if pair in checked_pairs:
-                continue
-            checked_pairs.add(pair)
             if not words_a or not words_b:
                 continue
             overlap = words_a & words_b
             smaller = min(len(words_a), len(words_b))
-            if smaller > 0 and len(overlap) / smaller > 0.7:
+            if len(overlap) / smaller > 0.7:
                 add_finding(name_a, "DUPLICATE_TRIGGER",
                             f">70% description overlap with {name_b}: {', '.join(sorted(overlap)[:5])}", "MEDIUM")
 
