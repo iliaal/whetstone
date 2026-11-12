@@ -2707,6 +2707,58 @@ def fake_plugin(tmp_path, monkeypatch):
     return root
 
 
+class TestDuplicateTriggerPairs:
+    def _component(self, root, kind, name, description):
+        if kind == "skill":
+            path = _add_skill(root, name, "Fixture body.") / "SKILL.md"
+        else:
+            path = root / f"{kind}s" / f"{name}.md"
+        path.write_text(
+            f"---\nname: {name}\nclass: discipline\n"
+            f"description: {json.dumps(description)}\n---\n\nFixture body.\n"
+        )
+
+    def _duplicates(self, **kwargs):
+        return _findings(distiller.validate_plugin(**kwargs), check="DUPLICATE_TRIGGER")
+
+    def test_pairs_are_unique_and_keep_inventory_order(self, fake_plugin):
+        # Skills, agents, then commands put these names in reverse lexical order.
+        for kind, name in (("skill", "zulu"), ("agent", "beta"), ("command", "alpha")):
+            self._component(fake_plugin, kind, name, "Shared trigger vocabulary")
+        assert self._duplicates() == [
+            {"component": a, "check": "DUPLICATE_TRIGGER", "severity": "MEDIUM",
+             "message": f">70% description overlap with {b}: shared, trigger, vocabulary"}
+            for a, b in (("alpha", "zulu"), ("alpha", "beta"), ("beta", "zulu"))
+        ]
+
+    @pytest.mark.parametrize("component", ["alpha", "beta", "zulu"])
+    def test_component_filter_keeps_existing_single_description_scope(self, fake_plugin, component):
+        for kind, name in (("skill", "zulu"), ("agent", "beta"), ("command", "alpha")):
+            self._component(fake_plugin, kind, name, "Shared trigger vocabulary")
+        # Filtering happens while inventory is built, before pair detection.
+        assert self._duplicates(component_filter=component) == []
+
+    @pytest.mark.parametrize("shared,expected", [(6, False), (7, False), (8, True), (10, True)])
+    def test_overlap_threshold_is_strict(self, fake_plugin, shared, expected):
+        words = "alpha bravo charlie delta echo foxtrot golf hotel india juliet".split()
+        other = words[:shared] + [f"unique{chr(97 + i)}" for i in range(10 - shared)]
+        self._component(fake_plugin, "agent", "alpha", " ".join(words))
+        self._component(fake_plugin, "agent", "beta", " ".join(other))
+        assert bool(self._duplicates()) is expected
+
+    def test_empty_token_sets_do_not_report_or_divide(self, fake_plugin):
+        for name, description in (("alpha", "123 ! ab"), ("beta", "456 ? cd"),
+                                  ("gamma", "Shared trigger vocabulary")):
+            self._component(fake_plugin, "agent", name, description)
+        assert self._duplicates() == []
+
+    def test_same_name_in_later_inventory_replaces_its_description(self, fake_plugin):
+        self._component(fake_plugin, "skill", "alpha", "Shared trigger vocabulary")
+        self._component(fake_plugin, "agent", "beta", "Shared trigger vocabulary")
+        self._component(fake_plugin, "command", "alpha", "Different unrelated words")
+        assert self._duplicates() == []
+
+
 @pytest.mark.parametrize("budget", [2000, 2001])
 def test_generated_and_shipped_body_budget_match(fake_plugin, monkeypatch, budget):
     skill = _add_skill(fake_plugin, "budget-check", "Budget sentinel body.")
