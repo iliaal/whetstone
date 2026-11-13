@@ -507,6 +507,8 @@ def load_catalog(cache_path: Path) -> list[Component]:
     if not cache_path.exists():
         return []
     data = json.loads(cache_path.read_text())
+    if not isinstance(data, list):
+        raise ValueError(f"Catalog must be a JSON array: {cache_path}")
     return [
         Component(
             kind=d["kind"],
@@ -576,10 +578,11 @@ def main() -> None:
     scanned_repo_names: list[str] | None = None
 
     if args.report_only:
-        external_components = load_catalog(CACHE_DIR / "external.json")
-        if not external_components:
+        external_cache = CACHE_DIR / "external.json"
+        if not external_cache.exists():
             print("No cached external catalog. Run without --report-only first.", file=sys.stderr)
             sys.exit(1)
+        external_components = load_catalog(external_cache)
     else:
         if not args.repos:
             print("Provide repo path(s) or use --report-only", file=sys.stderr)
@@ -702,3 +705,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
