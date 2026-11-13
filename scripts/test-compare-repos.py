@@ -129,6 +129,46 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
+    def test_report_only_reuses_successfully_scanned_empty_catalog(self):
+        repo = self.root / "unsupported"
+        self.write(repo, "README.md", "# No supported components\n")
+        self.run_cli("--catalog", repo)
+        cache = self.checkout / ".compare-cache/external.json"
+        self.assertEqual(json.loads(cache.read_text()), [])
+        for kind in ((), ("--type", "skills"), ("--type", "agents")):
+            with self.subTest(kind=kind):
+                self.assertEqual(self.run_cli("--report-only", "--catalog", *kind).stdout, "")
+                output = self.root / "empty-report.md"
+                result = self.run_cli("--report-only", "--output", output, *kind)
+                self.assertIn("External: 0 skills, 0 agents", result.stdout)
+                self.assertIn("- External components scanned: 0", output.read_text())
+                self.assertIn("- Overlapping matches: 0", output.read_text())
+                self.assertIn("- Unmatched external: 0", output.read_text())
+        self.assertEqual(json.loads(cache.read_text()), [])
+
+    def test_report_only_rejects_invalid_catalog_payloads(self):
+        for payload in ("{}", '""', "null", "0", "false", "{"):
+            for mode in ((), ("--catalog",)):
+                with self.subTest(payload=payload, mode=mode):
+                    self.write(self.checkout, ".compare-cache/external.json", payload)
+                    result = subprocess.run(
+                        [sys.executable, str(self.script), "--report-only", *mode],
+                        cwd=self.root, capture_output=True, text=True, timeout=10,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("External: 0 skills, 0 agents", result.stdout)
+
+    def test_report_only_still_rejects_missing_catalog(self):
+        for mode in ((), ("--catalog",)):
+            with self.subTest(mode=mode):
+                result = subprocess.run(
+                    [sys.executable, str(self.script), "--report-only", *mode],
+                    cwd=self.root, capture_output=True, text=True, timeout=10,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("No cached external catalog.", result.stderr)
+                self.assertFalse((self.checkout / ".compare-cache/external.json").exists())
+
     def run_cli(self, *args):
         result = subprocess.run(
             [sys.executable, str(self.script), *map(str, args)], cwd=self.root,
@@ -754,3 +794,4 @@ class RepositoryDiscoveryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
