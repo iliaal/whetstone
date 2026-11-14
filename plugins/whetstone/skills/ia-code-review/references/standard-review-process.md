@@ -20,4 +20,4 @@ Read when conducting a complete standard review. A caller-defined specialist bri
 8. **Verify**: run formatter check mode, lint, and tests on the reviewed revision; do not use formatting or autofix modes that rewrite the caller's files during review. State what was skipped and why. Note doc staleness (README/ARCHITECTURE/CONTRIBUTING) as informational.
 9. **Summary**: reconcile the coverage ledger, then group findings by severity with verdict: **Ready to merge / Ready with fixes / Not ready**. Never emit either Ready verdict when coverage is partial.
 
-**Large diffs:** >500 lines → review by module, not file-by-file. Size (ideal ~100-300 meaningful lines) is a review-cost signal only; suggest a split only when a gate in [pr-sizing.md](./pr-sizing.md) applies, and name that gate. The same file lists the four split strategies.
+**Large diffs:** >500 lines → review by module, not file-by-file. Size (ideal ~100-300 meaningful lines) is a review-cost signal only; suggest a split only when a gate in [pr-sizing.md](./pr-sizing.md) applies, and name that gate. pr-sizing.md also lists the four split strategies.

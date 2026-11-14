@@ -67,11 +67,11 @@ operator's explicit `disabled` opt-out from a failure-driven `unavailable`; both
 are reported, and neither is a pass. On failure, do not silently substitute a
 different external provider; report which reviewer was attempted and what
 happened (exit status, elapsed time, the first line of any error output).
-When the reviewer's prompt is written here, require it to end with exactly
+When this skill writes the reviewer's prompt, require it to end with exactly
 `VERDICT: CLEAN` or `VERDICT: FINDINGS` as its last line, and read a clean pass
-only from the raw last non-empty line. A prose no-findings sentence, any text
-after the verdict line, or `VERDICT: CLEAN` beside listed findings makes the
-pass `unavailable`.
+only from the raw last non-empty line. A missing verdict line (a prose
+no-findings sentence in its place), any text after the verdict line, or
+`VERDICT: CLEAN` beside listed findings makes the pass `unavailable`.
 
 Ask the reviewer to state its scope coverage. A structured verdict that reports
 missing context, inaccessible inputs, truncated input, or an unfinished

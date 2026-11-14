@@ -113,7 +113,7 @@ When every `Rule::anyOf()` alternative requires a string, keep `string` outside 
 
 ### not_regex fails open on a regex error
 
-Affected through v13.42.0, and in 12.x through v12.72.0, `not_regex` passes when `preg_match()` errors, because the rule tests `< 1` and the error value `false` satisfies it. Invalid UTF-8 against a `/u` pattern, or input long enough to hit `pcre.backtrack_limit`, therefore slips past a `not_regex` deny-list. A fix (framework PR #62427) is merged upstream but not yet tagged; it fails the value instead. Prefer an allow-list with `regex`, which fails closed; on affected versions, add the `string` rule plus a UTF-8 check (`mb_check_encoding()`) before `not_regex`. Test with `"foo\xFF"` against a `/u` pattern and assert a 422.
+Affected through v13.42.0, and in 12.x through v12.72.0, `not_regex` passes when `preg_match()` errors, because the rule tests `< 1` and the error value `false` satisfies it. Invalid UTF-8 against a `/u` pattern, or input long enough to hit `pcre.backtrack_limit`, therefore slips past a `not_regex` deny-list. A fix (framework PR #62427) is merged upstream but not yet tagged; it fails the value instead. Prefer an allow-list with `regex`, which fails closed; on affected versions, replace `not_regex` with a closure rule that fails unless `preg_match()` returns exactly `0`; a UTF-8 check alone leaves the backtrack-limit case open, because valid UTF-8 input can still exhaust `pcre.backtrack_limit`. Test with `"foo\xFF"` against a `/u` pattern and assert a 422, and test a valid-UTF-8 value long enough to exhaust the backtrack limit.
 
 ### validated() drops unruled nested array keys
 

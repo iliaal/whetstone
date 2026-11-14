@@ -173,7 +173,7 @@ agent-browser --headed snapshot -i
 **Step 3: Verify key elements**
 - Use `agent-browser snapshot -i` to get interactive elements with refs
 - Page title/heading present
-- Primary content rendered: wait for a selector that only this state renders, holding this state's data, not a container a skeleton also fills; a failed, aborted, or still-pending route request in `agent-browser network requests --type xhr,fetch` leaves the state incomplete, so its screenshot is not a pass.
+- Primary content rendered: wait for a selector that only this state renders, holding this state's data, not a container a skeleton also fills; a request that failed, aborted, or is still pending in `agent-browser network requests --type xhr,fetch` leaves the state incomplete, so its screenshot is not a pass, unless this state's own `--abort` stub caused it.
 - No error messages visible
 - Forms have expected fields
 - For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.

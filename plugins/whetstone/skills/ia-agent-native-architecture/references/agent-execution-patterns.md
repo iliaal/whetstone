@@ -435,6 +435,7 @@ interface ModelResponse {
 
 interface AgentConfig {
   systemPrompt: string;
+  toolNames: readonly string[];
   maxIterations: number;
 }
 
@@ -461,6 +462,7 @@ class AgentOrchestrator {
       { role: "user", content: userMessage },
     ];
     await this.saveMessages(messages);
+    const offered = new Set(config.toolNames);
 
     for (let iteration = 0; iteration < config.maxIterations; iteration += 1) {
       const response = await this.generateResponse(config, messages);
@@ -479,7 +481,9 @@ class AgentOrchestrator {
       await this.saveMessages(messages);
 
       for (const [index, toolCall] of response.toolCalls.entries()) {
-        const result = await this.executeToolCall(toolCall);
+        const result: ToolResult = offered.has(toolCall.name)
+          ? await this.executeToolCall(toolCall)
+          : { success: false, output: `Tool not available: ${toolCall.name}`, shouldContinue: true };
         messages.push({
           role: "tool", toolCallId: toolCall.id, name: toolCall.name,
           content: JSON.stringify(result),
@@ -524,7 +528,7 @@ class AgentOrchestrator {
 }
 ```
 
-The provider adapter must return stable tool-call IDs and map the complete `Message` union to its assistant-call and tool-result fields. Validate names, JSON inputs, and response shapes at that boundary. Check every returned call's name against the tool definitions sent in the request that produced it, not against the full registry: a model can name a tool it saw in an earlier round, in another agent's configuration, or in reference text. Answer an undeclared name with a not-available tool result and do not execute it. An omitted or empty tool list for an agent or round selects no tools; never let it fall back to the whole registry. Implement `saveMessages` with the checkpoint service: encode a snapshot of the complete messages, persist it durably, and propagate failure before the next action. The loop saves assistant calls before dispatching effects and their correlated results after the executor durably records outcomes; restore those same messages from checkpoints. Results for unexecuted calls in a terminal batch explicitly report that they did not run. Never infer call identity from result text or keep essential history only in adapter closure state.
+The provider adapter must return stable tool-call IDs and map the complete `Message` union to its assistant-call and tool-result fields. Validate names, JSON inputs, and response shapes at that boundary. Before dispatch, check every returned call's name against the tool definitions sent in the request that produced it, not against the full registry: a model can name a tool it saw in an earlier round, in another agent's configuration, or in reference text. Answer an undeclared name with a not-available tool result and do not execute it. An omitted or empty tool list for an agent or round selects no tools; never let it fall back to the whole registry. Implement `saveMessages` with the checkpoint service: encode a snapshot of the complete messages, persist it durably, and propagate failure before the next action. The loop saves assistant calls before dispatching effects and their correlated results after the executor durably records outcomes; restore those same messages from checkpoints. Results for unexecuted calls in a terminal batch explicitly report that they did not run. Never infer call identity from result text or keep essential history only in adapter closure state.
 
 Have the tool executor validate and persist runtime results before returning this type. Preserve the terminal status in persistence and UI labels. A reply without a completion signal remains `responded`. Save a checkpoint before returning `partial` with `turn_limit`; exhaustion remains unfinished. Wrap action boundaries with the cooperative cancellation and cleanup lifecycle above.
 

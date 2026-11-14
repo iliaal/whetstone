@@ -10,7 +10,7 @@ Deduplicate recurrence evidence by originating incident: inherited or replayed c
 
 ## Remedy routing
 
-Try removal before any additive remedy: an instruction that did nothing or caused the friction, a stale passage, or a rule a check now enforces. When an instruction demands something the repository lacks and no session suffered for its absence, propose removing the instruction, not creating what it asks for. A new line in always-loaded guidance costs every future session; propose one only when the recurring cost it removes is larger.
+For an agent-inferred candidate, try removal before any additive remedy: an instruction that did nothing or caused the friction, a stale passage, or a rule a check now enforces. When an instruction demands something the repository lacks and no session suffered for its absence, propose removing the instruction, not creating what it asks for. A new line in always-loaded guidance costs every future session; propose one only when sessions in the inspected window show a recurring failure it would prevent.
 
 Assign each candidate one primary category to select its remedy:
 

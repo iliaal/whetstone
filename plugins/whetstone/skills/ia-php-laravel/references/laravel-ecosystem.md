@@ -85,7 +85,7 @@ Schedule::job(new ProcessDailyMetrics)->dailyAt('01:00');
 
 Key methods:
 - `->withoutOverlapping($minutes)`: cache-lock guard; the argument is the lock expiry (default 1440), not a timeout. A run killed without releasing the lock (SIGKILL, OOM) leaves the task skipped until expiry; clear it with `php artisan schedule:clear-cache` and size the expiry just above the longest run.
-- `->onOneServer()`: every scheduler node must share one default cache store that supports atomic locks (`redis`, `memcached`, `database`, `dynamodb`); per-node `file`/`array` caches let every node run the task. Give closures distinct `->name()` values.
+- `->onOneServer()`: every scheduler node must share one default cache store that supports atomic locks (`redis`, `memcached`, `database`, `dynamodb`); per-node `file`/`array` caches let every node run the task. Give closures distinct `->name()` values (required by `withoutOverlapping` too).
 - `->evenInMaintenanceMode()`: critical tasks that must run during `php artisan down`
 - `->runInBackground()`: don't block scheduler for long tasks
 - `->emailOutputOnFailure('ops@example.com')`: alert on failures

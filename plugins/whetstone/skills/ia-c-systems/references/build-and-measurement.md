@@ -44,7 +44,7 @@ A verification result is a claim about a binary, not about a diff, and the two s
 
 ### Release hardening
 
-For shipped binaries add `-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection -fPIE -pie -Wl,-z,relro,-z,now` (plus `-fcf-protection=full` on x86-64). Undefine first: distro GCC predefines `_FORTIFY_SOURCE`, and a bare `-D` is a redefinition error under `-Werror`. FORTIFY checks nothing at `-O0` and emits no diagnostic saying so; confirm with `nm <obj> | grep _chk` on an optimized build. Level 3 relies on `__builtin_dynamic_object_size` (GCC 12+ or a recent Clang); older compilers accept it but give at most level-2 checks.
+For shipped binaries add `-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection -fPIE -pie -Wl,-z,relro,-z,now` (plus `-fcf-protection=full` on x86-64). Undefine first: distro GCC predefines `_FORTIFY_SOURCE`, and a bare `-D` is a redefinition error under `-Werror`. FORTIFY checks nothing at `-O0` and emits no diagnostic saying so; confirm with `nm <obj> | grep -E '__\w+_chk(@|$)'` on an optimized build (a bare `_chk` pattern also matches `__stack_chk_fail`); an object with no fortifiable libc call shows nothing either way. Level 3 relies on `__builtin_dynamic_object_size` (GCC 12+ or a recent Clang); older compilers accept it but give at most level-2 checks.
 
 
 ## Measuring a change

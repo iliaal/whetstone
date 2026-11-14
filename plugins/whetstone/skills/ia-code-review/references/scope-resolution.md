@@ -100,7 +100,8 @@ ledger from the same range with `--name-status`. Do not use `git show <sha>` as
 the scope: on a merge commit it prints a combined diff that omits every file
 taken cleanly from one parent, so a clean merge shows no changes and the ledger
 denominator shrinks to the conflicted files. A root commit has no parent;
-compare it against the empty tree (`git hash-object -t tree /dev/null`).
+diff it against the empty tree, whose id is `git hash-object -t tree /dev/null`,
+with `git diff --no-textconv --no-ext-diff [--name-status] <empty-tree-id> <sha>`.
 
 **Pass `--no-textconv --no-ext-diff` to every `git diff` / `git show` that
 materializes the reviewed content.** A `.gitattributes` entry in the reviewed

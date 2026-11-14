@@ -2,7 +2,7 @@
 
 > When to read: when designing a multi-agent workflow shape: parallel specialists, sequential pipeline, hub-and-spoke, or hierarchical sub-teams.
 
-Claude examples below use the active `Agent`, `SendMessage`, and optional Task tools. For named teammates, first confirm an interactive session with agent teams enabled. Team setup and session cleanup are automatic; use the actual session-derived paths. Supply the full dispatch contract and fresh reviewer context with each example. Task IDs are illustrative: use IDs returned by TaskCreate. If Task tools are absent, the orchestrator tracks dependencies and dispatches ready work through messages. A teammate blocked on a dependency ends its turn instead of polling; the lead, or the teammate that completes the blocking task, messages it when the task unblocks.
+Claude examples below use the active `Agent`, `SendMessage`, and optional Task tools. For named teammates, first confirm an interactive session with agent teams enabled. Team setup and session cleanup are automatic; use the actual session-derived paths. Supply the full dispatch contract and fresh reviewer context with each example. Task IDs are illustrative: use IDs returned by TaskCreate. If Task tools are absent, the orchestrator tracks dependencies and dispatches ready work through messages. A teammate blocked on a dependency ends its turn instead of polling; team-lead messages it when the task unblocks.
 
 ## Pattern 1: Parallel Specialists (Leader Pattern)
 
@@ -424,9 +424,9 @@ LOOP:
    - Send findings to team-lead via SendMessage
    - Go back to step 1
 4. If no tasks available:
-   - Send idle notification to team-lead and end your turn
+   - End your turn; the runtime notifies team-lead that you are idle
    - When team-lead messages that new tasks exist, go back to step 1
-   - If team-lead says the work is done, exit
+   - When team-lead sends a shutdown request, approve it
 
 Replace YOUR_NAME with the worker name explicitly supplied in its dispatch.
 `

@@ -30,3 +30,11 @@
 {"prompt": "can you look over this PR", "expect": true, "source": "sync-2026-11-14", "note": "'look over' phrasing of a review request"}
 {"prompt": "look through the diff for this branch before I merge", "expect": true, "source": "sync-2026-11-14"}
 {"prompt": "look over the deploy logs from last night", "expect": false, "source": "sync-2026-11-14", "note": "'look over' without a PR/diff object"}
+{"prompt": "look over this MR", "expect": true, "source": "audit-2026-11-14", "note": "MR as the last token is a merge request"}
+{"prompt": "look over MR !42 before I approve it", "expect": true, "source": "audit-2026-11-14", "note": "MR followed by a GitLab reference"}
+{"prompt": "look through the patches", "expect": true, "source": "audit-2026-11-14", "note": "plural patches without the word review"}
+{"prompt": "look over the merge request", "expect": true, "source": "audit-2026-11-14"}
+{"prompt": "look over Mr. Smith's contract", "expect": false, "source": "audit-2026-11-14", "note": "honorific Mr. lowercases to mr; a following name must not match"}
+{"prompt": "look over Mrs Jones's notes for the meeting", "expect": false, "source": "audit-2026-11-14", "note": "honorific Mrs without a period"}
+{"prompt": "look through the logs", "expect": false, "source": "audit-2026-11-14"}
+{"prompt": "look over the MR changes in auth", "expect": true, "source": "audit-2026-11-14", "note": "determiner before MR marks a merge request regardless of the following word"}

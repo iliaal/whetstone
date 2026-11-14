@@ -98,7 +98,7 @@ Create a report using only the sanitized fields:
 
 ## Step 4: Review and Create GitHub Issue
 
-Show the exact sanitized title and body, any remaining disclosure, and the public destination `iliaal/whetstone`. Obtain required approval when existing authorization does not cover that exact outgoing report. Answers to collection questions do not grant additional posting authority.
+Show the exact sanitized title and body, any remaining disclosure, and the public destination `iliaal/whetstone`. Obtain required approval when existing authorization does not cover that exact outgoing report. Answers to collection questions do not grant additional posting authority. An answer that auto-continued on idle, or a result saying the user may be away or nobody answered, is not approval: post nothing and re-ask when the user returns.
 
 Allocate invocation-owned files:
 
