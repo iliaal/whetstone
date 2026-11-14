@@ -2,7 +2,7 @@
 
 ## Changelog Voice
 
-- **Sell test**: every bullet should pass "would a user reading this think 'I want to try that'?" Lead with what the user can now *do*, not implementation details. "You can now filter by date range" not "Refactored the query builder to support date predicates"
+- **Sell test**: every bullet should pass "would a user reading this think 'I want to try that'?" Lead with what the user can now *do*, not implementation details. "You can now filter by date range" not "Refactored the query builder to support date predicates". Keep tracker codes and repository-internal terms out of user-facing bullets; a reader outside the project must understand the bold lead.
 - **User-facing vs internal**: internal changes (refactors, dependency bumps, CI fixes) belong in a separate "For contributors" subsection, not mixed with user-facing bullets
 - **Verb tense**: past tense for what changed ("Added", "Fixed"), not present ("Adds", "Fixes")
 

@@ -34,7 +34,7 @@ Always offer choice:
 
 ## Branch Completion
 
-When work in a worktree is done, verify tests pass, then present exactly 3 options. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat.
+When work in a worktree is done, verify tests pass, then present exactly 3 options. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. An answer that auto-continued on idle, or a result saying the user may be away or nobody answered, is not a choice: merge and push nothing, report the branch and worktree as awaiting a decision, and re-ask when the user returns.
 
 1. **Merge locally**: merge into base branch, delete worktree branch, clean up worktree
 2. **Push + PR**: push branch, create PR with `gh pr create`, keep worktree until merged

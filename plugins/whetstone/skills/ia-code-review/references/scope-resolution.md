@@ -94,6 +94,14 @@ Derive the comparison base via this fallback chain:
 all committed work on the branch and reviews only the uncommitted delta. Stop and
 ask which base to use instead.
 
+**Single-commit reviews.** Review a commit against its first parent with
+`git diff --no-textconv --no-ext-diff <sha>^1 <sha>`, and build the coverage
+ledger from the same range with `--name-status`. Do not use `git show <sha>` as
+the scope: on a merge commit it prints a combined diff that omits every file
+taken cleanly from one parent, so a clean merge shows no changes and the ledger
+denominator shrinks to the conflicted files. A root commit has no parent;
+compare it against the empty tree (`git hash-object -t tree /dev/null`).
+
 **Pass `--no-textconv --no-ext-diff` to every `git diff` / `git show` that
 materializes the reviewed content.** A `.gitattributes` entry in the reviewed
 branch can select a diff or textconv driver already configured in the

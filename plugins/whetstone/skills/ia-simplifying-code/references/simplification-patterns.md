@@ -11,6 +11,7 @@
 | Magic numbers/strings | Named constants |
 | Complex conditional | Extract to descriptively-named boolean or function |
 | Boolean-returning `if/else` (each branch returns a literal `True`/`False`) | Preserve the boolean return type and truthiness evaluation: in Python use `return True if a and b else False`; use `return a and b` only when both operands are guaranteed booleans |
+| Nested null or truthiness checks | Collapse to `?.`/`??` or `dict.get(k, default)` only after matching semantics: a truthiness test (`if (x.city)`) treats `""` and `0` as missing, and `??` does not; `dict.get(k, default)` defaults only on an absent key, not a stored `None`, and chaining `.get(s, {}).get(k)` raises on a stored `None` section. Otherwise keep the explicit check |
 | Dense transform chain (3+ chained methods) | Break into named intermediates for debuggability |
 | Dead code / unreachable branches | Confirm no usage across the whole tree, including dynamic dispatch and config references, before deleting; retain code when reachability remains uncertain |
 | Unnecessary `else` after return | Remove `else`, dedent |

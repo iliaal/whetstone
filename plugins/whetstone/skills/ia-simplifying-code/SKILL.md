@@ -15,6 +15,7 @@ description: >-
 - Preserve behavior, interfaces, side effects, and domain intent; prove any unshipped-shape exception has no consumers outside scope.
 - Before removing a guard for an external hazard, reproduce its precondition and show the hazard is handled; otherwise retain it.
 - Verify standard-library substitutions on empty, null, no-match, ordering, and zero-value cases.
+- Before merging parallel validators, parsers, normalizers, or default sets, run each copy on the same malformed-but-plausible and boundary inputs. Similar names or comments do not prove equivalent behavior; keep a copy separate when its callers depend on the difference.
 - For analysis-only requests, identify targets and report proposed simplifications without editing code.
 
 ## Principles
@@ -62,6 +63,7 @@ Stop and ask before proceeding when:
 - Watch for over-simplification: inlining too aggressively removes names that gave concepts meaning; combining unrelated logic into one function hides distinct responsibilities; removing abstractions that exist for testability breaks the test suite
 - Before deleting apparently dead code, search the whole tree, including tests, fixtures, config, templates, and string-keyed or dynamic callers. If the search cannot detect the relevant dispatch mechanism, retain the code and ask instead of treating zero hits as proof
 - For artifacts whose value is self-containment (prompts, skill and agent instructions, per-service configuration, vendored policy files), duplication is cheaper than a shared dependency until edits actually drift. Extract only after coordinated changes have repeatedly gone out of sync, or a real consumer of the shared form exists
+- Treat runtime LLM prompt text, instruction order, and output schemas as behavior. Simplify them only when a baseline and candidate run on matched inputs and model settings through the project's evaluation; a test that the prompt contains a string proves wiring, not answer quality. Without that evaluation, leave the prompt unchanged and report the gap
 
 
 ## Verify

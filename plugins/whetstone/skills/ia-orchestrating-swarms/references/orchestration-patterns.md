@@ -2,7 +2,7 @@
 
 > When to read: when designing a multi-agent workflow shape: parallel specialists, sequential pipeline, hub-and-spoke, or hierarchical sub-teams.
 
-Claude examples below use the active `Agent`, `SendMessage`, and optional Task tools. For named teammates, first confirm an interactive session with agent teams enabled. Team setup and session cleanup are automatic; use the actual session-derived paths. Supply the full dispatch contract and fresh reviewer context with each example. Task IDs are illustrative: use IDs returned by TaskCreate. If Task tools are absent, the orchestrator tracks dependencies and dispatches ready work through messages.
+Claude examples below use the active `Agent`, `SendMessage`, and optional Task tools. For named teammates, first confirm an interactive session with agent teams enabled. Team setup and session cleanup are automatic; use the actual session-derived paths. Supply the full dispatch contract and fresh reviewer context with each example. Task IDs are illustrative: use IDs returned by TaskCreate. If Task tools are absent, the orchestrator tracks dependencies and dispatches ready work through messages. A teammate blocked on a dependency ends its turn instead of polling; the lead, or the teammate that completes the blocking task, messages it when the task unblocks.
 
 ## Pattern 1: Parallel Specialists (Leader Pattern)
 
@@ -36,7 +36,8 @@ Agent({
   run_in_background: true
 })
 
-// 3. Wait for results (check inbox)
+// 3. Wait for results
+// Messages and idle notifications arrive automatically; do not poll the inbox or sleep.
 // Use the current session's delivered messages and runtime-provided paths
 
 // 4. Synthesize findings and request shutdown
@@ -78,11 +79,11 @@ Agent({
   name: "implementer",
   description: "Assigned implementer work",
   subagent_type: "general-purpose",
-  prompt: "Poll TaskList every 30 seconds. When task #3 unblocks, claim it and implement. Then complete and notify team-lead.",
+  prompt: "When task #3 unblocks, team-lead will message you; until then end your turn. On that message, claim task #3, implement it, complete it, and notify team-lead.",
   run_in_background: true
 })
 
-// Tasks auto-unblock as dependencies complete
+// Tasks auto-unblock as dependencies complete; message each waiting teammate when its task unblocks
 ```
 
 ## Pattern 3: Swarm (Self-Organizing)
@@ -240,7 +241,7 @@ Agent({
   name: "test-worker",
   description: "Assigned test-worker work",
   subagent_type: "general-purpose",
-  prompt: "Wait for task #3 to unblock (when #1 and #2 complete), then update tests",
+  prompt: "Task #3 unblocks when #1 and #2 complete; team-lead will message you then. Until that message, end your turn. On it, claim task #3 and update tests",
   run_in_background: true
 })
 ```
@@ -306,7 +307,7 @@ Agent({
 })
 
 // === STEP 3: Monitor and collect results ===
-// Poll inbox or wait for idle notifications
+// Messages and idle notifications arrive automatically; do not poll the inbox or sleep.
 // Use the current session's delivered messages and runtime-provided paths
 
 // === STEP 4: Synthesize findings ===
@@ -350,7 +351,7 @@ Agent({
   name: "planner",
   description: "Assigned planner work",
   subagent_type: "Plan",
-  prompt: "Wait for task #2 to unblock. Read research from task #1. Create detailed implementation plan. Mark complete and send plan to team-lead.",
+  prompt: "When task #2 unblocks, team-lead will message you; until then end your turn. On that message, read research from task #1. Create detailed implementation plan. Mark complete and send plan to team-lead.",
   run_in_background: true
 })
 
@@ -358,7 +359,7 @@ Agent({
   name: "implementer",
   description: "Assigned implementer work",
   subagent_type: "general-purpose",
-  prompt: "Wait for task #3 to unblock. Read plan from task #2. Implement OAuth2 authentication. Mark complete when done.",
+  prompt: "When task #3 unblocks, team-lead will message you; until then end your turn. On that message, read plan from task #2. Implement OAuth2 authentication. Mark complete when done.",
   run_in_background: true
 })
 
@@ -366,7 +367,7 @@ Agent({
   name: "tester",
   description: "Assigned tester work",
   subagent_type: "general-purpose",
-  prompt: "Wait for task #4 to unblock. Write comprehensive tests for the OAuth implementation. Run tests. Mark complete with results.",
+  prompt: "When task #4 unblocks, team-lead will message you; until then end your turn. On that message, write comprehensive tests for the OAuth implementation. Run tests. Mark complete with results.",
   run_in_background: true
 })
 
@@ -374,11 +375,11 @@ Agent({
   name: "reviewer",
   description: "Assigned reviewer work",
   subagent_type: "whetstone:ia-security-sentinel",
-  prompt: "Wait for task #5 to unblock. Review the complete OAuth implementation for security. Send final assessment to team-lead.",
+  prompt: "When task #5 unblocks, team-lead will message you; until then end your turn. On that message, review the complete OAuth implementation for security. Send final assessment to team-lead.",
   run_in_background: true
 })
 
-// Pipeline auto-progresses as each stage completes
+// Tasks auto-unblock as each stage completes; message the next stage's teammate to wake it
 ```
 
 ### Workflow 3: Self-Organizing Code Review Swarm
@@ -423,10 +424,9 @@ LOOP:
    - Send findings to team-lead via SendMessage
    - Go back to step 1
 4. If no tasks available:
-   - Send idle notification to team-lead
-   - Wait 30 seconds
-   - Try again (up to 3 times)
-   - If still no tasks, exit
+   - Send idle notification to team-lead and end your turn
+   - When team-lead messages that new tasks exist, go back to step 1
+   - If team-lead says the work is done, exit
 
 Replace YOUR_NAME with the worker name explicitly supplied in its dispatch.
 `
@@ -437,7 +437,7 @@ Agent({ name: "worker-2", description: "Assigned worker-2 work", subagent_type: 
 Agent({ name: "worker-3", description: "Assigned worker-3 work", subagent_type: "general-purpose", prompt: swarmPrompt, run_in_background: true })
 
 // Workers self-organize: race to claim tasks, naturally load-balance
-// Monitor progress with TaskList() or by reading inbox
+// Messages and idle notifications arrive automatically; check TaskList() when one arrives, and message idle workers when new tasks are added
 ```
 
 ## Delivery and credit discipline

@@ -40,3 +40,5 @@
 {"prompt": "Build a static mockup of the error page.", "expect": false, "source": "audit-2026-10-25"}
 {"prompt": "Document hang detection and deadlock prevention.", "expect": false, "source": "audit-2026-10-25"}
 {"prompt": "Review regression test coverage for the previous fix.", "expect": false, "source": "audit-2026-10-25"}
+{"prompt": "review this diff, it looks quick", "expect": false, "source": "sync-2026-11-14", "note": "review request must not fire debugging (SK-06 guard)"}
+{"prompt": "can you look over this PR", "expect": false, "source": "sync-2026-11-14", "note": "review request must not fire debugging (SK-06 guard)"}

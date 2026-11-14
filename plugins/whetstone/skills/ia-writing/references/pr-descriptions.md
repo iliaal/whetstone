@@ -15,6 +15,10 @@ Match the description length to the change complexity. Overwriting a trivial pat
 
 Skip the template for trivial PRs. "Bump lodash to 4.17.21 for CVE-2021-23337." is complete on its own; do not pad it.
 
+## Titles
+
+Write the title as the change a user of the project would notice, in everyday words. Keep a prefix the repository requires (a Conventional Commits type, a version) and put a tracker code only at the end in parentheses. Keep codenames, lane or agent names, and terms coined during the work out of the title; the same rule applies to commit subjects.
+
 ## Narrative frame (for non-trivial PRs)
 
 Use three sections, in order:

@@ -26,3 +26,7 @@
 {"prompt":"Apply this patch to the config loader","expect":false,"source":"sync-2026-09-26"}
 {"prompt":"check whether the merge preview build still renders the diff panel","expect":false,"source":"word-boundary-2026-10-31","note":"'preview' contains 'review'; no review is requested"}
 {"prompt":"before we merge, can you review the diff for this branch","expect":true,"source":"word-boundary-2026-10-31","note":"standalone 'review' near diff/merge still fires after the leading \\b"}
+{"prompt": "review this diff, it looks quick", "expect": true, "source": "sync-2026-11-14", "note": "quick-looking review still routes to code review (SK-06)"}
+{"prompt": "can you look over this PR", "expect": true, "source": "sync-2026-11-14", "note": "'look over' phrasing of a review request"}
+{"prompt": "look through the diff for this branch before I merge", "expect": true, "source": "sync-2026-11-14"}
+{"prompt": "look over the deploy logs from last night", "expect": false, "source": "sync-2026-11-14", "note": "'look over' without a PR/diff object"}

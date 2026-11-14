@@ -28,6 +28,13 @@ agent-browser console --clear      # Clear after retaining any earlier evidence
 agent-browser errors > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-errors.txt" # Uncaught page errors
 agent-browser errors --clear       # Clear before a new route's observation
 
+# Network (API evidence and per-state stubs)
+agent-browser network requests --type xhr,fetch    # Captured API requests; failed, aborted, or pending ones mean the state is incomplete
+agent-browser network requests --clear             # Clear before a new state's observation
+agent-browser network route "<api-pattern>" --body '<json>'  # Stub matching requests (empty or long-content state); cannot set a status code
+agent-browser network route "<api-pattern>" --abort          # Abort matching requests (network-failure state)
+agent-browser network unroute                      # Remove all stubs before the next state
+
 # Headed mode (visible browser)
 agent-browser --headed open <url>      # Open with visible browser
 agent-browser --headed click @e1       # Click in visible browser

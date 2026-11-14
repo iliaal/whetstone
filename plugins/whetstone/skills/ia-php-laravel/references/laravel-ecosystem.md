@@ -84,8 +84,8 @@ Schedule::job(new ProcessDailyMetrics)->dailyAt('01:00');
 ```
 
 Key methods:
-- `->withoutOverlapping()`: prevent concurrent runs (uses cache lock)
-- `->onOneServer()`: run only on one server in multi-server setup
+- `->withoutOverlapping($minutes)`: cache-lock guard; the argument is the lock expiry (default 1440), not a timeout. A run killed without releasing the lock (SIGKILL, OOM) leaves the task skipped until expiry; clear it with `php artisan schedule:clear-cache` and size the expiry just above the longest run.
+- `->onOneServer()`: every scheduler node must share one default cache store that supports atomic locks (`redis`, `memcached`, `database`, `dynamodb`); per-node `file`/`array` caches let every node run the task. Give closures distinct `->name()` values.
 - `->evenInMaintenanceMode()`: critical tasks that must run during `php artisan down`
 - `->runInBackground()`: don't block scheduler for long tasks
 - `->emailOutputOnFailure('ops@example.com')`: alert on failures
@@ -158,6 +158,10 @@ class SecurityHeaders
 
 Register in `bootstrap/app.php` middleware stack.
 
+### Blade dynamic components
+
+Affected through v13.42.0, and in 12.x through v12.72.0, `<x-dynamic-component component="..." :title="$value" />` passes a bound attribute that is not a constructor prop to `$attributes` unescaped, while the same binding on a static `<x-...>` tag is HTML-escaped; `ComponentAttributeBag` rewrites `"` to `\"`, which a browser does not treat as an escape. A fix (framework PR #62455) is merged upstream but not yet tagged. On affected versions, use an echoed attribute (`title="{{ $value }}"`), which is escaped, or `e($value)` in the binding, for any user-influenced value. Test by rendering the dynamic tag with `'"><script>x</script>'` and asserting the output contains `&quot;&gt;`.
+
 ### Password Validation
 
 ```php
@@ -166,7 +170,7 @@ Password::min(12)->letters()->mixedCase()->numbers()->symbols()
 
 ### Signed URLs
 
-`URL::temporarySignedRoute('download', now()->addMinutes(30), ['file' => $id])` with `signed` middleware for tamper-proof temporary access.
+`URL::temporarySignedRoute('download', now()->addMinutes(30), ['file' => $id])` with `signed` middleware for tamper-proof temporary access. Pass signed-route parameters by name. Before v13.41.0 and v12.72.0 (framework PR #62401), positional parameters beyond the route's placeholders are appended unencoded, so a user-influenced value of `expires=` blanks the expiry and yields a never-expiring signed URL.
 
 ### File Uploads
 

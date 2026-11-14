@@ -26,7 +26,7 @@ The controller reads all tasks from the plan upfront and provides full task text
 
 **The orchestrator mints identifiers; workers never do.** Models cannot compute hashes for dedupe IDs, and hashing a model-authored field forks identity on wording changes. See [cross-run-coordination.md](./cross-run-coordination.md) (Identifier minting section).
 
-**Standardize implementer outcome signals.** Require every implementer to distinguish completed and verified behavior from partial work, stubs, mocks, refusal-only paths, and blockers. Do not require empty report sections. Route blockers through the decision tree below.
+**Standardize implementer outcome signals.** Require every implementer to distinguish completed and verified behavior from partial work, stubs, mocks, refusal-only paths, and blockers. Do not require empty report sections. Route blockers through the decision tree below. Require a separate list of what did not go as briefed: each action the harness or a permission check refused, each step held or worked around, anything left unverified, and any change outside the owned files. A unit with a held, refused, or unverified step stays open. Retry a refused action only within the orchestrator's own permissions and the user's stated limits, never through a route the worker was told not to take; commit the finished part only when it stands alone.
 
 **Worker status vocabulary:** `DONE` (task verified complete) | `DONE_WITH_CONCERNS` (complete, residual risk named) | `BLOCKED` (blocker stated, no partial claim) | `NEEDS_CONTEXT` (missing information named). Callers that require a structured return (`/ia-work`) use this vocabulary; free-form reports elsewhere still distinguish the same states in prose.
 

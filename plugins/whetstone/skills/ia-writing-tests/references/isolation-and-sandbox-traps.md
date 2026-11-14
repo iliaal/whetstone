@@ -14,6 +14,12 @@ Checks whose result is decided by the harness, the sandbox, or the surrounding e
 
 **Fix:** Before trusting a probe, ask what the harness wraps the subject in and whether that is the same mechanism the question is about. Drop the trait for that one probe and assert a control proving the removal happened: print the transaction nesting depth and require 0. Without the control the probe is unfalsifiable: a nested run and a clean run produce output of the same shape. Same test for a filesystem probe run under a chroot of the path under test, or any sandbox built from the primitive being measured.
 
+## An injected exception standing in for a crash
+
+**Symptom:** A recovery test throws mid-operation and asserts the lock is released, the temp file is gone, or the job is retried. It passes because the throw ran `finally` blocks, destructors, `defer`, exit handlers, and transaction rollback, all of which a SIGKILL, OOM kill, or power loss skips.
+
+**Fix:** For a claim about crash recovery, run the subject in a child process or container, kill it with SIGKILL at the point under test, then start a fresh process and assert the recovered state. Keep exception injection for claims about error handling, not crashes.
+
 ## Global before/after snapshots as an isolation check
 
 **Symptom:** the isolation fixture hashes an entire shared directory, ledger, or registry before and after the run and requires it unchanged. The assertion cannot name a writer, so any legitimate concurrent process flips it and the test implicates itself. Retrying to green then hides a real fixture leak exactly as easily as it hides the unrelated write.

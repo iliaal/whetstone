@@ -173,7 +173,7 @@ agent-browser --headed snapshot -i
 **Step 3: Verify key elements**
 - Use `agent-browser snapshot -i` to get interactive elements with refs
 - Page title/heading present
-- Primary content rendered
+- Primary content rendered: wait for a selector that only this state renders, holding this state's data, not a container a skeleton also fills; a failed, aborted, or still-pending route request in `agent-browser network requests --type xhr,fetch` leaves the state incomplete, so its screenshot is not a pass.
 - No error messages visible
 - Forms have expected fields
 - For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.
@@ -195,6 +195,8 @@ agent-browser errors > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[it
 Inspect collected messages and page errors; a screenshot with no visible error is not console evidence. Retain error severity, text, and the route/action that produced it. Report relevant runtime errors as findings even when the page looks normal.
 
 Exercise reversible controls through initial state, changed state, and return to initial state. Scripted state injection may prepare or inspect a test, but signoff interactions must use actual clicks and typing.
+
+To reach empty or error states without a shared backend, stub the API per state with `agent-browser network route` (`--body` for empty or long-content data, `--abort` for network failure) and run `agent-browser network unroute` before the next state.
 
 For an affected finite virtualized collection, use enough records to exceed the viewport. Scroll the actual collection from the beginning to a middle record, the final record, and back to the beginning. Verify the expected record identities without missing or duplicated rows. Check row placement for unexpected gaps or overlap. Exercise one row action after scrolling to confirm that a recycled row still acts on the correct record. An initial screenshot or the current DOM row count does not prove that the full collection is reachable.
 

@@ -56,6 +56,7 @@ Automated scans and source inspection establish only the checks they actually pe
 - Visible focus indicators on every focusable element
 - For WCAG 2.2 AA, verify focused controls remain at least partly visible beneath sticky headers, footers, and overlays ([2.4.11](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html)). Apply the criterion's notes for user-repositioned and user-opened content before reporting a violation.
 - Custom keyboard shortcuts documented and non-conflicting
+- Composite widgets (`menu`, `menubar`, `tablist`, `listbox`, `tree`, `grid`) take one Tab stop, and arrow keys move between items through roving `tabindex` or `aria-activedescendant`, per the [WAI-ARIA APG pattern](https://www.w3.org/WAI/ARIA/apg/patterns/) for that role. Report a composite role whose items are separate Tab stops or that ignores arrow keys: the role announces a keyboard model the widget does not implement. APG is guidance, not a success criterion; cite 2.1.1 or 4.1.2 only when keyboard operation actually breaks.
 - Scrollable regions (wide data tables, overflow containers) reachable by keyboard: `tabindex="0"` while the content actually overflows, `-1` otherwise so a non-overflowing viewport gets no dead tab stop; re-evaluated on resize and on any ancestor `<details>` toggle
 
 ## Screen Reader Compatibility

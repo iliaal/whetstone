@@ -4,8 +4,9 @@ class: discipline
 description: >-
   Structured code reviews with severity-ranked findings and deep multi-agent
   mode. Use when performing a code review, auditing code quality, or critiquing
-  PRs, MRs, or diffs, including a diff or patch pasted inline. For the full multi-agent workflow, use the ia-review
-  command (/ia-review in Claude Code).
+  PRs, MRs, or diffs, including a diff or patch pasted inline, even when the
+  review looks quick from reading it. For the full multi-agent workflow, use the
+  ia-review command (/ia-review in Claude Code).
 ---
 
 # Code review

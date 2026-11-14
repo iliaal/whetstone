@@ -4,7 +4,8 @@ class: discipline
 description: >-
   Systematic root-cause debugging with verification. Use for errors, stack
   traces, broken tests, flaky tests, regressions, or anything not working as
-  expected. For validating bug reports before fixing, use
+  expected, including a pasted stack trace or failing test whose cause looks
+  obvious from reading it. For validating bug reports before fixing, use
   bug-reproduction-validator agent.
 ---
 

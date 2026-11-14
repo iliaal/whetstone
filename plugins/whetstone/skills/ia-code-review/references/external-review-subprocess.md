@@ -67,6 +67,11 @@ operator's explicit `disabled` opt-out from a failure-driven `unavailable`; both
 are reported, and neither is a pass. On failure, do not silently substitute a
 different external provider; report which reviewer was attempted and what
 happened (exit status, elapsed time, the first line of any error output).
+When the reviewer's prompt is written here, require it to end with exactly
+`VERDICT: CLEAN` or `VERDICT: FINDINGS` as its last line, and read a clean pass
+only from the raw last non-empty line. A prose no-findings sentence, any text
+after the verdict line, or `VERDICT: CLEAN` beside listed findings makes the
+pass `unavailable`.
 
 Ask the reviewer to state its scope coverage. A structured verdict that reports
 missing context, inaccessible inputs, truncated input, or an unfinished
@@ -88,6 +93,9 @@ restricted (customer data in fixtures, credentials in config, regulated content)
 name that specifically rather than describing the packet by size. Ask through the
 channel the main skill establishes (`AskUserQuestion` in Claude Code,
 `request_user_input` in Codex, numbered options in chat as the fallback).
+An answer that auto-continued on idle, or a result saying the user may be away
+or nobody answered, is not consent: send nothing, report the dispatch as
+awaiting a decision, and re-ask when the user returns.
 
 **Hard exclusion of credential-bearing paths.** Exclude known credential-bearing
 paths from any external dispatch, unconditionally. Unlike ordinary noise
