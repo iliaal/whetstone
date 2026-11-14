@@ -1,5 +1,5 @@
 {
-  "plugin_version": "5.1.5",
+  "plugin_version": "5.1.6",
   "model_baseline_prefixes": [
     "claude-opus-5-5",
     "claude-sonnet-5-5",
@@ -7,13 +7,13 @@
     "claude-fable-5",
     "claude-mythos-5"
   ],
-  "generated_at": "2026-11-07T14:09:29.018059+00:00",
+  "generated_at": "2026-11-14T14:29:53.142242+00:00",
   "skills": {
     "ia-agent-native-architecture": {
       "content_hash": "f568485abe2c9f20702c1625cc2cac6e5b37a903aa07ee8bcfaa135d69cf6794",
       "content_changed": "5.1.0",
-      "bundle_hash": "f4cf7af3092908409be993f398ab89276ab7da4312083dc8f708fe35f166ca6c",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "3ce0e487b3b29077783849c50df7c6a0150c5afceebad95e105d5a25bb8247b9",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "6a31fdd0c7fa24acf920f70010b1933d385f466cfc8021709399c1635fdb98c8",
       "pattern_changed": "5.1.3"
     },
@@ -28,18 +28,18 @@
     "ia-c-systems": {
       "content_hash": "22bb1ce760015d2d7863b09c4934d741d1e4d99825896993dbad7de33916077e",
       "content_changed": "5.1.0",
-      "bundle_hash": "3d65d3aa5d6d0c0d9cd962b78f37b9ad5c24982b6c62ec5aa5f37c8644e447af",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "ec9f45b24cadcc9e8841b03a6ed2373d844dd698cdf9ff3a9916247919899a86",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "90b3e5c4e0b954ae78c9810d19f01e445dc6f1460df1e4220d61b10da6131d07",
       "pattern_changed": "4.5.2"
     },
     "ia-code-review": {
-      "content_hash": "75b0b9c69bfc962e1226d7ff8bbaaa98916c21d8f5d2e00f7ef651c319929dff",
-      "content_changed": "5.1.0",
-      "bundle_hash": "d4ff3dfcc6263357ad84a7c31f59e226a3ad03f8911e2b6a9f17c353c7528a85",
-      "bundle_changed": "5.1.5",
-      "pattern_hash": "7a3074d75d151630f75075e7928fac4dd1d3a65a53a3f0dcea7137f9300aec50",
-      "pattern_changed": "5.1.4"
+      "content_hash": "3aa9cc36115345eb911b2f0d6a8f474005ab8945302f1745b96407bdd276f75a",
+      "content_changed": "5.1.6",
+      "bundle_hash": "af6231635ebf8b73f50c684ca25c2ebf492834d5f930770f46b0c0c6933e4457",
+      "bundle_changed": "5.1.6",
+      "pattern_hash": "f8a89ad08dbc81145b653bf1b5df683a92d30c67c8247805714b929495aabfb9",
+      "pattern_changed": "5.1.6"
     },
     "ia-cpp-systems": {
       "content_hash": "88e00629a618e6b799af48cf83e84211c9350b5466ddc6012792517bc37533f4",
@@ -50,10 +50,10 @@
       "pattern_changed": "4.4.0"
     },
     "ia-debugging": {
-      "content_hash": "66d60686caa811f1b7c385d4c85417f142e7809c536f35e292c00cd0bb84bfe5",
-      "content_changed": "5.1.5",
-      "bundle_hash": "f2367536f04c7ffc1f25fc56f5085fb87a015cef3eca24f1731b537d596f000a",
-      "bundle_changed": "5.1.5",
+      "content_hash": "b14dea298b82e579bd0bffac2a5d01ea669e9148383af3a70614a8095d7708f3",
+      "content_changed": "5.1.6",
+      "bundle_hash": "2eb438dd1691ecc738a439b9496a2518b1449702882783cd14844b97606695fd",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "5e15c44aa26f360f6e02861171eaac9d7fe64f898cf1aff7e75be6b671d79d02",
       "pattern_changed": "5.1.3"
     },
@@ -76,16 +76,16 @@
     "ia-git-worktree": {
       "content_hash": "77b2c21faf27c01bc989f6200bd30f4d839ee7c3d00849e5ac26a42230d08900",
       "content_changed": "5.1.3",
-      "bundle_hash": "9c70ef31261fb649d139729537b4dba6334aeb54f50cc7069955ca4d0d204f18",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "5cd9353d48cf9fe23ceeb012bab47ebc3d2b32d21937b517baea95644bdef838",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "b89e19a5b15a7c65d7f64edc9ec3bbd9e0467dfd98166a0aab458cd7702baa5c",
       "pattern_changed": "5.1.4"
     },
     "ia-linux-bash-scripting": {
       "content_hash": "351c7810feae77c866ae88cc89406fc04d64012e6f44f6d345c7bf4224cb26d8",
       "content_changed": "5.1.0",
-      "bundle_hash": "b8b9c95a4e0948c68962e44f20936faf39eb8cf2f4598cb20873af17db96b89b",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "a76a5570b422245a2d030321939387a26eaecbfcd064f5e3fb04bd9fdbc48507",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "4d2c3dbe634d774b5802c509b70d300fc56a3d1c5d6589fa609ac15991b794f5",
       "pattern_changed": "5.1.3"
     },
@@ -108,24 +108,24 @@
     "ia-nodejs-backend": {
       "content_hash": "f8dc97d18d0dc391cb685ecea20a3b60e3e0a4909f7ac3eb4232e98b65674c5c",
       "content_changed": "5.1.0",
-      "bundle_hash": "f16227097b08ef4b990398377c83c26ac79de83d753674f62c483c261e96cc29",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "5a6df670785ef1f1059f203387083c5894dae6c63977759d0f95cec2e3dafe9c",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "b423e42815609cce7cce4548aa485dc3d9e31b43eb9aa35fac81fe61466b1e2d",
       "pattern_changed": "5.1.4"
     },
     "ia-orchestrating-swarms": {
-      "content_hash": "439342e4af242aef2684b8f023d2f4922f815a38701224faa5b70473d3606fde",
-      "content_changed": "5.1.2",
-      "bundle_hash": "4676f56c0fbd1f4d260671c226fd1a828c3b55d5e8994a770745db95e546c433",
-      "bundle_changed": "5.1.5",
+      "content_hash": "ec8ea94d8da0d06fda036a889cecd35ac6066fe8b6fced70ea03176e4345aa6a",
+      "content_changed": "5.1.6",
+      "bundle_hash": "08a39245de830cde682e7936f8078673ce0dd3f5a0ce887fc01e78ef8c447291",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "1ccd922dbcd90588af36d9281dbe445b954e072a129ee476b137e0e16db41f7d",
       "pattern_changed": "4.5.2"
     },
     "ia-php-laravel": {
       "content_hash": "f092ad5e0c5c62143378f80c5ab88607073debbd5a61922522f8a811a2c705f6",
       "content_changed": "5.0.0",
-      "bundle_hash": "347ca3c42ec888d18b65772b04fdd1ab21b6b05107b5ce7352a1a282ec94d6d7",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "7a5aeee6d0e929ffd59ba353b4c4ce64a3ea4604b4c6f75038980ede123be1f8",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "b9061895120a4f2dae8e494a999ff426dc2fcfef48b98715099918479e002997",
       "pattern_changed": "5.1.3"
     },
@@ -148,8 +148,8 @@
     "ia-postgresql": {
       "content_hash": "29cf29cf5beed712b94132dc0c9b75cdbb2803143df9b238c5d2095b8dc699f1",
       "content_changed": "5.1.0",
-      "bundle_hash": "5e51f58e5b0fcbcbf6f43b7ff1397746513d73e6495984ffddb7cb757b2a07d5",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "0fa6aa0bf5fde00616c3cc9ce29d61e013ff7755ba5164f1c12f96306b523b89",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "b0aee045ac2da69e34f6f72eae99acdd1c9bed909a92c41948f4c308b354baf7",
       "pattern_changed": "4.2.0"
     },
@@ -180,8 +180,8 @@
     "ia-reflect": {
       "content_hash": "64ecbed4349013812840e5e57047c80e4e96b457d6cf65dd3236551c24b8d366",
       "content_changed": "5.1.2",
-      "bundle_hash": "c5cc044b2e48bcb44a4c580fdce2370e27ec0e6b51127ceb13248e75a56ed96c",
-      "bundle_changed": "5.1.3",
+      "bundle_hash": "24e3108cdc7dda5869e578dffb400e8cfc41dfd079d2323f9d33d37d72c7d5d9",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "5fcea9c8c0a81d045fcd6d674d7921dcd8c101236275d653a498dbd704e27c43",
       "pattern_changed": "5.1.3"
     },
@@ -194,50 +194,50 @@
       "pattern_changed": "5.1.4"
     },
     "ia-simplifying-code": {
-      "content_hash": "e66ac66242d9d2671a54b164c58d9d181e7d79eb0c60fc34955a2bf4d3359fb0",
-      "content_changed": "5.1.4",
-      "bundle_hash": "dc9094c87f87b0dca19090158f86eaa91259d17973f30bb0723c34a9058520e7",
-      "bundle_changed": "5.1.4",
+      "content_hash": "ba20c073511f61f6c3c7b13fad6df4bf370e0a8787fdd4121da694b2381fe3e1",
+      "content_changed": "5.1.6",
+      "bundle_hash": "57786f62f77ff93ad5be4521228e97fdea4201f86dd0ebc48f07f26f9ee525d4",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "6e7d98ad7dec1358225e257419b6e0fdfb54f2921133a7b47b154e57d13a0557",
       "pattern_changed": "5.1.4"
     },
     "ia-terraform": {
-      "content_hash": "8915f30bd2a3bbf44d3e4b6f612b84a6d7080e9287c732df902ac7fb1e47957d",
-      "content_changed": "5.1.0",
-      "bundle_hash": "3cca84e8b5817ad711efda02021107f5992b3bc14ba45647c27bc6a064b002f0",
-      "bundle_changed": "5.1.1",
+      "content_hash": "5e7d592ad33b7c236495a3a2868a6065749a16eb6989cb8a354d82d9e0ec73ec",
+      "content_changed": "5.1.6",
+      "bundle_hash": "1a19ef67c1d59ff836f7f4cbeda4cdae31413cd6dd7e2ccdee43c8a520294fe0",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "5d164ecb393ca9d60cccb13ef505099a2b5f016c004e8f95f5114e2a055a4b6f",
       "pattern_changed": "2.56.1"
     },
     "ia-test-audit": {
       "content_hash": "046e34bca989a7090423b5bd864a67fc5ce626c51ef0c78fba45cacb4f2ff22c",
       "content_changed": "5.1.2",
-      "bundle_hash": "4008d868dc91f05e38c59f4beb59dc3f1102ae9e65333d56ff44c78258079fc0",
-      "bundle_changed": "5.1.3",
+      "bundle_hash": "96240eee5a18d4f3ad611499e54afde2f7bb25c12ed925a832955721ef0140ab",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "a8818d31bb63e7fcfc2cd8d7fa50bcea837f4a50ccf506894bb08c68075d5663",
       "pattern_changed": "5.0.0"
     },
     "ia-verification-before-completion": {
-      "content_hash": "c32a985785ded2a4821fe4da8f7d53d4b1b45b1c2451985c4cf2834b89db4be0",
-      "content_changed": "5.1.2",
-      "bundle_hash": "1fc04962b10f994fa65192d02aa2231db5e394891dbb3532e8aedfbc5c742600",
-      "bundle_changed": "5.1.5",
+      "content_hash": "8285073c5496794a9c9ea80660148874207a71a726b20a0103a8a6d6707f1c39",
+      "content_changed": "5.1.6",
+      "bundle_hash": "6d56572afc93e91f7f9b6bc69790c921ded3c915a52f303bea1f2d2f21320fe2",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "dc056c8cac1a30551c1e5e05e14ae6258203a4f8bcfcaf5b0b53371e9882ad39",
       "pattern_changed": "5.1.3"
     },
     "ia-writing": {
       "content_hash": "f64c33bb515c6380c8cece0c512090e29a20d3b08ba13b913ca02bb33b967fb7",
       "content_changed": "5.1.2",
-      "bundle_hash": "5db908099663c28968671bf1fb84b66c3dbd45425e3e3e313bdc5e56346deebe",
-      "bundle_changed": "5.1.2",
+      "bundle_hash": "b8aba6819b1ee77965906f493131f22d0f9c85ed5eeac5dee7ab7c6a5eb21d21",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "107bbdca58b8f3d5f786eb8b4218eb65f42f3b1c36851cb2eb13e48ff59323f7",
       "pattern_changed": "5.1.4"
     },
     "ia-writing-tests": {
       "content_hash": "3db0b9d50313277d85b776b02df81ac9d56a061d71db4fc4d333bc32957b0e15",
       "content_changed": "5.1.2",
-      "bundle_hash": "4471f7b92c1f75dd042be57255ebd289748a6d73bec8ff6387389c24978aaf2d",
-      "bundle_changed": "5.1.5",
+      "bundle_hash": "dc364efb82d22f6aef3fe405117b9bba4fc5e370cdb30a6e2fe3772d94464c39",
+      "bundle_changed": "5.1.6",
       "pattern_hash": "c07fed78d464abba8737a3cc885cee813b70b45b628bfbe38e6bb8b5efa53b9c",
       "pattern_changed": "5.1.4"
     }
