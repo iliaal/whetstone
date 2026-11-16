@@ -70,6 +70,19 @@ class BlockScalarTests(unittest.TestCase):
     def setUpClass(cls):
         cls.parse = staticmethod(runpy.run_path(str(SCRIPT))["parse_frontmatter"])
 
+    def test_nested_mapping_fields_do_not_replace_catalog_metadata(self):
+        for prefix in ("", "  "):
+            with self.subTest(prefix=prefix):
+                raw = "---\n" + "\n".join(prefix + line for line in [
+                    "name: review", "description: Review code.", "metadata:",
+                    "  name: nested", "  description: Nested metadata.",
+                    "  options:", "    class: nested", "class: discipline",
+                ]) + "\n---\n"
+                self.assertEqual(self.parse(raw), {
+                    "name": "review", "description": "Review code.",
+                    "metadata": "", "class": "discipline",
+                })
+
     def test_closing_delimiter_at_eof_preserves_metadata(self):
         for newline in ("\n", "\r\n"):
             for trailing in ("", " ", "\t"):
