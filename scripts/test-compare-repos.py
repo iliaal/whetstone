@@ -70,6 +70,22 @@ class BlockScalarTests(unittest.TestCase):
     def setUpClass(cls):
         cls.parse = staticmethod(runpy.run_path(str(SCRIPT))["parse_frontmatter"])
 
+    def test_closing_delimiter_at_eof_preserves_metadata(self):
+        for newline in ("\n", "\r\n"):
+            for trailing in ("", " ", "\t"):
+                with self.subTest(newline=newline, trailing=trailing):
+                    raw = newline.join(["---", "name: review", "description: Review code.",
+                                        "---" + trailing])
+                    self.assertEqual(self.parse(raw), {
+                        "name": "review", "description": "Review code.",
+                    })
+
+    def test_only_complete_unindented_delimiter_lines_close_frontmatter(self):
+        for delimiter in ("  ---", "---not-a-delimiter", "----"):
+            with self.subTest(delimiter=delimiter):
+                raw = "---\nname: review\n" + delimiter + "\n"
+                self.assertEqual(self.parse(raw), {})
+
     def test_all_block_headers_keep_body_keys_inside_description(self):
         for style in ("|", ">"):
             for indicator in ("", *map(str, range(1, 10))):

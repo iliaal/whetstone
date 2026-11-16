@@ -65,7 +65,8 @@ class Component:
 # YAML frontmatter parser (no external deps)
 # ---------------------------------------------------------------------------
 
-_FM_RE = re.compile(r"\A---\s*\n(.*?\n)---\s*\n", re.DOTALL)
+_FM_RE = re.compile(r"\A---[ \t]*\r?\n(.*?)^---[ \t]*(?:\r?\n|\Z)",
+                    re.DOTALL | re.MULTILINE)
 
 
 def parse_frontmatter(text: str) -> dict:
