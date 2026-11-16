@@ -77,6 +77,7 @@ def parse_frontmatter(text: str) -> dict:
     result = {}
     lines = m.group(1).splitlines()
     index = 0
+    root_indent = None
     while index < len(lines):
         line = lines[index]
         indent = len(line) - len(line.lstrip())
@@ -85,6 +86,12 @@ def parse_frontmatter(text: str) -> dict:
         if not line or line.startswith("#"):
             continue
         if ":" in line:
+            # Catalog fields belong to the root mapping. Nested metadata must
+            # not overwrite name/description; consistently indented roots are valid.
+            if root_indent is None:
+                root_indent = indent
+            if indent != root_indent:
+                continue
             key, _, val = line.partition(":")
             val = val.strip()
             if re.fullmatch(r"[|>](?:[1-9][+-]?|[+-][1-9]?)?(?:\s+#.*)?", val):
