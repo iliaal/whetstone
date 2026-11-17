@@ -158,6 +158,20 @@ class RepositoryDiscoveryTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
+    def test_type_filter_keeps_recognized_repo_with_no_selected_components(self):
+        for path, selected in (("agents/review.md", "skills"),
+                               ("skills/review/SKILL.md", "agents")):
+            with self.subTest(path=path, selected=selected):
+                repo = self.root / selected
+                self.write(repo, path)
+                output = self.root / "filtered.md"
+                for mode in ((repo,), ("--report-only",)):
+                    self.run_cli("--type", selected, "--output", output, *mode)
+                    report = output.read_text()
+                    self.assertIn(f"- **{selected}**: 0 skills, 0 agents", report)
+                    self.assertNotIn("layout not recognized", report)
+                    self.assertIn("- External components scanned: 1", report)
+
     def test_report_only_reuses_successfully_scanned_empty_catalog(self):
         repo = self.root / "unsupported"
         self.write(repo, "README.md", "# No supported components\n")

@@ -375,7 +375,7 @@ def generate_report(
     unmatched: list[Component],
     filter_kind: str | None = None,
 ) -> str:
-    """Generate a markdown comparison report."""
+    """Generate a report; type filtering does not change layout recognition."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     lines = [
         f"# Repo Comparison Report",
@@ -408,7 +408,7 @@ def generate_report(
         filtered = [c for c in components if not filter_kind or c.kind == filter_kind]
         skills = [c for c in filtered if c.kind == "skill"]
         agents = [c for c in filtered if c.kind == "agent"]
-        if not filtered:
+        if not components:
             lines.append(f"- **{repo_name}**: 0 components (layout not recognized)")
         else:
             lines.append(f"- **{repo_name}**: {len(skills)} skills, {len(agents)} agents")
