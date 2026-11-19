@@ -24,6 +24,17 @@ unchanged=0
 printf "Source: %s\n" "$SOURCE_DIR"
 printf "Target: %s\n\n" "$TARGET_DIR"
 
+# A missing checkout is not an intentionally empty skill set. Abort before
+# staging, target updates, retirement, or license synchronization.
+if [[ ! -d "$SOURCE_DIR" ]]; then
+    printf "ERROR: Source directory does not exist: %s\n" "$SOURCE_DIR" >&2
+    exit 1
+fi
+
+is_mirrorable_skill() {
+    [[ -d "$1" && -f "$1/SKILL.md" ]]
+}
+
 if [[ ! -d "$TARGET_DIR" ]]; then
     printf "ERROR: Target directory does not exist: %s\n" "$TARGET_DIR" >&2
     printf "Clone ai-skills repo first: git clone <url> %s\n" "$(dirname "$TARGET_DIR")" >&2
@@ -50,9 +61,8 @@ trap 'exit 143' TERM
 # before writing into ai-skills so existing installs keep working with the
 # original skill names (debugging/, writing/, etc.).
 for skill_dir in "$SOURCE_DIR"/*/; do
-    [[ -d "$skill_dir" ]] || continue
+    is_mirrorable_skill "$skill_dir" || continue
     plugin_name="$(basename "$skill_dir")"
-    [[ -f "$skill_dir/SKILL.md" ]] || continue
 
     # Strip the in-plugin ia- prefix for the mirror destination
     skill_name="${plugin_name#ia-}"
@@ -85,13 +95,14 @@ for skill_dir in "$SOURCE_DIR"/*/; do
     fi
 done
 
-# Cleanup: remove from target if the corresponding "ia-<name>" dir is absent in source
+# Cleanup uses the same eligibility as copying, including legacy unprefixed skills.
 for skill_dir in "$TARGET_DIR"/*/; do
     [[ -d "$skill_dir" ]] || continue
     skill_name="$(basename "$skill_dir")"
 
     # Source uses the ia- prefix; reverse the strip to check existence
-    if [[ ! -d "$SOURCE_DIR/ia-$skill_name" && ! -d "$SOURCE_DIR/$skill_name" ]]; then
+    if ! is_mirrorable_skill "$SOURCE_DIR/ia-$skill_name" \
+        && ! is_mirrorable_skill "$SOURCE_DIR/$skill_name"; then
         printf "  %-10s %s\n" "removed" "$skill_name"
         removed=$((removed + 1))
         if [[ "$DRY_RUN" == false ]]; then

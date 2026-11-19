@@ -101,3 +101,58 @@ def test_staging_cleanup_on_normalization_failure(mirror):
     result = run(check=False)
     assert result.returncode != 0
     assert snapshot(target) == before
+
+
+@pytest.mark.parametrize("args", [(), ("--dry-run",)])
+@pytest.mark.parametrize("root_kind", ["missing", "file"])
+def test_unavailable_source_preserves_target(mirror, args, root_kind):
+    source, target, run = mirror
+    skill(source, "ia-example")
+    run()
+    before = snapshot(target)
+    shutil.rmtree(source)
+    if root_kind == "file":
+        source.write_text("not a source directory\n")
+    result = run(*args, check=False)
+    assert result.returncode != 0
+    assert "Source directory does not exist" in result.stderr
+    assert snapshot(target) == before
+
+
+@pytest.mark.parametrize("name", ["ia-example", "example"])
+def test_missing_skill_file_retires_mirror(mirror, name):
+    source, target, run = mirror
+    folder = skill(source, name)
+    run()
+    (folder / "SKILL.md").unlink()
+    before = snapshot(target)
+    assert "Removed:   1" in run("--dry-run").stdout
+    assert snapshot(target) == before
+    assert "Removed:   1" in run().stdout
+    assert not (target / "skills/example").exists()
+    assert (folder / "references/guide.md").read_text() == "original\n"
+
+
+@pytest.mark.parametrize("valid_name", ["ia-example", "example"])
+def test_valid_alternate_source_keeps_mirror(mirror, valid_name):
+    source, target, run = mirror
+    skill(source, valid_name)
+    invalid_name = "example" if valid_name == "ia-example" else "ia-example"
+    (source / invalid_name).mkdir()
+    run()
+    before = snapshot(target)
+    for args in [("--dry-run",), ()]:
+        assert "Removed:   0" in run(*args).stdout
+        assert snapshot(target) == before
+
+
+def test_empty_valid_source_still_retires_mirror(mirror):
+    source, target, run = mirror
+    folder = skill(source, "ia-example")
+    run()
+    shutil.rmtree(folder)
+    before = snapshot(target)
+    assert "Removed:   1" in run("--dry-run").stdout
+    assert snapshot(target) == before
+    assert "Removed:   1" in run().stdout
+    assert not (target / "skills/example").exists()
