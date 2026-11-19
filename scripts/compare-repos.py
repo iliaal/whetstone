@@ -7,6 +7,11 @@ and `agents/` at the repo root, (2) `plugins/<name>/skills|agents/`, and
 generates a structured markdown comparison report. Commands and other layouts
 are not scanned.
 
+Fresh scans require every supplied path to be an existing directory. Invalid
+paths fail preflight before either cache or the output report is changed;
+directories with no supported components remain valid inputs. This preflight
+does not protect against paths disappearing during a scan.
+
 Usage:
     # Compare all repos in a directory
     python3 scripts/compare-repos.py ../repos/
@@ -574,6 +579,13 @@ def main() -> None:
     args = parser.parse_args()
     if not math.isfinite(args.threshold):
         parser.error("--threshold must be finite")
+
+    # Reject invalid inputs before refreshing either cache or a report. An
+    # empty directory is valid; a missing path is not an empty repository.
+    if not args.report_only:
+        for repo in args.repos:
+            if not Path(repo).is_dir():
+                parser.error(f"Repository path is not a directory: {repo}")
 
     filter_kind = {"skills": "skill", "agents": "agent"}.get(args.type) if args.type else None
 

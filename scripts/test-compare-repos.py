@@ -336,6 +336,41 @@ class RepositoryDiscoveryTests(unittest.TestCase):
                     self.assertEqual({c["kind"] for c in json.loads(cache.read_text())},
                                      {"skill", "agent"})
 
+    def test_invalid_repo_paths_fail_before_scanning_or_writing(self):
+        repo = self.make_agents_repo()
+        missing = self.root / "missing"
+        regular_file = self.root / "not-a-directory"
+        regular_file.write_text("not a repository\n", encoding="utf-8")
+        output = self.root / "comparison.md"
+        self.run_cli("--output", output, repo)
+        tracked = [output, *sorted((self.checkout / ".compare-cache").iterdir())]
+        before = {path: path.read_bytes() for path in tracked}
+        for invalid in (missing, regular_file):
+            for paths in ((invalid,), (repo, invalid), (invalid, repo)):
+                for mode in ((), ("--catalog",)):
+                    with self.subTest(invalid=invalid.name, paths=paths, mode=mode):
+                        result = subprocess.run(
+                            [sys.executable, str(self.script), "--output", str(output),
+                             *mode, *map(str, paths)], cwd=self.root,
+                            capture_output=True, text=True, timeout=10,
+                        )
+                        self.assertEqual(result.returncode, 2, result.stderr)
+                        self.assertIn("Repository path is not a directory:", result.stderr)
+                        self.assertIn(str(invalid), result.stderr)
+                        self.assertNotIn("Scanning", result.stderr)
+                        self.assertEqual(result.stdout, "")
+                        self.assertEqual({path: path.read_bytes() for path in tracked}, before)
+
+    def test_valid_empty_directory_still_replaces_external_catalog(self):
+        repo = self.make_agents_repo()
+        self.run_cli("--catalog", repo)
+        empty = self.root / "empty"
+        empty.mkdir()
+        self.assertEqual(self.run_cli("--catalog", empty).stdout, "")
+        cache = self.checkout / ".compare-cache/external.json"
+        self.assertEqual(json.loads(cache.read_text()), [])
+        self.assertEqual(self.run_cli("--report-only", "--catalog").stdout, "")
+
     def test_nonfinite_thresholds_fail_before_scanning_or_writing(self):
         repo = self.make_agents_repo()
         output = self.root / "comparison.md"
