@@ -39,6 +39,13 @@ if [[ "$target_branch" != "$TARGET_BRANCH" ]]; then
     exit 1
 fi
 
+# Compare and publish the same normalized tree, so repeated runs (including
+# --dry-run) leave unchanged destinations alone. Staging is removed on failure.
+stage_root=$(mktemp -d)
+trap 'rm -rf "$stage_root"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 # Mirror: source → target. Plugin dirs are "ia-<name>"; strip the ia- prefix
 # before writing into ai-skills so existing installs keep working with the
 # original skill names (debugging/, writing/, etc.).
@@ -51,8 +58,15 @@ for skill_dir in "$SOURCE_DIR"/*/; do
     skill_name="${plugin_name#ia-}"
     target_dir="$TARGET_DIR/$skill_name"
 
+    staged_dir="$stage_root/skill"
+    rm -rf "$staged_dir"
+    cp -r "$skill_dir" "$staged_dir"
+    # Bytecode from local script runs must not enter the distribution.
+    find "$staged_dir" -type d -name __pycache__ -prune -exec rm -rf {} +
+    sed -i -E "0,/^name: *ia-$skill_name$/s//name: $skill_name/" "$staged_dir/SKILL.md"
+
     if [[ -d "$target_dir" ]]; then
-        if diff -rq "$skill_dir" "$target_dir" >/dev/null 2>&1; then
+        if diff -rq "$staged_dir" "$target_dir" >/dev/null 2>&1; then
             unchanged=$((unchanged + 1))
             continue
         fi
@@ -67,13 +81,7 @@ for skill_dir in "$SOURCE_DIR"/*/; do
 
     if [[ "$DRY_RUN" == false ]]; then
         rm -rf "$target_dir"
-        cp -r "$skill_dir" "$target_dir"
-        # Bytecode from local script runs is gitignored in the source but would ship here.
-        find "$target_dir" -type d -name __pycache__ -prune -exec rm -rf {} +
-        # Rewrite the mirrored SKILL.md frontmatter name: back to the un-prefixed form
-        if [[ -f "$target_dir/SKILL.md" ]]; then
-            sed -i -E "0,/^name: *ia-$skill_name$/s//name: $skill_name/" "$target_dir/SKILL.md"
-        fi
+        cp -r "$staged_dir" "$target_dir"
     fi
 done
 
