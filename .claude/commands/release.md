@@ -88,6 +88,8 @@ If `$ARGUMENTS` is empty, `release.sh` auto-generates the commit message from th
 
 State the version that shipped and the commit count that was bundled into it.
 
+Tell the user to run `/reload-plugins` to activate v<X> in the current session; don't tell them to restart Claude Code.
+
 ## Constraints
 
 - Do not bump the version or touch CHANGELOG.md outside this command. Per-change ceremony is explicitly forbidden by `CLAUDE.md`.
