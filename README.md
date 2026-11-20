@@ -98,7 +98,7 @@ Use `cleanup --target opencode --output <dir>` for a custom installation. Defaul
 
 ### Additional targets (symlink-based)
 
-For tools that read skills directly from `~/.agents/skills` or `~/.kilocode/skills`, `scripts/sync-to-tools.sh` symlinks the plugin's skill directory into each path so edits land immediately without re-conversion. It removes legacy Whetstone-owned links from `~/.codex/skills` and adds managed Codex exclusions for the same skills discovered through `~/.agents/skills`; the native plugin remains Codex's single source.
+For tools that read skills directly from `~/.agents/skills` or `~/.kilocode/skills`, `scripts/sync-to-tools.sh` symlinks the plugin's skill directory into each path so edits land immediately without re-conversion. It removes legacy Whetstone-owned links from `~/.codex/skills` and adds managed Codex exclusions for the same skills discovered through `~/.agents/skills`; the native plugin remains Codex's single source. If the checkout's skills source is missing or is not a directory, both sync and dry run stop before inspecting or changing local destinations.
 
 ```bash
 bash scripts/sync-to-tools.sh              # symlink into shared non-Codex tool dirs

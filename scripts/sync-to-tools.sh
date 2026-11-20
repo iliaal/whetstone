@@ -12,6 +12,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_DIR="$REPO_ROOT/plugins/whetstone/skills"
 
+if [[ ! -d "$SKILLS_DIR" ]]; then
+	printf 'Skills source directory is missing or not a directory: %s\n' "$SKILLS_DIR" >&2
+	exit 1
+fi
+
 TOOL_DIRS=(
 	"$HOME/.agents/skills"
 	"$HOME/.kilocode/skills"
