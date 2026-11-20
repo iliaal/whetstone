@@ -11,6 +11,9 @@ Fresh scans require every supplied path to be an existing directory. Invalid
 paths fail preflight before either cache or the output report is changed;
 directories with no supported components remain valid inputs. This preflight
 does not protect against paths disappearing during a scan.
+With `--report-only`, the script skips the external scan and reuses the cached
+external catalog. It still rescans Whetstone and refreshes `ours.json`, even
+if the external cache is missing.
 
 Usage:
     # Compare all repos in a directory
@@ -19,7 +22,7 @@ Usage:
     # Compare a single repo
     python3 scripts/compare-repos.py ../repos/superpowers
 
-    # Generate report only (skip catalog refresh)
+    # Reuse the external catalog and rescan Whetstone
     python3 scripts/compare-repos.py --report-only
 
     # Show catalog without comparison
@@ -559,7 +562,7 @@ def main() -> None:
     parser.add_argument(
         "--report-only",
         action="store_true",
-        help="Generate report from cached catalogs (skip scanning)",
+        help="Reuse the cached external catalog and rescan Whetstone",
     )
     parser.add_argument(
         "--type",
