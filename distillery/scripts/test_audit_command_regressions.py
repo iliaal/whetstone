@@ -67,13 +67,30 @@ sys.exit(int(os.environ['EXIT_CODE']))
     assert not (tmp_path / "unexpected").exists()
 
 
-def run_mock(tmp_path, responses, args=("123", "owner/repo")):
+def run_mock(tmp_path, responses, args=("123", "owner/repo"), permissions=None):
+    """Serve GraphQL calls from an ordered queue and permission reads from a login map.
+
+    A login mapped to None, or absent from the map, makes the permission read fail.
+    """
     fixture = tmp_path / "responses.json"
     fixture.write_text(json.dumps(responses))
+    (tmp_path / "permissions.json").write_text(json.dumps(permissions or {}))
+    (tmp_path / "lookups.json").write_text("[]")
     mock = tmp_path / "gh"
     mock.write_text("""#!/usr/bin/env python3
 import json, os, sys
 from pathlib import Path
+endpoint = next((arg for arg in sys.argv if '/collaborators/' in arg), None)
+if endpoint:
+    base = Path(os.environ['MOCK_GH_RESPONSES']).parent
+    log = base / 'lookups.json'
+    log.write_text(json.dumps(json.loads(log.read_text()) + [endpoint]))
+    login = endpoint.split('/collaborators/', 1)[1].removesuffix('/permission')
+    entry = json.loads((base / 'permissions.json').read_text()).get(login)
+    if entry is None:
+        sys.exit('gh: Must have push access to view collaborator permission. (HTTP 403)')
+    print(json.dumps(entry))
+    sys.exit(0)
 path = Path(os.environ['MOCK_GH_RESPONSES'])
 responses = json.loads(path.read_text())
 if not responses:
@@ -95,6 +112,14 @@ sys.exit(response.get('exit', 0))
              "MOCK_GH_RESPONSES": str(fixture)},
     )
     return result, json.loads(fixture.read_text())
+
+
+def lookups(tmp_path):
+    return json.loads((tmp_path / "lookups.json").read_text())
+
+
+def permission(level):
+    return {"permission": level, "role_name": level, "user": {"login": "x"}}
 
 
 def metadata():
@@ -173,44 +198,114 @@ def test_mock_repeated_cursor_fails_closed(tmp_path):
     assert "Pagination did not advance" in result.stderr
 
 
-def test_mock_trust_derives_from_association_bot_type_and_allowlist(tmp_path, monkeypatch):
+def test_mock_trust_requires_write_permission_or_allowlist(tmp_path, monkeypatch):
     monkeypatch.setenv("PR_COMMENT_TRUSTED_LOGINS", " Allowed-User , coderabbitai[bot]")
-    comments = [comment("owner", association="OWNER"),
-                comment("member", association="MEMBER"),
-                comment("collab", association="COLLABORATOR"),
-                comment("contrib", association="CONTRIBUTOR"),
-                comment("first", association="FIRST_TIME_CONTRIBUTOR"),
-                comment("none", association="NONE"),
-                comment("missing", association=None),
+    comments = [comment("owner", author="owner", association="OWNER"),
+                comment("member", author="member", association="MEMBER"),
+                comment("collab", author="collab", association="COLLABORATOR"),
+                comment("maintainer", author="maintainer", association="COLLABORATOR"),
+                comment("contrib", author="contrib", association="CONTRIBUTOR"),
+                comment("none", author="none", association="NONE"),
+                comment("missing", author="missing", association=None),
+                comment("failed", author="failed", association="OWNER"),
+                comment("malformed", author="malformed", association="OWNER"),
                 comment("bot", author="dependabot", association="MEMBER", kind="Bot"),
                 comment("allowed-bot", author="coderabbitai", association="NONE", kind="Bot"),
                 comment("allowed-user", author="allowed-user", association="NONE"),
                 {**comment("ghost"), "author": None}]
+    reviews = [{**comment("owner-review", author="Owner", association="OWNER"),
+                "state": "COMMENTED"}]
     mixed = thread("mixed")
-    mixed["comments"]["nodes"] = [comment("t1"), comment("t2", association="NONE")]
+    mixed["comments"]["nodes"] = [comment("t1", author="maintainer"),
+                                  comment("t2", author="member")]
     clean = thread("clean")
-    clean["comments"]["nodes"] = [comment("t3", association="OWNER")]
-    feedback = [page("comments", comments), page("reviews", []),
+    clean["comments"]["nodes"] = [comment("t3", author="owner", association="OWNER")]
+    feedback = [page("comments", comments), page("reviews", reviews),
                 page("reviewThreads", [mixed, clean, thread("empty")])]
     for response in feedback:
         response["args"].append("author { login __typename } authorAssociation")
-    result, remaining = run_mock(tmp_path, [metadata(), *feedback])
+    permissions = {"owner": permission("admin"), "member": permission("read"),
+                   "collab": permission("read"), "maintainer": permission("write"),
+                   "contrib": permission("write"), "none": permission("none"),
+                   "missing": permission("read"), "failed": None,
+                   "malformed": {"role_name": "admin"}, "dependabot": permission("admin"),
+                   "coderabbitai": None, "allowed-user": None}
+    result, remaining = run_mock(tmp_path, [metadata(), *feedback], permissions=permissions)
     assert result.returncode == 0, result.stderr
     assert not remaining
     output = json.loads(result.stdout)
     trust = {item["id"]: item["trusted"] for item in output["conversation"]["comments"]}
-    assert trust == {"owner": True, "member": True, "collab": True, "contrib": False,
-                     "first": False, "none": False, "missing": False, "bot": False,
-                     "allowed-bot": True, "allowed-user": True, "ghost": False}
+    assert trust == {"owner": True, "member": False, "collab": False, "maintainer": True,
+                     "contrib": True, "none": False, "missing": False, "failed": False,
+                     "malformed": False, "bot": False, "allowed-bot": True,
+                     "allowed-user": True, "ghost": False}
     by_id = {item["id"]: item for item in output["conversation"]["comments"]}
     assert by_id["bot"]["author_is_bot"] is True
     assert by_id["contrib"]["author_association"] == "CONTRIBUTOR"
     assert by_id["missing"]["author_association"] == "NONE"
+    assert by_id["member"]["author_permission"] == "read"
+    assert by_id["failed"]["author_permission"] == "unknown"
+    assert by_id["malformed"]["author_permission"] == "unknown"
+    assert by_id["allowed-user"]["author_permission"] is None
+    assert output["conversation"]["review_bodies"][0]["trusted"] is True
     threads = {item["node"]["id"]: item["node"] for item in output["unresolved"]}
     assert threads["mixed"]["trusted"] is False
     assert [c["trusted"] for c in threads["mixed"]["comments"]["nodes"]] == [True, False]
     assert threads["clean"]["trusted"] is True
     assert threads["empty"]["trusted"] is False
+    calls = lookups(tmp_path)
+    assert sorted(calls) == sorted(f"repos/owner/repo/collaborators/{login}/permission"
+                                   for login in ("owner", "member", "collab", "maintainer",
+                                                 "contrib", "none", "missing", "failed",
+                                                 "malformed"))
+
+
+def test_mock_trusted_body_separates_quoted_and_hidden_text(tmp_path):
+    body = ("> quoted request from someone else\nlazy continuation of the quote\n\n"
+            "Rename the helper.<!-- note the author never saw -->\n"
+            "```suggestion\n> literal code line\n```")
+    review_thread = thread("t")
+    review_thread["comments"]["nodes"] = [comment("tc", body=body)]
+    result, remaining = run_mock(tmp_path, [
+        metadata(), page("comments", [comment("c", body=body)]), page("reviews", []),
+        page("reviewThreads", [review_thread])], permissions={"reviewer": permission("write")})
+    assert result.returncode == 0, result.stderr
+    assert not remaining
+    output = json.loads(result.stdout)
+    for item in (output["conversation"]["comments"][0],
+                 output["unresolved"][0]["node"]["comments"]["nodes"][0]):
+        assert item["trusted"] is True
+        assert item["body"] == body
+        assert item["author_text"] == ("Rename the helper.\n"
+                                       "```suggestion\n> literal code line\n```")
+        assert item["quoted_text"] == ("> quoted request from someone else\n"
+                                       "lazy continuation of the quote")
+        assert item["hidden_text"] == "note the author never saw"
+    assert lookups(tmp_path) == ["repos/owner/repo/collaborators/reviewer/permission"]
+
+
+def test_mock_quote_nested_in_list_item_is_not_author_text(tmp_path):
+    body = "- > quoted in a list\n\n1. > quoted in a numbered list\n\n- item\n\n    > indented quote\n\nOwn words."
+    result, _ = run_mock(tmp_path, [
+        metadata(), page("comments", [comment("c", body=body)]),
+        page("reviews", []), page("reviewThreads", [])],
+        permissions={"reviewer": permission("write")})
+    assert result.returncode == 0, result.stderr
+    item = json.loads(result.stdout)["conversation"]["comments"][0]
+    assert item["author_text"] == "- item\n\nOwn words."
+    assert item["quoted_text"] == ("- > quoted in a list\n1. > quoted in a numbered list\n"
+                                   "    > indented quote")
+
+
+def test_mock_unterminated_html_comment_hides_rest_of_body(tmp_path):
+    result, _ = run_mock(tmp_path, [
+        metadata(), page("comments", [comment("c", body="Visible.\n<!-- open\n\nstill hidden")]),
+        page("reviews", []), page("reviewThreads", [])],
+        permissions={"reviewer": permission("admin")})
+    assert result.returncode == 0, result.stderr
+    item = json.loads(result.stdout)["conversation"]["comments"][0]
+    assert item["author_text"] == "Visible."
+    assert item["hidden_text"] == "open\n\nstill hidden"
 
 
 def test_mock_repository_detection_and_empty_feedback(tmp_path):

@@ -69,7 +69,7 @@ After every operation, display a summary:
 ## Verify
 
 - Every factual claim in updated docs verified against current codebase
-- No stale file paths or component names
+- No stale file paths or component names. Code citations name the file and the function, class, or config key; a line number appears only when no name identifies the spot, and never past the end of its file
 - Formatting renders correctly in markdown preview
 
 ## Task-specific references

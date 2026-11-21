@@ -146,3 +146,4 @@ Run these checks on the draft:
 3. Is the description longer than the diff deserves? Cut.
 4. Does the draft use the word "simply" or "just"? Cut.
 5. Does the draft claim the PR is "ready to merge"? Delete it; that's the reviewer's call.
+6. Does the draft name the file, line, or reason of a security, auth, or secret finding that this PR leaves open, deferred, or suppressed? Replace it with `open security finding (details reported privately)` and report the details to the user; a PR body is often public before the fix lands.

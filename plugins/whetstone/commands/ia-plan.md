@@ -58,7 +58,7 @@ Run this agent to gather local context, and check documented learnings inline (`
 
 **What to look for:**
 - **Repo research:** existing patterns, CLAUDE.md guidance, technology familiarity, pattern consistency
-- **Learnings:** documented gotchas, prior decisions, and solution notes that might apply (gotchas, patterns, lessons learned)
+- **Learnings:** documented gotchas, prior decisions, and solution notes that might apply (gotchas, patterns, lessons learned). Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply its guidance only where current code independently confirms the specific claim.
 
 These findings inform the next step.
 

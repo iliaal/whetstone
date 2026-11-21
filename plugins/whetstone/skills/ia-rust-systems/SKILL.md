@@ -25,11 +25,13 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 ## Unsafe Discipline
 
 - Default: no `unsafe`. If clippy flags it, don't `#[allow]` it; refactor. The `#[expect]` escape hatch below does not apply here; unsafe findings get fixed, not annotated.
-- Every `unsafe` block gets a `// SAFETY:` comment above it explaining why each invariant holds. No comment = reviewer rejects.
+- Every `unsafe` block gets a `// SAFETY:` comment naming the operation, the contract clause it discharges, and the code (types, bounds, a dominating check) that enforces each premise. Review the code first and the comment second: a comment asserting a property of a caller-supplied argument that no code checks makes the enclosing safe function unsound.
+- Unsafe code never relies for memory safety on caller-supplied safe code: `len()`/`size_hint()`, `Ord`, `Eq`, `Hash`, `Clone`, `Deref`, `Drop`, closures, and callbacks may return any type-correct value, panic, or reenter. Check capacity and bounds before each write, call `set_len` only for elements actually initialized, and restore invariants (or hold a guard) before any call into caller code.
 - Keep `unsafe` blocks minimal: wrap in a safe abstraction at module boundary, mark the module `pub(crate)`.
-- Use `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic; it catches UB that optimizers mask.
+- Run `miri` (`cargo +nightly miri test`) on any crate containing `unsafe` or raw pointer arithmetic; a clean run is evidence for the paths the tests execute, not a proof premise.
 - Prefer `bytemuck`, `zerocopy`, `bytes` over hand-rolled transmutes for zero-copy patterns.
 - **Env-var writes are `unsafe` in edition 2024. Write them only in `main`, before the runtime starts or any thread spawns.** Concurrent `getenv` is UB; `OnceLock` does not make it safe. Watch for lazy `LD_LIBRARY_PATH`-style writes on first use; hoist them to startup.
+- For reviewing or writing `unsafe` (raw parts to references, `transmute`, sealed-trait reliance, FFI), read [unsafe-review.md](./references/unsafe-review.md) and give every unsafe site a recorded disposition before concluding.
 
 
 ## Discipline
@@ -48,7 +50,7 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 - `cargo nextest run --workspace` (or `cargo test --workspace`) passes with zero failures
 - When using nextest, `cargo test --doc --workspace` also passes; nextest does not run doctests
 - `cargo deny check` passes (licenses, advisories, duplicates) for any crate going to production
-- No new `unsafe` without `// SAFETY:` comment
+- No new `unsafe` whose `// SAFETY:` premises are not enforced in code or by a caller `# Safety` contract
 
 ## Task-specific references
 

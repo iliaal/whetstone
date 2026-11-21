@@ -8,6 +8,7 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/inject-skills.sh\"",
             "timeout": 5,
+            "onFailure": "continue",
             "statusMessage": "Whetstone: record subagent skill context"
           }
         ]

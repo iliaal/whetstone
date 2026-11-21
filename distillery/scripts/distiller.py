@@ -5887,7 +5887,8 @@ def _format_eval_comparison(report, previous):
 #           a hostile directive from a skill's legitimate imperative methodology.
 
 # Invisible / format / bidi codepoints. A skill has no legitimate use for any of
-# these; bidi controls are the Trojan-Source attack vector (always HIGH).
+# these; bidi embeddings, overrides, and isolates are the Trojan-Source attack
+# vector (always HIGH). Bidi marks only shift neutral characters, so MEDIUM.
 _INJ_SUSPICIOUS_CHARS = {
     0x200B: ("zero-width space", "MEDIUM"),
     0x200C: ("zero-width non-joiner", "MEDIUM"),
@@ -5911,7 +5912,28 @@ _INJ_SUSPICIOUS_CHARS = {
     0x2067: ("RTL isolate (bidi)", "HIGH"),
     0x2068: ("first-strong isolate (bidi)", "HIGH"),
     0x2069: ("pop directional isolate (bidi)", "HIGH"),
+    0x200E: ("left-to-right mark (bidi mark)", "MEDIUM"),
+    0x200F: ("right-to-left mark (bidi mark)", "MEDIUM"),
+    0x061C: ("arabic letter mark (bidi mark)", "MEDIUM"),
+    0x115F: ("hangul choseong filler (blank-looking filler)", "MEDIUM"),
+    0x1160: ("hangul jungseong filler (blank-looking filler)", "MEDIUM"),
+    0x2800: ("braille pattern blank (blank-looking filler)", "MEDIUM"),
+    0x3164: ("hangul filler (blank-looking filler)", "MEDIUM"),
+    0xFFA0: ("halfwidth hangul filler (blank-looking filler)", "MEDIUM"),
+    0x000B: ("vertical tab (control character)", "MEDIUM"),
+    0x000C: ("form feed (control character)", "MEDIUM"),
+    0x007F: ("delete (control character)", "MEDIUM"),
 }
+
+# Inclusive code-point ranges checked after _INJ_SUSPICIOUS_CHARS. U+FE0F (emoji
+# presentation selector) stays allowed; U+E0100-E01EF can carry hidden ASCII the
+# same way the Unicode Tag block does.
+_INJ_SUSPICIOUS_RANGES = (
+    (0x0001, 0x0008, "control character", "MEDIUM"),
+    (0x000E, 0x001F, "control character", "MEDIUM"),
+    (0xFE00, 0xFE0E, "variation selector", "MEDIUM"),
+    (0xE0100, 0xE01EF, "variation selector supplement", "MEDIUM"),
+)
 
 # Upper bound on a whitespace-normalized base64 candidate run. Guards against a
 # pathological all-word paragraph joining into an unbounded decode attempt.
@@ -5944,6 +5966,8 @@ _INJ_FETCH_EXEC_PATTERNS = (
     r"(?i)\b(curl|wget|fetch)\b[^\n|]*\|[^\n]*\b(bash|sh|zsh|python[0-9.]*|node|ruby|perl|php)\b",
     r"(?i)\beval\b[^\n]*\$?\(\s*(curl|wget|fetch)\b",
     r"(?i)\b(iex|invoke-expression)\b[^\n]*(http|downloadstring|webclient)",
+    r"(?i)(?:^|[\s;&|(`'\"])(?:(?:ba|z|da|k)?sh|source|\.)\s+<\(\s*(curl|wget|fetch)\b",
+    r"(?i)\b(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|perl|ruby)\s+-c\s+[\"']?\$\(\s*(curl|wget|fetch)\b",
 )
 
 # Outbound network egress verbs, and references to local secrets/credentials.
@@ -5979,14 +6003,19 @@ def _scan_file_deterministic(path, text):
 
     lines = text.splitlines()
 
-    # 1. Hidden / bidi unicode (scan every char).
-    for lineno, line in enumerate(lines, 1):
+    # 1. Hidden / bidi unicode (scan every char). str.splitlines() also breaks on
+    # VT, FF, FS-RS, U+2028, and U+2029 and drops them, so split on LF only here.
+    for lineno, line in enumerate(text.split("\n"), 1):
         for col, ch in enumerate(line, 1):
             cp = ord(ch)
             if cp in _INJ_SUSPICIOUS_CHARS:
                 name, sev = _INJ_SUSPICIOUS_CHARS[cp]
                 add(lineno, "HIDDEN_UNICODE", sev,
                     f"{name} (U+{cp:04X}) at column {col}", line.strip())
+            elif (hit := next(((n, s) for lo, hi, n, s in _INJ_SUSPICIOUS_RANGES
+                               if lo <= cp <= hi), None)):
+                add(lineno, "HIDDEN_UNICODE", hit[1],
+                    f"{hit[0]} (U+{cp:04X}) at column {col}", line.strip())
             elif 0xE0000 <= cp <= 0xE007F:
                 add(lineno, "UNICODE_TAG", "HIGH",
                     f"Unicode Tag char U+{cp:05X} at column {col} (hidden-ASCII smuggling)",
@@ -6027,6 +6056,15 @@ def _scan_file_deterministic(path, text):
             add(lineno, "HTML_COMMENT_DIRECTIVE", "MEDIUM",
                 "HTML comment (invisible when rendered) contains directive/secret keywords",
                 m.group(0).strip())
+
+    # 5b. Markdown link-reference comments (`[//]: # (...)`, `[//]: <> (...)`):
+    # GitHub does not render them, so they hide text the same way HTML comments do.
+    for lineno, line in enumerate(lines, 1):
+        if _re.match(r"^ {0,3}\[[^\]]*\]:\s*(?:#|<>)", line):
+            if any(k in line.lower() for k in _INJ_PAYLOAD_KEYWORDS):
+                add(lineno, "LINK_REF_COMMENT", "MEDIUM",
+                    "Link-reference comment (not rendered) contains directive/secret keywords",
+                    line.strip())
 
     # 6. Encoded payloads: base64 blobs that decode to printable text with keywords (MEDIUM).
     # A base64 run split by interior whitespace/newlines defeats a contiguous

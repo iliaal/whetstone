@@ -48,7 +48,7 @@ Focus the viewport on the target rather than capturing the full page by default.
 
 ### Setup: Set Appropriate Window Size
 
-Before starting iterations, open the browser in headed mode to see and resize as needed:
+Before starting iterations, open the browser in headed mode to see and resize as needed. Pass `--session <invocation-id>` on every `agent-browser` call so concurrent browser work does not share the `default` session.
 
 ```bash
 agent-browser --headed open [url]

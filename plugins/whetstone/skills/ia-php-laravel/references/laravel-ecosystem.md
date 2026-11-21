@@ -57,6 +57,7 @@ Notification::send($users, new OrderShipped($order));
 Server-side drivers in Laravel 13: Reverb (first-party WebSocket server, `php artisan install:broadcasting --reverb`), Pusher Channels, Ably, plus `log` for local debugging and `null` for tests. All three real-time drivers speak the Pusher channel protocol to Echo over a persistent WebSocket.
 
 - **Mercure driver** (`MercureBroadcaster`, since v13.32.0; expect the published docs to lag). Transport is Server-Sent Events: the app publishes updates over HTTP to a Mercure hub (a standalone hub, or FrankenPHP's built-in one, which needs no `url`), and browsers subscribe with `EventSource`, so the application stack runs no WebSocket server process. Channel authorization is a JWT the hub validates (`secret`/`subscribe_secret` config; the hub multiplexes every joined channel over one connection under one token), `private-encrypted-*` channels are end-to-end encrypted with an `encryption_key` the hub never sees, and presence channels are never encrypted because member payloads go through the hub's subscription API. From v13.36.0, an event whose broadcast connections are all Mercure connections without `'async' => true` publishes synchronously inside the dispatching request, even when it implements `ShouldBroadcast`; a previously published `config/broadcasting.php` lacks the `async` key, so upgrading moves hub latency and failures (`BroadcastException`) from a retrying queue worker into the HTTP request. Set `'async' => (bool) env('MERCURE_ASYNC', false)` (the v13.36.0 config default) and enable it to queue again (it requires a `url`; the driver throws `InvalidArgumentException` without one), or implement `ShouldRescue` to keep publishing inline while containing hub errors. Also from v13.36.0, publishing through FrankenPHP's built-in hub (no `url`) from the CLI or a queue worker throws `BroadcastException`.
+- **Audit `routes/channels.php` for integer casts when user keys are ULIDs or UUIDs.** The `install:broadcasting` stub before v13.43.0, and in every 12.x release through v12.73.0, generates `(int) $user->id === (int) $id`; every current ULID and `HasUuids` UUIDv7 key casts to `1`, so any user authorizes for every other user's private channel. Upgrading does not rewrite the published file. Compare with `(string) $user->id === (string) $id` (or `$user->is($model)` with model binding), and test that user A's request to authorize `private-App.Models.User.{B}` returns 403.
 
 ## Vector Search
 
@@ -158,9 +159,15 @@ class SecurityHeaders
 
 Register in `bootstrap/app.php` middleware stack.
 
+### Trusted proxies
+
+Configure `->trustProxies(at: [...])` in `bootstrap/app.php` with the real proxy addresses; leaving it unset is not "trust nothing". From v12.22.0 through v12.72.0 and through v13.42.0, an unset proxy list trusts every caller when the client-supplied `Host` header ends in `.on-forge.com` or `.on-vapor.com`, so `X-Forwarded-For` sets `$request->ip()` and IP-keyed rate limits and allowlists can be bypassed. v13.43.0 and v12.73.0 (framework PR #62484) also require the Forge or Vapor environment variable. Test by sending `Host: x.on-forge.com` with `X-Forwarded-For: 10.9.9.9` and asserting `$request->ip()` is the socket address.
+
 ### Blade dynamic components
 
-Affected through v13.42.0, and in 12.x through v12.72.0, `<x-dynamic-component component="..." :title="$value" />` passes a bound attribute that is not a constructor prop to `$attributes` unescaped, while the same binding on a static `<x-...>` tag is HTML-escaped; `ComponentAttributeBag` rewrites `"` to `\"`, which a browser does not treat as an escape. A fix (framework PR #62455) is merged upstream but not yet tagged. On affected versions, use an echoed attribute (`title="{{ $value }}"`), which is escaped, or `e($value)` in the binding, for any user-influenced value. Test by rendering the dynamic tag with `'"><script>x</script>'` and asserting the output contains `&quot;&gt;`.
+Affected through v13.42.0, and in 12.x through v12.72.0, `<x-dynamic-component component="..." :title="$value" />` passes a bound attribute that is not a constructor prop to `$attributes` unescaped, while the same binding on a static `<x-...>` tag is HTML-escaped; `ComponentAttributeBag` rewrites `"` to `\"`, which a browser does not treat as an escape. v13.43.0 (framework PR #62455) and v12.73.0 (framework PR #62456) fix it. On affected versions, use an echoed attribute (`title="{{ $value }}"`), which is escaped, or `e($value)` in the binding, for any user-influenced value. Test by rendering the dynamic tag with `'"><script>x</script>'` and asserting the output contains `&quot;&gt;`.
+
+Through v13.42.0 and v12.72.0, `$attributes->merge()` leaves object defaults unescaped, so `merge(['title' => Str::of($input)])` or an `AsStringable` attribute renders raw HTML; v13.43.0 and v12.73.0 (framework PR #62503) escape every value that is not `Htmlable`. On affected versions, pass `(string)` or `e()` values to `merge()`. As hardening, choose the `component` name of `<x-dynamic-component>` from a server-side allowlist; from v13.43.0 and v12.73.0 (framework PRs #62453, #62454) names outside `[\w\-:.]` throw.
 
 ### Password Validation
 
@@ -176,6 +183,7 @@ Password::min(12)->letters()->mixedCase()->numbers()->symbols()
 
 - Validate MIME type: `'file' => ['required', 'mimes:pdf,docx', 'max:10240']`
 - Store outside public disk: `$request->file('doc')->store('documents', 's3')`
+- Store the validated value, not a fresh read: `$request->validated('doc')?->store('documents', 's3')`. From v13.25.0 through v13.42.0 (fixed in v13.43.0, framework PR #62521), an empty text field with the same name hides the file from validation, so an optional rule such as `nullable|mimes:pdf` passes while `$request->file('doc')` returns the unvalidated upload. Test by posting both `doc=` and a `.php` file under `doc` and asserting a 422.
 - Never trust the original filename
 
 ### Dependency Audit

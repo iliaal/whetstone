@@ -121,6 +121,12 @@ materialized, so use a dedicated worktree rather than the changed files alone:
 the diff's runtime closure includes dependencies absent on a stale base, and the
 resulting setup error looks like a defect in the change. Never switch, stash, or
 clean the user's checkout to get there; see working-tree safety above.
+When the branch is checked out, run tests or probes there only after
+`git status --short -uall` is empty and `git rev-parse HEAD` equals
+`REVIEW_HEAD`, and name that SHA beside the evidence. Uncommitted or untracked
+files, including another session's, make a local run evidence about a tree the
+change does not contain. Otherwise run in a dedicated worktree at `REVIEW_HEAD`,
+or label the result as covering the working tree, not the head.
 
 **`base...head` is not the tree that ships.** When the target has moved, neither
 endpoint of that range is the merged tree, and two regression classes are

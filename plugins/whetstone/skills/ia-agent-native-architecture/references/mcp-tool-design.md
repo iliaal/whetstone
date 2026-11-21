@@ -601,6 +601,8 @@ A lookup or search tool that scans a bounded or paginated set can find a match a
   "scanned": 500, "cap": 500, "unreadable": 2,
   "hint": "narrow by dateRange or continue with next_offset=500" }
 ```
+
+Bound content-returning tools (file read, log tail, record dump) by bytes as well as by count. One minified bundle, lockfile, or exported JSON line can exceed the whole context, so a line or item cap alone bounds nothing. Cap each rendered line and the total result, cut on a UTF-8 character boundary, and append an inline marker stating how many bytes were omitted. Compute the returned range and the truncation flag from what was emitted after the cut, and state how to fetch the rest (a narrower range or a continuation offset).
 </principle>
 
 <principle name="live-action-opt-in">
@@ -678,6 +680,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Native `tools/list` discovery follows every cursor before claiming a complete inventory; a paginated-server test exposes tools beyond the first page
 - [ ] Long jobs return a handle/status tool or negotiate task support; human input uses elicitation, and documented timeouts account for host backgrounding
 - [ ] Bounded or paginated lookups return `incomplete` (distinct from not-found and unique) when a cap or unreadable records cut the scan short
+- [ ] Content-returning tools cap bytes per line and per result; the reported range and truncation flag describe the emitted content
 - [ ] Money-spending or live-external-effect tools require an explicit opt-in separate from credentials and ship a credential-free, labelled dry-run
 - [ ] Caught or uncaught exceptions raised outside the tool's own code (a handler-wide catch or wrapper exists, because the SDK otherwise returns `error.message` to the model), or splicing in a value the tool received rather than derived, return a fixed generic message plus a correlation identifier; the raw exception text goes to the server log only. The tool's own validation errors, written by the author from values the tool computed, pass through as-is
 - [ ] Detection tools (secret, PII, credential scanners) emit rule identifier, description, path, line, and confidence; the output schema has no field that can hold the raw match

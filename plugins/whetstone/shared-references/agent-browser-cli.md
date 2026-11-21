@@ -46,6 +46,8 @@ agent-browser wait 2000            # Wait milliseconds
 
 Allocate `[capture-dir]` as a fresh invocation-owned directory before saving screenshots or logs. Substitute its emitted absolute path literally in later calls. Include a unique route/component ID, exact viewport width and height, interaction state, and iteration in every screenshot and diagnostic filename. Increment the iteration when repeating that combination. Retain every variant for the caller. Record the actual dimensions and state beside each path. A viewport screenshot is not an element crop. Check installed command support against `agent-browser --help` and the [official debug commands](https://agent-browser.dev/commands#debug); mark unavailable log checks unverified instead of reporting zero.
 
+Run each invocation in its own browser session. Generate one ID per invocation, for example `ab-$(date +%s)-$$`, record it as `[session-id]`, and pass `--session "[session-id]"` on every `agent-browser` call shown in this reference, including `close`. Without it, concurrent commands, agents, and the user share the `default` session, so one invocation's `open` replaces another's page and its `close` ends their browser. Do not rely on `AGENT_BROWSER_SESSION`, because environment variables do not persist between tool calls. Close only the session this invocation created.
+
 ## File-to-Route Mapping
 
 Map changed files to testable routes:

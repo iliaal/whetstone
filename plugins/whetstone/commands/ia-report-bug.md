@@ -96,6 +96,10 @@ Create a report using only the sanitized fields:
 *Reported via `/ia-report-bug` command*
 ```
 
+## Step 3b: Check for an Existing Report
+
+If the report describes a security vulnerability, such as a hook or script that runs untrusted input or exposes credentials, do not create a public issue: direct the user to private vulnerability reporting at `https://github.com/iliaal/whetstone/security/advisories/new` and stop. Otherwise read the latest release tag with `gh release view --repo iliaal/whetstone --json tagName -q .tagName` and compare it with the plugin version from Step 2, ignoring a leading `v`. If the installed version is older, ask the user to update and reproduce before filing; if it is unknown, say so in the report. Search open and closed issues with `gh search issues --repo iliaal/whetstone "<distinctive terms>"`, taking the terms from the sanitized report only. If an issue already reports the same failure, do not create a duplicate: show it to the user and offer a comment that adds only the new sanitized facts, under the same approval rule as Step 4.
+
 ## Step 4: Review and Create GitHub Issue
 
 Show the exact sanitized title and body, any remaining disclosure, and the public destination `iliaal/whetstone`. Obtain required approval when existing authorization does not cover that exact outgoing report. Answers to collection questions do not grant additional posting authority. An answer that auto-continued on idle, or a result saying the user may be away or nobody answered, is not approval: post nothing and re-ask when the user returns.

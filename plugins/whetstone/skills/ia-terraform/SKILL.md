@@ -15,6 +15,7 @@ paths:
 ## Working rules
 
 - Preserve state and resource addresses during refactoring; inspect the plan for unintended replacement.
+- Apply only a saved, reviewed plan; get approval before `apply` or `destroy`. Before applying, deleting a resource block, or adding `ignore_changes` or `prevent_destroy`, read [plan-and-state-safety.md](./references/plan-and-state-safety.md).
 - Separate tests with verified local or mocked effects from tests that access real services or create billable infrastructure. Plan mode can still read real data sources; mocked apply can run without infrastructure creation.
 
 ## File Organization & Naming
@@ -85,7 +86,7 @@ Default to `for_each`: removing a middle item from a `count` list recreates all 
 | Modules (prod) | Pin exact | `version = "5.1.2"` |
 | Modules (dev) | Allow patch | `version = "~> 5.1.0"` |
 
-Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
+Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), `removed` blocks (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
 Stacks (HCP; check current release status): orchestrates multiple configs as a single deployment unit. Evaluate for multi-environment patterns.
 
 
@@ -101,7 +102,6 @@ Stacks (HCP; check current release status): orchestrates multiple configs as a s
 - Never hardcode credentials; use assume_role, OIDC, or secrets managers.
 - Pre-commit: auto-format first (`terraform fmt -recursive` rewrites files), then verify (`terraform validate && tflint && trivy config .`)
 - Use `moved` blocks with `from` and `to` addresses for refactoring resource names/modules without destroy-recreate. Retain historical moves for downstream upgrades; remove only after every affected state has migrated, or as an explicitly breaking module release.
-- `lifecycle { ignore_changes = [attr] }` suppresses **updates only**, and it substitutes the prior state value at plan time, on the *first* plan after the config change, with no "first apply" exception. Two consequences reviewers get backwards: (1) on an already-provisioned resource the literal in the config is never written, and `ForceNew` never fires because `ignore_changes` erased the diff before replacement is evaluated, so a change that replaces a committed value with a placeholder scrubs the repository and leaves the remote value live; (2) `ignore_changes` does not apply on create, so any later `-replace`, taint, `state rm` + re-add, or manual deletion re-seeds the placeholder over a value that was set out of band. Keep only the container resource in configuration and provision the value entirely out of band, or state the restore step in the runbook for every replace path.
 
 
 ## Troubleshooting

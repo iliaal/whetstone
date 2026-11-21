@@ -44,6 +44,12 @@ Checks whose result is decided by the harness, the sandbox, or the surrounding e
 
 **Fix:** add the stub in the same commit as the step it supports, and run the harness before committing.
 
+## Host git config leaking into tests
+
+**Symptom:** a test that drives code which runs `git` passes on CI and fails on one machine, or the reverse. The developer's global or system config (a credential helper, a `url.<base>.insteadOf` rewrite, `commit.gpgsign`, `core.hooksPath`) applies to every `git` the suite starts. A clean environment passed only to the test's own `git` calls does not reach the `git` the code under test spawns, because that child inherits the process environment.
+
+**Fix:** set `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1` process-wide in suite setup (a pytest session fixture, a PHPUnit bootstrap file, a Vitest or Jest global setup file), and pin author and committer identity through `GIT_AUTHOR_*`/`GIT_COMMITTER_*`. Control: plant a global `insteadOf` rewrite in a scratch `HOME` and assert the code under test still resolves the original URL.
+
 ## Relocating an environment variable and calling it isolation
 
 **Symptom:** the suite points `HOME`, `TMPDIR`, or a state-root variable at a temp directory and concludes the code under test is sandboxed. The relocation only redirects paths derived from that variable *at call time*; anything anchored to the executable's own location, a compile-time constant, or the current uid still resolves to the real one. The fixture is green either way, because reading the real file usually succeeds; the tell is absent by construction.

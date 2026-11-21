@@ -39,7 +39,7 @@ Conduct visual comparisons between Figma designs and live implementations. Produ
 
 ### 1. Capture Implementation State
 
-- Use agent-browser CLI to capture screenshots of the implemented UI
+- Use agent-browser CLI to capture screenshots of the implemented UI. Pass `--session <invocation-id>` on every `agent-browser` call so concurrent browser work does not share the `default` session.
 - Test different viewport sizes if the design includes responsive breakpoints
 - Capture interactive states (hover, focus, active) when relevant
 - Document the URL and selectors of the components being reviewed

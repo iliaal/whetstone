@@ -81,7 +81,7 @@ async function gitInit(directory: string) {
 }
 ```
 
-Use `console.error()` in tests (not logger, which may be suppressed). Log BEFORE the dangerous operation, not after it fails. Include context: cwd, env vars, timestamps, stack trace.
+Use `console.error()` in tests (not logger, which may be suppressed). Log BEFORE the dangerous operation, not after it fails. Include context: cwd, named env vars (never a full environment dump), timestamps, stack trace.
 
 ## Applying the Pattern
 

@@ -51,7 +51,7 @@ Ask about, using the **AskUserQuestion tool**:
 
 For deprecation ADRs: which ADR is being superseded, why, and whether the replacement or retirement is proposed or accepted. The new record supersedes the original; do not mark the new record deprecated or point it at itself. Leave the accepted original unchanged unless updating its status and backlink is explicitly authorized by the caller.
 
-For retroactive ADRs, separate evidence from code and commit history from inferred intent. Record alternatives found in history, or state "none recorded"; do not invent prior deliberation.
+For retroactive ADRs, separate evidence from code and commit history from inferred intent. Record alternatives found in history, or state "none recorded"; do not invent prior deliberation. Cite code by file and the defining function, class, or config key rather than a line number, which goes stale when code above it moves.
 
 ### 4. Generate the ADR
 

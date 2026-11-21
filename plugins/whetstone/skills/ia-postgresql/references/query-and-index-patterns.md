@@ -122,5 +122,8 @@ For nested deletes, use `#-` with a text-array path. Verify with one round-tripp
 | Nullable booleans | `NOT NULL DEFAULT false`; three-valued logic causes subtle bugs |
 | Missing FK indexes | See detection query in Index Strategy above |
 | `ORDER BY RANDOM()` | Use `TABLESAMPLE` or application-side shuffle |
+| `WHERE id NOT IN (SELECT col ...)` on a nullable `col` | One NULL makes the predicate unknown for every row, so the query returns nothing. Use `NOT EXISTS (... WHERE col = outer.id)` |
+| `LEFT JOIN b ... WHERE b.col = $1` | The WHERE filter discards the NULL-extended rows and silently makes it an inner join. Move the predicate into `ON`, or write `INNER JOIN` if that is the intent |
+| `LIMIT`/`FETCH` without an `ORDER BY` that ends in a unique key | Row choice is unspecified and changes with plans; order by the business key plus a unique tiebreaker such as `id` |
 
 Detection queries for slow queries, table bloat, and unused indexes: see [operations.md](./operations.md).

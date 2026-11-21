@@ -33,7 +33,7 @@ First, determine the review target type and set up the code for analysis.
 
 - [ ] Determine review type: PR number (numeric), GitHub URL, file path (.md), or empty (current branch)
 - [ ] Check current git branch
-- [ ] If ALREADY on the target branch (PR branch, requested branch name, or the branch already checked out for review) → proceed with analysis on current branch; for a PR target, first confirm `git rev-parse HEAD` equals `gh pr view <pr> --json headRefOid -q .headRefOid` (the `ia-code-review` scope-resolution head-identity check), and on a mismatch refetch or review `gh pr diff <pr>` instead
+- [ ] If ALREADY on the target branch (PR branch, requested branch name, or the branch already checked out for review) → proceed with analysis on current branch; for a PR target, first confirm `git rev-parse HEAD` equals `gh pr view <pr> --json headRefOid -q .headRefOid` (the `ia-code-review` scope-resolution head-identity check), and on a mismatch refetch or review `gh pr diff <pr>` instead; before running tests or probes on that checkout, also require an empty `git status --short -uall`, or use a worktree at the frozen head
 - [ ] If DIFFERENT branch than the review target → offer to use the `ia-git-worktree` skill for an isolated worktree of the review branch
 - [ ] Resolve and freeze the caller's exact branch/PR head and comparison base through the `ia-code-review` scope-resolution reference; pass those SHAs to every reviewer even when another branch is checked out
 - [ ] For a PR target, fetch metadata using `gh pr view "$PR_TARGET" --json title,body,files,closingIssuesReferences,baseRefName,headRefOid`; bind the metadata to the recorded target and head
@@ -78,7 +78,7 @@ Task whetstone:{agent-name}(caller-defined scope and frozen base/head + PR conte
 
 Deduplicate configured agents and exclude `ia-code-simplicity-reviewer` from this dispatch; it runs once in section 2. When the migration criteria below match, reserve `ia-database-guardian` and `ia-deployment-verification-agent` for the ordered conditional sequence.
 
-Additionally, check documented learnings inline: read solution notes under `docs/` and ADRs whose names or frontmatter match the PR's modules. A dedicated agent costs more than these lookups.
+Additionally, check documented learnings inline: read solution notes under `docs/` and ADRs whose names or frontmatter match the PR's modules. Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply its guidance only where current code independently confirms the specific claim. A dedicated agent costs more than these lookups.
 
 #### Per-agent artifact persistence
 
@@ -151,7 +151,7 @@ Consolidate all agent reports into a categorized list of findings. Remove duplic
 
 - [ ] Reconcile the coverage ledger first; if any selected path is pending or failed, set the verdict to **Not ready** regardless of finding count
 - [ ] Collect findings from all parallel agents
-- [ ] Surface documented learnings: if a past solution or ADR applies, flag the finding as "Known Pattern" with a link to that document
+- [ ] Surface documented learnings: if a past solution or ADR that still holds applies, flag the finding as "Known Pattern" with a link to that document; cite a superseded or stale one only with its replacement or reason
 - [ ] Evaluate pipeline-artifact findings using lifecycle and inbound-link evidence, not a path-based exclusion
 - [ ] Categorize by type: security, performance, architecture, quality, etc.
 - [ ] Assign severity levels using the `ia-code-review` skill's four-level scale: **Critical** (blocks merge), **Important** (should fix before merge), **Medium** (should fix, non-blocking), **Minor** (optional). Treat legacy `P1`/`P2`/`P3` aliases as Critical/Important/Medium respectively.

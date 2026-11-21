@@ -2,7 +2,7 @@
 
 Read when implementing a remedy, assessing a failed experiment, or deciding whether to stop and reassess. Diagnosis-only work remains read-only.
 
-**5. Hypothesize and test**: one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to pinpoint the exact commit that introduced a regression. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set; do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first.
+**5. Hypothesize and test**: one change at a time. If a hypothesis is wrong, fully revert before testing the next. Use `git bisect` to pinpoint the exact commit that introduced a regression. **Scope lock**: after forming a hypothesis, identify the narrowest affected directory or file set; do not edit code outside that scope during the debug session. If the fix requires changes elsewhere, update the hypothesis first. Every site that makes the same root-cause mistake is inside that scope.
 
 **6. Fix and verify**: create a failing test FIRST, then fix. Run the test. Confirm the original reproduction case passes. No completion claims without fresh verification evidence (see `ia-verification-before-completion`).
 

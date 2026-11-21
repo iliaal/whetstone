@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import subprocess
 import sys
+import urllib.parse
 
 
 def gh(*args):
@@ -48,8 +50,11 @@ COMMENT = "id " + AUTHOR + " body createdAt url"
 REVIEW = "id " + AUTHOR + " body state submittedAt url"
 THREAD_COMMENT = COMMENT + " updatedAt outdated"
 THREAD = "id isResolved isOutdated isCollapsed path line startLine diffSide"
-TRUSTED_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
+# The legacy `permission` field folds maintain into write and triage into read.
+WRITE_PERMISSIONS = {"admin", "write"}
 ALLOWLIST_ENV = "PR_COMMENT_TRUSTED_LOGINS"
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+QUOTE = re.compile(r"^\s*(?:(?:[-*+]|\d{1,9}[.)])\s+)*>")
 
 
 def allowlist():
@@ -57,16 +62,86 @@ def allowlist():
     return {entry.strip().lower().removesuffix("[bot]") for entry in entries if entry.strip()}
 
 
-def annotate(item, allowed):
+def split_body(body):
+    """Separate the author's visible words from quoted lines and HTML-comment text.
+
+    GitHub renders neither a `>` line (or its lazy continuation, or one nested in a
+    list item) as the commenter's
+    own words nor an HTML comment at all; fenced code is literal, and an
+    unterminated `<!--` hides the rest of the body.
+    """
+    own, quoted, hidden = [], [], []
+    fence = None
+    in_comment = in_quote = False
+    for line in (body or "").splitlines():
+        if fence:
+            own.append(line)
+            match = FENCE.match(line)
+            if match and match.group(1)[0] == fence[0] and len(match.group(1)) >= len(fence) \
+                    and not line.strip().lstrip(fence[0]):
+                fence = None
+            continue
+        if in_comment and not line:
+            hidden.append(line)
+            continue
+        visible, rest = [], line
+        while rest:
+            if in_comment:
+                end = rest.find("-->")
+                hidden.append(rest if end < 0 else rest[:end])
+                rest = "" if end < 0 else rest[end + 3:]
+                in_comment = end < 0
+            else:
+                start = rest.find("<!--")
+                visible.append(rest if start < 0 else rest[:start])
+                rest = "" if start < 0 else rest[start + 4:]
+                in_comment = start >= 0
+        text = "".join(visible)
+        whole = text == line
+        match = FENCE.match(text) if whole else None
+        if match:
+            fence = match.group(1)
+            in_quote = False
+            own.append(text)
+        elif not text.strip():
+            if whole:
+                in_quote = False
+                if own and own[-1].strip():
+                    own.append(text)
+        elif QUOTE.match(text) or in_quote:
+            in_quote = True
+            quoted.append(text)
+        else:
+            own.append(text)
+    return "\n".join(own).strip(), "\n".join(quoted).strip(), "\n".join(hidden).strip()
+
+
+def write_access(owner, repo, login):
+    path = "repos/{}/{}/collaborators/{}/permission".format(
+        *(urllib.parse.quote(part, safe="") for part in (owner, repo, login)))
+    try:
+        permission = gh("api", path).get("permission")
+    except (OSError, ValueError, AttributeError, RuntimeError):
+        return "unknown", False
+    if not isinstance(permission, str):
+        return "unknown", False
+    return permission, permission in WRITE_PERMISSIONS
+
+
+def annotate(item, allowed, permissions):
     author = item.get("author") or {}
     login = author.get("login")
     is_bot = author.get("__typename") == "Bot"
     association = item.get("authorAssociation") or "NONE"
     allowlisted = login is not None and login.lower().removesuffix("[bot]") in allowed
-    trusted = allowlisted or (login is not None and not is_bot
-                              and association in TRUSTED_ASSOCIATIONS)
+    permission, has_write = None, False
+    if login is not None and not is_bot and not allowlisted:
+        permission, has_write = permissions(login)
+    own, quoted, hidden = split_body(item.get("body"))
     return {**item, "author": login or "unknown", "author_association": association,
-            "author_is_bot": is_bot, "trusted": trusted}
+            "author_is_bot": is_bot, "author_permission": permission,
+            "trusted": allowlisted or has_write,
+            "author_text": own, "quoted_text": quoted, "hidden_text": hidden}
 
 
 def main():
@@ -93,6 +168,13 @@ def main():
         raise RuntimeError("Pull request not found")
     author = (metadata.get("author") or {}).get("login")
     allowed = allowlist()
+    cache = {}
+
+    def permissions(login):
+        key = login.lower()
+        if key not in cache:
+            cache[key] = write_access(owner, repo, login)
+        return cache[key]
 
     def connection(name, fields):
         query = (
@@ -118,7 +200,7 @@ def main():
         thread_comments = pages(lambda cursor: graphql(
             query, thread=thread["id"], cursor=cursor
         )["node"]["comments"], initial=thread["comments"])
-        thread_comments = [annotate(item, allowed) for item in thread_comments]
+        thread_comments = [annotate(item, allowed, permissions) for item in thread_comments]
         thread["comments"] = {"totalCount": len(thread_comments), "nodes": thread_comments}
         thread["trusted"] = bool(thread_comments) and all(item["trusted"] for item in thread_comments)
 
@@ -127,7 +209,7 @@ def main():
         for item in items:
             if not (item.get("body") or "").strip():
                 continue
-            entry = annotate(item, allowed)
+            entry = annotate(item, allowed, permissions)
             result.append({**entry, "by_pr_author": author is not None
                            and entry["author"] == author})
         return result
