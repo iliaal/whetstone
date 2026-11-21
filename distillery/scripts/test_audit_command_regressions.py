@@ -1,10 +1,13 @@
 """Exercise the real feedback helper with a mock gh; no network or posting."""
 
+import ast
+from html import escape as html_escape
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
+import textwrap
 
 import pytest
 
@@ -533,6 +536,65 @@ def test_split_body_reads_real_github_body_html(tmp_path):
     assert "Apply the existing" not in item["author_text"]
     assert "Suggested change" not in item["author_text"]
     assert all(entry["render_unavailable"] is False for entry in (quote, review, item))
+
+
+SUGGESTION_URL = "https://github.com/python/cpython/pull/161701#discussion_r4602465510"
+
+
+def suggested_lines(url):
+    fence = "\x60" * 3
+    block = SAMPLES[url]["body"].split(fence + "suggestion\n", 1)[1].split(fence, 1)[0]
+    return block.removesuffix("\n")
+
+
+def suggestion_html(lines):
+    """Rebuild the captured suggestion table with other added lines, keeping GitHub's markup."""
+    html = SAMPLES[SUGGESTION_URL]["bodyHTML"]
+    rows = re.findall(r'<tr class="border-0">\s*<td class="blob-num blob-num-addition.*?</tr>', html, re.S)
+    cell = re.compile(r'(<td class="[^"]*blob-code-addition[^"]*">).*?(</td>)', re.S)
+    added = "\n          ".join(
+        cell.sub(lambda m: m.group(1) + html_escape(line, quote=False) + m.group(2), rows[0])
+        for line in lines)
+    start, end = html.index(rows[0]), html.index(rows[-1]) + len(rows[-1])
+    return html[:start] + added + html[end:]
+
+
+def test_split_body_preserves_suggested_python_exactly(tmp_path):
+    suggestion = thread("t")
+    suggestion["comments"]["nodes"] = [sample_comment("suggestion", SUGGESTION_URL)]
+    variant_lines = ["def f(x):  ", "\tif x:", "", "", "        ", "        return '  a   b  '",
+                     "    return None"]
+    variant = thread("v")
+    variant["comments"]["nodes"] = [comment("variant", body="suggestion",
+                                            html=suggestion_html(variant_lines))]
+    edges = thread("e")
+    edge_html = suggestion_html(["", "x", ""])
+    edges["comments"]["nodes"] = [comment("edges", body="suggestion",
+                                          html=edge_html[edge_html.index("  <div class"):])]
+    result, _ = run_mock(tmp_path, [
+        metadata(), page("comments", []), page("reviews", []),
+        page("reviewThreads", [suggestion, variant, edges])],
+        permissions={"reviewer": permission("write")})
+    assert result.returncode == 0, result.stderr
+    nodes = [entry["node"]["comments"]["nodes"][0] for entry in json.loads(result.stdout)["unresolved"]]
+    text = nodes[0]["author_text"]
+    expected = suggested_lines(SUGGESTION_URL)
+    assert "\n\n" in expected and "b'  abc  '" in expected
+    assert text.endswith("\n" + expected)
+    assert text.startswith("Suggestions:\n")
+    assert "test_strip_buffer_release_mutates_self" not in text
+    ast.parse(textwrap.dedent(text[-len(expected):]))
+    assert nodes[1]["author_text"].endswith("\n" + "\n".join(variant_lines))
+    assert "Suggested change" not in nodes[1]["author_text"]
+    assert nodes[2]["author_text"] == "\nx\n"
+
+
+def test_split_body_preserves_preformatted_whitespace(tmp_path):
+    fence = "\x60" * 3
+    code = 'def a():\n    return "  x  "\n\n\ndef b():  \n\treturn 1'
+    body = f"{fence}python\n{code}\n{fence}\n\nOwn."
+    parts = split_bodies(tmp_path, {"pre": body})
+    assert parts["pre"] == (code + "\n\nOwn.", "", "")
 
 
 def test_split_body_mutes_embedded_files_and_quotes_email_replies(tmp_path):

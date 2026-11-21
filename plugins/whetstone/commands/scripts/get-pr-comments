@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import itertools
 import json
 import os
 import re
@@ -74,6 +75,10 @@ UI_ONLY_CLASSES = {"sr-only", "data-footnote-backref", "email-hidden-toggle", "B
 # The earlier message an email reply quotes, as GitHub's email parser marks it.
 QUOTE_CLASSES = {"email-quoted-reply", "email-hidden-reply"}
 
+
+class Verbatim(str):
+    """Source text from <pre> or a suggested line, kept byte-exact by tidy()."""
+
 def allowlist():
     entries = os.environ.get(ALLOWLIST_ENV, "").split(",")
     return {entry.strip().lower().removesuffix("[bot]") for entry in entries if entry.strip()}
@@ -87,28 +92,48 @@ class RenderedText(HTMLParser):
         self.own, self.quoted = [], []
         self.stack = []
         self.quote_depth = 0
-        self.pre_depth = 0
+        self.verbatim_depth = 0
+        self.suggestion_lines = 0
+        self.pre_start = 0
 
     def emitting(self):
         return self.stack[-1][1] if self.stack else True
 
-    def handle_starttag(self, tag, attrs):
-        if tag in BLOCK_TAGS:
+    def in_suggestion(self):
+        return bool(self.stack) and self.stack[-1][2]
+
+    def block_break(self):
+        # Suggestion table cells are code lines; their row and cell breaks are not text.
+        if not self.in_suggestion():
             self.own.append("\n")
             self.quoted.append("\n")
+
+    def handle_starttag(self, tag, attrs):
+        if tag in BLOCK_TAGS:
+            self.block_break()
         if tag in VOID_TAGS:
             return
         classes = set((dict(attrs).get("class") or "").split())
-        in_suggestion = (bool(self.stack) and self.stack[-1][2]) or SUGGESTION in classes
+        in_suggestion = self.in_suggestion() or SUGGESTION in classes
+        added_line = False
         if in_suggestion:
-            emit = (tag == "td" and SUGGESTION_ADDED in classes) or (
-                self.emitting() and SUGGESTION not in classes)
+            added_line = tag == "td" and SUGGESTION_ADDED in classes
+            emit = added_line or (self.emitting() and SUGGESTION not in classes)
+            if SUGGESTION in classes and not self.in_suggestion():
+                self.suggestion_lines = 0
         else:
             emit = self.emitting() and not (classes & UI_ONLY_CLASSES)
         quote = tag == "blockquote" or bool(classes & QUOTE_CLASSES)
+        if added_line:
+            if self.suggestion_lines:
+                (self.quoted if self.quote_depth else self.own).append(Verbatim("\n"))
+            self.suggestion_lines += 1
+        verbatim = tag == "pre" or added_line
         self.quote_depth += quote
-        self.pre_depth += tag == "pre"
-        self.stack.append((tag, emit, in_suggestion, quote))
+        self.verbatim_depth += verbatim
+        if tag == "pre":
+            self.pre_start = len(self.quoted if self.quote_depth else self.own)
+        self.stack.append((tag, emit, in_suggestion, quote, verbatim))
 
     def handle_startendtag(self, tag, attrs):
         self.handle_starttag(tag, attrs)
@@ -116,38 +141,61 @@ class RenderedText(HTMLParser):
             self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
-        if tag in BLOCK_TAGS:
-            self.own.append("\n")
-            self.quoted.append("\n")
         if not any(frame[0] == tag for frame in self.stack):
+            if tag in BLOCK_TAGS:
+                self.block_break()
             if tag == "blockquote":
                 raise ValueError("unbalanced blockquote")
             return
         while True:
-            open_tag, _, _, quote = self.stack.pop()
+            open_tag, _, _, quote, verbatim = self.stack.pop()
             if quote:
                 if open_tag != tag:
                     raise ValueError("quote closed by </" + tag + ">")
                 self.quote_depth -= 1
-            self.pre_depth -= open_tag == "pre"
+            self.verbatim_depth -= verbatim
+            if open_tag == "pre":
+                self.drop_final_newline()
             if open_tag == tag:
-                return
+                break
+        if tag in BLOCK_TAGS:
+            self.block_break()
+
+    def drop_final_newline(self):
+        # A fenced block renders as <pre><code>line\n</code></pre>; that last newline
+        # ends the final source line and is not a blank line.
+        parts = self.quoted if self.quote_depth else self.own
+        if len(parts) > self.pre_start and isinstance(parts[-1], Verbatim) and parts[-1].endswith("\n"):
+            parts[-1] = Verbatim(parts[-1][:-1])
 
     def handle_data(self, data):
         if not self.emitting():
             return
         parts = self.quoted if self.quote_depth else self.own
-        if not self.pre_depth:
-            # Outside <pre>, a browser collapses ASCII whitespace and drops it at a line start.
-            data = HTML_SPACE.sub(" ", data)
-            if not parts or parts[-1].endswith("\n"):
-                data = data.lstrip(" ")
+        if self.verbatim_depth:
+            parts.append(Verbatim(data))
+            return
+        # Outside <pre> and suggested lines, a browser collapses ASCII whitespace and
+        # drops it at a line start.
+        data = HTML_SPACE.sub(" ", data)
+        if not parts or parts[-1].endswith("\n"):
+            data = data.lstrip(" ")
         parts.append(data)
 
 
 def tidy(parts):
-    lines = [line.rstrip() for line in "".join(parts).split("\n")]
-    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip("\n")
+    """Trim prose line ends and blank runs; leave Verbatim source text untouched."""
+    chunks = []
+    for verbatim, group in itertools.groupby(parts, key=lambda part: isinstance(part, Verbatim)):
+        text = "".join(group)
+        if not verbatim:
+            text = re.sub(r"\n{3,}", "\n\n", re.sub(r"[^\S\n]+\n", "\n", text))
+        chunks.append((verbatim, text))
+    if chunks and not chunks[0][0]:
+        chunks[0] = (False, chunks[0][1].lstrip("\n"))
+    if chunks and not chunks[-1][0]:
+        chunks[-1] = (False, chunks[-1][1].rstrip())
+    return "".join(text for _, text in chunks)
 
 
 def split_body(body, html):
@@ -158,8 +206,9 @@ def split_body(body, html):
     part, at any depth, is quoted, and
     markup that never renders (HTML comments, link-reference definitions,
     footnote definitions, processing instructions) is absent. hidden_text is a
-    best-effort pull of HTML comments from the raw body, kept so a stop or hold
-    request there can be honored. Missing or malformed HTML yields no
+    best-effort pull of HTML comments from the raw body, including ones inside
+    quotes or code, kept so a stop or hold request there can be surfaced to the
+    user for confirmation. Missing or malformed HTML yields no
     author_text and render_unavailable, never a fallback to the raw body.
     """
     raw = (body or "").replace("\r\n", "\n").replace("\r", "\n")

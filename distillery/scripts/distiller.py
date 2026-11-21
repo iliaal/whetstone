@@ -5925,16 +5925,116 @@ _INJ_SUSPICIOUS_CHARS = {
     0x007F: ("delete (control character)", "MEDIUM"),
 }
 
-# Inclusive code-point ranges checked after _INJ_SUSPICIOUS_CHARS. U+FE0F (emoji
-# presentation selector) stays allowed; U+E0100-E01EF can carry hidden ASCII the
-# same way the Unicode Tag block does.
+# Inclusive code-point ranges checked after _INJ_SUSPICIOUS_CHARS.
 _INJ_SUSPICIOUS_RANGES = (
     (0x0001, 0x0008, "control character", "MEDIUM"),
     (0x000E, 0x001F, "control character", "MEDIUM"),
     (0x0080, 0x009F, "C1 control character", "MEDIUM"),
-    (0xFE00, 0xFE0E, "variation selector", "MEDIUM"),
-    (0xE0100, 0xE01EF, "variation selector supplement", "MEDIUM"),
 )
+
+# Variation selectors render as nothing, so one per visible character (or a run
+# of them) carries hidden ASCII the same way the Unicode Tag block does. Allowed:
+# a single U+FE0F after any base; U+FE0E after a base listed in
+# emoji-variation-sequences.txt; U+FE00-FE02 after a CJK unified ideograph, the
+# only selectors StandardizedVariants.txt (Unicode 18.0) pairs with one. Every
+# other selector, every run, and all of U+E0100-E01EF are HIGH.
+_INJ_VS_RANGES = ((0xFE00, 0xFE0F), (0xE0100, 0xE01EF))
+# emoji-variation-sequences.txt bases outside the Symbol categories: keycap
+# bases, double and interrobang exclamation, information source, wavy dash, and
+# part alternation mark.
+_INJ_EMOJI_VS_NONSYMBOL_BASES = frozenset(map(ord, "#*0123456789\u203c\u2049\u2139\u3030\u303d"))
+
+
+def _is_variation_selector(cp):
+    return any(lo <= cp <= hi for lo, hi in _INJ_VS_RANGES)
+
+
+def _standard_variation_sequence(base, selector):
+    import unicodedata as _ud
+
+    if selector == 0xFE0F:
+        return True
+    if base is None:
+        return False
+    if selector == 0xFE0E:
+        return _ud.category(base).startswith("S") or ord(base) in _INJ_EMOJI_VS_NONSYMBOL_BASES
+    if 0xFE00 <= selector <= 0xFE02:
+        return _ud.name(base, "").startswith("CJK UNIFIED IDEOGRAPH")
+    return False
+
+
+# A logical shell command can span physical lines: the shell deletes a
+# backslash-newline, and a newline inside an open $( ), <( ) or >( ) does not end
+# the command. A join stops at a fence delimiter, at a blank line outside a
+# fence, or after this many lines.
+_SHELL_JOIN_MAX_LINES = 200
+_MD_FENCE_RE = r"^ {0,3}(`{3,}|~{3,})"
+
+
+def _substitution_depth(text, depth):
+    i = 0
+    while i < len(text):
+        if text[i] in "$<>" and text.startswith("(", i + 1):
+            depth += 1
+            i += 2
+            continue
+        if depth and text[i] == "(":
+            depth += 1
+        elif depth and text[i] == ")":
+            depth -= 1
+        i += 1
+    return depth
+
+
+def _shell_logical_lines(lines):
+    """Yield (text, starts, closed) for each logical shell command spanning several lines.
+
+    starts lists (offset in text, 1-based source line) for each joined line;
+    closed is False when a substitution is still open where the join stopped. A
+    trailing pipe continues a command only inside a fence, because a Markdown
+    table row also ends with one.
+    """
+    import re as _re
+
+    delimiter, fenced, inside = [], [], False
+    for line in lines:
+        is_delimiter = bool(_re.match(_MD_FENCE_RE, line))
+        delimiter.append(is_delimiter)
+        if is_delimiter:
+            inside = not inside
+        fenced.append(inside and not is_delimiter)
+
+    i = 0
+    while i < len(lines):
+        if delimiter[i]:
+            i += 1
+            continue
+        text, starts, depth, j, complete = "", [], 0, i, False
+        while True:
+            line = lines[j].removesuffix("\r")
+            continued = (len(line) - len(line.rstrip("\\"))) % 2 == 1
+            piece = line[:-1] if continued else line
+            starts.append((len(text), j + 1))
+            text += piece
+            depth = _substitution_depth(piece, depth)
+            piped = fenced[i] and line.rstrip().endswith("|")
+            if not (continued or depth > 0 or piped):
+                complete = True
+                break
+            nxt = j + 1
+            if (nxt >= len(lines) or delimiter[nxt] or fenced[nxt] != fenced[i]
+                    or (not fenced[i] and not lines[nxt].strip())
+                    or nxt - i >= _SHELL_JOIN_MAX_LINES):
+                complete = depth == 0
+                break
+            if not continued:
+                text += " "
+            j = nxt
+        if j > i:
+            yield text, starts, complete
+        # An open span may hold the start of a separate command, so its lines are
+        # scanned again as starting points.
+        i = j + 1 if complete else i + 1
 
 # Upper bound on a whitespace-normalized base64 candidate run. Guards against a
 # pathological all-word paragraph joining into an unbounded decode attempt.
@@ -5969,6 +6069,13 @@ _INJ_FETCH_EXEC_PATTERNS = (
     r"(?i)\b(iex|invoke-expression)\b[^\n]*(http|downloadstring|webclient)",
     r"(?i)(?:^|[\s;&|(`'\"])(?:(?:ba|z|da|k)?sh|source|\.)\s+(?:<\s*)?<\(\s*(curl|wget|fetch)\b",
     r"(?i)\b(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|perl|ruby)\s+(?:-[a-z]+\s+)*-[a-z]*c\s+[\"']?(?:\$\(|`)\s*(curl|wget|fetch)\b",
+)
+
+# The fetch-then-execute patterns anchored on a substitution opener. A span whose
+# substitution never closes is checked against these only, since the pipe pattern
+# would match across unrelated joined lines.
+_INJ_FETCH_EXEC_OPENER_PATTERNS = (
+    _INJ_FETCH_EXEC_PATTERNS[1], _INJ_FETCH_EXEC_PATTERNS[3], _INJ_FETCH_EXEC_PATTERNS[4],
 )
 
 # Outbound network egress verbs, and references to local secrets/credentials.
@@ -6008,8 +6115,27 @@ def _scan_file_deterministic(path, text):
 
     # 1. Hidden / bidi unicode (scan every char).
     for lineno, line in enumerate(lines, 1):
+        skip_to = 0
         for col, ch in enumerate(line, 1):
+            if col <= skip_to:
+                continue
             cp = ord(ch)
+            if _is_variation_selector(cp):
+                end = col
+                while end < len(line) and _is_variation_selector(ord(line[end])):
+                    end += 1
+                skip_to = end
+                run = line[col - 1:end]
+                base = line[col - 2] if col > 1 else None
+                if len(run) > 1 or cp > 0xFE0F:
+                    add(lineno, "HIDDEN_UNICODE", "HIGH",
+                        f"{len(run)} variation selector(s) from U+{cp:04X} at column {col}"
+                        " (hidden-ASCII smuggling)", line.strip())
+                elif not _standard_variation_sequence(base, cp):
+                    add(lineno, "HIDDEN_UNICODE", "HIGH",
+                        f"variation selector U+{cp:04X} at column {col} forms no standard"
+                        " variation sequence with its base (hidden-ASCII smuggling)", line.strip())
+                continue
             if cp in _INJ_SUSPICIOUS_CHARS:
                 name, sev = _INJ_SUSPICIOUS_CHARS[cp]
                 add(lineno, "HIDDEN_UNICODE", sev,
@@ -6023,7 +6149,8 @@ def _scan_file_deterministic(path, text):
                     f"Unicode Tag char U+{cp:05X} at column {col} (hidden-ASCII smuggling)",
                     line.strip())
 
-    # 2. Fetch-then-execute (HIGH).
+    # 2. Fetch-then-execute (HIGH), per physical line and then per logical shell
+    # command, so a command split across lines is reported at the line it starts on.
     for lineno, line in enumerate(lines, 1):
         for pat in _INJ_FETCH_EXEC_PATTERNS:
             if _re.search(pat, line):
@@ -6031,6 +6158,22 @@ def _scan_file_deterministic(path, text):
                     "Download piped/eval'd into an interpreter (remote code execution)",
                     line.strip())
                 break
+    fetch_lines = {f["line"] for f in findings if f["check"] == "FETCH_EXECUTE"}
+    for text, starts, closed in _shell_logical_lines(lines):
+        for pat in _INJ_FETCH_EXEC_PATTERNS if closed else _INJ_FETCH_EXEC_OPENER_PATTERNS:
+            m = _re.search(pat, text)
+            if not m:
+                continue
+            pos = m.start()
+            while pos < len(text) and text[pos].isspace():
+                pos += 1
+            lineno = next(n for offset, n in reversed(starts) if offset <= pos)
+            if lineno not in fetch_lines:
+                fetch_lines.add(lineno)
+                add(lineno, "FETCH_EXECUTE", "HIGH",
+                    "Download piped/eval'd into an interpreter across a multi-line"
+                    " shell command (remote code execution)", text.strip())
+            break
 
     # 3. Exfil-shaped lines: egress verb + secret reference on the same line (MEDIUM).
     egress = _re.compile(_INJ_EGRESS_RE)

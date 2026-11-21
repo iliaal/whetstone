@@ -63,7 +63,7 @@ When a CI check fails on a PR or branch:
 ## Post-Fix Passes
 
 - **Adversarial re-attack** (security-relevant fixes): after the bypass self-check, spawn a fresh-context agent, blind to the fix reasoning, and have it attack the patched code to find a variant input that still triggers the bad state. The fixing session cannot attack its own patch objectively; it knows too much about the intended fix path.
-- **Fresh-context trim pass**: after the fix verifies, run a fresh-context pass given the sweep's same-bug sites as required scope and asked only to "simplify to the smallest change that fixes the root cause at those sites." The fixing session is anchored to its own reasoning and over-reaches; a blind pass reliably finds the trim points without reintroducing the bug.
+- **Fresh-context trim pass**: after the fix verifies, run a fresh-context pass given the sweep's same-bug sites inside the authorized scope as required scope and asked only to "simplify to the smallest change that fixes the root cause at those sites." The fixing session is anchored to its own reasoning and over-reaches; a blind pass reliably finds the trim points without reintroducing the bug.
 
 ## Postmortem
 
