@@ -154,7 +154,7 @@ class RenderedText(HTMLParser):
                     raise ValueError("quote closed by </" + tag + ">")
                 self.quote_depth -= 1
             self.verbatim_depth -= verbatim
-            if open_tag == "pre":
+            if open_tag == "code" and self.stack and self.stack[-1][0] == "pre":
                 self.drop_final_newline()
             if open_tag == tag:
                 break
@@ -162,8 +162,9 @@ class RenderedText(HTMLParser):
             self.block_break()
 
     def drop_final_newline(self):
-        # A fenced block renders as <pre><code>line\n</code></pre>; that last newline
-        # ends the final source line and is not a blank line.
+        # An unhighlighted fenced block renders as <pre><code>line\n</code></pre>; that
+        # last newline ends the final source line and is not a blank line. A
+        # highlighted block, <pre> holding spans directly, carries no such terminator.
         parts = self.quoted if self.quote_depth else self.own
         if len(parts) > self.pre_start and isinstance(parts[-1], Verbatim) and parts[-1].endswith("\n"):
             parts[-1] = Verbatim(parts[-1][:-1])

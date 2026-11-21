@@ -597,6 +597,18 @@ def test_split_body_preserves_preformatted_whitespace(tmp_path):
     assert parts["pre"] == (code + "\n\nOwn.", "", "")
 
 
+# GitHub's highlighter drops leading blank lines and the line terminator, so only
+# the unhighlighted <pre><code> form carries a renderer-added final newline.
+@pytest.mark.parametrize("body,code", [
+    ("```\n\nprint(1)\n\n```\n\nOwn.", "\nprint(1)\n"),
+    ("```\n\n\nx = 1\n\n\n```\n\nOwn.", "\n\nx = 1\n\n"),
+    ("```python\n\nprint(1)\n\n```\n\nOwn.", "print(1)"),
+    ("```python\n\n\nx = 1\n\n\n```\n\nOwn.", "x = 1\n"),
+])
+def test_split_body_keeps_preformatted_edge_lines(tmp_path, body, code):
+    assert split_bodies(tmp_path, {"pre": body})["pre"] == (code + "\n\nOwn.", "", "")
+
+
 def test_split_body_mutes_embedded_files_and_quotes_email_replies(tmp_path):
     result, _ = run_mock(tmp_path, [
         metadata(), page("comments", [
