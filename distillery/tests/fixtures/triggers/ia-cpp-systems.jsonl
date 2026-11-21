@@ -29,8 +29,8 @@
 {"prompt": "use boost::asio for the socket", "expect": true, "added_in": "4.4.0", "source": "codex-review"}
 {"prompt": "help me boost php performance", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
 {"prompt": "write a c parser for the wire format", "expect": false, "added_in": "4.4.0", "source": "codex-review"}
-{"prompt": "the base class destructor is not virtual so delete through a base pointer leaks", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
-{"prompt": "the defaulted destructor is implicitly noexcept here", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
-{"prompt": "~widget() releases the handle twice", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
-{"prompt": "adversarially review this php-src patch, the object destructor frees the table twice", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}
-{"prompt": "check whether the destructor runs on the persistent connection table in php-src", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "the base class destructor is not virtual so delete through a base pointer leaks", "expect": true, "added_in": "5.1.7", "source": "q6-2026-11-21"}
+{"prompt": "the defaulted destructor is implicitly noexcept here", "expect": true, "added_in": "5.1.7", "source": "q6-2026-11-21"}
+{"prompt": "~widget() releases the handle twice", "expect": true, "added_in": "5.1.7", "source": "q6-2026-11-21"}
+{"prompt": "adversarially review this php-src patch, the object destructor frees the table twice", "expect": false, "added_in": "5.1.7", "source": "q6-2026-11-21"}
+{"prompt": "check whether the destructor runs on the persistent connection table in php-src", "expect": false, "added_in": "5.1.7", "source": "q6-2026-11-21"}

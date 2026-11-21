@@ -5,6 +5,31 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.7] - 2026-11-21
+
+Patch: a reference-repository sync, its follow-up audit, and three rounds of independent pre-release review tightened PR-comment trust, the Tier-1 injection scanner, framework pitfalls, and agent authority boundaries. 18 commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
+
+### Changed
+
+- `/ia-resolve-pr` trusts a commenter only with `write` or `admin` permission from the collaborator permission endpoint; `author_association` alone no longer grants trust, and a failed lookup leaves the author untrusted. `get-pr-comments` now takes author and quoted text from GitHub's rendered `bodyHTML`, so text GitHub hides, quotes, or strikes through never counts as the reviewer's request. Missing or malformed HTML marks the comment untrusted. Stop or hold requests in any field pause only that item and go to the user. Merges must match the approved head SHA (`--match-head-commit`).
+- `ia-debugging` fixes every site that repeats the root-cause mistake inside the authorized scope in the same run, reports sites outside it, and edits them only after approval. The sweep also looks for code resting on the same wrong assumption. `ia-orchestrating-swarms`, `ia-receiving-code-review`, `ia-code-review`, the code simplicity reviewer, and `/ia-verify` follow the same rule.
+- `ia-php-laravel` records the v13.43.0 and v12.73.0 releases of four fixes previously listed as untagged, and adds Forge and Vapor host headers that make every proxy trusted (including all 11.x releases from v11.45.2), `$guarded` bypasses through alternate key spellings, the `(int)` broadcast-channel stub that authorizes any user for ULID and UUIDv7 keys, empty text fields hiding uploads from validation, `$attributes->merge()` leaving objects unescaped, and `command_retries` retrying non-idempotent Redis commands.
+- `ia-nodejs-backend` covers NestJS mixin controllers that drop class-level guard metadata before v12.6.0, host-bound controllers matched in declaration order, microservice `gracefulShutdown` by transport and version, and `z.coerce.date()` accepting impossible dates.
+- `ia-agent-native-architecture` keys MCP trust on `mcp_server.source` (Claude Code v2.1.274+) rather than the tool-name prefix. Its hook guidance now covers git config and alias bypasses of `--no-verify` gates (including persistent includes and the command's target repository), cross-hook deny precedence, `tool_response` versus `PostToolUseFailure` payloads, `onFailure` on `mcp_tool` hooks, plugin agents ignoring `hooks`/`mcpServers`/`permissionMode`, denial text that never names off-switches, Windows hooks without Git Bash, and byte caps for content-returning MCP tools.
+- `ia-rust-systems` treats a `// SAFETY:` comment as a claim to check, forbids relying on caller-supplied safe code for memory safety, and adds an unsafe-review reference. `ia-terraform` applies only saved, reviewed plans with approval and adds a plan-and-state-safety reference covering `removed` blocks. `ia-python-services` publishes Celery tasks after commit and pairs `acks_late` with `reject_on_worker_lost`. `ia-postgresql` adds `NOT IN`, `LEFT JOIN`, and `LIMIT` result-correctness traps and version-gap handling for delta events.
+- `ia-writing` redacts open security findings in PR bodies, `ia-writing-tests` isolates host git config, `ia-md-docs` cites code by name rather than line number, and `ia-simplifying-code` treats skill and agent instruction files as runtime prompts.
+- Commands and agents: `/ia-work` reads issue comments as proposals only the user can accept and redacts security suppressions; `/ia-lfg` handles branches with no required checks and reads required checks from the base branch; `/ia-report-bug` routes vulnerabilities to private advisories and checks version and duplicates without sending report text before approval; `/ia-review`, `/ia-plan`, and `/ia-deepen-plan` check that a consulted ADR still holds; every `agent-browser` caller uses its own session and closes it; the database guardian states per-engine `NOT NULL` outcomes, the researcher looks up support dates, the infrastructure engineer verifies `npm stage publish`, and the accessibility tester runs a pinned axe CLI.
+- Triggers: `ia-meta-prompting` no longer fires on dual-review "meta-prompting rule" text, `ia-cpp-systems` no longer fires on a bare "destructor", and `ia-c-systems` narrows its C-standard and PHP-extension alternatives.
+
+### Fixed
+
+- The advisory `PreToolUse` skill-injection hook sets `onFailure: "continue"`, so a failing hook on Windows without Git Bash no longer blocks Agent calls.
+
+### For contributors
+
+- The Tier-1 injection scan splits lines on LF only, joins backslash-continued commands, catches more fetch-and-execute forms, and checks variation selectors against pinned Unicode 17.0.0 data: runs and unregistered pairs block a release. Multiline command substitutions are a documented Tier-1 gap covered by the Tier-2 judge.
+- Repository comparison and mirror scripts reject invalid or unavailable sources, keep nested frontmatter out of metadata, handle frontmatter closing at end of file, and compare normalized mirrors before updating.
+
 ## [5.1.6] - 2026-11-14
 
 Patch: 55 reference-repository improvements and 30 audit fixes tightened framework pitfalls, hook and approval-gate safety, and review guidance. 26 commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
