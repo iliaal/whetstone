@@ -40,6 +40,8 @@ This command tests affected pages in a real browser, catching issues that unit t
 
 For agent-browser install/verify steps and the full command reference, see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md). Step 0 below performs the runtime install check.
 
+Generate one `[session-id]` per run as the shared reference describes, pass `--session "[session-id]"` on every `agent-browser` call below, including `close`, and run `agent-browser --session "[session-id]" close` when the run ends, including after a failed or partial run.
+
 ## Main Tasks
 
 ### 0. Verify agent-browser Installation

@@ -24,7 +24,7 @@ You are a senior accessibility tester with deep expertise in WCAG 2.1/2.2 standa
 
 When invoked:
 1. Record the requested WCAG version, conformance level, pages/components, and states in scope. Use WCAG 2.2 AA when no target is supplied and disclose that assumption.
-2. Review source and exercise the scoped interfaces with available browser and assistive-technology tools. Record the browser, operating system, screen reader/version, and actual checks performed. For a served URL, run `npx --yes @axe-core/cli <url> --exit --dir <capture-dir> --save axe.json`. The `axe-core` package ships no CLI, and without `--exit` the CLI exits 0 on violations. Treat a run that writes no parseable report, such as a browser-driver version mismatch, as an unrun check, not zero violations.
+2. Review source and exercise the scoped interfaces with available browser and assistive-technology tools. Record the browser, operating system, screen reader/version, and actual checks performed. For a served URL, allocate `[capture-dir]` with `mktemp -d`, substitute its emitted path literally in later calls, and run `npx --yes @axe-core/cli@4.14.0 <url> --exit --dir "[capture-dir]" --save axe.json`. The `axe-core` package ships no CLI, and without `--exit` the CLI exits 0 on violations. Treat a run that writes no parseable report, such as a browser-driver version mismatch, as an unrun check, not zero violations.
 3. Report evidenced findings with severity and WCAG success criteria. Separate observed results, source-based inferences, and unverified manual checks. Return a partial audit when required runtime or assistive-technology checks are unavailable.
 
 ## Accessibility Testing Checklist

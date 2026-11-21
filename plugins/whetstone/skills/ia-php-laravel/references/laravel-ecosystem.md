@@ -161,7 +161,7 @@ Register in `bootstrap/app.php` middleware stack.
 
 ### Trusted proxies
 
-Configure `->trustProxies(at: [...])` in `bootstrap/app.php` with the real proxy addresses; leaving it unset is not "trust nothing". From v12.22.0 through v12.72.0 and through v13.42.0, an unset proxy list trusts every caller when the client-supplied `Host` header ends in `.on-forge.com` or `.on-vapor.com`, so `X-Forwarded-For` sets `$request->ip()` and IP-keyed rate limits and allowlists can be bypassed. v13.43.0 and v12.73.0 (framework PR #62484) also require the Forge or Vapor environment variable. Test by sending `Host: x.on-forge.com` with `X-Forwarded-For: 10.9.9.9` and asserting `$request->ip()` is the socket address.
+Configure `->trustProxies(at: [...])` in `bootstrap/app.php` with the real proxy addresses; leaving it unset is not "trust nothing". From v11.45.2 in every later 11.x release (no 11.x fix), v12.22.0 through v12.72.0, and through v13.42.0, an unset proxy list trusts every caller when the client-supplied `Host` header ends in `.on-forge.com` or `.on-vapor.com`, so `X-Forwarded-For` sets `$request->ip()` and IP-keyed rate limits and allowlists can be bypassed. v13.43.0 and v12.73.0 (framework PR #62484) also require the Forge or Vapor environment variable. Test by sending `Host: x.on-forge.com` with `X-Forwarded-For: 10.9.9.9` and asserting `$request->ip()` is the socket address.
 
 ### Blade dynamic components
 
@@ -183,7 +183,7 @@ Password::min(12)->letters()->mixedCase()->numbers()->symbols()
 
 - Validate MIME type: `'file' => ['required', 'mimes:pdf,docx', 'max:10240']`
 - Store outside public disk: `$request->file('doc')->store('documents', 's3')`
-- Store the validated value, not a fresh read: `$request->validated('doc')?->store('documents', 's3')`. From v13.25.0 through v13.42.0 (fixed in v13.43.0, framework PR #62521), an empty text field with the same name hides the file from validation, so an optional rule such as `nullable|mimes:pdf` passes while `$request->file('doc')` returns the unvalidated upload. Test by posting both `doc=` and a `.php` file under `doc` and asserting a 422.
+- Store the validated value, not a fresh read: in a form request, `$request->validated('doc')?->store('documents', 's3')`; with inline validation, `$request->validate([...])['doc']->store('documents', 's3')`. From v13.25.0 through v13.42.0 (fixed in v13.43.0, framework PR #62521), an empty text field with the same name hides the file from validation, so an optional rule such as `nullable|mimes:pdf` passes while `$request->file('doc')` returns the unvalidated upload. Test by posting both `doc=` and a `.php` file under `doc` and asserting a 422.
 - Never trust the original filename
 
 ### Dependency Audit

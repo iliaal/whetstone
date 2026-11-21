@@ -38,12 +38,9 @@ Review the structural rules that protect data. Focus on schema design, constrain
 
 ### 1. Analyze Database Migrations
 
-- Check for reversibility and rollback safety
-- Identify potential data loss scenarios
 - Verify handling of NULL values and defaults
 - Assess impact on existing data and indexes
 - Ensure migrations are idempotent when possible
-- Check for long-running operations that could lock tables
 
 ### 2. Migration Risk Patterns
 
@@ -183,14 +180,6 @@ WHERE new_column = '<expected_value>';
 
 Before reading the diff end-to-end, run the searches and checks in [database-review-triggers.md](../shared-references/database-review-triggers.md). It covers seven classes of silent data corruption and their remedies. Block fallback-state writes after a failed load until the record loads successfully or an explicit reset is authorized. Use the failure regression in the reference.
 
-## Analysis Approach
-
-- Start with a high-level assessment of data flow and storage
-- Identify critical data integrity risks first
-- Provide specific examples of potential data corruption scenarios
-- Suggest concrete improvements with code examples
-- Consider both immediate and long-term data integrity implications
-
 ## Output Format
 
 For each issue found, cite:
@@ -210,7 +199,7 @@ Return initial findings and required invariants even when the plan is missing. W
 
 ## Scope Boundaries
 
-- **This agent**: schema design, constraints, transaction boundaries, privacy compliance, AND migration code validation (ID mappings, enum conversions, backfills)
+- **This agent**: Phases 1 and 2 above
 - **deployment-verification-agent**: creates *deployment checklists* with pre/post-deploy SQL verification and rollback plans
 
 Pass initial findings to deployment-verification-agent when deployment planning is needed.

@@ -48,10 +48,10 @@ Focus the viewport on the target rather than capturing the full page by default.
 
 ### Setup: Set Appropriate Window Size
 
-Before starting iterations, open the browser in headed mode to see and resize as needed. Pass `--session <invocation-id>` on every `agent-browser` call so concurrent browser work does not share the `default` session.
+Before starting iterations, open the browser in headed mode to see and resize as needed. Generate one ID per invocation (for example `ab-$(date +%s)-$$`), record it as `[session-id]`, and substitute it literally in every later call. Pass `--session "[session-id]"` on every `agent-browser` call, including `close`, so concurrent browser work does not share the `default` session. When the run ends, including after a failed or partial run, run `agent-browser --session "[session-id]" close`.
 
 ```bash
-agent-browser --headed open [url]
+agent-browser --session "[session-id]" --headed open [url]
 ```
 
 Recommended viewport sizes for reference:
@@ -70,9 +70,9 @@ printf '%s\n' "$CAPTURE_DIR"
 
 Record the emitted absolute path as `[capture-dir]` and substitute it literally in later calls. Retain captures and any requested report beneath that directory. Never overwrite or delete caller-provided or concurrent artifacts.
 
-1. Get a DOM snapshot identifying the target; use `agent-browser snapshot -i` for interactive references
-2. Scroll to target: `agent-browser scrollintoview @e1`
-3. Capture the baseline viewport: `agent-browser screenshot "[capture-dir]/initial.png"`
+1. Get a DOM snapshot identifying the target; use `agent-browser --session "[session-id]" snapshot -i` for interactive references
+2. Scroll to target: `agent-browser --session "[session-id]" scrollintoview @e1`
+3. Capture the baseline viewport: `agent-browser --session "[session-id]" screenshot "[capture-dir]/initial.png"`
 4. Implement changes, then capture `"[capture-dir]/iteration-[N].png"` with the same viewport and target position. Use a distinct iteration number for each image.
 
 Record the URL, viewport size, target selector, and capture paths with each comparison. If rendering is unavailable, report visual verification as unverified rather than infer the screenshot result from source.

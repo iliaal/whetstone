@@ -78,7 +78,7 @@ Task whetstone:{agent-name}(caller-defined scope and frozen base/head + PR conte
 
 Deduplicate configured agents and exclude `ia-code-simplicity-reviewer` from this dispatch; it runs once in section 2. When the migration criteria below match, reserve `ia-database-guardian` and `ia-deployment-verification-agent` for the ordered conditional sequence.
 
-Additionally, check documented learnings inline: read solution notes under `docs/` and ADRs whose names or frontmatter match the PR's modules. Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply its guidance only where current code independently confirms the specific claim. A dedicated agent costs more than these lookups.
+Additionally, check documented learnings inline: read solution notes under `docs/` and ADRs (the directory `ia-adr` detects; default `docs/decisions/`) whose names or frontmatter match the PR's modules. Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply a stale record's guidance only where current code independently confirms the specific claim. A dedicated agent costs more than these lookups.
 
 #### Per-agent artifact persistence
 

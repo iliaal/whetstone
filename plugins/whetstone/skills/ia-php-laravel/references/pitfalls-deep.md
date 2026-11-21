@@ -71,7 +71,7 @@ The plain `array`/`json` casts throw `JsonEncodingException` on data `json_encod
 
 ### A `$guarded` denylist misses alternate spellings of mutated columns
 
-Through v13.42.0 and v12.72.0, `$guarded` matches the raw key, but mutator lookup studly-cases it, so `fill(['is-admin' => true])` or `fill(['isAdmin' => true])` reaches a `setIsAdminAttribute()` mutator (or an `Attribute` setter returning `['is_admin' => ...]`) and writes the guarded column. `$fillable` allowlists are unaffected. v13.43.0 and v12.73.0 (framework PR #62499) compare studly forms. Prefer `$fillable` or `validated()` over a denylist for privileged columns; test by filling the guarded column under its kebab-case and camelCase keys and asserting it stays unset.
+Through v13.42.0 and v12.72.0, `$guarded` matches the raw key, but mutator lookup studly-cases it, so `fill(['is-admin' => true])` or `fill(['isAdmin' => true])` reaches a `setIsAdminAttribute()` mutator (or an `Attribute` setter returning `['is_admin' => ...]`) and writes the guarded column. `$fillable` allowlists are unaffected. v13.43.0 and v12.73.0 (framework PR #62499) compare studly forms; no 11.x release carries the fix, and 11.x has the same unpatched `isGuarded` and mutator lookup. Prefer `$fillable` or `validated()` over a denylist for privileged columns; test by filling the guarded column under its kebab-case and camelCase keys and asserting it stays unset.
 
 ## Queue pitfalls
 

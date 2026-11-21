@@ -180,7 +180,7 @@ Report: list of missing documentation. These are warnings, not blockers, but the
 Inspect the same frozen diff selected above; do not resolve a different range for this phase. Check for:
 - Files that changed but have no test coverage
 - Large files (>500 lines changed) that may need splitting
-- Unrelated changes mixed into the diff
+- Unrelated changes mixed into the diff (a site repeating the fixed root-cause mistake is related)
 
 Report: summary of diff scope and any concerns.
 

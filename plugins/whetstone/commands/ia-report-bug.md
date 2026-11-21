@@ -96,9 +96,9 @@ Create a report using only the sanitized fields:
 *Reported via `/ia-report-bug` command*
 ```
 
-## Step 3b: Check for an Existing Report
+## Step 3b: Route Security Reports, Check Version and Duplicates
 
-If the report describes a security vulnerability, such as a hook or script that runs untrusted input or exposes credentials, do not create a public issue: direct the user to private vulnerability reporting at `https://github.com/iliaal/whetstone/security/advisories/new` and stop. Otherwise read the latest release tag with `gh release view --repo iliaal/whetstone --json tagName -q .tagName` and compare it with the plugin version from Step 2, ignoring a leading `v`. If the installed version is older, ask the user to update and reproduce before filing; if it is unknown, say so in the report. Search open and closed issues with `gh search issues --repo iliaal/whetstone "<distinctive terms>"`, taking the terms from the sanitized report only. If an issue already reports the same failure, do not create a duplicate: show it to the user and offer a comment that adds only the new sanitized facts, under the same approval rule as Step 4.
+If the report describes a security vulnerability, such as a hook or script that runs untrusted input or exposes credentials, do not create a public issue: direct the user to private vulnerability reporting at `https://github.com/iliaal/whetstone/security/advisories/new` and stop. Otherwise read the latest release tag with `gh release view --repo iliaal/whetstone --json tagName -q .tagName` and compare it with the plugin version from Step 2, ignoring a leading `v`. If the installed version is older, ask the user to update and reproduce before filing; after an update, re-run Steps 2-3; if the user declines, file with the installed version stated; if it is unknown, say so in the report. Search open and closed issues with `gh search issues --repo iliaal/whetstone -- <term> <term> ...`: pick 2-4 distinctive words from the sanitized report, each made only of letters, digits, `.`, `_`, or `-` and not starting with `-`, and pass each as its own argument. A quoted multi-word argument matches only that exact phrase. If an issue already reports the same failure, do not create a duplicate: show it to the user and offer a comment that adds only the new sanitized facts, under the same approval and file rules as Step 4 (allocate `REPORT_DIR` as there), posted with `gh issue comment <number> --repo iliaal/whetstone --body-file "$REPORT_DIR/comment.md"`.
 
 ## Step 4: Review and Create GitHub Issue
 
@@ -134,6 +134,8 @@ gh issue create \
 ```
 
 ## Step 5: Confirm Submission
+
+If Step 3b routed to private reporting or to a comment on an existing issue, report that outcome (the advisory URL, or the existing issue and posted comment URL) instead of the output below.
 
 After the issue is created:
 1. Display the issue URL to the user

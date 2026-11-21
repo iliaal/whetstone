@@ -39,7 +39,7 @@ Conduct visual comparisons between Figma designs and live implementations. Produ
 
 ### 1. Capture Implementation State
 
-- Use agent-browser CLI to capture screenshots of the implemented UI. Pass `--session <invocation-id>` on every `agent-browser` call so concurrent browser work does not share the `default` session.
+- Use agent-browser CLI to capture screenshots of the implemented UI. Generate one ID per invocation (for example `ab-$(date +%s)-$$`), record it as `[session-id]`, and substitute it literally in every later call. Pass `--session "[session-id]"` on every `agent-browser` call, including `close`, so concurrent browser work does not share the `default` session. When the run ends, including after a failed or partial run, run `agent-browser --session "[session-id]" close`.
 - Test different viewport sizes if the design includes responsive breakpoints
 - Capture interactive states (hover, focus, active) when relevant
 - Document the URL and selectors of the components being reviewed
@@ -55,12 +55,12 @@ Record the emitted absolute path as `[capture-dir]` and substitute it literally 
 Include a unique route/component ID, exact viewport width and height, interaction state, and iteration in every screenshot and diagnostic filename. Increment the iteration when repeating that combination. Retain every variant. Record the actual dimensions and state beside each path in the report.
 
    ```bash
-   agent-browser open [url]
-   agent-browser snapshot -i
-   agent-browser screenshot "[capture-dir]/[component-id]-[width]x[height]-initial-[iteration].png"
+   agent-browser --session "[session-id]" open [url]
+   agent-browser --session "[session-id]" snapshot -i
+   agent-browser --session "[session-id]" screenshot "[capture-dir]/[component-id]-[width]x[height]-initial-[iteration].png"
    # For hover states:
-   agent-browser hover @e1
-   agent-browser screenshot "[capture-dir]/[component-id]-[width]x[height]-hover-[iteration].png"
+   agent-browser --session "[session-id]" hover @e1
+   agent-browser --session "[session-id]" screenshot "[capture-dir]/[component-id]-[width]x[height]-hover-[iteration].png"
    ```
 
 ### 2. Retrieve Design Specifications

@@ -42,3 +42,10 @@
 {"prompt":"Draw a logo for a bakery","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Summarize the quarterly hiring plan","expect":false,"source":"audit-2026-09-07"}
 {"prompt":"Configure Zend Framework routing","expect":false,"source":"audit-2026-09-07-boundary"}
+{"prompt": "compile this with -std=c11 and check the atomics", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "bump the build to -std=gnu17 for the old toolchain", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "c99 mode rejects the designated initializer here", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "review this pr: it is a php extension in c", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "scan report groups c1, c2, c11, c12 need validation", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "cut the release for the php extension at ~/ai/mdparser", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "build the exhibit for the php extension author petition", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}

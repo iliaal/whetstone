@@ -5931,6 +5931,7 @@ _INJ_SUSPICIOUS_CHARS = {
 _INJ_SUSPICIOUS_RANGES = (
     (0x0001, 0x0008, "control character", "MEDIUM"),
     (0x000E, 0x001F, "control character", "MEDIUM"),
+    (0x0080, 0x009F, "C1 control character", "MEDIUM"),
     (0xFE00, 0xFE0E, "variation selector", "MEDIUM"),
     (0xE0100, 0xE01EF, "variation selector supplement", "MEDIUM"),
 )
@@ -5966,8 +5967,8 @@ _INJ_FETCH_EXEC_PATTERNS = (
     r"(?i)\b(curl|wget|fetch)\b[^\n|]*\|[^\n]*\b(bash|sh|zsh|python[0-9.]*|node|ruby|perl|php)\b",
     r"(?i)\beval\b[^\n]*\$?\(\s*(curl|wget|fetch)\b",
     r"(?i)\b(iex|invoke-expression)\b[^\n]*(http|downloadstring|webclient)",
-    r"(?i)(?:^|[\s;&|(`'\"])(?:(?:ba|z|da|k)?sh|source|\.)\s+<\(\s*(curl|wget|fetch)\b",
-    r"(?i)\b(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|perl|ruby)\s+-c\s+[\"']?\$\(\s*(curl|wget|fetch)\b",
+    r"(?i)(?:^|[\s;&|(`'\"])(?:(?:ba|z|da|k)?sh|source|\.)\s+(?:<\s*)?<\(\s*(curl|wget|fetch)\b",
+    r"(?i)\b(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|perl|ruby)\s+(?:-[a-z]+\s+)*-[a-z]*c\s+[\"']?(?:\$\(|`)\s*(curl|wget|fetch)\b",
 )
 
 # Outbound network egress verbs, and references to local secrets/credentials.
@@ -6001,11 +6002,12 @@ def _scan_file_deterministic(path, text):
             "evidence": evidence[:200],
         })
 
-    lines = text.splitlines()
+    # str.splitlines() also breaks on VT, FF, FS-RS, NEL, U+2028, and U+2029 and
+    # drops them, which renumbers lines and splits a command across two lines.
+    lines = text.split("\n")
 
-    # 1. Hidden / bidi unicode (scan every char). str.splitlines() also breaks on
-    # VT, FF, FS-RS, U+2028, and U+2029 and drops them, so split on LF only here.
-    for lineno, line in enumerate(text.split("\n"), 1):
+    # 1. Hidden / bidi unicode (scan every char).
+    for lineno, line in enumerate(lines, 1):
         for col, ch in enumerate(line, 1):
             cp = ord(ch)
             if cp in _INJ_SUSPICIOUS_CHARS:

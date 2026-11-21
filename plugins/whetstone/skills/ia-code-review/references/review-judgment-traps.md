@@ -6,7 +6,7 @@ To audit whether existing tests detect regressions, use ia-test-audit.
 
 - Nitpicking style when linters exist: defer to automated tools
 
-- "While you're at it..." scope creep: open a separate issue
+- "While you're at it..." scope creep (cleanup unrelated to the finding's root cause): open a separate issue. A site repeating the finding's root-cause mistake is part of the finding
 
 - Blocking on personal preference: approve with a Minor comment
 

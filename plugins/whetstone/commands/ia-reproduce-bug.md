@@ -33,6 +33,8 @@ Think about the places it could go wrong. Look for logging output that helps nar
 
 **Requires the agent-browser CLI.** If not available, skip to Phase 3 with findings from Phase 1 only. See [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md) for the full command reference. **ALWAYS use agent-browser Bash commands. NEVER use `mcp__*` browser tools.**
 
+Generate one `[session-id]` per run as the shared reference describes, pass `--session "[session-id]"` on every `agent-browser` call below, including `close`, and run `agent-browser --session "[session-id]" close` when the run ends, including after a failed or partial run.
+
 If the bug is UI-related or involves user flows, use agent-browser to visually reproduce it:
 
 ### Step 1: Bind the Server to the Intended Revision

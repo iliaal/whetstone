@@ -30,3 +30,7 @@
 {"prompt":"Explain assumptions in a statistical model","expect":false,"source":"audit-2026-09-07-boundary"}
 {"prompt":"Promote the note feedback_steelman_reviewer_original_stance.md into the project's response guidelines. Keep the edit terse and avoid duplicating existing advice.","expect":false,"source":"audit-2026-10-11-misfires"}
 {"prompt":"Steelman the reviewer's original objection before deciding whether this fix addresses it.","expect":true,"source":"audit-2026-10-11-misfires"}
+{"prompt": "follow the meta-prompting test-justification rule (one line per test)", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "read claude.md first (exit codes, test budget + meta-prompting rule)", "expect": false, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "apply meta-prompting to stress-test this architecture decision", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}
+{"prompt": "use meta-prompting on this plan before we commit", "expect": true, "added_in": "5.1.6", "source": "q6-2026-11-21"}

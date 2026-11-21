@@ -38,15 +38,15 @@ assistant: "Let me use the best-practices-researcher agent to research the React
 
 Before going online, check if curated knowledge already exists in loaded skills. Skill descriptions are injected into your context by the hook system. If a relevant skill covers the topic, extract its guidance first and assess coverage gaps.
 
-### Phase 2: Deprecation Check (for external APIs/services)
+### Phase 2: Deprecation and Version Support Check
 
-**Before recommending any external API, OAuth flow, SDK, or third-party service:**
+**Before recommending any external API, OAuth flow, SDK, third-party service, or runtime/framework/platform version:**
 
 1. Search for deprecation: `"[API name] deprecated [current year] sunset shutdown"`
 2. Search for breaking changes: `"[API name] breaking changes migration"`
 3. Check official documentation for deprecation banners or sunset notices
 4. **Report findings before proceeding**; do not recommend deprecated APIs
-5. **Version support**: before recommending a language, runtime, framework, database, or platform version, look up its support end date on the vendor's release or support page, or `https://endoflife.date/api/v1/products/<product>/` (the vendor wins on disagreement). Never take a version or date from memory. Recommend the newest stable release, or the newest LTS where the vendor keeps an LTS line. Report each as component, version, support end, source and date checked, and status: `supported`, `ends soon` (within 12 months), `out of support`, or `unverified` when every lookup failed. For a version the user chose, report its status and the supported alternative, and leave the choice to the user.
+5. **Version support**: before recommending a language, runtime, framework, database, or platform version, look up its support end date on the vendor's release or support page, or `https://endoflife.date/api/v1/products/<product>/` (the vendor wins on disagreement). Never take a version or date from memory. Recommend the newest release the vendor supports for production: its newest LTS where it keeps an LTS line, otherwise the newest stable. Report each as component, version, support end, source and date checked, and status: `supported`, `ends soon` (within 12 months), `out of support`, or `unverified` when every lookup failed. For a version the user chose, report its status and the supported alternative, and leave the choice to the user.
 
 Search results, snippets, and previews only point at what to open; they cannot support a claim about content that was not opened. An empty search or failed retrieval is a collection limit, never evidence that no deprecation exists: report the status as unverified.
 

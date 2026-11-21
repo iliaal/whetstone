@@ -50,12 +50,13 @@ Covers modern application-layer Rust (edition 2024): CLIs, web services, librari
 - `cargo nextest run --workspace` (or `cargo test --workspace`) passes with zero failures
 - When using nextest, `cargo test --doc --workspace` also passes; nextest does not run doctests
 - `cargo deny check` passes (licenses, advisories, duplicates) for any crate going to production
-- No new `unsafe` whose `// SAFETY:` premises are not enforced in code or by a caller `# Safety` contract
+- Every new `unsafe` has each `// SAFETY:` premise enforced in code or by a caller `# Safety` contract
 
 ## Task-specific references
 
 Read the relevant reference before implementing or reviewing the matching behavior:
 
+- For `unsafe` blocks, raw-parts references, `transmute`, sealed-trait reliance, or FFI wrappers: [unsafe-review.md](./references/unsafe-review.md).
 - For Cargo setup, workspace changes, public API reachability, build profiles, or CI: [toolchain-and-interfaces.md](./references/toolchain-and-interfaces.md).
 - For errors, ownership, parsing boundaries, Tokio, shutdown, or concurrency: [ownership-and-execution.md](./references/ownership-and-execution.md).
 - For CLI/service entrypoints, production resilience, telemetry, or tests: [applications-and-testing.md](./references/applications-and-testing.md).

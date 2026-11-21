@@ -43,7 +43,7 @@ Accept missed bugs, valid edge cases, readability improvements, and better domai
 
 ## Fix boundaries and handoff
 
-An in-scope blocker violates the same invariant within the same ownership boundary and can be fixed without changing the task contract. A different bug class, owner, or independent cleanup is a follow-up. A new protocol, configuration, storage, public API contract, or unresolved product decision requires escalation. File counts and diff multipliers are not scope rules.
+An in-scope blocker violates the same invariant within the same ownership boundary and can be fixed without changing the task contract. A different bug class, owner, or independent cleanup is a follow-up. A new protocol, configuration, storage, public API contract, or unresolved product decision requires escalation. File counts and diff multipliers are not scope rules. A site that repeats the mistake an accepted finding describes belongs to that finding's fix, not to a follow-up, unless it sits outside the ownership boundary the task authorizes or fixing it would reverse a deliberate behavior; report such a site with the reason.
 
 After two review-triggered patch cycles that fail to converge, pause and reclassify remaining findings. Do not add another local inference layer when the actual need is a canonical contract.
 
