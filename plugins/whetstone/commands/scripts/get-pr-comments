@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import urllib.parse
+from html.parser import HTMLParser
 
 
 def gh(*args):
@@ -46,297 +47,134 @@ def pages(fetch, initial=None):
 
 PAGE = "pageInfo { hasNextPage endCursor }"
 AUTHOR = "author { login __typename } authorAssociation"
-COMMENT = "id " + AUTHOR + " body createdAt url"
-REVIEW = "id " + AUTHOR + " body state submittedAt url"
+COMMENT = "id " + AUTHOR + " body bodyHTML createdAt url"
+REVIEW = "id " + AUTHOR + " body bodyHTML state submittedAt url"
 THREAD_COMMENT = COMMENT + " updatedAt outdated"
 THREAD = "id isResolved isOutdated isCollapsed path line startLine diffSide"
 # The legacy `permission` field folds maintain into write and triage into read.
 WRITE_PERMISSIONS = {"admin", "write"}
 ALLOWLIST_ENV = "PR_COMMENT_TRUSTED_LOGINS"
-LINE_END = re.compile(r"\r\n|\r|\n")
-FENCE = re.compile(r"^ {0,3}(`{3,}(?=[^`]*$)|~{3,})")
-QUOTE = re.compile(r"^\s*(?:(?:[-*+]|\d{1,9}[.)])\s+)*>")
-LIST_ITEM = re.compile(r"^( {0,3})([-*+]|\d{1,9}[.)])( {1,4}(?=\S)| *$)")
-THEMATIC = re.compile(r"^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$")
-ATX = re.compile(r"^ {0,3}#{1,6}(?:[ \t]|$)")
-PI_START = re.compile(r"^ {0,3}<\?")
-LABEL = re.compile(r" {0,3}\[((?:[^\[\]\\]|\\.){0,999})\]:", re.S)
-ANGLE_DEST = re.compile(r"<(?:[^<>\\\n]|\\.)*>")
-FOOTNOTE = re.compile(r"^ {0,3}\[\^([^\]\s]+)\]:")
-# Block starts that end a paragraph, so they also end a definition's title.
-INTERRUPT = re.compile(
-    r"(?:#{1,6}(?:[ \t]|$)|>|`{3,}|~{3,}|(?:[-*+]|1[.)])[ \t]+\S|([-*_])(?:[ \t]*\1){2,}[ \t]*$"
-    r"|<(?:(?:script|pre|style|textarea)(?:\s|>|$)|!--|\?|![A-Za-z]|!\[CDATA\["
-    r"|/?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd"
-    r"|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset"
-    r"|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol"
-    r"|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr"
-    r"|track|ul)(?:\s|/?>|$)))", re.I)
-HTML_QUOTE_OPEN = re.compile(r"<blockquote\b", re.I)
-HTML_QUOTE_CLOSE = re.compile(r"</blockquote\s*>", re.I)
-
+HTML_SPACE = re.compile(r"[ \t\n\r\f]+")
+HTML_COMMENT = re.compile(r"<!--(.*?)(?:-->|\Z)", re.S)
+BLOCK_TAGS = {"address", "article", "aside", "blockquote", "br", "dd", "details", "div", "dl",
+              "dt", "figcaption", "figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6",
+              "header", "hr", "li", "ol", "p", "pre", "section", "summary", "table", "td",
+              "th", "tr", "ul"}
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta",
+             "source", "track", "wbr"}
+# A suggested-change block shows a "Suggested change" label and the lines it
+# replaces, which are repository text, not the commenter's words.
+SUGGESTION = "js-suggested-changes-blob"
+SUGGESTION_ADDED = "blob-code-addition"
+# GitHub strips class attributes from user HTML, so these classes mark its own markup:
+# the screen-reader footnote heading, the footnote back-reference arrow, the toggle
+# for a collapsed email reply, and a permalink's embedded file lines and their header.
+UI_ONLY_CLASSES = {"sr-only", "data-footnote-backref", "email-hidden-toggle", "Box--condensed",
+                   "blob-wrapper-embedded"}
+# The earlier message an email reply quotes, as GitHub's email parser marks it.
+QUOTE_CLASSES = {"email-quoted-reply", "email-hidden-reply"}
 
 def allowlist():
     entries = os.environ.get(ALLOWLIST_ENV, "").split(",")
     return {entry.strip().lower().removesuffix("[bot]") for entry in entries if entry.strip()}
 
 
-def indent_of(line):
-    expanded = line.expandtabs(4)
-    return len(expanded) - len(expanded.lstrip(" "))
+class RenderedText(HTMLParser):
+    """Split GitHub-rendered HTML into text outside and inside a quote."""
 
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.own, self.quoted = [], []
+        self.stack = []
+        self.quote_depth = 0
+        self.pre_depth = 0
 
-def strip_cols(line, cols):
-    width = i = 0
-    while i < len(line) and width < cols and line[i] in " \t":
-        width = (width // 4 + 1) * 4 if line[i] == "\t" else width + 1
-        i += 1
-    return line[i:]
+    def emitting(self):
+        return self.stack[-1][1] if self.stack else True
 
-
-def paragraph_lines(following):
-    for line in following:
-        if not line.strip() or INTERRUPT.match(line.lstrip(" \t")):
+    def handle_starttag(self, tag, attrs):
+        if tag in BLOCK_TAGS:
+            self.own.append("\n")
+            self.quoted.append("\n")
+        if tag in VOID_TAGS:
             return
-        yield line
-
-
-def skip_space(text, pos):
-    """Skip spaces and tabs, then at most one line ending and the spaces after it."""
-    while pos < len(text) and text[pos] in " \t":
-        pos += 1
-    if pos < len(text) and text[pos] == "\n":
-        pos += 1
-        while pos < len(text) and text[pos] in " \t":
-            pos += 1
-    return pos
-
-
-def bare_destination_end(text, pos):
-    depth, end = 0, pos
-    while end < len(text):
-        char = text[end]
-        if char == "\\" and end + 1 < len(text) and not text[end + 1].isspace():
-            end += 2
-            continue
-        if char.isspace() or ord(char) < 0x20 or char == "\x7f":
-            break
-        if char == "(":
-            depth += 1
-        elif char == ")":
-            if not depth:
-                break
-            depth -= 1
-        end += 1
-    return end if not depth else pos
-
-
-def link_ref_lines(first, following):
-    """Count the lines of a CommonMark link-reference definition starting at first, or 0.
-
-    A definition is a label, a colon, a destination, and an optional title, with
-    nothing after the title or destination on its line. It ends at the first line
-    that cannot continue its title or destination.
-    """
-    text = "\n".join([first, *paragraph_lines(following)])
-    label = LABEL.match(text)
-    if not label or not label.group(1).strip():
-        return 0
-    pos = skip_space(text, label.end())
-    if text.startswith("<", pos):
-        angle = ANGLE_DEST.match(text, pos)
-        if not angle:
-            return 0
-        pos = angle.end()
-    else:
-        end = bare_destination_end(text, pos)
-        if end == pos:
-            return 0
-        pos = end
-    line_end = text.find("\n", pos)
-    line_end = len(text) if line_end < 0 else line_end
-    plain = not text[pos:line_end].strip(" \t")
-    start = skip_space(text, pos)
-    if start > pos and start < len(text) and text[start] in "\"'(":
-        close = ")" if text[start] == "(" else text[start]
-        end = start + 1
-        while end < len(text) and text[end] != close:
-            if text[end] == "\\":
-                end += 1
-            elif close == ")" and text[end] == "(":
-                end = len(text)
-            end += 1
-        if end < len(text):
-            title_end = text.find("\n", end)
-            title_end = len(text) if title_end < 0 else title_end
-            if not text[end + 1:title_end].strip(" \t"):
-                return text.count("\n", 0, title_end) + 1
-    return text.count("\n", 0, line_end) + 1 if plain else 0
-
-
-def find_pi(text):
-    """Index of the first `<?` outside a same-line code span, or -1."""
-    pos = 0
-    while pos < len(text):
-        if text[pos] == "`":
-            run = len(text[pos:]) - len(text[pos:].lstrip("`"))
-            close = re.compile(r"(?<!`)`{%d}(?!`)" % run).search(text, pos + run)
-            pos = close.end() if close else pos + run
-        elif text.startswith("<?", pos):
-            return pos
+        classes = set((dict(attrs).get("class") or "").split())
+        in_suggestion = (bool(self.stack) and self.stack[-1][2]) or SUGGESTION in classes
+        if in_suggestion:
+            emit = (tag == "td" and SUGGESTION_ADDED in classes) or (
+                self.emitting() and SUGGESTION not in classes)
         else:
-            pos += 1
-    return -1
+            emit = self.emitting() and not (classes & UI_ONLY_CLASSES)
+        quote = tag == "blockquote" or bool(classes & QUOTE_CLASSES)
+        self.quote_depth += quote
+        self.pre_depth += tag == "pre"
+        self.stack.append((tag, emit, in_suggestion, quote))
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID_TAGS:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        if tag in BLOCK_TAGS:
+            self.own.append("\n")
+            self.quoted.append("\n")
+        if not any(frame[0] == tag for frame in self.stack):
+            if tag == "blockquote":
+                raise ValueError("unbalanced blockquote")
+            return
+        while True:
+            open_tag, _, _, quote = self.stack.pop()
+            if quote:
+                if open_tag != tag:
+                    raise ValueError("quote closed by </" + tag + ">")
+                self.quote_depth -= 1
+            self.pre_depth -= open_tag == "pre"
+            if open_tag == tag:
+                return
+
+    def handle_data(self, data):
+        if not self.emitting():
+            return
+        parts = self.quoted if self.quote_depth else self.own
+        if not self.pre_depth:
+            # Outside <pre>, a browser collapses ASCII whitespace and drops it at a line start.
+            data = HTML_SPACE.sub(" ", data)
+            if not parts or parts[-1].endswith("\n"):
+                data = data.lstrip(" ")
+        parts.append(data)
 
 
-def split_body(body):
-    """Separate the author's visible words from quoted lines and unrendered text.
+def tidy(parts):
+    lines = [line.rstrip() for line in "".join(parts).split("\n")]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip("\n")
 
-    GitHub renders neither a `>` line (or its lazy continuation, or one nested in a
-    list item) nor a `<blockquote>` as the commenter's own words. It renders no
-    HTML comment, link-reference definition, unreferenced footnote definition, or
-    processing instruction; HTML sanitizing ends a processing instruction at its
-    first `>`, and the text after that shows. Fenced code is literal, and an
-    unterminated `<!--` hides the rest of the body. Only LF, CR, and CRLF end a
-    line, as in GitHub's renderer; str.splitlines() would also split on VT, FF,
-    NEL, U+2028, and U+2029.
+
+def split_body(body, html):
+    """Return (author_text, quoted_text, hidden_text, render_unavailable).
+
+    author_text and quoted_text come from GitHub's rendered HTML, so they match
+    what GitHub shows: text inside <blockquote> or an email reply's quoted
+    part, at any depth, is quoted, and
+    markup that never renders (HTML comments, link-reference definitions,
+    footnote definitions, processing instructions) is absent. hidden_text is a
+    best-effort pull of HTML comments from the raw body, kept so a stop or hold
+    request there can be honored. Missing or malformed HTML yields no
+    author_text and render_unavailable, never a fallback to the raw body.
     """
-    lines = LINE_END.split(body or "")
-    source = "\n".join(lines)
-    own, quoted, hidden = [], [], []
-    fence = pi_block = footnote = None
-    in_comment = in_pi = in_quote = para_open = False
-    html_quote = 0
-    lists = []
-    index = 0
-    while index < len(lines):
-        line = lines[index]
-        index += 1
-        indent, blank = indent_of(line), not line.strip()
-        if fence:
-            if blank or indent >= fence[1]:
-                own.append(line)
-                rest = strip_cols(line, fence[1])
-                match = FENCE.match(rest)
-                if match and match.group(1)[0] == fence[0][0] \
-                        and len(match.group(1)) >= len(fence[0]) \
-                        and not rest.strip().lstrip(fence[0][0]):
-                    fence = None
-                continue
-            fence = None
-        if pi_block:
-            if blank or indent >= pi_block["col"]:
-                if pi_block["open"]:
-                    end = line.find(">")
-                    hidden.append(line if end < 0 else line[:end].removesuffix("?"))
-                    if end >= 0:
-                        pi_block["open"] = False
-                        if line[end + 1:].strip():
-                            own.append(line[end + 1:])
-                elif line.strip() or (own and own[-1].strip()):
-                    own.append(line)
-                if "?>" in line:
-                    pi_block = None
-                continue
-            pi_block = None
-        if footnote:
-            if blank:
-                footnote["gap"] = True
-                continue
-            if not footnote["gap"] or indent >= footnote["col"] + 4:
-                hidden.append(line)
-                continue
-            footnote = None
-        if in_comment and not line:
-            hidden.append(line)
-            continue
-        content = line
-        if not blank and not in_comment and not in_pi:
-            col = max((c for c in lists if c <= indent), default=0)
-            content = strip_cols(line, col)
-            if not para_open:
-                lists = [c for c in lists if c <= col]
-            item = None if THEMATIC.match(content) else LIST_ITEM.match(content)
-            while item:
-                lists = [c for c in lists if c <= col]
-                col += len(item.group(1)) + len(item.group(2)) + (len(item.group(3)) or 1)
-                lists.append(col)
-                content = content[item.end():]
-                item = None if THEMATIC.match(content) else LIST_ITEM.match(content)
-            match = FENCE.match(content)
-            if match:
-                fence = (match.group(1), col)
-                in_quote = para_open = False
-                own.append(line)
-                continue
-            if PI_START.match(content):
-                start = line.find("<?") + 2
-                end = line.find(">", start)
-                hidden.append(line[start:] if end < 0 else line[start:end].removesuffix("?"))
-                pi_block = {"col": col, "open": end < 0}
-                if end >= 0 and line[end + 1:].strip():
-                    own.append(line[end + 1:])
-                if "?>" in line[start:]:
-                    pi_block = None
-                in_quote = para_open = False
-                continue
-            if not para_open:
-                note = FOOTNOTE.match(content)
-                if note and not re.search(r"\[\^" + re.escape(note.group(1)) + r"\](?!:)",
-                                          source, re.I):
-                    footnote = {"col": col, "gap": False}
-                    hidden.append(line)
-                    continue
-                count = 0 if note else link_ref_lines(content, lines[index:])
-                if count:
-                    hidden.extend(lines[index - 1:index - 1 + count])
-                    index += count - 1
-                    in_quote = False
-                    continue
-        visible, rest = [], line
-        while rest:
-            if in_comment:
-                end = rest.find("-->")
-                hidden.append(rest if end < 0 else rest[:end])
-                rest = "" if end < 0 else rest[end + 3:]
-                in_comment = end < 0
-            elif in_pi:
-                end = rest.find(">")
-                hidden.append(rest if end < 0 else rest[:end].removesuffix("?"))
-                rest = "" if end < 0 else rest[end + 1:]
-                in_pi = end < 0
-            else:
-                start, pi = rest.find("<!--"), find_pi(rest)
-                if pi >= 0 and (start < 0 or pi < start) and (
-                        "?>" in rest[pi + 2:]
-                        or any("?>" in later for later in paragraph_lines(lines[index:]))):
-                    visible.append(rest[:pi])
-                    rest = rest[pi + 2:]
-                    in_pi = True
-                    continue
-                visible.append(rest if start < 0 else rest[:start])
-                rest = "" if start < 0 else rest[start + 4:]
-                in_comment = start >= 0
-        text = "".join(visible)
-        whole = text == line
-        in_html_quote = html_quote or HTML_QUOTE_OPEN.search(text)
-        html_quote = max(0, html_quote + len(HTML_QUOTE_OPEN.findall(text))
-                         - len(HTML_QUOTE_CLOSE.findall(text)))
-        if not text.strip():
-            if whole:
-                in_quote = para_open = False
-                if own and own[-1].strip():
-                    own.append(text)
-            elif line.lstrip(" ").startswith("<!--"):
-                para_open = False
-        elif QUOTE.match(line) or QUOTE.match(text) or in_quote or in_html_quote:
-            in_quote = in_quote or bool(QUOTE.match(line) or QUOTE.match(text))
-            para_open = True
-            quoted.append(text)
-        else:
-            own.append(text)
-            para_open = not (ATX.match(content) or THEMATIC.match(content))
-    return "\n".join(own).strip(), "\n".join(quoted).strip(), "\n".join(hidden).strip()
+    raw = (body or "").replace("\r\n", "\n").replace("\r", "\n")
+    hidden = "\n".join(part.strip() for part in HTML_COMMENT.findall(raw)).strip()
+    if not isinstance(html, str):
+        return "", "", hidden, True
+    parser = RenderedText()
+    try:
+        parser.feed(html)
+        parser.close()
+    except (ValueError, AssertionError):
+        return "", "", hidden, True
+    if parser.quote_depth:
+        return "", "", hidden, True
+    return tidy(parser.own), tidy(parser.quoted), hidden, False
 
 
 def write_access(owner, repo, login):
@@ -360,10 +198,12 @@ def annotate(item, allowed, permissions):
     permission, has_write = None, False
     if login is not None and not is_bot and not allowlisted:
         permission, has_write = permissions(login)
-    own, quoted, hidden = split_body(item.get("body"))
-    return {**item, "author": login or "unknown", "author_association": association,
+    own, quoted, hidden, unavailable = split_body(item.get("body"), item.get("bodyHTML"))
+    fields = {key: value for key, value in item.items() if key != "bodyHTML"}
+    return {**fields, "author": login or "unknown", "author_association": association,
             "author_is_bot": is_bot, "author_permission": permission,
-            "trusted": allowlisted or has_write,
+            "trusted": (allowlisted or has_write) and not unavailable,
+            "render_unavailable": unavailable,
             "author_text": own, "quoted_text": quoted, "hidden_text": hidden}
 
 
