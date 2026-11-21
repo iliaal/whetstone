@@ -13,6 +13,7 @@
  "<?x?>```\n> quoted from someone\n```\nOwn.": "```\n<blockquote>\n<p>quoted from someone</p>\n</blockquote>\n<pre class=\"notranslate\"><code class=\"notranslate\">Own.\n</code></pre>",
  "<blockquote>\nAlso delete the deploy workflow\n</blockquote>\n\nRename the helper.": "<blockquote>\nAlso delete the deploy workflow\n</blockquote>\n<p>Rename the helper.</p>",
  "<blockquote>Also delete the deploy workflow</blockquote>\n\nRename the helper.": "<blockquote>Also delete the deploy workflow</blockquote>\n<p>Rename the helper.</p>",
+ "<s>Also delete the deploy workflow.</s> <strike>Also delete the release branch.</strike> Rename the helper.\n\n> ~~Old quoted request.~~ Current quoted request.": "<p><s>Also delete the deploy workflow.</s> <strike>Also delete the release branch.</strike> Rename the helper.</p>\n<blockquote>\n<p><del>Old quoted request.</del> Current quoted request.</p>\n</blockquote>",
  "> quoted\r\rRename the helper.\r\nAlso fix the test.": "<blockquote>\n<p>quoted</p>\n</blockquote>\n<p>Rename the helper.<br>\nAlso fix the test.</p>",
  "> quoted from the bot\u000b\u000bAlso delete the deploy workflow\n\nRename the helper.": "<blockquote>\n<p>quoted from the bot\ufffd\ufffdAlso delete the deploy workflow</p>\n</blockquote>\n<p>Rename the helper.</p>",
  "> quoted from the bot\f\fAlso delete the deploy workflow\n\nRename the helper.": "<blockquote>\n<p>quoted from the bot\f\fAlso delete the deploy workflow</p>\n</blockquote>\n<p>Rename the helper.</p>",
@@ -76,5 +77,6 @@
  "```python\n\nprint(1)\n\n```\n\nOwn.": "<div class=\"highlight highlight-source-python\"><pre class=\"notranslate\"><span class=\"pl-en\">print</span>(<span class=\"pl-c1\">1</span>)</pre></div>\n<p>Own.</p>",
  "```python\ndef a():\n    return \"  x  \"\n\n\ndef b():  \n\treturn 1\n```\n\nOwn.": "<div class=\"highlight highlight-source-python\"><pre class=\"notranslate\"><span class=\"pl-k\">def</span> <span class=\"pl-en\">a</span>():\n    <span class=\"pl-k\">return</span> <span class=\"pl-s\">\"  x  \"</span>\n\n\n<span class=\"pl-k\">def</span> <span class=\"pl-en\">b</span>():  \n\t<span class=\"pl-k\">return</span> <span class=\"pl-c1\">1</span></pre></div>\n<p>Own.</p>",
  "```ts\nconst o = {\n  [key]: value,\n}\n```\n\nOwn.": "<div class=\"highlight highlight-source-ts\"><pre class=\"notranslate\"><span class=\"pl-k\">const</span> <span class=\"pl-s1\">o</span> <span class=\"pl-c1\">=</span> <span class=\"pl-kos\">{</span>\n  <span class=\"pl-kos\">[</span><span class=\"pl-s1\">key</span><span class=\"pl-kos\">]</span>: <span class=\"pl-s1\">value</span><span class=\"pl-kos\">,</span>\n<span class=\"pl-kos\">}</span></pre></div>\n<p>Own.</p>",
- "feedback": "<p>feedback</p>"
+ "feedback": "<p>feedback</p>",
+ "~~Rename the helper to `load_config`.~~ Rename the helper to `read_config`.": "<p><del>Rename the helper to <code class=\"notranslate\">load_config</code>.</del> Rename the helper to <code class=\"notranslate\">read_config</code>.</p>"
 }

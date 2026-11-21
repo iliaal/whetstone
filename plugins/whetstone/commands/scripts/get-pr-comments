@@ -74,6 +74,8 @@ UI_ONLY_CLASSES = {"sr-only", "data-footnote-backref", "email-hidden-toggle", "B
                    "blob-wrapper-embedded"}
 # The earlier message an email reply quotes, as GitHub's email parser marks it.
 QUOTE_CLASSES = {"email-quoted-reply", "email-hidden-reply"}
+# Struck-through text is withdrawn, not a current request; ~~text~~ renders as <del>.
+DELETED_TAGS = {"del", "s", "strike"}
 
 
 class Verbatim(str):
@@ -123,6 +125,7 @@ class RenderedText(HTMLParser):
                 self.suggestion_lines = 0
         else:
             emit = self.emitting() and not (classes & UI_ONLY_CLASSES)
+        emit = emit and tag not in DELETED_TAGS
         quote = tag == "blockquote" or bool(classes & QUOTE_CLASSES)
         if added_line:
             if self.suggestion_lines:
@@ -136,6 +139,11 @@ class RenderedText(HTMLParser):
         self.stack.append((tag, emit, in_suggestion, quote, verbatim))
 
     def handle_startendtag(self, tag, attrs):
+        # HTML ignores the slash on a non-void element, so the content that follows
+        # belongs to it; closing it here would misplace quoted or struck text.
+        classes = set((dict(attrs).get("class") or "").split())
+        if tag == "blockquote" or classes & QUOTE_CLASSES or tag in DELETED_TAGS:
+            raise ValueError("self-closing <" + tag + ">")
         self.handle_starttag(tag, attrs)
         if tag not in VOID_TAGS:
             self.handle_endtag(tag)
@@ -179,9 +187,11 @@ class RenderedText(HTMLParser):
         # Outside <pre> and suggested lines, a browser collapses ASCII whitespace and
         # drops it at a line start.
         data = HTML_SPACE.sub(" ", data)
-        if not parts or parts[-1].endswith("\n"):
+        if not parts or parts[-1].endswith("\n") or (
+                parts[-1].endswith(" ") and not isinstance(parts[-1], Verbatim)):
             data = data.lstrip(" ")
-        parts.append(data)
+        if data:
+            parts.append(data)
 
 
 def tidy(parts):
@@ -206,11 +216,13 @@ def split_body(body, html):
     what GitHub shows: text inside <blockquote> or an email reply's quoted
     part, at any depth, is quoted, and
     markup that never renders (HTML comments, link-reference definitions,
-    footnote definitions, processing instructions) is absent. hidden_text is a
+    footnote definitions, processing instructions) is absent, as is struck-through
+    text (<del>, <s>, <strike>), which is withdrawn. hidden_text is a
     best-effort pull of HTML comments from the raw body, including ones inside
     quotes or code, kept so a stop or hold request there can be surfaced to the
-    user for confirmation. Missing or malformed HTML yields no
-    author_text and render_unavailable, never a fallback to the raw body.
+    user for confirmation. Missing or malformed HTML, including a self-closing
+    quote or struck element, yields no author_text and render_unavailable, never a
+    fallback to the raw body.
     """
     raw = (body or "").replace("\r\n", "\n").replace("\r", "\n")
     hidden = "\n".join(part.strip() for part in HTML_COMMENT.findall(raw)).strip()

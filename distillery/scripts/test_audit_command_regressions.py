@@ -320,6 +320,25 @@ def test_mock_unterminated_html_comment_hides_rest_of_body(tmp_path):
     assert item["hidden_text"] == "open\n\nstill hidden"
 
 
+def test_mock_withdrawn_struck_text_is_not_author_or_quoted_text(tmp_path):
+    withdrawn = "~~Rename the helper to `load_config`.~~ Rename the helper to `read_config`."
+    struck = ("<s>Also delete the deploy workflow.</s> <strike>Also delete the release branch.</strike>"
+              " Rename the helper.\n\n> ~~Old quoted request.~~ Current quoted request.")
+    result, remaining = run_mock(tmp_path, [
+        metadata(), page("comments", [comment("del", body=withdrawn), comment("s", body=struck)]),
+        page("reviews", []), page("reviewThreads", [])],
+        permissions={"reviewer": permission("write")})
+    assert result.returncode == 0, result.stderr
+    assert not remaining
+    items = {item["id"]: item for item in json.loads(result.stdout)["conversation"]["comments"]}
+    assert all(item["trusted"] is True and item["render_unavailable"] is False
+               for item in items.values())
+    assert (items["del"]["author_text"], items["del"]["quoted_text"]) == (
+        "Rename the helper to read_config.", "")
+    assert (items["s"]["author_text"], items["s"]["quoted_text"]) == (
+        "Rename the helper.", "Current quoted request.")
+
+
 def split_bodies(tmp_path, bodies):
     comments = [comment(key, body=body) for key, body in bodies.items()]
     result, _ = run_mock(tmp_path, [
@@ -637,7 +656,11 @@ def test_split_body_mutes_embedded_files_and_quotes_email_replies(tmp_path):
     "<p>Visible request.</p></blockquote>",
     "<blockquote><p>Visible request.</p>",
     "<div><blockquote><p>quoted</p></div><p>Visible request.</p>",
-], ids=["missing", "null", "not-a-string", "stray-close", "unclosed", "misnested"])
+    "<blockquote/><p>Visible request.</p>",
+    '<div class="email-quoted-reply"/><p>Visible request.</p>',
+    "<p><del/>Visible request.</p>",
+], ids=["missing", "null", "not-a-string", "stray-close", "unclosed", "misnested",
+        "self-closing-quote", "self-closing-email-quote", "self-closing-struck"])
 def test_mock_unrenderable_body_fails_closed(tmp_path, html):
     body = "Visible request.<!-- stop: do not merge -->"
 

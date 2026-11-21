@@ -4,6 +4,7 @@
 import argparse
 import ast
 import datetime as _dt
+import functools
 import hashlib
 import json
 import math
@@ -5925,9 +5926,10 @@ _INJ_SUSPICIOUS_CHARS = {
     0x007F: ("delete (control character)", "MEDIUM"),
 }
 
-# Inclusive code-point ranges checked after _INJ_SUSPICIOUS_CHARS. U+FE0F (emoji
-# presentation selector) stays allowed; U+E0100-E01EF can carry hidden ASCII the
-# same way the Unicode Tag block does.
+# Inclusive code-point ranges checked after _INJ_SUSPICIOUS_CHARS. A variation
+# selector reaches this table only as a permitted single selector (see
+# _vs_single_allowed), so it keeps the severity listed here; U+FE0F has no entry,
+# so a permitted emoji presentation selector is not reported.
 _INJ_SUSPICIOUS_RANGES = (
     (0x0001, 0x0008, "control character", "MEDIUM"),
     (0x000E, 0x001F, "control character", "MEDIUM"),
@@ -5944,6 +5946,49 @@ _INJ_VS_RANGES = ((0xFE00, 0xFE0F), (0xE0100, 0xE01EF))
 
 def _is_variation_selector(cp):
     return any(lo <= cp <= hi for lo, hi in _INJ_VS_RANGES)
+
+
+_UNICODE_DATA = Path(__file__).resolve().parent / "data" / "unicode-17.0.0"
+# Bases an Ideographic Variation Database sequence can use; the IVD is not vendored.
+# CJK Unified Ideographs Extension A and the URO, CJK Compatibility Ideographs, and
+# all of planes 2 and 3 (SIP and TIP hold only CJK ideographs).
+_CJK_IDEOGRAPH_RANGES = ((0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF),
+                         (0x20000, 0x3FFFD))
+
+
+@functools.lru_cache(maxsize=1)
+def _registered_variation_sequences():
+    """(base, selector) pairs from the pinned Unicode standardized and emoji variation data."""
+    pairs = set()
+    for name in ("StandardizedVariants.txt", "emoji-variation-sequences.txt"):
+        found = 0
+        for row in (_UNICODE_DATA / name).read_text(encoding="utf-8").splitlines():
+            fields = row.split("#", 1)[0].split(";", 1)[0].split()
+            if not fields:
+                continue
+            if len(fields) != 2:
+                raise RuntimeError(f"{name}: not a two-code-point variation sequence: {row!r}")
+            pairs.add((int(fields[0], 16), int(fields[1], 16)))
+            found += 1
+        if not found:
+            raise RuntimeError(f"{name}: no variation sequences parsed")
+    return frozenset(pairs)
+
+
+def _vs_single_allowed(base, selector):
+    """Whether one variation selector after base is a legitimate glyph variant.
+
+    Registered pairs pass. Two unvalidated allowances cover data not vendored or not
+    yet published: a supplement selector after a CJK ideograph (IVD), and a text or
+    emoji presentation selector after a code point at or above U+1F000 (future emoji).
+    """
+    if base is None:
+        return False
+    if (base, selector) in _registered_variation_sequences():
+        return True
+    if 0xE0100 <= selector <= 0xE01EF:
+        return any(lo <= base <= hi for lo, hi in _CJK_IDEOGRAPH_RANGES)
+    return selector in (0xFE0E, 0xFE0F) and base >= 0x1F000
 
 
 def _backslash_continued(lines):
@@ -6001,31 +6046,6 @@ _INJ_FETCH_EXEC_PATTERNS = (
     r"(?i)\b(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|perl|ruby)\s+(?:-[a-z]+\s+)*-[a-z]*c\s+[\"']?(?:\$\(|`)\s*(curl|wget|fetch)\b",
 )
 
-# Fetch-then-execute through a command or process substitution whose body can
-# span lines. The body is bounded by its own closing delimiter and length, and
-# must hold a download; the substitution must be executed: by sh -c and the
-# like, eval, source or ., or a pipe into an interpreter. The pipe form takes
-# only $( ): a backtick there can be the closing delimiter of a Markdown code
-# span, which would pair with the next span's opener.
-_INJ_SUBST_BODY_MAX = 2000
-
-
-def _download_body(close):
-    body = r"[^%s]{0,%d}" % (close, _INJ_SUBST_BODY_MAX)
-    return r"(?=%s\b(?:curl|wget|fetch)\b)%s" % (body, body)
-
-
-_INJ_CMD_SUBST = r"(?P<sub>\$\(%s\)|`%s`)" % (_download_body(")"), _download_body("`"))
-_INJ_FETCH_EXEC_SUBST_PATTERNS = (
-    r"(?i)\b(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|perl|ruby)[^\S\n]+(?:-[a-z]+[^\S\n]+)*"
-    r"-[a-z]*c[^\S\n]+[\"']?" + _INJ_CMD_SUBST,
-    r"(?i)\beval[^\S\n]+[\"']?" + _INJ_CMD_SUBST,
-    r"(?i)(?P<sub>\$\(%s\))[\"']?[^\S\n]*\|[^\S\n]*(?:sudo[^\S\n]+)?" % _download_body(")")
-    + r"(?:(?:ba|z|da|k)?sh|python[0-9.]*|node|ruby|perl|php)\b",
-    r"(?i)(?:^|[\s;&|(`'\"])(?:(?:ba|z|da|k)?sh|source|\.)[^\S\n]+(?:<[^\S\n]*)?"
-    r"(?P<sub><\(%s\))" % _download_body(")"),
-)
-
 # Outbound network egress verbs, and references to local secrets/credentials.
 # A line carrying BOTH is exfil-shaped (MEDIUM: documentation can show defensive
 # examples, so the judge adjudicates intent).
@@ -6064,14 +6084,6 @@ def _scan_file_deterministic(path, text):
     # 1. Hidden / bidi unicode (scan every char).
     for lineno, line in enumerate(lines, 1):
         run_end = 0
-        ascii_vs = [i for i, ch in enumerate(line) if i and _is_variation_selector(ord(ch))
-                    and ord(line[i - 1]) < 0x80 and not _is_variation_selector(ord(line[i - 1]))
-                    and not (ch == "\uFE0F" and line[i - 1] in "0123456789#*")
-                    and not (ch == "\uFE00" and line[i - 1] == "0")]
-        if len(ascii_vs) >= 2:
-            add(lineno, "HIDDEN_UNICODE", "HIGH",
-                f"{len(ascii_vs)} variation selectors on ASCII characters starting at column"
-                f" {ascii_vs[0] + 1} (one hidden byte per visible character)", line.strip())
         for col, ch in enumerate(line, 1):
             if col <= run_end:
                 continue
@@ -6085,6 +6097,13 @@ def _scan_file_deterministic(path, text):
                     add(lineno, "HIDDEN_UNICODE", "HIGH",
                         f"run of {end - col + 1} variation selectors from U+{cp:04X} at column {col}"
                         " (hidden-ASCII smuggling)", line.strip())
+                    continue
+                base = ord(line[col - 2]) if col > 1 else None
+                if not _vs_single_allowed(base, cp):
+                    after = f"U+{base:04X}" if base is not None else "the line start"
+                    add(lineno, "HIDDEN_UNICODE", "HIGH",
+                        f"variation selector U+{cp:04X} at column {col} after {after} is not a"
+                        " registered variation sequence (hidden-data carrier)", line.strip())
                     continue
             if cp in _INJ_SUSPICIOUS_CHARS:
                 name, sev = _INJ_SUSPICIOUS_CHARS[cp]
@@ -6100,8 +6119,11 @@ def _scan_file_deterministic(path, text):
                     line.strip())
 
     # 2. Fetch-then-execute (HIGH), per physical line, then per command a trailing
-    # backslash continues and per substitution whose body spans lines. Those are
-    # reported at their first line unless a line they cover is already reported.
+    # backslash continues, reported at its first line unless a line it covers is
+    # already reported. Accepted Tier-1 gaps, left to the Tier-2 judge: a $(...),
+    # <(...), or backtick substitution whose body spans lines; a fenced command
+    # continued on the next line after a trailing pipe; and a backtick substitution
+    # piped to a shell across lines.
     for lineno, line in enumerate(lines, 1):
         for pat in _INJ_FETCH_EXEC_PATTERNS:
             if _re.search(pat, line):
@@ -6121,10 +6143,6 @@ def _scan_file_deterministic(path, text):
     for first, last, joined in _backslash_continued(lines):
         if any(_re.search(pat, joined) for pat in _INJ_FETCH_EXEC_PATTERNS):
             add_fetch(first, last, joined)
-    for pat in _INJ_FETCH_EXEC_SUBST_PATTERNS:
-        for m in _re.finditer(pat, text):
-            first = text.count("\n", 0, m.start("sub")) + 1
-            add_fetch(first, first + m.group("sub").count("\n"), m.group(0))
 
     # 3. Exfil-shaped lines: egress verb + secret reference on the same line (MEDIUM).
     egress = _re.compile(_INJ_EGRESS_RE)
