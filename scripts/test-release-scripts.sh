@@ -10,6 +10,12 @@ TMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/whetstone-release-tests.XXXXXXXX")
 trap 'rm -rf -- "$TMP_ROOT"' EXIT
 FAILURES=0
 
+# Host git config (init.defaultBranch, hooks, signing, URL rewrites) must not reach the
+# fixtures or the release scripts under test.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+export GIT_AUTHOR_NAME=Test GIT_AUTHOR_EMAIL=test@example.invalid
+export GIT_COMMITTER_NAME=Test GIT_COMMITTER_EMAIL=test@example.invalid
+
 fail() {
 	printf 'FAIL: %s\n' "$*" >&2
 	FAILURES=$((FAILURES + 1))
@@ -41,7 +47,7 @@ make_release_fixture() {
 	cp "$root/bin/gh" "$root/bin/npx"
 	chmod +x "$root/bin/gh" "$root/bin/npx"
 
-	git init -q --bare "$root/origin.git"
+	git init -q --bare -b master "$root/origin.git"
 	git_init_repo "$root/work"
 	mkdir -p "$root/work/scripts"
 	cp "$REPO_ROOT/scripts/release.sh" "$root/work/scripts/release.sh"
@@ -51,7 +57,7 @@ make_release_fixture() {
 	git -C "$root/work" remote add origin "$root/origin.git"
 	git -C "$root/work" push -q -u origin master
 
-	git init -q --bare "$root/ai-origin.git"
+	git init -q --bare -b master "$root/ai-origin.git"
 	git_init_repo "$root/home/ai/ai-skills"
 	mkdir -p "$root/home/ai/ai-skills/skills"
 	printf '# Changelog\n' >"$root/home/ai/ai-skills/CHANGELOG.md"
