@@ -4,14 +4,17 @@
 A guard whose message appears in no test is either untested or tested only by a
 status-only negative, which a different guard's refusal would also satisfy. The count
 sizes the problem. Individual rows are candidates: the extraction also picks up warnings
-and format fragments (over-count), and a short generic test needle can look like a pin
-(under-count).
+and format fragments (over-count), and a short generic test needle or a template whose
+long fragments all recur in another message can look like a pin (under-count).
 
 Source literals are taken from lines that look like a refusal (throw, raise, abort,
 Err(, bail!, exit, reject, deny, ValidationException, ...) and the two lines after
 them, so multi-line calls are covered. Test needles are every string literal in the
-test files. In Rust files, everything after the first `#[cfg(test)]` counts as test
-code, not source.
+test files. A guard is pinned when a needle occurs in its literal, or when one needle
+contains every fragment of at least --needle-min characters between its format
+placeholders ({x}, %s, $var, ${x}), so a test asserting the rendered message pins the
+template. In Rust files, everything after the first `#[cfg(test)]` counts as test code,
+not source.
 
 Exit status 2 means known incomplete input: a --src or --tests glob matched no file.
 Output is still printed.
@@ -137,7 +140,7 @@ def main() -> int:
             continue
         seen.add(literal)
         fragments = [f.strip() for f in HOLE.split(literal) if len(f.strip()) >= args.needle_min]
-        pinned = any(n in literal or any(n in f for f in fragments) for n in needles)
+        pinned = any(n in literal or (fragments and all(f in n for f in fragments)) for n in needles)
         if not pinned:
             unpinned.append((name, number, literal))
 
