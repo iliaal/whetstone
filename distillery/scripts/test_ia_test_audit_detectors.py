@@ -184,6 +184,47 @@ class DetectorCliTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn("unmatched pattern (no eligible files): nope/", result.stderr)
 
+    def test_guard_pins_matches_template_fragments_inside_rendered_test_messages(self):
+        self.write(
+            "app.py",
+            'raise ValueError(f"amount {value} must be a positive integer")\n'
+            'raise ValueError("unknown currency code %s in the request" % code)\n'
+            'raise ValueError(f"{field_name} is required {hint_text}")\n'
+            'raise ValueError(f"price {price} exceeds the configured ceiling")\n'
+            'raise ValueError("currency must be an ISO 4217 code")\n',
+        )
+        self.write("app.php", 'throw new RuntimeException("User $id was not found in the directory");\n')
+        self.write(
+            "app.js",
+            "throw new Error(`token has expired and cannot be used: ${name}`);\n"
+            "throw new Error(`Refusing to write ${target}: path is outside the output root`);\n",
+        )
+        self.write(
+            "test_app.py",
+            'assert "amount -3 must be a positive integer" in str(error)\n'
+            'assert "unknown currency code XYZ in the request" in str(error)\n'
+            'assert "email is required for signup" in str(error)\n'
+            'with pytest.raises(ValueError, match="must be an ISO 4217"):\n',
+        )
+        self.write("test_app.php", "$this->expectExceptionMessage('User 42 was not found in the directory');\n")
+        self.write(
+            "test_app.js",
+            'expect(() => use()).toThrow("token has expired and cannot be used: abc");\n'
+            'expect(() => link()).toThrow("Refusing to write through symlink");\n',
+        )
+        result = self.run_detector("guard_pins.py", "--src", "app.*", "--tests", "test_app.*")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("8 distinct guard literals in 3 source files; 3 contain", result.stdout)
+        rows = result.stdout.split("== first 60 unpinned\n", 1)[1].splitlines()
+        self.assertEqual(
+            rows,
+            [
+                "app.js:2  Refusing to write ${target}: path is outside the output root",
+                "app.py:3  {field_name} is required {hint_text}",
+                "app.py:4  price {price} exceeds the configured ceiling",
+            ],
+        )
+
     def test_reporters_reject_negative_limits_before_reading_input(self):
         self.write("app.py", 'raise ValueError("amount must be a positive integer")\n')
         self.write_junit("test_a")
