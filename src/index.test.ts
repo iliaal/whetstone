@@ -11,5 +11,6 @@ test("--version reports the package version", async () => {
   })
   const [out, code] = await Promise.all([new Response(proc.stdout).text(), proc.exited])
   expect(code).toBe(0)
-  expect(out.trim()).toBe(pkg.version)
+  // consola prefixes "[log]" when it detects CI, so compare the last token
+  expect(out.trim().split(/\s+/).at(-1)).toBe(pkg.version)
 })
