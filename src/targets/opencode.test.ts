@@ -20,7 +20,7 @@ test("installed bundle preserves supported hooks and skills without queuing task
   tempRoots.push(root)
   const source = path.join(root, "source plugin")
   const project = path.join(root, "project")
-  await copyDir(path.resolve("plugins/whetstone"), source)
+  await copyDir(path.join(import.meta.dir, "../../plugins/whetstone"), source)
   await mkdir(project)
   const plugin = await loadClaudePlugin(source)
   const command = 'test -f "${CLAUDE_PLUGIN_ROOT}/skills/ia-debugging/SKILL.md" && printf \'{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"Bundled skill is readable"}}\''
@@ -195,7 +195,7 @@ for (const command of ["convert", "install"]) {
       })
       await writeText(path.join(source, "marker.txt"), "Bundled resource")
       const build = await Bun.build({
-        entrypoints: [path.resolve("src/index.ts")],
+        entrypoints: [path.join(import.meta.dir, "../index.ts")],
         target: "bun",
         outdir: path.join(root, "standalone"),
       })

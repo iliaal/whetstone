@@ -17,8 +17,8 @@ test("cleanup backs up owned links while preserving unrelated and modified skill
   await writeFile(path.join(skills, "ia-debugging/SKILL.md"), "My customized debugging skill")
   await mkdir(path.join(skills, "unrelated"))
   await writeFile(path.join(skills, "unrelated/SKILL.md"), "Unrelated skill")
-  await symlink(path.resolve("plugins/whetstone/skills/ia-writing"), path.join(skills, "ia-writing"))
-  const proc = Bun.spawn([process.execPath, "run", path.resolve("src/index.ts"), "cleanup", "--target", "agents"], {
+  await symlink(path.join(import.meta.dir, "../../plugins/whetstone/skills/ia-writing"), path.join(skills, "ia-writing"))
+  const proc = Bun.spawn([process.execPath, "run", path.join(import.meta.dir, "../index.ts"), "cleanup", "--target", "agents"], {
     env: { ...process.env, HOME: home }, stdout: "pipe", stderr: "pipe",
   })
   const stdout = await new Response(proc.stdout).text()
@@ -36,8 +36,8 @@ test.each([false, true])("project cleanup preserves user artifacts (customized p
   roots.push(home)
   const project = path.join(home, "opencode")
   await mkdir(project)
-  const cli = path.resolve("src/index.ts")
-  const install = Bun.spawn([process.execPath, "run", cli, "install", path.resolve("plugins/whetstone"), "--to", "opencode"], {
+  const cli = path.join(import.meta.dir, "../index.ts")
+  const install = Bun.spawn([process.execPath, "run", cli, "install", path.join(import.meta.dir, "../../plugins/whetstone"), "--to", "opencode"], {
     cwd: project, env: { ...process.env, HOME: home }, stdout: "pipe", stderr: "pipe",
   })
   await Promise.all([new Response(install.stdout).text(), new Response(install.stderr).text()])

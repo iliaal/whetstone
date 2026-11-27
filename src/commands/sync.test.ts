@@ -18,7 +18,7 @@ for (const target of ["codex", "opencode"]) {
       const settings = path.join(claudeHome, "settings.json")
       await writeFile(settings, JSON.stringify({ mcpServers: { demo: { command: "node", args: ["server.js"] } } }))
       const run = async () => {
-        const proc = Bun.spawn([process.execPath, "run", path.resolve("src/index.ts"), "sync", "--target", target], {
+        const proc = Bun.spawn([process.execPath, "run", path.join(import.meta.dir, "../index.ts"), "sync", "--target", target], {
           env: { ...process.env, HOME: home }, stdout: "pipe", stderr: "pipe",
         })
         const [stdout, stderr, exitCode] = await Promise.all([
