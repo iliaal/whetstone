@@ -5,11 +5,12 @@ import convert from "./commands/convert"
 import install from "./commands/install"
 import listCommand from "./commands/list"
 import sync from "./commands/sync"
+import pkg from "../package.json"
 
 const main = defineCommand({
   meta: {
     name: "whetstone",
-    version: "0.1.0",
+    version: pkg.version,
     description: "Convert Claude Code plugins into other agent formats",
   },
   subCommands: {
