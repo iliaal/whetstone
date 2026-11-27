@@ -225,6 +225,34 @@ class DetectorCliTests(unittest.TestCase):
             ],
         )
 
+    def test_guard_pins_requires_template_fragments_in_order_without_overlap(self):
+        self.write(
+            "app.py",
+            'raise ValueError(f"first part here {x} second part here")\n'
+            'raise ValueError(f"alpha bravo charlie {x} delta echo foxtrot")\n'
+            'raise ValueError(f"quota exceeded now {a} quota exceeded now")\n'
+            'raise ValueError(f"index out of range {i}range for the buffer")\n',
+        )
+        self.write(
+            "test_app.py",
+            'assert "second part here and first part here" in str(error)\n'
+            'assert "alpha bravo charlie 7 then delta echo foxtrot" in str(error)\n'
+            'assert "quota exceeded now for the account" in str(error)\n'
+            'assert "index out of range for the buffer" in str(error)\n',
+        )
+        result = self.run_detector("guard_pins.py", "--src", "app.py", "--tests", "test_app.py")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("4 distinct guard literals in 1 source files; 3 contain", result.stdout)
+        rows = result.stdout.split("== first 60 unpinned\n", 1)[1].splitlines()
+        self.assertEqual(
+            rows,
+            [
+                "app.py:1  first part here {x} second part here",
+                "app.py:3  quota exceeded now {a} quota exceeded now",
+                "app.py:4  index out of range {i}range for the buffer",
+            ],
+        )
+
     def test_reporters_reject_negative_limits_before_reading_input(self):
         self.write("app.py", 'raise ValueError("amount must be a positive integer")\n')
         self.write_junit("test_a")
