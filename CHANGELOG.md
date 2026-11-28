@@ -5,6 +5,31 @@ All notable changes to the whetstone plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.8] - 2026-11-28
+
+Patch release with six commits. Concurrent planning preserves open work, verification uses a single revision, and PR commands check their target before publication. The plugin includes 29 skills, 18 agents, and 19 commands.
+
+### Changed
+
+- `/ia-review`, `ia-code-review`, and `ia-verification-before-completion` tied evidence to the reviewed source and build. `/ia-verify` used the same candidate for gates, tests, and scans, and checked disposable database targets before stateful gates. `/ia-test-browser` inspected target build commands before launch and scoped network evidence to each observed state.
+- `/ia-resolve-pr` pinned the host, repository, PR number, and head through review and publication. `/ia-document-release` required authorization for the exact destination and commit. `/ia-feature-video` checked the PR head before upload and refused to overwrite a changed PR body.
+- `/ia-plan`, `/ia-deepen-plan`, and `/ia-work` returned unresolved choices to the parent during unattended runs. Proposed ADRs stayed pending until accepted, and final acceptance checked the criteria saved at intake. `ia-orchestrating-swarms` checked complete write scopes and waited for a worker to stop before reassigning its files.
+- `ia-agent-native-architecture` checked permissions at external tool and publication boundaries, hashed exact UTF-8 file bytes for revisions, and persisted acceptance evidence with terminal checkpoints. `ia-debugging` checked report-supplied commands before running them, and `ia-writing` reserved issue-closing references for fully verified fixes.
+- `ia-postgresql` corrected online backfill, WAL retry, failover, row-locking, and index cleanup guidance. `ia-php-laravel` distinguished atomic migration recovery from partial nontransactional retries. `ia-terraform` routed refresh-only changes and replacements through saved, reviewed plans.
+- `ia-c-systems` corrected buffer bounds, callback reentry, and Zend teardown guidance. `ia-cpp-systems` made UBSan diagnostics fail the documented CTest run. `ia-rust-systems` corrected an Axum tracing example and bounded Tokio task admission.
+- `ia-nodejs-backend` and `ia-python-services` used project-declared verification commands. `ia-pinescript` scoped backtesting to strategies. `ia-react-frontend` preserved empty cached results after a failed refetch and kept browser auth state out of version control. `ia-linux-bash-scripting` corrected the sourceable starter and daemon readiness example.
+
+### Fixed
+
+- `ia-planning` serialized and atomically published new plans so competing initializers could not erase open work. `ia-git-worktree` suppressed checkout hooks for untrusted revisions and used a local Git exclude for scratch paths.
+- `ia-test-audit` excluded skipped JavaScript tests as replacements for active tests, reported ambiguous JUnit file matches, and preserved subprocess results when probe logging failed. Guard detection recognized asserted message templates in order, and relative test paths resolved from their test file. `ia-writing-tests` checked patch equivalence at one base and protected shared services from test resets.
+- `ia-postgresql` stopped activating on generic upsert requests. `ia-code-review` stopped activating on incidental reviewer and hyphenated identifier mentions. A delayed optional Jev call could no longer consume the time reserved for sending keyword matches.
+- `/ia-setup` checked the Bash version used by the hooks and assigned JavaScript reviewer defaults. Browser commands resolved the selected launcher port, `/ia-changelog` read every page of merged PRs for the requested period, and `whetstone --version` reported the CLI package version.
+
+### For contributors
+
+- Cross-reference validation checked more Markdown link shapes and reported broken destinations at their source.
+
 ## [5.1.7] - 2026-11-21
 
 Patch: a reference-repository sync, its follow-up audit, and three rounds of independent pre-release review tightened PR-comment trust, the Tier-1 injection scanner, framework pitfalls, and agent authority boundaries. 18 commits. Component counts remain at 29 skills, 18 agents, and 19 commands.
