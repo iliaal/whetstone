@@ -180,7 +180,7 @@ You didn't have to guess that weekly review would be popular. You discovered it.
 
 When agents take unsolicited actions--doing things on their own rather than responding to explicit requests--you need to decide how much autonomy to grant.
 
-> **Note:** This framework applies to unsolicited agent actions. If the user explicitly asks the agent to do something ("send that email"), that's already approval--the agent just does it.
+> An authenticated user request can authorize the exact requested action within the user's grants and application policy. Enforce any separate approval requirement for protected actions.
 
 ### The Stakes/Reversibility Matrix
 
@@ -277,28 +277,28 @@ When agents can modify their own behavior--changing prompts, updating preference
 2. **Understanding:** User understands the effects
 3. **Rollback:** User can undo changes
 
-Approval flows are one way to achieve this. Audit logs with easy rollback could be another. **The principle is: make it legible.**
+Use the [self-modification guardrails](./self-modification.md) for system prompts, protected workflows, and other protected state. Keep the proposed change pending while the authenticated user reviews the exact draft revision. Show the applied change in the audit log and provide a rollback path after the trusted service applies it.
 
-The application supplies the audit, checkpoint, mutation, and notification adapters:
+The example applies an unprotected response-length preference. The application supplies the audit, checkpoint, mutation, and notification adapters. The mutation adapter verifies the caller's grant and validates the preference before saving.
 
 ```typescript
-type PromptChange = { summary: string; prompt: string };
+type ResponseLength = "concise" | "detailed";
 
-interface PromptRuntime {
-  recordChangeRequest(change: PromptChange): Promise<void>;
+interface PreferenceRuntime {
+  recordChangeRequest(length: ResponseLength): Promise<void>;
   checkpointCurrentState(): Promise<void>;
-  applyChange(change: PromptChange): Promise<void>;
+  setResponseLength(length: ResponseLength): Promise<void>;
   notifyUser(message: string): Promise<void>;
 }
 
-async function agentSelfModify(
-  change: PromptChange,
-  runtime: PromptRuntime,
+async function changeResponseLength(
+  length: ResponseLength,
+  runtime: PreferenceRuntime,
 ): Promise<void> {
-  await runtime.recordChangeRequest(change);
+  await runtime.recordChangeRequest(length);
   await runtime.checkpointCurrentState();
-  await runtime.applyChange(change);
-  await runtime.notifyUser(`I've adjusted my approach: ${change.summary}`);
+  await runtime.setResponseLength(length);
+  await runtime.notifyUser(`Response length set to ${length}.`);
 }
 ```
 </approval_and_agency>

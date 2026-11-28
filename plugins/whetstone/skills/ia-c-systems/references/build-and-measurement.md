@@ -44,7 +44,9 @@ A verification result is a claim about a binary, not about a diff, and the two s
 
 ### Release hardening
 
-For shipped binaries add `-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection -fPIE -pie -Wl,-z,relro,-z,now` (plus `-fcf-protection=full` on x86-64). Undefine first: distro GCC predefines `_FORTIFY_SOURCE`, and a bare `-D` is a redefinition error under `-Werror`. FORTIFY checks nothing at `-O0` and emits no diagnostic saying so; confirm with `nm <obj> | grep -E '__\w+_chk(@|$)'` on an optimized build (a bare `_chk` pattern also matches `__stack_chk_fail`); an object with no fortifiable libc call shows nothing either way. Level 3 relies on `__builtin_dynamic_object_size` (GCC 12+ or a recent Clang); older compilers accept it but give at most level-2 checks.
+For dynamically linked Linux ELF executables, use `-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection -fPIE` when supported by the compiler, libc, and architecture. Link with `-pie -Wl,-z,relro,-z,now` on compatible linkers. Add `-fcf-protection=full` on x86-64 when supported. Select flags for the actual target when building shared modules, non-ELF artifacts, or static executables.
+
+Undefine `_FORTIFY_SOURCE` before setting it to avoid redefining a distro default under `-Werror`. Level 3 requires libc support and `__builtin_dynamic_object_size`, as in GCC 12+ or compatible Clang. Select a supported level on older toolchains. Verify on an optimized build with `nm <obj> | grep -E '__\w+_chk(@|$)'` against code that exercises a fortifiable libc call. `-O0` disables fortification, and a bare `_chk` pattern also matches `__stack_chk_fail`.
 
 
 ## Measuring a change

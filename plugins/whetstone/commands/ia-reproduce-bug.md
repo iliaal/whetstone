@@ -5,7 +5,7 @@ argument-hint: "[GitHub issue number]"
 disable-model-invocation: true
 ---
 
-**Requires:** agent-browser CLI installed (`npm install -g agent-browser && agent-browser install`). If unavailable, fall back to log analysis from Phase 1 only.
+Visual reproduction requires the agent-browser CLI (`npm install -g agent-browser && agent-browser install`). When it is unavailable, report log-only findings and the reproduction blocker.
 
 # Reproduce Bug Command
 
@@ -45,11 +45,11 @@ Record the source checkout, intended commit, and any workspace changes before ca
 REPRO_REPO=$(git rev-parse --show-toplevel)
 REPRO_HEAD=$(git rev-parse --verify 'HEAD^{commit}')
 git status --short
-PORT=$(bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port")
+PORT=$(bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port" "" "${APP_SCRIPT:-}")
 BASE_URL="http://localhost:$PORT"
 ```
 
-Require successful repository, commit, and port resolution. Port 3000 is a convention, not proof of the served application.
+Set `APP_SCRIPT` to the actual package script when known. With no explicit selection, the helper prefers `dev`, then `start`, then `serve`. Require successful repository, commit, and port resolution. Treat the resolved port as a hint until the server identity is verified.
 
 Identify the process listening on the resolved port. On Linux, inspect `ss -ltnp "sport = :$PORT"`, then set `SERVER_PID` to the observed numeric process ID. Inspect `readlink "/proc/$SERVER_PID/cwd"` and `ps -p "$SERVER_PID" -o pid=,lstart=,args=`. On other systems, use equivalent listener and process inspection. Record the process, startup command, and serving checkout; inspect relevant build output directories when the process serves a separate artifact.
 
@@ -57,7 +57,7 @@ Verify the revision/build the server actually serves using evidence the applicat
 
 If the caller explicitly selects another checkout, deployed revision, or build, label the evidence **Revision override** and record both intended and served identities. If process or build identity cannot be established, label the result **Served revision unverified** with the missing evidence. Exploratory reproduction may continue, but do not claim it verifies the current checkout or derive a current-source cause from that browser result alone.
 
-If server not running, inform user to start their dev server.
+If the server is stopped, record that blocker and continue to Phase 3. State in the report which server the caller needs to start for visual reproduction.
 
 Retain the selected `BASE_URL` and identity evidence for the entire reproduction. Open it after recording the binding or its explicit limitation:
 
@@ -114,23 +114,18 @@ agent-browser --session "[session-id]" console
 
 ## Phase 3: Document Findings
 
-**Reference Collection:**
+Record the reproduction outcome and the exact steps actually attempted. Use **Not attempted** when no reproduction steps ran and state the reason, including for a log-only investigation. Use **Inconclusive** for an attempted check that could not complete or whose setup cannot be verified. Use **Reproduced** when the sequence produces the reported symptom on the verified subject. Use **Cannot reproduce** when the sequence completes on the stated revision, a passing control establishes that the setup works, and the symptom is absent. If the symptom occurs on an unverified build, record the observation and classify reproduction on the intended revision as **Inconclusive**.
 
-- [ ] Document all research findings with specific file paths (e.g., `src/services/ExampleService.ts:42`)
-- [ ] Include screenshots showing the bug reproduction
-- [ ] List console errors if any
-- [ ] Document the exact reproduction steps
-- [ ] Record the selected URL, source revision/workspace state, server process/checkout, served build identity, and any **Revision override** or **Served revision unverified** limitation
+Record source evidence with file and line references. Include screenshots and console errors only when captured. For browser evidence, record the URL, source revision and workspace state, serving process and checkout, served build identity, and any **Revision override** or **Served revision unverified** limitation.
 
 ## Phase 4: Report Back
 
 Return findings to the caller with:
 
-1. **Findings** - What you discovered about the cause
-2. **Reproduction Steps** - Exact steps to reproduce (verified)
-3. **Screenshots** - Local visual evidence of the bug and its served-revision binding
-4. **Relevant Code** - File paths and line numbers
-5. **Suggested Fix** - If you have one
+1. **Outcome** with the reproduction status, revision checked, and any served-build limitation.
+2. **Steps and evidence**. List attempted steps and their results. Label a sequence verified only when it reproduced the symptom on the stated served build. Include screenshots, logs, and console errors when observed.
+3. **Findings** with source references and a distinction between observed evidence and a suspected cause.
+4. **Suggested fix**, when supported by the findings.
 
 Reproduction alone does not authorize posting an issue comment or uploading screenshots. If external reporting is requested, show the exact draft and selected attachments, redact sensitive content, and obtain any missing posting authority. Existing authorization must specifically cover that external action. When authorized, write the exact approved comment with a file-writing tool and send it through a body-file argument; never interpolate issue text or Markdown into shell source.
 

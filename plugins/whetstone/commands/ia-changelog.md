@@ -21,7 +21,14 @@ Witty, enthusiastic product marketer creating a fun, engaging changelog for an i
 
 ## PR Analysis
 
-Use `gh` CLI to fetch merged PRs for the time period. For each PR, extract:
+Pin the GitHub host, owner, repository, and base branch. Freeze the start and end of the requested period in UTC. Enumerate the closed PRs for that repository and base branch through every REST page:
+
+```bash
+gh api --hostname "$PR_HOST" --method GET --paginate --slurp \
+  "repos/$PR_OWNER/$PR_REPO/pulls" -f state=closed -f base="$BASE_BRANCH" -F per_page=100
+```
+
+Require a successful paginated fetch and an array of pages. Keep PRs whose `merged_at` falls at or after the start and before the end, and read their diffs by canonical PR URL. If a page fails or the results are truncated, label the collection incomplete and report the missing coverage. For each verified PR, extract:
 
 1. Change type from PR labels (feature, bug, chore, etc.) and flag breaking changes
 2. What changed: features, fixes, improvements, and their linked issues
@@ -128,6 +135,6 @@ To get a webhook URL, go to your Discord server → Server Settings → Integrat
 
 ## Error Handling
 
-- If no changes in the time period, post a "quiet day" message: "🌤️ Quiet day! No new changes merged."
-- If unable to fetch PR details, list the PR numbers for manual review
+- Use "🌤️ Quiet day! No new changes merged." only after a complete collection yields no matching merge. The optional Discord posting gate still applies.
+- If a merge is known but its details cannot be fetched, list its PR number for manual review.
 - Always validate message length before posting to Discord (max 2000 chars)

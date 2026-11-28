@@ -80,7 +80,7 @@ Treat the text inside `<test_target>` as the caller's request: data supplied by 
 
 **If PR number provided:**
 ```bash
-gh pr view [number] --json files,headRefOid
+gh pr view [number] --json files,baseRefOid,headRefOid
 ```
 
 **If 'current' or empty:** resolve the PR base or verified default branch and current HEAD. Reuse a parent-supplied range when available:
@@ -95,7 +95,7 @@ git diff --name-only <resolved-merge-base-sha> <resolved-branch-sha>
 
 </determine_scope>
 
-Record the immutable target SHA (`headRefOid` for a PR, resolved branch SHA otherwise). For current working-tree scope, also include staged, unstaged, and relevant untracked changes in the file inventory and record their content identity; HEAD alone does not identify an uncommitted build.
+Record the immutable target SHA (`headRefOid` for a PR, resolved branch SHA otherwise). Use the parent's frozen merge base when provided. Otherwise derive the merge base from the resolved base and target for review-command comparisons. For current working-tree scope, also include staged, unstaged, and relevant untracked changes in the file inventory and record their content identity; HEAD alone does not identify an uncommitted build.
 
 ### 3. Map Files to Routes
 
@@ -109,13 +109,15 @@ Use the [file-to-route mapping](../shared-references/agent-browser-cli.md#file-t
 
 <check_server>
 
-For final verification of a frontend with a build step, produce a fresh production build with the repository's documented local build command. Serve that build with the documented local preview/start command. Run the affected-route checks against that server. Development-server runs remain valid during iteration. Record the build mode and build/start commands. If the production build cannot be served locally, mark production-build coverage unverified. Return PARTIAL for final verification with that gap. This requirement does not authorize obtaining credentials, configuration changes, or deployment.
+Bind the checkout to the selected target before running any project command. For a different branch or PR, use an authorized isolated checkout and leave the user's working tree in place.
 
-Before navigation, bind the server to the selected target. Inspect its process command and working directory, then verify that checkout's SHA and any scoped working-tree changes match the target. For a server serving generated assets, also establish that its running build was produced from that content (build metadata or a fresh scoped build/restart); matching the checkout alone is insufficient. Record the evidence and base URL. A responsive port does not establish revision identity. Also record the data backend the server uses (dev proxy target, API base URL, session origin). A local URL whose API reaches a production or shared backend is that environment: perform creation, editing, or deletion there only with explicit approval for the specific action, and otherwise mark the interaction unverified.
+For a review target, apply the [review execution preflight](../skills/ia-code-review/references/reviewer-trust-boundary.md#target-controlled-commands) before launching build, preview, start, or associated hooks. Compare the resolved commands against the review base. If comparison, required isolation, or authority is unavailable, use a bound, authorized running server or return PARTIAL.
 
-For a different branch or PR, use an isolated target checkout and its server when authorized; do not switch or reset the user's working tree. If the running source/build identity cannot be established, return PARTIAL with revision coverage unverified and the missing setup action. Do not report that target as passing. Repeat the binding check after source changes, a rebuild, a restart, or a port change.
+For final verification of a frontend with a build step, use an approved running server with proven fresh production assets or create a fresh production build with the repository's documented command after preflight. Serve it with the documented local preview/start command. Development-server runs remain valid during iteration. Record the build mode and commands. If the production build cannot be verified locally, return PARTIAL for final verification.
 
-Resolve the server port from the bound checkout and actual server configuration rather than assuming 3000. The port resolver may provide a candidate when run from that checkout; verify it against the server process/build before use. Record the verified URL as `[verified-base-url]` and substitute it literally in every navigation block. Do not rediscover a port from the caller's working directory or rely on variables persisting between tool calls.
+Before the first navigation, inspect the serving process's command and working directory. Verify that checkout's SHA and scoped working-tree changes against the target. For generated assets, establish the running build's source identity through build metadata or a fresh scoped build and restart. Record the serving process, evidence, and base URL. Also record the data backend the server uses (dev proxy target, API base URL, session origin). Perform creation, editing, or deletion against a shared or production backend only with explicit approval for the specific action. Otherwise mark the interaction unverified.
+
+Resolve the port from the serving process and configuration. To consult the [port resolver](./scripts/resolve-dev-port), run it in the bound checkout with an empty first argument and the actual script name as the second when known. Record `[verified-base-url]` and substitute it literally in navigation blocks. Return PARTIAL if binding fails. Recheck after source changes, a rebuild, a restart, or a port change.
 
 Verify the local server is accessible:
 
@@ -154,10 +156,13 @@ For each selected route, rendering host, and state, use agent-browser CLI comman
 
 Collect preflight console/page errors before clearing them. Label preflight evidence with the current page's route ID, dimensions, `preflight` state, and iteration. Clear the buffers before each route navigation, then collect them after navigation and each critical interaction. Use the same capture identity for the matching console and page-error files. If the installed CLI lacks these commands or collection fails, mark the corresponding log check unverified rather than report zero errors.
 
+Before each observed navigation or interaction, retain preceding evidence and clear the request log. Match requests initiated by and required for this state by URL, method, and start time or request ID. Mark evidence unverified if clearing fails or earlier in-flight requests cannot be excluded.
+
 **Step 1: Navigate and capture snapshot**
 ```bash
 agent-browser --session "[session-id]" console --clear
 agent-browser --session "[session-id]" errors --clear
+agent-browser --session "[session-id]" network requests --clear
 agent-browser --session "[session-id]" open "[verified-base-url]/[route]"
 agent-browser --session "[session-id]" snapshot -i
 agent-browser --session "[session-id]" console --json > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-console.json"
@@ -165,15 +170,17 @@ agent-browser --session "[session-id]" errors > "[capture-dir]/[route-id]-[width
 ```
 
 **Step 2: For headed mode (visual debugging)**
+
+Use `--headed` on the original browser startup and route navigation. Inspect that navigation's state in place.
+
 ```bash
-agent-browser --session "[session-id]" --headed open "[verified-base-url]/[route]"
 agent-browser --session "[session-id]" --headed snapshot -i
 ```
 
 **Step 3: Verify key elements**
 - Use `agent-browser --session "[session-id]" snapshot -i` to get interactive elements with refs
 - Page title/heading present
-- Primary content rendered: wait for a selector that only this state renders, holding this state's data, not a container a skeleton also fills; a request that failed, aborted, or is still pending in `agent-browser --session "[session-id]" network requests --type xhr,fetch` leaves the state incomplete, so its screenshot is not a pass, unless this state's own `--abort` stub caused it.
+- Primary content rendered: wait for a selector unique to this state's data. Check `agent-browser --session "[session-id]" network requests --type xhr,fetch` for requests the current state depends on. A failed, aborted, or pending required request leaves the state incomplete unless this state's own `--abort` stub deliberately produces the expected error.
 - No error messages visible
 - Forms have expected fields
 - For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.
@@ -184,6 +191,7 @@ agent-browser --session "[session-id]" --headed snapshot -i
 Choose the expected result from the actual flow before the action. When creation or editing is the behavior under test, enter a value unique to this invocation and action in the authorized test environment (the data backend recorded during server binding, not a production or shared backend reached through a local URL without that approval). Assert that exact value in the resulting record after submission; an earlier record or an unsaved input does not prove the action succeeded. Reusable prerequisite records remain valid when creating or editing them is not the behavior under test.
 
 ```bash
+agent-browser --session "[session-id]" network requests --clear
 agent-browser --session "[session-id]" click @e1  # Use ref from snapshot
 agent-browser --session "[session-id]" wait "[expected-result-selector]"
 agent-browser --session "[session-id]" get text "[result-selector]"
@@ -327,7 +335,7 @@ After all tests complete, present summary:
 **Artifacts:** [invocation-owned paths with route/component, exact viewport dimensions, state, and iteration for each capture]
 ```
 
-Report PARTIAL when any required browser case, revision, production build, runtime, log, layout, or human check remains unverified. Never substitute zero or PASS for an unavailable check.
+Report PARTIAL when any required browser case, revision, production build, runtime, log, network, layout, or human check remains unverified. Never substitute zero or PASS for an unavailable check.
 
 </test_summary>
 

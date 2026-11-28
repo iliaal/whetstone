@@ -244,20 +244,23 @@ Compare the exact committed patch with the inspected task patch, not just its fi
 
 **Mixed ownership path:** If any selected file contains caller-owned or peer-owned hunks, use `ia-git-worktree`'s commit-ownership reference to create a clean, session-owned isolated checkout from the captured HEAD. Apply only the attributable documentation patch there. Stage only that owned patch. Inspect the exact staged diff. Commit in the isolated checkout. Inspect the exact committed diff. Leave the original checkout's HEAD, index, and working tree unchanged. Retain the isolated branch and commit SHA for authorized integration. If attribution is ambiguous or the owned patch cannot apply cleanly, stop without altering caller state. Report the conflict.
 
-If an isolated commit is awaiting integration, report its SHA and the remaining integration step instead of pushing the original branch or updating the PR body. Once the commit is integrated through an authorized path, inspect the integrated patch. Recheck preservation of caller changes before continuing. On the whole-file ownership path, proceed only after the same ownership checks pass:
+If an isolated commit is awaiting integration, report its SHA and the remaining integration step instead of pushing the original branch or updating the PR body. Once the commit is integrated through an authorized path, inspect the integrated patch. Recheck preservation of caller changes before continuing.
+
+**Branch publication.** Resolve the destination independently of the base-fetch remote. For an existing PR, record its canonical URL and use its head repository and branch, including the fork when applicable. Otherwise use the destination the caller selected. Require one verified effective push URL for the selected remote (`git remote get-url --push --all`) and a full destination branch ref. Require caller authorization for that destination and the exact verified commit before running the push. If publication is outside scope or the destination is unresolved, retain the commit locally, report its SHA and status, and skip the PR body update.
 
 ```bash
-git push origin <current-branch>
+git push --no-follow-tags --recurse-submodules=no -- "${PUSH_REMOTE:?}" "${COMMITTED_SHA:?}:${PUSH_REF:?}"
 ```
+
+Set `PUSH_REMOTE` to the verified remote, `COMMITTED_SHA` to the verified commit, and `PUSH_REF` to the authorized `refs/heads/...` destination in the push invocation. Recheck the effective push URL before use if approval intervened.
 
 If the push fails, stop and report the error verbatim. Skip the PR body update and print every updated row of the health summary as `Committed, not pushed -- <error>`, never as `Updated`. Never force-push or rebase to make it succeed.
 
 **PR body update:**
 
-Resolve and record the canonical PR URL and use it explicitly for the original read, preflight read, and edit. Create a private temporary directory once and record the printed path for subsequent calls.
+Use the recorded canonical PR URL for the original read, preflight read, and edit. If no PR was recorded before the push, resolve its canonical URL and verify that its head repository and branch match the published destination before proceeding. Create a private temporary directory once and record the printed path for subsequent calls.
 
 ```bash
-gh pr view --json url --jq .url
 body_dir=$(mktemp -d "${TMPDIR:-/tmp}/doc-release.XXXXXXXX") && printf '%s\n' "$body_dir"
 ```
 
@@ -288,4 +291,4 @@ Documentation health:
   Post-review doc claims checked: 2 (README.md count 20 -> commands/ listing; CONTRIBUTING.md setup command -> package.json:8)
 ```
 
-Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not applicable (<reason>)`, `Skipped (<error>)`, `Not bumped -- user chose to skip`, `Committed, not pushed -- <error>`
+Status values: `Updated`, `Current`, `Voice polished`, `Skipped (not found)`, `Not applicable (<reason>)`, `Skipped (<error>)`, `Not bumped -- user chose to skip`, `Committed locally (<reason>)`, `Committed, not pushed -- <error>`

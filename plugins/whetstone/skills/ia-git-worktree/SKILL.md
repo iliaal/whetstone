@@ -23,11 +23,11 @@ Never call `git worktree add` directly; always use the `worktree-manager.sh` scr
 
 The manager handles setup:
 1. Copies `.env`, `.env.local`, `.env.test`, etc. from the main checkout, only when the base is the default branch or a local branch that already contains the fetched commit (a branch that exists only on `origin` gets none); it never overwrites or follows an existing file or symlink in the new tree
-2. Ensures `.worktrees` is in the main checkout's `.gitignore`
+2. Uses effective ignore rules for the worktree path and adds a local Git exclude when needed
 3. Creates consistent directory structure
 4. After creation, install dependencies if detected: `package.json` → `npm install`, `composer.json` → `composer install`, `pyproject.toml` → `pip install -e .`, `go.mod` → `go mod download`
 
-**Untrusted bases (PR heads, fork or origin-only branches, third-party code):** create with `--no-env`, never `copy-env` into the tree, and keep credentials out of its commands. Skip installs; if needed, disable lifecycle scripts and plugins (`npm ci --ignore-scripts`, `composer install --no-scripts --no-plugins`) and never `pip install -e .`, which runs the build backend.
+**For untrusted bases** such as PR heads, fork or origin-only branches, or third-party code, create with `--no-env`, which suppresses checkout hooks and environment copying for the creation command. Keep credentials out of its commands and never `copy-env` into the tree. Skip installs where possible. If an install is necessary, disable lifecycle scripts and plugins (`npm ci --ignore-scripts`, `composer install --no-scripts --no-plugins`). Do not run `pip install -e .`, which runs the build backend.
 
 All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh <command>`. If `CLAUDE_PLUGIN_ROOT` is unset (non-Claude-Code harness), resolve the script relative to this skill's own directory.
 
@@ -53,14 +53,7 @@ Cleanup refuses the current checkout, another session's tree, and tracked, untra
 
 ## Safety Verification
 
-With a main checkout, verify `.worktrees` is ignored before creation:
-
-```bash
-# Verify .worktrees is ignored (should output ".worktrees")
-git check-ignore .worktrees || echo "WARNING: .worktrees not in .gitignore"
-```
-
-If not ignored, add it to `.gitignore` before proceeding.
+The manager verifies effective exclusion of the worktree path before creation. If a project rule prevents the local exclude from taking effect, stop and report the conflict. See [hooks-and-excludes.md](./references/hooks-and-excludes.md).
 
 Before any baseline suite or migration, apply `ia-verification-before-completion`'s effective-target preflight. Resolve worktree environment/configuration overlays; verify disposable database and service targets, never the dev database. Copied `.env` files do not prove isolation. Without verified disposable targets, stop before tests. Then run the suite or its fastest relevant subset to establish a clean baseline before implementation.
 

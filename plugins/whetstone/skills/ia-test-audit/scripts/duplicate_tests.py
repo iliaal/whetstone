@@ -84,6 +84,7 @@ Python (ast):
 
 Rust (#[test], #[tokio::test], #[rstest], #[test_case]), PHP (PHPUnit test methods,
 #[Test]/@test, Pest it()/test()), JS/TS (it/test blocks, including .each): token-based.
+Explicit JS/TS skips and todos are listed separately and never enter comparison groups.
 Comments and whitespace are stripped; locals are canonicalized (Rust `let` bindings, PHP
 `$variables`, JS `const`/`let`/`var` bindings); statements are split at top-level `;` (and
 line breaks in JS). A statement is an assertion when it starts with `assert*!` (Rust),
@@ -114,6 +115,7 @@ from collections import Counter, defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import NamedTuple
 
 if sys.version_info < (3, 11):
     print("duplicate_tests: Python 3.11+ required", file=sys.stderr)
@@ -164,6 +166,7 @@ class Unit:
     inputs: frozenset[str] = frozenset()
     needles: frozenset[str] = frozenset()
     real_act: bool = True
+    inactive: str | None = None
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -1563,7 +1566,13 @@ def tok_text(toks: list[Tok]) -> str:
     return " ".join(t.text for t in toks)
 
 
-Found = tuple[str, int, list[Tok], bool, str]
+class Found(NamedTuple):
+    name: str
+    line: int
+    body: list[Tok]
+    params: bool
+    key: str
+    inactive: str | None = None
 
 
 def rust_tests(toks: list[Tok]) -> list[Found]:
@@ -1599,7 +1608,7 @@ def rust_tests(toks: list[Tok]) -> list[Found]:
                     close = match_close(toks, body_open)
                     signature = tok_text(toks[j + 2 : body_open])
                     key = f"{signature} {' '.join(cases)}" if params else ""
-                    out.append((name, line, toks[body_open + 1 : close], params, key))
+                    out.append(Found(name, line, toks[body_open + 1 : close], params, key))
                     i = close + 1
                     continue
             i = j if j > i else i + 1
@@ -1640,7 +1649,7 @@ def php_tests(toks: list[Tok], raw: list[Tok], path: str) -> list[Found]:
                     comment = " ".join(comments_before.get(k, "") for k in range(max(0, i - 40), i + 1))
                     providers += re.findall(r"@dataProvider\s+(\w+)", comment)
                     key = f"{path}::{params}::{','.join(providers)}" if params else ""
-                    out.append((name, toks[i + 1].line, toks[body_open + 1 : close], bool(params), key))
+                    out.append(Found(name, toks[i + 1].line, toks[body_open + 1 : close], bool(params), key))
                     i = close + 1
                     continue
         if (
@@ -1672,7 +1681,7 @@ def php_tests(toks: list[Tok], raw: list[Tok], path: str) -> list[Found]:
                     tok_text(toks[call_close + 3 : match_close(toks, call_close + 3) + 1]) if chained else ""
                 )
                 out.append(
-                    (toks[i + 2].text[1:-1], t.line, body, chained, f"{path}::{key}" if chained else "")
+                    Found(toks[i + 2].text[1:-1], t.line, body, chained, f"{path}::{key}" if chained else "")
                 )
                 i = call_close + 1
                 continue
@@ -1686,16 +1695,21 @@ JS_MODIFIERS = {"only", "skip", "concurrent", "sequential", "todo", "fails", "fa
 def js_tests(toks: list[Tok]) -> list[Found]:
     out: list[Found] = []
     i = 0
+    skipped_suite_end = -1
     while i < len(toks):
         t = toks[i]
         if (
             t.kind == "id"
-            and t.text in ("it", "test")
+            and t.text in ("it", "test", "xit", "xtest", "describe", "xdescribe")
             and (i == 0 or toks[i - 1].text not in (".", "function"))
         ):
             j, params, table = i + 1, False, ""
+            inactive = "skip" if t.text in ("xit", "xtest", "xdescribe") else None
             while j + 1 < len(toks) and toks[j].text == "." and toks[j + 1].text in JS_MODIFIERS:
-                if toks[j + 1].text == "each":
+                modifier = toks[j + 1].text
+                if modifier in ("skip", "todo"):
+                    inactive = modifier
+                if modifier == "each":
                     params = True
                     j += 2
                     if j < len(toks) and toks[j].text == "(":
@@ -1707,14 +1721,21 @@ def js_tests(toks: list[Tok]) -> list[Found]:
                         j += 1
                     continue
                 j += 2
+            if t.text in ("describe", "xdescribe"):
+                if inactive == "skip" and j < len(toks) and toks[j].text == "(":
+                    skipped_suite_end = max(skipped_suite_end, match_close(toks, j))
+                i = j
+                continue
             if j + 1 < len(toks) and toks[j].text == "(" and toks[j + 1].kind == "str":
+                if i < skipped_suite_end and inactive is None:
+                    inactive = "skipped suite"
                 call_close = match_close(toks, j)
                 k = j + 2
+                body: list[Tok] = []
                 if k < call_close and toks[k].text == ",":
                     k += 1
                     if toks[k].text == "async":
                         k += 1
-                    body: list[Tok] = []
                     if toks[k].text == "function":
                         body_open = find_open(toks, k + 1)
                         if body_open > 0:
@@ -1741,10 +1762,10 @@ def js_tests(toks: list[Tok]) -> list[Found]:
                                         break
                                     end += 1
                                 body = toks[k:end]
-                    if body:
-                        out.append((toks[j + 1].text[1:-1], t.line, body, params, table))
-                        i = j + 1
-                        continue
+                if body or inactive:
+                    out.append(Found(toks[j + 1].text[1:-1], t.line, body, params, table, inactive))
+                    i = j + 1
+                    continue
         i += 1
     return out
 
@@ -1909,14 +1930,14 @@ def token_units(path: str, text: str, lang: str) -> list[Unit]:
         found = js_tests(toks)
     shared: set[str] = set()
     if lang == "js":
-        inside = {id(t) for _, _, body, _, _ in found for t in body}
+        inside = {id(t) for test in found for t in test.body}
         shared = {
             toks[k + 1].text
             for k in range(len(toks) - 1)
             if toks[k].text in ("let", "var") and toks[k + 1].kind == "id" and id(toks[k]) not in inside
         }
     units = []
-    for name, line, body, params, key in found:
+    for name, line, body, params, key, inactive in found:
         # Class state set in setUp()/beforeEach makes an identical body mean different things per file.
         stateful = (
             lang == "php"
@@ -1978,6 +1999,7 @@ def token_units(path: str, text: str, lang: str) -> list[Unit]:
                 inputs=frozenset(inputs),
                 needles=frozenset(needles),
                 real_act=real_act,
+                inactive=inactive,
             )
         )
     return units
@@ -2484,7 +2506,8 @@ def main() -> int:
     if args.explain:
         for u in units:
             if args.explain in u.name:
-                print(f"{u.path}:{u.line}  {u.name}  fixtures={list(u.fixtures)}")
+                inactive = f"  inactive={u.inactive}" if u.inactive else ""
+                print(f"{u.path}:{u.line}  {u.name}  fixtures={list(u.fixtures)}{inactive}")
                 for text in u.actions:
                     print(f"  act     {text}")
                 for label, bucket in (("pre", u.pre), ("assert", u.post)):
@@ -2492,7 +2515,8 @@ def main() -> int:
                         print(f"  {label:<7} {text}")
                 print(f"  final   {u.act_shape}\n")
         return 0 if input_complete else 2
-    groups = build_groups(units, args.ratio, args.cross_file)
+    inactive_tests = [{**u.ref(), "reason": u.inactive} for u in units if u.inactive]
+    groups = build_groups([u for u in units if not u.inactive], args.ratio, args.cross_file)
     if args.kind:
         groups = [g for g in groups if g["kind"] in args.kind]
     order = {"REDUNDANT": 0, "SUBSUMED": 1, "FOLD": 2, "PARAMETRIZE": 3}
@@ -2517,6 +2541,7 @@ def main() -> int:
                 "unsupported_files": unsupported,
                 "unparsed_files": [{"file": name, "error": error} for name, error in sorted(errors.items())],
                 "unrecognized_files": unrecognized,
+                "inactive_tests": inactive_tests,
                 "counts": dict(counts),
                 "groups": groups,
             },
@@ -2531,6 +2556,10 @@ def main() -> int:
                 note = f"  ({m['note']})" if "note" in m else ""
                 print(f"  {m['file']}:{m['line']}  {m['test']}{note}")
             print()
+        if inactive_tests:
+            print("Statically inactive tests (excluded from comparison groups):")
+            for test in inactive_tests:
+                print(f"  {test['file']}:{test['line']}  {test['test']}  ({test['reason']})")
     summary = ", ".join(f"{k} {counts[k]}" for k in order if counts[k]) or "none"
     print(f"{len(files)} files, {tests} tests ({len(units)} cases); groups: {summary}", file=sys.stderr)
     return 0 if input_complete else 2

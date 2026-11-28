@@ -54,9 +54,9 @@ while (b < hdr_size && (n = stream_read(s, (char *)&font[b], hdr_size - b)) > 0)
 
 Do not assume a read returns the full requested size until EOF. A partial read (`0 < n < requested`) is a normal outcome for network sockets, pipes, and any pluggable stream layer, and some implementations loop-to-fill for *some* backends only, which makes the partial case look impossible in local testing while remaining reachable in production. Every read loop must be correct under `0 < n < requested`, not just `n == size` or `n == 0`.
 
-### A read returning zero or less is two different events
+### Distinguish EOF from a read failure
 
-`n <= 0` collapses "the stream ended" and "the stream failed". A loop that breaks on it falls through to whatever completion code follows, so a failure part-way through commits the partially parsed prefix as though the input had ended there, silently and successfully. Classify before leaving the loop: negative is an error, and zero is an error unless the stream separately reports EOF. Layers below are not consistent about which they return, and a pluggable or user-supplied stream commonly reports failure as zero, so the EOF query is the only thing that separates them. Only a fault-injecting stream reproduces it; no real file will.
+Classify the result before committing any parsed prefix. For POSIX `read()` of a nonzero byte count from a regular file, pipe, or byte-stream socket, zero means EOF and `-1` reports an error through `errno`. EOF before a required byte count means truncated input. If a wrapper uses zero for either EOF or failure, check its documented status indicators. Exercise both clean EOF and a read failure after a valid prefix.
 
 ## Bounds arithmetic: validate before deriving
 

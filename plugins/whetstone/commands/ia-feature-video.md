@@ -51,6 +51,7 @@ Parse the input:
   ```bash
   echo "http://localhost:$(bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port")"
   ```
+  If the server runs a known package script, pass its exact name as the resolver's second argument, for example `bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port" '' start`.
 
 ```bash
 # Get PR number for current branch if needed
@@ -65,13 +66,10 @@ gh pr view --json number -q '.number'
 
 **Get PR details:**
 ```bash
-gh pr view [number] --json title,body,files,headRefName,headRefOid -q '.'
+gh pr view [number] --json url,title,files,headRefName,headRefOid
 ```
 
-**Get changed files:**
-```bash
-gh pr view [number] --json files -q '.files[].path'
-```
+Record `PR_URL`, `PR_SHA`, and changed paths. Keep that URL and SHA pinned through publication.
 
 **Map files to testable routes** (same mapping used by `/ia-test-browser`; see [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md) for the full file-to-route table).
 
@@ -211,13 +209,10 @@ ffmpeg -y -framerate 0.5 -pattern_type glob -i '[capture-dir]/screenshots/*.png'
 
 **Final-artifact review (required for local handoff and upload):** After the final encode, including any privacy re-encode, inspect a decoded frame from each planned shot in both the MP4 and preview GIF. Verify shot order, the visible result, and readability at each artifact's encoded dimensions. Check the actual shot durations against the text and interaction shown. Correct unreadable, missing, or mistimed shots. After a correction, re-encode the affected artifacts. Repeat the review after re-encoding. Require both artifacts to pass before marking the local capture complete or uploading. If either artifact cannot be inspected, report capture as partial. Skip upload when artifact review is incomplete.
 
-**Upload with rclone only to an authorized destination (otherwise retain local artifacts):**
-
-If upload authority, configuration, or a verified destination is missing, skip upload and PR editing and return the completed local video. If an upload or public-URL check fails, retain local artifacts and report that failure; do not proceed to PR editing.
+**Upload with rclone.** Verify destination and authorization. Recheck the PR before copying. On failure, retain the capture locally.
 
 ```bash
-# Check rclone is configured -- abort upload step if not
-rclone listremotes || { echo "rclone not configured, skipping upload"; exit 0; }
+rclone listremotes || exit "$?"
 
 # Config: set these to your rclone remote, bucket, and public base URL
 R2_REMOTE="${R2_REMOTE:-r2}"              # rclone remote name
@@ -226,12 +221,18 @@ PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-https://your-domain.r2.dev}"  # NO trailing 
 
 UPLOAD_PATH="$R2_REMOTE:$R2_BUCKET/pr-videos/pr-[number]/[capture-id]"
 
+current_pr=$(gh pr view "${PR_URL:?}" --json url,headRefOid --jq '.url + " " + .headRefOid') || exit "$?"
+if [[ "$current_pr" != "$PR_URL ${PR_SHA:?}" ]]; then
+  printf 'PR identity or head changed.\n' >&2
+  exit 1
+fi
+
 # Upload video, preview GIF, and screenshots
-rclone copy "[capture-dir]/videos/" "$UPLOAD_PATH/" --s3-no-check-bucket --progress
-rclone copy "[capture-dir]/screenshots/" "$UPLOAD_PATH/screenshots/" --s3-no-check-bucket --progress
+rclone copy "[capture-dir]/videos/" "$UPLOAD_PATH/" --s3-no-check-bucket --progress || exit "$?"
+rclone copy "[capture-dir]/screenshots/" "$UPLOAD_PATH/screenshots/" --s3-no-check-bucket --progress || exit "$?"
 
 # List uploaded files
-rclone ls "$UPLOAD_PATH/"
+rclone ls "$UPLOAD_PATH/" || exit "$?"
 
 # Build and validate public URLs BEFORE updating PR
 VIDEO_URL="$PUBLIC_BASE_URL/pr-videos/pr-[number]/[capture-id]/feature-demo.mp4"
@@ -255,11 +256,11 @@ done
 
 <update_pr>
 
-Run this step only when upload succeeded, the public URLs passed verification, and the caller authorized the selected PR edit or comment. Otherwise retain the local result and report PR publication as not attempted.
+Require a successful upload, verified public URLs, and authorization for the selected PR action.
 
-**Get current PR body:**
+For an edit, save the body used to draft the proposed change:
 ```bash
-gh pr view [number] --json body -q '.body'
+gh pr view "$PR_URL" --json body > "[capture-dir]/pr-body-original.json"
 ```
 
 **Add video section to PR description:**
@@ -274,6 +275,8 @@ If the PR already has a video section, replace it. Otherwise, append:
 [![Feature Demo]([preview-gif-url])]([video-mp4-url])
 
 *Click to view full video*
+
+Recorded at PR revision `[pr-sha]`.
 ```
 
 Example (using `$PUBLIC_BASE_URL`):
@@ -281,19 +284,22 @@ Example (using `$PUBLIC_BASE_URL`):
 [![Feature Demo]($PUBLIC_BASE_URL/pr-videos/pr-137/feature-demo-preview.gif)]($PUBLIC_BASE_URL/pr-videos/pr-137/feature-demo.mp4)
 ```
 
-Write the exact proposed Markdown to `[capture-dir]/pr-body.md` with a non-shell file-writing tool (`Write`, or the harness equivalent). Preserve unrelated sections from the current PR body. Show the exact draft for approval unless that content is already approved. Keep retrieved Markdown out of shell command text, including heredocs, `echo`, and interpolated double-quoted arguments. If the current PR body changes before submission, reconcile the change and renew approval when the proposed content changes.
+Preserve unrelated sections and label any approved served-revision override with its reason. Save the exact Markdown with a non-shell file-writing tool and show it for approval. Keep retrieved Markdown out of shell commands. Reconcile body drift and renew approval if the draft changes. On identity or head drift, keep the draft and report upload status.
 
-**Update the PR using the exact approved file:**
-```bash
-gh pr edit [number] --body-file "[capture-dir]/pr-body.md"
-```
-
-**Or add as a comment if preferred:**
-
-Write and approve the exact comment through the same non-shell method as `[capture-dir]/pr-comment.md`. Authority for editing the description does not also authorize a comment; execute only the selected authorized action.
+Set `PR_ACTION` and `PR_DRAFT` to the approved action and file. Use `edit` with `[capture-dir]/pr-body.md` or `comment` with `[capture-dir]/pr-comment.md`. Include the revision label in either draft.
 
 ```bash
-gh pr comment [number] --body-file "[capture-dir]/pr-comment.md"
+case "$PR_ACTION" in
+  edit)
+    gh pr view "${PR_URL:?}" --json body > "[capture-dir]/pr-body-current.json" &&
+      cmp -s "[capture-dir]/pr-body-original.json" "[capture-dir]/pr-body-current.json" || exit "$?"
+    ;;
+  comment) ;;
+  *) exit 1 ;;
+esac
+current_pr=$(gh pr view "${PR_URL:?}" --json url,headRefOid --jq '.url + " " + .headRefOid') &&
+  [[ "$current_pr" == "$PR_URL ${PR_SHA:?}" ]] &&
+  gh pr "$PR_ACTION" "$PR_URL" --body-file "${PR_DRAFT:?}"
 ```
 
 Record success only after the selected `gh` command succeeds and the resulting PR body or comment contains the approved content. On failure, retain the draft and report the failed action.
@@ -323,7 +329,7 @@ Report only observed actions and captured shots. Set capture, upload, and PR pub
 ```markdown
 ## Feature Video Result
 
-**PR:** #[number] - [title]
+**PR:** [pr-url] - [title]
 **Requested revision:** [PR SHA]
 **Served revision evidence:** [checkout/process/build identity, or unverified]
 **Revision override:** [explicit override and reason, or none]

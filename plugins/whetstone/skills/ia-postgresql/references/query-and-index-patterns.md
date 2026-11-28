@@ -17,7 +17,7 @@
 - Case-insensitive identity needs `lower()` on both sides: lowercasing only the input misses stored mixed-case rows. A non-unique `lower(col)` index means `LIMIT 1` needs a tie-break or a reject-on-ambiguity. A later `CREATE UNIQUE INDEX CONCURRENTLY ON t (lower(col))` fails on existing case-variant duplicates and leaves an `INVALID` index behind, so dedupe first (and drop the invalid index before retrying)
 - A GIN index on an array column serves the containment operators, not `=`: `WHERE 'x' = ANY(col)` seq-scans even with `enable_seqscan = off`, because `ANY` over an array expands to equality and no GIN operator class implements it. Write the predicate as `WHERE col @> ARRAY['x']` to reach the index.
 - `fillfactor = 70-90` on write-heavy tables reserves space for HOT updates, reducing index bloat
-- Drop unused indexes (only after one full business cycle since last restart; check `pg_stat_database.stats_reset` first; on a freshly restarted DB or read replica, `idx_scan = 0` reports live indexes, primary keys included, as unused): `SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0`
+- For unused-index candidates, use [the monitoring query and removal checks](./operations.md#maintenance--monitoring).
 
 **Find foreign keys without a valid unfiltered B-tree key prefix (PostgreSQL 11+):**
 ```sql

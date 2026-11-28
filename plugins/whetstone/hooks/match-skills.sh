@@ -59,9 +59,14 @@ for entry in ${ENTRIES[@]+"${ENTRIES[@]}"}; do
 done
 REGEX_MATCH_COUNT=${#ALL_MATCHES[@]}
 
+# The host grants five seconds to SubagentStart. Reserve time for Bash's
+# whole-second clock, terminating Jev, and emitting the keyword matches.
+JEV_FINISH_BY=3
 if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ENTRIES[@]} -eq 1 && ${#ALL_MATCHES[@]} -lt $MAX_SKILLS ]] &&
+  ((SECONDS < JEV_FINISH_BY)) &&
   PROMPT=$(prompt_at 0) && [[ -n "${PROMPT//[[:space:]]/}" ]] &&
-  command -v python3 >/dev/null 2>&1 && command -v "${WHETSTONE_JEV_COMMAND:-jev}" >/dev/null 2>&1; then
+  command -v timeout >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1 &&
+  command -v "${WHETSTONE_JEV_COMMAND:-jev}" >/dev/null 2>&1; then
   prompt_context "$PROMPT"
   ELIGIBLE=()
   for skill_name in "${SKILL_NAMES[@]}"; do
@@ -81,8 +86,9 @@ if [[ "${WHETSTONE_JEV:-}" == 1 && ${#ENTRIES[@]} -eq 1 && ${#ALL_MATCHES[@]} -l
     JEV_CMD+=(--selected "${ALL_MATCHES[@]}")
   fi
   JEV_CMD+=(-- ${ELIGIBLE[@]+"${ELIGIBLE[@]}"})
-  if [[ ${#ELIGIBLE[@]} -gt 0 ]] &&
-    JEV_MATCHES=$(printf '%s' "$INPUT" | "${JEV_CMD[@]}" 2>/dev/null); then
+  JEV_REMAINING=$((JEV_FINISH_BY - SECONDS))
+  if ((${#ELIGIBLE[@]} > 0 && JEV_REMAINING > 0)) &&
+    JEV_MATCHES=$(printf '%s' "$INPUT" | timeout -k 0.2s "${JEV_REMAINING}s" "${JEV_CMD[@]}" 2>/dev/null); then
     while IFS= read -r skill_name; do
       [[ -n "$skill_name" ]] || continue
       ALL_MATCHES+=("$skill_name")

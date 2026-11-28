@@ -92,7 +92,7 @@ The bare `catch (...)` is required: `catch (const std::exception &)` alone still
 
 - `emalloc`/`efree`/`erealloc`: request-scoped, freed wholesale at request end. Default choice.
 - `pemalloc(size, persistent)`/`pefree(ptr, persistent)`: survives the request. Anything that must outlive the request, including anything reachable from a persistent resource, has to be persistent-allocated.
-- Request-scoped (`emalloc`) data may live in module globals, which is a standard pattern across php-src's own extensions, provided it is released **and the pointer reset** in `RSHUTDOWN`. What corrupts is a request-scoped pointer left in a global across requests: the next request reads freed memory.
+- Request-scoped (`emalloc`) data may live in module globals. Release the data and reset the pointer after its last producer and before its storage expires. Use `RSHUTDOWN` when all producers finish before that hook. Use the later teardown path below for tables the executor can refill after `RSHUTDOWN`.
 - Never cross the allocators. `emalloc` pairs only with `efree`; `malloc` only with `free`.
 - Trace `is_persistent` on every path before calling a `pefree` redundant. One handle variable can hold request-scoped memory on the happy path and a persistent allocation on a failed-retry or destructor path, where a plain `efree` frees persistent memory with the request allocator.
 - `zend_string` is refcounted: `zend_string_copy` to take a reference, `zend_string_release` to drop one. Interned strings have refcount handling of their own, so never `efree` a `zend_string` directly.
@@ -131,7 +131,7 @@ typedef struct {
 
 ## Module globals
 
-`ZEND_DECLARE_MODULE_GLOBALS(ext)` plus an accessor macro. Under ZTS the globals are per-thread, so never cache a raw pointer *to* a globals struct across requests or hand one to another thread; go through the accessor each time. Request-scoped contents are fine under the `RSHUTDOWN` discipline above.
+`ZEND_DECLARE_MODULE_GLOBALS(ext)` plus an accessor macro. Under ZTS the globals are per-thread, so never cache a raw pointer *to* a globals struct across requests or hand one to another thread. Go through the accessor each time. Apply the [request-scoped lifetime rules](#memory) to the contents.
 
 ## Assertions
 
@@ -156,7 +156,8 @@ A feature gated on a core-provided `HAVE_*` macro (`#ifdef HAVE_PHP_SESSION`) co
 - `make test` passes with zero `FAIL`, and any new `.phpt` fails without the change
 - `USE_ZEND_ALLOC=0` run under Valgrind or ASan is clean
 - `*_arginfo.h` matches a fresh `gen_stub.php` run
-- No `emalloc`/`free` or `malloc`/`efree` crossing, and every request-scoped pointer in module globals is reset in `RSHUTDOWN`
+- No `emalloc`/`free` or `malloc`/`efree` crossing
+- Request-scoped module globals meet the [last-producer and teardown rules](#memory)
 - Every throw in a Zend handler is followed by `RETURN_THROWS()`; every throw in a `zend_result` helper returns `FAILURE` instead
 - Every userland call checks its `zend_result`, then `EG(exception)`, then `IS_UNDEF`
 - Every allocation sits below `ZEND_PARSE_PARAMETERS_END()`

@@ -16,7 +16,7 @@ Create, list, or update ADRs in the repository's ADR directory (auto-detected; d
 - **`list`**: same as empty: scan and list existing ADRs. Do not create anything.
 - **A short title** (≤8 words): create a new ADR with that title. Ask the user to pick a format (Y-statement, Lightweight, Full MADR, RFC, Deprecation) using the **AskUserQuestion tool** before generating.
 - **A longer topic or question** (>8 words): treat as context for a Full MADR or RFC. Extract the decision subject from the input, confirm the extracted title with the user, then proceed.
-- **`deprecate <NNNN>`**: create a Deprecation ADR superseding the referenced ADR number. Read the superseded ADR first to capture its context.
+- **`deprecate <NNNN>`**: create a Deprecation ADR for the referenced ADR number. Read the original ADR first to capture its context.
 
 ## Process
 
@@ -49,7 +49,7 @@ Ask about, using the **AskUserQuestion tool**:
 - What constraints drove the choice
 - What consequences are accepted
 
-For deprecation ADRs: which ADR is being superseded, why, and whether the replacement or retirement is proposed or accepted. The new record supersedes the original; do not mark the new record deprecated or point it at itself. Leave the accepted original unchanged unless updating its status and backlink is explicitly authorized by the caller.
+For deprecation ADRs, identify the original ADR and confirm the reason and approval status of its proposed replacement or retirement. Link to the original. Apply [effective decision lookup](../shared-references/adr-templates.md#effective-decision-lookup) to determine when the successor takes effect. Leave the original unchanged unless the caller explicitly authorizes updating its status and backlink.
 
 For retroactive ADRs, separate evidence from code and commit history from inferred intent. Record alternatives found in history, or state "none recorded"; do not invent prior deliberation. Cite code by file and the defining function, class, or config key rather than a line number, which goes stale when code above it moves; use a line number only when no name identifies the spot.
 

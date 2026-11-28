@@ -8,8 +8,8 @@ results never bound the semantic audit.
 All four static detectors (weak-negative, duplicate, guard, and junit census) return
 status 2 when an input glob matches no file. The weak-negative and duplicate CLIs also
 return 2 for other known incomplete input and can still print useful partial findings.
-The census also returns 2 on an unreadable report. The reach probe is a pytest plugin,
-not a detector CLI; its report mode does not signal completeness. Inspect diagnostics.
+The census also returns 2 on an unreadable report. For the reach probe, inspect pytest's
+terminal summary for an incomplete-evidence diagnostic before using its report.
 Run each detector's `--help` for its contract instead of reading the source.
 Duplicate JSON includes `input_complete`, `unmatched_patterns`, `unsupported_files`,
 `unparsed_files`, and `unrecognized_files`.
@@ -26,12 +26,14 @@ syntax. Reconcile omissions with the inventory before proceeding.
   complete framework syntax support.
 - The guard scanner counts textual occurrences, including unused strings. Its unpinned
   total is not a coverage estimate or an estimate of defective tests.
-- JUnit names may lack file paths. The census matches a file's path, name, or stem on
-  path-segment boundaries, so `test_user` is not hidden by `test_user_admin`, but the
-  name and stem fallbacks still conflate same-name files in different directories.
-  Confirm suspected collection gaps with runner output.
+- JUnit names may lack file paths. The census prefers explicit paths and qualified
+  module names. Short names and stems can identify one file only when unique in the
+  supplied inventory. Resolve the separately listed ambiguous files and suspected
+  collection gaps with runner output.
 - Duplicate detection does not resolve every fixture, provider, hook, or module mock.
-  Same executed lines or body shape do not establish equivalent contracts.
+  Same executed lines or body shape do not establish equivalent contracts. Statically
+  inactive JS/TS tests appear separately and cannot substitute for active tests in a
+  comparison group. Check the actual gate for conditional skips and focused tests.
 
 ## Consolidation leads
 

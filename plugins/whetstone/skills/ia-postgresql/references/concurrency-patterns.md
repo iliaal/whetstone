@@ -13,23 +13,26 @@ The conflict target must restate a partial or expression unique index: `ON CONFL
 
 **Replayed or reordered events:** when the upsert consumes events that can be redelivered or arrive out of order (CDC, webhooks, queue consumers, backfills), carry a source-owned version that increases per key and guard the update: `ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, version = EXCLUDED.version WHERE orders.version < EXCLUDED.version`. Without the guard, a late older event overwrites newer state. The guard fits only events that carry the full state of every column they set. For delta events (an increment, an appended item), apply an event only when `version = current + 1`, park later versions until the gap fills, and reconcile from the source of truth when a gap outlives its window; a `<` guard would apply v5 and then skip a late v4 as stale, losing its change. Arrival time, `now()`, and random event IDs cannot order events. A skipped stale event returns zero rows from `RETURNING`, so treat an empty result as "already newer", not as a failure. Reject or quarantine two different payloads at the same key and version instead of letting arrival order pick one; the guard cannot tell them apart, so store a payload hash beside `version` and compare it in a separate check when the same version can carry different data.
 
-**Deadlock prevention**: acquire locks in deterministic order:
+**Deadlock prevention:** Acquire row locks in a consistent order by an immutable key across all competing paths. A single atomic update can avoid a read-modify-write race on one row. A multi-row update's plan determines row-lock acquisition order. Lock the target rows explicitly before updating them in the same transaction.
+
 ```sql
-SELECT * FROM accounts WHERE id IN (1, 2) ORDER BY id FOR UPDATE;
--- Or collapse into single atomic statement:
+BEGIN;
+SELECT id FROM accounts WHERE id IN (1, 2) ORDER BY id FOR UPDATE;
+-- Continue only if both account IDs were returned.
 UPDATE accounts SET balance = balance + CASE id
   WHEN 1 THEN -100 WHEN 2 THEN 100 END
 WHERE id IN (1, 2);
+COMMIT;
 ```
 
 **Transaction retries:** On SQLSTATE `40001`, roll back the top-level transaction. Retry the [complete transaction](https://www.postgresql.org/docs/18/mvcc-serialization-failure-handling.html), including every read and the application decisions that choose statements and values. Retrying only the failed statement can reuse stale inputs; a savepoint retry at `REPEATABLE READ` or `SERIALIZABLE` retains the transaction snapshot. Bound retries with backoff and jitter. Use the same retry boundary for `40P01` deadlocks. Correct inconsistent lock order. Keep non-idempotent external effects outside replayable transaction work. A connection lost during `COMMIT` leaves the outcome unknown, since the transaction may have committed before the reply was lost, so exclude connection errors (SQLSTATE class `08`, driver connection errors) from the retry predicate, even when a helper marks them retryable, unless the transaction is idempotent or its committed state is checked first (for example through an idempotency key).
 
-**Foreign-key row locks cut both ways.** Inserting a child row takes `FOR KEY SHARE` on the parent row it references, and the row-lock conflict table gives `FOR KEY SHARE` exactly one conflicting mode: `FOR UPDATE`. Two opposite consequences follow, and only the order distinguishes them:
+**Foreign-key checks take `FOR KEY SHARE` on the referenced parent row.** When checks run during child insertion, order matters if the same transaction also takes `FOR UPDATE` on the parent.
 
-- Lock the parent, *then* insert the child: concurrent creators serialize, because the second transaction's `FOR UPDATE` waits on the first transaction's `KEY SHARE`.
-- Insert the child, *then* lock the parent: two concurrent runs of that one path deadlock. Each already holds `KEY SHARE` from its own insert and each asks to upgrade to `FOR UPDATE`, so Postgres aborts one with `deadlock detected` / `while locking tuple ... in relation "<parent>"` and the caller gets a 500.
+- Take `FOR UPDATE` on the parent first. It blocks other parent lockers and child inserts that need `KEY SHARE` on that same row.
+- Insert the child first, then take `FOR UPDATE`. Two sessions can each hold `KEY SHARE` and deadlock on the upgrade.
 
-`FOR SHARE` and `FOR NO KEY UPDATE` do not conflict with `KEY SHARE`, so neither serializes the child insert; a shared-lock "fix" is a no-op. Detector: for every parent-row `FOR UPDATE`, check whether the same transaction already inserted a row referencing that parent; if it did, the path deadlocks against itself under concurrency. The late lock is often deliberate (keeping a row lock off an outbound network call). Where it is, keep it where it sits and swap it for a transaction-scoped advisory lock on the parent key: it orders the same writers, takes nothing on the parent tuple, and so cannot participate in the upgrade:
+`FOR SHARE` and `FOR NO KEY UPDATE` both allow child inserts that only take `KEY SHARE`. `FOR NO KEY UPDATE` conflicts with itself and can serialize cooperating paths that all take that lock. When the critical section must start after a child insert and all writers cooperate, another option is a transaction-scoped advisory lock on the parent key. It leaves the parent tuple lock unchanged. Use the same key and acquire it before reading or writing the protected state. See the [row-lock conflict matrix](https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-ROWS).
 
 ```sql
 SELECT pg_advisory_xact_lock(hashtextextended('organization:' || $1, 0));

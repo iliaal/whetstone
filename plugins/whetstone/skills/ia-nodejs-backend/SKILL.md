@@ -65,9 +65,9 @@ src/
 
 ## Verify
 
-- `tsc --noEmit` passes with zero errors
-- `npm test` passes with zero failures
-- No TypeScript bypasses (`as any`, `@ts-ignore`) in new code
+- Run the project's configured test command with its existing runner and package manager, including `bun test` for projects that declare it.
+- For TypeScript projects, run the configured type check, such as `tsc --noEmit` when the configuration supports it. Check new TypeScript code for bypasses such as `as any` and `@ts-ignore`.
+- Report any applicable check that could not run and why.
 
 
 ## References

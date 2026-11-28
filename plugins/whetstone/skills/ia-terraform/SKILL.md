@@ -107,8 +107,8 @@ Stacks (HCP; check current release status): orchestrates multiple configs as a s
 ## Troubleshooting
 
 - State lock stuck: `terraform force-unlock <ID>`, only after confirming no other operation running
-- Resource drift: `terraform plan -refresh-only` to detect, `terraform apply -refresh-only` to accept
-- Replace tainted: `terraform apply -replace=ADDR` (not deprecated `terraform taint`)
+- Resource drift: Save a state-reconciliation plan with `terraform plan -refresh-only -out=refresh.tfplan`. Review and obtain approval before applying that file.
+- Intentional replacement: Save the plan with `terraform plan '-replace=ADDR' -out=replace.tfplan`, substituting the resource instance address. Review and obtain approval before applying that file.
 - Import existing: `import` blocks (1.5+) for declarative import, or `terraform import ADDR ID`
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+SECONDS=0
 exec 2>/dev/null
 umask 077
 export LC_ALL=C

@@ -97,7 +97,7 @@ pub async fn get_user(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<UserResponse>, AppError> {
-    tracing::Span::current().record("user_id", %id);
+    tracing::Span::current().record("user_id", tracing::field::display(&id));
     let user = state.users.find(id).await?.ok_or(AppError::NotFound)?;
     Ok(Json(user.into()))
 }

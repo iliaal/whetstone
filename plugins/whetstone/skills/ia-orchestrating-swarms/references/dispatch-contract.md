@@ -22,7 +22,7 @@ Choose the mode by lifespan. A **subagent** returns its result to the caller and
 
 When dispatching independent read-only, worktree-isolated, or valid shared-tree-wave agents, issue the harness's native spawn calls without waiting for earlier workers to finish: in Claude Code, multiple `Agent` calls; in Codex, direct `spawn_agent` calls up to the active-agent limit. Waiting for each worker's completion before dispatching the next independent unit serializes the work. If agents depend on each other's output, that is a pipeline; see [Coordination models](./session-coordination.md#coordination-models).
 
-**Bounded parallelism when the harness caps active subagents.** Single-message fan-out dispatches in parallel; the harness then decides how many to *run* concurrently. Queue the overflow rather than failing: dispatch as many as the harness accepts, treat capacity-related spawn errors as backpressure, and re-dispatch queued agents as active ones complete. Record an agent as failed only after a successful dispatch times out or errors, or when dispatch fails for a non-capacity reason. Error-classification detail: [resilience-patterns.md](./resilience-patterns.md) (Dispatch backpressure).
+**Bounded parallelism when the harness caps active subagents.** Single-message fan-out dispatches in parallel; the harness then decides how many to *run* concurrently. Queue the overflow rather than failing: dispatch as many as the harness accepts, treat capacity-related spawn errors as backpressure, and re-dispatch queued agents as active ones complete. Classify errors and timeouts under [resilience-patterns.md](./resilience-patterns.md#dispatch-backpressure).
 
 ---
 
@@ -53,15 +53,11 @@ Cardinal rule: one owner per file. When files must be shared, designate a single
 
 **Parallel implementation agents need worktrees or the wave contract.** Implementation agents share state via git, so unguarded parallel dispatch overwrites. In Claude Code use `isolation: "worktree"`; in Codex create worktrees with the `ia-git-worktree` skill and pass each agent its absolute path (`spawn_agent` has no `isolation` argument). Without isolation, a shared-tree wave is permitted only while all five wave-contract conditions hold: committed baseline; exclusive ownership of every write surface, hidden ones included; no worker git operations; orchestrator-owned verification once after the wave; abort rolls back worker-attributable paths only. Any condition unmet, dispatch sequentially. Read-only review, research, and analysis agents parallelize freely. Full conditions and the worktree base-SHA pre-check: [wave-contract.md](./wave-contract.md).
 
-**Pre-dispatch file-intersection check**: operationalize the one-owner-per-file rule with a runnable safety gate before every parallel dispatch:
+**Pre-dispatch file-intersection check.** Establish exclusive file ownership before every parallel implementation dispatch.
 
-1. Collect each unit's declared Owned Files / Test Paths / Modify Paths from its task spec.
-2. Build a `{file → unit}` map. If any file appears under more than one unit, the dispatch is unsafe. Quick check on Markdown task specs:
-   ```bash
-   grep -h "^Owned Files:" -A 20 tasks/*.md | grep -v "^Owned Files:" | grep -v "^--$" | sort | uniq -d
-   ```
-   Any output is an overlapping file path that needs resolution.
-3. On overlap: either downgrade to serial, isolate each unit in a harness-supported worktree, or rewrite unit boundaries so files become exclusive.
+1. Read the complete Owned Files, Test Paths, and Modify Paths sections in each brief. Account for any other write surfaces required by the task or validation commands. Record an explicit empty set for fields with no entries.
+2. Resolve all entries against the same repository root. Expand globs and directory scopes. Normalize aliases that identify the same path. Include paths workers will create. Compare each unit's full set with every other unit's set and check whether a directory scope contains another unit's path.
+3. If any paths overlap, revise ownership, serialize, or use isolated worktrees. If an entry cannot be resolved or the scope is incomplete, establish the missing ownership before starting a shared-tree wave.
 4. Even with no declared overlap, include this constraint verbatim in every parallel-dispatch prompt: *"Do not run `git add`, `git commit`, or the project's test suite while other parallel agents are active; you'd race on the git index or thrash the test cache. Stage changes for the orchestrator to commit after integration."*
 
 That constraint is advisory, not enforcement: one checkout has one index, so a bare commit includes peer-staged files. A pathspec commit records complete selected files and requires whole-file ownership; mixed hunks need isolated owned staging in a clean checkout that preserves the caller's HEAD and index. Follow `ia-git-worktree`'s commit ownership procedure and inspect the exact committed patch. Worker Git operations remain prohibited during a shared-tree wave.

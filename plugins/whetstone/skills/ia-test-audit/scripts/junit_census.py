@@ -3,9 +3,8 @@
 
 Reads junit XML written by pytest (--junitxml), PHPUnit (--log-junit), Vitest
 (--reporter=junit), jest-junit, or cargo-nextest. Pass --test-files to list test files
-on disk that no report mentions: those were never collected by the gate. A file counts
-as mentioned only when its path, name, or stem appears between token boundaries, so a
-report naming tests/test_user_admin.py does not also mark tests/test_user.py.
+on disk that no report mentions. Prefer a reported path or qualified module, then use
+bounded names or stems when unique. Colliding short names are reported separately.
 
 Exit status 2 means known incomplete input: an unreadable report, or a --test-files
 glob that matched no file. Output is still printed when a glob is unmatched.
@@ -15,6 +14,8 @@ from __future__ import annotations
 
 import argparse
 import glob
+import os
+import posixpath
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -54,6 +55,76 @@ def bounded(candidate: str) -> re.Pattern[str]:
     return re.compile(rf"(?<![\w-]){re.escape(candidate)}(?![\w-])")
 
 
+def path_key(text: str) -> str:
+    return posixpath.normpath(os.path.normcase(text).replace("\\", "/").replace("::", "/"))
+
+
+def qualified_matches(labels: tuple[str, ...], aliases: dict[str, set[str]]) -> set[str]:
+    matches: set[str] = set()
+    for label in labels:
+        while "/" in label:
+            if label in aliases:
+                matches.update(aliases[label])
+                break
+            label = label.rsplit("/", 1)[0]
+    return matches
+
+
+def collection_evidence(
+    files: list[str], mentions: set[tuple[str, tuple[str, ...]]]
+) -> tuple[set[str], set[str]]:
+    paths: dict[str, set[str]] = defaultdict(set)
+    modules: dict[str, set[str]] = defaultdict(set)
+    basenames: dict[str, set[str]] = defaultdict(set)
+    stems: dict[str, set[str]] = defaultdict(set)
+    working_dir = Path.cwd()
+    for name in files:
+        path = Path(name)
+        absolute = Path(os.path.abspath(path))
+        spellings = {absolute}
+        if absolute.is_relative_to(working_dir):
+            spellings.add(absolute.relative_to(working_dir))
+        for spelling in spellings:
+            key = path_key(spelling.as_posix())
+            if "/" in key:
+                paths[key].add(name)
+                modules[normalise(str(spelling.with_suffix("")))].add(name)
+        basenames[normalise(path.name)].add(name)
+        stems[normalise(path.stem)].add(name)
+
+    short_patterns = [
+        [(bounded(key), matches) for key, matches in aliases.items()]
+        for aliases in (basenames, stems)
+    ]
+    confirmed: set[str] = set()
+    ambiguous: set[str] = set()
+    for file, labels in mentions:
+        explicit = path_key(file) if file else ""
+        if "/" in explicit:
+            matches = paths.get(explicit, set())
+        else:
+            short_labels = tuple(map(normalise, (*labels, file)))
+            matches = (
+                qualified_matches(tuple(map(path_key, labels)), paths)
+                or qualified_matches(tuple(label.replace(".", "/") for label in short_labels), modules)
+                or basenames.get(normalise(explicit), set())
+            )
+            if not matches:
+                for patterns in short_patterns:
+                    matches = {
+                        name for pattern, candidates in patterns
+                        if any(pattern.search(label) for label in short_labels)
+                        for name in candidates
+                    }
+                    if matches:
+                        break
+        if len(matches) == 1:
+            confirmed.update(matches)
+        else:
+            ambiguous.update(matches)
+    return confirmed, ambiguous - confirmed
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -77,7 +148,7 @@ def main() -> int:
     total = skipped = failed = 0
     skips: dict[str, list[str]] = defaultdict(list)
     zero_assertions: list[str] = []
-    mentioned: set[str] = set()
+    mentioned: set[tuple[str, tuple[str, ...]]] = set()
     counts_assertions = False
 
     for report in args.reports:
@@ -87,16 +158,10 @@ def main() -> int:
             print(f"junit_census: cannot read {report}: {error}; audit input is incomplete", file=sys.stderr)
             return 2
         for suite in root.iter("testsuite"):
-            for key in ("name", "file"):
-                if suite.get(key):
-                    mentioned.add(normalise(suite.get(key, "")))
+            mentioned.add((suite.get("file", ""), (suite.get("name", ""),)))
         for case in root.iter("testcase"):
             total += 1
-            parts = [case.get(k, "") for k in ("file", "classname", "name")]
-            for part in parts:
-                if part:
-                    mentioned.add(normalise(part))
-                    mentioned.add(normalise(part.replace(".", "/")))
+            mentioned.add((case.get("file", ""), (case.get("classname", ""), case.get("name", ""))))
             ident = "::".join(p for p in (case.get("classname"), case.get("name")) if p)
             skip = case.find("skipped")
             if skip is not None:
@@ -133,17 +198,17 @@ def main() -> int:
         unmatched = [pattern for pattern, names in pattern_files if not names]
         for pattern in unmatched:
             print(f"junit_census: unmatched pattern (no eligible files): {pattern}", file=sys.stderr)
-        unseen = []
-        for name in files:
-            path = Path(name)
-            stem = normalise(str(path.with_suffix("")))
-            candidates = [bounded(c) for c in {stem, normalise(path.name), normalise(path.stem)}]
-            if not any(c.search(m) for c in candidates for m in mentioned):
-                unseen.append(name)
+        confirmed, ambiguous = collection_evidence(files, mentioned)
+        unseen = sorted(set(files) - confirmed - ambiguous)
         print(f"\n== test files on disk never mentioned by any report ({len(unseen)} of {len(files)})")
         print("Check runner include/exclude config, naming conventions, and suite lists.")
         for name in unseen[: args.limit * 5]:
             print(f"  {name}")
+        if ambiguous:
+            print(f"\n== test files with collection ambiguous from short names ({len(ambiguous)})")
+            print("Use a reporter with file paths or verify these files in the runner's collection listing.")
+            for name in sorted(ambiguous)[: args.limit * 5]:
+                print(f"  {name}")
     return 2 if unmatched else 0
 
 

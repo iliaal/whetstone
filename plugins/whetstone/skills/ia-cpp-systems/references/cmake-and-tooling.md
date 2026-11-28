@@ -92,6 +92,7 @@ Add `-Werror` in CI only. Making it the local default turns every new compiler v
     {
       "name": "asan",
       "configurePreset": "asan",
+      "environment": { "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1" },
       "output": { "outputOnFailure": true }
     }
   ]
@@ -102,7 +103,7 @@ Add `-Werror` in CI only. Making it the local default turns every new compiler v
 
 Two things that bite here. `cmake --build --preset` and `ctest --preset` read `buildPresets` and `testPresets`; a file carrying only `configurePresets` fails with "no such preset" on both. And the schema `version` sets a CMake floor of its own (2 needs 3.20, 3 needs 3.21, 6 needs 3.25) which must not exceed the project's `cmake_minimum_required`.
 
-Sanitizer notes: ASan, TSan, and MSan are mutually exclusive, so each needs its own build directory. UBSan composes with any one of them (`address,undefined`, `thread,undefined`, and `memory,undefined` all link). Set `UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1`, because UBSan otherwise prints diagnostics into a passing test run.
+ASan, TSan, and MSan are mutually exclusive, so each needs its own build directory. UBSan composes with any one of them (`address,undefined`, `thread,undefined`, and `memory,undefined` all link). The test preset makes UBSan diagnostics fail the test. Set `UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1` when running the instrumented tests outside the preset.
 
 ## Dependencies
 

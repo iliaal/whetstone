@@ -75,7 +75,7 @@ sys.exit(int(os.environ['EXIT_CODE']))
     assert not (tmp_path / "unexpected").exists()
 
 
-def run_mock(tmp_path, responses, args=("123", "owner/repo"), permissions=None):
+def run_mock(tmp_path, responses, args=("123", "owner/repo"), permissions=None, hostname=""):
     """Serve GraphQL calls from an ordered queue and permission reads from a login map.
 
     A login mapped to None, or absent from the map, makes the permission read fail.
@@ -88,6 +88,13 @@ def run_mock(tmp_path, responses, args=("123", "owner/repo"), permissions=None):
     mock.write_text("""#!/usr/bin/env python3
 import json, os, sys
 from pathlib import Path
+hostname = os.environ['MOCK_GH_HOSTNAME']
+flags = sys.argv[1:]
+if hostname:
+    if flags.count('--hostname') != 1 or flags[-2:] != ['--hostname', hostname]:
+        sys.exit('Missing explicit hostname in: ' + repr(flags))
+elif '--hostname' in flags:
+    sys.exit('Unexpected explicit hostname in: ' + repr(flags))
 endpoint = next((arg for arg in sys.argv if '/collaborators/' in arg), None)
 if endpoint:
     base = Path(os.environ['MOCK_GH_RESPONSES']).parent
@@ -114,10 +121,12 @@ if response.get('stderr'):
 sys.exit(response.get('exit', 0))
 """)
     mock.chmod(0o755)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
     result = subprocess.run(
         ["python3", str(HELPER), *args], text=True, capture_output=True,
+        cwd=tmp_path,
         env={**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}",
-             "MOCK_GH_RESPONSES": str(fixture)},
+             "MOCK_GH_RESPONSES": str(fixture), "MOCK_GH_HOSTNAME": hostname},
     )
     return result, json.loads(fixture.read_text())
 
@@ -704,6 +713,28 @@ def test_mock_repository_detection_and_empty_feedback(tmp_path):
     assert output["unresolved"] == []
     assert output["conversation"]["comments"] == []
     assert output["cross_invocation"]["signal"] is False
+
+
+def test_explicit_repository_host_survives_feedback_and_permission_reads(tmp_path):
+    host = "git.example.test"
+    review_thread = thread("thread")
+    review_thread["comments"] = {
+        "nodes": [comment("first")], "totalCount": 2,
+        "pageInfo": {"hasNextPage": True, "endCursor": "next"},
+    }
+    result, remaining = run_mock(tmp_path, [
+        metadata(), page("comments", []), page("reviews", []),
+        page("reviewThreads", [review_thread]),
+        page("comments", [comment("second")], cursor="next", thread="thread"),
+    ], args=("123", f"{host}/owner/repo"), permissions={"reviewer": permission("write")},
+        hostname=host)
+
+    assert result.returncode == 0, result.stderr
+    assert not remaining
+    node = json.loads(result.stdout)["unresolved"][0]["node"]
+    assert node["trusted"] is True
+    assert [item["id"] for item in node["comments"]["nodes"]] == ["first", "second"]
+    assert lookups(tmp_path) == ["repos/owner/repo/collaborators/reviewer/permission"]
 
 
 def test_resolve_pr_approval_preview_binds_only_owned_changes(tmp_path):

@@ -20,7 +20,8 @@ assistant: "I'll use the figma-design-sync agent to compare your implementation 
 <example>
 Context: User is working on responsive design and wants to verify mobile breakpoint matches design.
 user: "The mobile view doesn't look quite right. Here's the Figma: https://figma.com/file/xyz789/mobile?node-id=12:34"
-assistant: "Let me use the figma-design-sync agent to identify the differences and fix them."
+assistant: "I'll compare the mobile view with the Figma design and report any differences."
+<commentary>Run Phase 1 only. Include suggested fixes in the report.</commentary>
 </example>
 <example>
 Context: After initial fixes, user wants to verify the implementation now matches.

@@ -2,9 +2,9 @@
 
 ## The Rule
 
-No completion claims without fresh verification evidence. If the verification command has not been run **immediately before the claim**, the claim cannot be made.
+Make completion claims only from fresh evidence gathered immediately before reporting.
 
-"Should pass", "probably works", and "looks correct" are not verification. Only command output confirming the claim counts (typically exit code 0). For independently established base failures, see [When verification fails](./claims-and-failures.md#when-verification-fails).
+Match the observation to the claim. For a command check, read the actual output and exit status. For a browser or rendering check, exercise the relevant path and inspect the result directly. Record the command, URL, or click path, the observed outcome, and any limit on coverage. For independently established base failures, see [When verification fails](./claims-and-failures.md#when-verification-fails).
 
 Evidence is invalid when the change makes the oracle easier to satisfy instead of making the behavior correct. Never weaken a specification, assertion, test, validator, or acceptance criterion to obtain a pass. Regenerate expected output only after reviewing and justifying the semantic change. Do not hard-code the exercised subject or success path.
 

@@ -20,22 +20,31 @@ Target: GNU Bash 4.4+ on Linux. No macOS/BSD workarounds, no Windows paths, no P
 
 ```bash
 #!/usr/bin/env bash
-set -Eeuo pipefail
-shopt -s inherit_errexit
+main() (
+  set -Eeuo pipefail
+  shopt -s inherit_errexit
 
-SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}") || exit "$?"
-SCRIPT_DIR=$(cd -- "${SCRIPT_DIR}" && pwd -P) || exit "$?"
-readonly SCRIPT_DIR
+  SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}") || exit "$?"
+  SCRIPT_DIR=$(cd -- "${SCRIPT_DIR}" && pwd -P) || exit "$?"
+  readonly SCRIPT_DIR
 
-trap 'printf "Error at %s:%d\n" "${BASH_SOURCE[0]}" "$LINENO" >&2' ERR
-trap 'rm -rf -- "${_tmpdir:-}"' EXIT
+  trap 'printf "Error at %s:%d\n" "${BASH_SOURCE[0]}" "$LINENO" >&2' ERR
+  _tmpdir=""
+  trap 'if [[ -n ${_tmpdir} ]]; then rm -rf -- "${_tmpdir}"; fi' EXIT
+
+  printf '%s\n' "${SCRIPT_DIR}"
+)
+
+if [[ ${BASH_SOURCE[0]} == "${0}" ]]; then
+  main "$@"
+fi
 ```
 
 - `-E` propagates ERR traps into functions
 - `inherit_errexit` propagates errexit into `$()`  command substitutions
 - Resolve the script's own data files against `SCRIPT_DIR`, never the caller's cwd or `git rev-parse --show-toplevel`. A shared linter invoked from another project's git hook, a cron job, or a wrapper runs with someone else's cwd, so a caller-relative rules path resolves to a file that does not exist: the rule set loads empty, zero violations are found, exit 0. It is a silent no-op, not an error, and running it from inside its own repo passes for the wrong reason. Exercise it once from a scratch directory that is not the script's own tree
 - Always create temp dirs under the EXIT trap: `_tmpdir=$(mktemp -d)`
-- Wrap the body in a `main` function. Guard its invocation so direct execution runs it and sourcing only defines functions for testing.
+- Keep shell options, readonly variables, and traps inside `main`. Use a subshell body to contain them when tests call the function. Guard the call so sourcing only defines functions.
 
 ## Core rules
 

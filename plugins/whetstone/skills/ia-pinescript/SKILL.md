@@ -89,13 +89,13 @@ Use [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/)
 
 ## Workflow
 
-1. Write indicator/strategy in Pine Editor
-2. Test with bar replay and strategy tester on multiple timeframes
-3. Walk-forward validate before trusting backtest results (see Strategy & Backtesting above)
-4. Verify: run on 3+ symbols and 2+ timeframes
+1. Compile the script in Pine Editor.
+2. Exercise indicator changes on the chart or in Bar Replay.
+3. Inspect strategy changes in the [Strategy Report](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategy-report).
+4. Test changes on at least 3 symbols and 2 timeframes.
 
 ## Verify
 
-- Indicator compiles without errors on TradingView
-- Verify signal stability with live/reloaded bar comparisons and inspect higher-timeframe requests; a guard's presence alone is not proof.
-- Walk-forward tested on 3+ symbols across different timeframes
+- Compare live and reloaded signals. Inspect higher-timeframe requests when relevant.
+- Support strategy performance claims with walk-forward results on at least 3 symbols across different timeframes.
+- Report unavailable TradingView checks.

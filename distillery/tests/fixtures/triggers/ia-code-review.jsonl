@@ -38,3 +38,5 @@
 {"prompt": "look over Mrs Jones's notes for the meeting", "expect": false, "source": "audit-2026-11-14", "note": "honorific Mrs without a period"}
 {"prompt": "look through the logs", "expect": false, "source": "audit-2026-11-14"}
 {"prompt": "look over the MR changes in auth", "expect": true, "source": "audit-2026-11-14", "note": "determiner before MR marks a merge request regardless of the following word"}
+{"prompt":"Generate the daily report from review-ops and include the exit code.","expect":false,"source":"audit-2026-11-28"}
+{"prompt":"Validate a lead from an independent reviewer on the retry code.","expect":false,"source":"audit-2026-11-28"}

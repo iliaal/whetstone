@@ -154,7 +154,7 @@ Plain closure routes cache fine; group and middleware closures are fine; only se
 
 `Migrator::runUp()` calls `runMigration()` and then, as a separate statement, `repository->log()`. A process killed in that window leaves a committed-but-unrecorded migration. On a deploy model that runs `migrate --force` at container preboot and can kill the task mid-boot, the migration stays "pending", every subsequent container re-runs `up()`, hits `relation already exists` / `type already exists`, and crash-loops, bricking every further deploy, not just this one.
 
-Fix with an early-return idempotency guard at the top of `up()`: `if (Schema::hasTable('the_main_table')) { return; }`. That single-object guard is a valid proxy for "everything exists" ONLY if the whole body is one transaction; any statement Postgres cannot run inside a transaction is skipped on re-run and ships a partial schema (`ia-postgresql` skill, Migration Safety core rules).
+Use an early-return `Schema::hasTable()` guard only when the database commits the entire migration in one transaction and the table can only be created by that transaction. For independent commits or nontransactional DDL, split atomic DDL from nontransactional work where feasible. Otherwise make each step resumable. Inspect the exact definition and validity of each existing object, repair incomplete steps, and fail on a conflicting definition. Verify the whole intended schema before returning from `up()`. Exercise a retry from a partially applied state, including an invalid index after an interrupted `CREATE INDEX CONCURRENTLY` if that step applies.
 
 ## Outbound HTTP
 

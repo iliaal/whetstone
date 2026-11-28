@@ -11,7 +11,7 @@ bash "$SKILL_DIR/scripts/init-plan.sh" "Feature Name"
 
 Substitute the real absolute path before running; never execute the command with the angle-bracket placeholder. The script refuses to overwrite a `task_plan.md` that still has unchecked tasks (the never-overwrite gate below); pass `--force` only after deciding which plan wins. Anchor the call to `SKILL_DIR` rather than a bare `init-plan.sh`: a relative path resolves against the caller's working directory, not the skill, and breaks from a subdirectory or under a non-Claude harness.
 
-This creates `.plan/task_plan.md` and adds `.plan/` to `.gitignore`.
+The script requires `flock` to serialize initializers. It checks for unfinished work under the lock, publishes the complete `.plan/task_plan.md` atomically, and adds `.plan/` to `.gitignore`.
 
 `.plan/` files are ephemeral working state; do not commit them. Old files are overwritten when starting a new feature. Before overwriting, check the existing `task_plan.md` for unchecked tasks: same work continuing means update in place, different work over an incomplete plan means stop and ask which plan wins. Never bulk-close or silently discard another plan's open items (the same rule applies to items mirrored into an external tracker). Within a multi-phase feature, use numbered intermediate files (`01-setup.md`, `02-phase1-complete.md`) to preserve state across phases. `docs/plans/` is the separate, committed home for a formal plan document; `.plan/` supports the work session.
 

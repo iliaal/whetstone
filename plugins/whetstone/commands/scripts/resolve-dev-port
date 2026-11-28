@@ -13,12 +13,18 @@ if [ $# -ge 1 ] && [ -n "${1:-}" ]; then
     port="$1"
 fi
 
-# 2. A --port/-p flag in a package.json dev/start/serve script. Scoped to those script
-# values, not the whole file; an unrelated field mentioning "-p 5000" is not a port.
-if [ -z "$port" ] && [ -f package.json ]; then
-    scripts=$(jq -r '(.scripts // {}) | to_entries[] | select(.key | test("^(dev|start|serve)")) | .value | select(type == "string")' package.json 2>/dev/null) || scripts=""
-    if [ -n "$scripts" ]; then
-        port=$(printf '%s\n' "$scripts" | grep -oE '(--port|-p)[ =]+[0-9]+' | grep -oE '[0-9]+' | head -1) || port=""
+# 2. The selected package.json launcher. An optional second argument names it
+# exactly. With no selection, prefer the standard dev, start, and serve names.
+if [[ -z "${port}" && -f package.json ]]; then
+    launcher=$(jq -r --arg name "${2:-}" '
+        (.scripts // {}) |
+        if $name != "" then .[$name]
+        else .dev // .start // .serve //
+            (. as $scripts | first(keys[] | select(test("^(dev|start|serve)")) | $scripts[.]))
+        end | select(type == "string")
+    ' package.json 2>/dev/null) || launcher=""
+    if [[ "${launcher}" =~ (^|[[:space:]])(--port|-p)[[:space:]=]+([0-9]+) ]]; then
+        port=${BASH_REMATCH[3]}
     fi
 fi
 

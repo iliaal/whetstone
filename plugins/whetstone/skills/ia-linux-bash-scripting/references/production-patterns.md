@@ -57,17 +57,31 @@ exec 9>/var/lock/"${0##*/}".lock
 flock -n 9 || { printf 'Already running\n' >&2; exit 1; }
 ```
 
-**A singleton daemon started by an ensure script must start inside the lock and drop the lock fd.** Two callers that both pass a `pgrep` check each start a server; one can unlink the other's socket and then exit. Hold the `flock` across both the check and the start, and launch the daemon with `9>&-` so it does not keep the lock open for its whole life:
+**Check, start, and verify a singleton daemon under the same lock.** Two callers that both pass a `pgrep` check can each start a server. One can unlink the other's socket and then exit. Launch the daemon with `9>&-` so it does not inherit the lock, and require a successful readiness probe on both the existing-process and startup paths:
 ```bash
-exec 9>/var/lock/mydaemon.lock
-flock 9
-if ! pgrep -x mydaemon >/dev/null; then
-  mydaemon --socket "$sock" 9>&- &
-  for _ in {1..50}; do [[ -S "$sock" ]] && break; sleep 0.1; done
-fi
-exec 9>&-
+ensure_mydaemon() (
+  local sock=$1 lockfile=$2 status=0
+  exec 9>"${lockfile}" || exit
+  flock 9 || exit
+  pgrep -x mydaemon >/dev/null || status=$?
+  if ((status == 1)); then
+    mydaemon --socket "${sock}" 9>&- &
+  elif ((status != 0)); then
+    exit "${status}"
+  fi
+
+  for _ in {1..50}; do
+    if timeout --kill-after=0.1s 0.1s mydaemonctl --socket "${sock}" ping 9>&- >/dev/null 2>&1; then
+      exit 0
+    fi
+    sleep 0.1
+  done
+  printf 'mydaemon did not become ready on %s\n' "${sock}" >&2
+  exit 1
+)
+ensure_mydaemon /run/mydaemon.sock /var/lock/mydaemon.lock
 ```
-Write the `if` form: in `pgrep … || mydaemon … &` the `&` backgrounds the whole list, so the subshell running it keeps fd 9 open until the daemon exits. Wait for the socket before releasing the lock, or the next caller can run its `pgrep` before the forked child has exec'd under the daemon's name.
+Use the daemon's functional probe on the expected endpoint. Checking that the socket file exists accepts stale paths. Bound each attempt and return a failure when the readiness budget expires. In `pgrep … || mydaemon … &`, `&` backgrounds the whole list and the subshell can keep fd 9 open until the daemon exits.
 
 **Idempotent operations**: safe to rerun:
 ```bash

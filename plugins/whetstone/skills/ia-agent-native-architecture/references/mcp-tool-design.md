@@ -130,11 +130,50 @@ The examples in this file use the Claude Agent SDK's in-process server (`createS
 
 Require `storage.get` to return `undefined` only for a missing key; stored `null`, `false`, `0`, and empty strings remain valid values.
 
+The catalog adapter uses `catalogOrigin`, an operator-configured HTTPS origin enforced by the runtime's outbound network policy. Resolve `catalogAccess.mayRead` from the authenticated caller on each request. The adapter fixes the method and route, rejects redirects, and returns only a validated status. Apply the live-action opt-in and dry-run requirements below when adding an external write operation.
+
 Require `storage.list` and `db.feedback.list` to return a page with the fields shown below. Use stable ordering for offsets. Set `status` to `incomplete` when more pages, a scan cap, or skipped records leave results unexamined. Supply a `reason` and `scanned`, the number of records examined in this call. Return `total_count` as the exact filtered count or `null` when unknown. Return `has_more` as a boolean or `null` when unknown. Return a usable `next_offset` when continuation is possible, otherwise `null`. Set `status` to `complete` only when the requested traversal reaches the end without omissions. Use `reason: null` for a complete traversal. An empty incomplete page does not establish absence.
 
 ```typescript
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
+
+const catalogStatus = z.object({ state: z.enum(["available", "unavailable"]) });
+
+async function readCatalogStatus(itemId: string) {
+  const url = new URL("/v1/catalog/status", catalogOrigin);
+  url.searchParams.set("item", itemId);
+  const response = await fetch(url, {
+    method: "GET",
+    redirect: "error",
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok || !response.body) {
+    await response.body?.cancel();
+    throw new Error("Catalog response unavailable");
+  }
+
+  const bytes = new Uint8Array(4096);
+  const reader = response.body.getReader();
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value.length > bytes.length - size) {
+        await reader.cancel();
+        throw new Error("Catalog response exceeds its byte limit");
+      }
+      bytes.set(value, size);
+      size += value.length;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, size));
+  return catalogStatus.parse(JSON.parse(text));
+}
 
 export const serverName = createSdkMcpServer({
   name: "server-name",
@@ -217,33 +256,30 @@ export const serverName = createSdkMcpServer({
 
     // EXTERNAL operations
     tool(
-      "call_api",
-      "Make an HTTP request with an optional JSON body. For GET, omit body and put query parameters in the URL.",
-      {
-        url: z.string().url(),
-        method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("GET"),
-        body: z.any().optional(),
-      },
-      async ({ url, method, body }) => {
-        if (method === "GET" && body !== undefined) {
+      "read_catalog_status",
+      "Read the availability of an item in the configured catalog. Pass the catalog item ID.",
+      { itemId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/) },
+      async ({ itemId }) => {
+        try {
+          if (!await catalogAccess.mayRead(itemId)) {
+            return {
+              content: [{ type: "text", text: "Catalog item is unavailable to this caller." }],
+              isError: true,
+            };
+          }
+          const status = await readCatalogStatus(itemId);
+          return { content: [{ type: "text", text: JSON.stringify(status) }] };
+        } catch (err) {
+          const correlationId = randomUUID();
+          logger.error({ correlationId, err }, "read_catalog_status failed");
           return {
-            content: [{ type: "text", text: "GET requests cannot have a body. Omit body and put query parameters in the URL." }],
+            content: [{
+              type: "text",
+              text: `Catalog lookup failed (ref ${correlationId}). Give the reference to the operator if it persists.`,
+            }],
             isError: true,
           };
         }
-        const response = await fetch(url, {
-          method,
-          headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-          body: body === undefined ? undefined : JSON.stringify(body),
-        });
-        const text = await response.text();
-        return {
-          content: [{
-            type: "text",
-            text: `${response.status} ${response.statusText}\n\n${text}`,
-          }],
-          isError: !response.ok,
-        };
       }
     ),
   ],

@@ -2,6 +2,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,7 +19,7 @@ HELPER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(HELPER)
 
 
-def run_hook(prompt, env):
+def run_hook(prompt, env, *, start_path=None):
     payload = {
         "session_id": "jev-test",
         "tool_use_id": "jev-tool",
@@ -33,17 +34,20 @@ def run_hook(prompt, env):
     }
     with tempfile.TemporaryDirectory(dir=env["TMPDIR"]) as queue_tmp:
         hook_env = {**env, "TMPDIR": queue_tmp}
+        subprocess.run(["git", "init", "-q"], cwd=queue_tmp, check=True)
         result = subprocess.run(
             ["bash", str(HOOK)], input=json.dumps(payload), text=True,
-            capture_output=True, env=hook_env, timeout=5, check=False,
+            capture_output=True, cwd=queue_tmp, env=hook_env, timeout=5, check=False,
         )
         assert result.returncode == 0, result.stderr
         assert result.stdout == ""
+        if start_path is not None:
+            hook_env["PATH"] = start_path
         result = subprocess.run(
             ["bash", str(START_HOOK)], input=json.dumps({
                 "session_id": payload["session_id"], "agent_id": "jev-agent",
                 "agent_type": "general-purpose", "hook_event_name": "SubagentStart",
-            }), text=True, capture_output=True, env=hook_env, timeout=5, check=False,
+            }), text=True, capture_output=True, cwd=queue_tmp, env=hook_env, timeout=5, check=False,
         )
         assert result.returncode == 0, result.stderr
         return result.stdout
@@ -222,6 +226,39 @@ def test_cli_failure_or_timeout_preserves_regex_output(tmp_path, code):
     Path(env["WHETSTONE_JEV_COMMAND"]).write_text(f"#!{sys.executable}\n{code}\n")
     env["WHETSTONE_JEV"] = "1"
     assert run_hook(prompt, env) == original
+
+
+def test_late_queue_claim_still_sends_keyword_matches(tmp_path):
+    env, jev_called = fake_jev(tmp_path, {})
+    prompt = "Fix the bug in Python CLI service"
+    original = run_hook(prompt, env)
+    assert "ia-debugging/SKILL.md" in original
+
+    flock = shutil.which("flock")
+    assert flock is not None
+    lock_called = tmp_path / "queue-lock-called"
+    delay_lock = tmp_path / "flock"
+    delay_lock.write_text(
+        f"#!{sys.executable}\n"
+        "import os, sys, time\n"
+        "from pathlib import Path\n"
+        f"Path({str(lock_called)!r}).touch()\n"
+        "time.sleep(3.2)\n"
+        f"os.execv({flock!r}, [{flock!r}, *sys.argv[1:]])\n"
+    )
+    delay_lock.chmod(0o700)
+    executable = Path(env["WHETSTONE_JEV_COMMAND"])
+    executable.write_text(
+        f"#!{sys.executable}\n"
+        "import time\n"
+        "from pathlib import Path\n"
+        f"Path({str(jev_called)!r}).touch()\n"
+        "time.sleep(10)\n"
+    )
+    env["WHETSTONE_JEV"] = "1"
+    assert run_hook(prompt, env, start_path=os.pathsep.join((str(tmp_path), env["PATH"]))) == original
+    assert lock_called.exists()
+    assert not jev_called.exists()
 
 
 @pytest.mark.parametrize(("text", "expected"), [

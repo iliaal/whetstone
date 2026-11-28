@@ -44,7 +44,7 @@ Do not reach for `git worktree prune` to clear a stale entry after a linked work
 
 ### Tree-scanning tests fail with phantom offenders?
 
-A worktree under `.worktrees/` is a full second checkout inside the repository. `.gitignore` hides it from Git, not from a test that walks the tree with `rglob` or `find`, so a hygiene test reports offenders that repeat known-good files under the worktree prefix, and CI never reproduces the failure. Check `git worktree list` before debugging one. Remove only this session's clean trees through the manager, or run the suite from a checkout that contains no nested worktree; for parallel suites, create the worktrees outside the repository.
+A worktree under `.worktrees/` is a full second checkout inside the repository. Git excludes hide it from Git, while a test that walks the tree with `rglob` or `find` still sees it. A hygiene test can therefore report offenders that repeat known-good files under the worktree prefix. Check `git worktree list` before debugging one. Remove only this session's clean trees through the manager or run the suite from a checkout that contains no nested worktree. For parallel suites, create the worktrees outside the repository.
 
 ---
 
@@ -67,8 +67,10 @@ else
 fi
 git update-ref -d "$fetch_ref"
 rm -- "$fetch_marker"
-git worktree add .worktrees/<name> -b <branch> "$base_sha"
+git worktree add -b <branch> .worktrees/<name> "$base_sha"
 ```
+
+A creation with `--no-env` or an untrusted base runs the last command with checkout hooks disabled for that invocation.
 
 A narrow `remote.origin.fetch` refspec can leave remote-tracking refs frozen even after an explicit branch fetch succeeds. `FETCH_HEAD` is also shared between linked checkouts, so another fetch can overwrite it. The manager uses its own private destination, pins that SHA, removes its ref, and verifies the created checkout against the SHA. It does not assume `origin/<base>` was updated. For separate claims about remote-tracking history, check `git config --get-all remote.origin.fetch` and fetch an explicit destination refspec first.
 
@@ -92,7 +94,7 @@ Known gap: the script does not distinguish "stale-base contamination" (another s
 │   └── ...
 └── ...
 
-.gitignore (updated to include .worktrees)
+.git/info/exclude (updated only when existing rules leave the worktree path visible)
 ```
 
 ### How It Works

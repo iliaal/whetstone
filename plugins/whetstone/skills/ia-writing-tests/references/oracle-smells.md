@@ -10,7 +10,7 @@
 
 **Symptom:** Integration tests fail with row-count multipliers (expected 2 rows, got 8) yet pass on a fresh container: persistent infrastructure kept state from prior runs. **Diagnostic shortcut:** a clean integer multiple (2x, 3x, 4x...) between expected and actual means state contamination, not a logic bug; logic bugs rarely produce uniform multipliers across unrelated assertions.
 
-**Fix:** Reset infrastructure state between runs (ephemeral containers, fixture `TRUNCATE`, or volume teardown; ladder in the reference); never rely on tests "cleaning up after themselves."
+**Fix:** Provision disposable, run-owned infrastructure. Before resetting it, verify the resolved database or volume belongs exclusively to the run. Follow the [reset ladder](./anti-patterns-extended.md#persistent-test-infrastructure-state-contamination).
 
 Isolation and sandbox traps (containerized-timeout leaks, a harness sandboxing the subject in the primitive under test, global before/after snapshots, relocated environment variables, assertions pinned to stream chunking, an out-of-memory kill that prints no failure summary, and stub fixtures that quietly become allowlists) are in [isolation-and-sandbox-traps.md](./isolation-and-sandbox-traps.md).
 

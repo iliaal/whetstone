@@ -43,8 +43,9 @@ SKILL_TIERS[ia-debugging]=1
 
 # Bounded gaps + word anchors: unbounded `review.*code` / `audit.*code` spans
 # multi-KB prompts and fires on codebases whose domain noun is "audit"
-# (AuditControllerTest, audit.enabled).
-SKILL_PATTERNS[ia-code-review]='\breview.{0,60}(\bcode\b|\bprs?\b|\bdiff\b|\bpatch(es)?\b|\bmerge\b)|\bcode.?review|\baudit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|\bcritiqu|\breview.{0,30}\bpull request\b|\blook (over|through)\b.{0,20}\b((prs?|diff|patch(es)?|merge requests?|pull requests?)\b|(this|the|my|our|that|your|an?)\s+mrs?\b|mrs?\s*[!#]?[0-9])'
+# (AuditControllerTest, audit.enabled). Require a standalone 'review' so
+# 'reviewer' and hyphenated identifiers such as 'review-ops' do not match.
+SKILL_PATTERNS[ia-code-review]='\breview\b[^-].{0,59}(\bcode\b|\bprs?\b|\bdiff\b|\bpatch(es)?\b|\bmerge\b)|\bcode.?review|\baudit(ing)?.{0,20}\b(code|codebase|diff|changes)\b|\bcritiqu|\breview\b[^-].{0,29}\bpull request\b|\blook (over|through)\b.{0,20}\b((prs?|diff|patch(es)?|merge requests?|pull requests?)\b|(this|the|my|our|that|your|an?)\s+mrs?\b|mrs?\s*[!#]?[0-9])'
 SKILL_TIERS[ia-code-review]=1
 
 SKILL_PATTERNS[ia-simplifying-code]='simplif\w*\s+(\w+\s+)?code|clean.?up.{0,40}code|polish.{0,40}code|\b(refactor|simplif[a-z]*)\b.{0,50}\b(code|functions?|methods?|modules?|classes|class|parsers?|handlers?|implementation|data pipeline|services?|components?|router|middleware)\b|declutter|reduce.?complexity|remove.{0,40}(dead.?code|ai.?slop)|improve.?readability|\bsimplify.{0,20}\bimplementation.{0,20}\breadability\b|\brefactor\b.{0,50}\.(php|py|rs|[cm]?[jt]sx?|c|h|cpp|hpp)\b'
@@ -121,10 +122,9 @@ SKILL_NEGATIVE[ia-c-systems]='\bc#|\bc sharp\b|\bcsharp\b|objective-?c\b|\bdotne
 SKILL_PATTERNS[ia-cpp-systems]='c\+\+|\bcpp\b|\bcxx\b|\.cpp\b|\.hpp\b|\.cc\b|\.cxx\b|\.hh\b|std::|unique_ptr|shared_ptr|weak_ptr|make_unique|make_shared|\bconstexpr\b|\bnoexcept\b|\bnullptr\b|template *<|\braii\b|move semantics|move constructor|copy constructor|rvalue|rule of (zero|five|three)|virtual (destructor|function)|\b(defaulted|deleted|noexcept|trivial|base[- ]class) +destructor\b|\bdestructor\b[^.]{0,25}\bvirtual\b|~[a-z_]+ *\(|\bvtable\b|explicit constructor|constructor[^.]{0,25}\bexplicit\b|extern +"?c"? |\bgtest\b|google ?test|\bcatch2\b|clang-tidy|clang-format|\bcmake\b|cmakelists|\bpimpl\b|\bstl\b|string_view|boost::|boost/|\bboost\.(asio|beast|filesystem|program_options|thread|system)\b'
 SKILL_TIERS[ia-cpp-systems]=2
 
-# DB-op required near the token: bare `postgres`, `jsonb`, and `upsert` fire on any
-# prompt naming the stack, such as tasks mentioning "PostgreSQL repo" as context.
-# Each requires a DB-work word (query/column/migrate/index/...) within a bounded gap.
-SKILL_PATTERNS[ia-postgresql]='postgres(ql)?.{0,30}(quer|index|schema|table|column|migrat|partition|tune|optimi|connect|pool|vacuum|explain|perf|slow|lock|tenant|rls|jsonb|constraint|dump|replica)|(quer|schema|migrat|optimi|index|tune|slow|partition|vacuum|explain|connect|pool|deadlock).{0,30}postgres(ql)?|\bpgbouncer\b|jsonb.{0,25}(column|field|index|quer|operator|path|gin|migrat|store|nest|set|->|@>)|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|\bupsert\b.{0,25}(row|record|table|quer|conflict|batch|column|postgres|sql)|tsvector|pg_stat_|pg_class'
+# Require a nearby database operation for generic PostgreSQL and JSONB mentions.
+# Upsert wording alone also occurs in other databases and non-database stores.
+SKILL_PATTERNS[ia-postgresql]='postgres(ql)?.{0,30}(quer|index|schema|table|column|migrat|partition|tune|optimi|connect|pool|vacuum|explain|perf|slow|lock|tenant|rls|jsonb|constraint|dump|replica|upsert)|(quer|schema|migrat|optimi|index|tune|slow|partition|vacuum|explain|connect|pool|deadlock|upsert).{0,30}postgres(ql)?|\bpgbouncer\b|jsonb.{0,25}(column|field|index|quer|operator|path|gin|migrat|store|nest|set|->|@>)|row.?level.?security|\brls\b.{0,20}(policy|tenant|postgres|table)|\bcte[s]?\b.{0,30}(query|recurs|select|report)|window.?function|explain.?analyze|partition.{0,40}(range|list|hash|\bby\b)|tsvector|pg_stat_|pg_class'
 SKILL_TIERS[ia-postgresql]=2
 
 SKILL_PATTERNS[ia-terraform]='terraform|opentofu|\biac\b|infrastructure.?as.?code|\bhcl\b|tfvars|tftest'

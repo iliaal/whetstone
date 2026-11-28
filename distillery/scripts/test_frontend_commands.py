@@ -17,10 +17,8 @@ PORT_HELPER = COMMANDS / "scripts/resolve-dev-port"
 VIDEO_COMMAND = COMMANDS / "ia-feature-video.md"
 
 
-def resolve_port(directory, argument=None):
-    command = ["bash", str(PORT_HELPER)]
-    if argument is not None:
-        command.append(argument)
+def resolve_port(directory, *arguments):
+    command = ["bash", str(PORT_HELPER), *arguments]
     result = subprocess.run(command, cwd=directory, capture_output=True, text=True, check=True)
     assert result.stderr == ""
     return result.stdout.strip()
@@ -54,6 +52,26 @@ def test_explicit_and_configured_ports_override_framework_defaults(tmp_path):
     assert resolve_port(tmp_path) == "4567"
     (tmp_path / "package.json").write_text(json.dumps({"devDependencies": {"astro": "*"}}))
     assert resolve_port(tmp_path) == "6789"
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_port_follows_the_selected_launcher(tmp_path, reverse):
+    launchers = [("start", "vite preview -p 4299"), ("dev", "vite --port=4511")]
+    if reverse:
+        launchers.reverse()
+    (tmp_path / "package.json").write_text(json.dumps({"scripts": dict(launchers)}))
+    assert resolve_port(tmp_path) == "4511"
+    assert resolve_port(tmp_path, "", "start") == "4299"
+    assert resolve_port(tmp_path, "5500", "start") == "5500"
+
+
+def test_port_uses_environment_when_selected_launcher_has_no_port(tmp_path):
+    (tmp_path / "package.json").write_text(json.dumps({
+        "scripts": {"start": "vite preview --port 4299", "dev": "vite"},
+    }))
+    (tmp_path / ".env").write_text("PORT=4511\n")
+    assert resolve_port(tmp_path) == "4511"
+    assert resolve_port(tmp_path, "", "dev") == "4511"
 
 
 def test_video_port_lookup_supports_plugin_paths_with_spaces(tmp_path):

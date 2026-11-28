@@ -44,7 +44,7 @@ uncertainty, followed by a clearly separated final answer.
 **`/edge`** | `/break`: 5+ inputs/scenarios that break the approach. Code: null/empty, concurrency, overflow, encoding, auth bypass. Strategies: market conditions, timing, dependencies.
 *Auto-triggers on: security, validation, parsing contexts.*
 
-**`/verify-think`** | `/check`: Three phases: (1) **Answer** direct response, (2) **Challenge** 3 ways it could be wrong, (3) **Verify** investigate each, update if needed. Mark final as `VERIFIED ANSWER:` or `REVISED ANSWER:`. Distinct from the `/ia-verify` slash command (Claude Code), which runs the full pre-PR verification pipeline.
+**`/verify-think`** | `/verify`, `/check`: Three phases: (1) **Answer** direct response, (2) **Challenge** 3 ways it could be wrong, (3) **Verify** investigate each, update if needed. Mark final as `VERIFIED ANSWER:` or `REVISED ANSWER:`. The literal `/ia-verify` command in Claude Code runs the pre-PR verification pipeline.
 *Auto-triggers on: architecture decisions, critical choices, "Am I right?"*
 
 **`/flip`** | `/alt`: Identify the default approach and state it. Then propose an alternative that uses a different mechanism (different data structure, different layer, different abstraction). State the conditions under which the alternative beats the default. Override: `/flip 3` for top 3 alternatives.
@@ -70,7 +70,8 @@ uncertainty, followed by a clearly separated final answer.
 
 ## Conventions
 
-- Separate combined pattern outputs with `---`
+- Separate combined prose pattern outputs with `---`.
+- In a combination with `/json`, apply the requested analysis patterns in order and serialize the entire result in the JSON code block. Put the conclusion, counterarguments, evidence, and status markers in the requested fields. With the default schema, put the conclusion, counterarguments, evidence, and applicable marker in `analysis`. Preserve custom keys and types when they limit which details fit. Use prose outside the block only if the caller expressly requests it.
 - Keep core answer prominent; patterns enhance, not bury the response
 - Present decision-relevant rationale and evidence. Do not narrate private
   step-by-step reasoning or dead ends.
@@ -78,7 +79,7 @@ uncertainty, followed by a clearly separated final answer.
 
 ## Verify
 
-- Pattern marker present in output (e.g., `VERIFIED ANSWER:` for /verify)
-- Core answer appears before any pattern-output separator (`---`)
+- Applicable pattern markers appear in prose or their JSON fields when the requested schema supports them.
+- Core answer appears before any pattern-output separator (`---`) in prose.
 - Decision records distinguish observed evidence, inference, assumptions, and
   uncertainty

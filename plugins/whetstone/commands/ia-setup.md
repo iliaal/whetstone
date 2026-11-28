@@ -22,7 +22,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` if available and extract
 
 Before running, display: "Compound Engineering -- checking your environment..."
 
-Run the bundled script. Do not perform manual dependency checks; the script handles CLI probes, alt-name resolution, and install hints in one pass.
+Run the bundled script. It handles CLI probes, alternative command names, the Bash version on PATH, and install hints in one pass.
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh" --version VERSION
@@ -43,7 +43,7 @@ Parse the output. Two possible states:
 - **All clear** (`✅ All clear` line): proceed to Phase 2.
 - **Issues found** (`⚠️ N issue(s) found`): proceed to Step 4.
 
-### Step 4: Offer Installation for Missing Tools
+### Step 4: Offer Installation or Updates for Unmet Requirements
 
 The script labels executable hints `Install command:` and URL-only guidance `Manual instructions:`. Report manual guidance separately; never execute a URL as a shell command. If the user requests help with a manual route, read the upstream instructions and determine a concrete command for the current platform before requesting execution approval.
 
@@ -63,7 +63,7 @@ For each selected tool, in order:
        description: "I'll install manually"
    ```
 
-2. If the exact command is approved, run it via `Bash`. After it completes, verify with `command -v <tool>`. A selection or approval of manual guidance does not authorize a later command.
+2. If the exact command is approved, run it via `Bash`. Verify command availability with `command -v <tool>`. For Bash, use the version probe in the final health report to verify that PATH selects Bash 4.4 or newer. A selection or approval of manual guidance does not authorize a later command.
 3. If verification succeeds, report success.
 4. If verification fails, display the upstream URL from the script output as fallback and continue to the next tool.
 
@@ -96,12 +96,17 @@ If "Reconfigure": retain the full existing file as the edit baseline. Preserve i
 Auto-detect the project stack:
 
 ```bash
-test -f tsconfig.json && echo "typescript" || \
-test -f package.json && echo "javascript" || \
-test -f pyproject.toml && echo "python" || \
-test -f requirements.txt && echo "python" || \
-test -f composer.json && echo "php" || \
-echo "general"
+if [[ -f tsconfig.json ]]; then
+  echo "typescript"
+elif [[ -f package.json ]]; then
+  echo "javascript"
+elif [[ -f pyproject.toml || -f requirements.txt ]]; then
+  echo "python"
+elif [[ -f composer.json ]]; then
+  echo "php"
+else
+  echo "general"
+fi
 ```
 
 ### Step 7: Ask Mode
@@ -123,8 +128,7 @@ options:
 Skip to Step 10 with these defaults:
 
 - **Python/TypeScript:** `[ia-kieran-reviewer, ia-code-simplicity-reviewer, ia-security-sentinel, ia-performance-oracle]`
-- **PHP:** `[ia-code-simplicity-reviewer, ia-security-sentinel, ia-performance-oracle, ia-architecture-strategist]`
-- **General:** `[ia-code-simplicity-reviewer, ia-security-sentinel, ia-performance-oracle, ia-architecture-strategist]`
+- **JavaScript/PHP/General:** `[ia-code-simplicity-reviewer, ia-security-sentinel, ia-performance-oracle, ia-architecture-strategist]`
 
 ### Step 9: Customize (if Customize)
 
@@ -141,7 +145,7 @@ options:
   - label: "TypeScript"
     description: "TypeScript -- adds type safety reviewer"
   - label: "PHP"
-    description: "PHP/Laravel -- adds PHP-specific reviewer"
+    description: "PHP/Laravel -- uses the selected focus reviewers"
 ```
 
 **b. Focus areas**: multiSelect:
@@ -179,8 +183,7 @@ options:
 
 **Stack-specific agents:**
 - Python/TypeScript → `ia-kieran-reviewer`
-- PHP → (none; rely on focus agents)
-- General → (none)
+- JavaScript/PHP/General → selected focus agents only
 
 **Focus area agents:**
 - Security → `ia-security-sentinel`

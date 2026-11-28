@@ -1,5 +1,9 @@
 # ADR Templates
 
+## Effective decision lookup
+
+Check the consulted record's own status and the repository's documented lifecycle convention. A later ADR replaces or retires that record only when the later ADR explicitly points to it and the repository records the later decision as accepted or equivalently approved. A pending proposal leaves the accepted predecessor in force. Follow verified chains to the current decision. Report conflicting or unverified successors as unresolved. When a record no longer applies, cite its effective replacement or retirement reason. Use a stale record's guidance only where current code independently confirms the specific claim.
+
 ## Y-statement (quick captures)
 
 ```markdown
@@ -86,6 +90,8 @@ Chosen option: "[Option N]", because [justification].
 
 ## Deprecation
 
+Use `proposed` while the replacement or retirement awaits approval. When it is accepted, update the status and state the adopted change in the opening sentence. Apply [effective decision lookup](#effective-decision-lookup) when reading this record.
+
 ```markdown
 ---
 status: proposed
@@ -94,8 +100,7 @@ supersedes: OOOO-original-decision.md
 ---
 # NNNN. [Decision to replace or retire the original decision]
 
-This decision supersedes [OOOO. Original Decision](OOOO-original-decision.md).
-Set status to accepted once the replacement or retirement is decided.
+This record proposes replacing or retiring [OOOO. Original Decision](OOOO-original-decision.md).
 
 ## Original Context
 

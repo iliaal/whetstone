@@ -11,7 +11,8 @@ basename, exit code, and the first and last non-empty stderr lines.
 
 The second form prints, per test, the LAST nonzero call (usually the one the assertion
 checks) and its last stderr line (the refusal, after any warnings), so each can be compared with the guard the test is
-named for. The plugin only observes; it never changes a result. The output file is
+named for. An append failure leaves the subprocess result intact and marks reach evidence
+incomplete in the pytest terminal summary. The output file is
 truncated once per session, so rows from an earlier run never mix in. Without
 REACH_PROBE_OUT it is reach-probe-<pid>.jsonl in the system temp directory, and the path
 is printed in the terminal summary. It works under xdist: the controller truncates and
@@ -28,7 +29,9 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-_current: dict[str, str | None] = {"nodeid": None}
+_current_item = None
+_recording_disabled = False
+_recording_errors: set[str] = set()
 _original_communicate = subprocess.Popen.communicate
 
 
@@ -43,13 +46,16 @@ def _refusal_lines(data: object) -> tuple[str, str]:
 
 
 def _recording_communicate(self, *args, **kwargs):
+    global _recording_disabled
+
     result = _original_communicate(self, *args, **kwargs)
-    if self.returncode not in (0, None) and _current["nodeid"] is not None:
+    item = _current_item
+    if self.returncode not in (0, None) and item is not None and not _recording_disabled:
         argv = self.args
         first, last = _refusal_lines(result[1] if isinstance(result, tuple) else None)
         head = argv[0] if isinstance(argv, list | tuple) and argv else argv
         row = {
-            "test": _current["nodeid"],
+            "test": item.nodeid,
             "program": os.path.basename(os.fsdecode(head))
             if isinstance(head, str | bytes | os.PathLike)
             else str(head),
@@ -57,8 +63,13 @@ def _recording_communicate(self, *args, **kwargs):
             "stderr_first": first,
             "stderr_last": last,
         }
-        with _output_path().open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(row) + "\n")
+        try:
+            with _output_path().open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(row) + "\n")
+        except OSError as error:
+            _recording_disabled = True
+            # Test report properties carry diagnostics back from xdist workers.
+            item.user_properties.append(("reach_probe_error", f"{item.nodeid}: {error}"))
     return result
 
 
@@ -67,6 +78,9 @@ def _output_path() -> Path:
 
 
 def pytest_configure(config):
+    global _recording_disabled
+    _recording_disabled = False
+    _recording_errors.clear()
     if not hasattr(config, "workerinput"):
         # xdist workers inherit the environment, so they append to the controller's file.
         os.environ["REACH_PROBE_OUT"] = str(_output_path())
@@ -78,6 +92,14 @@ def pytest_configure(config):
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     if not hasattr(config, "workerinput"):
         terminalreporter.write_line(f"reach probe rows: {os.environ.get('REACH_PROBE_OUT')}")
+        for error in sorted(_recording_errors):
+            terminalreporter.write_line(f"reach probe evidence incomplete: {error}", yellow=True)
+
+
+def pytest_runtest_logreport(report):
+    for key, value in report.user_properties:
+        if key == "reach_probe_error":
+            _recording_errors.add(value)
 
 
 def pytest_unconfigure(config):
@@ -85,11 +107,13 @@ def pytest_unconfigure(config):
 
 
 def pytest_runtest_setup(item):
-    _current["nodeid"] = item.nodeid
+    global _current_item
+    _current_item = item
 
 
 def pytest_runtest_teardown(item, nextitem):
-    _current["nodeid"] = None
+    global _current_item
+    _current_item = None
 
 
 def _report() -> int:

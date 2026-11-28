@@ -119,17 +119,20 @@ and refined by you on January 16th.
 
 Give the agent the same file primitives the app uses:
 
-Use the same contained, revision-aware service contract on every platform. The complete TypeScript service below defines read, replacement, listing, and append. A native file-provider adapter must preserve its containment and conditional-write semantics rather than bypassing them with raw caller paths. [mobile-storage.md](./mobile-storage.md) specifies provider coordination and availability handling.
+Use the same contained, revision-aware service contract on every platform. The TypeScript text service below defines read, replacement, listing, and append. It handles valid UTF-8 text and hashes the exact bytes on disk. A native file-provider adapter must preserve its containment and conditional-write semantics. [mobile-storage.md](./mobile-storage.md) specifies provider coordination and availability handling.
 
 ### TypeScript/Node.js Implementation
 
 ```typescript
 import * as fs from "node:fs/promises";
+import { Buffer } from "node:buffer";
 import { constants } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
+import { TextDecoder } from "node:util";
 
 type FileVersion = { content: string; revision: string } | null;
+const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 
 async function workspacePath(root: string, input: string): Promise<string> {
   if (isAbsolute(input)) throw new Error("Use a workspace-relative path");
@@ -178,8 +181,9 @@ class Workspace {
       const handle = await fs.open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
       try {
         if (!(await handle.stat()).isFile()) throw new Error("Not a regular file");
-        const content = await handle.readFile("utf8");
-        const revision = createHash("sha256").update(content).digest("hex");
+        const bytes = await handle.readFile();
+        const content = utf8.decode(bytes);
+        const revision = createHash("sha256").update(bytes).digest("hex");
         return { content, revision };
       } finally {
         await handle.close();
@@ -196,6 +200,8 @@ class Workspace {
   }
 
   async replace(input: string, content: string, expected: string | null): Promise<string> {
+    const bytes = Buffer.from(content, "utf8");
+    if (utf8.decode(bytes) !== content) throw new Error("Content is not valid Unicode text");
     const path = await workspacePath(this.root, input);
     if (path === await fs.realpath(this.root)) throw new Error("Cannot replace workspace root");
     return this.exclusive(path, async () => {
@@ -209,7 +215,7 @@ class Workspace {
       try {
         const handle = await fs.open(temporary, "wx", 0o600);
         try {
-          await handle.writeFile(content, "utf8");
+          await handle.writeFile(bytes);
           await handle.sync();
         } finally {
           await handle.close();
@@ -220,7 +226,7 @@ class Workspace {
       } finally {
         await fs.rm(temporary, { force: true });
       }
-      return createHash("sha256").update(content).digest("hex");
+      return createHash("sha256").update(bytes).digest("hex");
     });
   }
 
@@ -238,7 +244,9 @@ Install the canonical root from trusted application configuration and check the 
 
 This Node.js example assumes one shared service instance owns all writes and directory entries on a POSIX filesystem. All cooperating user and agent edits use it. The per-path lock makes its revision check and replacement indivisible among those writers. Direct editor writes, other processes, hostile directory renames, and mount changes require a backend transaction or OS containment/coordination mechanism; do not claim this lock covers them. A failure after rename but before the durability receipt is unknown and requires artifact reconciliation.
 
-Open with `O_NONBLOCK` so a named pipe without a writer does not hang the POSIX example. Reject non-regular files using the opened handle before reading. Exercise contained read/write/list/append, creation, stale revision, traversal, absolute paths, sibling prefixes, symlinks, prompt rejection of a named pipe without a writer, and propagation of write failures.
+Open with `O_NONBLOCK` so a named pipe without a writer does not hang the POSIX example. Reject non-regular files using the opened handle before reading. Strict decoding rejects malformed UTF-8 rather than substituting characters. Keep a leading byte-order mark as part of the content so an append preserves the original bytes. Route binary files through a byte-oriented adapter.
+
+Exercise contained read/write/list/append, creation, stale revision, traversal, absolute paths, sibling prefixes, symlinks, prompt rejection of a named pipe without a writer, and propagation of write failures. Check that the revision equals the hash of the saved bytes, appending preserves valid text with a byte-order mark, and malformed input fails without changing the file.
 </file_tools>
 
 <ui_integration>

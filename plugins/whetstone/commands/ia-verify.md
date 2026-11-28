@@ -27,7 +27,10 @@ Project-declared gates (phase 0) also run before any push, regardless of mode.
 
 Resolve one verification scope before classifying or scanning changes:
 
-1. In `pre-pr` mode, resolve the PR base (`gh pr view --json baseRefName -q .baseRefName`) or the repository's verified default branch, and freeze the current HEAD SHA. Resolve the merge-base against the available base ref, then use `git diff --no-textconv --no-ext-diff <merge-base-sha> <head-sha>` for content and its `--name-only` form for file lists in every diff-based phase below (metadata-only forms such as `--name-only` and `--stat` render no content and need no such flags). If the base cannot be resolved, report NOT READY with that missing input; do not silently substitute an empty working-tree diff. For a dirty checkout, either verify the committed head in isolation or explicitly include and identify local changes; do not claim tests of a different tree verify the frozen PR head.
+1. In `pre-pr` mode, resolve the PR base (`gh pr view --json baseRefName -q .baseRefName`) or the repository's verified default branch. Freeze the current HEAD and resolve the merge-base against the available base ref. If resolution fails, report NOT READY and name the missing input.
+   - By default, verify the committed HEAD. Use a matching clean checkout or materialize HEAD in an isolated checkout if the caller's checkout is dirty. Record the frozen HEAD as the candidate.
+   - When the caller explicitly includes local changes, materialize the complete intended source in an isolated checkout at HEAD, with the selected working-tree changes and explicitly selected untracked files. Preserve the original checkout and index. Stage the selected content only in the isolated checkout and use `git write-tree` there to freeze it. Record the resulting tree ID as the candidate and label the result with its local scope.
+   - Run project gates, build, type checks, lint, and tests from the checkout of that candidate. Classify files and run all diff-based checks against `git diff --no-textconv --no-ext-diff <merge-base-sha> <candidate>` and its `--name-only` form. Read source context from that same candidate. Establish the source identity of reused build artifacts and ignored inputs that affect the result. Recheck the candidate's source identity after applicable gates and phases. If any command changes the selected source or the execution cannot be bound to the candidate, stop and report NOT READY.
 2. In `pre-commit` mode, freeze the complete index tree and its staged diff (`git diff --no-textconv --no-ext-diff --cached`). Run every applicable phase in an isolated checkout of that complete index tree, including unchanged tracked inputs. Preserve the caller's index and unstaged work when preparing verification. Do not copy unstaged source, configuration, or fixtures into the isolated checkout. Report NOT READY if the staged tree cannot be verified in isolation. Before issuing READY, confirm the caller's index still matches the tested snapshot; otherwise repeat verification or report NOT READY. In `quick`/`full` mode, use the caller's selected scope, defaulting to tracked staged and unstaged changes (`git diff --no-textconv --no-ext-diff HEAD`) plus explicitly enumerated untracked files. Record the selected scope and tested tree in the report. An empty selected diff is not evidence that a feature branch is unchanged.
 3. Classify the selected files:
    - **frontend**: files under `src/components/`, `src/pages/`, `app/`, `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, templates
@@ -47,9 +50,11 @@ Log which phases were skipped and why in the report. A checker that failed to ru
 
 Run each phase in order. Stop on the first failure unless the mode skips that phase.
 
+Before a gate or other verification command runs a suite, migration, seeder, or accesses the application's database or service backends, resolve its effective targets using the [Pre-Verification Check](../skills/ia-verification-before-completion/references/proof-integrity.md#pre-verification-check). Apply the same check to baseline runs. If a target is shared, non-disposable, or unresolved, stop and report NOT READY pending a suitable test environment.
+
 ### 0. Project-Declared Gates (runs in pre-pr mode and before any push in every mode)
 
-Run the project-declared gates check from the `ia-verification-before-completion` skill's Gate Function. Stop and report NOT READY if any gate is unmet, naming it.
+Resolve the applicable project-declared gates as directed by the `ia-verification-before-completion` skill. Apply the target preflight to each applicable gate before it runs. Stop and report NOT READY if any gate is unmet, naming it.
 
 ### 1. Build
 
@@ -87,7 +92,7 @@ Record: pass/fail + warning/error counts + new warnings introduced (if measurabl
 
 ### 4. Tests
 
-Before running a suite, migration, or seeder, resolve its database and service targets per the Pre-Verification Check of the `ia-verification-before-completion` skill; if any target is not local or disposable, stop and report NOT READY pending the user's choice of environment.
+Apply the target preflight above before running a suite, migration, or seeder.
 
 Run the project's test suite:
 - `npm test`, `pytest`, `go test ./...`, `php artisan test`, `mix test`, etc.
@@ -119,7 +124,7 @@ Flag critical/high vulnerabilities as blockers. Moderate/low are warnings.
 - `.env` files staged for commit
 - `dangerouslySetInnerHTML`, `eval()`, raw SQL string concatenation
 
-Print only file names or `file:line` from the secret scan, never the matched line: a match echoed to the terminal puts the live value into tool output and the session transcript. Scan the selected scope, not always the index. In `pre-commit` mode, use `git diff --cached -i -G'<pattern>' --name-only`, or `git grep --cached -n -I -i -E '<pattern>' -- <files> | cut -d: -f1,2`. In `pre-pr` mode, use `git diff -i -G'<pattern>' --name-only <merge-base-sha> <head-sha>`, or `git grep -n -I -i -E '<pattern>' <head-sha> -- <files> | cut -d: -f2,3` (a revision grep prefixes each hit with `<head-sha>:`). Treat each hit as "inspect this location", not as text to quote.
+Print only file names or `file:line` from the secret scan, never the matched line: a match echoed to the terminal puts the live value into tool output and the session transcript. Scan the selected scope, not always the index. For a staged scan, use `git diff --no-textconv --no-ext-diff --cached -i -G'<pattern>' --name-only`, or `git grep --cached -n -I -i -E '<pattern>' -- <files> | cut -d: -f1,2`. In `pre-pr` mode, use `git diff --no-textconv --no-ext-diff -i -G'<pattern>' --name-only <merge-base-sha> <candidate>`, or `git grep -n -I -i -E '<pattern>' <candidate> -- <files> | cut -d: -f2,3` (a revision grep prefixes each hit with `<candidate>:`). Treat each hit as "inspect this location", not as text to quote.
 
 Classify each changed file by its content (magic bytes or control bytes), not its extension. List files the text scan cannot inspect, including archives, office documents, databases, PDFs, and binary key stores, as `unscanned, open manually`; do not exempt minified text bundles. Report the unscanned count as at least a warning when nonzero. If enumeration or reading fails, report the count as unknown and the scan as `ERROR`, never zero or `CLEAN`.
 
@@ -192,7 +197,7 @@ Produce a structured report:
 ## Verification Report
 
 **Mode:** [mode]
-**Scope:** [base SHA → head SHA, staged diff, or explicit local scope; tested tree and local changes]
+**Scope:** [base SHA → candidate commit or tree ID, staged diff, or explicit local scope; tested tree and local changes]
 **Result:** READY / NOT READY
 
 | Phase | Status | Details |
@@ -217,7 +222,7 @@ Produce a structured report:
 - [list non-blocking concerns]
 ```
 
-If NOT READY, list exactly what needs fixing before the PR can proceed.
+If NOT READY, list exactly what needs fixing before the PR can proceed. A READY result before a push must cover the exact tree intended to be pushed.
 
 ## Integration
 

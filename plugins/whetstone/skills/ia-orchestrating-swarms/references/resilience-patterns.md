@@ -4,13 +4,13 @@ Load this reference when designing a multi-agent workflow that must survive part
 
 ## Cascade prevention
 
-Set timeout boundaries per agent. If one agent fails or hangs, do not let it cascade into abandoning the entire swarm's work. The orchestrator treats each agent as independently failable; other agents continue their work unaffected. Terminate unresponsive agents after the timeout rather than waiting indefinitely.
+Set a deadline per agent and continue independent work when one agent stalls. When a worker exceeds its deadline, request termination through the harness. Wait for a terminal outcome or stop acknowledgement that establishes the worker can no longer write before releasing its owned paths.
 
 Apply circuit-breaker logic to agent types: after N consecutive failures from the same agent type, stop dispatching to it and route to an alternative (different model, different decomposition). Apply bulkhead isolation: a failing agent type cannot exhaust the shared task queue or block other agent types from proceeding.
 
 ## Dispatch backpressure
 
-When the harness accepts a dispatch but caps active execution, the overflow queues rather than fails. Treat transient capacity-related spawn errors as backpressure: any retryable error indicating the limiter rejected the dispatch. Exact wording varies across harness versions and platforms, so do not pattern-match on a fixed string list. Re-dispatch queued agents as active ones complete. Record an agent as failed only after a successful dispatch times out or returns an error, or when dispatch fails for a non-capacity reason (bad tool name, malformed prompt, missing permission). A rate-capped fan-out is still parallel; it is just limited to what the harness can run concurrently.
+When the harness accepts a dispatch but caps active execution, treat a retryable capacity rejection as backpressure. Exact wording varies across harness versions and platforms. Re-dispatch queued agents as active ones complete. Record dispatch errors unrelated to capacity as failures (bad tool name, malformed prompt, missing permission). For accepted dispatches, keep deadline expiry pending until the harness confirms a terminal outcome.
 
 ## Recovery strategy
 
@@ -24,7 +24,7 @@ For agent-reported `BLOCKED` status specifically (as opposed to crashes or timeo
 
 Never retry blindly. Repeating the same prompt in the same conditions produces the same failure.
 
-**A worker still inside its timeout is not a failure.** The terminate rule under Cascade prevention fires on one condition only: an agent past its own timeout boundary. Silence, an absent message channel, or the orchestrator reaching a wrap-up point are none of them, and none licenses a stop, kill, or interrupt. While such a worker can still write, treat its scope as unsettled: its on-disk edits and any messages it sent are provisional, so do not reconstruct its result, do not dispatch replacement work into its scope, and do not report that scope complete. Exclude its owned paths from validation, staging, and commits until it returns or its timeout actually expires, at which point it becomes a crash and takes the working-tree inspection path in the main skill.
+**Keep ownership while a worker can still write.** Silence, an absent message channel, and the orchestrator reaching wrap-up do not establish deadline expiry. A controller deadline or a successful stop request without confirmation leaves ownership with the worker. Exclude its owned paths from validation, staging, commits, and replacement dispatches while the scope is unsettled. If the harness cannot establish that the writer stopped, report the affected paths as unresolved and continue independent work. Once the writer has stopped, collect its usable result or follow the [crash recovery procedure](./worker-lifecycle.md).
 
 When agents hand off through files rather than return values, the artifact is part of the failure classification. A missing, malformed, wrong-version, or wrong-shape artifact is a failed dispatch, not a partial success: validate the declared output against its expected shape before advancing the phase, and never substitute a command that produces no artifact for an unavailable backend. On artifact-validation failure, give the retry a fresh output path and preserve the failed attempt for diagnosis. Retrying onto the same path means a crashed retry leaves the previous attempt's file sitting there looking like a success, and the orchestrator has no way to tell the two apart. This governs declared handoff artifacts only. An agent that crashed while making in-place edits to its owned source files takes the working-tree inspection and verify-and-continue relaunch in the main skill instead; a fresh path is meaningless for an in-place edit, and redoing the work double-applies it.
 

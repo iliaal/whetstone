@@ -34,14 +34,30 @@ for arg in "$@"; do
 done
 DATE=$(date +%Y-%m-%d)
 
-# Guard: an existing plan with unchecked tasks is live work in progress.
-if [ "$FORCE" -ne 1 ] && [ -f "$PLAN_DIR/task_plan.md" ] && grep -q '^\s*- \[ \]' "$PLAN_DIR/task_plan.md"; then
-    echo "ERROR: $PLAN_DIR/task_plan.md has unchecked tasks." >&2
-    echo "Same work continuing: update it in place. Different work: confirm which plan wins, then re-run with --force." >&2
+command -v flock >/dev/null 2>&1 || {
+    echo "ERROR: flock is required to initialize a plan safely." >&2
+    exit 1
+}
+mkdir -p "${PLAN_DIR}"
+exec {plan_lock}>>"${PLAN_DIR}/.init.lock"
+flock -x "${plan_lock}"
+
+PLAN_FILE="${PLAN_DIR}/task_plan.md"
+if [[ -L "${PLAN_FILE}" || (-e "${PLAN_FILE}" && ! -f "${PLAN_FILE}") ]]; then
+    echo "ERROR: ${PLAN_FILE} is not a regular file." >&2
     exit 1
 fi
 
-mkdir -p "$PLAN_DIR"
+# Guard: an existing plan with unchecked tasks is live work in progress.
+if [[ "${FORCE}" -ne 1 && -f "${PLAN_FILE}" ]]; then
+    if grep -q '^[[:space:]]*- \[ \]' "${PLAN_FILE}"; then
+        echo "ERROR: ${PLAN_FILE} has unchecked tasks." >&2
+        echo "Same work continuing: update it in place. Different work: confirm which plan wins, then re-run with --force." >&2
+        exit 1
+    elif [[ $? -ne 1 ]]; then
+        exit 1
+    fi
+fi
 
 if ! grep -qxF '.plan/' "$GITIGNORE" 2>/dev/null; then
     if [[ -s "$GITIGNORE" ]]; then
@@ -53,7 +69,9 @@ if ! grep -qxF '.plan/' "$GITIGNORE" 2>/dev/null; then
     printf '%s\n' '.plan/' >>"$GITIGNORE"
 fi
 
-cat > "$PLAN_DIR/task_plan.md" << EOF
+TEMP_PLAN=$(mktemp "${PLAN_DIR}/.task_plan.XXXXXXXXXX")
+trap 'rm -f -- "${TEMP_PLAN}"' EXIT
+cat >"${TEMP_PLAN}" <<EOF
 # Plan: ${TASK_NAME}
 
 **Created:** ${DATE}
@@ -91,6 +109,7 @@ cat > "$PLAN_DIR/task_plan.md" << EOF
 | Attempt | What Failed | Why | Next Action |
 |---------|-------------|-----|-------------|
 EOF
+mv -fT -- "${TEMP_PLAN}" "${PLAN_FILE}"
 
 echo "Created ${PLAN_DIR}/ with:"
 echo "  - task_plan.md"

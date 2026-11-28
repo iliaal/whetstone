@@ -19,9 +19,9 @@ Never put the command and matcher in one pipeline or discard the command's statu
 
 ## A comparison oracle that fails open
 
-**Symptom:** the harness compares two producers with `diff -q <(producer_a | filter) <(producer_b | filter)`. `diff` observes the streams, not whether either producer succeeded: two failed producers yield two empty streams and compare equal. Comparing only added lines has the same hole: two deletions of *different* content both produce an empty `^+` stream, and identical file and line counts do not mean identical content.
+**Symptom:** the harness compares two producers with `diff -q <(producer_a | filter) <(producer_b | filter)`. `diff` sees equal streams when both producers fail with no output. A projection to added lines loses deletions. Even a comparison of both hunk bodies can report identical edits to different files as equivalent.
 
-**Fix:** capture each producer to a temporary file and check its exit status before comparing. Compare both added and removed hunk bodies from a zero-context diff, not summaries or diffstats. Classify a producer failure, a binary or metadata-only patch, or a comparison I/O error as *undecidable*, never as *identical*.
+**Fix:** capture each producer to a temporary file and check its exit status. For patch equivalence, apply each patch independently to the same pinned base in isolated trees or indexes, then compare resulting paths, bytes, and relevant metadata such as mode, symlink target, and submodule revision. Git tree IDs can serve as the oracle for Git-tracked state when both sides use the same object format. Classify producer or apply failures, unsupported patch records, and comparison I/O errors as *undecidable*.
 
 ## A green suite over a feature the test environment disables
 

@@ -16,6 +16,7 @@ class DetectorCliTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True, capture_output=True)
 
     def write(self, name, source):
         path = self.root / name
@@ -133,6 +134,28 @@ class DetectorCliTests(unittest.TestCase):
         self.assertEqual(report["unrecognized_files"], ["test.js"])
         self.assertFalse(report["input_complete"])
 
+    def test_statically_inactive_js_tests_do_not_replace_active_duplicates(self):
+        body = "{ const result = run(1); expect(result).toBe(3); }"
+        self.write(
+            "test.js",
+            f'test("active original", () => {body});\n'
+            f'test.skip("skipped copy", () => {body});\n'
+            f'describe.skip("disabled suite", () => {{ it("nested copy", () => {body}); }});\n'
+            'test.todo("pending");\n'
+            f'it("active copy", () => {body});\n',
+        )
+        result = self.run_detector("duplicate_tests.py", "test.js", "--json", "--jobs", "1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(len(report["groups"]), 1)
+        group = report["groups"][0]
+        self.assertEqual((group["kind"], group["match"]), ("REDUNDANT", "exact"))
+        self.assertEqual([member["test"] for member in group["members"]], ["active original", "active copy"])
+        self.assertEqual(
+            {member["test"]: member["reason"] for member in report["inactive_tests"]},
+            {"skipped copy": "skip", "nested copy": "skipped suite", "pending": "todo"},
+        )
+
     def write_junit(self, *classnames):
         cases = "".join(f'<testcase classname="{c}" name="test_ok"/>' for c in classnames)
         return self.write("r.xml", f'<testsuite name="pytest">{cases}</testsuite>')
@@ -159,6 +182,40 @@ class DetectorCliTests(unittest.TestCase):
         result = self.run_detector("junit_census.py", "r.xml", "--test-files", "tests/*")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("(0 of 2)", result.stdout)
+
+    def test_census_resolves_exact_file_identity_before_basename_fallback(self):
+        for layer in ("unit", "integration"):
+            (self.root / "tests" / layer).mkdir(parents=True)
+            for leaf in ("test_file.py", "test_module.py"):
+                self.write(f"tests/{layer}/{leaf}", "")
+        self.write(
+            "r.xml",
+            '<testsuite name="pytest">'
+            '<testcase file="tests/unit/test_file.py" classname="test_file" name="test_ok"/>'
+            '<testcase classname="tests.unit.test_module.TestModule" name="test_ok"/>'
+            '</testsuite>',
+        )
+        result = self.run_detector("junit_census.py", "r.xml", "--test-files", "tests/**/*.py")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        unseen = result.stdout.split("never mentioned by any report (2 of 4)", 1)[1]
+        self.assertEqual(
+            [line.strip() for line in unseen.splitlines() if line.startswith("  tests/")],
+            ["tests/integration/test_file.py", "tests/integration/test_module.py"],
+        )
+
+    def test_census_reports_ambiguous_short_names_without_crediting_either_path(self):
+        self.write("test_unique.py", "")
+        for layer in ("unit", "integration"):
+            (self.root / layer).mkdir()
+            self.write(f"{layer}/test_same.py", "")
+        self.write_junit("test_same", "test_unique")
+        result = self.run_detector("junit_census.py", "r.xml", "--test-files", "**/*.py")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("never mentioned by any report (0 of 3)", result.stdout)
+        ambiguous = result.stdout.split("collection ambiguous from short names", 1)[1]
+        self.assertIn("integration/test_same.py", ambiguous)
+        self.assertIn("unit/test_same.py", ambiguous)
+        self.assertNotIn("test_unique.py", ambiguous)
 
     def test_census_unmatched_glob_and_unreadable_report_are_incomplete_input(self):
         self.write("test_a.py", "")
@@ -331,7 +388,9 @@ class DetectorCliTests(unittest.TestCase):
             "import subprocess, sys\n\n"
             "def test_refusal():\n"
             "    code = \"import sys; sys.stderr.write('warn\\\\nrefused: bad id\\\\n'); sys.exit(3)\"\n"
-            "    assert subprocess.run([sys.executable, '-c', code], capture_output=True).returncode == 3\n",
+            "    result = subprocess.run([sys.executable, '-c', code], capture_output=True)\n"
+            "    assert result.returncode == 3\n"
+            "    assert result.stderr == b'warn\\nrefused: bad id\\n'\n",
         )
         env = {**os.environ, **env, "PYTHONPATH": str(SCRIPTS), "PYTHONDONTWRITEBYTECODE": "1"}
         env.pop("PYTEST_ADDOPTS", None)
@@ -367,6 +426,26 @@ class DetectorCliTests(unittest.TestCase):
         self.assertRegex(written[0].name, r"^reach-probe-\d+\.jsonl$")
         self.assertIn(f"reach probe rows: {written[0]}", result.stdout)
         self.assertEqual(len(written[0].read_text().splitlines()), 1)
+
+    def test_reach_probe_append_failure_preserves_subprocess_result_and_signals_incomplete(self):
+        out = self.root / "reach.jsonl"
+        self.write(
+            "conftest.py",
+            "import os\n"
+            "from pathlib import Path\n"
+            "import pytest\n"
+            "@pytest.fixture(autouse=True)\n"
+            "def make_probe_destination_unwritable():\n"
+            "    out = Path(os.environ['REACH_PROBE_OUT'])\n"
+            "    out.unlink()\n"
+            "    out.mkdir()\n",
+        )
+        result = self.run_reach_probe({"REACH_PROBE_OUT": str(out)})
+        self.assertTrue(out.is_dir())
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("1 passed", result.stdout)
+        self.assertIn("reach probe evidence incomplete", result.stdout)
+        self.assertIn("test_cli.py::test_refusal", result.stdout)
 
     @unittest.skipUnless(shutil.which("python3.10"), "python3.10 not installed")
     def test_duplicate_tests_refuses_old_python_with_a_message(self):

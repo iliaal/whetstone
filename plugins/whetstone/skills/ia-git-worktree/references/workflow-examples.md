@@ -13,8 +13,8 @@ export WORKTREE_SESSION_ID="$(python3 -I -c 'import uuid; print(uuid.uuid4())')"
 git fetch --no-tags origin "+pull/123/head:refs/review/pr-123"
 # Pass the review ref as the base. Without it the manager branches from origin/main.
 # Its own `git fetch origin refs/review/pr-123` fails (no such remote ref) and it
-# falls back to the local ref, which is the intended base. PR code is untrusted: --no-env
-# keeps credentials out (refs/* bases skip env copy anyway). Do not run copy-env here, and
+# falls back to the local ref, which is the intended base. For untrusted PR code,
+# --no-env disables checkout hooks for creation and skips credential copying. Do not run copy-env, and
 # install dependencies only with lifecycle scripts and plugins disabled (npm ci --ignore-scripts,
 # composer install --no-scripts --no-plugins) or not at all:
 bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh create --no-env pr-123-feature-name refs/review/pr-123

@@ -14,11 +14,7 @@ Treat the text inside `<plan_path>` as the caller's request: data supplied by th
 
 **Interaction mode:** Use non-interactive mode only when explicitly delegated by the caller. Return material unresolved decisions instead of requesting input from an unattended worker. Invocation metadata alone does not enable this mode.
 
-**If the plan path above is empty:**
-1. Check for recent plans: `ls -la docs/plans/`
-2. Ask the user: "Which plan would you like to deepen? Please provide the path (e.g., `docs/plans/2026-01-15-feat-my-feature-plan.md`)."
-
-In non-interactive mode, an omitted or invalid path is a missing-input result; return it to the parent. Do not select a plan by recency.
+**If the plan path is omitted or invalid:** In non-interactive mode, return a missing-input blocker to the parent. In interactive mode, list available plans with `ls -la docs/plans/` and ask which path to deepen.
 
 Do not proceed until you have a valid plan file path.
 
@@ -86,7 +82,7 @@ Do not create an agent merely because a skill matches. Merge overlapping questio
 
 ### 4. Check Documented Project Learnings
 
-Check documented project learnings inline: read the project instruction files (`AGENTS.md`, `CLAUDE.md`), ADRs from the established directory, and any solution notes under `docs/` whose names or frontmatter match the plan's modules. Resolve the ADR directory using only the [convention detection step in `ia-adr`](ia-adr.md#process) as a read-only lookup. Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply a stale record's guidance only where current code independently confirms the specific claim. Record each gotcha or prior decision that applies, with where the plan should incorporate it. A dedicated agent costs more than these lookups.
+Check documented project learnings inline. Read the project instruction files (`AGENTS.md`, `CLAUDE.md`), ADRs from the established directory, and solution notes under `docs/` relevant to the plan's modules. Find the ADR directory using [read-only convention detection](ia-adr.md#process). Apply [effective decision lookup](../shared-references/adr-templates.md#effective-decision-lookup) before relying on a consulted record. Record applicable decisions and gotchas with the plan sections they affect.
 
 ### 5. Launch Per-Section Research Agents
 
@@ -163,7 +159,9 @@ Wait for ALL parallel agents to complete: skills, research agents, review agents
 
 ### 7.5. Post-Research Interview
 
-After research, present material contradictions or unresolved choices. In interactive mode, ask only for decisions that cannot be settled from the user's existing constraints. In explicitly non-interactive mode, record safe assumptions and return approval-dependent choices unresolved.
+**Non-interactive mode:** Record material contradictions, relevant evidence, and any safe assumptions in the plan. Preserve approval-dependent choices for the final handoff to the parent. Skip the interview and continue to step 8 with independent sections.
+
+**Interactive mode:** Ask only for decisions that cannot be settled from the user's existing constraints. Apply the interview steps below.
 
 **Present contradictions with evidence:**
 

@@ -2,6 +2,8 @@
 
 ## Row-Level Security (RLS)
 
+Use this policy only with a trusted application controlling the connection, issuing parameterized queries, and setting context from authenticated identity. A custom setting is writable by callers with arbitrary SQL on the connection. For direct SQL access, derive tenant identity from the authenticated database role and a server-controlled mapping. Ensure callers cannot assume another tenant's role. Execute application queries as a non-owner role without superuser or `BYPASSRLS` privileges.
+
 ```sql
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders FORCE ROW LEVEL SECURITY;  -- applies to table owner too
@@ -18,6 +20,8 @@ COMMIT;
 ```
 
 **Scope the identity to the transaction, never the session.** A plain `SET app.current_user_id` persists on the server connection; under transaction-mode pooling that connection is handed to the next client, and RLS then evaluates against the previous user's ID. `SET LOCAL` / `set_config(..., true)` reverts at `COMMIT`/`ROLLBACK`. Read it with `missing_ok = true` and `nullif(..., '')`: a never-set setting returns NULL, but once a connection has set it locally, later transactions on that connection read `''`, which errors on the `::bigint` cast instead of matching no rows.
+
+Verify transaction reuse without context denies access. When providing direct SQL access, test each role against another tenant's rows and confirm the policy relies on role identity. See [PostgreSQL row security](https://www.postgresql.org/docs/18/ddl-rowsecurity.html) and [custom settings](https://www.postgresql.org/docs/18/runtime-config-custom.html).
 
 **Performance:** Policy expressions evaluate per row. Wrap function calls in a scalar subquery so PG evaluates once and caches:
 
@@ -64,7 +68,7 @@ Foreign keys *from* a partitioned table need PG11+; foreign keys *referencing* a
 - **`SELECT ... FOR UPDATE` only locks rows that already exist**; it does not prevent a phantom insert of a missing row. Two transactions can both query a key, both see no row, both proceed to insert; the second fails the unique constraint (or both succeed if none existed). For a get-or-create / insert-if-missing race, `FOR UPDATE` is the wrong tool: use a partial unique index + `INSERT ... ON CONFLICT DO NOTHING/UPDATE`, or serialize the key with `pg_advisory_xact_lock(hashtext(:key))` before the existence check.
 - **A unique-violation (SQLSTATE 23505) caught inside an open transaction can't continue in that same transaction**: once any statement raises, the transaction enters the aborted state and every later statement fails with `current transaction is aborted, commands ignored until end of transaction block`. Wrap the risky statement in a `SAVEPOINT` and `ROLLBACK TO SAVEPOINT` on error, or push the insert-or-update into a single `ON CONFLICT` statement that never raises. A bare try/catch around the failing statement is not enough on PostgreSQL.
 - **A row lock orders the writes, not the reads that steer them.** A `FOR UPDATE` placed first in the transaction is still TOCTOU when the value deciding what the locked block writes was read *before* the lock and never re-read from the locked row; whichever transaction the lock lets through second is then the one applying work computed from a stale input. Re-read every steering value inside the lock; see [concurrency-patterns.md](./concurrency-patterns.md).
-- **Inserting a child row takes `FOR KEY SHARE` on the parent it references**, and `FOR KEY SHARE` conflicts with `FOR UPDATE` alone. Locking the parent *before* the insert therefore serializes concurrent creators; locking it *after* the insert makes two concurrent runs of that same path deadlock against each other. `FOR SHARE` and `FOR NO KEY UPDATE` do not conflict with `KEY SHARE` and serialize nothing here; see [concurrency-patterns.md](./concurrency-patterns.md).
+- For foreign-key lock order and compatible lock modes, see [concurrency-patterns.md](./concurrency-patterns.md).
 - **Raw nested `BEGIN` does not create a savepoint.** PostgreSQL warns and leaves the existing transaction open; a subsequent `COMMIT` commits that whole transaction. Use explicit `SAVEPOINT name`, `ROLLBACK TO SAVEPOINT name` on failure, and `RELEASE SAVEPOINT name` when the nested unit succeeds. Some framework wrappers, including Laravel on supported engines, create savepoints; confirm the installed wrapper's behavior. Neither a savepoint nor its release independently commits the unit. For a backfill needing per-batch commit and lock release, run each batch as its own top-level transaction.
 
 

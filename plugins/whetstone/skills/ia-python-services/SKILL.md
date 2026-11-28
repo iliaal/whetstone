@@ -31,15 +31,14 @@ paths:
 - Only touch what's necessary; avoid introducing unrelated changes
 - No hacky workarounds: if a fix feels wrong, step back and implement the clean solution
 - Before adding a new abstraction, verify it appears in 3+ places. If not, inline it.
-- Verify: see Verify section below; pass all checks with zero warnings before declaring done
+- Verify with the project's configured checks and thresholds.
 
 
 ## Verify
 
-- `uv run pytest` passes with zero failures
-- `uv run ruff check .` passes with zero warnings
-- `uv run ty check .` passes with zero errors
-- Coverage target: 80%+ (`uv run pytest --cov`; add `--cov-report=html` for a browsable report)
+Run the project's configured test, lint, and type-check commands. Use its coverage and warning thresholds. Report applicable checks that cannot run.
+
+For new projects adopting these tools, starter checks are `uv run pytest`, `uv run ruff check .`, and `uv run ty check .`. With `pytest-cov` configured, `uv run pytest --cov` measures coverage. Use 80% as a starter target when the project establishes one. Add `--cov-report=html` for a browsable report.
 
 ## Task-specific references
 

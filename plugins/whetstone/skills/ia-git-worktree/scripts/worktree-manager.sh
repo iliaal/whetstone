@@ -60,17 +60,32 @@ resolve_worktree() {
   return 1
 }
 
-ensure_gitignore() {
-  local last_byte
+ensure_scratch_excluded() {
+  local scratch="$1" exclude="${COMMON_DIR}/info/exclude" resolved_exclude last_byte
   [[ "${COMMON_BARE}" == false ]] || return 0
-  if ! grep -qxF '.worktrees' "${GIT_ROOT}/.gitignore" 2>/dev/null; then
-    if [[ -s "${GIT_ROOT}/.gitignore" ]]; then
-      last_byte=$(tail -c 1 -- "${GIT_ROOT}/.gitignore") || return 1
+  if git -C "${GIT_ROOT}" check-ignore -q -- "${scratch}"; then
+    return 0
+  elif [[ $? -ne 1 ]]; then
+    return 1
+  fi
+  resolved_exclude=$(realpath -m -- "${exclude}") || return 1
+  if [[ "${resolved_exclude}" != "${exclude}" ]]; then
+    echo "Error: refusing a redirected Git exclude path: ${exclude}" >&2
+    return 1
+  fi
+  if ! grep -qxF '/.worktrees/' "${exclude}" 2>/dev/null; then
+    mkdir -p -- "${exclude%/*}"
+    if [[ -s "${exclude}" ]]; then
+      last_byte=$(tail -c 1 -- "${exclude}") || return 1
       if [[ -n "${last_byte}" ]]; then
-        printf '\n' >>"${GIT_ROOT}/.gitignore"
+        printf '\n' >>"${exclude}"
       fi
     fi
-    printf '%s\n' '.worktrees' >>"${GIT_ROOT}/.gitignore"
+    printf '%s\n' '/.worktrees/' >>"${exclude}"
+  fi
+  if ! git -C "${GIT_ROOT}" check-ignore -q -- "${scratch}"; then
+    echo "Error: cannot exclude ${scratch} without changing project ignore rules" >&2
+    return 1
   fi
 }
 
@@ -181,10 +196,6 @@ create_worktree() {
   done
   local branch_name="${args[0]:-}"
   local from_branch="${args[1]:-main}"
-  if [[ "${COMMON_BARE}" == true ]]; then
-    copy_env=0
-  fi
-
   if [[ -z "$branch_name" ]]; then
     echo -e "${RED}Error: Branch name required${NC}"
     exit 1
@@ -251,19 +262,23 @@ create_worktree() {
   rm -- "$fetch_marker" || return 1
   [[ "$base_valid" == 1 ]] || return 1
 
-  local env_trusted=0
-  if [[ "$copy_env" == 1 && "$base_from_branch" == 1 ]] && base_is_trusted_branch "$from_branch" "$base_sha"; then
-    env_trusted=1
+  local checkout_trusted=0
+  if [[ "${copy_env}" == 1 && "${base_from_branch}" == 1 ]] && base_is_trusted_branch "${from_branch}" "${base_sha}"; then
+    checkout_trusted=1
   fi
 
+  ensure_scratch_excluded ".worktrees/${branch_name}/"
   mkdir -p "$WORKTREE_DIR"
-  ensure_gitignore
   if [[ "${COMMON_BARE}" == false ]]; then
     printf '%s\n' "$GIT_ROOT" > "$COMMON_DIR/whetstone-main-root"
   fi
 
   echo -e "${BLUE}Creating worktree...${NC}"
-  git worktree add -b "$branch_name" "$worktree_path" "$base_sha"
+  if [[ "${checkout_trusted}" == 1 ]]; then
+    git worktree add -b "${branch_name}" "${worktree_path}" "${base_sha}"
+  else
+    git -c core.hooksPath=/dev/null worktree add -b "${branch_name}" "${worktree_path}" "${base_sha}"
+  fi
   [[ "$(git -C "$worktree_path" rev-parse HEAD)" == "$base_sha" ]] || {
     echo "Error: created worktree does not match fetched/local base $base_sha" >&2
     return 1
@@ -279,7 +294,7 @@ create_worktree() {
     echo -e "${YELLOW}Skipped .env copy: bare repository has no main checkout${NC}"
   elif [[ "${copy_env}" == 0 ]]; then
     echo -e "${YELLOW}Skipped .env copy (--no-env)${NC}"
-  elif [[ "$env_trusted" == 1 ]]; then
+  elif [[ "${checkout_trusted}" == 1 ]]; then
     copy_env_files "$worktree_path"
   else
     echo -e "${YELLOW}Skipped .env copy: $from_branch is not the default branch or a local branch containing this commit.${NC}"
@@ -437,6 +452,7 @@ Environment Files:
     remove the worktree copy first to refresh it with 'copy-env'
   - New copies are mode 600
   - Pass --no-env for any branch that holds third-party code
+  - Creation disables checkout hooks for --no-env and untrusted bases
 
 Examples:
   worktree-manager.sh create feature-login

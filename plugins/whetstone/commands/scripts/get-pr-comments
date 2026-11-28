@@ -9,19 +9,21 @@ import urllib.parse
 from html.parser import HTMLParser
 
 
-def gh(*args):
+def gh(*args, hostname=None):
+    if hostname is not None:
+        args += ("--hostname", hostname)
     result = subprocess.run(["gh", *args], capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError(result.stderr.strip() or f"gh exited {result.returncode}")
     return json.loads(result.stdout)
 
 
-def graphql(query, **fields):
+def graphql(query, *, hostname=None, **fields):
     args = ["api", "graphql", "-f", "query=" + query]
     for name, value in fields.items():
         if value is not None:
             args.extend(["-F" if isinstance(value, int) else "-f", f"{name}={value}"])
-    response = gh(*args)
+    response = gh(*args, hostname=hostname)
     if response.get("errors"):
         raise RuntimeError("GraphQL errors: " + json.dumps(response["errors"]))
     if not response.get("data"):
@@ -239,11 +241,11 @@ def split_body(body, html):
     return tidy(parser.own), tidy(parser.quoted), hidden, False
 
 
-def write_access(owner, repo, login):
+def write_access(owner, repo, login, *, hostname=None):
     path = "repos/{}/{}/collaborators/{}/permission".format(
         *(urllib.parse.quote(part, safe="") for part in (owner, repo, login)))
     try:
-        permission = gh("api", path).get("permission")
+        permission = gh("api", path, hostname=hostname).get("permission")
     except (OSError, ValueError, AttributeError, RuntimeError):
         return "unknown", False
     if not isinstance(permission, str):
@@ -271,13 +273,18 @@ def annotate(item, allowed, permissions):
 
 def main():
     if len(sys.argv) not in (2, 3) or not sys.argv[1].isdigit() or int(sys.argv[1]) < 1:
-        raise RuntimeError("Usage: get-pr-comments PR_NUMBER [OWNER/REPO]")
+        raise RuntimeError("Usage: get-pr-comments PR_NUMBER [[HOST/]OWNER/REPO]")
     pr = int(sys.argv[1])
+    hostname = None
     if len(sys.argv) == 3:
         parts = sys.argv[2].split("/")
-        if len(parts) != 2 or not all(parts):
-            raise RuntimeError("Repository must be OWNER/REPO")
-        owner, repo = parts
+        if len(parts) not in (2, 3) or not all(parts):
+            raise RuntimeError("Repository must be [HOST/]OWNER/REPO")
+        if len(parts) == 3:
+            hostname = parts[0]
+            if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?", hostname):
+                raise RuntimeError("Invalid GitHub hostname")
+        owner, repo = parts[-2:]
     else:
         detected = gh("repo", "view", "--json", "owner,name")
         owner, repo = detected["owner"]["login"], detected["name"]
@@ -287,7 +294,7 @@ def main():
           repository(owner: $owner, name: $repo) {
             pullRequest(number: $pr) { author { login } }
           }
-        }""", owner=owner, repo=repo, pr=pr
+        }""", hostname=hostname, owner=owner, repo=repo, pr=pr
     )["repository"]["pullRequest"]
     if metadata is None:
         raise RuntimeError("Pull request not found")
@@ -298,7 +305,7 @@ def main():
     def permissions(login):
         key = login.lower()
         if key not in cache:
-            cache[key] = write_access(owner, repo, login)
+            cache[key] = write_access(owner, repo, login, hostname=hostname)
         return cache[key]
 
     def connection(name, fields):
@@ -309,7 +316,7 @@ def main():
             "}}}"
         )
         return pages(lambda cursor: graphql(
-            query, owner=owner, repo=repo, pr=pr, cursor=cursor
+            query, hostname=hostname, owner=owner, repo=repo, pr=pr, cursor=cursor
         )["repository"]["pullRequest"][name])
 
     comments = connection("comments", COMMENT)
@@ -323,7 +330,7 @@ def main():
             "nodes {" + THREAD_COMMENT + "} " + PAGE + "}}}}"
         )
         thread_comments = pages(lambda cursor: graphql(
-            query, thread=thread["id"], cursor=cursor
+            query, hostname=hostname, thread=thread["id"], cursor=cursor
         )["node"]["comments"], initial=thread["comments"])
         thread_comments = [annotate(item, allowed, permissions) for item in thread_comments]
         thread["comments"] = {"totalCount": len(thread_comments), "nodes": thread_comments}

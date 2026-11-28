@@ -8,9 +8,11 @@ Detail offloaded from the SKILL.md Anti-Patterns section. The symptom/fix one-li
 
 **Fix ladder**, in order of preference:
 
-1. **Ephemeral containers per test session** (`testcontainers`, `pytest-postgresql`, or `docker compose run --rm <service>` for one-shot runs): slowest to start, strongest isolation. Default for CI.
-2. **Fixture-driven `TRUNCATE` / `DROP DATABASE`** in a session-scoped or per-test fixture: fast, but requires careful coverage of every stateful table.
-3. **Volume teardown between iterations** (`docker compose down -v` before each run) when running locally: manual but reliable.
+1. **Ephemeral infrastructure per test session** (`testcontainers`, `pytest-postgresql`, or a uniquely named Compose project with run-owned storage): default for local runs and CI.
+2. **Fixture-driven reset** in a session-scoped or per-test fixture: resolve the effective connection, database, and schema, then reset only resources created for this run. Check that the fixture covers every stateful table it owns.
+3. **Volume teardown** after a local run: resolve the actual Compose project, services, and volume names before `docker compose down -v`. Remove only volumes owned exclusively by the run.
+
+Stop before a destructive reset if the effective destination or its ownership is unknown. For shared or development targets, provision a separate disposable database, schema, or Compose project.
 
 Never rely on tests "cleaning up after themselves." If a previous run errored mid-test, the cleanup didn't run, and the next run inherits the partial state.
 

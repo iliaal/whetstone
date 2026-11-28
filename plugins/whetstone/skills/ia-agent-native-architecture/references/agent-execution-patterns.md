@@ -79,17 +79,22 @@ Structure tool results to separate success from continuation:
 ```typescript
 type TerminalStatus = "success" | "partial" | "blocked" | "cancelled";
 
+type AcceptanceEvidence = {
+  acceptanceStatus: "passed" | "unmet";
+  acceptance: CriterionResult[];
+  remaining: string[];
+};
+
+type TerminalReport = AcceptanceEvidence & { status: TerminalStatus };
+
 type ToolResult =
   | { success: boolean; output: string; shouldContinue: true }
-  | {
+  | ({
       success: true;
       output: string;
       shouldContinue: false;
       terminalStatus: TerminalStatus;
-      acceptanceStatus: "passed" | "unmet";
-      acceptance: CriterionResult[];
-      remaining: string[];
-    };
+    } & AcceptanceEvidence);
 ```
 
 ### Key Insight
@@ -223,12 +228,7 @@ type AgentCheckpoint = {
   customState: { [key: string]: JSONValue };
   waitingReason: string | null;
   resumeState: "running" | "waitingForUser" | "partial" | "blocked";
-  terminalReport: {
-    status: TerminalStatus;
-    acceptanceStatus: "passed" | "unmet";
-    acceptance: CriterionResult[];
-    remaining: string[];
-  } | null;
+  terminalReport: TerminalReport | null;
   attemptIds: string[];
   timestamp: number;
 };
@@ -247,7 +247,7 @@ Use the preceding `AgentTask` type and the `Message` union in Unified Agent Orch
 
 ### Resume Flow
 
-1. On app launch, scan for valid checkpoints
+1. On app launch, scan for valid checkpoints. Restore any recorded terminal report before selecting an incomplete session. Continue unfinished work only through an explicit resume that preserves the prior report and reconciles recorded attempts.
 2. Show user: "You have an incomplete session. Resume?"
 3. On resume:
    - Restore messages to conversation
@@ -444,6 +444,7 @@ interface AgentResult {
   stopReason?: "turn_limit";
   output: string;
   iterations: number;
+  terminalReport: TerminalReport | null;
 }
 
 class AgentOrchestrator {
@@ -453,7 +454,10 @@ class AgentOrchestrator {
       messages: Message[],
     ) => Promise<ModelResponse>,
     private executeToolCall: (call: ToolCall) => Promise<ToolResult>,
-    private saveMessages: (messages: readonly Message[]) => Promise<void>,
+    private saveCheckpoint: (state: {
+      messages: readonly Message[];
+      terminalReport: TerminalReport | null;
+    }) => Promise<void>,
   ) {}
 
   async run(config: AgentConfig, userMessage: string): Promise<AgentResult> {
@@ -461,7 +465,7 @@ class AgentOrchestrator {
       { role: "system", content: config.systemPrompt },
       { role: "user", content: userMessage },
     ];
-    await this.saveMessages(messages);
+    await this.saveCheckpoint({ messages, terminalReport: null });
     const offered = new Set(config.toolNames);
 
     for (let iteration = 0; iteration < config.maxIterations; iteration += 1) {
@@ -478,7 +482,7 @@ class AgentOrchestrator {
         content: response.content,
         toolCalls: structuredClone(response.toolCalls),
       });
-      await this.saveMessages(messages);
+      await this.saveCheckpoint({ messages, terminalReport: null });
 
       for (const [index, toolCall] of response.toolCalls.entries()) {
         const result: ToolResult = offered.has(toolCall.name)
@@ -488,8 +492,6 @@ class AgentOrchestrator {
           role: "tool", toolCallId: toolCall.id, name: toolCall.name,
           content: JSON.stringify(result),
         });
-        await this.saveMessages(messages);
-
         if (!result.shouldContinue) {
           for (const skipped of response.toolCalls.slice(index + 1)) {
             messages.push({
@@ -500,13 +502,21 @@ class AgentOrchestrator {
               }),
             });
           }
-          await this.saveMessages(messages);
-          return {
+          const terminalReport: TerminalReport = {
             status: result.terminalStatus,
+            acceptanceStatus: result.acceptanceStatus,
+            acceptance: result.acceptance,
+            remaining: result.remaining,
+          };
+          await this.saveCheckpoint({ messages, terminalReport });
+          return {
+            status: terminalReport.status,
             output: result.output,
             iterations: iteration + 1,
+            terminalReport,
           };
         }
+        await this.saveCheckpoint({ messages, terminalReport: null });
       }
 
       if (response.toolCalls.length === 0) {
@@ -514,6 +524,7 @@ class AgentOrchestrator {
           status: "responded",
           output: response.content,
           iterations: iteration + 1,
+          terminalReport: null,
         };
       }
     }
@@ -523,14 +534,17 @@ class AgentOrchestrator {
       stopReason: "turn_limit",
       output: messages[messages.length - 1].content,
       iterations: config.maxIterations,
+      terminalReport: null,
     };
   }
 }
 ```
 
-The provider adapter must return stable tool-call IDs and map the complete `Message` union to its assistant-call and tool-result fields. Validate names, JSON inputs, and response shapes at that boundary. Before dispatch, check every returned call's name against the tool definitions sent in the request that produced it, not against the full registry: a model can name a tool it saw in an earlier round, in another agent's configuration, or in reference text. Answer an undeclared name with a not-available tool result and do not execute it. An omitted or empty tool list for an agent or round selects no tools; never let it fall back to the whole registry. Implement `saveMessages` with the checkpoint service: encode a snapshot of the complete messages, persist it durably, and propagate failure before the next action. The loop saves assistant calls before dispatching effects and their correlated results after the executor durably records outcomes; restore those same messages from checkpoints. Results for unexecuted calls in a terminal batch explicitly report that they did not run. Never infer call identity from result text or keep essential history only in adapter closure state.
+The provider adapter must return stable tool-call IDs and map the complete `Message` union to its assistant-call and tool-result fields. Validate names, JSON inputs, and response shapes at that boundary. Before dispatch, check every returned call's name against the tool definitions sent in the request that produced it, not against the full registry: a model can name a tool it saw in an earlier round, in another agent's configuration, or in reference text. Answer an undeclared name with a not-available tool result and do not execute it. An omitted or empty tool list for an agent or round selects no tools; never let it fall back to the whole registry.
 
-Have the tool executor validate and persist runtime results before returning this type. Preserve the terminal status in persistence and UI labels. A reply without a completion signal remains `responded`. Save a checkpoint before returning `partial` with `turn_limit`; exhaustion remains unfinished. Wrap action boundaries with the cooperative cancellation and cleanup lifecycle above.
+Implement `saveCheckpoint` by storing the complete messages and supplied `terminalReport` together in an atomic checkpoint. Await persistence and propagate any failure. Save assistant calls before dispatching effects and their correlated results after the executor durably records outcomes. For a terminal batch, persist the completed call, explicit skipped results, and terminal report in one checkpoint. On restore, display the saved report and preserve the same call identities. Reconcile recorded attempts before continuing a stopped or interrupted run.
+
+Have the tool executor validate and persist runtime results before returning them. Use the terminal report for UI status and criterion evidence. A reply without a completion signal remains `responded` with a null report. Save a checkpoint before returning `partial` with `turn_limit`. Exhaustion stays unfinished and carries no application terminal report. Wrap action boundaries with the cooperative cancellation and cleanup lifecycle above.
 
 ### Benefits
 

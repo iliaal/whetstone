@@ -18,6 +18,7 @@ set -o pipefail
 
 deps=(
   # Core: required for the release pipeline and core workflows
+  "bash||recommended|sudo apt install -y bash|brew install bash|https://www.gnu.org/software/bash/"
   "git||recommended|sudo apt install -y git|brew install git|https://git-scm.com/downloads"
   "gh||recommended|https://github.com/cli/cli/blob/trunk/docs/install_linux.md|brew install gh|https://cli.github.com"
   "jq||recommended|sudo apt install -y jq|brew install jq|https://jqlang.github.io/jq/"
@@ -65,6 +66,7 @@ in_repo=$(git rev-parse --is-inside-work-tree >/dev/null 2>&1 && echo "yes" || e
 
 rec_ok=0; rec_total=0; opt_ok=0; opt_total=0; issues=0
 results=()
+bash_version=""
 
 for entry in "${deps[@]}"; do
   IFS='|' read -r name alt tier install_apt install_brew url <<< "$entry"
@@ -74,6 +76,14 @@ for entry in "${deps[@]}"; do
     resolved="$name"
   elif [ -n "$alt" ] && command -v "$alt" >/dev/null 2>&1; then
     resolved="$alt"
+  fi
+
+  if [[ $name == bash && -n $resolved ]]; then
+    bash_version=$(command bash -c 'printf "%s.%s\n" "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}"' 2>/dev/null) || bash_version=""
+    if ! [[ $bash_version =~ ^([1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] ||
+      ((BASH_REMATCH[1] < 4 || (BASH_REMATCH[1] == 4 && BASH_REMATCH[2] < 4))); then
+      resolved=""
+    fi
   fi
 
   if [ "$tier" = "optional" ]; then
@@ -109,7 +119,9 @@ render_row() {
     IFS='|' read -r name resolved row_tier status install_apt install_brew url <<< "$result"
     [ "$row_tier" = "$tier" ] || continue
     if [ "$status" = "ok" ]; then
-      if [ "$resolved" != "$name" ]; then
+      if [[ $name == bash ]]; then
+        ok "$name ($bash_version)"
+      elif [ "$resolved" != "$name" ]; then
         ok "$name (found as: $resolved)"
       else
         ok "$name"
@@ -121,7 +133,12 @@ render_row() {
         warn "$name"
         issues=$((issues + 1))
       fi
-      if [[ ${name} == flock ]]; then
+      if [[ $name == bash ]]; then
+        if [[ -n $bash_version ]]; then
+          detail "Bash on PATH reported version $bash_version."
+        fi
+        detail "Automatic skill injection requires Bash 4.4 or newer on PATH."
+      elif [[ ${name} == flock ]]; then
         detail "Automatic skill injection unavailable: flock is missing."
       fi
       install_hint=${url}

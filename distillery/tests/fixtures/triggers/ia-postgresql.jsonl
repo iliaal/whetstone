@@ -18,3 +18,7 @@
 {"prompt": "the laravel 12 / postgresql repo at cred/mobile-backend, review the authorization slice of the mr", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "you are one of 10 parallel fix agents in codesage rust workspace touching trust_boundary_rules.rs", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
 {"prompt": "the api returns a jsonb blob to the client", "expect": false, "added_in": "4.1.5", "source": "audit-misfire-2026-07"}
+{"prompt":"PostgreSQL upsert the billing records","expect":true,"source":"audit-2026-11-28"}
+{"prompt":"upsert the billing records in Postgres","expect":true,"source":"audit-2026-11-28"}
+{"prompt":"upsert the SQLite row","expect":false,"source":"audit-2026-11-28"}
+{"prompt":"upsert ledger records in a Rust JSON file","expect":false,"source":"audit-2026-11-28"}

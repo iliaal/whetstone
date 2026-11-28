@@ -32,6 +32,9 @@ Keep this config at the project root and run the CLI from that root. Playwright 
 ```typescript
 import { defineConfig, devices } from '@playwright/test';
 
+const authFile = process.env.PLAYWRIGHT_AUTH_FILE;
+if (!authFile) throw new Error('Set PLAYWRIGHT_AUTH_FILE using the auth state setup below');
+
 export default defineConfig({
   testDir: './e2e/tests',
   fullyParallel: true,
@@ -51,7 +54,7 @@ export default defineConfig({
     { name: 'setup', testDir: './e2e/fixtures', testMatch: 'auth.fixture.ts' },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/user.json' },
+      use: { ...devices['Desktop Chrome'], storageState: authFile },
       dependencies: ['setup'],
     },
   ],
@@ -140,19 +143,37 @@ await page.getByTestId('spinner').waitFor({ state: 'hidden' });
 
 ## Auth State Reuse
 
-Save auth state once, reuse across all tests:
+Save auth state once per run and reuse it in that run's dependent test projects. Add `/e2e/.auth/` to the root `.gitignore` before generating state. Browser state can include reusable credentials. Give each invocation a private directory and verify Git ignores the exact state file before running the fixture. [Playwright authentication guide](https://playwright.dev/docs/auth#core-concepts)
+
+Pass the same auth state setup to focused, repeated, headed, or UI runs that load this config. Replace the final test command below with the desired invocation.
+
+```bash
+(
+  mkdir -p e2e/.auth || exit
+  auth_dir=$(mktemp -d e2e/.auth/run.XXXXXXXX) || exit
+  trap 'rm -f -- "$auth_dir/user.json"; rmdir -- "$auth_dir"' EXIT
+  if ! git check-ignore -q -- "$auth_dir/user.json"; then
+    printf '%s\n' 'Auth state path must be ignored by Git' >&2
+    exit 1
+  fi
+  PLAYWRIGHT_AUTH_FILE="$PWD/$auth_dir/user.json" npx playwright test
+)
+```
 
 ```typescript
 // e2e/fixtures/auth.fixture.ts
 import { test as setup } from '@playwright/test';
 
 setup('authenticate', async ({ page }) => {
+  const authFile = process.env.PLAYWRIGHT_AUTH_FILE;
+  if (!authFile) throw new Error('PLAYWRIGHT_AUTH_FILE is required');
+
   await page.goto('/login');
   await page.getByLabel('Email').fill('testuser@example.com');
   await page.getByLabel('Password').fill('TestPassword123!');
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL('/dashboard');
-  await page.context().storageState({ path: 'e2e/.auth/user.json' });
+  await page.context().storageState({ path: authFile });
 });
 ```
 

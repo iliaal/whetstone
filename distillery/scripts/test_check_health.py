@@ -22,6 +22,7 @@ def link_tool(bin_dir, name, source=None):
 
 @pytest.fixture
 def health_env(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     for name in TOOLS:
@@ -34,15 +35,37 @@ def health_env(tmp_path):
     }
 
 
-def run_bash(env, *args, payload=None):
+def run_bash(env, *args, payload=None, interpreter=None):
     result = subprocess.run(
-        [str(Path(env["PATH"]) / "bash"), *map(str, args)],
+        [str(interpreter or Path(env["PATH"]) / "bash"), *map(str, args)],
         input=None if payload is None else json.dumps(payload),
         capture_output=True, text=True, env=env, cwd=env["TMPDIR"], timeout=10,
     )
     assert result.returncode == 0, result.stderr
     assert result.stderr == ""
     return result.stdout
+
+
+@pytest.mark.parametrize("path_version, supported", [("4.3", False), ("4.4", True), ("5.0", True)])
+def test_health_uses_bash_version_from_path(health_env, path_version, supported):
+    bin_dir = Path(health_env["PATH"])
+    link_tool(bin_dir, "flock")
+    path_bash = bin_dir / "bash"
+    interpreter = path_bash.resolve()
+    path_bash.unlink()
+    path_bash.write_text(f"#!/bin/sh\nprintf '%s\\n' '{path_version}'\n")
+    path_bash.chmod(0o700)
+
+    health = run_bash(health_env, PLUGIN / "scripts/check-health.sh", interpreter=interpreter)
+
+    if supported:
+        assert f"bash ({path_version})" in health
+        assert "All clear" in health
+    else:
+        assert f"Bash on PATH reported version {path_version}." in health
+        assert "Automatic skill injection requires Bash 4.4 or newer on PATH." in health
+        assert "1 issue(s) found" in health
+        assert "All clear" not in health
 
 
 def test_missing_flock_health_matches_actual_injection(health_env):
@@ -106,3 +129,22 @@ def test_setup_health_recipes_support_spaces(health_env):
         assert "issue(s) found" in health
         if "--version" in recipe:
             assert "Plugin version vVERSION" in health
+
+
+@pytest.mark.parametrize(
+    "manifests, stack",
+    [
+        ((), "general"),
+        (("package.json",), "javascript"),
+        (("composer.json",), "php"),
+        (("requirements.txt", "composer.json"), "python"),
+        (("tsconfig.json", "package.json"), "typescript"),
+    ],
+)
+def test_setup_detects_one_stack(health_env, manifests, stack):
+    for manifest in manifests:
+        (Path(health_env["TMPDIR"]) / manifest).touch()
+    command = (PLUGIN / "commands/ia-setup.md").read_text()
+    section = command.split("### Step 6: Detect Stack", 1)[1]
+    detector = re.search(r"```bash\n(.*?)\n```", section, re.S).group(1)
+    assert run_bash(health_env, "-c", detector) == f"{stack}\n"

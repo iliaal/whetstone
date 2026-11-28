@@ -149,6 +149,13 @@ files, including another session's, make a local run evidence about a tree the
 change does not contain. Otherwise run in a dedicated worktree at `REVIEW_HEAD`,
 or label the result as covering the working tree, not the head.
 
+Check the provenance of the executable, generated files, or ignored inputs
+that affect the test result. When the test can reuse artifacts, build them
+fresh in an isolated checkout of `REVIEW_HEAD` or verify their source revision
+and configuration from recorded build evidence. Apply the [execution preflight](./reviewer-trust-boundary.md#target-controlled-commands)
+before launching a review-target build. If provenance remains unknown, report
+the test result without attributing it to the reviewed revision.
+
 **`base...head` is not the tree that ships.** When the target has moved, neither
 endpoint of that range is the merged tree, and two regression classes are
 invisible in it: a branch forked before a fix landed and rewriting that region

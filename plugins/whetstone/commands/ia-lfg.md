@@ -22,7 +22,7 @@ Run applicable steps in order within the user's authorized scope. Carry explicit
 
 ## Build
 
-3. `/ia-work <exact-plan-path>` with explicit pipeline context: implement and verify locally, defer branch publication until the final review and fixes below. The `ia-verification-before-completion` gate that `/ia-work` runs, plus `/ia-review` in step 4, satisfies this pipeline's pre-PR verification; a separate `/ia-verify` invocation is not required. Share any review receipt with the next step to avoid reviewing an unchanged diff twice.
+3. `/ia-work <exact-plan-path>` with explicit pipeline context. Pass the verified checkout root and branch if the caller selected them or existing plan evidence binds them to this feature. If branch ownership remains uncertain, report the branch decision returned by `/ia-work` and pause dependent steps. Implement and verify locally before any authorized publication. The `ia-verification-before-completion` gate in `/ia-work` and `/ia-review` in step 4 cover pre-PR verification. Share an existing review receipt to avoid reviewing the same diff twice.
 
 **Swarm mode:** Use Task list and launch parallel agent swarm subagents to build the plan.
 **Normal mode:** Execute sequentially.
@@ -30,7 +30,7 @@ Run applicable steps in order within the user's authorized scope. Carry explicit
 ## Verify (parallel in swarm mode)
 
 4. `/ia-review` on the current change. Capture the finding IDs returned by this review as `current_review_findings`; pre-existing backlog is outside this pipeline's scope. If step 3 already completed the same review protocol on the same revision, reuse that receipt and review only subsequent changes.
-5. Run `/ia-test-browser` only when the change affects browser-visible routes or interactions and a usable local server exists. Pass explicit non-interactive context and use headless mode. Record missing browser coverage as a gap; a skipped stage is not a pass. Add only this invocation's returned findings to `current_review_findings`.
+5. Run `/ia-test-browser` only when the change affects browser-visible routes or interactions and a usable local server exists. Pass the same review target and frozen base/head, explicit non-interactive context, and headless mode. Record missing browser coverage as a gap; a skipped stage is not a pass. Add only this invocation's returned findings to `current_review_findings`.
 
 **Swarm mode:** Review and browser verification may run in parallel when both are read-only against the same revision and isolated from writers. Wait for both to complete.
 **Normal mode:** Run sequentially.

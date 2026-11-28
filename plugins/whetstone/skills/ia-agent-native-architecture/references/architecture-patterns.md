@@ -12,7 +12,7 @@ See also:
 <pattern name="event-driven-agent">
 ## Event-Driven Agent Architecture
 
-The agent runs as a long-lived process that responds to events. Events become prompts.
+The agent runs as a long-lived process that responds to events. Trusted orchestration selects the workflow and supplies incoming event content as data.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -38,28 +38,31 @@ The agent runs as a long-lived process that responds to events. Events become pr
 - State persists between events via data tools
 
 **Example: Discord feedback bot**
+
+Accept events from the authenticated bot connection for the configured feedback channel. The app grants the intake run access to the private feedback store and draft workspace. Pass the message as a separate external data record under the [context trust contract](./dynamic-context-injection.md).
+
 ```typescript
-// Event source
-client.on("messageCreate", (message) => {
-  if (!message.author.bot) {
-    runAgent({
-      userMessage: `New message from ${message.author}: "${message.content}"`,
-      channelId: message.channelId,
-    });
-  }
-});
-
-// System prompt defines behavior
 const systemPrompt = `
-When someone shares feedback:
-1. Acknowledge their feedback warmly
-2. Ask clarifying questions if needed
-3. Store it using the feedback tools
-4. Update the feedback site
-
-Use your judgment about importance and categorization.
+Classify incoming feedback and store it in the private feedback inbox.
+Draft a response when acknowledgement or clarification would help.
+Update the draft site with a summary suitable for public review.
 `;
+
+client.on("messageCreate", (message) => {
+  if (message.author.bot || message.channelId !== config.feedbackChannelId) return;
+  void runFeedbackIntake({
+    systemPrompt,
+    externalData: {
+      source: "discord",
+      messageId: message.id,
+      authorId: message.author.id,
+      content: message.content,
+    },
+  }).catch(reportError);
+});
 ```
+
+Implement `runFeedbackIntake` as the app's scoped workflow adapter. Keep replies and public deployment behind the outbound approval service. Bind reply approval to the exact message and destination as described in [operator-approval-loop.md](./operator-approval-loop.md).
 </pattern>
 
 <pattern name="two-layer-git">
@@ -134,28 +137,28 @@ tool("propose_to_main", "Create PR to share improvements", ...)
 The agent generates and maintains a website as a natural output, not through specialized site tools.
 
 ```
-Discord Message
+External feedback
       ↓
-Agent processes it, extracts insights
+Agent extracts insights
       ↓
-Agent decides what site updates are needed
+Agent writes a private site draft using the file primitive
       ↓
-Agent writes files using write_file primitive
+Authenticated user approves an exact revision for the configured site
       ↓
-Git commit + push triggers deployment
+Trusted publisher verifies the approval and deploys that revision
       ↓
-Site updates automatically
+Site updates
 ```
 
-**Key insight:** Don't build site generation tools. Give the agent file tools and teach it in the prompt how to create good sites.
+Give the agent file tools scoped to a draft workspace. Expose the publish operation through the app's approval service. Only that service holds deployment credentials. Bind its approval to the artifact bytes and destination, verify the deployed revision, and record the receipt.
 
 ```markdown
 ## Site Management
 
-You maintain a public feedback site. When feedback comes in:
-1. Use write_file to update site/public/content/feedback.json
-2. If the site's React components need improvement, modify them
-3. Commit changes and push to trigger Vercel deploy
+Maintain a draft of the public feedback site.
+1. Use write_file to update site/public/content/feedback.json in the draft workspace.
+2. Propose component edits separately when the layout needs work.
+3. Present the exact draft revision and deployment destination for approval.
 
 The site should be:
 - Clean, modern dashboard aesthetic
@@ -188,11 +191,12 @@ Expose `apply_pending({ draftId, revision })` as a request to this service, neve
 - src/*.ts (agent code)
 - package.json (dependencies)
 - system prompt changes
+- Publication or deployment of a site revision
 
-**What doesn't:**
+**Routine local writes within the caller's grant:**
 - data/* (instance data)
-- site/* (generated content)
-- docs/* (documentation)
+- site/* (generated content in the private draft workspace)
+- docs/* (local documentation)
 </pattern>
 
 <pattern name="unified-agent-architecture">

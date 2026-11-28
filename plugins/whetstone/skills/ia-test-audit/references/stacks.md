@@ -35,6 +35,8 @@ an earlier report. Use separate directories for concurrent packages and retries.
   `python3 <this skill's directory>/scripts/pytest_reach_probe.py "$reach_probe_dir/reach.jsonl"`.
   Share that invocation's path among its xdist workers; use a new directory for
   each concurrent invocation or retry.
+  An append failure leaves the test result intact and marks reach evidence incomplete
+  in the pytest terminal summary. In that case, treat even a readable report as partial.
   The probe runs the suite and patches only `subprocess.Popen.communicate`, so it sees
   `subprocess.run` and wrappers built on `run` or `communicate`. It does not observe
   `subprocess.call`, `check_call`, a bare `Popen(...).wait()`, `os.system`, or asyncio
@@ -119,7 +121,7 @@ pin, not the message text.
 | Python | fixture parameters, `parametrize` cases (a plain test can match one case), module constants, same-module helper defaults, observation bindings | conftest fixture bodies, imported helpers and constants, `setUp` state |
 | Rust | `let` locals; `#[rstest]`/`#[test_case]` attributes as the data source | helper bodies; each parametrized fn is one unit |
 | PHP | `$variables`; `->assert*` chains split from the request; data provider name and parameters as the data source | `setUp`, `$this->` properties (a stateful body pairs only within its own file), provider rows |
-| JS/TS | `const`/`let`/`var` locals; `it.each` tables as the data source | `beforeEach`, module-level mocks, reordered statements |
+| JS/TS | `const`/`let`/`var` locals; `it.each` tables as the data source; explicit skips and todos excluded from groups | `beforeEach`, module-level mocks, reordered statements, conditional skips |
 
 The status, polarity, harness, and clique gates apply to every stack. Two refinements are
 Python only: literals that select what to read are not counted as signal, and a test whose
