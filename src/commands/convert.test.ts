@@ -26,7 +26,7 @@ for (const target of ["opencode", "codex"]) {
       const output = path.join(root, "output")
       const codexHome = path.join(root, ".codex")
       const proc = Bun.spawn([
-        process.execPath, "run", path.resolve("src/index.ts"), "convert", source,
+        process.execPath, "run", path.join(import.meta.dir, "../index.ts"), "convert", source,
         "--to", target, "--output", output, "--codex-home", codexHome,
       ], { cwd: root, env: { ...process.env, HOME: home }, stdout: "pipe", stderr: "pipe" })
       const [stdout, stderr, exitCode] = await Promise.all([
