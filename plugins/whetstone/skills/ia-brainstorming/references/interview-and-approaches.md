@@ -19,6 +19,8 @@ Ask questions **one at a time** by default. When probing a single dimension (e.g
 
 **Facts vs decisions (mid-interview):** before asking, classify each candidate question. A fact (which table holds the field, whether an endpoint exists, what a library supports) is answered by inspecting code or docs, or a quick background lookup, not by asking the user. Reserve the blocking question tool for genuine trade-offs and preferences.
 
+**Ambiguous requests:** if plausible readings lead to materially different work, identify one observable fact that would distinguish each reading and check the evidence already available. When the evidence leaves the meaning open, ask for a concrete example in the user's own terms. Present a choice once the evidence identifies a decision.
+
 **Premature solutions:** when the user proposes a solution before the requirements are understood, acknowledge it in one line and redirect to the requirement it serves; hold it as a candidate for Phase 2 rather than adopting it. Once Phase 2 has started, evaluate it alongside the other approaches instead of redirecting.
 
 **Info-dump gate (when user offers rich context up-front):** if the user's first message is substantial (>200 words, or dumps requirements in stream-of-consciousness), resist the urge to ask questions one-at-a-time. Instead, respond with 5-10 **numbered clarifying questions** the user can answer in shorthand (`1: yes, 2: channel #ops, 3: no because backwards compat`). Pick questions that remove ambiguity, not questions that show you read the dump. Exit this batched mode when the user's answers show they can be asked about edge cases without basics being explained back to them.

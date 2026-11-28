@@ -178,6 +178,103 @@ def test_bash_gate_accepts_then_rejects_missing_fragment(validation_repo):
     assert "FAILED" in bad.stdout
 
 
+@pytest.mark.parametrize(("source", "target"), [
+    ("SKILL.md", "../../shared-references/outside.md#outside"),
+    ("references/target.md", "../../../shared-references/outside.md#outside"),
+    ("references/target.md", "/plugins/whetstone/shared-references/outside.md#outside"),
+    ("references/target.md", "./alias.md#outside"),
+    ("references/target.md", "alias"),
+    ("references/target.md", "./linked-directory/outside.md#outside"),
+])
+def test_skill_bundle_rejects_links_to_existing_outside_targets(validation_repo, source, target):
+    root, skill, refs = validation_repo
+    shared = root / "plugins/whetstone/shared-references"
+    shared.mkdir()
+    outside = shared / "outside.md"
+    outside.write_text("# Outside\n", encoding="utf-8")
+    (refs / "alias.md").symlink_to("../../../shared-references/outside.md")
+    (refs / "alias").symlink_to("../../../shared-references/outside.md")
+    (refs / "linked-directory").symlink_to("../../../shared-references", target_is_directory=True)
+    with (skill / source).open("a", encoding="utf-8") as stream:
+        stream.write(f"\n[Outside]({target})\n")
+
+    gate = subprocess.run(
+        ["bash", str(root / "scripts/validate-cross-refs.sh")],
+        capture_output=True, text=True, timeout=20,
+    )
+    assert gate.returncode == 1, gate.stdout + gate.stderr
+    assert f"{skill / source} links to path outside its skill bundle: {target}" in gate.stdout
+    report = json.loads(_validate_cli(root).stdout)
+    findings = [entry for entry in report["findings"] if entry["check"] == "BROKEN_REFERENCE_LINK"]
+    assert len(findings) == 1
+    assert findings[0]["message"] == f"{source} links to path outside its skill bundle: {target}"
+
+
+@pytest.mark.parametrize(("target", "reason"), [
+    ("../ia-sibling/entry.md#real", "path outside its skill bundle"),
+    ("../ia-demo/references/target.md#real", "path outside its skill bundle"),
+    ("./references/reentered.md#real", "path outside its skill bundle"),
+    ("./references/absolute.md#real", "absolute symlink in its skill bundle"),
+    ("./references/chained.md#real", "absolute symlink in its skill bundle"),
+    ("./absolute-directory/target.md#real", "absolute symlink in its skill bundle"),
+])
+def test_skill_bundle_rejects_links_that_break_after_relocation(validation_repo, target, reason):
+    root, skill, refs = validation_repo
+    sibling = skill.parent / "ia-sibling"
+    sibling.mkdir()
+    (sibling / "entry.md").symlink_to("../ia-demo/references/target.md")
+    (refs / "reentered.md").symlink_to("../../ia-demo/references/target.md")
+    (refs / "absolute.md").symlink_to(refs / "target.md")
+    (refs / "chained.md").symlink_to("absolute.md")
+    (skill / "absolute-directory").symlink_to(refs, target_is_directory=True)
+    source = skill / "SKILL.md"
+    with source.open("a", encoding="utf-8") as stream:
+        stream.write(f"\n[Checkout link]({target})\n")
+
+    gate = subprocess.run(
+        ["bash", str(root / "scripts/validate-cross-refs.sh")],
+        capture_output=True, text=True, timeout=20,
+    )
+    assert gate.returncode == 1, gate.stdout + gate.stderr
+    assert f"{source} links to {reason}: {target}" in gate.stdout
+    report = json.loads(_validate_cli(root).stdout)
+    findings = [entry for entry in report["findings"] if entry["check"] == "BROKEN_REFERENCE_LINK"]
+    assert len(findings) == 1
+    assert findings[0]["message"] == f"SKILL.md links to {reason}: {target}"
+
+
+def test_shared_resources_remain_linkable_outside_skill_bundles(validation_repo):
+    root, _, refs = validation_repo
+    plugin = root / "plugins/whetstone"
+    shared = plugin / "shared-references"
+    shared.mkdir()
+    (shared / "outside.md").write_text("# Outside\n", encoding="utf-8")
+    (refs / "inside.md").symlink_to("target.md")
+    (refs / "relative-directory").symlink_to(".", target_is_directory=True)
+    with (refs / "target.md").open("a", encoding="utf-8") as stream:
+        stream.write(
+            "\n[Inside](./inside.md#real) [Same](#real) [External](https://example.com/#absent)\n"
+            "[Directory alias](./relative-directory/target.md#real)\n"
+            "[Backtrack inside](./relative-directory/../SKILL.md#fixture)\n"
+        )
+    for path, target in (
+        (root / "README.md", "/plugins/whetstone/shared-references/outside.md#outside"),
+        (plugin / "README.md", "./shared-references/outside.md#outside"),
+        (plugin / "commands/ia-demo.md", "../shared-references/outside.md#outside"),
+        (plugin / "agents/ia-demo.md", "../shared-references/outside.md#outside"),
+    ):
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(f"\n[Shared]({target})\n")
+
+    gate = subprocess.run(
+        ["bash", str(root / "scripts/validate-cross-refs.sh")],
+        capture_output=True, text=True, timeout=20,
+    )
+    assert gate.returncode == 0, gate.stdout + gate.stderr
+    report = json.loads(_validate_cli(root).stdout)
+    assert not any(entry["check"] == "BROKEN_REFERENCE_LINK" for entry in report["findings"])
+
+
 def test_missing_parser_dependency_fails_loudly(validation_repo):
     root, _, refs = validation_repo
     result = subprocess.run(

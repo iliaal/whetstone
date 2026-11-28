@@ -61,10 +61,15 @@ Track and optimize:
 7. **Deploy production**: require approval gate or auto-promote after staging soak
 8. **Verify**: health checks, error rate monitoring, auto-rollback trigger
 
+- **Multi-target gates.** Require one passing terminal verdict per independently listed target and revision pair. Reject missing, duplicate, unexpected, or stale verdicts. Verify the gate fails with one valid verdict and one missing.
+- **GitHub PR event policy.** For public GitHub-hosted repositories, verify the intended PR event starts the required jobs. From December 2, 2026, GitHub blocks `pull_request_target` by default unless an applicable Actions event policy allows it. Prefer `pull_request` when it provides sufficient access. [GitHub policy](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target#default-policy-for-pull_request_target)
+
 ### Pipeline Optimization
 
 - **Build caching**: cache `node_modules`, `vendor/`, `.venv` between runs, keyed by lockfile hash
 - **Parallel execution**: run unit tests, lint, type-checks, and security scans concurrently only when writes to generated files, caches, and fixtures are isolated. Run suites that replace or rebuild shared artifacts after conflicting workers finish. Give checks with wall-clock budgets an uncontended lane.
+- **Changed-file checks.** When shared rules, config, or loaders change, check all affected files, including unchanged files. Partition expensive checks without losing coverage.
+- **GitHub cancellation groups.** Put concurrency on eligible jobs or give excluded events separate groups. Verify unrelated events leave active and pending eligible runs intact.
 - **Artifact promotion**: build once, deploy the same artifact to staging → production (never rebuild)
 - **Public web configuration**: for pages intended to be indexed, resolve robots directives, `robots.txt`, canonical URLs, sitemap URLs, and Open Graph URLs at runtime for the deployed host, with origin-only `noindex` rules scoped to the origin hostname behind a reverse proxy. On promotion, smoke-check public production HTML and headers for unintended `noindex`, verify the crawl policy, and confirm absolute URLs use the production host.
 - **Fast feedback**: fail on lint/type errors before running expensive test suites
@@ -115,6 +120,7 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 
 - **GitHub tag events**: batch tag pushes, creations, and deletions at no more than three tags per operation; GitHub omits their corresponding workflow events above that limit ([event limits](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)). Inspect tag-triggered workflows before pushing. Disclose any publication step, including `npm publish` with OIDC (`id-token: write`), because its triggering tag push also initiates publication. Apply the required publication authorization to that push; do not independently execute publish or approval steps. A workflow that runs `npm stage publish` only stages the version: it stays unavailable until a maintainer approves it with 2FA (`npm stage approve` or the npmjs.com Staged Packages page). Report the version as published only after `npm view <package>@<version> version` returns it; otherwise report the approval as pending.
 - **Dependency coordination**: if service A depends on service B's new API, deploy B first
+- **In-place upgrades.** Pin both artifacts. Create representative state with the prior release. Install the candidate over that state. Verify the outcome through its normal entry point. Test the reverse transition when rollback is promised.
 - **Database migrations**: run before code deploy, ensure backward compatibility (expand-contract pattern)
 - **Communication**: auto-notify on deploy start/finish/rollback (Slack, email)
 - **Rollback triggers**: define explicit criteria: error rate, latency, failed health checks
@@ -123,6 +129,8 @@ Decouple deployment from release. Code ships dark, flag enables for users.
 ## Docker & Containerization
 
 For Dockerfile, image optimization, container security, graceful shutdown, and docker-compose dev-setup patterns, load [docker-containerization.md](../shared-references/docker-containerization.md). Covers multi-stage builds, minimal base images, non-root user, image-size targets, Trivy/Grype scanning, SIGTERM handling, and dev/prod topology parity.
+
+For workers that wait on a broker, test shutdown with the broker unreachable and an acknowledgment outstanding. Verify exit within the shutdown budget. Check the result against the delivery policy.
 
 ## Monitoring & Observability
 
@@ -138,6 +146,7 @@ For Dockerfile, image optimization, container security, graceful shutdown, and d
 - **RED method** for services: Rate, Errors, Duration
 - **USE method** for resources: Utilization, Saturation, Errors
 - Track business metrics alongside technical ones (signups, orders, conversions)
+- For historical queue depth, use timestamped gauge samples or durable state transitions. Show measurement gaps. Verify pause and resume leave earlier readings intact.
 - Set SLIs (what to measure) and SLOs (target thresholds) for critical paths
 - **Error-budget gate**: track SLO error budget remaining. Above 20% remaining, ship normally. Between 0-20% remaining, allow only slow, canary-only rollouts with no high-risk changes. At 0% (exhausted), freeze feature deploys until the budget recovers or the SLO is renegotiated.
 

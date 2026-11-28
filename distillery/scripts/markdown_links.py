@@ -1,6 +1,7 @@
 """Validate local Markdown links using CommonMark parsing and GitHub anchors."""
 
 import argparse
+import os
 import re
 import sys
 import unicodedata
@@ -95,10 +96,41 @@ def markdown_anchors(text):
     return parser.anchors
 
 
+def _resolve_skill_target(path, bundle, active_links=frozenset()):
+    """Walk unnormalized components because a copied bundle must supply every step."""
+    if not path.is_relative_to(bundle):
+        raise ValueError("path outside its skill bundle")
+    current = bundle
+    for part in path.relative_to(bundle).parts:
+        if part == "..":
+            if current == bundle:
+                raise ValueError("path outside its skill bundle")
+            current = current.parent
+            continue
+        current = current / part
+        if current.is_symlink():
+            target = current.readlink()
+            if target.is_absolute():
+                raise ValueError("absolute symlink in its skill bundle")
+            if current in active_links:
+                raise ValueError("cyclic symlink in its skill bundle")
+            current = _resolve_skill_target(current.parent / target, bundle, active_links | {current})
+    return current
+
+
 def broken_local_links(text, base_dir, anchor_cache=None, repo_root=None):
-    """Return (target, reason) pairs; fragments are checked only on Markdown files."""
+    """Return broken links, including links outside a standalone skill bundle."""
     cache = anchor_cache if anchor_cache is not None else {}
     repo_root = repo_root or REPO_ROOT
+    absolute_repo_root = Path(os.path.abspath(repo_root))
+    skills_dir = absolute_repo_root / "plugins/whetstone/skills"
+    source_dir = Path(os.path.abspath(base_dir))
+    skill_bundle = None
+    resolved_bundle = None
+    if source_dir != skills_dir and source_dir.is_relative_to(skills_dir):
+        skill_name = source_dir.relative_to(skills_dir).parts[0]
+        skill_bundle = skills_dir / skill_name
+        resolved_bundle = skill_bundle.resolve()
     broken = []
     local_anchors = None
     for target in link_targets(text):
@@ -114,9 +146,23 @@ def broken_local_links(text, base_dir, anchor_cache=None, repo_root=None):
                 if fragment not in local_anchors:
                     broken.append((target, "missing fragment"))
             continue
-        if "." not in Path(path).name and "/" not in path:
+        check_exists = "." in Path(path).name or "/" in path
+        if not check_exists and skill_bundle is None:
             continue
-        resolved = (repo_root / path.lstrip("/") if path.startswith("/") else base_dir / path).resolve()
+        if skill_bundle is None:
+            resolved = (repo_root / path.lstrip("/") if path.startswith("/") else base_dir / path).resolve()
+        else:
+            candidate = absolute_repo_root / path.lstrip("/") if path.startswith("/") else source_dir / path
+            try:
+                resolved = _resolve_skill_target(candidate, skill_bundle).resolve()
+            except ValueError as exc:
+                broken.append((target, str(exc)))
+                continue
+            if not resolved.is_relative_to(resolved_bundle):
+                broken.append((target, "path outside its skill bundle"))
+                continue
+        if not check_exists:
+            continue
         markdown = resolved.suffix.lower() in {".md", ".markdown", ".mdown", ".mkdn"}
         resource = path.startswith(("./references/", "./scripts/"))
         if not resolved.exists() or ((markdown or resource) and not resolved.is_file()):

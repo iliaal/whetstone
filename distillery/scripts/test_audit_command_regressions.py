@@ -706,39 +706,68 @@ def test_mock_repository_detection_and_empty_feedback(tmp_path):
     assert output["cross_invocation"]["signal"] is False
 
 
-def test_resolve_pr_approval_view_shows_staged_unstaged_and_new_files(tmp_path):
+def test_resolve_pr_approval_preview_binds_only_owned_changes(tmp_path):
     doc = (HELPER.parents[1] / "ia-resolve-pr.md").read_text()
     phase = doc.split("## Phase 4", 1)[1]
     view = re.search(r"```bash\n(.*?)```", phase, re.S)
     assert view, "Phase 4 must prescribe an executable approval view"
-    assert re.search(r"git commit -m [^`]*-- <approved paths>", phase)
-    assert "git commit -a" in phase and "git add -A" in phase
-
     env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
            "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com",
            "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+    caller = tmp_path / "caller repo"
+    caller.mkdir()
+    owned = tmp_path / "owned worktree"
 
-    def git(*args):
-        return subprocess.run(["git", *args], cwd=tmp_path, env=env, text=True,
-                              capture_output=True, check=True)
+    def git(*args, repo=caller):
+        return subprocess.run(["git", *args], cwd=repo, env=env, text=True,
+                              capture_output=True, check=True).stdout
 
     git("init", "-q")
-    (tmp_path / "staged.txt").write_text("base\n")
-    (tmp_path / "unstaged.txt").write_text("base\n")
-    git("add", ".")
+    (caller / "sub").mkdir()
+    (caller / "sub/shared.txt").write_text("caller baseline\ntask baseline\n")
+    (caller / "unstaged.txt").write_text("base\n")
+    git("add", "--", "sub/shared.txt", "unstaged.txt")
     git("commit", "-qm", "base")
-    (tmp_path / "staged.txt").write_text("STAGED_CHANGE\n")
-    git("add", "staged.txt")
-    (tmp_path / "unstaged.txt").write_text("UNSTAGED_CHANGE\n")
-    (tmp_path / "sub").mkdir()
-    (tmp_path / "sub" / "new file.txt").write_text("NEW_FILE_CONTENT\n")
+    first = git("rev-parse", "HEAD").strip()
+    git("update-index", "--add", "--cacheinfo", f"160000,{first},dependency")
+    git("commit", "-qm", "add gitlink")
+    base = git("rev-parse", "HEAD").strip()
+    git("worktree", "add", "-q", "--detach", str(owned), base)
 
-    result = subprocess.run(["bash", "-c", view.group(1)], cwd=tmp_path, env=env,
-                            text=True, capture_output=True)
+    (caller / "sub/shared.txt").write_text("CALLER_STAGED\ntask baseline\n")
+    git("add", "--", "sub/shared.txt")
+    (caller / "unstaged.txt").write_text("CALLER_UNSTAGED\n")
+    (caller / "caller scratch.txt").write_text("CALLER_UNTRACKED\n")
+    index_before = git("ls-files", "--stage")
+
+    (owned / "sub/shared.txt").write_text("caller baseline\nOWNED_CHANGE\n")
+    (owned / "owned new.txt").write_text("OWNED_NEW_FILE\n")
+    git("add", "--", "sub/shared.txt", "owned new.txt", repo=owned)
+    git("update-index", "--cacheinfo", f"160000,{base},dependency", repo=owned)
+    patch = git("diff", "--cached", "--binary", base, repo=owned)
+    patch_file = tmp_path / "owned patch.diff"
+    patch_file.write_text(patch)
+    git("config", "diff.ignoreSubmodules", "all")
+    git("config", "diff.relative", "true")
+
+    result = subprocess.run(
+        ["bash", "-c", view.group(1)], cwd=caller / "sub", text=True, capture_output=True,
+        env={**env, "REPO_ROOT": str(caller), "RECORDED_HEAD": base,
+             "OWNED_PATCH": str(patch_file), "TMPDIR": str(tmp_path)},
+    )
     assert result.returncode == 0, result.stderr
-    for marker in ("+STAGED_CHANGE", "+UNSTAGED_CHANGE", "+NEW_FILE_CONTENT", "sub/new file.txt"):
-        assert marker in result.stdout, marker
+    preview, expected_tree = result.stdout.splitlines()
+    assert Path(preview).read_text() == patch
+    assert "+OWNED_CHANGE" in patch and "+OWNED_NEW_FILE" in patch
+    assert f"+Subproject commit {base}" in patch
+    assert "CALLER_" not in patch
+    assert git("ls-files", "--stage") == index_before
+    assert git("rev-parse", "HEAD").strip() == base
+    assert (caller / "unstaged.txt").read_text() == "CALLER_UNSTAGED\n"
+    assert (caller / "caller scratch.txt").read_text() == "CALLER_UNTRACKED\n"
 
-    git("commit", "-qm", "address review: x", "--", "staged.txt", "sub/new file.txt")
-    committed = git("diff", "--name-only", "HEAD~1", "HEAD").stdout.split("\n")
-    assert sorted(filter(None, committed)) == ["staged.txt", "sub/new file.txt"]
+    git("commit", "-qm", "approved fix", repo=owned)
+    assert git("rev-parse", "HEAD^{tree}", repo=owned).strip() == expected_tree
+    (owned / "sub/shared.txt").write_text("caller baseline\nLATE_CHANGE\n")
+    git("add", "--", "sub/shared.txt", repo=owned)
+    assert git("write-tree", repo=owned).strip() != expected_tree

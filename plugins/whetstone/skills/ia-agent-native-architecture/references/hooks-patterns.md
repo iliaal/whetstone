@@ -58,6 +58,8 @@ Check both the supplied path and its resolved target in a protected-path hook. F
 
 Parse the incoming event and build this response with a real JSON tool (`jq`), never `grep` plus `printf` interpolation. A grep-based field extractor truncates on an escaped quote, and an interpolated response silently malforms on a path containing a quote or newline; in both cases the block evaporates. The same rule covers tool arguments generally: parse them, never string-match the serialised payload, because equivalent JSON differs across models in key order, whitespace, and escaping, so a pattern that matches one model's arguments misses another's. Treat an unparseable payload as deny, not as allow: a gate whose failure mode is "permit" is not a gate. Verify by asserting the hook denies a call it should deny, since a hook that returns nothing looks identical to a hook that approved.
 
+Decode UTF-8 hook input across chunk boundaries. In Node, call `process.stdin.setEncoding("utf8")` before reading or collect bytes and decode once at EOF. Decoding each buffer separately can corrupt a split character while leaving valid JSON. Test a non-ASCII field split inside a character and verify both the parsed value and the resulting decision. See [Node stream decoding](https://nodejs.org/api/stream.html#readablesetencodingencoding).
+
 Render control characters, bidirectional controls, and invisible code points in denial messages as visible escapes, such as `U+202E`. Bound the displayed value's length and mark truncation. Evaluate policy against the original parsed value; do not strip legitimate joiners or substitute the display string into the tool call. Check that a filename containing a newline or a direction override cannot conceal the denied path or forge another message line.
 
 A Node hook that emits its response with `process.stdout.write()` must not call `process.exit()` synchronously on the next line. Node documents piped stdout writes as asynchronous on POSIX, and the hook runner reads the response through a pipe; an immediate exit can terminate the process before the buffer drains, so the runner receives a truncated or empty response and the decision evaporates (observed: a 4 MiB write followed by a bare `exit(0)` delivered 64 KiB). Pass a callback to `write()` and exit from it (`process.stdout.write(json, () => process.exit(0))`), or count pending writes and exit once every callback has fired.
@@ -187,7 +189,9 @@ For non-blocking side effects that should not slow the agent loop:
 
 Set `async: true` for logging, notifications, metrics collection, or any hook where the agent does not need the result before proceeding.
 
-**asyncRewake**: set `asyncRewake: true` to run in the background and wake the model on **exit code 2**. Deliberately map failures requiring attention to exit 2; exit 1 does not wake it. The reminder uses stderr, falling back to stdout when stderr is empty. See [command hook fields](https://code.claude.com/docs/en/hooks#command-hook-fields).
+Set `asyncRewake: true` to run in the background and wake the model on exit code 2. The reminder uses stderr, falling back to stdout when stderr is empty. See [command hook fields](https://code.claude.com/docs/en/hooks#command-hook-fields).
+
+For recurring Stop hooks, write an operator diagnostic to stderr and exit 1 if the launcher cannot start the check. Reserve exit 2 for fresh findings the agent can act on or a deliberate notice when recovery becomes possible. Deduplicate wakes until the finding or recovery state changes. Test that a missing dependency produces a diagnostic without repeated wakes and a fresh actionable finding wakes the model once.
 
 ## Hooks Are Cancellable
 

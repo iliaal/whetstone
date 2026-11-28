@@ -81,7 +81,7 @@ async function gitInit(directory: string) {
 }
 ```
 
-Use `console.error()` in tests (not logger, which may be suppressed). Log BEFORE the dangerous operation, not after it fails. Include context: cwd, named env vars (never a full environment dump), timestamps, stack trace.
+Use `console.error()` in tests when the logger may be suppressed. Log before the operation. Include relevant cwd, timestamps, and safe stack detail. For environment or configuration values, use the named-value rules in [baseline-and-data-handling.md](./baseline-and-data-handling.md).
 
 ## Applying the Pattern
 

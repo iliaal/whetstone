@@ -560,6 +560,8 @@ return {
 };
 ```
 
+Preserve `isError` in client adapters. A successful JSON-RPC response can carry a failed tool execution with `isError: true`, even when the result includes structured data. Branch on `isError` before consuming the payload and pass actionable tool feedback to the caller on the failure path. Test the same adapter with an ordinary success and a tool error carrying structured data inside a successful JSON-RPC response. See [MCP error handling](https://modelcontextprotocol.io/specification/2026-07-28/server/tools#error-handling).
+
 **Application data pagination:** For the list-tool payloads in these examples, return `has_more`, `next_offset`, and `total_count`. Default to 20-50 items per page. Process application data one page at a time.
 
 **MCP tool discovery:** Native `tools/list` uses [opaque protocol cursors](https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/pagination). For a complete tool inventory, pass each returned `nextCursor` unchanged as the next request's `cursor` until `nextCursor` is absent. An SDK iterator is suitable only if it guarantees that traversal. Do not infer completion from page size. If a page fails or a cap stops discovery, report the inventory as incomplete. Test with a server whose first response contains a nonempty `nextCursor`. Confirm the actual client exposes tools from later pages.
@@ -602,7 +604,9 @@ A lookup or search tool that scans a bounded or paginated set can find a match a
   "hint": "narrow by dateRange or continue with next_offset=500" }
 ```
 
-Bound content-returning tools (file read, log tail, record dump) by bytes as well as by count. One minified bundle, lockfile, or exported JSON line can exceed the whole context, so a line or item cap alone bounds nothing. Cap each rendered line and the total result, cut on a UTF-8 character boundary, and append an inline marker stating how many bytes were omitted. Compute the returned range and the truncation flag from what was emitted after the cut, and state how to fetch the rest (a narrower range or a continuation offset).
+Bound content-returning tools by bytes as well as by count. A single long line or record can exceed the budget. For plain text, cap each rendered line and the total result. Clip at a UTF-8 character boundary and append a marker stating how many bytes were omitted. Include the marker in the budget. Derive the returned range and truncation flag from the emitted content, and state how to fetch the rest.
+
+For structured pages, fit fewer whole records to the final UTF-8 response budget. Include metadata, JSON escaping, and both representations in the measurement when the tool returns them. Generate the text and `structuredContent` from the same valid page. When the byte limit leaves records for a later page, mark the result incomplete and set its continuation to the first omitted record in the stable ordering. If even one record cannot fit, return a bounded error with a way to request a smaller projection or range. Test a page that fits by count but exceeds the byte budget. Verify schema validity, equality of representations where both are returned, and the first record on the next page. Also test a single oversized record.
 </principle>
 
 <principle name="live-action-opt-in">
@@ -670,7 +674,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Outputs are rich (enough for agent to verify)
 - [ ] CRUD operations are separate tools (not one mega-tool)
 - [ ] Use primitive tools by default; graduate hot paths only for measured performance or reliability needs under [from-primitives-to-domain-tools.md](./from-primitives-to-domain-tools.md#graduating-to-code), with primitive fallback retained
-- [ ] Error states clearly communicated via `isError`
+- [ ] Tool errors carry `isError` through the client adapter and follow its failure path
 - [ ] Descriptions state capability and the boundary against sibling tools, never workflow context (see Writing the description)
 - [ ] Descriptions carry no worked examples, numbered protocols, `CRITICAL:`-style boosters, or cross-tool `ALWAYS`/`NEVER` scolding
 - [ ] Descriptions pass the machine-parsed-text rules: one directive per sentence, simple tenses, noun stacks capped at three, no dropped referents
@@ -680,7 +684,7 @@ The eval is the single best proxy for "does a real agent successfully use this s
 - [ ] Native `tools/list` discovery follows every cursor before claiming a complete inventory; a paginated-server test exposes tools beyond the first page
 - [ ] Long jobs return a handle/status tool or negotiate task support; human input uses elicitation, and documented timeouts account for host backgrounding
 - [ ] Bounded or paginated lookups return `incomplete` (distinct from not-found and unique) when a cap or unreadable records cut the scan short
-- [ ] Content-returning tools cap bytes per line and per result; the reported range and truncation flag describe the emitted content
+- [ ] Plain text caps bytes per line and per result and reports truncation. Structured pages fit whole records to the final response budget and resume at the first omitted record
 - [ ] Money-spending or live-external-effect tools require an explicit opt-in separate from credentials and ship a credential-free, labelled dry-run
 - [ ] Caught or uncaught exceptions raised outside the tool's own code (a handler-wide catch or wrapper exists, because the SDK otherwise returns `error.message` to the model), or splicing in a value the tool received rather than derived, return a fixed generic message plus a correlation identifier; the raw exception text goes to the server log only. The tool's own validation errors, written by the author from values the tool computed, pass through as-is
 - [ ] Detection tools (secret, PII, credential scanners) emit rule identifier, description, path, line, and confidence; the output schema has no field that can hold the raw match

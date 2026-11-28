@@ -26,6 +26,8 @@ Grep-able patterns for the common vulnerability classes. Each entry: what to sea
 
 **Per-parameter secret redaction covers only the frame that declares the parameter.** The same secret sitting in an unannotated caller's parameter is still in the caller's frame, and a whole-trace scrubber hooked to one exception class is not equivalent: changing the thrown type is then not redaction-neutral. Verify by triggering through a wrapper whose own parameter carries no annotation, and assert the secret is absent from the whole trace.
 
+**Redact before truncating raw diagnostics.** Prefer capturing an allowlist of safe fields. When retaining raw subprocess output, apply redaction before truncation, logging, or artifact writes, and preserve decoder and redactor state across chunks. Truncation can discard the context that identifies a remaining fragment as sensitive. Use synthetic multiline secrets split across chunks and a capture limit that triggers truncation. Verify that safe diagnostics survive and the sensitive bytes are absent.
+
 ## Auth / AuthZ
 
 | Search for | Vulnerable pattern | Fix |

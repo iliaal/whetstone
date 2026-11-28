@@ -163,6 +163,7 @@ Tests receive auth state via `storageState` in config projects.
 - Tests create own data via API helpers (faster than UI), clean up in `finally` blocks
 - Mock responses with `page.route('**/api/path', route => route.fulfill({ ... }))`
 - Simulate errors with `route.abort('failed')`
+- For a mocked error path, assert that the intended route handler intercepted the request and that the UI reaches the expected error state. If a service worker intercepts the request first, set `serviceWorkers: 'block'` for the mock-only context as needed. Exercise service-worker behavior separately with workers enabled. [Playwright network guide](https://playwright.dev/docs/network#missing-network-events-and-service-workers)
 
 ## Flaky Test Fixes
 

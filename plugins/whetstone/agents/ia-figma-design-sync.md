@@ -54,13 +54,21 @@ Record the emitted absolute path as `[capture-dir]` and substitute it literally 
 
 Include a unique route/component ID, exact viewport width and height, interaction state, and iteration in every screenshot and diagnostic filename. Increment the iteration when repeating that combination. Retain every variant. Record the actual dimensions and state beside each path in the report.
 
+Before capturing a dynamic state, verify a state-specific marker in the same session and record it with the image. Use an element, text, or observable property unique to the intended loaded, hover, focus, or error state. When loading itself is the target, verify its own marker. If the marker cannot be observed, mark that state unverified and retain any capture for diagnosis only.
+
    ```bash
-   agent-browser --session "[session-id]" open [url]
-   agent-browser --session "[session-id]" snapshot -i
-   agent-browser --session "[session-id]" screenshot "[capture-dir]/[component-id]-[width]x[height]-initial-[iteration].png"
-   # For hover states:
-   agent-browser --session "[session-id]" hover @e1
-   agent-browser --session "[session-id]" screenshot "[capture-dir]/[component-id]-[width]x[height]-hover-[iteration].png"
+   agent-browser --session "[session-id]" open "[url]" &&
+     agent-browser --session "[session-id]" wait "[initial-state-selector]" &&
+     agent-browser --session "[session-id]" snapshot -i &&
+     agent-browser --session "[session-id]" screenshot "[capture-dir]/[component-id]-[width]x[height]-initial-[iteration].png"
+   ```
+
+   After verifying the initial state, use an element ref from its snapshot to capture the hover state.
+
+   ```bash
+   agent-browser --session "[session-id]" hover @e1 &&
+     agent-browser --session "[session-id]" wait "[hover-state-selector]" &&
+     agent-browser --session "[session-id]" screenshot "[capture-dir]/[component-id]-[width]x[height]-hover-[iteration].png"
    ```
 
 ### 2. Retrieve Design Specifications

@@ -81,6 +81,18 @@ sandbox starts empty, so supply the unchanged files each change depends on, and
 never truncate or cap the packet silently: partition a large input so every
 change is reviewed against all the context it needs.
 
+Before dispatch, when the transport exposes measurable limits, check that a
+plan covering the full selected scope fits both the encoded request limit and
+the authorized pass count. Measure complete requests, including framing and
+repeated context. Repartition while preserving each change's required context.
+When no complete plan fits, record the pass as `incomplete` and name the
+uncovered scope.
+
+When a verdict must bind to an exact packet digest, verify the digest from
+the bytes received at the reviewer boundary. A sender-side hash alone leaves
+transport transformations unverified. Use a byte-preserving transport and mark
+the pass `incomplete` for that contract if the received bytes cannot be verified.
+
 ## Egress consent: the packet leaves this machine
 
 Delegating to an external CLI sends the diff, and often surrounding source, to

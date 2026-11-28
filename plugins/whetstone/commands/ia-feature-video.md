@@ -150,32 +150,32 @@ Preflight the starting route and confirm the rendered page matches the shot list
 
 **Step 1: Navigate to starting point**
 ```bash
-agent-browser open "[verified-base-url]/[start-route]"
-agent-browser wait "[start-ready-selector]"
-agent-browser screenshot "[capture-dir]/screenshots/01-start.png"
+agent-browser --session "[session-id]" open "[verified-base-url]/[start-route]"
+agent-browser --session "[session-id]" wait "[start-ready-selector]"
+agent-browser --session "[session-id]" screenshot "[capture-dir]/screenshots/01-start.png"
 ```
 
 **Step 2: Perform navigation/interactions**
 ```bash
-agent-browser snapshot -i  # Get refs
-agent-browser click @e1    # Click navigation element
-agent-browser wait "[destination-ready-selector]"
-agent-browser screenshot "[capture-dir]/screenshots/02-navigate.png"
+agent-browser --session "[session-id]" snapshot -i  # Get refs
+agent-browser --session "[session-id]" click @e1    # Click navigation element
+agent-browser --session "[session-id]" wait "[destination-ready-selector]"
+agent-browser --session "[session-id]" screenshot "[capture-dir]/screenshots/02-navigate.png"
 ```
 
 **Step 3: Demonstrate feature**
 ```bash
-agent-browser snapshot -i  # Get refs for feature elements
-agent-browser click @e2    # Click feature element
-agent-browser wait "[feature-ready-selector]"
-agent-browser screenshot "[capture-dir]/screenshots/03-feature.png"
+agent-browser --session "[session-id]" snapshot -i  # Get refs for feature elements
+agent-browser --session "[session-id]" click @e2    # Click feature element
+agent-browser --session "[session-id]" wait "[feature-ready-selector]"
+agent-browser --session "[session-id]" screenshot "[capture-dir]/screenshots/03-feature.png"
 ```
 
 **Step 4: Capture result**
 ```bash
-agent-browser wait --text "[expected-result]"
-agent-browser get text "[result-selector]"
-agent-browser screenshot "[capture-dir]/screenshots/04-result.png"
+agent-browser --session "[session-id]" wait --text "[expected-result]"
+agent-browser --session "[session-id]" get text "[result-selector]"
+agent-browser --session "[session-id]" screenshot "[capture-dir]/screenshots/04-result.png"
 ```
 
 **Create video/GIF from screenshots:**

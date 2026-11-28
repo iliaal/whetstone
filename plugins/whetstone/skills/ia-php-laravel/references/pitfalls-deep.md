@@ -111,6 +111,10 @@ From v12.55.0 through v12.70.2, and in 13.x through v13.39.0, the process driver
 
 ## Validation pitfalls
 
+### Bound decimal inputs before parsing
+
+Apply an input length limit and reject out-of-range exponents before decimal parsing. For fixed-point fields, accept only the intended fixed-point format and enforce the domain's precision and scale. Laravel v13.44.0 (framework PR #62590) and v12.74.0 (framework PR #62589) add exponent checks to both operands of numeric `gt`/`gte`/`lt`/`lte` comparisons, the input to `multiple_of`, and Eloquent `decimal:` casts. Keep application limits on patched versions too. Verify an accepted boundary value and rejection beyond the domain limit through the actual request and persistence paths.
+
 ### Rule::anyOf() scalar alternatives can accept associative arrays
 
 When every `Rule::anyOf()` alternative requires a string, keep `string` outside the union. In affected implementations including v13.38.0, `['x' => 1]` can pass `['required', Rule::anyOf([['string', 'email'], ['string', 'alpha_dash', 'min:6']])]`: the inner scalar rules target missing key `0` and are skipped. Confirm the installed `AnyOf` contains framework PR #62171's paired rule/value wrapping (released in v13.39.0). Test associative-array rejection alongside a valid string. When an alternative intentionally accepts arrays, keep that branch valid. Add a passing array regression for that union instead of an outer `string` constraint.
@@ -148,6 +152,8 @@ The `boolean` validation rule validates but never normalises. `1`, `0`, `"1"`, `
 The same serialization reinterprets scope values. Affected through v13.42.0, and in 12.x through v12.72.0, a fluent `Exists`/`Unique` scope value is written into the string rule and re-parsed: a value of `NULL` or `NOT_NULL`, or one starting with `!`, becomes `whereNull`, `whereNotNull`, or `!=`; a value containing `\"` can break out of its field and add or override conditions; and a second condition on the same column replaces the first, so `->whereNot('status', 'banned')->whereNot('status', 'deleted')` checks only `deleted`. Treat a request-derived scope value (`->where('team_id', $request->team_id)`) as an injection point: pass server-side values, or bind it in a query callback (`->where(fn ($q) => $q->where('team_id', $teamId))`), and put repeated same-column conditions in one callback. v13.43.0 (framework PRs #62425, #62442, #62459) and v12.73.0 (framework PRs #62426, #62463, #62476) fix it; the fix compares values literally and keeps every condition, so string rules then AND repeated columns instead of keeping the last. Test with a scope value of `NOT_NULL` against a row whose column holds another value, and assert a 422.
 
 The validated value itself reaches the database with its PHP type. Affected through v13.42.0, and in 12.x through v12.72.0, the presence verifier binds a JSON integer or boolean as an integer, so `exists:coupons,code` with `{"code": 0}` compares a string column with 0; MySQL evaluates that numerically and matches every non-numeric code (observed on MySQL 8.0.46: a `SUMMER25` row makes `{"code": 0}` pass, while the string `"NOPE"` fails). Put `string` before `exists`/`unique` on string columns. v13.43.0 (framework PR #62447) and v12.73.0 (framework PR #62448) fix it; the fix compares integers and booleans as strings.
+
+On SQLite JSON paths, string bindings introduced in v13.43.0 can miss stored JSON numbers because a JSON extraction retains its type. v13.44.0 (framework PR #62601) casts the extracted path value to text for scalar and multi-value presence queries. Exercise scalar and array `exists` and scalar `unique` in an isolated database on the affected engine, including a matching numeric value, a missing array member, and a leading-zero string identifier that must stay distinct from its unpadded form.
 
 ### Carbon::parse() year-only string pitfall
 

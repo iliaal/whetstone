@@ -67,7 +67,7 @@ Record: pass/fail + error output.
 
 ### 2. Type Check (skip for dynamically typed projects without type tooling)
 
-- TypeScript → `npx tsc --noEmit`
+- TypeScript → run the declared project type-check command. If none is declared, resolve the installed project or workspace `tsc` executable and run it with `--noEmit` against the applicable `tsconfig`. A missing required compiler is `ERROR`. Avoid any invocation that can resolve a missing executable by installing a registry package.
 - Python with mypy/pyright → run the configured checker
 - Go → already covered by build
 
@@ -199,7 +199,7 @@ Produce a structured report:
 |-------|--------|---------|
 | Project gates | PASS/FAIL/SKIP | [unmet gate, if any] |
 | Build | PASS/FAIL/ERROR | [summary] |
-| Types | PASS/FAIL/SKIP | [summary] |
+| Types | PASS/FAIL/ERROR/SKIP | [summary] |
 | Lint | PASS/FAIL/SKIP | [summary] |
 | Tests | PASS/FAIL/ERROR | [N passed, M failed] |
 | Debug audit | CLEAN/[N warnings]/ERROR | [summary] |

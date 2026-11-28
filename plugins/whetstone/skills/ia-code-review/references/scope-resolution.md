@@ -9,8 +9,9 @@ Contents: [working-tree safety](#working-tree-safety-never-reorganize-the-users-
 
 ## Working-tree safety: never reorganize the user's checkout to review
 
-A review is read-only on the working tree. Setting up a review must not mutate
-what the user has in progress. Before any other setup step, run:
+Before entering a foreign checkout, resolve trusted executables using the
+[reviewer trust boundary](./reviewer-trust-boundary.md#target-controlled-commands).
+A review is read-only on the working tree. Start checkout inspection with:
 
 ```
 git status --short --branch -uall
@@ -65,30 +66,53 @@ hide a defect still in the index. Derive status and coverage from the same
 transitions as the captured patches. Retain a caller's staged-only,
 working-tree-only, or explicit-file scope; do not add another version to it.
 
-When reviewing a branch (no specific files given), resolve the requested target
-before deriving the base. Set `TARGET_REF` to the caller's exact branch/ref; use
-the current branch only when the caller selected it or supplied no other target.
+For exact-object reviews, disable Git replacement objects for every Git invocation
+that resolves, derives, or reads the snapshot, including delegated reads. Use
+`GIT_NO_REPLACE_OBJECTS=1` in each process environment or the global
+`git --no-replace-objects` option. This covers ref resolution, merge bases, tree
+and blob reads, object listings, diffs, and history. Keep the user's refs and
+configuration intact. Use replacements only for an explicitly requested,
+separately labeled alternate-history analysis.
+
+For a PR review, resolve the requested PR before deriving the comparison range.
+Set `PR_TARGET` to the requested PR or the exact branch being matched to a PR.
+Use one `gh pr view "$PR_TARGET" --json url,number,baseRefName,baseRefOid,headRefOid`
+response to pin the host, repository, PR number, base ref, base tip, and head.
+Check identity against the request and require complete commit IDs. Set
+`RESOLVED_BASE` to `baseRefOid` and `REVIEW_HEAD` to `headRefOid`. If the PR was
+inferred from a branch, include `headRefName,headRepositoryOwner,headRepository`
+and confirm the PR's head belongs to the intended branch and repository.
+Verify that a checkout or fetched ref equals the pinned head before using it.
+Obtain the exact objects through an authorized fetch, or read
+the necessary evidence by SHA from the host. A `gh pr diff` read can orient the
+review when objects are unavailable. Recheck the pinned tuple around that read
+and mark as incomplete any evidence that cannot be established at the
+pinned revisions.
+
+For a branch review without a PR, or when the caller selects a local branch
+revision explicitly, set `TARGET_REF` to that exact branch/ref. Use the
+current branch only when selected or when no target was supplied. If the local
+revision differs from the associated PR head, label the review as local.
 Freeze its commit:
 
 ```bash
-REVIEW_HEAD=$(git rev-parse --verify "$TARGET_REF^{commit}")
+REVIEW_HEAD=$(git --no-replace-objects rev-parse --verify --end-of-options "$TARGET_REF^{commit}")
 ```
 
-Require successful resolution; an unknown requested ref does not permit a HEAD
-fallback. For a PR, set `PR_TARGET` to that PR's number or URL. For a named
-branch, set `PR_TARGET` to that requested branch's name on the hosting service,
-not an implicit current branch. Record the resolved target, head SHA, and base in every specialist brief.
-Read branch content by the frozen SHA even when another branch is checked out.
+Require successful resolution of the requested ref. For its base, try
+`git symbolic-ref --quiet --short refs/remotes/origin/HEAD`, then
+`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, then
+`origin/main`, `origin/master`, `origin/develop`, and `origin/trunk` in order.
+Use bare-local names only if no `origin/*` ref exists. Resolve and freeze the
+selected base tip as `RESOLVED_BASE`.
 
-Derive the comparison base via this fallback chain:
-
-1. **If a PR exists for the requested target**, use its base: `gh pr view "$PR_TARGET" --json baseRefName,headRefOid`. Verify that the returned `headRefOid` equals `REVIEW_HEAD`; resolve and freeze the named base ref. A mismatch requires refetching the requested target, not reviewing the current branch.
-2. **Else infer the default branch**: try `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` (parses to `origin/<name>`). If unset, try `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`.
-3. **Else fallback list**: try `origin/main`, `origin/master`, `origin/develop`, `origin/trunk` in order; pick the first that resolves via `git rev-parse --verify`. Bare-local names are a last resort if no `origin/*` remote ref exists.
-4. **Compute the diff base**: `REVIEW_BASE=$(git merge-base "$REVIEW_HEAD" "$RESOLVED_BASE")`. Require success, freeze that SHA, and review `git diff --no-textconv --no-ext-diff "$REVIEW_BASE" "$REVIEW_HEAD"`. Never substitute the checked-out HEAD or working tree for the requested head.
-5. **Shallow-clone retry**: if `git merge-base` returns nothing and `git rev-parse --is-shallow-repository` is `true`, run `git fetch --unshallow origin` and retry. Document this in the review output so the reviewer knows the comparison range only became available after unshallowing.
-
-**PR head identity.** For a PR review, a fetched or checked-out ref is the PR head only when its SHA equals `gh pr view <pr> --json headRefOid --jq .headRefOid`. On a mismatch (stale fetch, force-push, wrong ref), refetch or review from `gh pr diff <pr>` and say which in the coverage notes; never review a ref that has not passed this check as the PR.
+For either path, compute `REVIEW_BASE=$(git --no-replace-objects merge-base "$REVIEW_HEAD" "$RESOLVED_BASE")`.
+Require successful resolution. Record it separately from the frozen base tip and review
+`git --no-replace-objects diff --no-textconv --no-ext-diff "$REVIEW_BASE" "$REVIEW_HEAD"`.
+Pass the resolved target and frozen revisions to each specialist. If shallow
+history prevents merge-base resolution, deepen only with authorization and
+retry against the same endpoints. Record the coverage limit if the comparison
+remains unavailable.
 
 **Never fall back to `git diff HEAD`** when base resolution fails; that hides
 all committed work on the branch and reviews only the uncommitted delta. Stop and
@@ -109,18 +133,15 @@ branch can select a diff or textconv driver already configured in the
 reviewer's environment, so without the flags the branch author chooses which
 program rewrites the diff the review reads.
 
-**The working tree is not the review head.** Unless the branch is checked out,
-every filesystem-backed tool (file reads, greps, delegated sweeps, any test
-runner mounting the repository) executes the *base*. The asymmetry is usable:
-findings on files the change touched are unreliable (already-fixed call sites
-report as broken), while findings on untouched files are sound. Partition
-delegated-sweep output by `git diff --name-only <base> <head>` and re-verify only
-the changed-file half against `git show --no-textconv --no-ext-diff <head>:<file>`. Anchoring reads to the
-head SHA does not cover execution: running the suite needs the full head
-materialized, so use a dedicated worktree rather than the changed files alone:
-the diff's runtime closure includes dependencies absent on a stale base, and the
-resulting setup error looks like a defect in the change. Never switch, stash, or
-clean the user's checkout to get there; see working-tree safety above.
+**Bind delegated evidence to the frozen revision.** Filesystem search in
+another or dirty checkout can locate candidates. Before accepting a finding,
+verify its anchor and each decision-critical caller, guard, or configuration
+against the correct frozen side, even for paths outside the diff. Read by SHA
+with `git --no-replace-objects show --no-textconv --no-ext-diff <sha>:<path>`,
+or establish byte identity with that snapshot. Materialize the full revision
+for execution, which can depend on files outside the diff. Preserve the user's
+checkout as described above.
+
 When the branch is checked out, run tests or probes there only after
 `git status --short -uall` is empty and `git rev-parse HEAD` equals
 `REVIEW_HEAD`, and name that SHA beside the evidence. Uncommitted or untracked
@@ -144,16 +165,16 @@ markers.
 
 When a branch is stacked on another unmerged branch, `git merge-base <reviewed-head-SHA>
 <default-branch>` over-covers: it sweeps in the sibling branch's commits,
-fabricating findings on files this change doesn't touch. Prefer the hosting
-platform's authoritative base SHA (PR/MR `base_sha`, or `gh pr diff`) over a
-locally computed merge-base. After the run, intersect every finding's anchor with
+fabricating findings on files this change doesn't touch. Use the hosting
+platform's pinned target instead of the default branch when the PR targets the
+unmerged parent. After the run, intersect every finding's anchor with
 the change's `--name-only` set and discard off-scope ones, anchoring each finding
 at the changed line its failing path runs through (the off-scope filter in
 [scope-and-mode-selection.md](./scope-and-mode-selection.md)).
 
 When the stacked change targets the default branch rather than its parent, the
-platform's `base_sha` is that same over-covering merge-base (the parent's files
-appear as added or deleted); diff from the parent change's head instead,
+default-branch comparison also includes the parent's changes. For a review
+scoped to the stacked change, diff from the parent change's head,
 confirmed with `git merge-base <head> <parent-head>`. After a rebase, a new head
 SHA says nothing about scope: compare the platform's own changed-file list and
 live base against the reviewed set, not `git diff <old_head>..<new_head>`, which
@@ -210,6 +231,13 @@ For a frozen branch or commit review, reconcile against the original
 name-and-status set. For mutable workspace review, re-enumerate each selected
 transition separately. Compare per-entry diff or content fingerprints immediately
 before the verdict; add new or changed entries as pending.
+
+For a live PR verdict, re-query the pinned canonical PR immediately before
+reporting. Verify its host, repository, number, base ref, base tip SHA, and head
+SHA. A changed tuple makes the snapshot stale. A failed or incomplete lookup
+leaves freshness unverified. Keep findings and coverage on the original frozen
+range and withhold any current readiness claim in either case. A requested
+historical review can report its frozen result without claiming current readiness.
 
 Derive terminal coverage mechanically:
 

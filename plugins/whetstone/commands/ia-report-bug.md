@@ -50,7 +50,7 @@ claude --version 2>/dev/null || echo "Claude CLI version unknown"
 uname -srm
 ```
 
-If `jq` or the registry is unavailable, report the plugin version as unknown or obtain the version alone from the caller. Review all supplied descriptions, reproduction steps, and additional context for the same sensitive content; sanitizing only the error field is insufficient.
+These commands read the current environment. For a historical incident or an intervening upgrade, obtain the incident's plugin and Claude Code versions from evidence or the caller, or mark them unknown. Report current versions separately where they differ or equality is unverified. Use one version per component when the incident and current version are confirmed equal. If `jq` or the registry is unavailable, report the current plugin version as unknown or obtain the version alone from the caller. Review all supplied descriptions, reproduction steps, and additional context for the same sensitive content; sanitizing only the error field is insufficient.
 
 ## Step 3: Format the Bug Report
 
@@ -64,8 +64,9 @@ Create a report using only the sanitized fields:
 
 ## Environment
 
-- **Plugin Version:** [from installed_plugins.json]
-- **Claude Code Version:** [from claude --version]
+- **Plugin Version:** [at incident or unknown]
+- **Claude Code Version:** [at incident or unknown]
+- **Current versions:** [include plugin or Claude Code version where different or equality is unverified]
 - **OS:** [from uname]
 
 ## What Happened
@@ -98,7 +99,9 @@ Create a report using only the sanitized fields:
 
 ## Step 3b: Route Security Reports, Check Version and Duplicates
 
-If the report describes a security vulnerability, such as a hook or script that runs untrusted input or exposes credentials, do not create a public issue: direct the user to private vulnerability reporting at `https://github.com/iliaal/whetstone/security/advisories/new` and stop. Otherwise read the latest release tag with `gh release view --repo iliaal/whetstone --json tagName -q .tagName` and compare it with the plugin version from Step 2, ignoring a leading `v`. If the installed version is older, ask the user to update and reproduce before filing; after an update, re-run Steps 2-3; if the user declines, file with the installed version stated; if it is unknown, say so in the report. Search open and closed issues with `gh search issues --repo iliaal/whetstone -- <term> <term> ...`, because the query leaves the machine before Step 4's disclosure review: by default pick 2-4 terms from the public component name and generic failure words (such as `hook`, `timeout`, `crash`), and add a term taken from the report's own text (an error string, identifier, or path fragment) only after the user approves those exact terms under Step 4's approval rules. Use terms made only of letters, digits, `.`, `_`, or `-` and not starting with `-`, and pass each as its own argument. A quoted multi-word argument matches only that exact phrase. If an issue already reports the same failure, do not create a duplicate: show it to the user and offer a comment that adds only the new sanitized facts, under the same approval and file rules as Step 4 (allocate `REPORT_DIR` as there), posted with `gh issue comment <number> --repo iliaal/whetstone --body-file "$REPORT_DIR/comment.md"`.
+If the report describes a security vulnerability, such as a hook or script that runs untrusted input or exposes credentials, do not create a public issue: direct the user to private vulnerability reporting at `https://github.com/iliaal/whetstone/security/advisories/new` and stop. Otherwise read the latest release tag with `gh release view --repo iliaal/whetstone --json tagName -q .tagName` and compare it with the version used for the reported reproduction, ignoring a leading `v`. If that version is older, ask to reproduce on the latest release, requesting an update only when the current installation is older. After an update or retest, re-run Steps 2-3 and record the retest version and outcome while preserving the original incident version. If the user declines or the reproduction version is unknown, state the applicable version limitation in the report.
+
+Search open and closed issues with `gh search issues --repo iliaal/whetstone -- <term> <term> ...`, because the query leaves the machine before Step 4's disclosure review: by default pick 2-4 terms from the public component name and generic failure words (such as `hook`, `timeout`, `crash`), and add a term taken from the report's own text (an error string, identifier, or path fragment) only after the user approves those exact terms under Step 4's approval rules. Use terms made only of letters, digits, `.`, `_`, or `-` and not starting with `-`, and pass each as its own argument. A quoted multi-word argument matches only that exact phrase. If an issue already reports the same failure, do not create a duplicate: show it to the user and offer a comment that adds only the new sanitized facts, under the same approval and file rules as Step 4 (allocate `REPORT_DIR` as there), posted with `gh issue comment <number> --repo iliaal/whetstone --body-file "$REPORT_DIR/comment.md"`.
 
 ## Step 4: Review and Create GitHub Issue
 

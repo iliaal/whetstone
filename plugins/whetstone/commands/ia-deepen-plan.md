@@ -86,7 +86,7 @@ Do not create an agent merely because a skill matches. Merge overlapping questio
 
 ### 4. Check Documented Project Learnings
 
-Check documented project learnings inline: read the project instruction files (`AGENTS.md`, `CLAUDE.md`), ADRs (`docs/decisions/`), and any solution notes under `docs/` whose names or frontmatter match the plan's modules. Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply a stale record's guidance only where current code independently confirms the specific claim. Record each gotcha or prior decision that applies, with where the plan should incorporate it. A dedicated agent costs more than these lookups.
+Check documented project learnings inline: read the project instruction files (`AGENTS.md`, `CLAUDE.md`), ADRs from the established directory, and any solution notes under `docs/` whose names or frontmatter match the plan's modules. Resolve the ADR directory using only the [convention detection step in `ia-adr`](ia-adr.md#process) as a read-only lookup. Before applying a consulted ADR or solution note, check that it still holds: its own status, and any later ADR that names it as superseded or deprecated (an original often still reads accepted). Report a record that no longer holds with its replacement or reason, and apply a stale record's guidance only where current code independently confirms the specific claim. Record each gotcha or prior decision that applies, with where the plan should incorporate it. A dedicated agent costs more than these lookups.
 
 ### 5. Launch Per-Section Research Agents
 

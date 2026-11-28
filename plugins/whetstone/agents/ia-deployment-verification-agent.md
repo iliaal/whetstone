@@ -90,6 +90,8 @@ For each destructive step:
 
 ### 4. Post-Deploy Verification (Within 5 Minutes)
 
+If a Laravel `MigrationEnded` event feeds a deployment gate, require a successful migration command exit and verify the expected committed change or migration ledger entry through a separate connection to the intended database. Laravel can emit the event before the transaction commits and before recording the migration.
+
 ```sql
 -- Verify migration completed
 SELECT COUNT(*) FROM records WHERE new_column IS NULL AND old_column IS NOT NULL;
@@ -109,9 +111,12 @@ SELECT status, COUNT(*) FROM records GROUP BY status;
 
 ### 5. Rollback Plan
 
+When rollback depends on a backup, identify the full recovery set, including any files or configuration needed to restore the affected user path. Require evidence from a representative restore in an isolated environment that passes the data checks and exercises that path successfully. Reuse a recorded drill if it covers the same recovery set, restore procedure, and user path. Record backup-based rollback as unverified when the evidence is missing.
+
 **Can we roll back?**
 - [ ] Yes - dual-write kept legacy column populated
-- [ ] Yes - have database backup from before migration
+- [ ] Yes - isolated restore and affected user path verified
+- [ ] Unverified - backup exists, but restore or user-path evidence is missing
 - [ ] Partial - can revert code but data needs manual fix
 - [ ] No - irreversible change (document why this is acceptable)
 
@@ -197,6 +202,7 @@ Produce a complete Go/No-Go checklist that an engineer can literally execute:
 - [ ] Save expected values
 - [ ] Verify staging test passed
 - [ ] Confirm rollback plan reviewed
+- [ ] When rollback depends on a backup, record the isolated restore and affected user-path results
 
 ## DEPLOY Steps
 1. [ ] Deploy commit [sha]
@@ -205,6 +211,7 @@ Produce a complete Go/No-Go checklist that an engineer can literally execute:
 
 ## POST-DEPLOY (Within 5 Minutes)
 - [ ] Run verification queries
+- [ ] When a Laravel migration-end event gates deployment, confirm successful migration exit and committed state
 - [ ] Compare with baseline
 - [ ] Check error dashboard
 - [ ] Spot check in console

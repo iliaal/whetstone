@@ -82,6 +82,10 @@ an earlier report. Use separate directories for concurrent packages and retries.
   workspace, run the census per package, or pass several reports.
 - **uncollected files:** Vitest and Jest `include`/`testMatch` globs, and workspace
   packages whose `test` script is missing or ends in `|| true`, silently drop tests.
+- **application bootstrap:** A fixture-installed guard, pipe, interceptor, or serializer
+  can pass while the deployed app omits it. For claims about the app's installed
+  behavior, exercise its production bootstrap or the same shared registration path.
+  Keep fixture registration for focused tests of the component itself.
 - **type assertions:** Vitest's `expectTypeOf` and `assertType` are [compile-time checks](https://vitest.dev/guide/testing-types.html).
   A green runtime-only run does not prove them. Verify that a blocking gate enables
   Vitest typechecking or runs a compiler that includes the assertion files. Inspect

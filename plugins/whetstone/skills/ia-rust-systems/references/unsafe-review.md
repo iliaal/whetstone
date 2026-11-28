@@ -137,3 +137,7 @@ impl<T: AsRef<[u8]>> private::Sealed for T {}
 ```
 
 Accept: implement `Sealed` only for concrete crate types (`impl private::Sealed for Rgb8 {}`), or declare the trait `pub unsafe trait Pixel` with a `# Safety` section stating the contract implementors must uphold, or check the trusted value at each use instead of relying on it.
+
+## 6. File-backed mappings need stable backing storage
+
+For a file-backed `memmap2` mapping, establish how the mapped file stays free of conflicting modification or truncation throughout the mapping's lifetime, including writes by other processes. A read-only handle leaves other writers unaffected. Record the guarantee in the safety reasoning and verify how the deployment enforces it. When the backing file can change and isolation is unproved, read into an owned buffer instead. [Mapping safety contract](https://docs.rs/memmap2/latest/memmap2/struct.MmapOptions.html#safety)

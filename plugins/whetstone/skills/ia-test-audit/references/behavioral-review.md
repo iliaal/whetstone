@@ -33,6 +33,7 @@ concrete explanation, not merely a visual resemblance between calculations.
 | All results satisfy a property | Result collection can be empty. | Assert expected population or identities before the universal property. |
 | Coalesce repeated requests | Only one request or requests that never overlap. | Same-key overlapping requests with controlled scheduling; observe one shared operation. |
 | Keep independent requests separate | Only one key, so incorrect merging remains invisible. | Distinct keys with independently asserted outcomes. |
+| Retry selected failures | The fixture exercises a retryable failure only, so retrying every error passes. | Drive a retryable failure and a terminal failure through the same boundary in separate cases. Assert recovery, terminal propagation, and the number of attempts each case permits. |
 | Process concurrently | One item or synchronous completion hides serialization. | Multiple items and controlled scheduling that distinguishes concurrent entry from sequential work. |
 | Handle unknown ID | No existing records, so ignoring the requested ID still returns empty. | Seed a competing record and assert that its values do not appear. |
 

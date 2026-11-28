@@ -60,6 +60,8 @@ SELECT * FROM items WHERE metadata->>'category' = 'electronics';
 
 Prefer typed columns over JSONB for frequently queried, well-structured data. Use JSONB for truly dynamic/variable attributes.
 
+When `LEFT JOIN` supplies children for a JSON array, an unmatched parent contributes a NULL-extended child row. To preserve the parent and return `[]` for no children, use `COALESCE(jsonb_agg(to_jsonb(c) ORDER BY c.position, c.id) FILTER (WHERE c.id IS NOT NULL), '[]'::jsonb)` with a non-null child key. Put ordering and a unique tiebreaker inside the aggregate. Exercise a parent with no children and a parent with tied child positions. [PostgreSQL aggregate expressions](https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES)
+
 Use `jsonb_path_ops` operator class for containment-only (`@>`) queries: 2-3x smaller index. Use default `jsonb_ops` when key-existence (`?`, `?|`) is needed.
 
 **Delete operators:**

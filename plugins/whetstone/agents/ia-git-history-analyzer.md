@@ -26,22 +26,34 @@ assistant: "Let me use the git-history-analyzer agent to investigate the histori
 
 Identify the files, directories, or code patterns to investigate. Ask the user if the scope is unclear.
 
+For every invocation, resolve `REVIEW_GIT` to the trusted absolute Git
+executable before entering any foreign checkout. Use the
+[reviewer trust boundary](../skills/ia-code-review/references/reviewer-trust-boundary.md#target-controlled-commands).
+Record that path and substitute it in later shell calls that lack the
+assignment. Disable replacement objects for revision
+resolution, history, diffs, and blob reads so every result refers to the
+stored objects. Enable replacements only for a separately labeled
+alternate-history analysis the caller explicitly requests. Preserve refs
+and configuration in either mode.
+
 Set `REQUESTED_REVISION` to the caller's selected revision as data, or use `HEAD` when none was supplied. Resolve it before querying history:
 
 ```bash
-REVIEWED_REVISION=$(git rev-parse --verify --end-of-options "${REQUESTED_REVISION:-HEAD}^{commit}")
+REVIEWED_REVISION=$("$REVIEW_GIT" --no-replace-objects rev-parse --verify --end-of-options "${REQUESTED_REVISION:-HEAD}^{commit}")
 ```
 
-Stop if resolution fails. Record the resolved commit. Read historical file contents with `git show "$REVIEWED_REVISION:<path>"` and derive paths and line ranges from that tree, not the working copy.
+Stop if resolution fails. Record the resolved commit. Read historical files with
+`"$REVIEW_GIT" --no-replace-objects show --no-textconv --no-ext-diff "$REVIEWED_REVISION:<path>"`.
+Derive paths and line ranges from that tree.
 
-Run `git rev-parse --is-shallow-repository`. If it prints `true`, the history is truncated: `git blame` attributes older lines to the boundary commit and `git log -S` reports it as the introducing commit, with no error. Deepen only when the caller permits it; otherwise mark the analysis partial, name the boundary commits (listed in the file at `git rev-parse --git-path shallow`, which also resolves in linked worktrees), and make no "first introduced", "original author", or "never changed" claim that reaches past the boundary.
+Run `"$REVIEW_GIT" --no-replace-objects rev-parse --is-shallow-repository`. If it prints `true`, the history is truncated: `git blame` attributes older lines to the boundary commit and `git log -S` reports it as the introducing commit, with no error. Deepen only when the caller permits it; otherwise mark the analysis partial, name the boundary commits (listed in the file resolved by `"$REVIEW_GIT" --no-replace-objects rev-parse --git-path shallow`, also in linked worktrees), and make no "first introduced", "original author", or "never changed" claim that reaches past the boundary.
 
 ### Step 2: File Evolution Timeline
 
 For each file of interest, run via the Bash tool:
 
 ```bash
-git log --follow --oneline -20 "$REVIEWED_REVISION" -- <file>
+"$REVIEW_GIT" --no-replace-objects log --follow --oneline -20 "$REVIEWED_REVISION" -- <file>
 ```
 
 Extract: major refactorings, renames, and significant changes. Note the dates and commit messages.
@@ -51,7 +63,7 @@ Extract: major refactorings, renames, and significant changes. Note the dates an
 For specific code sections that need explanation:
 
 ```bash
-git blame -w -C -C -C "$REVIEWED_REVISION" -- <file>
+"$REVIEW_GIT" --no-replace-objects blame -w -C -C -C "$REVIEWED_REVISION" -- <file>
 ```
 
 The `-w` ignores whitespace, `-C -C -C` follows code movement across files. Identify who wrote each section and when.
@@ -61,14 +73,14 @@ The `-w` ignores whitespace, `-C -C -C` follows code movement across files. Iden
 Search for when specific patterns were introduced or removed:
 
 ```bash
-git log -S"pattern" --oneline "$REVIEWED_REVISION" -- <path>
+"$REVIEW_GIT" --no-replace-objects log -S"pattern" --oneline "$REVIEWED_REVISION" -- <path>
 ```
 
 Also search commit messages for recurring themes:
 
 ```bash
-git log --grep="fix" --oneline "$REVIEWED_REVISION" -- <path>
-git log --grep="refactor" --oneline "$REVIEWED_REVISION" -- <path>
+"$REVIEW_GIT" --no-replace-objects log --grep="fix" --oneline "$REVIEWED_REVISION" -- <path>
+"$REVIEW_GIT" --no-replace-objects log --grep="refactor" --oneline "$REVIEWED_REVISION" -- <path>
 ```
 
 ### Step 5: Contributor Mapping
@@ -76,7 +88,7 @@ git log --grep="refactor" --oneline "$REVIEWED_REVISION" -- <path>
 Identify key contributors and their domains at the same reviewed commit:
 
 ```bash
-git shortlog -sn "$REVIEWED_REVISION" -- <path>
+"$REVIEW_GIT" --no-replace-objects shortlog -sn "$REVIEWED_REVISION" -- <path>
 ```
 
 Use the repository's `.mailmap` identity mapping when grouping contributors; `git shortlog` applies it. Exclude confirmed bot accounts such as Dependabot and Renovate before identifying human contributors or inferring owners. Record the excluded identities.
@@ -86,7 +98,7 @@ Use the repository's `.mailmap` identity mapping when grouping contributors; `gi
 Select a bounded commit population independently of candidate paths for co-change analysis:
 
 ```bash
-git log --use-mailmap --format='commit %H%nAuthor: %aN <%aE>%nSubject: %s' --name-only --max-count=100 "$REVIEWED_REVISION"
+"$REVIEW_GIT" --no-replace-objects log --use-mailmap --format='commit %H%nAuthor: %aN <%aE>%nSubject: %s' --name-only --max-count=100 "$REVIEWED_REVISION"
 ```
 
 Bound the sample by commits, not output lines. Declare a maximum changed-file count before ranking; discard commits above it and identified formatting, mass-rename, or dependency-only sweeps. Count each commit's full changed-path set before excluding noise paths. Exclude confirmed bots and noise paths such as lockfiles, CI glue, and editor configuration from the coupling calculation. Select candidate pairs after fixing this shared population. Retain commits touching only one member of each pair when calculating its denominator.

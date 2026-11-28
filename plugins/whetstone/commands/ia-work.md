@@ -66,7 +66,8 @@ This command executes a work document (plan or specification) to a shipped, comp
 3. **Create Task Tracking**
    - Record the initial working-tree and staged diffs before editing. Distinguish caller changes, peer changes, and the invocation's owned changes; keep the original index intact.
    - Inspect the available tools once. If TaskCreate, TaskUpdate, and TaskList are available, use them as the task tracker. Otherwise, use the input plan when it is a writable local file. For an issue, URL, or read-only input, create a local tracker under the repository's existing planning/scratch convention or the harness scratch directory, and record its path. Make that local tracker's first line its input identity: the issue URL or plan path plus the base commit. Before resuming from an existing tracker, confirm that line matches the current input; a mismatched tracker is another input's progress, so leave it untouched and start a fresh tracker rather than reusing it or creating a duplicate for the same input. Keep stable task IDs, status, dependencies, blockers, and verification evidence in the selected tracker. Do not enable tools or change session settings.
-   - Preserve the input's acceptance criteria in the selected tracker. A local tracker does not authorize edits to a remote issue or a read-only source.
+   - Preserve the originally approved source revision (or a content identity), task set, and acceptance criteria with the tracker. Keep this record in the existing scratch convention if the tracker is the editable plan itself. A local tracker does not authorize edits to a remote issue or a read-only source.
+   - Before resuming tracked tasks, compare the current source with the approved record, ignoring progress marks. Reconcile added, changed, and removed tasks only against approved revisions. Keep IDs and status for unchanged tasks, and reuse verification only if the claims and dependencies still match. Treat suggested edits as proposals and pause affected tasks when the approved scope cannot be confirmed.
    - Break the plan into actionable tasks in the selected tracker
    - Include dependencies between tasks
    - Prioritize based on what needs to be done first
@@ -110,23 +111,7 @@ This command executes a work document (plan or specification) to a shipped, comp
    | About to switch contexts (backend → frontend) | Purely scaffolding with no behavior |
    | About to attempt risky/uncertain changes | Would need a "WIP" commit message |
 
-   **Commit workflow:**
-   ```bash
-   # 1. Verify tests pass (use project's test command)
-   # Examples: npm test, pytest, php artisan test, go test, etc.
-
-   # 2. Review the exact proposed commit against the ownership inventory
-   git diff --cached
-   git diff
-
-   # 3. Stage only owned changes for this logical unit
-   git add <files related to this logical unit>
-
-   # 4. Commit only after confirming every staged hunk belongs to this unit
-   git commit -m "feat(scope): description of this unit"
-   ```
-
-   Explicit `git add` paths do not exclude unrelated changes already staged: a bare `git commit` includes the entire index. A path-limited commit selects the working-tree content of those files and can absorb caller or peer hunks in the same file. Establish whole-file ownership before using that form. For mixed ownership, use isolated staging that preserves the caller's index, following `ia-git-worktree`'s ownership guidance; inspect the exact proposed patch before committing. Never reset or overwrite someone else's staged changes to simplify the commit.
+   **Commit workflow:** Run the applicable tests and follow [commit ownership](../skills/ia-git-worktree/references/commit-ownership.md). For whole-file ownership, stage any owned new paths explicitly, inspect the complete prospective working-tree patch for the selected paths against HEAD, then use `git commit -m 'feat(scope): describe this unit' -- <owned paths>`. For mixed hunks, prepare and verify the task patch in a dedicated checkout before committing there. Confirm the exact committed patch and preserve unrelated index entries.
 
    **Note:** Incremental commits use clean conventional messages without attribution footers.
 

@@ -107,6 +107,8 @@ None of these for content that's genuinely prose; don't force structure where it
 
 Include issue references (`Fixes #1234`, `Closes JIRA-567`, `Related to #890`) only when the exact ID or URL is present in user input, the branch name, a commit message, or verified tracker output. If the ID's origin cannot be named, omit the line entirely; the PR can ship without it.
 
+Use `Fixes` or `Closes` only when the PR's diff and verification establish that it covers the issue's full stated scope and acceptance criteria. For partial or unverified completion, use `Related to` and name any known remaining work.
+
 Never emit placeholder IDs:
 - Wrong: `Fixes #XXXXX` / `Closes <issue>` / `Related to #TBD` / `Fixes ABC-???`
 - Right: omit the line; the PR description is complete without an issue ref.
@@ -119,7 +121,7 @@ Apply the parent writing skill's banned-phrases list (no "delve", "leverage", "c
 
 - "This PR..." opener: redundant; the reader already knows it's a PR. Lead with the change.
 - "Made some changes to...": say which changes. "Some" is an AI tell.
-- "This should fix #1234": use "Fixes #1234" for auto-close, or "Related to #1234" if unsure. "Should" is hedging.
+- "This should fix #1234": apply the issue reference rule above.
 - Laundry-list commit message dumps in the description. The commit log is already there. Summarize the commits' net effect, don't reprint them.
 - Emoji decoration on section headings. Sentence case, no emoji.
 

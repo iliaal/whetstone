@@ -4,7 +4,7 @@
 
 ## Identifier minting
 
-**The orchestrator mints identifiers; workers never do.** When a pipeline tracks items across runs by ID (findings, tickets, work units), two failure modes destroy dedupe. Models cannot compute hashes: a prompt asking for "the first 8 hex characters of `hash(...)`" returns fabricated plausible hex, and nothing guarantees a tool was used even with shell access, so every rerun mints fresh IDs and exact-match dedupe silently never fires. And hashing any model-authored field (title, summary) forks identity on a model, temperature, or wording change, duplicating the whole backlog when you swap reviewers. Compute the ID in the merge step from model-independent fields only; let workers return raw tuples and echo a prior ID only when one was supplied. Absorb the residual instability with fuzzy prior-matching (same file and category within a small line window keeps the prior ID), and grep each item's quoted evidence against the cited file before persisting; that kills hallucinated items at zero model cost and keeps the ID inputs honest.
+**The orchestrator mints identifiers; workers never do.** Compute IDs in the merge step from model-independent fields. Model-authored titles, summaries, or hashes can vary across runs and duplicate the backlog. Let workers return raw tuples and echo a prior ID only when supplied. Use the same file, category, and nearby lines to locate possible prior matches. Reuse an ID only when the evidence identifies the same underlying issue and the same affected occurrence. Keep separate IDs when that match is ambiguous. Check each evidence quote against the cited file before persisting it.
 
 ## TTL lease file
 

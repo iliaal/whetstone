@@ -32,11 +32,8 @@ First, determine the review target type and set up the code for analysis.
 #### Immediate Actions:
 
 - [ ] Determine review type: PR number (numeric), GitHub URL, file path (.md), or empty (current branch)
-- [ ] Check current git branch
-- [ ] If ALREADY on the target branch (PR branch, requested branch name, or the branch already checked out for review) → proceed with analysis on current branch; for a PR target, first confirm `git rev-parse HEAD` equals `gh pr view <pr> --json headRefOid -q .headRefOid` (the `ia-code-review` scope-resolution head-identity check), and on a mismatch refetch or review `gh pr diff <pr>` instead; before running tests or probes on that checkout, also require an empty `git status --short -uall`, or use a worktree at the frozen head
-- [ ] If DIFFERENT branch than the review target → offer to use the `ia-git-worktree` skill for an isolated worktree of the review branch
-- [ ] Resolve and freeze the caller's exact branch/PR head and comparison base through the `ia-code-review` scope-resolution reference; pass those SHAs to every reviewer even when another branch is checked out
-- [ ] For a PR target, fetch metadata using `gh pr view "$PR_TARGET" --json title,body,files,closingIssuesReferences,baseRefName,headRefOid`; bind the metadata to the recorded target and head
+- [ ] For a branch or PR target, resolve its exact snapshot through the [scope-resolution reference](../skills/ia-code-review/references/scope-resolution.md#base-branch-resolution-for-branch-reviews). For a PR, request `title,body,files,closingIssuesReferences` alongside the identity and revision fields in the same response and bind the metadata to that snapshot.
+- [ ] Give every reviewer the frozen comparison base and head, even when another branch is checked out. Before testing against the local checkout, verify its clean state and HEAD against the frozen head. For a different or dirty checkout, offer an isolated worktree through `ia-git-worktree` if tests need a materialized tree.
 - [ ] Resolve and record each review unit's deterministic stack route using the `ia-code-review` language profile reference
 - [ ] Prepare security scanning environment
 - [ ] Review a different branch through its resolved diff range or an approved isolated worktree; do not switch the user's working tree during review setup
@@ -149,7 +146,7 @@ Run the Task whetstone:ia-code-simplicity-reviewer() to see if we can simplify t
 
 Consolidate all agent reports into a categorized list of findings. Remove duplicates, prioritize by severity and impact.
 
-- [ ] Reconcile the coverage ledger first; if any selected path is pending or failed, set the verdict to **Not ready** regardless of finding count
+- [ ] Reconcile the coverage ledger first. Pending or failed coverage means **Not ready** regardless of finding count.
 - [ ] Collect findings from all parallel agents
 - [ ] Surface documented learnings: if a past solution or ADR that still holds applies, flag the finding as "Known Pattern" with a link to that document; cite a superseded or stale one only with its replacement or reason
 - [ ] Evaluate pipeline-artifact findings using lifecycle and inbound-link evidence, not a path-based exclusion
@@ -162,6 +159,8 @@ Consolidate all agent reports into a categorized list of findings. Remove duplic
 
 #### Step 2: Summary Report
 
+Immediately before a live PR summary, recheck the pinned identity, base ref and SHA, and head SHA using the [pre-verdict procedure](../skills/ia-code-review/references/scope-resolution.md#reconcile-before-the-verdict). This includes pipeline runs. Stale or unverified freshness means **Not ready** for the live target. Keep findings on their frozen range.
+
 Return the summary with the exact `current_review_findings` IDs. In explicit pipeline mode, omit the interactive Next Steps below and return to the parent; do not execute triage or optional follow-on stages.
 
 ````markdown
@@ -169,6 +168,7 @@ Return the summary with the exact `current_review_findings` IDs. In explicit pip
 
 **Review Target:** PR #XXXX - [PR Title] **Branch:** [branch-name]
 
+**PR snapshot (when applicable):** [canonical PR, base ref and SHA, head SHA, comparison base, freshness and verdict]
 **Coverage:** [complete/partial/failed/skipped] — [covered]/[selected] selected files covered; [excluded] excluded
 **Profiles:** [review unit -> primary skill (+ supplemental), or generic]
 

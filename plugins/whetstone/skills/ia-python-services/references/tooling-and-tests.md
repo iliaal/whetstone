@@ -11,6 +11,7 @@
 - `uv init --package myproject` for distributable packages, `uv init` for apps
 - `uv add <pkg>`, `uv add --group dev <pkg>`, never edit pyproject.toml deps manually
 - `uv run <cmd>` instead of activating venvs; auto-activates the venv without explicit activation
+- Create each deployed virtual environment at its final release path. Installed scripts can embed the interpreter's absolute path, so moving the environment can strand their entry points. Switch the service or launcher to the new release, then invoke the installed entry point through that path and confirm the expected interpreter runs. [Python venv documentation](https://docs.python.org/3/library/venv.html#how-venvs-work)
 - `uv add --upgrade <pkg>` to upgrade a single package without touching others
 - `uv tree --outdated` to preview what would be upgraded before committing
 - `uv.lock` goes in version control

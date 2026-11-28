@@ -101,9 +101,7 @@ Record the immutable target SHA (`headRefOid` for a PR, resolved branch SHA othe
 
 <file_to_route_mapping>
 
-Map changed files to testable routes using the file-to-route table in [shared-references/agent-browser-cli.md](../shared-references/agent-browser-cli.md).
-
-Build a list of URLs to test based on the mapping.
+Use the [file-to-route mapping](../shared-references/agent-browser-cli.md#file-to-route-mapping) and trace the changed component's consumers. List the route, rendering host, and affected state for each browser case. Track distinct placements even when they share a URL. If sampling equivalent placements, record the tested representative, the omitted placements, and the evidence that they are equivalent for the behavior and layout under test.
 
 </file_to_route_mapping>
 
@@ -122,8 +120,8 @@ Resolve the server port from the bound checkout and actual server configuration 
 Verify the local server is accessible:
 
 ```bash
-agent-browser open "[verified-base-url]"
-agent-browser snapshot -i
+agent-browser --session "[session-id]" open "[verified-base-url]"
+agent-browser --session "[session-id]" snapshot -i
 ```
 
 If server is not running, inform user:
@@ -152,30 +150,30 @@ printf '%s\n' "$CAPTURE_DIR"
 
 Record the emitted absolute path as `[capture-dir]` and substitute it literally in later calls. Save screenshots, console evidence, and any requested report beneath that directory. Name every screenshot and diagnostic file with a unique route/component ID, exact viewport width and height, interaction state, and iteration: `[route-id]-[width]x[height]-[state-id]-[iteration]`. Include the action in the state ID when needed to distinguish interactions. Increment the iteration when repeating that combination. Record the actual dimensions and state beside each retained path. Retain every variant. Never overwrite or delete caller-provided or concurrent artifacts.
 
-For each affected route, use agent-browser CLI commands (NOT Chrome MCP):
+For each selected route, rendering host, and state, use agent-browser CLI commands. Give distinct placements distinct capture IDs even on the same route.
 
 Collect preflight console/page errors before clearing them. Label preflight evidence with the current page's route ID, dimensions, `preflight` state, and iteration. Clear the buffers before each route navigation, then collect them after navigation and each critical interaction. Use the same capture identity for the matching console and page-error files. If the installed CLI lacks these commands or collection fails, mark the corresponding log check unverified rather than report zero errors.
 
 **Step 1: Navigate and capture snapshot**
 ```bash
-agent-browser console --clear
-agent-browser errors --clear
-agent-browser open "[verified-base-url]/[route]"
-agent-browser snapshot -i
-agent-browser console --json > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-console.json"
-agent-browser errors > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-errors.txt"
+agent-browser --session "[session-id]" console --clear
+agent-browser --session "[session-id]" errors --clear
+agent-browser --session "[session-id]" open "[verified-base-url]/[route]"
+agent-browser --session "[session-id]" snapshot -i
+agent-browser --session "[session-id]" console --json > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-console.json"
+agent-browser --session "[session-id]" errors > "[capture-dir]/[route-id]-[width]x[height]-navigation-[iteration]-errors.txt"
 ```
 
 **Step 2: For headed mode (visual debugging)**
 ```bash
-agent-browser --headed open "[verified-base-url]/[route]"
-agent-browser --headed snapshot -i
+agent-browser --session "[session-id]" --headed open "[verified-base-url]/[route]"
+agent-browser --session "[session-id]" --headed snapshot -i
 ```
 
 **Step 3: Verify key elements**
-- Use `agent-browser snapshot -i` to get interactive elements with refs
+- Use `agent-browser --session "[session-id]" snapshot -i` to get interactive elements with refs
 - Page title/heading present
-- Primary content rendered: wait for a selector that only this state renders, holding this state's data, not a container a skeleton also fills; a request that failed, aborted, or is still pending in `agent-browser network requests --type xhr,fetch` leaves the state incomplete, so its screenshot is not a pass, unless this state's own `--abort` stub caused it.
+- Primary content rendered: wait for a selector that only this state renders, holding this state's data, not a container a skeleton also fills; a request that failed, aborted, or is still pending in `agent-browser --session "[session-id]" network requests --type xhr,fetch` leaves the state incomplete, so its screenshot is not a pass, unless this state's own `--abort` stub caused it.
 - No error messages visible
 - Forms have expected fields
 - For fixed-height shells, internal scroll panes, and overflow-hidden containers, check required regions against viewport and clipping-container bounds using supported CLI inspection; mark unavailable bounds checks unverified.
@@ -186,26 +184,26 @@ agent-browser --headed snapshot -i
 Choose the expected result from the actual flow before the action. When creation or editing is the behavior under test, enter a value unique to this invocation and action in the authorized test environment (the data backend recorded during server binding, not a production or shared backend reached through a local URL without that approval). Assert that exact value in the resulting record after submission; an earlier record or an unsaved input does not prove the action succeeded. Reusable prerequisite records remain valid when creating or editing them is not the behavior under test.
 
 ```bash
-agent-browser click @e1  # Use ref from snapshot
-agent-browser wait "[expected-result-selector]"
-agent-browser get text "[result-selector]"
-agent-browser snapshot -i
-agent-browser console --json > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-console.json"
-agent-browser errors > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-errors.txt"
+agent-browser --session "[session-id]" click @e1  # Use ref from snapshot
+agent-browser --session "[session-id]" wait "[expected-result-selector]"
+agent-browser --session "[session-id]" get text "[result-selector]"
+agent-browser --session "[session-id]" snapshot -i
+agent-browser --session "[session-id]" console --json > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-console.json"
+agent-browser --session "[session-id]" errors > "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-errors.txt"
 ```
 
 Inspect collected messages and page errors; a screenshot with no visible error is not console evidence. Retain error severity, text, and the route/action that produced it. Report relevant runtime errors as findings even when the page looks normal.
 
 Exercise reversible controls through initial state, changed state, and return to initial state. Scripted state injection may prepare or inspect a test, but signoff interactions must use actual clicks and typing.
 
-To reach empty or error states without a shared backend, stub the API per state with `agent-browser network route` (`--body` for empty or long-content data, `--abort` for network failure) and run `agent-browser network unroute` before the next state.
+To reach empty or error states without a shared backend, stub the API per state with `agent-browser --session "[session-id]" network route` (`--body` for empty or long-content data, `--abort` for network failure) and run `agent-browser --session "[session-id]" network unroute` before the next state.
 
 For an affected finite virtualized collection, use enough records to exceed the viewport. Scroll the actual collection from the beginning to a middle record, the final record, and back to the beginning. Verify the expected record identities without missing or duplicated rows. Check row placement for unexpected gaps or overlap. Exercise one row action after scrolling to confirm that a recycled row still acts on the correct record. An initial screenshot or the current DOM row count does not prove that the full collection is reachable.
 
 **Step 5: Take screenshots**
 ```bash
-agent-browser screenshot "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-viewport.png"
-agent-browser screenshot --full "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-full.png"
+agent-browser --session "[session-id]" screenshot "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-viewport.png"
+agent-browser --session "[session-id]" screenshot --full "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-full.png"
 ```
 
 Use the viewport capture as signoff evidence; the full-page capture supplies secondary context and cannot establish that required content is visible in the viewport.
@@ -250,7 +248,7 @@ Did it work correctly?
 When a test fails:
 
 1. **Document the failure:**
-   - Screenshot the error state: `agent-browser screenshot "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-error.png"`
+   - Screenshot the error state: `agent-browser --session "[session-id]" screenshot "[capture-dir]/[route-id]-[width]x[height]-[state-id]-[iteration]-error.png"`
    - Note the exact reproduction steps
 
 2. **Interactive mode: ask how to proceed.** In a read-only pipeline run, return the failure as a finding; implementation remains with the parent:
@@ -298,14 +296,16 @@ After all tests complete, present summary:
 **Target:** [SHA and scoped working-tree content identity, if applicable]
 **Served revision evidence:** [checkout/process/build evidence, or unverified]
 
-### Pages Tested: [count]
+### Browser cases tested [count]
 
-| Route | Status | Notes |
-|-------|--------|-------|
-| `/users` | Pass | |
-| `/settings` | Pass | |
-| `/dashboard` | Fail | Console error: [msg] |
-| `/checkout` | Skip | Requires payment credentials |
+| Route | Rendering host | State | Status | Notes |
+|-------|----------------|-------|--------|-------|
+| `/users` | Results list | Loaded | Pass | |
+| `/users` | Search drawer | Empty | Pass | |
+| `/dashboard` | Summary card | Loaded | Fail | Console error: [msg] |
+| `/checkout` | Payment form | Submitted | Skip | Requires payment credentials |
+
+**Sampling:** [omitted placements or states, tested representatives, and equivalence evidence or coverage gaps]
 
 ### Browser Logs
 - Console errors: [observed count, or unverified with reason]
@@ -327,7 +327,7 @@ After all tests complete, present summary:
 **Artifacts:** [invocation-owned paths with route/component, exact viewport dimensions, state, and iteration for each capture]
 ```
 
-Report PARTIAL when required revision, production-build, runtime, log, layout, or human verification remains unverified. Never substitute zero or PASS for an unavailable check.
+Report PARTIAL when any required browser case, revision, production build, runtime, log, layout, or human check remains unverified. Never substitute zero or PASS for an unavailable check.
 
 </test_summary>
 

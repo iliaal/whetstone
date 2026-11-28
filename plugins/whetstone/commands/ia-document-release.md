@@ -95,7 +95,7 @@ Output: "Analyzing N files changed across M commits. Found K documentation files
 
 ## Step 2: Per-file documentation audit
 
-Read each documentation file and cross-reference against the diff. Classify each needed change as **auto-update** (factual, clearly warranted) or **ask user** (narrative, ambiguous, large).
+Read each documentation file and cross-reference against the diff. Classify each needed change as **auto-update** (factual, clearly warranted prose), **ask user** (narrative, ambiguous, large), or **behavior review** (changes how runtime instructions, executable examples, configuration, or gates work). Use [ia-review's document target routing](ia-review.md#document-target-routing-early-branch) for the behavior review. When the edit or its review falls outside the authorized scope, leave it pending and report the proposal.
 
 **README.md:**
 - Does it describe all features and capabilities visible in the diff?
@@ -128,11 +128,11 @@ Read each documentation file and cross-reference against the diff. Classify each
 
 ## Step 3: Apply auto-updates
 
-Make all clear, factual updates using the Edit tool.
+Use the Edit tool for Step 2's **auto-update** changes and any authorized **behavior review** changes. Review the latter in Step 9 before committing.
 
 For each file modified, output a one-line summary of **what specifically changed**: not "Updated README.md" but "README.md: added document-release to commands table, updated count from 19 to 20."
 
-Before committing, check each added or changed sentence that states a command, flag, path, default, count, limit, price, or security property against the source at HEAD, and cite the `file:line` or command output that supports it. Revert any such claim with no supporting source, or move it to Step 4 as a question. These edits postdate the code review, so apply this check to every doc sentence written in Steps 3 through 8 (including Step 4 answers and Step 6 fixes; Step 5 wording-only polish is exempt), rerun it just before Step 9, and list the total under `Post-review doc claims checked` in the Step 9 summary.
+Before committing, check each added or changed sentence that states a command, flag, path, default, count, limit, price, or security property against the source at HEAD, and cite the `file:line` or command output that supports it. Revert any such claim with no supporting source, or move it to Step 4 as a question. Apply the check to every doc sentence written in Steps 3 through 8, including Step 4 answers and Step 6 fixes. Step 5 wording-only polish is exempt. List the total under `Post-review doc claims checked` in the Step 9 summary.
 
 **Never auto-update:**
 - README introduction or project positioning
@@ -176,7 +176,7 @@ After auditing files individually, do a cross-doc pass:
 3. Does the CHANGELOG's latest version match the VERSION file or `version` field in the package manifest?
 4. **Discoverability:** Is every documentation file reachable from README.md or CLAUDE.md/AGENTS.md? If ARCHITECTURE.md exists but neither entry-point file links to it, flag it.
 
-Auto-fix clear factual inconsistencies. Ask for narrative contradictions.
+Use Step 2's classification for any fixes found in this pass.
 
 ---
 
@@ -228,6 +228,8 @@ git status
 
 If this task made no documentation changes, output "All documentation is up to date." and exit without committing caller-owned changes.
 
+Before committing, route any behavior-changing edits from Steps 3 through 8 through the normal code review for the exact proposed patch. Resolve blocking findings and review any subsequent behavioral changes before publishing. Rerun the Step 3 claim check on the final text. If review is unavailable, leave the affected edits pending and report the missing review.
+
 **Whole-file ownership path:** Use the following path only when every change in each selected file belongs to this task. Establish that condition from the Step 1 baseline and the current staged and unstaged patches. Inspect the complete prospective commit patch for the selected files. Recheck HEAD and selected file contents immediately before committing. If either changed since inspection, reconcile ownership first.
 
 ```bash
@@ -252,23 +254,26 @@ If the push fails, stop and report the error verbatim. Skip the PR body update a
 
 **PR body update:**
 
-Each Bash tool call runs in a fresh shell, so `$$` and shell variables do not survive between blocks; create the temp file once, print its path, and reference the printed literal path in every later block.
+Resolve and record the canonical PR URL and use it explicitly for the original read, preflight read, and edit. Create a private temporary directory once and record the printed path for subsequent calls.
 
 ```bash
-# Create the temp file once and print its path
-body=$(mktemp /tmp/doc-release.XXXXXX); echo "$body"
-gh pr view --json body -q .body > "$body"
+gh pr view --json url --jq .url
+body_dir=$(mktemp -d "${TMPDIR:-/tmp}/doc-release.XXXXXXXX") && printf '%s\n' "$body_dir"
 ```
 
 ```bash
-# Append or replace a ## Documentation section with a per-file change summary,
-# then write back. Substitute the literal path printed above for <printed-path>.
-gh pr edit --body-file <printed-path>
-rm -f <printed-path>
+gh pr view '<pr-url>' --json body --jq .body > '<printed-directory>/original.md'
 ```
 
-If no PR exists: skip with "No PR found; documentation changes are in the commit."
-If `gh pr edit` fails: warn and continue.
+After the original read succeeds, compose `proposed.md` from `original.md`, changing only the `## Documentation` section. With publication authority, refetch the pinned PR body immediately before writing:
+
+```bash
+gh pr view '<pr-url>' --json body --jq .body > '<printed-directory>/current.md' &&
+  cmp -s '<printed-directory>/original.md' '<printed-directory>/current.md' &&
+  gh pr edit '<pr-url>' --body-file '<printed-directory>/proposed.md'
+```
+
+If the body changed, review the drift and recompose from the current body, then repeat the comparison, or leave it unchanged and report the conflict. If the PR is absent, report "No PR found; documentation changes are in the commit." Report lookup, comparison, or edit errors. The comparison narrows the window for overlapping edits, since GitHub handles the read and write as separate requests. Remove the invocation's temporary files when finished.
 
 **Documentation health summary (final output):**
 

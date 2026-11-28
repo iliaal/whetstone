@@ -175,7 +175,7 @@ class Workspace {
   async read(input: string): Promise<FileVersion> {
     const path = await workspacePath(this.root, input);
     try {
-      const handle = await fs.open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+      const handle = await fs.open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
       try {
         if (!(await handle.stat()).isFile()) throw new Error("Not a regular file");
         const content = await handle.readFile("utf8");
@@ -238,7 +238,7 @@ Install the canonical root from trusted application configuration and check the 
 
 This Node.js example assumes one shared service instance owns all writes and directory entries on a POSIX filesystem. All cooperating user and agent edits use it. The per-path lock makes its revision check and replacement indivisible among those writers. Direct editor writes, other processes, hostile directory renames, and mount changes require a backend transaction or OS containment/coordination mechanism; do not claim this lock covers them. A failure after rename but before the durability receipt is unknown and requires artifact reconciliation.
 
-Exercise contained read/write/list/append, creation, stale revision, traversal, absolute paths, sibling prefixes, symlinks, and propagation of write failures.
+Open with `O_NONBLOCK` so a named pipe without a writer does not hang the POSIX example. Reject non-regular files using the opened handle before reading. Exercise contained read/write/list/append, creation, stale revision, traversal, absolute paths, sibling prefixes, symlinks, prompt rejection of a named pipe without a writer, and propagation of write failures.
 </file_tools>
 
 <ui_integration>

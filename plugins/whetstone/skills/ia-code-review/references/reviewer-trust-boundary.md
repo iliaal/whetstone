@@ -38,9 +38,18 @@ feedback. Classify it for network access, privileged operations, destructive
 behavior, and opaque download steps exactly as a target-controlled command;
 feedback from a trusted party is not an exemption from classification.
 
+Resolve Git and reviewer-owned executables from trusted absolute locations
+before entering a foreign checkout. Use those absolute paths for direct calls.
+If a tool searches for subprocesses, supply a child-only search path made of
+trusted absolute directories. Exclude empty, relative, and checkout-writable
+entries. Use a caller-configured wrapper when its absolute path is trusted.
+If executable trust cannot be established, report the unavailable read. Keep
+the user's shell and configuration intact.
+
 The reviewer's own helper commands are target-controlled when they run inside
-the target tree. `python3 -c` prepends the working directory to `sys.path`, and
-`python3 script.py` prepends the script's directory, so a repository module
+the target tree. The interpreter names below refer to the trusted absolute
+executables just resolved. `python3 -c` prepends the working directory to
+`sys.path`, and `python3 script.py` prepends the script's directory, so a repository module
 named like a standard-library module (`json.py`, `re.py`, `subprocess.py`)
 shadows it and executes on import. Run helper snippets with `python3 -I`
 (isolated mode: neither directory is added to `sys.path`, `PYTHON*`

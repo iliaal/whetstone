@@ -52,7 +52,7 @@ If multiple brainstorms could match, use `AskUserQuestion` to ask which to use.
 First, I need to understand the project's conventions, existing patterns, and any documented learnings. This is fast and local - it informs whether external research is needed.
 </thinking>
 
-Run this agent to gather local context, and check documented learnings inline (`AGENTS.md`/`CLAUDE.md`, `docs/decisions/`, solution notes under `docs/`) while it runs:
+Run this agent to gather local context, and check documented learnings inline (`AGENTS.md`/`CLAUDE.md`, the established ADR directory, and solution notes under `docs/`) while it runs. Use the [convention detection step in `ia-adr`](ia-adr.md#process) as a read-only lookup for the directory, including when checking later records for supersession.
 
 - Task whetstone:ia-repo-research-analyst(feature_description)
 
