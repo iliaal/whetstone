@@ -1,0 +1,50 @@
+# Performance Patterns: When Indexes Can't Help, Pools, and Caching
+
+## When an index cannot help
+
+Adding an index is the reflex fix; these four query shapes defeat it. Recognize them before recommending an index that will never be used.
+
+| Shape | Why the index is dead | Fix |
+|-------|----------------------|-----|
+| Function on the column: `WHERE lower(email) = ?` | The stored values are indexed, not the function's output | Expression index `ON (lower(email))`, or generated column |
+| Leading wildcard: `LIKE '%term'` | B-tree matches prefixes only | Trigram GIN (`pg_trgm`) or full-text search |
+| Explicit column cast: `WHERE varchar_col::integer = 123` | The integer expression cannot use the ordinary varchar index for this lookup | Compare as text (`WHERE varchar_col = '123'`) when text equality is intended; otherwise use a suitable numeric column or matching expression index |
+| Low selectivity: predicate matches a large fraction of rows | The planner correctly prefers a seq scan; forcing the index is slower | Partial index on the rare value, or accept the seq scan |
+
+Distinguish the explicit cast from `WHERE varchar_col = 123`: with built-in operators and casts, the latter fails operator resolution instead of silently casting the column. Cast to integer only when stored values are valid integers within range.
+
+Start plan inspection with `EXPLAIN`. Use `EXPLAIN (ANALYZE, BUFFERS)` only when executing the query and its side effects is authorized and safe. For writes, prefer disposable data; use a transaction followed by rollback only when all relevant effects are transactional. Check these shapes when an expected index is absent from the plan.
+
+## Pool exhaustion: relocating the queue is not fixing it
+
+When requests wait on connections, raising the application pool's `max` is usually the wrong move:
+
+- Postgres does non-trivial work per connection (~10MB, a backend process). An application pool sized above what the database can concurrently execute just moves the wait from the app's pool queue into the database, where it costs memory and context switches.
+- Diagnose before resizing: `SELECT state, count(*) FROM pg_stat_activity GROUP BY state`. Many `idle in transaction` sessions mean the app holds connections across non-DB work (HTTP calls, file I/O inside a transaction); fix the transaction scope, not the pool.
+- Sizing start point: connections ≈ cores × 2 for CPU-bound OLTP. If the app tier needs more concurrent requests than that, multiplex through PgBouncer in `transaction` mode rather than raising `max_connections`.
+- One pool per service instance multiplies: 20 instances × pool max 20 = 400 connections. Size the fleet, not the process.
+
+## Cache discipline (application-side, for query results)
+
+- **Stampede protection.** When a hot key expires, every concurrent request recomputes it and hits the database at once. Use request coalescing (first caller computes, the rest wait on that computation) or stale-while-revalidate (serve the expired value while one background refresh runs). TTL jitter (±10%) prevents synchronized expiry across keys.
+- **Negative caching.** Cache "not found" results with a short TTL. Without it, requests for missing rows bypass the cache forever; a scraper enumerating IDs turns every miss into a query.
+- **Cache-key completeness.** Every input that changes the response belongs in the key: tenant, locale, role/permission set, API version, feature flags. A key missing one of these serves one user's data to another; the bug presents as intermittent wrong data, not as an error.
+- **Invalidate on write, don't trust TTL alone.** TTL bounds staleness; it does not provide correctness for read-after-write paths the user observes.
+
+## Vector Search (pgvector)
+
+```sql
+CREATE EXTENSION vector;
+ALTER TABLE items ADD COLUMN embedding vector(1536);  -- match your model's output dimensions
+
+-- HNSW: better recall, higher memory. Default choice.
+CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);
+
+-- IVFFlat: lower memory for large datasets. Set lists = sqrt(row_count).
+CREATE INDEX ON items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);
+```
+
+Choose filtering according to the search contract. For exact search over a bounded subset, use a materialized filtered CTE and sort that subset by distance; an ordinary CTE may inline and does not establish a prefilter. For approximate HNSW/IVFFlat search, filters can run after the index retrieves candidates, returning fewer than K rows. Use a matching partial index or partitioning where suitable, or version-gated iterative scans (pgvector 0.8.0+) with tuned search limits. Verify the actual plan, returned count, and recall against an exact baseline; syntax alone proves none of them. Distance operators: `<=>` cosine, `<->` L2, `<#>` inner product.
+
+- For hybrid vector/full-text search with reciprocal rank fusion (RRF), retrieve `candidate_k > K` rows from each branch before combining ranks. Apply the final `LIMIT K` after fusion. Truncating each branch to K can discard documents that would rank highly after fusion; tune candidate depth against measured recall.
+- For batched embedding responses with an `index` field, associate each vector with its input chunk by that index, not response order. Before inserting, require the response count to equal the chunk count and the indices to contain exactly `0..n-1`, with no duplicates or gaps.

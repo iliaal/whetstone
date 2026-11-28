@@ -1,0 +1,18 @@
+--- a/skills/ia-debugging/references/specialized-patterns.md
++++ b/skills/ia-debugging/references/specialized-patterns.md
+@@ -2,14 +2,7 @@
+ 
+ ## Environment Diagnostics
+ 
+-Before investigating, capture the environment state using [collect-diagnostics.sh](../scripts/collect-diagnostics.sh):
+-
+-```bash
+-bash collect-diagnostics.sh           # print to stdout
+-bash collect-diagnostics.sh diag.md   # write to file
+-```
+-
+-Collects system info, language versions, git state, project files, and environment variables. Use during differential analysis to compare working vs broken environments, or attach to bug reports.
++Before investigating, capture the environment state: OS and kernel (`uname -a`), the versions of the runtimes and package managers the project uses (`node --version`, `python3 --version`, `php --version`, and so on), git state (`git rev-parse HEAD`, `git status --short`), the project manifest and lock files present, and the names (not values) of relevant environment variables. Record secrets by name only. Use during differential analysis to compare working vs broken environments, or attach to bug reports.
+ 
+ ## Intermittent Issues
+ 

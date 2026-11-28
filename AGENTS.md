@@ -26,6 +26,8 @@ whetstone/
 │   ├── refresh-codex-plugin.sh  # Cachebust/reinstall Codex without dirtying release version
 │   ├── sync-to-tools.sh          # Symlink skills to .agents/.kilocode; retire legacy Codex links
 │   └── update-plugin.sh          # Update locally installed plugin to latest version
+├── packaging/claude-directory/   # Directory-edition inputs: manifest.json, README.md, patches/
+├── claude-directory/whetstone/   # Generated Claude plugin directory edition (do not edit; rebuilt by /release)
 ├── CHANGELOG.md                 # Version history
 └── plugins/
     └── whetstone/     # The plugin
@@ -86,6 +88,7 @@ When `/release` runs, it:
    - Tier-2 prompt-injection attestation verify — **BLOCKING**; **skipped with a WARNING** when no previous `v*` tag exists
    - skill-injection hook tests (`test-semantic`) — **NON-BLOCKING** (WARNING only; these are hook-firing tests, not the prompt-injection scan)
    - skill manifest regeneration (baseline reset to the last-released manifest first)
+   - Claude plugin directory edition regeneration (`package-claude-directory.py`) — **BLOCKING** when a patch no longer applies or the edition fails its checks
 6. Commits, refreshes the native Codex plugin before push, mirrors to ai-skills, publishes to ClawHub, and syncs shared skill directories
 
 Semver rules applied by `/release`:
@@ -245,6 +248,12 @@ cp -r distillery/generated-skills/<name> plugins/whetstone/skills/<name>
 bash scripts/mirror-to-ai-skills.sh
 ```
 
+### Claude plugin directory edition
+
+`claude-directory/whetstone/` is generated; never edit it by hand. The Claude plugin directory accepts only Markdown, JSON, and images from community plugins, with no command hooks, so `scripts/package-claude-directory.py` copies the tracked plugin minus `packaging/claude-directory/manifest.json`'s `exclude` list, applies `packaging/claude-directory/patches/*.patch` (edition-only rewrites of text that points at omitted scripts or commands), flattens frontmatter to the `frontmatter_keys` allowlist, and fails on any omitted-script mention, `forbidden_text` hit, broken relative link, or non-text file. The allowlist is inferred from the documented Claude Code fields, not from a published directory list.
+
+When a source edit makes a patch stop applying, re-author it in a scratch directory: `d=$(mktemp -d); cp -r plugins/whetstone "$d/a"; cp -r plugins/whetstone "$d/b"`, apply the remaining patches to `$d/b` with `git apply -p1`, redo the edit in `$d/b`, and write `(cd "$d" && diff -u a/<path> b/<path>)` over the patch file. Then run `python3 scripts/package-claude-directory.py` and `claude plugin validate --profile directory claude-directory/whetstone`.
+
 ### SkillOpt optimizer (offline)
 
 `distillery/skillopt/` is a vendored [microsoft/SkillOpt](https://github.com/microsoft/SkillOpt) (MIT, see its `VENDORED.md`) plus a whetstone env that optimizes a process `SKILL.md` by running the target model **agentically** (Claude Code via `claude_code_exec`) against curated fixtures, with a hybrid reward: deterministic `hard` (fixture test red→green) + a per-skill process rubric `soft`. It is the **Tier 3** rung of the skill-optimization ladder (`eval-skills` → `evolve` → SkillOpt) — the higher-fidelity, higher-cost path for process skills whose value is agentic, reached when the single-turn DSPy `evolve` plateaus.
@@ -338,6 +347,7 @@ Every trigger pattern fix should add a regression test case to `distillery/tests
 | `scripts/install-codex-plugin.sh` | Install and verify the native Codex plugin before retiring duplicate direct sources | Initial install and release refresh |
 | `scripts/refresh-codex-plugin.sh` | Reinstall local Codex source edits with a temporary, trap-restored cachebuster | During between-release Codex plugin development |
 | `scripts/update-plugin.sh` | Update locally installed plugin to latest pushed version | After pushing a new version to GitHub |
+| `scripts/package-claude-directory.py` | Regenerate `claude-directory/whetstone/`, the Markdown-and-JSON edition submitted to the Claude plugin directory (no hooks, scripts, MCP server, `/ia-resolve-pr`, or non-standard frontmatter). Edition-only text changes live as patches in `packaging/claude-directory/patches/`; a patch that stops applying fails the build. `--check` builds and validates without writing. Confirm with `claude plugin validate --profile directory claude-directory/whetstone` | During `/release` (automatic); CI runs `--check` |
 | `scripts/post-thread.py` | Post tweet threads to X via Playwright CDP to Edge | After `/announce` drafts are approved |
 
 ## Marketplace.json spec

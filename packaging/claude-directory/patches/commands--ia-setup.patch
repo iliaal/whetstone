@@ -1,0 +1,87 @@
+--- a/commands/ia-setup.md
++++ b/commands/ia-setup.md
+@@ -2,7 +2,7 @@
+ name: ia-setup
+ description: >-
+   Diagnose the whetstone environment and configure review agents.
+-  Checks CLI dependencies and plugin version, then runs the review-agent wizard
++  Checks CLI dependencies, then runs the review-agent wizard
+   that writes whetstone.local.md. Use when onboarding a project,
+   troubleshooting missing tools, or configuring review agents.
+ disable-model-invocation: true
+@@ -14,60 +14,27 @@
+ 
+ ## Phase 1: Diagnose
+ 
+-### Step 1: Determine Plugin Version
++### Steps 1-2: Probe Tools
+ 
+-Read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` if available and extract `version`. Pass it to the health check via `--version`. If the file or the field is missing, omit the flag.
++Before probing, display: "Compound Engineering -- checking your environment..."
+ 
+-### Step 2: Run the Health Check Script
++Probe each tool with `command -v <tool>` (for `python3`, also accept `python`) and report the result as a table:
+ 
+-Before running, display: "Compound Engineering -- checking your environment..."
++| Tool | Need | Install guidance |
++|---|---|---|
++| `bash` 4.4+ | recommended | https://www.gnu.org/software/bash/ |
++| `git` | recommended | https://git-scm.com/downloads |
++| `gh` | recommended | https://cli.github.com |
++| `jq` | recommended | https://jqlang.github.io/jq/ |
++| `python3` | recommended | https://www.python.org/downloads/ |
++| `node`, `npm` | optional | https://nodejs.org |
++| `playwright` | optional | https://playwright.dev/python |
+ 
+-Run the bundled script. It handles CLI probes, alternative command names, the Bash version on PATH, and install hints in one pass.
++For Bash, run `bash -c 'echo "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"'` and require 4.4 or newer from the Bash that PATH selects.
+ 
+-```bash
+-bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh" --version VERSION
+-```
++### Steps 3-4: Offer Installation for Missing Tools
+ 
+-Or without version if Step 1 could not determine it:
+-
+-```bash
+-bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-health.sh"
+-```
+-
+-Display the script's output to the user verbatim.
+-
+-### Step 3: Evaluate Results
+-
+-Parse the output. Two possible states:
+-
+-- **All clear** (`✅ All clear` line): proceed to Phase 2.
+-- **Issues found** (`⚠️ N issue(s) found`): proceed to Step 4.
+-
+-### Step 4: Offer Installation or Updates for Unmet Requirements
+-
+-The script labels executable hints `Install command:` and URL-only guidance `Manual instructions:`. Report manual guidance separately; never execute a URL as a shell command. If the user requests help with a manual route, read the upstream instructions and determine a concrete command for the current platform before requesting execution approval.
+-
+-Offer tools with an `Install command:` hint using `AskUserQuestion` (load the schema via `ToolSearch` with `select:AskUserQuestion` if not already loaded) as a multiSelect with all items pre-selected. Use the exact command after the label as the description. If no executable hint is available, continue to Phase 2 after reporting the unresolved dependencies and affected capabilities.
+-
+-For each selected tool, in order:
+-
+-1. Show the install command and ask for approval using `AskUserQuestion`:
+-
+-   ```
+-   question: "Install <tool>?"
+-   header: "Install"
+-   options:
+-     - label: "Run this command (Recommended)"
+-       description: "<command from script output>"
+-     - label: "Skip"
+-       description: "I'll install manually"
+-   ```
+-
+-2. If the exact command is approved, run it via `Bash`. Verify command availability with `command -v <tool>`. For Bash, use the version probe in the final health report to verify that PATH selects Bash 4.4 or newer. A selection or approval of manual guidance does not authorize a later command.
+-3. If verification succeeds, report success.
+-4. If verification fails, display the upstream URL from the script output as fallback and continue to the next tool.
+-
+-After the install loop, re-run `check-health.sh` once and show the updated report.
++When every recommended tool is present, proceed to Phase 2. Otherwise, list the missing tools and their install guidance. Never execute a URL as a shell command. When the user asks for help with a tool, read its upstream instructions, determine a concrete command for the current platform, and show it for approval through `AskUserQuestion` (load the schema via `ToolSearch` with `select:AskUserQuestion` if not already loaded) before running it. After an approved install, verify with `command -v <tool>`; on failure, show the upstream URL and continue. Report unresolved tools and the capabilities they affect, then continue to Phase 2.
+ 
+ ## Phase 2: Configure Review Agents
+ 

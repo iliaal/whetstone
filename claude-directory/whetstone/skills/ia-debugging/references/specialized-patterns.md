@@ -1,0 +1,123 @@
+# Specialized Debugging Patterns
+
+## Environment Diagnostics
+
+Before investigating, capture the environment state: OS and kernel (`uname -a`), the versions of the runtimes and package managers the project uses (`node --version`, `python3 --version`, `php --version`, and so on), git state (`git rev-parse HEAD`, `git status --short`), the project manifest and lock files present, and the names (not values) of relevant environment variables. Record secrets by name only. Use during differential analysis to compare working vs broken environments, or attach to bug reports.
+
+## Intermittent Issues
+
+- Track with correlation IDs across distributed components
+- Race conditions: look for shared mutable state, check-then-act patterns, missing locks. In async code (Node.js, Python asyncio): interleaved `.then()` chains, unguarded shared state between concurrent tasks, missing transaction isolation in DB operations
+- Deadlocks: check for circular lock acquisition (DB row locks held across multiple queries), circular `await` dependencies in async code, connection pool exhaustion blocking queries that would release other connections
+- Resource exhaustion: monitor memory growth, connection pool depletion, file descriptor leaks. Under load: check pool size vs concurrent request count, verify connections are returned on error paths (finally/dispose)
+- Timing-dependent: replace arbitrary `sleep()` with condition-based polling; wait for the actual state, not a duration
+
+For a suspected race, trace each access to the shared state with a monotonic timestamp and actor ID. Force the suspected ordering through a test-only barrier or delay hook that lets another actor enter the vulnerable window; if the original invariant does not fail reliably, the trigger is not yet isolated. Keep the controlled interleaving as the regression case and exercise at least eight concurrent writers where the operation supports them. Assert the actual invariant, such as one winner, an intact row, or a lock released only by its owner. A narrower check-then-act window does not establish a repair.
+
+To measure a flake, choose a fixed run count of at least ten per revision and record failures over total runs on both the base and candidate under matching conditions. Use the comparison to investigate attribution, not to retry until green; zero failures in a bounded sample does not prove the race absent.
+
+## Performance Regressions
+
+For slow, latency, or throughput symptoms, code reading is not the reproduction step; a numeric measurement is.
+
+Use `ia-verification-before-completion` and its performance-measurement reference to validate the harness, completed work, failures, comparison objective, and load-generator capacity before relying on the baseline or a claimed gain.
+
+- Establish a baseline before touching anything: time the same input, in the same environment, across N runs. That baseline is the failing test for a perf bug; it stands in for Step 1's reproduction and Step 6's pass/fail check.
+- Attribute before optimizing: a profiler run or per-stage timing that shows where the time actually goes. A hot-spot guess is a hypothesis, not evidence; optimizing an unmeasured suspect is shotgun debugging with extra steps.
+- If the slowness is a regression, bisect commits against the measurement (rerun the baseline at each candidate commit), not by reading diffs for code that looks expensive.
+- Repeat baseline and candidate runs with comparable inputs and conditions. Compare the improvement with run-to-run variance; a delta within the noise is inconclusive. Revert a performance-only change when repeated comparable measurements do not establish a benefit. Keep an independently verified correctness repair even when its performance gain remains inconclusive.
+- When several independent costs sit on one hot path, fixing the first moves the profile instead of flattening it, which reads as "the fix did nothing" unless the new stack is compared against the old. Compare stacks, not totals; once the same stack arrives a third time, stop bisecting configuration and get symbols.
+
+## Connectivity Failures
+
+1. **Identify the actual path**: inspect the failing process's configured endpoint, resolver, proxy, TLS server name, and network namespace. Run probes through that path rather than substituting a public endpoint or the host's network configuration.
+2. **Bound each probe**: set connection and overall deadlines appropriate to the failing operation. Distinguish resolution, connection, TLS negotiation, and HTTP response failures from the observed output.
+3. **Match the resolver**: on Linux, compare the application's resolver with NSS-backed lookup such as `getent ahosts <host>`. `dig <host>` queries DNS and can disagree with NSS sources such as `/etc/hosts`; a successful DNS query does not prove the application resolves the same address.
+4. **Interpret timings by stage**: curl's `time_namelookup`, `time_connect`, and `time_appconnect` are cumulative. For a fresh direct HTTPS request over TCP without redirects, subtract `time_namelookup` from `time_connect` to estimate TCP setup, and `time_connect` from `time_appconnect` to estimate TLS negotiation. Account for proxies, connection reuse, redirects, and the selected transport before assigning a duration to an origin stage.
+5. **Verify the operation**: an HTTP response establishes an HTTP exchange with the responding peer. Check the expected status, payload, and business effect before claiming the requested operation works.
+
+## CI Failures
+
+When a CI check fails on a PR or branch:
+
+1. **Fetch logs**: `gh run view <run_id> --log` (extract run ID from the checks URL). If `detailsUrl` points to a non-GitHub provider (Buildkite, CircleCI), don't attempt to fetch logs; report the URL and let the user investigate.
+2. **Classify the failure**: build error (compilation/dependency), test failure (which test, what assertion), lint/type error (which rule, which file), timeout (which step exceeded limits), or infrastructure (runner OOM, network, flaky service).
+   - **Check the provider before blaming the setup.** When a run stays queued without a runner, status commands disagree, the API returns 5xx, or a push does not start a workflow, query the provider's status API (GitHub: `curl -fsS https://www.githubstatus.com/api/v2/summary.json`).
+     If an open incident or a non-operational component matches the symptom, report its name, components, and update time, and retry after mitigation instead of changing workflows, configuration, or credentials. A clear status page does not prove a local cause; continue local diagnosis.
+3. **Reproduce locally**: run the same command from the CI config (`cat .github/workflows/*.yml` to find it). A local pass is a comparison result, not proof of an environmental cause; compare inputs, revision, configuration, timing, and build state.
+4. **Fix and verify**: fix the issue, then suggest re-running the relevant checks: `gh pr checks <pr> --watch` or `gh run rerun <run_id> --failed`.
+
+**A fast red suggests an early failure.** Check the failed step and first relevant error before deciding whether setup, compilation, or a fast test failed. Duration alone does not identify the phase.
+
+**Failure labels need discriminating evidence.** A bounded retry can measure recurrence, but two identical failures do not rule out flakiness and a later green does not repair it. Compare the exact head/base revisions, failed assertions, inputs, and runner conditions. An identical tree behaving differently in two environments identifies a relevant axis, not necessarily an external cause: timing or allocator differences can expose a source defect.
+
+**A parallel runner's diff output can attach to the wrong test.** With N workers and per-failure diffs, interleaving puts a diff block above a `FAIL <name>` line that belongs to a neighbor. Match the diff's content against that test's expected output before acting on it.
+
+## Post-Fix Passes
+
+- **Adversarial re-attack** (security-relevant fixes): after the bypass self-check, spawn a fresh-context agent, blind to the fix reasoning, and have it attack the patched code to find a variant input that still triggers the bad state. The fixing session cannot attack its own patch objectively; it knows too much about the intended fix path.
+- **Fresh-context trim pass**: after the fix verifies, run a fresh-context pass given the sweep's same-bug sites inside the authorized scope as required scope and asked only to "simplify to the smallest change that fixes the root cause at those sites." The fixing session is anchored to its own reasoning and over-reaches; a blind pass reliably finds the trim points without reintroducing the bug.
+
+## Postmortem
+
+After resolving non-trivial bugs, document a lightweight postmortem:
+
+1. **Timeline**: when introduced, when detected, when resolved (include commit SHAs)
+2. **Root cause**: one sentence stating the actual cause, not the symptom
+3. **Impact**: what broke, for how long, who was affected
+4. **Fix**: what changed and why this fix addresses the root cause
+5. **Prevention**: what test, monitor, or process change prevents recurrence
+
+## Common Bug Patterns
+
+- **Async ordering**: missing `await`, unhandled promise rejection, callback firing before setup completes. The temporal gap between setup and callback is where bugs hide.
+- **Stale state**: cached values, stale closures, outdated config, old build artifacts. When behavior contradicts the code you're reading, verify you're running what you think you're running.
+- **Stale build artifacts**: a test failure whose source path is provably correct and untouched by your diff is the tell: the source on disk is right, but an incremental build relinked a stale object. A clean working tree (`git status`) does not mean a clean build tree; build outputs are typically gitignored. Baseline the *build*, not the commit: rebuild from clean (`make clean`, fresh `target/`) before debugging the code. Checking out an old commit inherits the same stale objects and proves nothing.
+- **A crash and a leak reported against the same tests**: two reports from one toolchain upgrade usually trace to a single defect with a single fix, and the closing commit credits only one of them. Search the tracker for reports naming the same test files, read the fix commit, then check per branch whether it landed and whether the buggy code exists there at all.
+- **A platform-specific fault is rarely a platform-specific bug**: when a wrong pointer lands in benign mapped memory under one allocator and on the zero page under another, the defect is latent everywhere. A red/green comparison on the forgiving platform proves nothing, and shrinking the build changes the layout that decides whether the fault appears. Reproduce on the hostile platform with the full component set.
+- **Recurring fix site**: repeated fixes in one file justify examining shared invariants and prior remedies. Redesign requires evidence of structural coupling; a history count alone is not that evidence.
+- **A metric pinned at a clean extreme**: an aggregate landing on exactly 0%, 100%, or all-zero across a correlated set is usually the failure path feeding the metric, not a result. Check whether the error handler emits a value the aggregator accepts as real: a type-valid placeholder verdict, a default score, a swallowed exception returning the neutral case. Ask what number comes out when the dependency fails for *every* item at once; if it is indistinguishable from a genuine one, that is the bug. Size- or batch-correlated zeros (small inputs fine, large ones uniformly zero) point at the scoring call raising before it ever ran.
+- **Container-local id used as a global key**: an id minted per parent (row N of a batch, finding N of a review, id 1 within a tenant) collides silently when flattened into one map. If that map feeds a completeness or coverage check, the failure is a *passing* gate rather than a wrong value: the erased information (which parent) is exactly what the check was measuring. Cheapest probe: the keyed map holds fewer entries than the source rows, with no error raised. Put the parent in the key, and make a collision that "cannot happen" assert instead of overwrite.
+
+## Diagnosis Completeness
+
+**When several branches share a destination, the artifact cannot say which one fired.** A guard chain or a validator whose branches reach one terminal produces a byte-identical symptom for each, so the failing artifact stays true after a fix and says nothing about completeness. Enumerate every branch that reaches that destination and establish each one at the fixed revision. A branch that is fail-open on absence (`!x || x.ok`) passes for the wrong reason on whatever environment was measured, and a cleanup step the fix's own instructions prescribe can remove the state that made a branch pass.
+
+**A working build variant does not rule the source out.** Compare the named source files and build axes: static versus dynamic modules, distribution, compiler flags, allocator, and layout. Identical source can contain undefined behavior or a race exposed only by one variant. Use the comparison to design the next probe, not to dismiss the source hypothesis.
+
+## First Move by Bug Class
+
+The first debugging move depends on the bug class. "Add logging" is the default reflex, but for some classes it is the wrong first move: it captures nothing and burns a cycle.
+
+- **Visual / rendering / layout**: read statically first. Instrumentation cannot capture what the compositor, layout engine, or cascade actually did. Read the render path and inspect computed styles (resolved values, not the source rule) instead of logging. A log fires before paint and says nothing about the rendered result.
+- **Behavioral / lifecycle / async / state**: instrument first, before writing any fix. Add the probe (a log or assertion) as part of forming the hypothesis, not after a fix has already failed. These bugs live in values and ordering that are invisible from a static read; the probe is how the hypothesis becomes observable.
+- **Pure logic** (off-by-one, wrong branch, bad comparison): a careful static read is sufficient. No instrumentation needed; the defect is on the page once the path is read end to end.
+
+**Write the question before the log.** Before adding any probe, state the yes/no question it answers and pre-commit the decision rule: "if this prints X before Y, hypothesis A survives; if not, A is dead." A log with no question attached is noise: it produces output, not evidence.
+
+**A log that changes the behavior is itself evidence.** If adding or removing a probe makes the bug appear, disappear, or move, that signals a timing, lifecycle, or concurrency defect: the observation is perturbing the very ordering that is broken. Do not chase the now-hidden symptom; treat the sensitivity as the lead and investigate the race.
+
+**Weight a confirming probe more suspiciously than a refuting one.** Familiar oracle failures return empty; this one returns the answer you hoped for. A false negative costs a finding never filed, while a false positive kills a live hypothesis and cites executed output as proof. Check that the matched token cannot be derived from a fixture value you control (name fixtures orthogonally, never by interpolating the loop variable), and require any "no problem found" probe to have printed at least one subject's actual value.
+
+**The flag that makes the bug visible can disable behavior another test asserts.** An option that routes allocations around the runtime allocator so a memory checker can see them also removes that allocator's limits, so every test expecting an exhaustion error produces empty output or a timeout and reads as a regression. Re-run any failure whose expectation is a resource limit without the instrumentation flag.
+
+**When the probe kills the repro, switch to non-perturbing capture.** Once two of these hold (fires under the real harness but not under a debugger, vanishes when print-style logging is added, vanishes under a built-in verbose dump, or crash-or-not flips across rebuilds of identical source), stop trying I/O-based observation; every heavier tool makes it less reproducible. Record bounded entries in a preallocated in-memory buffer (no formatting, no syscalls, no flush in the hot path). Use a publication scheme that keeps readers from observing entries while they are being modified. Dump from an ordinary failure callback only when normal runtime I/O remains safe. In a native signal handler, use only operations documented as async-signal-safe for the target platform over safely published data whose access and lifetime satisfy the platform's signal and concurrency rules; preallocation alone is insufficient. Otherwise extract the buffer through an external reader or a core dump, accounting for incomplete entries and excluded memory mappings. See [signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html). Keep the instrument behind a single build flag, add a per-entry invocation counter so re-dispatch within one call is distinguishable from a fresh entry, and commit each instrument increment; shared automation can reset a worktree mid-task and take an uncommitted probe with it.
+
+**To settle whether a path executes at all, interpose the libc symbol rather than instrumenting the build.** At a 1-2% fault rate, before/after counts are weak evidence. An `LD_PRELOAD` shim that wraps the suspect entry point (`exit`, `close`, `free`), writes one marker, and forwards to `dlsym(RTLD_NEXT, ...)` answers "does this run" deterministically in a single execution, with no rebuild.
+
+## Bug Triage
+
+When multiple bugs exist, prioritize by:
+- **Severity** (data loss > crash > wrong output > cosmetic) separately from **Priority** (blocking release > customer-facing > internal)
+- Reproducibility: always > sometimes > once. "Sometimes" bugs need instrumentation before fixing.
+- Quick wins: if a fix is < 5 minutes and unblocks others, do it first
+
+## Signals You're Off Track
+
+Watch for these signs from the user; they indicate you've left the systematic process:
+
+- "Is that not happening?": you assumed behavior without checking
+- "Will it show us...?": you're not gathering enough evidence
+- "Stop guessing": you're proposing fixes without root cause
+- "We're going in circles": same hypothesis repackaged, not a new approach
+- Repeating the same type of fix with slight variations: that's not a new hypothesis

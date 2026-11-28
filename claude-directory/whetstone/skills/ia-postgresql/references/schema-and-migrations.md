@@ -1,0 +1,75 @@
+# Schema and migration safety
+
+## Schema Rules
+
+- Every FK column gets an index (PG does NOT auto-create these)
+- `NOT NULL` on every column unless NULL has business meaning
+- `CHECK` constraints for domain rules at DB level
+- `EXCLUDE` constraints for range overlaps: `EXCLUDE USING gist (room WITH =, during WITH &&)`
+- Default `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- Separate `updated_at` with trigger, never trust app layer alone. Gate it with `WHEN (OLD.* IS DISTINCT FROM NEW.*)` so a no-op write neither fires the function nor bumps the timestamp. On `BEFORE UPDATE` the row image is built before the trigger runs, so the comparison sees the caller's row, not the one the trigger is about to stamp.
+- Use `BIGINT` PKs: cheaper JOINs than UUID, better index locality
+- Safe migrations: `CREATE INDEX CONCURRENTLY`. Add a column with a non-volatile `DEFAULT` when that value is correct for existing rows. Never `ALTER TYPE` on large tables in-place.
+- A volatile `DEFAULT` on `ADD COLUMN` rewrites the table under `ACCESS EXCLUSIVE`. On PG11+, non-volatile defaults such as `7` and `now()` use the metadata-only fast path. Check function volatility in `pg_proc.provolatile` (`v` = volatile, `s` = stable, `i` = immutable). For volatile defaults such as `gen_random_uuid()`, or whenever old rows need individually computed values, use the two-step DDL and batched backfill below.
+- Adding a `STORED` generated column rewrites the table under `ACCESS EXCLUSIVE`: every existing row has to get the computed value. Schedule it like a type change, or add a plain column and backfill in batches.
+- `NULLS NOT DISTINCT` on unique indexes (PG15+) treats NULLs as equal for uniqueness
+- A `UNIQUE` constraint proves *at most* one row per key, never *exactly* one. The lower bound has to come from elsewhere (a `NOT NULL` FK from the covered side, a `CHECK`, or a seeding invariant), so any docblock, MR description, or review conclusion of the form "the index is unique, therefore every X has exactly one Y" is unsound until that other source is named. The tell is the word *exactly*, or a downstream promise phrased as a universal. One query settles it: enumerate the domain and count the members with zero rows.
+- Under `NULLS NOT DISTINCT`, a pre-flight duplicate check written with SQL `=` misses NULL/NULL collisions: the index rejects the second row, but `NULL = NULL` evaluates to NULL (not true), so a self-join or `WHERE a.col = b.col` probe silently skips exactly the pairs the index will reject. Write the probe with `IS NOT DISTINCT FROM` so NULL/NULL compares as equal.
+- `ORDER BY col DESC` puts NULLs FIRST (ASC puts them last), so a "keep the newest row" dedup written `ORDER BY updated_at DESC` picks the row whose timestamp is NULL. ORM `timestamps()` helpers typically create `created_at`/`updated_at` as nullable, so the exposure is routine rather than exotic. Pin the order (`ORDER BY updated_at DESC NULLS LAST, id DESC`) or make the column `NOT NULL`. MySQL's DESC default is the opposite (NULLS LAST), so a query ported between the two silently changes which row survives.
+- Revoke default public schema access: `REVOKE ALL ON SCHEMA public FROM public`
+- Derive every attribute at its own grain. A property of the parent (a session, a day, an order) computed from one child row lands on every child and is legitimately partial for most of them, so the aggregate disagrees with itself depending on which child is read. Put parent-scoped facts in a table keyed at the parent grain, populate them from the child the parent designates, and prefer a boundary observation (the last event's timestamp) over a count threshold.
+
+
+## Migration Safety
+
+**Core rules:**
+- Every schema change is a migration. No ad-hoc DDL in production.
+- Migrations are immutable once deployed; never edit a migration that has run in any shared environment.
+- Schema migrations and data migrations are separate files. Schema changes are fast and transactional; data backfills are slow and may need batching. Exception: when one transaction is what closes a rolling-deploy null window, do not split reflexively; see the `ADD COLUMN` lock note under Dangerous operations for the table-size disposition.
+- Forward-only in production. Rollback = a new forward migration that reverses the change.
+- Set migration-local `lock_timeout` and `statement_timeout` from the deployment's lock-wait and execution budgets. Keep a nonzero lock timeout shorter than the statement timeout. Use `SET LOCAL` inside a transaction; for DDL outside a transaction, use a dedicated migration session and restore its settings. Roll back a failed transaction before retrying from a clean transaction. Bound retries rather than repeatedly joining the lock queue. See [PostgreSQL timeout semantics](https://www.postgresql.org/docs/18/runtime-config-client.html#RUNTIME-CONFIG-CLIENT-STATEMENT).
+- A re-run guard that checks one object (`IF EXISTS`-style early return on the main table) is a valid proxy for "everything already applied" **only** when the entire migration body runs in one transaction. PostgreSQL rolls `CREATE TABLE` / `CREATE TYPE` / `CREATE INDEX` (non-concurrent) / `CREATE FUNCTION` / `CREATE TRIGGER` / `ALTER TABLE` back together, so table-exists implies the rest committed. Any statement that cannot run inside a transaction (`CREATE INDEX CONCURRENTLY`, `ALTER TYPE ... ADD VALUE` on older versions, `VACUUM`) sits outside that guarantee, and the guard then skips it on re-run and ships a partial schema. Confirm every DDL object is inside the one transaction before relying on the guard.
+
+**Expand-contract pattern** for zero-downtime renames and removals:
+
+1. **Expand**: add the new column/table while preserving old readers and writers.
+2. **Deploy compatible writes**: populate both representations atomically, or use a durable synchronization mechanism. Drain old application instances, workers, and other writers that only populate the old representation.
+3. **Backfill and reconcile**: migrate existing rows under the live-write concurrency contract, verify no missing or mismatched values remain, and keep compatible writes active.
+4. **Switch reads**: use the new representation and verify production behavior while retaining rollback compatibility.
+5. **Contract**: remove the old representation and compatibility code in a later deploy after dependent clients and jobs have drained.
+
+Never rename or remove a column in a single migration; callers reading the old name will break between deploy and code rollout.
+
+The transitional window covers every layer a client reads, not just the column. A migration can be flawlessly rolling-deploy-safe on the write side while the same release drops the field from the API response, and a bundle loaded before the deploy then reads `undefined`: a render-time crash, not a graceful absence. Enumerate the field's treatment per layer (column, response payload, each client) and keep the response emitting it until the same later release that drops the column. "The client change ships alongside" addresses new bundles, not the ones already running.
+
+**Dangerous operations:**
+- Adding a `NOT NULL` column without a value fails on a nonempty table. `SET NOT NULL` on an existing column normally scans for nulls; the validation does not rewrite stored rows. Add the column nullable first, backfill, then enforce the constraint. On PG12+, a validated `CHECK (col IS NOT NULL)` can avoid the final `SET NOT NULL` scan; retain that check until the command completes. Confirm the installed version's behavior in the [ALTER TABLE reference](https://www.postgresql.org/docs/18/sql-altertable.html).
+- A `CHECK ... NOT VALID` skips validation of existing rows, but still rejects violating inserts and updates. Updating an unrelated column on a legacy violating row can therefore fail. Verify compatibility with deployed writers and updates to those rows before adding the constraint. Choose the writer rollout, backfill, or drain order that makes each write compliant, then run `VALIDATE CONSTRAINT` under the migration budgets. A staged constraint does not justify splitting a transaction that closes the rolling-deploy null window described below.
+- `CREATE INDEX` (without `CONCURRENTLY`) locks writes for the duration. Always use `CONCURRENTLY`, which cannot run inside a transaction block; keep it in its own migration.
+- `ADD COLUMN` with no default is metadata-only and takes `ACCESS EXCLUSIVE` until commit. On a small table, keep `ADD COLUMN`, backfill, and `SET DEFAULT` in one transaction if the measured lock duration fits the deployment budget. On a large table, add the nullable column without a default and set its future-write default with a separate `ALTER COLUMN ... SET DEFAULT` in the same short DDL transaction, then backfill in independent batches. Existing rows keep NULL and old writers that omit the column get the default. Deploy compatible writers or drain those that explicitly send NULL. A default specified in `ADD COLUMN` also supplies a value to existing rows, so use that form by itself only if the default is their intended historical value. See [PostgreSQL column defaults](https://www.postgresql.org/docs/18/ddl-alter.html).
+- Dedup for a **partial** unique index: restrict the ranking to rows where the exact index predicate is true and match its key and NULL semantics. Delete only the selected duplicate identities and check those identities with `DELETE ... RETURNING`. Before applying to real data, exercise a disposable fixture with true, false, and NULL predicate rows and verify that the identities where `(<pred>) IS NOT TRUE` all survive. Coordinate concurrent writers so cleanup and index creation cover the same invariant.
+- Large data backfills: batch with `FOR UPDATE SKIP LOCKED` to avoid locking the entire table:
+
+```sql
+UPDATE target SET new_col = compute(old_col)
+WHERE id IN (
+  SELECT id FROM target
+  WHERE new_col IS NULL
+  LIMIT 1000
+  FOR UPDATE SKIP LOCKED
+);
+```
+
+Commit each batch independently. When a batch affects zero rows, check `SELECT EXISTS (SELECT 1 FROM target WHERE new_col IS NULL)` without `SKIP LOCKED` in a fresh transaction. Another transaction can hold every remaining row. If work remains, retry within the migration's deadline or report partial completion with the remaining count. Require `compute(old_col)` to produce a non-null completion value, or track completion separately. Test a row present before the DDL whose computed value differs from the future default and assert its exact value after backfill. Drain incompatible writers and reconcile values before switching reads.
+
+**Full-replace clobber on read-modify-write loops.** A migration that loops `SELECT col → mutate in app → UPDATE SET col = new_full_value WHERE id = ?` silently drops concurrent writes that landed between SELECT and UPDATE. Any column written by live traffic is exposed: `jsonb` documents, comma-separated tag fields, denormalized counters, JSON-encoded attribute blobs. Mitigations, in order of preference:
+
+- **In-place atomic update** when the edit is expressible as SQL: `UPDATE t SET col = jsonb_set(col, '{path}', :value) WHERE ...`, or `UPDATE t SET tags = array_append(tags, :tag) WHERE ...`. No read-modify-write window.
+- **Row-level lock during the loop:** wrap each iteration in a transaction, `SELECT ... WHERE id = ? FOR UPDATE`, then mutate and write. Cheaper to author, accepts more lock contention.
+- **Compare-and-swap retry:** include the original snapshot in `WHERE col = :original_value`, check the affected-row count; on 0, re-read and retry. Holds under contention, requires explicit retry-loop handling.
+
+Default chunked decode-encode loops are only safe during a maintenance window with writes blocked. ORM "chunkById + load + mutate + save" patterns hit this same trap.
+
+**A SQL backfill claiming parity with an application normalizer usually differs on a character class.** One-argument `btrim(x)` trims spaces only, while PHP's `trim()` and Python's `.strip()` trim the whole ASCII whitespace set, so a value carrying a tab folds out of vocabulary in SQL, and on a value-dropping migration that is one-way data loss. Pass the character set explicitly (`btrim(x, E' \t\n\r\x0B')`, which mirrors PHP's default) and apply it to the blank guard as well as the comparison. Whenever a query re-implements an application normalizer, enumerate every class each side treats as insignificant (whitespace, case folding, Unicode normalization, trailing punctuation) and execute both over the same inputs, loading the committed implementation verbatim rather than retyping it.
+
+**Rollback fidelity is executable.** Reviewers compare the up and down SQL as strings and agree they look symmetric, which misses a renamed index, a dropped partial predicate, or an operator-class difference. Hold the migration out and build the baseline, restore and apply it, roll back one step, then diff the catalog's normalized output (`pg_indexes.indexdef`, `pg_get_constraintdef(oid)`); an empty diff is the answer, and no amount of reading is. Run it on anything that rebuilds a unique or partial index, or re-keys an index in place.

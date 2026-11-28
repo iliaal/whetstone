@@ -1,0 +1,22 @@
+# v3 to v4 Breaking Changes
+
+Reference for migrating an existing Tailwind v3 project to v4. For greenfield v4 work, [tailwind.md](./tailwind.md) covers current patterns directly.
+
+| v3 | v4 | Notes |
+|----|-----|-------|
+| Legacy Tailwind config | CSS configuration or explicit `@config` compatibility | Retire the file only after its settings/plugins have verified equivalent coverage; migrate unsupported legacy options separately |
+| `@tailwind base/components/utilities` | `@import "tailwindcss"` | Single import |
+| `darkMode: "class"` | `@custom-variant dark (...)` | CSS-only |
+| `bg-gradient-to-r` | `bg-linear-to-r` | Also: `bg-radial`, `bg-conic` |
+| `bg-opacity-60` | `bg-red-500/60` | All `*-opacity-*` removed |
+| `rounded-sm` | `rounded-xs` | Radius scale shifted down one step |
+| `rounded` | `rounded-sm` | (run `@tailwindcss/upgrade` codemod) |
+| `rounded-md`, `rounded-lg`, `rounded-xl` | Unchanged | Default radii remain 6px, 8px, and 12px |
+| `min-h-screen` | `min-h-dvh` | `dvh` handles mobile browser chrome |
+| `w-6 h-6` | `size-6` | Size shorthand for equal w/h |
+| `space-x-4` | `gap-4` | Gap handles flex/grid wrapping correctly |
+| `text-base leading-7` | `text-base/7` | Inline line-height modifier |
+| `require("tailwindcss-animate")` | `tw-animate-css` | CSS-only animations |
+| display utility beats `[hidden]` | `[hidden]` beats display utilities | Preflight adds `[hidden]:where(:not([hidden="until-found"])) { display: none !important }`; remove the attribute instead of overriding it |
+
+Run `@tailwindcss/upgrade` codemod before hand-editing; it handles the mechanical class renames. Hand-fix `@theme` migration, custom variants, and any project-specific config patterns the codemod cannot infer.

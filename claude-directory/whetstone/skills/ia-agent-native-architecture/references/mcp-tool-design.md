@@ -1,0 +1,741 @@
+<overview>
+How to design MCP tools following prompt-native principles. Start with primitives that enable capability. Graduate proven hot paths only under the performance and reliability criteria in [from-primitives-to-domain-tools.md](./from-primitives-to-domain-tools.md#graduating-to-code). Retain primitive fallback for edge cases.
+
+For a CLI rather than an MCP surface, see [cli-agent-interface.md](./cli-agent-interface.md).
+
+**Core principle:** Whatever a user can do, the agent should be able to do. Don't artificially limit the agent--give it the same primitives a power user would have.
+</overview>
+
+<principle name="primitives-not-workflows">
+## Tools Are Primitives, Not Workflows
+
+**Wrong approach:** Tools that encode business logic
+```typescript
+tool("process_feedback", {
+  feedback: z.string(),
+  category: z.enum(["bug", "feature", "question"]),
+  priority: z.enum(["low", "medium", "high"]),
+}, async ({ feedback, category, priority }) => {
+  // Tool decides how to process
+  const processed = categorize(feedback);
+  const stored = await saveToDatabase(processed);
+  const notification = await notify(priority);
+  return { processed, stored, notification };
+});
+```
+
+**Right approach:** Primitives that enable any workflow
+```typescript
+tool("store_item", {
+  key: z.string(),
+  value: z.any(),
+}, async ({ key, value }) => {
+  await db.set(key, value);
+  return { text: `Stored ${key}` };
+});
+
+tool("send_message", {
+  channel: z.string(),
+  content: z.string(),
+}, async ({ channel, content }) => {
+  await messenger.send(channel, content);
+  return { text: "Sent" };
+});
+```
+
+The agent decides categorization, priority, and when to notify based on the system prompt.
+</principle>
+
+<principle name="descriptive-names">
+## Tools Should Have Descriptive, Primitive Names
+
+Names should describe the capability, not the use case:
+
+| Wrong | Right |
+|-------|-------|
+| `process_user_feedback` | `store_item` |
+| `create_feedback_summary` | `write_file` |
+| `send_notification` | `send_message` |
+| `deploy_to_production` | `git_push` |
+
+The prompt tells the agent *when* to use primitives. The tool just provides *capability*.
+
+### Writing the description
+
+The name is the handle; the description is the contract the model routes on. Optimize it for precision, not brevity; the common defect is under-description, not verbosity. Write it as a man page: what the tool does, what each parameter means and what values are legal, what it does *not* return, and any caveat that changes the caller's plan (pagination, rate limits, eventual consistency, partial failure). Three or four sentences is a floor for a non-trivial tool, not a ceiling.
+
+The "capability, not use case" rule above still holds, and the boundary is what kind of *when* is being stated. A description may draw the line against sibling tools (what this tool covers, what it does not, which neighbour owns the adjacent case), because that is disambiguation the model needs at routing time and cannot get anywhere else. It must not carry workflow context: which step of a process to call it in, what to do with the result, or which business condition makes it appropriate. That belongs to the prompt or skill orchestrating the tool.
+
+Three things belong somewhere else:
+
+- **Worked examples, sample dialogue, and numbered protocols.** They cost tokens on every request and narrow the model's exploration to the path shown. Put procedure in the skill or prompt that orchestrates the tool.
+- **Triggering boosters** (`CRITICAL:`, `You MUST call this first`). Emphasis is priced in aggregate: once several descriptions shout, none of them carries signal, and the observed failure shifts from under-triggering to over-triggering.
+- **Cross-tool scolding** (`ALWAYS use this instead of X`, `NEVER use Y for this`). A preference for one tool belongs in that tool's own description, stated positively. Scattered across its rivals it decays the moment either tool changes.
+</principle>
+
+<principle name="simple-inputs">
+## Inputs Should Be Simple
+
+Tools accept data. They don't accept decisions.
+
+**Wrong:** Tool accepts decisions
+```typescript
+tool("format_content", {
+  content: z.string(),
+  format: z.enum(["markdown", "html", "json"]),
+  style: z.enum(["formal", "casual", "technical"]),
+}, ...)
+```
+
+**Right:** Tool accepts data, agent decides format
+```typescript
+tool("write_file", {
+  path: z.string(),
+  content: z.string(),
+}, ...)
+// Agent decides to write index.html with HTML content, or data.json with JSON
+```
+</principle>
+
+<principle name="rich-outputs">
+## Outputs Should Be Rich
+
+Return enough information for the agent to verify and iterate.
+
+**Wrong:** Minimal output
+```typescript
+async ({ key }) => {
+  await db.delete(key);
+  return { text: "Deleted" };
+}
+```
+
+**Right:** Rich output
+```typescript
+async ({ key }) => {
+  const existed = await db.has(key);
+  if (!existed) {
+    return { text: `Key ${key} did not exist` };
+  }
+  await db.delete(key);
+  return { text: `Deleted ${key}. ${await db.count()} items remaining.` };
+}
+```
+</principle>
+
+<design_template>
+## Tool Design Template
+
+The examples in this file use the Claude Agent SDK's in-process server (`createSdkMcpServer`, `tool` with raw-shape schemas). A standalone server uses the MCP TypeScript SDK instead; check the latest major before starting. Since its 2026-07-27 release, v2 (`@modelcontextprotocol/server`) is the stable line: it requires Zod `^4.2.0` and takes `z.object(...)` schemas (raw shapes survive only as deprecated overloads), while v1 (`@modelcontextprotocol/sdk`) receives only bug and security fixes. Start new servers on v2; when migrating, keep v1 and v2 imports on opposite sides of a process or transport boundary, because objects from one major must not flow into the other.
+
+Require `storage.get` to return `undefined` only for a missing key; stored `null`, `false`, `0`, and empty strings remain valid values.
+
+The catalog adapter uses `catalogOrigin`, an operator-configured HTTPS origin enforced by the runtime's outbound network policy. Resolve `catalogAccess.mayRead` from the authenticated caller on each request. The adapter fixes the method and route, rejects redirects, and returns only a validated status. Apply the live-action opt-in and dry-run requirements below when adding an external write operation.
+
+Require `storage.list` and `db.feedback.list` to return a page with the fields shown below. Use stable ordering for offsets. Set `status` to `incomplete` when more pages, a scan cap, or skipped records leave results unexamined. Supply a `reason` and `scanned`, the number of records examined in this call. Return `total_count` as the exact filtered count or `null` when unknown. Return `has_more` as a boolean or `null` when unknown. Return a usable `next_offset` when continuation is possible, otherwise `null`. Set `status` to `complete` only when the requested traversal reaches the end without omissions. Use `reason: null` for a complete traversal. An empty incomplete page does not establish absence.
+
+```typescript
+import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
+
+const catalogStatus = z.object({ state: z.enum(["available", "unavailable"]) });
+
+async function readCatalogStatus(itemId: string) {
+  const url = new URL("/v1/catalog/status", catalogOrigin);
+  url.searchParams.set("item", itemId);
+  const response = await fetch(url, {
+    method: "GET",
+    redirect: "error",
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok || !response.body) {
+    await response.body?.cancel();
+    throw new Error("Catalog response unavailable");
+  }
+
+  const bytes = new Uint8Array(4096);
+  const reader = response.body.getReader();
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value.length > bytes.length - size) {
+        await reader.cancel();
+        throw new Error("Catalog response exceeds its byte limit");
+      }
+      bytes.set(value, size);
+      size += value.length;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, size));
+  return catalogStatus.parse(JSON.parse(text));
+}
+
+export const serverName = createSdkMcpServer({
+  name: "server-name",
+  version: "1.0.0",
+  tools: [
+    // READ operations
+    tool(
+      "read_item",
+      "Read an item by key",
+      { key: z.string().describe("Item key") },
+      async ({ key }) => {
+        const item = await storage.get(key);
+        return {
+          content: [{
+            type: "text",
+            text: item === undefined ? `Not found: ${key}` : JSON.stringify(item, null, 2),
+          }],
+          isError: item === undefined,
+        };
+      }
+    ),
+
+    tool(
+      "list_items",
+      "Return one page of items, optionally filtered. Continue with next_offset; check status before treating a scan as complete.",
+      {
+        prefix: z.string().optional().describe("Filter by key prefix"),
+        limit: z.number().int().min(1).max(100).default(100).describe("Max items per page"),
+        offset: z.number().int().min(0).default(0).describe("Starting offset; use the previous next_offset"),
+      },
+      async ({ prefix, limit, offset }) => {
+        const page = await storage.list({ prefix, limit, offset });
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              items: page.items,
+              has_more: page.has_more,
+              next_offset: page.next_offset,
+              total_count: page.total_count,
+              status: page.status,
+              reason: page.reason,
+              scanned: page.scanned,
+            }, null, 2),
+          }],
+        };
+      }
+    ),
+
+    // WRITE operations
+    tool(
+      "store_item",
+      "Store an item",
+      {
+        key: z.string().describe("Item key"),
+        value: z.any().describe("Item data"),
+      },
+      async ({ key, value }) => {
+        await storage.set(key, value);
+        return {
+          content: [{ type: "text", text: `Stored ${key}` }],
+        };
+      }
+    ),
+
+    tool(
+      "delete_item",
+      "Delete an item",
+      { key: z.string().describe("Item key") },
+      async ({ key }) => {
+        const existed = await storage.delete(key);
+        return {
+          content: [{
+            type: "text",
+            text: existed ? `Deleted ${key}` : `${key} did not exist`,
+          }],
+        };
+      }
+    ),
+
+    // EXTERNAL operations
+    tool(
+      "read_catalog_status",
+      "Read the availability of an item in the configured catalog. Pass the catalog item ID.",
+      { itemId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/) },
+      async ({ itemId }) => {
+        try {
+          if (!await catalogAccess.mayRead(itemId)) {
+            return {
+              content: [{ type: "text", text: "Catalog item is unavailable to this caller." }],
+              isError: true,
+            };
+          }
+          const status = await readCatalogStatus(itemId);
+          return { content: [{ type: "text", text: JSON.stringify(status) }] };
+        } catch (err) {
+          const correlationId = randomUUID();
+          logger.error({ correlationId, err }, "read_catalog_status failed");
+          return {
+            content: [{
+              type: "text",
+              text: `Catalog lookup failed (ref ${correlationId}). Give the reference to the operator if it persists.`,
+            }],
+            isError: true,
+          };
+        }
+      }
+    ),
+  ],
+});
+```
+</design_template>
+
+<example name="feedback-server">
+## Example: Feedback Storage Server
+
+This server provides primitives for storing feedback. It does NOT decide how to categorize or organize feedback--that's the agent's job via the prompt.
+
+```typescript
+export const feedbackMcpServer = createSdkMcpServer({
+  name: "feedback",
+  version: "1.0.0",
+  tools: [
+    tool(
+      "store_feedback",
+      "Store a feedback item",
+      {
+        item: z.object({
+          id: z.string(),
+          author: z.string(),
+          content: z.string(),
+          importance: z.number().min(1).max(5),
+          timestamp: z.string(),
+          status: z.string().optional(),
+          urls: z.array(z.string()).optional(),
+          metadata: z.any().optional(),
+        }).describe("Feedback item"),
+      },
+      async ({ item }) => {
+        await db.feedback.insert(item);
+        return {
+          content: [{
+            type: "text",
+            text: `Stored feedback ${item.id} from ${item.author}`,
+          }],
+        };
+      }
+    ),
+
+    tool(
+      "list_feedback",
+      "Return one page of feedback items. Continue with next_offset; check status before treating a scan as complete.",
+      {
+        limit: z.number().int().min(1).max(100).default(50),
+        offset: z.number().int().min(0).default(0).describe("Starting offset; use the previous next_offset"),
+        status: z.string().optional(),
+      },
+      async ({ limit, offset, status }) => {
+        const page = await db.feedback.list({ limit, offset, status });
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              items: page.items,
+              has_more: page.has_more,
+              next_offset: page.next_offset,
+              total_count: page.total_count,
+              status: page.status,
+              reason: page.reason,
+              scanned: page.scanned,
+            }, null, 2),
+          }],
+        };
+      }
+    ),
+
+    tool(
+      "update_feedback",
+      "Update a feedback item",
+      {
+        id: z.string(),
+        updates: z.object({
+          status: z.string().optional(),
+          importance: z.number().optional(),
+          metadata: z.any().optional(),
+        }),
+      },
+      async ({ id, updates }) => {
+        await db.feedback.update(id, updates);
+        return {
+          content: [{ type: "text", text: `Updated ${id}` }],
+        };
+      }
+    ),
+  ],
+});
+```
+
+The system prompt then tells the agent *how* to use these primitives:
+
+```markdown
+## Feedback Processing
+
+When someone shares feedback:
+1. Extract author, content, and any URLs
+2. Rate importance 1-5 based on actionability
+3. Store using feedback.store_feedback
+4. If high importance (4-5), notify the channel
+
+Use your judgment about importance ratings.
+```
+</example>
+
+<principle name="dynamic-capability-discovery">
+## Dynamic Capability Discovery vs Static Tool Mapping
+
+**This pattern is specifically for agent-native apps** where you want the agent to have full access to an external API--the same access a user would have. It follows the core agent-native principle: "Whatever the user can do, the agent can do."
+
+If you're building a constrained agent with limited capabilities, static tool mapping may be intentional. But for agent-native apps integrating with GraphQL, OpenAPI, or other APIs exposing authorized capability metadata:
+
+**Static Tool Mapping (Anti-pattern for Agent-Native):**
+Build individual tools for each API capability. Always out of date, limits agent to only what you anticipated.
+
+```typescript
+function readSteps(client: MetricClient, start: string, end: string): Promise<unknown> {
+  return client.read("steps", start, end);
+}
+function readHeartRate(client: MetricClient, start: string, end: string): Promise<unknown> {
+  return client.read("heartRate", start, end);
+}
+function readSleep(client: MetricClient, start: string, end: string): Promise<unknown> {
+  return client.read("sleep", start, end);
+}
+```
+
+Every newly exposed metric needs another binding when only these static functions are registered.
+
+**Dynamic Capability Discovery (Preferred):**
+Build a meta-tool that discovers what's available, and a generic tool that can access anything.
+
+```typescript
+function listAvailableCapabilities(client: MetricClient): Promise<MetricType[]> {
+  return client.listTypes();
+}
+
+function readMetric(
+  client: MetricClient,
+  dataType: string,
+  start: string,
+  end: string,
+): Promise<unknown> {
+  return client.read(dataType, start, end);
+}
+```
+
+Use the complete `MetricClient` implementation below. Register discovery and generic access as tools with string type-name inputs, while the authenticated server validates names and grants. Do not assume a native library exposes an enumeration or metadata endpoint that it does not implement.
+
+**When to Use Each Approach:**
+
+| Dynamic (Agent-Native) | Static (Constrained Agent) |
+|------------------------|---------------------------|
+| Agent should access anything user can | Agent has intentionally limited scope |
+| External API with authorized metadata (GraphQL, OpenAPI) | Internal domain with fixed operations |
+| API evolves independently of your code | Tightly coupled domain logic |
+| You want full action parity | You want strict guardrails |
+
+**The agent-native default is Dynamic.** Only use Static when you're intentionally limiting the agent's capabilities.
+
+**Complete Dynamic Pattern:**
+
+Use the provider's authenticated metadata API rather than inventing language-level enumeration. This complete TypeScript client discovers and reads arbitrary authorized metric types; the URL is installed by trusted configuration.
+
+```typescript
+type MetricType = { name: string; readable: boolean; writable: boolean };
+
+class MetricClient {
+  private readonly baseURL: URL;
+  private readonly token: string;
+
+  constructor(baseURL: URL, token: string) {
+    if (!baseURL.pathname.endsWith("/")) {
+      throw new Error("Metric API base URL must end with a slash");
+    }
+    this.baseURL = new URL(baseURL);
+    this.token = token;
+  }
+
+  private async request(path: string, query?: Record<string, string>): Promise<unknown> {
+    const url = new URL(path, this.baseURL);
+    for (const [key, value] of Object.entries(query ?? {})) {
+      url.searchParams.set(key, value);
+    }
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${this.token}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error(`Metric API returned ${response.status}`);
+    return response.json();
+  }
+
+  async listTypes(): Promise<MetricType[]> {
+    const body = await this.request("types");
+    if (!Array.isArray(body)) throw new Error("Invalid metric inventory");
+    return body.map(item => {
+      if (typeof item !== "object" || item === null ||
+          typeof item.name !== "string" || typeof item.readable !== "boolean" ||
+          typeof item.writable !== "boolean") {
+        throw new Error("Invalid metric capability");
+      }
+      return { name: item.name, readable: item.readable, writable: item.writable };
+    });
+  }
+
+  async read(typeName: string, start: string, end: string): Promise<unknown> {
+    const types = await this.listTypes();
+    if (!types.some(type => type.name === typeName && type.readable)) {
+      throw new Error("Metric type is unavailable or not authorized");
+    }
+    return this.request("samples", { type: typeName, start, end });
+  }
+
+  async context(): Promise<string> {
+    const types = await this.listTypes();
+    return JSON.stringify({ availableMetricTypes: types });
+  }
+}
+```
+
+This example specifies a service contract: `GET types` returns capability objects, and `GET samples` validates the supplied type and time range against the authenticated caller's grants. Implement those endpoints in the existing PHP, Python, or TypeScript service. The client check improves diagnostics; the server must independently enforce grants. Preserve returned inventory as labeled app data, not interpolated developer instructions. Add a primitive write endpoint only for discovered writable capabilities and the caller's actual write authority.
+
+**Benefits:**
+- Agent can use any API capability, including ones added after your code shipped
+- API is the validator, not your enum definition
+- Smaller tool surface (2-3 tools vs N tools)
+- Agent naturally discovers capabilities by asking
+- Works with APIs that actually expose authorized metadata or introspection
+</principle>
+
+<principle name="crud-completeness">
+## CRUD Completeness
+
+Every data type the agent can create, it should be able to read, update, and delete. Incomplete CRUD = broken action parity.
+
+**Anti-pattern: Create-only tools**
+```typescript
+// ❌ Can create but not modify or delete
+tool("create_experiment", { hypothesis, variable, metric })
+tool("write_journal_entry", { content, author, tags })
+// User: "Delete that experiment" → Agent: "I can't do that"
+```
+
+**Correct: Full CRUD for each entity**
+```typescript
+// ✅ Complete CRUD
+tool("create_experiment", { hypothesis, variable, metric })
+tool("read_experiment", { id })
+tool("update_experiment", { id, updates: { hypothesis?, status?, endDate? } })
+tool("delete_experiment", { id })
+
+tool("create_journal_entry", { content, author, tags })
+tool("read_journal", { query?, dateRange?, author? })
+tool("update_journal_entry", { id, content, tags? })
+tool("delete_journal_entry", { id })
+```
+
+**The CRUD Audit:**
+For each entity type in your app, verify:
+- [ ] Create: Agent can create new instances
+- [ ] Read: Agent can query/search/list instances
+- [ ] Update: Agent can modify existing instances
+- [ ] Delete: Agent can remove instances
+
+If any operation is missing, users will eventually ask for it and the agent will fail.
+</principle>
+
+<principle name="tool-annotations">
+## Tool Annotations
+
+Declare behavioral hints to describe the tool's claimed semantics:
+
+| Annotation | Values | Purpose |
+|-----------|--------|---------|
+| `readOnlyHint` | `true`/`false` | Claims that the tool does not modify state. |
+| `destructiveHint` | `true`/`false` | Tool may irreversibly delete or overwrite data. |
+| `idempotentHint` | `true`/`false` | Repeated calls with the same arguments have no additional environmental effect; responses may differ. |
+| `openWorldHint` | `true`/`false` | Tool interacts with external entities beyond the server's control. |
+
+Treat annotations as untrusted unless the server is trusted, as required by the [MCP tools specification](https://modelcontextprotocol.io/specification/2026-07-28/server/tools#tool). Neither an annotation nor a read-like tool name grants authority. Permit automatic approval only under operator policy for a trusted server whose verified behavior fits the approved scope. Recheck that scope when implementations or tool inventories change; wildcard approvals include future matching tools.
+
+```typescript
+tool("delete_item", "Delete an item by key", {
+  key: z.string()
+}, async ({ key }) => { /* ... */ }, {
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  }
+});
+```
+</principle>
+
+<principle name="structured-output">
+## Structured Output and Actionable Errors
+
+Define `outputSchema` on tools whose every successful result is structured, so agents process structured data instead of parsing text. Once a tool declares an `outputSchema`, every non-error result must carry conforming `structuredContent`; the TypeScript SDK turns a result without it into an output validation error, so a tool with a text-only mode (a markdown/json format switch, a plain-text empty result) declares no `outputSchema`. Also return the same data serialized as JSON in a text content block, which the MCP specification recommends for clients that read only text.
+
+Error messages must guide agents toward solutions, not just report failure:
+
+```typescript
+// Wrong: opaque error
+return { text: "Error: too many results", isError: true };
+
+// Right: actionable error with recovery suggestion
+return {
+  text: "Query returned 5,000 results (limit 100). Try filter='active_only' to reduce results, or add a date range.",
+  isError: true
+};
+```
+
+Preserve `isError` in client adapters. A successful JSON-RPC response can carry a failed tool execution with `isError: true`, even when the result includes structured data. Branch on `isError` before consuming the payload and pass actionable tool feedback to the caller on the failure path. Test the same adapter with an ordinary success and a tool error carrying structured data inside a successful JSON-RPC response. See [MCP error handling](https://modelcontextprotocol.io/specification/2026-07-28/server/tools#error-handling).
+
+**Application data pagination:** For the list-tool payloads in these examples, return `has_more`, `next_offset`, and `total_count`. Default to 20-50 items per page. Process application data one page at a time.
+
+**MCP tool discovery:** Native `tools/list` uses [opaque protocol cursors](https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/pagination). For a complete tool inventory, pass each returned `nextCursor` unchanged as the next request's `cursor` until `nextCursor` is absent. An SDK iterator is suitable only if it guarantees that traversal. Do not infer completion from page size. If a page fails or a cap stops discovery, report the inventory as incomplete. Test with a server whose first response contains a nonempty `nextCursor`. Confirm the actual client exposes tools from later pages.
+</principle>
+
+<principle name="output-data-minimization">
+## Tool Output Carries Classification, Not Payload
+
+Tool output is model input: whatever a tool returns lands in the context window, in transcripts, and in whatever the agent writes next. Two cases leak by default.
+
+**Caught and uncaught exceptions.** A caught exception's message must not be returned to the model as tool output. Raw exception text routinely carries credentials from a connection string, local filesystem paths, the request payload that triggered the failure, and upstream response bodies. Log the full detail server-side, and return a fixed, generic tool-facing failure message plus a correlation identifier the operator can use to find the log entry. The recovery hint from the Actionable Errors principle still applies; the tool author writes it, and it is never copied from the exception. The test is origin, not syntax: an exception the tool's own code raised, whose message the tool author wrote from values the tool itself computed (a typed `ValidationError` carrying a rejected field name, a row count, a configured limit), is already the Actionable Errors shape and may be returned as-is. Interpolation is not the line; provenance is. Anything raised outside the tool's own code (a library, driver, filesystem, or upstream response), and any message that splices in a value the tool received rather than derived (a connection string, a resolved path, a request payload, an upstream response body), takes the generic message plus correlation identifier. Omitting the `catch` does not keep the text out: the TypeScript MCP SDK catches whatever a handler throws and returns `error.message` as the text of an `isError` result. Wrap each handler body (or register every handler through one wrapper) so only the tool's own errors propagate and everything else maps to the generic message plus correlation identifier.
+
+```typescript
+} catch (err) {
+  const correlationId = randomUUID();
+  logger.error({ correlationId, err }, "read_item failed");
+  return {
+    text: `read_item failed (ref ${correlationId}). Retry, or give the reference to the operator.`,
+    isError: true,
+  };
+}
+```
+
+**Detection tools.** A tool whose job is detection (a secret scanner, a PII sweep, a credential audit) must discard the raw matched text and every capture group at detection time and forward only classification metadata: rule identifier, rule description, path, line, confidence. A reporting tool that carries the matched secret "for context" is itself a re-leak vector, and the output schema should have no field capable of holding the raw match; a `snippet` or `match` string field is the defect regardless of what the implementation currently puts in it.
+
+```json
+{ "rule": "aws-access-key-id", "description": "AWS access key ID",
+  "path": "config/prod.env", "line": 12, "confidence": "high" }
+```
+</principle>
+
+<principle name="bounded-scan-incompleteness">
+## Bounded Scans Report Incompleteness
+
+A lookup or search tool that scans a bounded or paginated set can find a match and still not know whether it is unique, or find nothing and still not know whether the item is absent. Whenever the scan stopped at a size or count cap, or skipped unreadable or malformed records, return an explicit `incomplete` signal (a status field plus the reason and how far the scan got) distinct from `not_found` and from a confirmed unique match. A tool that collapses "scan truncated" into "not found" produces false negatives, and one that reports "unique" from a partial scan produces false positives; the agent then acts on both as facts. Callers that need absence or uniqueness reject `incomplete` and narrow the query or raise the cap rather than treating it as a pass.
+
+```json
+{ "status": "incomplete", "matches": [{ "id": "exp_41" }],
+  "scanned": 500, "cap": 500, "unreadable": 2,
+  "hint": "narrow by dateRange or continue with next_offset=500" }
+```
+
+Bound content-returning tools by bytes as well as by count. A single long line or record can exceed the budget. For plain text, cap each rendered line and the total result. Clip at a UTF-8 character boundary and append a marker stating how many bytes were omitted. Include the marker in the budget. Derive the returned range and truncation flag from the emitted content, and state how to fetch the rest.
+
+For structured pages, fit fewer whole records to the final UTF-8 response budget. Include metadata, JSON escaping, and both representations in the measurement when the tool returns them. Generate the text and `structuredContent` from the same valid page. When the byte limit leaves records for a later page, mark the result incomplete and set its continuation to the first omitted record in the stable ordering. If even one record cannot fit, return a bounded error with a way to request a smaller projection or range. Test a page that fits by count but exceeds the byte budget. Verify schema validity, equality of representations where both are returned, and the first record on the next page. Also test a single oversized record.
+</principle>
+
+<principle name="live-action-opt-in">
+## Live Actions Need an Opt-In Beyond Credentials
+
+Credential presence is necessary but not sufficient authorization for a tool that spends money, sends a message, submits, uploads, or otherwise acts on an external system. Gate the live path behind a separate explicit opt-in (an environment variable such as `ALLOW_LIVE=1` or a `--live` flag) that the operator sets only for the authorized run, so a configured environment does not make every invocation a real transaction. Ship a credential-free dry-run that exercises the full pipeline (validation, request construction, response handling) and returns placeholder output labelled as such, not a no-op that skips the code the live path depends on.
+</principle>
+
+<principle name="transport-selection">
+## Transport Selection
+
+| Transport | When to use |
+|-----------|------------|
+| **stdio** | Local/single-client tools, CLI integrations, same-machine only |
+| **Streamable HTTP** | Remote/multi-client, production deployments, cross-network |
+| **SSE** | Deprecated; avoid for new servers |
+
+For local HTTP servers, bind to loopback and validate allowed origins. Also validate parsed `Host` or HTTP authority against the names and ports actually served, even when `Origin` is absent. A local allowlist typically uses `localhost`, `127.0.0.1`, or `[::1]` with the configured port. Reject missing, malformed, or unlisted authority values; do not accept an arbitrary domain because it resolves to loopback. For a reverse proxy, explicitly configure the served names and trust forwarded authority only from that proxy. Test an allowed local request and a foreign Host with no Origin, as well as an invalid Origin. The [MCP transport specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#security-%26-endpoint) requires Origin validation; the [Python SDK transport checks](https://github.com/modelcontextprotocol/python-sdk/blob/main/src/mcp/server/transport_security.py) demonstrate the separate Host check. Neither check replaces authentication.
+
+For stateless Streamable HTTP, create one server instance per HTTP request through a factory, register tools inside it, and keep clients and connection pools at module scope. A factory that returns one shared instance passes single-request tests and fails any request that arrives while another is in flight, because a connected instance cannot serve a second transport; test with two overlapping requests.
+</principle>
+
+<principle name="long-running-calls">
+## Long-Running and Human-Waiting Calls
+
+Use elicitation for human input instead of polling inside an open call. For long jobs, return a handle with a status tool, or negotiate [MCP task support](https://modelcontextprotocol.io/extensions/tasks/overview) with the client. Document the server timeout operators need; progress does not imply an unlimited request lifetime.
+
+In Claude Code v2.1.212+, main-conversation MCP calls move to background tasks after two minutes by default. Subagent and IDE calls do not; non-interactive calls require `CLAUDE_AUTO_BACKGROUND_TASKS=1`. An open elicitation dialog postpones backgrounding. Per-server `timeout` is a hard wall-clock limit in milliseconds that progress notifications do not extend. HTTP requests also have a first-byte timer: the maximum of 60 seconds, the configured tool timeout, and `MCP_TIMEOUT` (the unset tool timeout's default does not enter that comparison). Backgrounding preserves call limits. See [Claude Code's timeout and backgrounding contract](https://code.claude.com/docs/en/mcp#automatic-backgrounding-of-long-tool-calls).
+</principle>
+
+<principle name="tool-naming-multi-server">
+## Tool Naming for Multi-Server Environments
+
+When multiple MCP servers coexist, prefix tool names with the service: `slack_send_message`, `github_create_issue`, `sentry_list_issues`. Without prefixes, tool name collisions across servers cause ambiguous routing.
+</principle>
+
+<principle name="evaluation-methodology">
+## Evaluation: How to Prove an MCP Server Works
+
+Do not ship an MCP server without a quality gate. Build a 10-question evaluation set before the server is merged:
+
+- **10 human-readable Q/A pairs**: each question is a realistic user ask (`"How many commits did Alice land on the payments module in Q3 2025?"`), each answer is a single string-comparable value (`"27"`, `"2024-08-14"`, `"kieran@example.com"`).
+- **Multi-hop**: each question requires calling 2-3 tools in sequence (list → filter → aggregate). Single-tool questions don't stress the capability graph.
+- **Read-only**: questions never mutate state. Every eval run must be reproducible.
+- **Closed / historical data**: answers derive from data that doesn't change over time (a closed quarter, an archived project, a committed git range). Live data makes answers drift and the eval becomes noise.
+- **Dozens of invocations per run**: the full eval should fire 20-40 tool calls. Servers that look fine on a single call often break on the 15th (rate limits, pagination edge cases, state pollution).
+
+Run the eval in CI. Scoring is binary per question: exact string match or fail. Pass threshold: 9/10. Investigate any drop from a prior run; eval regressions usually indicate a tool schema change broke client inference.
+
+**What the eval catches that unit tests don't:**
+- Vague tool descriptions that cause the agent to call the wrong tool
+- Tools whose results are always structured but declare no `outputSchema`, which forces the agent to parse error-prone text (tools with a text-only mode declare none, per Structured Output)
+- Pagination that works for page 1 but breaks on page 3
+- Error messages that don't surface the recovery path, so the agent gives up
+
+The eval is the single best proxy for "does a real agent successfully use this server?". Skipping it ships servers that pass unit tests and fail in practice.
+</principle>
+
+<checklist>
+## MCP Tool Design Checklist
+
+**Fundamentals:**
+- [ ] Tool names describe capability, not use case
+- [ ] Inputs are data, not decisions
+- [ ] Outputs are rich (enough for agent to verify)
+- [ ] CRUD operations are separate tools (not one mega-tool)
+- [ ] Use primitive tools by default; graduate hot paths only for measured performance or reliability needs under [from-primitives-to-domain-tools.md](./from-primitives-to-domain-tools.md#graduating-to-code), with primitive fallback retained
+- [ ] Tool errors carry `isError` through the client adapter and follow its failure path
+- [ ] Descriptions state capability and the boundary against sibling tools, never workflow context (see Writing the description)
+- [ ] Descriptions carry no worked examples, numbered protocols, `CRITICAL:`-style boosters, or cross-tool `ALWAYS`/`NEVER` scolding
+- [ ] Descriptions pass the machine-parsed-text rules: one directive per sentence, simple tenses, noun stacks capped at three, no dropped referents
+- [ ] Tool annotations set (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`)
+- [ ] Error messages include recovery suggestions, not just failure descriptions
+- [ ] Example application list payloads paginate with `has_more`, `next_offset`, `total_count`
+- [ ] Native `tools/list` discovery follows every cursor before claiming a complete inventory; a paginated-server test exposes tools beyond the first page
+- [ ] Long jobs return a handle/status tool or negotiate task support; human input uses elicitation, and documented timeouts account for host backgrounding
+- [ ] Bounded or paginated lookups return `incomplete` (distinct from not-found and unique) when a cap or unreadable records cut the scan short
+- [ ] Plain text caps bytes per line and per result and reports truncation. Structured pages fit whole records to the final response budget and resume at the first omitted record
+- [ ] Money-spending or live-external-effect tools require an explicit opt-in separate from credentials and ship a credential-free, labelled dry-run
+- [ ] Caught or uncaught exceptions raised outside the tool's own code (a handler-wide catch or wrapper exists, because the SDK otherwise returns `error.message` to the model), or splicing in a value the tool received rather than derived, return a fixed generic message plus a correlation identifier; the raw exception text goes to the server log only. The tool's own validation errors, written by the author from values the tool computed, pass through as-is
+- [ ] Detection tools (secret, PII, credential scanners) emit rule identifier, description, path, line, and confidence; the output schema has no field that can hold the raw match
+- [ ] Multi-server tool names use service prefix (`service_action_resource`)
+- [ ] 10 Q/A eval pairs defined before merge (read-only, multi-hop, closed-data); eval passes ≥ 9/10 in CI on every PR; regressions investigated before shipping. See the Evaluation principle above.
+
+**Dynamic Capability Discovery (for agent-native apps):**
+- [ ] For external APIs where agent should have full access, use dynamic discovery
+- [ ] Include a `list_*` or `discover_*` tool for each API surface
+- [ ] Use string inputs (not enums) when the API validates
+- [ ] Supply discovered capability inventories as labeled runtime data or tool results; keep trusted static tool definitions in system/developer instructions
+- [ ] Only use static tool mapping if intentionally limiting agent scope
+
+**CRUD Completeness:**
+- [ ] Every entity has create, read, update, delete operations
+- [ ] Every UI action has a corresponding agent tool
+- [ ] Test: "Can the agent undo what it just did?"
+</checklist>

@@ -1,0 +1,10 @@
+--- a/skills/ia-test-audit/references/behavioral-review.md
++++ b/skills/ia-test-audit/references/behavioral-review.md
+@@ -1,6 +1,6 @@
+ # Behavioral review
+ 
+-Use this checklist on independently selected tests, including files with no detector
++Use this checklist on independently selected tests, including files with no search
+ hits. Follow fixture and assertion-helper definitions before judging a test body.
+ 
+ ## Trace the source of the answer

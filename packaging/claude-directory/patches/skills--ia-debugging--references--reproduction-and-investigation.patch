@@ -1,0 +1,11 @@
+--- a/skills/ia-debugging/references/reproduction-and-investigation.md
++++ b/skills/ia-debugging/references/reproduction-and-investigation.md
+@@ -31,7 +31,7 @@
+ 
+ **3. Reduce**: strip the reproduction to the minimal failing case. Remove unrelated code, data, and configuration until removing one more piece makes the bug disappear. That remaining piece is the trigger.
+ 
+-**4. Investigate**: trace the failing path far enough to explain the violated invariant and the conditions that cause it ([root-cause-tracing.md](./root-cause-tracing.md): stack instrumentation, test pollution detection). Compare code version, data, environment, timing, and configuration in working versus broken cases. Capture relevant environment state with [collect-diagnostics.sh](../scripts/collect-diagnostics.sh). A causal explanation may span several layers or be local to one expression; neither the earliest observed divergence nor a fixed number of stack levels proves root cause.
++**4. Investigate**: trace the failing path far enough to explain the violated invariant and the conditions that cause it ([root-cause-tracing.md](./root-cause-tracing.md): stack instrumentation, test pollution detection). Compare code version, data, environment, timing, and configuration in working versus broken cases. Capture relevant environment state as described in [specialized-patterns.md](./specialized-patterns.md#environment-diagnostics). A causal explanation may span several layers or be local to one expression; neither the earliest observed divergence nor a fixed number of stack levels proves root cause.
+ 
+ **Route the first move by bug class before instrumenting.** Visual/rendering bugs want a static read of the render path and computed styles, not logs; behavioral/async/state/lifecycle bugs want a probe added *now* as part of the hypothesis; pure-logic bugs need only a careful read. Before adding any probe, state the yes/no question it answers and the decision rule. CI check failed? See [specialized-patterns.md](./specialized-patterns.md) for the CI-failure workflow (and full routing detail).
+ 

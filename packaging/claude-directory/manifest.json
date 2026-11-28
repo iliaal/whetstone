@@ -1,0 +1,54 @@
+{
+  "source": "plugins/whetstone",
+  "output": "claude-directory/whetstone",
+  "exclude": [
+    ".codex-plugin/",
+    ".mcp.json",
+    "README.md",
+    "PRIVACY.md",
+    "evals/",
+    "hooks/",
+    "scripts/",
+    "commands/scripts/",
+    "commands/ia-resolve-pr.md",
+    "skills/*/scripts/",
+    "skills/*/SPEC.md",
+    "skills/ia-git-worktree/references/workflow-examples.md",
+    "skills/ia-git-worktree/references/troubleshooting.md",
+    "skills/ia-test-audit/references/detectors.md"
+  ],
+  "frontmatter_keys": {
+    "skill": [
+      "name",
+      "description",
+      "argument-hint",
+      "disable-model-invocation",
+      "paths",
+      "model"
+    ],
+    "command": [
+      "description",
+      "argument-hint",
+      "disable-model-invocation",
+      "model"
+    ],
+    "agent": [
+      "name",
+      "description",
+      "model",
+      "tools"
+    ]
+  },
+  "forbidden_text": [
+    "CLAUDE_PLUGIN_ROOT",
+    "ia-resolve-pr",
+    "mcp__plugin_whetstone",
+    "WORKTREE_SESSION_ID",
+    "PR_COMMENT_TRUSTED_LOGINS",
+    "copy-env",
+    "hook system",
+    "--no-env`",
+    "--no-env "
+  ],
+  "plugin_description": "Engineering-discipline agents, commands, and skills for planning, debugging, code review, verification, and PHP/Python/TypeScript work. {agents} agents, {commands} commands, {skills} skills."
+}

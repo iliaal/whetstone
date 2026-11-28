@@ -1,0 +1,192 @@
+# Agent Types
+
+> When to read: when picking which agent type to spawn for a swarm role and weighing built-in vs plugin-defined options.
+
+## Subagent vs teammate
+
+| Aspect | Agent (subagent) | Named Agent with teams enabled (teammate) |
+|--------|-----------------|-----------------------------------|
+| Lifespan | Until task complete | Until shutdown requested |
+| Communication | Return value; messaging when exposed | Inbox messages through SendMessage |
+| Task access | Depends on active tools | Shared task list when Task tools are exposed |
+| Team membership | No | Yes |
+| Coordination | One-off | Ongoing |
+| Best for | Searches, analysis, focused work | Parallel work, pipelines, collaboration |
+
+## Built-in Agent Types
+
+Inspect the active `Agent` schema for available built-in types; the examples below do not require the Whetstone plugin. Tool restrictions and model defaults can vary by runtime.
+
+Claude Code facts below follow the [subagent documentation](https://code.claude.com/docs/en/sub-agents) checked on 2026-10-11. Explore and Plan omit CLAUDE.md files and the startup git-status snapshot; include applicable project rules in their prompts. Other built-ins and custom agents load both by default. `omitClaudeMd: true` (v2.1.271+) suppresses user, project, and local CLAUDE.md files only; it preserves git status and managed policy except that managed subagents also omit managed policy.
+
+### Bash
+```javascript
+Agent({
+  subagent_type: "Bash",
+  description: "Run git commands",
+  prompt: "Check git status and show recent commits"
+})
+```
+- **Tools:** Bash only
+- **Model:** Inherits from parent
+- **Best for:** Git operations, command execution, system tasks
+
+### Explore
+```javascript
+Agent({
+  subagent_type: "Explore",
+  description: "Find API endpoints",
+  prompt: "Find all API endpoints in this codebase. Be very thorough."
+})
+```
+- **Tools:** Read-only exploration tools; verify the active type's tool restrictions
+- **Model:** Main conversation model by default; when the main model is Fable, the built-in resolves to `opus` on subscriptions, Console, or `ANTHROPIC_BASE_URL` gateways. On Bedrock, Agent Platform, Foundry, Claude Platform on AWS, or Claude apps gateways, it retains the main model.
+- **Best for:** Codebase exploration, file searches, code understanding
+- **Thoroughness levels:** "quick", "medium", "very thorough"
+
+### Plan
+```javascript
+Agent({
+  subagent_type: "Plan",
+  description: "Design auth system",
+  prompt: "Create an implementation plan for adding OAuth2 authentication"
+})
+```
+- **Tools:** All read-only tools
+- **Model:** Inherits from parent
+- **Best for:** Architecture planning, implementation strategies
+
+### general-purpose
+```javascript
+Agent({
+  subagent_type: "general-purpose",
+  description: "Research and implement",
+  prompt: "Research React Query best practices and implement caching for the user API"
+})
+```
+- **Tools:** All tools (*)
+- **Model:** Inherits from parent
+- **Best for:** Multi-step tasks, research + action combinations
+
+### claude-code-guide
+```javascript
+Agent({
+  subagent_type: "claude-code-guide",
+  description: "Help with Claude Code",
+  prompt: "How do I configure MCP servers?"
+})
+```
+- **Tools:** Read-only + WebFetch + WebSearch
+- **Model:** Haiku
+- **Best for:** Questions about Claude Code, Agent SDK, Anthropic API
+
+### claude
+
+Use this catch-all for tasks without a specialized type or for dispatched background sessions, where it is the default. It exposes every available subagent tool and follows the normal model-selection order without its own model override.
+
+### statusline-setup
+```javascript
+Agent({
+  subagent_type: "statusline-setup",
+  description: "Configure status line",
+  prompt: "Set up a status line showing git branch and node version"
+})
+```
+- **Tools:** Read, Edit only
+- **Model:** Sonnet
+- **Best for:** Configuring Claude Code status line
+
+---
+
+## Plugin Agent Types
+
+Plugin-defined agents are addressed `<plugin>:<agent-name>` (`whetstone:ia-security-sentinel`, not `ia-security-sentinel`). Built-in types above take no prefix. A bare plugin-agent name fails at dispatch with a bad-tool-name error, and the failure is invisible to every static check in this repo, so confirm the prefix against this file rather than inferring it from a filename.
+
+From the `whetstone` plugin (examples):
+
+### Review Agents
+```javascript
+// Security review
+Agent({
+  subagent_type: "whetstone:ia-security-sentinel",
+  description: "Security audit",
+  prompt: "Audit this PR for security vulnerabilities"
+})
+
+// Performance review
+Agent({
+  subagent_type: "whetstone:ia-performance-oracle",
+  description: "Performance check",
+  prompt: "Analyze this code for performance bottlenecks"
+})
+
+// Architecture review
+Agent({
+  subagent_type: "whetstone:ia-architecture-strategist",
+  description: "Architecture review",
+  prompt: "Review the system architecture of the authentication module"
+})
+
+// Code simplicity
+Agent({
+  subagent_type: "whetstone:ia-code-simplicity-reviewer",
+  description: "Simplicity check",
+  prompt: "Check if this implementation can be simplified"
+})
+```
+
+**All review agents from whetstone:**
+- `ia-code-simplicity-reviewer` - YAGNI and minimalism
+- `ia-database-guardian` - Database safety and migration validation
+- `ia-deployment-verification-agent` - Pre-deploy checklists
+- `ia-kieran-reviewer` - Python and TypeScript best practices
+- `ia-architecture-strategist` - Architecture, design patterns, and anti-patterns
+- `ia-performance-oracle` - Performance analysis
+- `ia-security-sentinel` - Security vulnerabilities
+
+### Research Agents
+```javascript
+// Best practices research
+Agent({
+  subagent_type: "whetstone:ia-best-practices-researcher",
+  description: "Research auth best practices",
+  prompt: "Research current best practices for JWT authentication 2024-2026"
+})
+
+// Framework documentation (use best-practices-researcher -- covers docs + best practices)
+Agent({
+  subagent_type: "whetstone:ia-best-practices-researcher",
+  description: "Research S3 file-upload patterns for Laravel",
+  prompt: "Gather comprehensive documentation about S3 file-upload patterns for Laravel"
+})
+
+// Git history analysis
+Agent({
+  subagent_type: "whetstone:ia-git-history-analyzer",
+  description: "Analyze auth history",
+  prompt: "Analyze the git history of the authentication module to understand its evolution"
+})
+```
+
+**All research agents:**
+- `ia-best-practices-researcher` - Best practices, framework docs, and implementation patterns
+- `ia-git-history-analyzer` - Code archaeology
+- `ia-repo-research-analyst` - Repository patterns
+
+### Design Agents
+```javascript
+Agent({
+  subagent_type: "whetstone:ia-figma-design-sync",
+  description: "Sync with Figma",
+  prompt: "Compare implementation with Figma design at [URL]"
+})
+```
+
+### Workflow Agents
+```javascript
+Agent({
+  subagent_type: "whetstone:ia-bug-reproduction-validator",
+  description: "Validate bug",
+  prompt: "Reproduce and validate this reported bug: [description]"
+})
+```

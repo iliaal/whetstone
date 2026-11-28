@@ -1,0 +1,51 @@
+# Swarm Resilience Patterns
+
+Load this reference when designing a multi-agent workflow that must survive partial failure. Swarm failures are inevitable: contain blast radius and recover partial value rather than discarding everything.
+
+## Cascade prevention
+
+Set a deadline per agent and continue independent work when one agent stalls. When a worker exceeds its deadline, request termination through the harness. Wait for a terminal outcome or stop acknowledgement that establishes the worker can no longer write before releasing its owned paths.
+
+Apply circuit-breaker logic to agent types: after N consecutive failures from the same agent type, stop dispatching to it and route to an alternative (different model, different decomposition). Apply bulkhead isolation: a failing agent type cannot exhaust the shared task queue or block other agent types from proceeding.
+
+## Dispatch backpressure
+
+When the harness accepts a dispatch but caps active execution, treat a retryable capacity rejection as backpressure. Exact wording varies across harness versions and platforms. Re-dispatch queued agents as active ones complete. Record dispatch errors unrelated to capacity as failures (bad tool name, malformed prompt, missing permission). For accepted dispatches, keep deadline expiry pending until the harness confirms a terminal outcome.
+
+## Recovery strategy
+
+When an agent fails, classify the failure before acting:
+
+- **Retry**: transient errors (network timeout, rate limit). Re-dispatch the same task; if the task declares a file artifact, retry onto a fresh output path (see below).
+- **Reassign**: agent-specific issue (context pollution, wrong model for task complexity). Dispatch a fresh agent, optionally with a different model.
+- **Escalate**: systemic problem (bad spec, missing dependency, impossible constraint). Surface to the orchestrator or user with an [Escalation Report](./handoff-templates.md).
+
+For agent-reported `BLOCKED` status specifically (as opposed to crashes or timeouts), use the [worker-lifecycle.md](./worker-lifecycle.md) triage table. It maps premature stops, missing context, reasoning ceilings, oversized tasks, and faulty specifications to concrete responses.
+
+Never retry blindly. Repeating the same prompt in the same conditions produces the same failure.
+
+**Keep ownership while a worker can still write.** Silence, an absent message channel, and the orchestrator reaching wrap-up do not establish deadline expiry. A controller deadline or a successful stop request without confirmation leaves ownership with the worker. Exclude its owned paths from validation, staging, commits, and replacement dispatches while the scope is unsettled. If the harness cannot establish that the writer stopped, report the affected paths as unresolved and continue independent work. Once the writer has stopped, collect its usable result or follow the [crash recovery procedure](./worker-lifecycle.md).
+
+When agents hand off through files rather than return values, the artifact is part of the failure classification. A missing, malformed, wrong-version, or wrong-shape artifact is a failed dispatch, not a partial success: validate the declared output against its expected shape before advancing the phase, and never substitute a command that produces no artifact for an unavailable backend. On artifact-validation failure, give the retry a fresh output path and preserve the failed attempt for diagnosis. Retrying onto the same path means a crashed retry leaves the previous attempt's file sitting there looking like a success, and the orchestrator has no way to tell the two apart. This governs declared handoff artifacts only. An agent that crashed while making in-place edits to its owned source files takes the working-tree inspection and verify-and-continue relaunch in the main skill instead; a fresh path is meaningless for an in-place edit, and redoing the work double-applies it.
+
+Exception for a shape-only failure: when the saved output fails validation only on form (a misspelled key, broken quoting, extra wrapping) and every identity and outcome field (id, status, blocker or failure list) is present exactly once, send the saved output to one fresh agent with no tools to re-emit it in the declared shape, write the reply to a fresh path beside the preserved original, and accept it only when it passes shape validation and every identity and outcome field value equals the original exactly. Any difference is a content failure and takes the normal retry. The reformat does not consume a retry and never re-dispatches the writer. A missing, repeated, or malformed identity or outcome field is a content failure and takes the normal retry.
+
+## Bounded collection
+
+Collecting a worker's result on a bounded budget means repeating the host's blocking wait back to back until the result artifact or a terminal outcome lands or an aggregate wall-clock limit passes. A host whose single wait returns quickly reaches the limit by repeating it; one short return is not "done waiting". Classify the end state three ways: a terminal outcome was collected; a receipt exists (the dispatch was accepted, a status or completion signal arrived) but the result was not collected; or this host offers no reliable collector at all. On some hosts the task-tagged completion message is itself the terminal result while the dedicated wait tool reports status only, so key collection to whatever channel the active host uses to deliver the final answer rather than to one collector shape.
+
+## Orchestrator context exhaustion mid-pipeline
+
+A multi-stage synthesis pipeline can exhaust the dispatching context before the final stages run; the symptom is subagent launches starting to fail after several dispatch and collect rounds. Once every worker result is collected, write a complete, self-sufficient handoff contract to disk with every field present (`null` for a field that does not apply, never omitted) and hand the remaining stages to fresh leaf subagents. Redact secrets, tokens, and credentials from the contract even when a worker artifact quotes them verbatim; every later leaf reads the file. Reference a needed secret by name or location (env var, secret-store key), never by value. Each leaf's brief names the exact handoff file path and the stage to run; the leaf reads that file and the run directory (the per-run folder holding the collected worker artifacts and the handoff file) and nothing else. This is the one sanctioned case of a worker reading its assignment from disk; the general rule that the brief carries the task text is in [worker-lifecycle.md](./worker-lifecycle.md). A fact in neither place does not exist to a leaf. Leaves launch nothing themselves; a leaf that dispatches further agents recreates the exhaustion one level down.
+
+## Mid-pipeline compensation
+
+When an agent fails mid-pipeline after earlier agents have already written files or made changes, classify whether those earlier effects are reversible before deciding the recovery path. If reversible (file writes, uncommitted changes), revert and retry the pipeline segment. If irreversible (committed code, external API calls, database writes), compensate rather than retry: apply a corrective action that accounts for the partial state. Never retry blindly when earlier stages have produced side effects.
+
+## Post-failure synthesis
+
+Before starting a multi-phase plan, trace each phase output to a later consumer or an explicit check. Resolve unused outputs as dropped requirements or unnecessary work. If an upstream filter or failure leaves a phase with an empty input list, report "no input" rather than a clean verdict.
+
+Even partial results from a failed swarm run have value. When some agents succeed and others fail, collect and present the successful outputs rather than discarding everything. Mark failed tasks as incomplete in the synthesis so downstream consumers know which areas lack coverage.
+
+**Uniform failure across every unit is an infrastructure result, not a clean verdict.** A pipeline that emits "no findings" when every unit errored the same way is indistinguishable from a clean run. When the failure count equals the unit count and the failures share a cause, report the provider, auth, or model failure and suppress the verdict.

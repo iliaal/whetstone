@@ -1,0 +1,11 @@
+--- a/commands/ia-test-browser.md
++++ b/commands/ia-test-browser.md
+@@ -117,7 +117,7 @@
+ 
+ Before the first navigation, inspect the serving process's command and working directory. Verify that checkout's SHA and scoped working-tree changes against the target. For generated assets, establish the running build's source identity through build metadata or a fresh scoped build and restart. Record the serving process, evidence, and base URL. Also record the data backend the server uses (dev proxy target, API base URL, session origin). Perform creation, editing, or deletion against a shared or production backend only with explicit approval for the specific action. Otherwise mark the interaction unverified.
+ 
+-Resolve the port from the serving process and configuration. To consult the [port resolver](./scripts/resolve-dev-port), run it in the bound checkout with an empty first argument and the actual script name as the second when known. Record `[verified-base-url]` and substitute it literally in navigation blocks. Return PARTIAL if binding fails. Recheck after source changes, a rebuild, a restart, or a port change.
++Resolve the port from the serving process and configuration. In the bound checkout, check an explicit `--port`/`-p` in the package script that runs the server, then a `PORT=` entry in `.env.local` or `.env`, then the framework config, then the framework default, and confirm the result against the port the serving process listens on. Record `[verified-base-url]` and substitute it literally in navigation blocks. Return PARTIAL if binding fails. Recheck after source changes, a rebuild, a restart, or a port change.
+ 
+ Verify the local server is accessible:
+ 

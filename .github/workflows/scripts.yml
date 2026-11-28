@@ -7,12 +7,14 @@ on:
       - "scripts/**"
       - "distillery/**"
       - "plugins/whetstone/**"
+      - "packaging/**"
       - ".github/workflows/scripts.yml"
   pull_request:
     paths:
       - "scripts/**"
       - "distillery/**"
       - "plugins/whetstone/**"
+      - "packaging/**"
       - ".github/workflows/scripts.yml"
   workflow_dispatch:
 
@@ -50,3 +52,5 @@ jobs:
           done
       - name: Run trigger regression tests
         run: python distillery/scripts/distiller.py test-triggers
+      - name: Build the Claude plugin directory edition
+        run: python scripts/package-claude-directory.py --check

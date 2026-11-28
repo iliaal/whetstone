@@ -1,0 +1,108 @@
+# Banned AI Design Patterns
+
+Visual patterns that signal AI-generated interfaces. Avoid all of these.
+
+## Layout Patterns
+
+| Pattern | Problem | Alternative |
+|---------|---------|-------------|
+| Centered hero + three equal-width cards + centered CTA | The most common AI layout | Asymmetric layouts, split screens, bento grids |
+| >60% of content using `text-align: center` | Center-heavy layouts are the #1 structural AI tell | Left-align body text, reserve centering for headings and CTAs only |
+| Perfectly symmetric grids everywhere | Real design uses intentional asymmetry | Vary column spans, use dominant/subordinate relationships |
+| Full-width sections stacked vertically with identical padding | Monotonous rhythm | Vary section widths, padding, and visual weight |
+| Everything inside cards (border + shadow + white bg) | Card overuse dilutes hierarchy | Use `border-t`, `divide-y`, or negative space for separation. In data-dense UIs, still drop per-element card chrome, but projects, records, and independent panels need a visible boundary (border, surface contrast, or spacing); remove a group border only when the rendered replacement keeps the boundary at least as clear at each tested width and theme |
+| Nested cards (two independent cards, each with its own header, padding, and shadow, stacked one inside the other) | Stacked elevation with no hierarchy gain; reads as component nesting left visible. A single surface framed by a hairline `ring-1` wrapper (the double-bezel pattern in aesthetics-and-interaction.md) is one surface with one elevation and is not this pattern | Flatten the inner card to a plain region, `divide-y` row, or heading; one elevation level per container |
+| Cookie-cutter section rhythm (every section follows identical structure) | Monotonous, signals templated generation | Vary section types: hero, split, bento, full-bleed, editorial |
+| Colored left-border accent cards | Common AI component pattern | Use top borders, background tints, or typography weight for emphasis |
+| Unintended gaps in bento grids | Span choices can leave visually awkward holes | Adjust spans first. Use `grid-auto-flow: dense` only for decorative or order-independent content; dense placement changes visual order without changing DOM or keyboard order. For interactive cards, verify meaningful reading and focus order, and preserve gaps when filling them would disrupt that order |
+
+## Color Patterns
+
+| Pattern | Problem | Alternative |
+|---------|---------|-------------|
+| Purple/violet gradients (`#6366f1` to `#8b5cf6` range) | The single most recognizable AI color signature | Pick a different palette entirely, then check the result against Composite Looks below; the usual escapes (earth tones, monochrome, warm accents) land straight in one of them |
+| Purple-to-blue gradient hero | The default AI aesthetic | Pick a different palette entirely |
+| Evenly distributed accent colors | No visual hierarchy | One dominant accent, neutrals everywhere else, but source the accent from the subject's own world, not the default acid-green or vermilion on near-black (Composite Looks below) |
+| Generic blue (#3B82F6) as primary | Default Tailwind blue | Choose a distinctive hue with personality |
+| Oversaturated accent colors (saturation >80%) | Visually loud, cheap feel | Desaturate accents; muted tones read as more considered |
+| Pure black (`#000000`) for text or backgrounds | Harsh, unnatural contrast | Use near-blacks (`#0a0a0a`, `#111`) or tinted darks |
+| Rainbow gradient text | Screams "AI made this" | Single-color text, use weight/size for emphasis |
+| Excessive `bg-clip-text bg-gradient-to-r` on headings | Gradient text overuse is an AI tell when applied to multiple headings | Reserve for one hero moment at most |
+| Neon/outer glow effects (`shadow-[0_0_20px_...]`) | Dated, screams template | Subtle, tinted shadows that match the surface hue |
+| Warm AND cool grays in the same interface | Inconsistent tinting | Pick one gray family and commit |
+
+## Composite Looks
+
+The rows above ban individual tokens. These three ban whole *combinations* that pass every per-token rule and still arrive unprompted regardless of subject. Each one is a legitimate structure (single accent on neutrals, restrained palette, editorial typography) collapsed onto the same realization every time.
+
+| Look | Composition | Alternative |
+|------|-------------|-------------|
+| Warm editorial | Cream ground near `#F4F1EA` + high-contrast serif display + terracotta accent (near `#D97757`, Anthropic's own accent) | Keep the serif/neutral structure, move the ground and accent off the cream-terracotta pairing |
+| Acid dark | Near-black ground + exactly one bright acid-green or vermilion accent | Keep one accent on neutrals; derive its hue from the subject rather than the default two |
+| Broadsheet | Hairline rules + zero border-radius + dense newspaper columns | Keep the density; vary rule weight, radius, or column rhythm so all three do not co-occur |
+| SaaS-card kit | Identical rounded cards everywhere, one border-radius regardless of hierarchy, the same soft grey shadow (`rgba(0,0,0,.1)`) under each, gradient washes as decoration | Vary card treatment by hierarchy; drop the shared radius/shadow/gradient combination even where each token alone would pass a per-token check |
+
+Observed as of 2026-08. Treat as a dated list of over-used combinations, not a permanent ban; if the brief pins one of these looks, follow the brief.
+
+## Typography Patterns
+
+| Pattern | Problem | Alternative |
+|---------|---------|-------------|
+| Inter/Roboto/System font everywhere | Zero personality | Cabinet Grotesk, Satoshi, or a context-appropriate serif. The current reflex "personality" faces (Geist, Outfit, Fraunces, Playfair Display, Cormorant, Space Grotesk, Instrument Serif) are themselves a tell in the display role; several remain fine as body or UI faces |
+| Declared display face silently replaced by a fallback | The chosen typography never reaches the page | Load files from a provider that hosts the face and inspect actual rendered fonts; follow [font-loading guidance](./aesthetics-and-interaction.md) |
+| Letter-spacing tighter than about -0.04em on display type | Tight tracking is a taste; crushed tracking is a tell | Stop at roughly -0.04em and get presence from size and weight instead |
+| Uniform font-weight (400 regular everywhere) | Flat hierarchy | Weight contrast: 500/600 for headings, 400 for body |
+| Title Case In Every Heading Word | Overly formal, AI tell | Sentence case |
+| Single word or phrase accented inside a headline (italic, bold, or a different color on just one word) | Each token is legitimate elsewhere; applied mid-headline it reads as an AI tell | Let the whole headline carry one consistent treatment; drive emphasis through word choice, not mid-sentence formatting |
+
+## Decoration Patterns
+
+| Pattern | Problem | Alternative |
+|---------|---------|-------------|
+| Accent line under every heading | Dead giveaway | Use typography weight and spacing for hierarchy |
+| Decorative emoji in headers | Tacky | Quality icons (Phosphor, Radix) or no decoration |
+| Uniform rounded corners everywhere (>80% of elements sharing the same `>=16px` radius) | Bubbly uniformity is an instant AI tell | Vary by purpose: sharp for data, rounded for interactive, pill for tags |
+| Icons inside colored circles (primary-color background circle + white icon) | Default AI component decoration; #3 most common AI pattern | Use icons inline, or with subtle background tints matching the surface |
+| `rounded-2xl` / `rounded-3xl` on containers, cards, and sections | Bubbly, toy-like feel | Reserve large radii for small interactive elements; use tighter radii for containers |
+| Generic stock imagery | Placeholder feel | Contextual photos, SVG illustrations, or abstract graphics suited to the domain |
+| Fabricated product UI assembled from styled divs, including invented version or sync footers inside the preview | Implies a product surface or state that the preview cannot demonstrate | Use a real screenshot or functioning component preview; put optional window chrome around that evidence, or omit the preview |
+| Form that shows success without sending (submit handler swallows the event, `action="#"`, success copy set on click) | Every real submission is silently lost while the page looks finished | Show success only after the endpoint responds; without an endpoint, use a reserved `.example` `mailto:` stand-in with no success state and list it in the completion report |
+| Floating gradient blobs as background | Overused AI aesthetic | Noise textures, mesh gradients, geometric patterns |
+| Custom mouse cursors (`cursor: url(...)`) | Novelty that signals template code | Use system cursors; reserve custom cursors for drawing tools or games |
+| shadcn/ui components left in generic default state | Identifiably "template starter kit" | Customize colors, spacing, and radii to match the design system |
+| Browser chrome left at defaults (`::selection`, `caret-color`, scrollbar, focus ring, `text-underline-offset`) | Unthemed chrome reads as unfinished template output | Theme each from the palette; keep the focus ring visible, only restyled |
+| Meta strings joined with middle dots (`A · B · C`) | Templated info-string formatting, appears regardless of subject | Use a separator suited to the content: comma, pipe, or a line break |
+| Trailing `→` appended to link or button text | Template chrome, not a functional affordance | Let the link text stand alone, or use a real icon component that carries intent |
+
+## Interaction Patterns
+
+| Pattern | Problem | Alternative |
+|---------|---------|-------------|
+| Hover effect on every element | Noise, no hierarchy | Reserve hover for interactive elements only |
+| Uniform transition-all on everything | Performance waste, lazy | Animate specific properties (transform, opacity) |
+| Bounce animation on load | Juvenile | Staggered fade/translate reveals with spring physics |
+| Skeleton loaders that look identical to content | Uncanny valley | Simpler placeholders or progressive loading |
+
+## Content Patterns
+
+Preserve supplied or measured metrics, prices, names, and contact details. Apply placeholder styling advice only to clearly labeled synthetic demo/test data; use reserved example contact information. Roundness is not evidence that a factual value is fabricated.
+
+| Pattern | Problem | Alternative |
+|---------|---------|-------------|
+| "Welcome to X" / "Unlock the power of..." / "Revolutionize your..." hero copy | Generic AI copy; instant credibility killer | Write specific, benefit-driven copy tied to the actual product |
+| "John Doe" / "Jane Smith" / "Sarah Chan" placeholder users | Lazy, unrealistic | Diverse, realistic names with messy data |
+| "Acme Corp" / "Nexus" / "Synergy" startup slop names | Template feel, obviously generated | Industry-specific realistic names |
+| Invented metrics presented as real | Unsupported claims mislead readers regardless of their digits | Use verified values; vary clearly labeled synthetic values only to exercise demo layouts |
+| Lorem ipsum visible in output | Unfinished | Realistic copy, even if placeholder |
+| Broken Unsplash links (`source.unsplash.com` or expired URLs) | Renders as broken images, amateurish | Use `https://picsum.photos/seed/{name}/800/600` or local assets |
+| Perfectly aligned testimonial cards with star ratings | Template pattern | Varied formats, pull quotes, inline mentions |
+| Oversized H1s without proportional hierarchy below | Single-level typography signals "just make it big" | Scale the full type ramp: H1 through H4 with intentional ratio |
+| Scroll-prompt filler UI ("Scroll to explore", "Swipe down", bouncing chevrons, scroll-arrow icons) | Signature AI landing-page tell; padding to avoid writing actual below-the-fold content | If content below is worth scrolling to, its first heading is the cue. Delete the prompt. |
+
+## Falsifiable Tests
+
+The pattern tables above catch known tells one at a time. These three tests catch the whole class; run them against finished output before shipping.
+
+- **Template test (greenfield pages and apps outside reference-fidelity mode)**: assess whether the palette, typography, and layout fit the subject. If the visual direction could serve an unrelated brief unchanged, revise the generic choices. Skip this gate for supplied references and components matched to an existing design system. Do not treat reusable tables, forms, dashboards, or component systems as failures solely because they support different content.
+- **AI Slop test**: would a stranger glancing at only the first viewport immediately say "an AI made this"? If yes, the committed direction was not committed enough. Push the signature visual choice further until the answer is no.
+- **Content authenticity check**: trace metrics, prices, identities, and contact details to supplied or measured sources. Preserve factual values even when round. Label synthetic demo content explicitly and keep it separate from production claims.

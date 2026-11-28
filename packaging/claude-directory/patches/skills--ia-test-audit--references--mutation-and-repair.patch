@@ -1,0 +1,11 @@
+--- a/skills/ia-test-audit/references/mutation-and-repair.md
++++ b/skills/ia-test-audit/references/mutation-and-repair.md
+@@ -57,7 +57,7 @@
+ source or types before judging a test that claims its behavior. The test that proved
+ the current change stays untouched in the same pass.
+ 
+-Handle detector consolidation groups per [detectors.md](./detectors.md).
++Treat duplicate-test groups as consolidation leads, not findings. Inspect setup and contract differences before merging, and preserve distinct risks across unit, integration, and end-to-end layers.
+ 
+ When authoring a new test, answer the same six trace questions in `SKILL.md` step 2. A
+ regression test must fail on the defective behavior for the intended reason. A test

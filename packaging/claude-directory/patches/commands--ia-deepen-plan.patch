@@ -1,0 +1,22 @@
+--- a/commands/ia-deepen-plan.md
++++ b/commands/ia-deepen-plan.md
+@@ -102,14 +102,16 @@
+ Return concrete, actionable recommendations."
+ ```
+ 
+-**Also use Context7 MCP for framework documentation:**
++**Also use Context7 MCP for framework documentation when it is installed:**
+ 
+ For any technologies/frameworks mentioned in the plan, query Context7:
+ ```
+-mcp__plugin_whetstone_context7__resolve-library-id: Resolve [framework] to a Context7 library ID
+-mcp__plugin_whetstone_context7__query-docs: Fetch current docs for that library ID, scoped to a query
++resolve-library-id: Resolve [framework] to a Context7 library ID
++query-docs: Fetch current docs for that library ID, scoped to a query
+ ```
+ 
++Without Context7, fetch the official documentation directly.
++
+ **Use WebSearch for current best practices:**
+ 
+ Search for recent (within the last 2 years) articles, blog posts, and documentation on topics in the plan.

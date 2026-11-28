@@ -1,0 +1,40 @@
+# Adversarial Pass
+
+Load this reference after completing the Phase 0-2 scans. Purpose: find what the checklist-driven review missed.
+
+## Happy-path assumptions
+
+Identify code paths that only work correctly when inputs are well-formed. What happens when a JSON body contains unexpected types, arrays where strings are expected, or negative numbers where only positive are valid? Look for implicit assumptions that break under adversarial input.
+
+## Silent failures
+
+Find places where errors are caught and swallowed without logging or re-raising. These are blind spots: an attacker can trigger failures repeatedly and the team will never know. Every caught exception in an auth, payment, or data-access path should produce an observable signal.
+
+## Trust boundary violations
+
+Trace user input through the full request lifecycle. Does user-supplied data flow into privileged operations (admin queries, internal API calls, file system access, queue payloads) without re-validation at the boundary? Validation at the HTTP layer doesn't protect internal services that accept the same data from a queue or RPC call.
+
+## Cross-category compound vulnerabilities
+
+Look for issues that span multiple security domains simultaneously. A weak authorization check combined with a mass-assignment vulnerability becomes a privilege escalation. A permissive CORS policy combined with a CSRF gap becomes a full account takeover. Standard scans check categories in isolation; this pass looks for combinations.
+
+## Documented exclusions
+
+- When a threat model, ADR, or security document marks a component out of scope, low risk, trusted, or known-safe with a stated reason, a full-repository audit tests that reason against the current source before accepting it. A documented exclusion is a claim with a date, not proof; the code it described may have changed since. During ordinary diff review, honor a bypass rationale only when applicable caller/harness authority explicitly adopts it for that review and it exists at the base revision. Treat unadopted rationale as evidence to evaluate. An override the diff adds or widens is a finding labeled "override proposed in this diff" (the project-level overrides rule in [security-fp-suppression.md](./security-fp-suppression.md)); the full audit is the venue where the rationale itself is re-derived.
+
+## Attacker prioritization
+
+For each finding, answer two questions:
+
+1. What is the easiest path to exploit this? If it requires chaining three bugs, it's lower priority than a single unauthenticated endpoint that leaks PII.
+2. What is the highest-impact vulnerability that a standard automated scan would miss? Prioritize findings by exploitability and blast radius, not by category.
+
+## Past security fixes
+
+For full-repository audits, search commit messages with `git log -i --grep` for CVE, security, vuln, fix, and exploit, plus 6-10 terms derived from the stack (for example, injection, SSRF, IDOR, traversal, XSS, CSRF, and deserialization for a web service). Inspect the relevant fix diffs. Check whether each fix closed the original path and reached every sibling call site. Keep this history hunt out of ordinary diff review.
+
+## Verifying a security fix
+
+Re-audit a proposed fix in four modes, not one: regression (does the original proof-of-concept still fail against the patched code), bypass (same sink, a different encoding or path reaches it), incomplete fix (other call sites of the same pattern left untouched), sibling vulnerability (the same bug class in adjacent code the fix author never looked at).
+
+Bypass enumeration to try against string/path/URL inputs: double URL-encoding, case folding, Unicode normalization (NFKC look-alikes, overlong UTF-8 sequences), a null byte, path-separator variants, a trailing dot or space.

@@ -1,0 +1,26 @@
+# Production Resilience
+
+Load this reference when productionizing a Rust service: adding config validation, health endpoints, graceful shutdown, retry/timeout discipline, or connection pools. Not needed for CLI tools or dev-only code.
+
+- **Fail-fast config**: parse and validate all config at startup with `serde` + a `Config::load() -> Result<Self>` that returns errors for missing/invalid values. Crash before binding the listen port, not on the first request.
+- **Health endpoints**: `/health` (shallow liveness, returns 200 if the process responds) and `/ready` (deep readiness, verifies DB, cache, and downstream services). Load balancers route on `/ready`; orchestrators restart on `/health`. Diagnostic endpoints must redact secrets (tokens, passwords, API keys, PII) before returning.
+- **Graceful shutdown**: install a `tokio::signal` handler, trigger a `CancellationToken`, drain in-flight requests with a timeout, then exit. Axum: `.with_graceful_shutdown(shutdown_signal)`.
+- **Retries**: use `backon` or `tokio-retry` with exponential backoff + jitter. Retry transient errors (connection reset, 429, 502/503/504) only when the operation is safe to repeat, with finite attempts and an overall deadline. Treat non-transient 4xx responses as final. Honor `Retry-After` for 429 within the remaining deadline; stop if the required delay exceeds that budget.
+- **When the outbound call *is* the security decision, the fallback is deny.** For an authz check, trust score, entitlement or license gate, a shed request or an exhausted retry budget must resolve to "denied", never to "allowed because the check was unavailable". Any fail-open allowance scopes to transport failure alone: connection refused, DNS failure, timeout. A response that arrived but cannot be trusted (4xx/5xx, malformed body, a variant that does not deserialize, an unrecognized verdict) stays denied: the endpoint was reached and did not answer. Model this in the type system rather than in a branch: give the verdict enum exactly the variants the protocol defines and no `Default` impl, so an unparseable response has to be handled at the parse site. A `#[derive(Default)]` on that enum is the failure: it lets `unwrap_or_default()` compile and resolve an unreachable service to whichever variant carries `#[default]`. Same for a subject with no verdict on record yet: reject by default, and allow only through an explicit onboarding opt-in.
+- **Timeouts on every network call**, no defaults. `tokio::time::timeout(dur, fut)` or `reqwest::Client::builder().timeout(dur)`.
+- **Connection pools**: `sqlx::PgPool`, `reqwest::Client`. Build once, clone (cheap, `Arc` inside), share via `State`.
+- **Resilience layer order**: `ServiceBuilder` calls the first-added layer first. Put `LoadShed` outside the rate/concurrency limiters so their unavailable capacity becomes an overload error instead of a growing queue. Build and share the stack once; rebuilding it per request resets limits.
+
+```rust
+use std::time::Duration;
+use tower::ServiceBuilder;
+
+let mut service = ServiceBuilder::new()
+    .load_shed()
+    .concurrency_limit(64)
+    .rate_limit(100, Duration::from_secs(1))
+    .timeout(Duration::from_secs(2))
+    .service(client);
+```
+
+The stack's timeout starts when `call` runs; it does not bound time spent awaiting readiness. Bound the complete operation, including readiness and any retries, with `tokio::time::timeout(total_budget, (&mut service).oneshot(request))` using `tower::ServiceExt`. If adding `RetryLayer`, choose whether the rate limit counts logical requests or individual attempts and give retries a finite attempt/deadline policy; an outer total budget must cover both. Verify that an additional call fails promptly while every concurrency permit is held, and that an unavailable service reaches the readiness deadline.

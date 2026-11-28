@@ -1,0 +1,8 @@
+--- a/skills/ia-code-review/references/report-and-integration.md
++++ b/skills/ia-code-review/references/report-and-integration.md
+@@ -57,5 +57,4 @@
+ - `ia-receiving-code-review`: inbound side. Tier map: `safe_auto` ≈ AUTO-FIX, `gated_auto` ≈ ESCALATE-for-approval, `manual` ≈ ESCALATE, `advisory` ≈ FYI
+ - `ia-kieran-reviewer` agent: persona-driven Python/TypeScript deep quality review
+ - `/ia-review`: full ceremony (worktrees, ultra-thinking); deep review here is lighter: parallel specialists, no worktrees
+-- `/ia-resolve-pr` command: batch-resolve PR comments with parallel agents
+ - `ia-security-sentinel` agent: deep security audit; threat-model mode for new trust boundaries

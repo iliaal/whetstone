@@ -1,0 +1,22 @@
+{
+  "name": "whetstone",
+  "version": "5.1.8",
+  "description": "Engineering-discipline agents, commands, and skills for planning, debugging, code review, verification, and PHP/Python/TypeScript work. 18 agents, 18 commands, 29 skills.",
+  "author": {
+    "name": "Ilia Alshanetsky",
+    "url": "https://github.com/iliaal"
+  },
+  "homepage": "https://github.com/iliaal/whetstone",
+  "repository": "https://github.com/iliaal/whetstone",
+  "license": "MIT",
+  "privacyPolicyUrl": "https://github.com/iliaal/whetstone/blob/master/plugins/whetstone/PRIVACY.md",
+  "keywords": [
+    "ai-powered",
+    "whetstone",
+    "workflow-automation",
+    "code-review",
+    "python",
+    "typescript",
+    "knowledge-management"
+  ]
+}

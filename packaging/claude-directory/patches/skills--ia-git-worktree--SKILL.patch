@@ -1,0 +1,86 @@
+--- a/skills/ia-git-worktree/SKILL.md
++++ b/skills/ia-git-worktree/SKILL.md
+@@ -17,44 +17,47 @@
+ - Verify dependencies resolve first-party code from the intended worktree.
+ - Keep merge, push, and cleanup within user authorization; report the exact exercised checkout and resulting commit.
+ 
+-## Always use the manager script
++## Create worktrees with this procedure
+ 
+-Never call `git worktree add` directly; always use the `worktree-manager.sh` script.
++Create every worktree with the steps below, not an ad hoc `git worktree add`. Record each tree this session creates; only those trees are this session's to clean up.
+ 
+-The manager handles setup:
+-1. Copies `.env`, `.env.local`, `.env.test`, etc. from the main checkout, only when the base is the default branch or a local branch that already contains the fetched commit (a branch that exists only on `origin` gets none); it never overwrites or follows an existing file or symlink in the new tree
+-2. Uses effective ignore rules for the worktree path and adds a local Git exclude when needed
+-3. Creates consistent directory structure
+-4. After creation, install dependencies if detected: `package.json` → `npm install`, `composer.json` → `composer install`, `pyproject.toml` → `pip install -e .`, `go.mod` → `go mod download`
++1. **Choose the path.** Use `.worktrees/<name>` under the main checkout. Confirm it is ignored: `git check-ignore -q -- .worktrees/<name>`. If it is not, append `.worktrees/` to `$(git rev-parse --git-path info/exclude)` (never the tracked `.gitignore`) and re-check. If a project rule still keeps it visible, stop and report the conflict. See [hooks-and-excludes.md](./references/hooks-and-excludes.md).
++2. **Resolve the base to a commit without touching the caller's checkout.** Fetch into a private ref, pin its SHA, then remove the ref:
+ 
+-**For untrusted bases** such as PR heads, fork or origin-only branches, or third-party code, create with `--no-env`, which suppresses checkout hooks and environment copying for the creation command. Keep credentials out of its commands and never `copy-env` into the tree. Skip installs where possible. If an install is necessary, disable lifecycle scripts and plugins (`npm ci --ignore-scripts`, `composer install --no-scripts --no-plugins`). Do not run `pip install -e .`, which runs the build backend.
++   ```bash
++   fetch_ref="refs/whetstone/fetch/$(date +%s)-$$"
++   if GIT_TERMINAL_PROMPT=0 git fetch --no-tags --refmap= origin "<base>:$fetch_ref"; then
++     base_sha=$(git rev-parse --verify "$fetch_ref^{commit}")
++   else
++     base_sha=$(git rev-parse --verify "<base>^{commit}")
++   fi
++   git update-ref -d "$fetch_ref"
++   ```
+ 
+-All commands use: `bash ${CLAUDE_PLUGIN_ROOT}/skills/ia-git-worktree/scripts/worktree-manager.sh <command>`. If `CLAUDE_PLUGIN_ROOT` is unset (non-Claude-Code harness), resolve the script relative to this skill's own directory.
++   Never check out `<base>` in the caller's working tree, and do not rely on `origin/<base>` or `FETCH_HEAD`, which other checkouts can move. To carry unpushed local commits on `<base>` into the branch, branch from the local ref deliberately and say so.
++3. **Create the tree:** `git worktree add -b <branch> .worktrees/<name> "$base_sha"`, then verify `git -C .worktrees/<name> rev-parse HEAD` equals `$base_sha`. For an **untrusted base** (PR heads, fork or origin-only branches, third-party code), run `git -c core.hooksPath=/dev/null worktree add ...` so checkout hooks do not run.
++4. **Environment files (trusted bases only).** Copy `.env`, `.env.local`, `.env.test`, and similar files from the main checkout only when the base is the default branch or a local branch that already contains the fetched commit. Never overwrite or follow an existing file or symlink in the new tree (`cp -n`, after checking with `test -L`). Never copy them into an untrusted tree.
++5. **Dependencies.** For trusted bases, install what the project declares: `package.json` → `npm install`, `composer.json` → `composer install`, `pyproject.toml` → `pip install -e .`, `go.mod` → `go mod download`. For untrusted bases, skip installs where possible; if one is necessary, disable lifecycle scripts and plugins (`npm ci --ignore-scripts`, `composer install --no-scripts --no-plugins`), and do not run `pip install -e .`, which runs the build backend. Keep credentials out of commands run in that tree.
+ 
+-Before creating worktrees, export a unique `WORKTREE_SESSION_ID` and retain that same value for this session's later manager calls. Example: `export WORKTREE_SESSION_ID="$(python3 -I -c 'import uuid; print(uuid.uuid4())')"`. The manager records ownership in each new worktree's Git metadata. Creation without a session ID works, but manager cleanup then refuses that tree; never adopt a previous session's ID to bypass ownership.
++For a PR review, fetch the head into a review ref (`git fetch --no-tags origin "+pull/<n>/head:refs/review/pr-<n>"`), pass that ref as `<base>`, and treat the tree as the PR head only when both the review ref and the new branch equal `gh pr view <n> --json headRefOid -q .headRefOid`. On a mismatch, review `gh pr diff <n>` instead and say so in the coverage notes.
+ 
+-The manager script fetches `<base>` from `origin` into an invocation-private ref, resolves that commit, and creates the branch from its SHA, even when `origin/<base>` is absent or stale or another checkout fetches concurrently. It removes only its private ref and never checks out `<base>` in the caller's working tree. If the fetch fails (offline, no remote), it resolves the local `<base>` instead. PR review: pass the fetched PR head as `<base>`, then verify its SHA ([workflow-examples.md](./references/workflow-examples.md)). Details: [troubleshooting.md](./references/troubleshooting.md).
++## Other operations
+ 
++| Operation | Command |
++|---------|---------|
++| List | `git worktree list` |
++| Path of a tree | `git worktree list --porcelain`, then the `worktree` line for the branch; the caller applies it as workdir |
++| Clean up | For each named tree this session created: require `git -C <tree> status --porcelain --untracked-files=all --ignored=matching` to print nothing, confirm with the user, then `git worktree remove <tree>` from the main checkout |
+ 
+-## Commands
++Run commands with `env -C "$target" <command>` or the harness workdir argument. Run cleanup from the main checkout; inside a linked tree, `git rev-parse --show-toplevel` returns that linked tree.
+ 
+-| Command | Description | Example |
+-|---------|-------------|---------|
+-| `create [--no-env] <branch> [from]` | Create worktree + branch (default: from main) | `...worktree-manager.sh create feature-login` |
+-| `list` / `ls` | List all worktrees with status | `...worktree-manager.sh list` |
+-| `switch <name>` / `go` | Print the registered worktree's absolute path; the caller applies it as workdir | `target=$(...worktree-manager.sh switch feature-login)` |
+-| `copy-env <name>` | Copy .env files to existing worktree | `...worktree-manager.sh copy-env feature-login` |
+-| `cleanup <name> [...]` / `clean` | Confirm removal of named, session-owned, clean worktrees | `...worktree-manager.sh cleanup feature-login` |
++Cleanup refuses the current checkout, another session's tree, and any tree with tracked, untracked, or ignored files. Copied `.env` files and installed dependencies therefore need explicit user-managed disposition first. Confirm no process uses the named trees. Keep Git's removal safeguards, including locked-tree refusal: never pass `--force` or suppress failures to finish cleanup. Before `git worktree prune` after a tree ran agent or third-party code, list `$(git rev-parse --git-common-dir)/worktrees` with `ls -la` and `unlink` any symlink there: prune follows planted symlinks and deletes their targets' contents.
+ 
+-Run commands with `env -C "$target" <command>` or the harness workdir argument. A child script cannot change the caller's working directory. Listing and name resolution work from any main or linked checkout, including subdirectories.
+-
+-Cleanup refuses the current checkout, another session's tree, and tracked, untracked, or ignored files. Auto-copied `.env` files and installed dependencies therefore require explicit user-managed disposition before cleanup. Confirm no process uses the named trees; the manager cannot detect every external reader. Git's normal removal safeguards remain enabled, including locked-tree refusal. Do not force deletion or suppress failures to finish cleanup.
++A worktree under `.worktrees/` is a second checkout inside the repository. Tests that walk the tree with `rglob` or `find` see it even though Git excludes hide it; for parallel suites, create the worktrees outside the repository.
+ 
+ 
+ ## Safety Verification
+ 
+-The manager verifies effective exclusion of the worktree path before creation. If a project rule prevents the local exclude from taking effect, stop and report the conflict. See [hooks-and-excludes.md](./references/hooks-and-excludes.md).
+-
+ Before any baseline suite or migration, apply `ia-verification-before-completion`'s effective-target preflight. Resolve worktree environment/configuration overlays; verify disposable database and service targets, never the dev database. Copied `.env` files do not prove isolation. Without verified disposable targets, stop before tests. Then run the suite or its fastest relevant subset to establish a clean baseline before implementation.
+ 
+ 
+@@ -82,11 +85,8 @@
+ 
+ ## References
+ 
+-- [workflow-examples.md](./references/workflow-examples.md) - Code review and parallel development workflows
+-- [troubleshooting.md](./references/troubleshooting.md) - Common issues, fresh-remote-base behavior, directory structure, how it works
+ - [hooks-and-excludes.md](./references/hooks-and-excludes.md) - Hook safety under Husky, .git/info/exclude vs .gitignore
+ - [commit-ownership.md](./references/commit-ownership.md) - Whole-file commits and isolated staging for mixed hunks
+-- [worktree-manager.sh](./scripts/worktree-manager.sh) - The manager script
+ 
+ ## Task-specific references
+ 

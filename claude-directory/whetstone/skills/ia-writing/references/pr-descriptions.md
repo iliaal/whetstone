@@ -1,0 +1,151 @@
+# PR and MR Description Style
+
+Rules for writing pull-request and merge-request descriptions that senior engineers actually read, not skim.
+
+## Sizing matrix
+
+Match the description length to the change complexity. Overwriting a trivial patch with a narrative wastes reviewer time; underwriting a structural change hides intent.
+
+| Change shape | Description size |
+|--------------|------------------|
+| Typo, comment fix, single-line bug fix, dependency bump with no behavior change | 1 sentence |
+| Small feature or fix touching 1-3 files, no architectural implications | 2-4 sentences |
+| Non-trivial feature, new endpoint, new skill, multi-file refactor | Full narrative: Before / After / Scope rationale |
+| Architecturally significant change, new module, migration, subsystem rewrite | Full narrative + rationale for decisions NOT taken |
+
+Skip the template for trivial PRs. "Bump lodash to 4.17.21 for CVE-2021-23337." is complete on its own; do not pad it.
+
+## Titles
+
+Write the title as the change a user of the project would notice, in everyday words. Keep a prefix the repository requires (a Conventional Commits type, a version) and put a tracker code only at the end in parentheses. Keep codenames, lane or agent names, and terms coined during the work out of the title; the same rule applies to commit subjects.
+
+## Narrative frame (for non-trivial PRs)
+
+Use three sections, in order:
+
+**Before**: what the code did / the system looked like before this change. One paragraph. Name the concrete state, not the abstract shape. "The `renderMessage` function serialized markdown synchronously in the request handler" beats "messaging was slow."
+
+**After**: what the code does / the system looks like now. Same paragraph shape. Describe the *net end state*, not the journey. The reviewer doesn't need to know three approaches were tried; they need to know what they're merging.
+
+**Scope rationale**: why this PR draws the line where it does. What's intentionally NOT included and why. This is the most-skipped section and the one reviewers value most; it prevents "why didn't you also fix X?" review comments.
+
+```
+## Before
+Authentication tokens were validated in each route handler via a helper call.
+Token parsing logic was duplicated across 12 handlers, and the JWT secret
+was read from env on every request.
+
+## After
+Authentication runs once in the `authRequired` middleware before any handler.
+Token parsing is centralized; the secret is read once at process start.
+
+## Scope rationale
+- NOT changing the token format -- that's a separate migration in #1247
+- NOT touching refresh-token flow -- the middleware is read-only for this PR
+- NOT adding role-based authorization -- tracked in #1301
+```
+
+## Merge danger (optional; non-trivial and architecturally significant changes only)
+
+For the bottom two rows of the sizing matrix, add a short section stating reversibility and blast radius. It tells the reviewer how much review depth the change has earned before they read the diff. Never add it to a trivial PR; a one-sentence PR stays one sentence.
+
+- **Reversibility**: `two-way door` (a revert restores the prior state) or `one-way door` (data migrated, external state changed, an API shipped to consumers). Name what makes it one-way.
+- **Blast radius**: what breaks, and for whom, if the change is wrong. Name the surface and the audience concretely: "every authenticated request returns 401" beats "auth might break".
+
+```
+## Merge danger
+- Reversibility: one-way door -- the migration drops `legacy_token`; a revert needs the #1247 backfill re-run
+- Blast radius: all API consumers; a bad middleware rule rejects every authenticated request
+```
+
+## Place the PR in its program (only when there is one)
+
+A PR that is one slice of a larger effort (a stack, a series, a multi-unit plan) usually still opens with its own outcome: state the local change, then follow it with a short block that supplies the program, the lead-in (what already landed), and the lead-out (what remains). Early PRs need only the lead-out, late ones only the lead-in. Fold the program into the opening's own sentence instead only when the local outcome does not stand on its own: when the program is what gives this change its shape or its point, not just its context. Either half may lead in that case, whichever reads better, but the opening still has to name which part of the program this PR delivers; naming the arc without saying what changed fails the same test a standalone opening would.
+
+**Don't** (outcome stands alone, but the program is missing entirely): "Issue-close now revokes the active session on the server." with no placement anywhere else in the body.
+**Do**: same opening, then a block: "Continues the session-revocation rewrite after the refresh-path change landed; multi-device revocation remains follow-on."
+**Do** (program gives the change its shape, so it belongs in the opening): "Sessions now carry a revocation epoch, the field that makes server-side revocation possible at all. Nothing reads it yet."
+
+Two hard limits. Derive the program only from what is already in hand (the request, a known plan file, the existing PR body, the commit messages) and never run a repository-wide scan of open PRs to manufacture one. If a neighbor is unknown, omit it; an invented arc ("continues the auth rewrite") on a standalone PR is worse than no framing at all. A PR with no program gets none of this, and the sizing matrix still governs: a one-sentence PR stays one sentence.
+
+## Describe net end state, not iteration journey
+
+The commit log is the journey. The description is the destination. If three approaches were written and the third kept, the description describes the third, not all three.
+
+**Don't**: "First I tried X but it didn't work because Y. Then I tried Z, which almost worked but ran into W. Finally I settled on V which handles both."
+
+**Do**: "V replaces the previous X-based approach because V handles both the Y and W cases without the performance regression Z introduced."
+
+Review drafts for "first I... then I... eventually..." phrasing and rewrite toward the final state.
+
+## Visual choice: match the shape to the content
+
+When the change benefits from a visual, pick the shape based on what the change is:
+
+- **Mermaid diagram**: topology with edges. Components that send messages to each other, request flow across services, a state machine's transitions, a dependency graph. Anything where the *relationships* are the point.
+- **Markdown table**: rows with parallel attributes. A before/after comparison of config values, a list of endpoints with their verbs and paths, a comparison of options with their tradeoffs. Anything where the *structure is grid-shaped*.
+- **Pseudocode**: an algorithm change. Ten lines of the new branching beats a paragraph describing it.
+- **Call tree**: a control-flow change: which function now calls which, as an indented tree.
+- **Component tree**: a UI hierarchy change: the new parent/child nesting.
+- **File tree**: a layout change or a move: where the files live now.
+- **Before/after diff excerpt**: a focused edit where the exact lines are the point.
+
+Evidence outranks description: a screenshot or captured execution output beats prose about the behavior. When one exists, attach it and let the text point at it.
+
+None of these for content that's genuinely prose; don't force structure where it doesn't serve understanding.
+
+## GitHub-specific hazards
+
+- **Never prefix list items with `#<number>`**: GitHub auto-links `#123` at the start of any line as an issue/PR reference. Use a dash and backticks instead:
+  - Wrong: `# 1. Fixed bug`
+  - Wrong: `#1 - Fixed bug`
+  - Right: `1. Fixed bug` or `- Fixed bug`
+- **Headings stay at H2 and below**: `#` (H1) is reserved for the PR title. Use `##` for section headings.
+- **Use a fence longer than any embedded fence**: triple backticks suit ordinary code blocks. Use four outer backticks when showing Markdown that contains triple backticks. Use a longer fence if the content requires it.
+
+## Issue references: verify or omit
+
+Include issue references (`Fixes #1234`, `Closes JIRA-567`, `Related to #890`) only when the exact ID or URL is present in user input, the branch name, a commit message, or verified tracker output. If the ID's origin cannot be named, omit the line entirely; the PR can ship without it.
+
+Use `Fixes` or `Closes` only when the PR's diff and verification establish that it covers the issue's full stated scope and acceptance criteria. For partial or unverified completion, use `Related to` and name any known remaining work.
+
+Never emit placeholder IDs:
+- Wrong: `Fixes #XXXXX` / `Closes <issue>` / `Related to #TBD` / `Fixes ABC-???`
+- Right: omit the line; the PR description is complete without an issue ref.
+
+Hallucinated refs degrade the tracker (false links to the wrong issue, dead links to issues that don't exist) and noise up review threads. Verified refs are signal; placeholder refs are anti-signal.
+
+## Anti-patterns to strip
+
+Apply the parent writing skill's banned-phrases list (no "delve", "leverage", "crucial", "game-changer", "in today's rapidly evolving landscape", etc.) in addition to these PR-specific offenders:
+
+- "This PR..." opener: redundant; the reader already knows it's a PR. Lead with the change.
+- "Made some changes to...": say which changes. "Some" is an AI tell.
+- "This should fix #1234": apply the issue reference rule above.
+- Laundry-list commit message dumps in the description. The commit log is already there. Summarize the commits' net effect, don't reprint them.
+- Emoji decoration on section headings. Sentence case, no emoji.
+
+## Test plan
+
+Every non-trivial PR needs a Test Plan section. Bulleted markdown checklist so reviewers can see exactly what was exercised:
+
+```
+## Test plan
+- [ ] `npm test` passes locally
+- [ ] Manual: sign in with new SAML IdP, verify redirect to dashboard
+- [ ] Manual: sign in with existing OAuth flow, verify no regression
+- [ ] Staging: load test middleware at 500 rps for 5 min, p95 < 80ms
+```
+
+Be concrete. "Tested manually" is not a test plan. "Signed in with new SAML IdP, verified redirect" is.
+
+## Self-check before posting
+
+Run these checks on the draft:
+
+1. Can a reviewer who hasn't read the linked issue still understand what this PR does? If no, add context.
+2. Is anything in the diff NOT mentioned in the description? Either describe it or question whether it belongs in this PR (scope drift).
+3. Is the description longer than the diff deserves? Cut.
+4. Does the draft use the word "simply" or "just"? Cut.
+5. Does the draft claim the PR is "ready to merge"? Delete it; that's the reviewer's call.
+6. Does the draft name the file, line, or reason of a security, auth, or secret finding that this PR leaves open, deferred, or suppressed? Replace it with `open security finding (details reported privately)` and report the details to the user; a PR body is often public before the fix lands.

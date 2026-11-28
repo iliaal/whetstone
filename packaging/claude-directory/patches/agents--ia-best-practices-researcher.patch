@@ -1,0 +1,11 @@
+--- a/agents/ia-best-practices-researcher.md
++++ b/agents/ia-best-practices-researcher.md
+@@ -36,7 +36,7 @@
+ 
+ ### Phase 1: Check Available Skills
+ 
+-Before going online, check if curated knowledge already exists in loaded skills. Skill descriptions are injected into your context by the hook system. If a relevant skill covers the topic, extract its guidance first and assess coverage gaps.
++Before going online, check if curated knowledge already exists in loaded skills. Skill descriptions are listed in your context by the harness. If a relevant skill covers the topic, extract its guidance first and assess coverage gaps.
+ 
+ ### Phase 2: Deprecation and Version Support Check
+ 

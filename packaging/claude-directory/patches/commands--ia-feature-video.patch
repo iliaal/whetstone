@@ -1,0 +1,15 @@
+--- a/commands/ia-feature-video.md
++++ b/commands/ia-feature-video.md
+@@ -47,11 +47,7 @@
+ 
+ Parse the input:
+ - First argument: PR number or "current" (defaults to current branch's PR)
+-- Second argument: Base URL. When omitted, resolve the port from the project instead of assuming 3000, and use the result as `[base-url]` in the capture steps below:
+-  ```bash
+-  echo "http://localhost:$(bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port")"
+-  ```
+-  If the server runs a known package script, pass its exact name as the resolver's second argument, for example `bash "${CLAUDE_PLUGIN_ROOT}/commands/scripts/resolve-dev-port" '' start`.
++- Second argument: Base URL. When omitted, resolve the port from the project instead of assuming 3000, and use `http://localhost:<port>` as `[base-url]` in the capture steps below. Check, in order: an explicit `--port`/`-p` in the package script that runs the server (prefer `dev`, then `start`, then `serve` when none is named), a `PORT=` entry in `.env.local` or `.env`, the framework config (`vite.config.*` `server.port`, `next.config.*`, `angular.json`), then the framework default.
+ 
+ ```bash
+ # Get PR number for current branch if needed

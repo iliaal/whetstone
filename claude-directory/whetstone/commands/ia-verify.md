@@ -1,0 +1,228 @@
+---
+description: "Run pre-PR verification chain: build, types, lint, tests, security scan, diff review"
+argument-hint: "[mode: quick|full|pre-commit|pre-pr]"
+---
+
+# Verify
+
+Run a structured verification pipeline and produce a single READY / NOT READY report.
+
+**Boundary vs `/ia-review`:** `/ia-verify` is the pre-PR static gate (pass/fail on build/types/lint/tests/security). `/ia-review` is the multi-agent code review with findings synthesis. Use `/ia-verify` first to confirm shippable; use `/ia-review` for design-level assessment.
+
+## Mode
+
+`$ARGUMENTS`: defaults to `full` if omitted.
+
+| Mode | What runs |
+|------|-----------|
+| `quick` | Build + type check only |
+| `full` | Build + types + lint + tests |
+| `pre-commit` | Build + types + lint + tests + console.log audit |
+| `pre-pr` | Project-declared gates + build + types + lint + tests + console.log audit + security scan + performance + accessibility + infrastructure + documentation + diff review |
+
+Project-declared gates (phase 0) also run before any push, regardless of mode.
+
+## Applicability Detection
+
+Resolve one verification scope before classifying or scanning changes:
+
+1. In `pre-pr` mode, resolve the PR base (`gh pr view --json baseRefName -q .baseRefName`) or the repository's verified default branch. Freeze the current HEAD and resolve the merge-base against the available base ref. If resolution fails, report NOT READY and name the missing input.
+   - By default, verify the committed HEAD. Use a matching clean checkout or materialize HEAD in an isolated checkout if the caller's checkout is dirty. Record the frozen HEAD as the candidate.
+   - When the caller explicitly includes local changes, materialize the complete intended source in an isolated checkout at HEAD, with the selected working-tree changes and explicitly selected untracked files. Preserve the original checkout and index. Stage the selected content only in the isolated checkout and use `git write-tree` there to freeze it. Record the resulting tree ID as the candidate and label the result with its local scope.
+   - Run project gates, build, type checks, lint, and tests from the checkout of that candidate. Classify files and run all diff-based checks against `git diff --no-textconv --no-ext-diff <merge-base-sha> <candidate>` and its `--name-only` form. Read source context from that same candidate. Establish the source identity of reused build artifacts and ignored inputs that affect the result. Recheck the candidate's source identity after applicable gates and phases. If any command changes the selected source or the execution cannot be bound to the candidate, stop and report NOT READY.
+2. In `pre-commit` mode, freeze the complete index tree and its staged diff (`git diff --no-textconv --no-ext-diff --cached`). Run every applicable phase in an isolated checkout of that complete index tree, including unchanged tracked inputs. Preserve the caller's index and unstaged work when preparing verification. Do not copy unstaged source, configuration, or fixtures into the isolated checkout. Report NOT READY if the staged tree cannot be verified in isolation. Before issuing READY, confirm the caller's index still matches the tested snapshot; otherwise repeat verification or report NOT READY. In `quick`/`full` mode, use the caller's selected scope, defaulting to tracked staged and unstaged changes (`git diff --no-textconv --no-ext-diff HEAD`) plus explicitly enumerated untracked files. Record the selected scope and tested tree in the report. An empty selected diff is not evidence that a feature branch is unchanged.
+3. Classify the selected files:
+   - **frontend**: files under `src/components/`, `src/pages/`, `app/`, `*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, templates
+   - **backend**: files under `src/api/`, `routes/`, `controllers/`, `services/`, `*.php`, `*.py` (non-frontend), `*.go`, server-side TS
+   - **infrastructure**: migration files, Dockerfiles, terraform/ansible, CI configs, env templates, k8s manifests
+   - **docs-only**: passive prose only; agent instructions, executable snippets, and configuration embedded in Markdown must be classified by the behavior they drive
+
+4. Apply phase filters (pre-pr mode only):
+   - **Performance**: skip for docs-only changes
+   - **Accessibility**: skip for backend-only or docs-only changes
+   - **Infrastructure**: skip for pure frontend changes (no migrations, no env changes, no CI changes)
+   - **Documentation**: always run when user-facing files changed; skip for internal refactors with no API/behavior change
+
+Log which phases were skipped and why in the report. A checker that failed to run (missing tool, errored invocation, unparseable output) is `ERROR`, never `SKIP` or `CLEAN`; `SKIP` is reserved for a phase deliberately not run. An `ERROR` row blocks a READY result.
+
+## Pipeline
+
+Run each phase in order. Stop on the first failure unless the mode skips that phase.
+
+Before a gate or other verification command runs a suite, migration, seeder, or accesses the application's database or service backends, resolve its effective targets using the [Pre-Verification Check](../skills/ia-verification-before-completion/references/proof-integrity.md#pre-verification-check). Apply the same check to baseline runs. If a target is shared, non-disposable, or unresolved, stop and report NOT READY pending a suitable test environment.
+
+### 0. Project-Declared Gates (runs in pre-pr mode and before any push in every mode)
+
+Resolve the applicable project-declared gates as directed by the `ia-verification-before-completion` skill. Apply the target preflight to each applicable gate before it runs. Stop and report NOT READY if any gate is unmet, naming it.
+
+### 1. Build
+
+Detect and run the project's build command:
+- `package.json` → `npm run build` (or pnpm/yarn/bun equivalent)
+- `Makefile` → `make build`
+- `pyproject.toml` → `python -m build` or framework-specific
+- `mix.exs` → `mix compile --warnings-as-errors`
+- `go.mod` → `go build ./...`
+- `composer.json` → `composer install`
+
+After the build, run any generation command the project itself declares (a CLAUDE.md/AGENTS.md instruction, Makefile target, or `package.json`/`composer.json` script for codegen, arginfo or OpenAPI client regeneration, autoload maps, or lockfile refresh); do not invent one. Snapshot the tree's content, not just its status, before the build and compare after this phase: `(set -o pipefail; idx=$(mktemp) && cp "$(git rev-parse --git-path index)" "$idx" && GIT_INDEX_FILE="$idx" git add -A -N -- :/ && { git status --porcelain --untracked-files=all && GIT_INDEX_FILE="$idx" git diff --no-textconv --no-ext-diff --binary HEAD; } | git hash-object --stdin; rc=$?; rm -f "$idx"; exit $rc)`. Status codes alone miss a rewrite of an already-modified tracked file, and `git diff` omits untracked content, so a throwaway index marks every untracked path intent-to-add; the real index is untouched. Read the exit status of each snapshot, not just its printed hash: a nonzero exit (for example an untracked nested repository with no commit) is Build `FAIL (snapshot failed: <first error: or fatal: line>)`. A changed hash means the build or generator rewrote tracked or untracked files, so the tree is stale against its own generator: mark Build `FAIL (stale generated files: <paths from git status --porcelain>)` and stop, like any other failure.
+
+Record: pass/fail + error output.
+
+### 2. Type Check (skip for dynamically typed projects without type tooling)
+
+- TypeScript → run the declared project type-check command. If none is declared, resolve the installed project or workspace `tsc` executable and run it with `--noEmit` against the applicable `tsconfig`. A missing required compiler is `ERROR`. Avoid any invocation that can resolve a missing executable by installing a registry package.
+- Python with mypy/pyright → run the configured checker
+- Go → already covered by build
+
+Record: pass/fail + error count.
+
+### 3. Lint
+
+Detect and run the project's linter:
+- Biome, ESLint, Prettier → whichever is configured
+- Ruff, Flake8 → for Python
+- `golangci-lint run` → for Go
+- PHPStan, PHP-CS-Fixer → for PHP
+
+Compare warning counts against the same explicit base SHA in an isolated checkout when useful. Stashing does not change a committed branch to its base and is not a baseline comparison. Report a skipped baseline comparison directly. Flag net-new warnings even if the overall run passes.
+
+Record: pass/fail + warning/error counts + new warnings introduced (if measurable).
+
+### 4. Tests
+
+Apply the target preflight above before running a suite, migration, or seeder.
+
+Run the project's test suite:
+- `npm test`, `pytest`, `go test ./...`, `php artisan test`, `mix test`, etc.
+
+Record: pass/fail + test count + coverage if available.
+
+### 5. Console.log / Debug Audit (pre-commit and pre-pr only)
+
+Search staged or changed files for debug statements that shouldn't ship:
+- `console.log`, `console.debug`, `debugger` (JS/TS)
+- `print(`, `breakpoint()`, `pdb.set_trace()` (Python)
+- `dd(`, `dump(`, `ray(` (PHP)
+- `fmt.Println` used for debugging (Go)
+
+Report: file:line for each occurrence. These are warnings, not blockers.
+
+### 6. Security Scan (pre-pr only)
+
+**6a. Dependency audit**: run the project's dependency auditor:
+- `npm audit` / `pnpm audit` / `yarn audit` (JS/TS)
+- `pip-audit` or `safety check` (Python)
+- `composer audit` (PHP)
+- `govulncheck ./...` (Go)
+
+Flag critical/high vulnerabilities as blockers. Moderate/low are warnings.
+
+**6b. Secrets in diff**: search changed files for:
+- Hardcoded secrets (API keys, tokens, passwords in string literals)
+- `.env` files staged for commit
+- `dangerouslySetInnerHTML`, `eval()`, raw SQL string concatenation
+
+Print only file names or `file:line` from the secret scan, never the matched line: a match echoed to the terminal puts the live value into tool output and the session transcript. Scan the selected scope, not always the index. For a staged scan, use `git diff --no-textconv --no-ext-diff --cached -i -G'<pattern>' --name-only`, or `git grep --cached -n -I -i -E '<pattern>' -- <files> | cut -d: -f1,2`. In `pre-pr` mode, use `git diff --no-textconv --no-ext-diff -i -G'<pattern>' --name-only <merge-base-sha> <candidate>`, or `git grep -n -I -i -E '<pattern>' <candidate> -- <files> | cut -d: -f2,3` (a revision grep prefixes each hit with `<candidate>:`). Treat each hit as "inspect this location", not as text to quote.
+
+Classify each changed file by its content (magic bytes or control bytes), not its extension. List files the text scan cannot inspect, including archives, office documents, databases, PDFs, and binary key stores, as `unscanned, open manually`; do not exempt minified text bundles. Report the unscanned count as at least a warning when nonzero. If enumeration or reading fails, report the count as unknown and the scan as `ERROR`, never zero or `CLEAN`.
+
+**6c. Auth/authz review**: if the diff touches authentication or authorization code (middleware, guards, policies, permission checks, token handling, session management), flag for manual review. Check that:
+- No auth bypass paths introduced (missing middleware on new routes)
+- Permission checks not weakened or removed
+- Token/session expiry not extended without justification
+
+Report: file:line for each finding. Secrets and critical dependency vulnerabilities ARE blockers. Auth changes are warnings requiring human sign-off.
+
+### 7. Performance (pre-pr only, skip for docs-only changes)
+
+Scan the diff for common performance regressions:
+
+- **N+1 queries**: loops containing database calls where a batch/join/eager-load would work. Look for ORM calls inside `foreach`/`for`/`map`/`array_map` or equivalent.
+- **Unbounded queries**: `SELECT` without `LIMIT`, `findAll()` without pagination, collection fetches with no ceiling. Flag when the table could grow large.
+- **Bundle size** (frontend changes): check if new dependencies were added (`package.json` diff). For large additions (>50KB gzipped), flag for justification. Run `npm run build` and compare output size if a build-stats script exists.
+- **Missing indexes**: if new queries filter or join on columns, check that indexes exist (or are added in accompanying migrations).
+
+Report: file:line for each concern. These are warnings, not blockers, unless an unbounded query hits a table known to be large.
+
+### 8. Accessibility (pre-pr only, skip for backend-only and docs-only changes)
+
+If the diff touches frontend markup, templates, or components, dispatch the `ia-accessibility-tester` agent for a full WCAG pass (keyboard navigation, screen reader, contrast, ARIA, forms, cognitive) and fold its findings into this phase's report row.
+
+Fall back to the inline checks below only for a tiny diff where a full agent dispatch isn't warranted, or when the agent is unavailable:
+
+- **Keyboard navigation**: interactive elements (`button`, `a`, custom clickable divs) must be focusable and operable via keyboard. Flag `onClick` on non-interactive elements without `role`, `tabIndex`, and `onKeyDown`.
+- **ARIA attributes**: custom interactive elements (dropdowns, modals, tabs, accordions) need appropriate `role`, `aria-label`/`aria-labelledby`, and state attributes (`aria-expanded`, `aria-selected`).
+- **Contrast**: if color values changed in the diff (CSS/Tailwind custom colors), flag for contrast ratio verification (4.5:1 text, 3:1 large text).
+- **Image alt text**: new `<img>` tags or `Image` components must have non-empty `alt` (or explicit `alt=""` for decorative images with `aria-hidden`).
+
+Report: file:line for each finding. These are warnings. Skip this phase entirely if no frontend markup was changed.
+
+### 9. Infrastructure (pre-pr only, skip for pure frontend changes)
+
+Check for operational readiness when the diff touches backend, config, or deployment files:
+
+- **Environment variables**: if new env vars are referenced in code, verify they are documented (`.env.example`, README, or deployment docs). Flag undocumented vars.
+- **Migrations**: if database migration files are present, check that they are reversible (have a `down`/`rollback` method). Flag destructive migrations (dropping columns/tables) without a data preservation strategy.
+- **Rollback plan**: for risky changes (new service dependencies, major schema changes, feature flag removals), flag the need for a rollback plan. Not a blocker, but the report should note it.
+- **CI/CD config**: if CI files changed (`.github/workflows/`, `Jenkinsfile`, `.gitlab-ci.yml`), verify the changes don't break existing pipeline stages.
+
+Report: file:line for each concern. Undocumented env vars are warnings. Irreversible destructive migrations are blockers.
+
+### 10. Documentation (pre-pr only)
+
+Check that documentation keeps pace with code changes:
+
+- **README / CHANGELOG**: if user-facing behavior changed (new features, changed CLI flags, config options), verify README and/or CHANGELOG are updated in the diff. Flag missing updates.
+- **API docs**: if endpoints were added, changed, or removed, check that API documentation (OpenAPI/Swagger specs, doc comments, or dedicated API docs) reflects the change.
+- **Breaking changes**: if the diff introduces breaking changes (removed endpoints, changed response shapes, renamed config keys), verify they are documented and flagged in CHANGELOG.
+
+Report: list of missing documentation. These are warnings, not blockers, but the report should make them visible.
+
+### 11. Diff Review (pre-pr only)
+
+Inspect the same frozen diff selected above; do not resolve a different range for this phase. Check for:
+- Files that changed but have no test coverage
+- Large files (>500 lines changed) that may need splitting
+- Unrelated changes mixed into the diff (a site repeating the fixed root-cause mistake is related; flag one outside the authorized scope for approval)
+
+Report: summary of diff scope and any concerns.
+
+## Output
+
+Produce a structured report:
+
+```
+## Verification Report
+
+**Mode:** [mode]
+**Scope:** [base SHA → candidate commit or tree ID, staged diff, or explicit local scope; tested tree and local changes]
+**Result:** READY / NOT READY
+
+| Phase | Status | Details |
+|-------|--------|---------|
+| Project gates | PASS/FAIL/SKIP | [unmet gate, if any] |
+| Build | PASS/FAIL/ERROR | [summary] |
+| Types | PASS/FAIL/ERROR/SKIP | [summary] |
+| Lint | PASS/FAIL/SKIP | [summary] |
+| Tests | PASS/FAIL/ERROR | [N passed, M failed] |
+| Debug audit | CLEAN/[N warnings]/ERROR | [summary] |
+| Security | CLEAN/[N findings]/ERROR | [summary] |
+| Performance | OK/[N concerns]/SKIP | [summary] |
+| Accessibility | OK/[N concerns]/SKIP | [summary] |
+| Infrastructure | OK/[N concerns]/SKIP | [summary] |
+| Documentation | OK/[N gaps]/SKIP | [summary] |
+| Diff review | OK/[N concerns]/ERROR | [summary] |
+
+### Blockers
+- [list any failures or security findings]
+
+### Warnings
+- [list non-blocking concerns]
+```
+
+If NOT READY, list exactly what needs fixing before the PR can proceed. A READY result before a push must cover the exact tree intended to be pushed.
+
+## Integration
+
+For in-session verification gates (before claiming tasks complete, committing, or creating PRs), use the `ia-verification-before-completion` skill. This command runs the full pipeline; the skill enforces the discipline of running it.

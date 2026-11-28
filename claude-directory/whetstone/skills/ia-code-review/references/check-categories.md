@@ -1,0 +1,61 @@
+# What to Check: Review Category Checklists
+
+Load this reference during the line-by-line review step. Use the category lists to structure your reading and ensure nothing slips through. Each category corresponds to a class of defect that surfaces repeatedly in production code.
+
+## Correctness
+
+- Edge cases (null, empty, boundary values, concurrent access)
+- Error paths (are failures handled or swallowed?)
+- Type safety (implicit conversions, `any` types, unchecked casts)
+- New enum/status/type values or widened accepted inputs (MIME types, extensions, flags, validator shapes): trace through ALL consumers (switch/case, filter arrays, allowlists). Read code outside the diff and verify consumers handle the newly accepted shape. Missing handler = wrong default at runtime.
+- A new cache in front of a guarded or metered call: name every check a hit skips (authorization, quota, consent, rate limit). Verify required checks still run on hits.
+- **Spend caps on paid calls** (LLM APIs, paid search or SMS, provisioned cloud resources). For a hard budget, require a provider-enforced cap on final charges covering the full budget scope or atomically reserve a conservative upper bound before dispatch. Subtract both incurred charges and outstanding reservations from the budget. A call-count limit works when each call has a known maximum cost. Bound every chargeable unit and include retries, loops, pagination, fan-out, and fallbacks. An estimated-price admission check can still admit a call whose final charge exceeds the limit.
+- Flag cap checks after spend, comparisons in the wrong units, absent limits treated as unlimited, and guards removed or moved behind default-off flags. Require an explicit unpriced state when a model, SKU, or provider's price is unknown, including when a usage report omits cost. Block dispatch under a hard budget when the charge cannot be bounded, and surface unpriced usage when enforcement is advisory. Check for estimates stored as actual charges, billed failures recorded as zero, duplicate charges, and skipped ledger writes. Grade severity by reachable spend using [severity-and-confidence.md](./severity-and-confidence.md).
+- Static import changed to dynamic import: trace top-level side effects (registrations, route tables, environment validation) and readers that can now run before initialization or see an empty registry.
+- Repeated switches: a diff adding another branch-set (switch/if-chain/map) over a discriminator already switched on elsewhere. Fix is a shared mapping or polymorphic dispatch at the owning layer, not another copy of the branch-set.
+- Sentinel overload: a diff that reuses an existing sentinel (`null`, `undefined`, empty array/object, fallback enum) for a *new* state. If one value now means two things (consumers can't tell "no data" from "data exists but unsummarizable"), require a richer shape or explicit discriminator. "Type-checks and doesn't crash" is not the bar.
+- Dormant constraint: a new condition or filter added to a shared helper whose only current call site does not exercise it. Nothing breaks today and no test can fail; the first caller to use the combination inherits the bug. Require the constraint be documented where the caller sees it, or the unexercised combination rejected outright.
+- Lossy typed round-trip: code that decodes an externally owned document into a typed model and then writes it back or replays it (config read-modify-write through a DTO, re-serializing an API resource for PUT, rebuilding assistant/tool-call messages from a typed SDK accumulator for the next LLM turn). Keys the model does not declare vanish: settings written by a newer version, vendor extensions, provider-opaque fields the provider requires echoed back unchanged. Defaults that drop them: Zod 4 `z.object()` strips unrecognized keys on parse; Pydantic v2 models default to `extra='ignore'`; a PHP hydrator maps only declared properties. Require pass-through of unknown fields (`z.looseObject()`, `extra='allow'`, a raw-JSON sidecar, or patching the raw document) or a partial update.
+- Composed-path downgrade: a new dispatcher that routes work through existing single-purpose helpers inherits the degraded context they were written for (cache-only reads, missing shared inputs), so a flag meant to toggle one stage changes what every consumer receives. Diff the full input set each consumer gets on the original and composed paths; every optional parameter defaulting to null is a candidate silent downgrade. Tests asserting the plan (which stages run) do not assert input parity.
+- Status source guard: a status write must guard the source state, not only the target. Reaching an editable status reopens every freeze keyed on it, so grep the editability predicate's callers and reject transitions from submitted or terminal states.
+- Settle paths: a diff touching a record with a kind and a pending status that an owner action resolves (proposals, holds, approvals, moderation queues, invitations). Build a kind × action matrix and write each cell's expected resulting row from what the kind means, not from what the code does (deactivate keeps the row with its flag off, a same-claim replace keeps it, only remove deletes). Map each cell to a test that settles that exact kind and asserts the row; a sibling kind's test through the same function, a status-only assertion, or a mocked store does not cover it. Flag any branch that sends several kinds down one destructive path, even when one of those kinds is tested.
+
+## Maintainability & Readability
+
+- Naming: variables, functions, and classes convey purpose without needing surrounding context
+- Function length: long functions that force scrolling; prefer extractable blocks with clear names. Split by responsibility, not line count
+- Nesting depth: more than 3 levels of indentation signals a need for early returns, guard clauses, or extraction
+- Comment quality: comments explain WHY (constraints, workarounds, non-obvious decisions), not WHAT. Flag comments that restate code or will rot as the code changes
+- Comment referents: a WHY comment is often the only record of a hidden constraint, so an unresolvable "this", "it", or "the above" destroys it. Flag any comment whose pronoun has more than one antecedent in scope; name the subject instead (`// Must run before the cache warm — otherwise it reads stale IDs` → `// The cache warm reads user IDs; run this migration first or the warm reads stale ones`). A reviewer agent honors or re-raises a rationale comment based on how it parses, with no author available to ask
+- God classes / SRP violations: class with unrelated responsibilities. Split into focused classes
+- Leaky abstractions: implementation details exposed in interfaces or public APIs
+- Tooling and platform fit: flag a new file that repeats a job the repo already does with a different language, tool, or runner (a second task runner, linter config, or install script; a `.bat` or `.ps1` script in a repository whose scripts are bash plus a Makefile), or a script the CI runners or documented platforms cannot execute. Name the concrete consequence (two tools that drift apart, a script CI cannot run); a preference alone is not a finding
+- Structural remedy: when flagging a structural problem, name the move that fixes it (extract a helper, collapse duplicate branches, separate orchestration from logic, replace a conditional chain with a typed dispatcher), not just the smell. Then test the proposed refactor: does it *reduce* the concepts a reader must hold, or just *relocate* complexity elsewhere? Prefer deleting an abstraction over polishing one
+- File size: total file size is an inspection signal separate from diff size; ~1000 total lines in one file is a soft boundary (not a hard cap). A small diff can still push an already-large file past it; ask whether to decompose first, then add
+
+## Performance
+
+- N+1 queries (loop with query per item; use batch/join instead)
+- Unbounded collections (arrays/maps without size limits)
+- Missing indexes on queried columns
+
+## Adversarial (red-team pass)
+
+- Silent failures: `.catch(() => [])` or log-and-forget patterns that swallow errors and return success
+- Trust assumption exploits: frontend-validated data not re-validated on the backend; internal service inputs treated as trusted
+- Agentic confused-deputy: a tool or function exposed to an LLM can invoke an action the requesting user isn't authorized for; the model runs with broader scope than the caller. Check tool authorization against the caller's identity, not the agent's
+- Edge cases under pressure: max input size, zero items, first-run-ever, double-click within 100ms, concurrent identical requests
+- Partial completion: operations that can crash mid-way leaving state inconsistent (no rollback, no cleanup)
+- Floor guards: tightening a quality gate is silent, loosening is loud only if someone looks. Flag: a loosened threshold, read by limit type (a minimum loosens by going down: coverage, mutation score, lint level; a maximum loosens by going up: test timeout, size budget, max complexity, `--max-warnings`, max retries, allowed-failure count; when the direction cannot be read from the changed number, report the change rather than assume it tightened), a rule removed from a standards or threshold file, a test weakened (`.skip`, deleted, assertion removed), a new suppression comment (`eslint-disable`, `# noqa`, `@ts-ignore`, `#[allow]`), a stub or empty catch replacing real handling, a new row in a tracked-exceptions list
+- Additional gate-relaxation signals: a snapshot or golden changed without its owning test changing; product behavior branching on test/CI environment values (`NODE_ENV`, `process.env.CI`, `PYTEST_CURRENT_TEST`, `APP_ENV`); added `[skip ci]`, `continue-on-error: true`, `allow_failure: true`, or `--no-verify`. Trace whether each change weakens the gate or substitutes behavior during verification. Group a shared threshold change affecting several tests as one finding. A measurement cited in a comment or commit message is evidence to assess, not grounds to suppress a confirmed relaxation
+
+## AI-generated code lens
+
+Apply when the code is LLM-authored (most diffs are):
+
+- **Over-engineering**: gratuitous defensive checks for cases the type system or framework already prevents; unnecessary abstraction for a single call site; premature generalization of one concrete case into a generic utility
+- **Defensive noise**: `try/catch` around operations that cannot throw; null checks on values the signature guarantees non-null; input validation on internal code boundaries already validated upstream
+- **Cost bloat**: long chains of model-cost-inducing work (recursive agent dispatch, per-item API calls, unbounded loops) where a single batch or deterministic routine would suffice
+- **Scope drift**: "while I'm here" edits to unrelated files; rename refactors piggybacking on a bug fix; formatting churn that dwarfs the real change
+
+Flag these as simplification findings, not bugs. The fix is usually deletion, not addition. For a deeper YAGNI pass on an AI-heavy diff, dispatch `ia-code-simplicity-reviewer`. Its six named traps (while-I'm-here, for-future-flexibility, defensive-coding, modernization, consistency, cleanup) map onto this lens and produce a structured simplification report.

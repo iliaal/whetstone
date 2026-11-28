@@ -1,0 +1,65 @@
+--- a/skills/ia-test-audit/SKILL.md
++++ b/skills/ia-test-audit/SKILL.md
+@@ -52,7 +52,7 @@
+ For a bounded request, inspect every in-scope test. For a large suite, declare the
+ review budget and selection method before discovery. Cover distinct layers, major
+ fixtures, and mocking styles. Combine risk-directed selection with a reproducible
+-sample independent of detector hits. Keep those two sample results separate. Record
++sample independent of search hits. Keep those two sample results separate. Record
+ the seed and sample unit if claiming random sampling. Expand recurring patterns into
+ their owner family when practical; report anything left unreviewed.
+ 
+@@ -85,32 +85,31 @@
+ observable effects at that boundary.
+ 
+ When delegation is available, split semantic discovery by owner or directory. Each
+-reviewer discovers independently of detector output. Require exact locations, real
++reviewer discovers independently of search results. Require exact locations, real
+ subject, surviving regression, retained value, and evidence status. Independently
+ verify the strongest findings before reporting them.
+ 
+-## 3. Use detectors as additional leads
++## 3. Hunt mechanical leads by search
+ 
+-Run each script by its path in this skill's directory, not the audited repository's
+-`scripts/`, with the audited repository root as the working directory. Write output
+-to a temporary directory.
+-Use the repository's pinned tooling for runner commands. The scripts require Python
+-3.11+ and the standard library.
+-
+-| Script | What its results mean |
+-|---|---|
+-| [weak_negatives.py](./scripts/weak_negatives.py) `<test globs>` | Heuristic candidates for ambiguous refusal assertions. Does not assess positive behavior or assertion data flow. |
+-| [duplicate_tests.py](./scripts/duplicate_tests.py) `<test globs> --json` | Structural duplicate/consolidation candidates, not an effectiveness score. |
+-| [junit_census.py](./scripts/junit_census.py) `<report.xml> --test-files <glob>` | Reported skips, possible collection gaps, and PHPUnit zero-assertion leads (adequate when not throwing is the documented contract). |
+-| [guard_pins.py](./scripts/guard_pins.py) `--src <glob> --tests <glob>` | Refusal strings without textual matches; not proof of guard coverage. |
+-| [pytest_reach_probe.py](./scripts/pytest_reach_probe.py) | Runs the target suite with a recording plugin; use a scratch copy. See [stacks.md](./references/stacks.md). |
+-
+-Before trusting any output, read [detectors.md](./references/detectors.md): for the
+-four static detectors, status 2 means known incomplete input, and each detector has
+-blind spots that require source review. Read [stacks.md](./references/stacks.md) for
+-runner/probe commands and duplicate parser limits. Confirm tool flags locally before
+-use. No detector hits means only no matches to that detector's rules; continue the
+-semantic sample.
++This edition ships no detector scripts. Search the test files directly for the
++same lead classes, and treat every hit as a lead for the semantic review, never a
++finding on its own:
++
++- **Weak negatives:** refusal tests that assert only an exception type, a falsy
++  return, or a non-2xx status, with no message, code, or state check that ties the
++  refusal to the guard under test.
++- **Duplicates:** tests in one file whose bodies differ only in literals or names.
++  Inspect setup and contract differences before proposing consolidation, and keep
++  distinct risks across unit, integration, and end-to-end layers.
++- **Skips and collection gaps:** run the gate with its junit reporter (see
++  [stacks.md](./references/stacks.md)) and read the report for skipped tests, test
++  files that never appear, and (PHPUnit) tests with `assertions="0"`.
++- **Unpinned guards:** refusal and validation messages in source with no matching
++  assertion in the tests. A textual match is not proof of coverage.
++
++Read [stacks.md](./references/stacks.md) for runner commands and confirm tool flags
++locally before use. No search hits means only no matches to those patterns; continue
++the semantic sample.
+ 
+ ## 4. Confirm regression sensitivity
+ 

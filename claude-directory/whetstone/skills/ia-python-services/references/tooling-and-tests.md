@@ -1,0 +1,51 @@
+# Tooling and tests
+
+## Modern Tooling
+
+| Tool | Replaces | Purpose |
+|------|----------|---------|
+| **uv** | pip, virtualenv, pyenv, pipx | Package/dependency management |
+| **ruff** | flake8, black, isort | Linting + formatting |
+| **ty** | mypy, pyright | Type checking (Astral, faster) |
+
+- `uv init --package myproject` for distributable packages, `uv init` for apps
+- `uv add <pkg>`, `uv add --group dev <pkg>`, never edit pyproject.toml deps manually
+- `uv run <cmd>` instead of activating venvs; auto-activates the venv without explicit activation
+- Create each deployed virtual environment at its final release path. Installed scripts can embed the interpreter's absolute path, so moving the environment can strand their entry points. Switch the service or launcher to the new release, then invoke the installed entry point through that path and confirm the expected interpreter runs. [Python venv documentation](https://docs.python.org/3/library/venv.html#how-venvs-work)
+- `uv add --upgrade <pkg>` to upgrade a single package without touching others
+- `uv tree --outdated` to preview what would be upgraded before committing
+- `uv.lock` goes in version control
+- uv treats an exactly-pinned (`==`) yanked transitive version as unsolvable; plain `pip` only warns and installs it. If a dependency hard-pins a yanked release (and bumping the leaf won't help because the pin is exact), `uv pip install` fails resolution where a pip-based script stays green. Drop the package from the requirements you feed uv when it's off your code path; fall back to `pip` only when the path genuinely needs it
+- A user-level `~/.config/uv/uv.toml` carrying `exclude-newer` can serialize that policy into `uv.lock`; a clean CI runner without it then rejects the lock. Pinning the same uv version does not isolate configuration. Preserve the repository's intended settings while excluding user settings: maintain them in a version-controlled `uv.toml` and select it with `uv --config-file ./uv.toml lock`, `uv --config-file ./uv.toml sync --locked`, and `uv --config-file ./uv.toml run <cmd>`. Before selecting that file, preserve any applicable settings from `[tool.uv]`; the selected file replaces discovered configuration. Use `--no-config` only when the project requires none of the configuration it disables. Regenerate the lock under the selected policy instead of deleting lock options by hand. Verify that user-only settings cannot change the lock and that intended repository settings still apply; retain an intentional repository `exclude-newer` policy.
+- Use `[dependency-groups]` (PEP 735) for dev/test/docs, not `[project.optional-dependencies]`
+- PEP 723 inline metadata for standalone scripts with deps
+- `ruff check --fix . && ruff format .` for lint+format in one pass
+
+**Standard project layout:**
+```
+src/mypackage/
+    __init__.py
+    main.py
+    services/
+    models/
+tests/
+    conftest.py
+    test_main.py
+pyproject.toml
+```
+
+See [cli-tools.md](./cli-tools.md) for Click patterns, argparse, and CLI project layout.
+
+
+## Testing Patterns
+
+- **`python -m unittest discover` collects only `TestCase` subclasses**, so module-level pytest `def test_*` functions are silently skipped: no error, just a smaller `Ran N tests` and `OK`. When a script or CI gate uses it, compare its count against `pytest --collect-only -q` at the same commit.
+- **pytest flags**: `--lf` (last failed), `-x` (stop on first failure), `-k "pattern"` (filter), `--pdb` (debugger on failure)
+- **Fixtures**: use `conftest.py` for shared fixtures. Scope wisely: `@pytest.fixture(scope="session")` for expensive setup (DB connections), `scope="function"` (default) for test isolation
+- **`tmp_path`**: built-in fixture for temp files; no manual cleanup needed
+- **Parametrize with IDs**: `@pytest.mark.parametrize("input,expected", [...], ids=["empty", "single", "overflow"])` for readable test names
+- **Mock discipline**: always `autospec=True` on mocks to catch API drift. `assert_awaited_once()` for async mocks.
+- **Test markers**: register in `pyproject.toml` under `[tool.pytest.ini_options]` with `markers = ["slow", "integration"]`. Run fast tests with `-m "not slow"`.
+- **Protocol duck typing**: use `class Renderable(Protocol)` for structural typing at service boundaries; enables testing with plain objects instead of mocks
+- **Context managers**: `@contextmanager` for connection/transaction lifecycle. Always implement `__exit__` cleanup.
+- **A package `__init__.py` that eager-imports a heavy stack defeats every in-test skip guard.** Under pytest's default `prepend` import mode, importing `pkg.test_foo` imports `pkg` first and runs its `__init__.py` before any line of the test module executes, so `pytest.importorskip(...)` and a module-level `pytest.skip(allow_module_level=True)` are both dead code, and a `conftest.py` *inside* the package imports as `pkg.conftest` and fails identically. `collect_ignore`/`collect_ignore_glob` prune directory *recursion* and are **not** honored for paths named explicitly on the command line, so they cannot skip a broken file either. There is no clean in-test-file option once `__init__` is the failing layer: make the package `__init__` lazy (the real fix, but it touches production code), drop `__init__.py` from the test directory so a module-level guard can run, or scope `testpaths` so a bare `pytest` never collects it, and document the limitation in the test docstring rather than shipping a guard that cannot fire.

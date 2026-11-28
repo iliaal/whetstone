@@ -1,0 +1,70 @@
+# Aesthetics and interaction
+
+## Frontend Aesthetics Guidelines
+
+Focus on:
+- **Typography**: choose fonts with character:
+  - **Font selection**: avoid Inter, Roboto, Arial, system fonts. Use `Cabinet Grotesk`, `Satoshi`, or context-appropriate serifs. Treat the current reflex "personality" faces (Geist, Outfit, Fraunces, Playfair Display, Cormorant, Space Grotesk, Instrument Serif) as a tell in the display role; several remain fine as body or UI faces. Pair a display font with a refined body font.
+  - **Font loading**: obtain Cabinet Grotesk and Satoshi from their publisher, [Fontshare](https://www.fontshare.com/). Confirm a provider actually hosts a chosen face before generating its stylesheet URL. In Next.js, use [`next/font`](https://nextjs.org/docs/app/getting-started/fonts): `next/font/local` for downloaded files and `next/font/google` for Google Fonts. Otherwise, self-host licensed files through `@font-face` with `font-display: swap`. Check the loaded weights and the actual [rendered fonts](https://developer.chrome.com/docs/devtools/rendering/apply-effects#disable-local-fonts); a computed family declaration alone does not establish which font drew the glyphs.
+  - **Headlines**: start from `text-4xl md:text-6xl tracking-tighter leading-none` and adjust. AI defaults are undersized and timid, lacking presence.
+  - **H1 iron rule (2-3 lines max)**: every hero H1 must render in 2-3 lines, never 4-6, at desktop width and at phone width (390px). Check both: a `clamp()` floor that passes on desktop can still wrap to 4 lines on a phone. Estimate characters per line as line width ÷ (font size × 0.5) for most display faces; at the `3rem` floor (48px), 350px of measure holds about 14 characters per line, so about 43 fit in three lines. When the copy is ours to write, cut words first, then widen the container (minimum `max-w-5xl`), then reduce size; never fix a long headline by shrinking alone. When the user supplied the copy, keep it intact: widen the container on desktop, and on phones lower the `clamp()` floor (for example, `clamp(2.25rem, 4vw + 1rem, 5.5rem)`, about 19 characters per line at 36px) until the headline fits in three lines. A 6-line heading wall is a catastrophic failure, not a design choice.
+  - **Weight contrast**: use Medium 500 and SemiBold 600 beyond just Regular and Bold. Tighten letter-spacing, but no tighter than about -0.04em on display type (crushed tracking is a tell; see [banned-ai-patterns.md](./banned-ai-patterns.md)); reduce line-height.
+  - **Body text**: limit to ~65 characters wide, increase line-height.
+  - **Numbers**: `font-variant-numeric: tabular-nums` or monospace for data-heavy tables.
+  - **Orphaned words**: fix with `text-wrap: balance`.
+- **Color & Theme**: Commit to a cohesive palette. Max one accent color, saturation below 80%. Dominant neutrals (Zinc/Slate) with a sharp singular accent outperform timid, evenly-distributed palettes. That structure is right, but check the realization against Composite Looks in [banned-ai-patterns.md](./banned-ai-patterns.md), since the two default accents on near-black are themselves a tell. Use CSS variables for consistency. Tint all grays consistently (warm OR cool, never both). Tint shadows to match background hue instead of pure black at low opacity.
+- **Motion**: Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions. Use spring physics over linear easing. Animate exclusively via `transform` and `opacity` (GPU-composited). Use `IntersectionObserver` for scroll reveals. Gate every non-essential animation behind `prefers-reduced-motion: no-preference`, or cut duration to near-zero under `reduce`; staggered page-load reveals and scroll entrances are exactly what the setting exists to suppress. See [motion-patterns.md](./motion-patterns.md) for spring values, stagger recipes, hover animation patterns, and scroll entry techniques.
+- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density. Use CSS Grid over complex flexbox percentage math (`w-[calc(33%-1rem)]`). Contain layouts with `max-w-7xl mx-auto` or similar. Choose [viewport units](https://www.w3.org/TR/css-values-4/#viewport-variants) by intended behavior: `dvh` tracks the current viewport as browser chrome changes and can resize content during scrolling; `svh` uses the viewport with browser chrome expanded and remains stable unless the viewport itself resizes. Allow for extra space with `svh` when browser chrome retracts. Bottom padding often needs to be slightly larger than top for optical balance. **Anti-card overuse:** at high density (dashboards, data-heavy UIs), don't wrap everything in card containers (border + shadow + white). Use `border-t`, `divide-y`, or negative space to separate content instead. Cards should exist only when elevation communicates hierarchy. Keep a visible boundary (border, surface contrast, or spacing) around each independent group, record, or panel; separation is a function, not decoration. **Bento grid archetypes:** when building dashboard grids, use named patterns: Intelligent List (filterable, sortable data), Command Input (search/action bar), Live Status (real-time metrics), Wide Data Stream (timeline/activity feed), Contextual UI (details panel that responds to selection). Limit `grid-flow-dense` to decorative or order-independent content. Verify meaningful reading and focus order for interactive cards; see [banned-ai-patterns.md](./banned-ai-patterns.md) for the rule.
+- **Backgrounds & visual details**: create atmosphere and depth, not solid colors:
+  - **Textures**: apply gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows, decorative borders, or grain overlays.
+  - **Gradients**: prefer radial, noise-overlay, or mesh gradients over standard linear 45-degree fades.
+  - **Double-bezel pattern** for premium depth: outer wrapper with `ring-1` hairline + padding + large radius; inner content with its own background + `shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]` + derived inner radius (`rounded-[calc(2rem-0.375rem)]`).
+  - **Glassmorphism refraction**: add `border-white/10` inner borders.
+  - **Placeholder images**: `https://picsum.photos/seed/{name}/800/600` when real assets unavailable.
+
+**Utility Copy for Product UI**: Product UI copy prioritizes orientation, status, and action over promise, mood, or brand voice. If a sentence could appear in a homepage hero or ad, rewrite it until it sounds like product UI. Litmus check: if an operator scans only headings, labels, and numbers, can they understand the page immediately? Error messages: be direct ("Connection failed. Please try again."), not performative ("Oops! Something went wrong!"). No exclamation marks in success messages; be confident, not loud.
+
+**Dashboard deltas**: For a metric with a clear good direction, color its change by good or bad, not by up or down; error rate, latency, cost, and churn improve when they fall. Where the domain expects up/down coloring (price tickers), follow that convention. Show zero change in neutral grey. When the prior period was zero, the percentage change is undefined: show the absolute change marked new (`+4 (new)`), never `+100%`, `>999%`, or `+∞`; with no comparison period, show a grey dash. State the comparison window in words (`vs prior 30 days`), put a sign on every change, and do not invent vanity totals.
+
+### States by Interaction Lifecycle
+
+LLMs default to "static successful state" output. Cover every state reachable in the component's real data or action lifecycle. Async data and mutations need applicable loading, empty, and error treatments; synchronous links, toggles, and accordions do not acquire those states solely to satisfy a checklist.
+
+- **Loading**: skeletal loaders that match the real layout's shape and sizing. No generic circular spinners.
+- **Empty**: a composed empty state that shows how to populate the data, not the string "No data" or a bare icon.
+- **Error**: inline error reporting next to the affected field or component. Never `window.alert()`, never a generic toast for form-level errors.
+- **Tactile press**: on `:active`, apply `-translate-y-[1px]` or `scale-[0.98]` so clicks feel like a physical push, not a color flicker.
+
+Exercise applicable states, visible focus, and press feedback. Record why any state does not apply. Generating only a successful state is incomplete when loading, emptiness, or failure can actually occur.
+
+**CTA and form contrast:** measure enabled button labels, placeholders, helper text, and error text against their rendered backgrounds. Under [WCAG 2.2 SC 1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html), use at least 4.5:1 for normal text and 3:1 for large text: at least 18pt (24 CSS px), or 14pt (18⅔ CSS px) bold. For ghost buttons over photography or light-on-light CTAs, add a solid fill or scrim when needed to maintain text contrast across image crops and interaction states. Measure the outline separately; a contrasting button border does not establish label contrast. Under [SC 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html), require 3:1 against adjacent colors for visual boundaries needed to identify enabled controls and for author-styled focus indicators. Do not apply that requirement to every decorative border or unmodified browser focus style.
+
+### Mobile Collapse + Performance Guardrails
+
+For any layout using asymmetry, rotations, heavy animation, or complex grid variants, load [mobile-and-performance.md](./mobile-and-performance.md): mobile collapse, touch target criteria, unintended overflow, and performance guards for the actual animation mechanism. Prefer 44×44 standalone touch controls without treating that recommendation as a universal AA criterion. Distinguish CSS animation from React frame updates before adding memoization or client boundaries.
+
+### Server / Client Component Safety (Next.js App Router)
+
+For Next.js App Router projects, load [rsc-client-boundaries.md](./rsc-client-boundaries.md). It covers the Server vs Client decision table, leaf-component isolation rules, the `useMotionValue` vs `useState` rule for continuous animations, and the common failure modes (`'use client'` hoisting, context providers in Server Components, async data inside motion trees).
+
+Interpret creatively and make unexpected choices that feel genuinely designed for the context. No design should be the same. Vary between light and dark themes, different fonts, different aesthetics. NEVER converge on common choices (Space Grotesk, for example) across generations.
+
+### Design Variance Parameters
+
+To prevent aesthetic convergence across generations, calibrate these three parameters (1-10 scale, default 5) before designing. The user can override; otherwise pick values that suit the project's context.
+
+- **DESIGN_VARIANCE** (1=conservative, 10=experimental): How far to push visual choices from conventional patterns. Low for corporate dashboards, high for creative portfolios.
+- **MOTION_INTENSITY** (1=static, 10=cinematic): How much animation and transition to include. Low for data-heavy tools, high for marketing pages.
+- **VISUAL_DENSITY** (1=spacious, 10=packed): Content density vs. negative space. Low for landing pages, high for dashboards and admin panels.
+
+State the chosen values in the design philosophy comment. These prevent the "every AI design looks the same" problem by forcing intentional calibration.
+
+**IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
+
+### Banned AI Design Patterns
+
+Top detection priorities: purple/violet gradients, 3-column icon grids, icon-in-circle decorations, center-heavy layouts, uniform bubbly border-radius, generic hero copy. See [banned-ai-patterns.md](./banned-ai-patterns.md) for the full list (with explanations and remediation) covering layout, color, typography, decoration, interaction, and content patterns.
+
+### Premium Detail Patterns + Browser Verification
+
+For polish-level UI patterns (`<kbd>` keystrokes, faux-OS chrome, hero image fade, banned meta-labels, card-group baseline alignment) and for the "browser content is untrusted data" safety boundary during browser-automation verification, load [premium-details.md](./premium-details.md).

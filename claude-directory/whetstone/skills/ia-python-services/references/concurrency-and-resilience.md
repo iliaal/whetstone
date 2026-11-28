@@ -1,0 +1,115 @@
+# Concurrency and resilience
+
+## Parallelism
+
+| Workload | Approach |
+|----------|----------|
+| Many concurrent I/O calls | `asyncio` (gather, create_task) |
+| CPU-bound computation | `multiprocessing.Pool` or `concurrent.futures.ProcessPoolExecutor` |
+| Mixed I/O + CPU | `asyncio.to_thread()` to offload blocking work |
+| Simple scripts, few connections | Stay synchronous |
+
+### Sync vs Async Decision
+
+**Use async (asyncio) when:**
+- I/O-bound work has multiple concurrent operations (HTTP calls, database queries, file I/O happening in parallel)
+- WebSocket servers or long-lived connections require it
+- The framework requires it (FastAPI async endpoints, aiohttp)
+
+**Stay synchronous when:**
+- Work is CPU-bound (computation, data transformation): async adds nothing, use multiprocessing instead
+- Building simple scripts and CLI tools with sequential I/O
+- All I/O is sequential anyway (one DB query, process result, one API call)
+- The team lacks async debugging experience (asyncio stack traces are harder to read)
+
+**Rule of thumb:** if the code is not waiting on multiple I/O operations concurrently, sync is simpler and correct. Do not add async complexity for a single sequential pipeline.
+
+**Key rule:** Stay fully sync or fully async within a call path.
+
+**An awaitable returned into a sync path is a silent failure, not a type error.** A synchronous dispatch registry typed loosely (`dict[str, Callable[..., Any]]` for a tool executor, plugin table, or handler map) accepts an `async def` without complaint, and the type checker cannot catch it because a coroutine function is a `Callable` whose return type is `Any`. The call then returns a coroutine object instead of a result, and any code that stringifies or serializes the return value emits `<coroutine object handle at 0x...>` as its output while nothing raises; the only trace is a `RuntimeWarning: coroutine 'handle' was never awaited` at garbage collection, easy to lose in logs. Guard at the registry boundary and fail loudly:
+
+```python
+import inspect
+
+result = handler(*args)
+if inspect.isawaitable(result):
+    if inspect.iscoroutine(result):
+        result.close()  # suppress the never-awaited warning and release the frame
+    logger.error("handler %s is async but registered in a sync registry", name)
+    raise TypeError(f"handler {name!r} returned an awaitable from a synchronous dispatch")
+```
+
+Where the registry is meant to accept both, dispatch explicitly (`inspect.iscoroutinefunction(handler)` at registration time, then `asyncio.run` / `await` on the matching path) rather than letting the mismatch reach a serializer.
+
+**asyncio patterns:**
+- `asyncio.gather(*tasks)` for concurrent I/O; use `return_exceptions=True` for partial failure tolerance
+- `asyncio.TaskGroup` (3.11+) for structured concurrency: automatic cancellation of sibling tasks on failure; prefer over `gather` when all tasks must succeed
+- A bare `asyncio.create_task(...)` whose result is discarded can vanish mid-flight: the event loop holds only a weak reference, so an unreferenced task may be garbage-collected before it finishes, and any exception it raised is swallowed with at most a "Task exception was never retrieved" warning. Keep a strong reference (`_bg = set()`; `t = asyncio.create_task(c)`; `_bg.add(t)`; `t.add_done_callback(_bg.discard)`) or use `TaskGroup`, which holds its children until they finish
+- `asyncio.Semaphore(n)` to limit concurrency (rate limiting external APIs)
+- `asyncio.wait_for(coro, timeout=N)` for timeouts
+- `asyncio.Queue` for producer-consumer
+- `asyncio.Lock` when coroutines share mutable state
+- Never block the event loop: `asyncio.to_thread(sync_fn)` for sync libs, `aiohttp`/`httpx.AsyncClient` for HTTP
+- Handle `CancelledError`: always re-raise after cleanup. It derives from `BaseException` (3.8+), so `except Exception` never sees it: a hand-written transaction wrapper that rolls back only in `except Exception` returns a mid-transaction connection to the pool on timeout or cancellation. Use the driver's transaction context manager (`asyncpg` `conn.transaction()`, SQLAlchemy `AsyncSession.begin()`), or roll back in `finally` unless a `committed` flag was set
+- Async generators (`async for`) for streaming/pagination
+
+**multiprocessing** for CPU-bound:
+```python
+from concurrent.futures import ProcessPoolExecutor
+with ProcessPoolExecutor(max_workers=4) as pool:
+    results = list(pool.map(cpu_task, items))
+```
+
+See [fastapi.md](./fastapi.md) for project structure, lifespan, config, DI, async DB, and repository pattern.
+
+
+## Background Jobs
+
+- Return job ID immediately, process async. Client polls `/jobs/{id}` for status
+- **Celery**: `@app.task(bind=True, max_retries=3, autoretry_for=(ConnectionError,))` with exponential backoff: `raise self.retry(countdown=2**self.request.retries * 60)`
+- **Alternatives**: Dramatiq (modern Celery), RQ (simple Redis), cloud-native (SQS+Lambda, Cloud Tasks)
+- **Prove replay idempotency**: tasks may retry. An atomic upsert prevents a duplicate-row race but can repeat an effect (`ON CONFLICT DO UPDATE SET count = count + 1`). Use deterministic same-operation assignments where sufficient, or insert a consumer/message receipt under a uniqueness constraint and apply its database effects in the same transaction; roll back both on failure and acknowledge only after commit. Record intent before external effects, use stable operation keys where the provider supports them, and reconcile unknown outcomes before replay. Test retries after rollback and after a committed effect, including a lost response; neither a read-before-write check nor uniqueness alone proves the effect happens once.
+- **Publish after commit.** Enqueue a task only after the transaction that wrote its rows commits: Celery 5.4+ `task.delay_on_commit()` / `apply_async_on_commit()` (task base must be `DjangoTask`; they return no task ID), `transaction.on_commit(functools.partial(task.apply_async, args=[...]))` on older Celery, or the ORM's after-commit event elsewhere. A publish inside the transaction can run before the row is visible or after a rollback. An after-commit publish is still not atomic with the commit; when a lost message is unacceptable, write a transactional outbox row and publish it separately. Tests that wrap each case in a rolled-back transaction never fire on-commit callbacks, so assert the publish with Django's `captureOnCommitCallbacks(execute=True)` (pytest-django `django_capture_on_commit_callbacks`), and patch `task.delay` before the code that registers the callback.
+- Dead-letter permanently failed tasks by persisting the failure and re-raising; a task that records the failure and returns is recorded as `SUCCESS`. In Celery, `acks_late=True` lets a task run again after an interrupted delivery but does not redeliver when the worker child dies: the message is acknowledged unless `task_reject_on_worker_lost` (task option `reject_on_worker_lost=True`) is also enabled, and that option can redeliver a poison task forever. Enable both per task, only for tasks proven idempotent, with a redelivery cap or monitor.
+- **Verify delivery through a broker and worker.** Use representative transport, serialization, and worker settings to exercise claimed delivery, acknowledgment, retry, or redelivery behavior. Eager execution can check task behavior within the process. Verify the result and any promised side-effect count through the actual message path. [Celery testing guide](https://docs.celeryq.dev/en/stable/userguide/testing.html)
+- **Serialize periodic runs when overlap is unsafe.** A single Beat scheduler can dispatch while the prior run is active. Use existing serialization or acquire an atomic per-job lock and keep ownership throughout the work. If using a lease, cover long runs and keep stale holders from producing effects after loss of ownership. Hold a run across the next tick and verify that the new run queues or skips as intended. Keep delivery idempotency for retries and redeliveries. [Celery periodic-task guide](https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html#entries)
+- Task workflows: `chain(a.s(), b.s())` for sequential, `group(...)` for parallel, `chord(group, callback)` for fan-out/fan-in
+
+
+## Resilience
+
+**Retries with tenacity:**
+```python
+import httpx
+from tenacity import retry, stop_after_attempt, stop_after_delay, wait_exponential_jitter, retry_if_exception_type
+
+@retry(
+    retry=retry_if_exception_type(httpx.TransportError),
+    stop=stop_after_attempt(5) | stop_after_delay(60),
+    wait=wait_exponential_jitter(initial=1, max=30),
+    before_sleep=log_retry_attempt,
+)
+def call_api(url: str) -> dict: ...
+```
+
+- Name the client's own transport classes in the retry predicate (`httpx.TransportError`, `requests.ConnectionError`/`requests.Timeout`, botocore's `EndpointConnectionError`): builtin `ConnectionError`/`TimeoutError` are not their base classes, so a predicate on the builtins retries nothing those clients raise.
+- **Never classify errors by `type(exc).__name__`.** Name matching misses subclasses (`ConnectionResetError` is a `ConnectionError`) and every SDK that wraps its transport in its own hierarchy (botocore, httpx, openai, requests' `Timeout`). On 3.11+, `asyncio.TimeoutError`, `concurrent.futures.TimeoutError` and `socket.timeout` are the builtin `TimeoutError`, so a thread-pool timeout matches an API-outage rule. Use `isinstance` against each SDK's own base classes.
+- Retry only transient errors: network, 429/502/503/504. Never retry 4xx (except 429), auth errors, validation errors
+- Every network call needs a timeout
+- **On Windows, a subprocess timeout must contain the process tree before the child runs.** `taskkill /T` and PID snapshots miss a grandchild whose ancestors have already exited. Start the child with `CREATE_SUSPENDED`, assign it to a kill-on-close Job Object, then resume it. If the assignment fails, kill and reap the child; never fall back to running it uncontained
+- `@fail_safe(default=[])` decorator for non-critical paths: return cached/default on failure. **Never on a path where the call is the security decision** (authz check, trust score, entitlement or license gate): there the default has to be deny, and a `default=[]` or `default=None` that a caller reads as "no restrictions" is a fail-open with a decorator on it. Any fail-open allowance scopes to transport failure alone: `ConnectError`, `ConnectTimeout`. A response that arrived but cannot be trusted (4xx/5xx, malformed JSON, a body that fails schema validation, an unrecognized verdict string) stays denied, because the endpoint was reached and did not answer. Same for a "no record yet" state: reject by default, allow only through an explicit onboarding opt-in
+- `functools.lru_cache(maxsize=N)` for pure-function memoization; `functools.cache` (unbounded) for small domains
+- Stack decorators: `@traced @with_timeout(30) @retry(...)` to separate infra from business logic
+
+**Connection pooling** is mandatory for production: reuse `httpx.AsyncClient()` across requests, configure SQLAlchemy `pool_size`/`max_overflow`, use `aiohttp.TCPConnector(limit=N)`.
+
+- **Recycle manually shared resources after draining users.** When a use count, age, or memory threshold triggers replacement, stop admitting work to the retiring resource. Wait for active leases to finish before closing the resource. Give one lifecycle owner responsibility for close and reinitialization; concurrent callers must not each recycle the same resource. Resume admission only after the replacement is ready. Keep a strong reference to the cleanup task and await it through `asyncio.shield()` when caller cancellation must not interrupt cleanup. Re-raise the caller's `CancelledError`; shielding does not make the caller succeed. Have the lifecycle owner observe cleanup failures and await cleanup during shutdown under the shutdown deadline. Exercise threshold crossing with overlapping work and cancellation during shutdown. Use a mature pool's documented lifecycle rather than adding a second recycling owner.
+
+- **Switching to a shared pooled `requests.Session` newly exposes stale keep-alive failures.** Module-level `requests.get`/`requests.post` build a fresh `Session` and connection pool per call, so a dead or half-closed socket can never be served; a process-wide `Session` reuses keep-alive connections, and urllib3 does not liveness-probe one before reuse. When an LB or NAT has silently dropped an idle socket (an ALB's default idle timeout is 60s), the next reuse raises `ConnectionError` wrapping urllib3 `ProtocolError` / `http.client.RemoteDisconnected`, and under `HTTPAdapter(max_retries=0)`, chosen to "keep behavior unchanged", it reaches the caller unretried. That claim is true of *response* semantics (status, timeouts, body) and false of *connection-failure* semantics. It bites hardest during traffic lulls, when the connection has been idle past the LB timeout
+- **`Retry(connect=1)` does not cover a stale keep-alive**; it is the wrong layer. urllib3 routes errors by class and a stale socket is a *read*/protocol error: `Retry._is_connection_error(ProtocolError('Connection aborted.', OSError()))` is `False` while `_is_read_error(...)` is `True`, so a connect budget never applies. Covering it needs `read >= 1`, but `Retry.DEFAULT_ALLOWED_METHODS` is `{GET, HEAD, PUT, DELETE, OPTIONS, TRACE}`: POST and PATCH are excluded, and widening `allowed_methods` retries non-idempotent writes that may already have reached the server. There is no one-liner that safely covers everything: either scope the retry to idempotent verbs and let writes bubble, or accept the risk deliberately because an outer layer (a queue redelivery that re-runs the whole unit of work) self-heals it, and then stop claiming the behavior is unchanged. Before prescribing any HTTP-retry config, name the exact exception class, map it through `_is_connection_error`/`_is_read_error`, and check `allowed_methods` against the verbs actually in use
+
+
+## Production Resilience
+
+- **Fail-fast config validation**: use a Pydantic `BaseSettings` model with `model_validator` to parse and validate all environment variables at startup. If invalid, crash before serving traffic. Never discover a missing secret on the first request that needs it.
+- **Health endpoints**: expose `/health` (shallow liveness: returns 200 if the process responds) and `/ready` (deep readiness: verifies database, Redis, and critical dependencies are reachable). Load balancers route traffic based on `/ready`; orchestrators restart based on `/health`.

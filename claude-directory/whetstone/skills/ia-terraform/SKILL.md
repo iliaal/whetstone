@@ -1,0 +1,139 @@
+---
+name: ia-terraform
+description: "Terraform and OpenTofu configuration, modules, testing, state management, and HCL review. Use when working with Terraform, OpenTofu, HCL, tfvars, tftest, state migration, or IaC patterns."
+paths: ["**/*.tf", "**/*.tfvars"]
+---
+
+# Terraform & OpenTofu
+
+## Working rules
+
+- Preserve state and resource addresses during refactoring; inspect the plan for unintended replacement.
+- Apply only a saved, reviewed plan; get approval before `apply` or `destroy`. Before applying, deleting a resource block, or adding `ignore_changes` or `prevent_destroy`, read [plan-and-state-safety.md](./references/plan-and-state-safety.md).
+- Separate tests with verified local or mocked effects from tests that access real services or create billable infrastructure. Plan mode can still read real data sources; mocked apply can run without infrastructure creation.
+
+## File Organization & Naming
+
+| File | Purpose |
+|------|---------|
+| `terraform.tf` | Terraform + provider version requirements |
+| `providers.tf` | Provider configurations |
+| `main.tf` | Primary resources and data sources |
+| `variables.tf` | Input variables (alphabetical) |
+| `outputs.tf` | Output values (alphabetical) |
+| `locals.tf` | Local values |
+
+- Lowercase with underscores: `web_api`, not `webAPI` or `web-api`
+- Descriptive nouns excluding resource type: `aws_instance.web_api` not `aws_instance.web_api_instance`
+- Singular, not plural
+- `this` for singleton resources (one of that type per module)
+- Contextual variable prefixes: `vpc_cidr_block` not `cidr`
+
+
+## Block Ordering
+
+**Resources:** `count`/`for_each` (blank line after) → arguments → nested blocks → `tags` → `depends_on` → `lifecycle` (last)
+
+**Variables:** `description` → `type` → `default` → `validation` → `nullable`
+
+Every variable needs `type` + `description`. Every output needs `description`. Mark secrets `sensitive = true`.
+
+
+## Module Structure
+
+| Type | Scope | Example |
+|------|-------|---------|
+| Resource Module | Single logical group | VPC + subnets, SG + rules |
+| Infrastructure Module | Collection of resource modules | Networking + compute for one region |
+| Composition | Complete infrastructure | Spans regions/accounts |
+
+```
+module-name/
+├── main.tf, variables.tf, outputs.tf, versions.tf
+├── examples/
+│   ├── minimal/
+│   └── complete/
+└── tests/
+    └── defaults.tftest.hcl
+```
+
+Keep modules small (single responsibility). `examples/` double as documentation and integration test fixtures. Semantic versioning for all published modules.
+
+
+## count vs for_each
+
+| Scenario | Use |
+|----------|-----|
+| Boolean toggle (create or skip) | `count = condition ? 1 : 0` |
+| Named/keyed items that may reorder | `for_each = toset(list)` or `map` |
+| Fixed identical replicas | `count = N` |
+
+Default to `for_each`: removing a middle item from a `count` list recreates all subsequent resources. Use `count` only for boolean conditionals or truly identical replicas.
+
+
+## Version Pinning
+
+| Component | Strategy | Example |
+|-----------|----------|---------|
+| Terraform | Pin minor | `required_version = "~> 1.9.0"` |
+| Providers | Pin major | `version = "~> 5.0"` |
+| Modules (prod) | Pin exact | `version = "5.1.2"` |
+| Modules (dev) | Allow patch | `version = "~> 5.1.0"` |
+
+Key modern features: `moved` blocks (1.1+), `optional()` with defaults (1.3+), native testing (1.6+), mock providers (1.7+), `removed` blocks (1.7+), cross-variable validation (1.9+), write-only arguments (1.11+).
+Stacks (HCP; check current release status): orchestrates multiple configs as a single deployment unit. Evaluate for multi-environment patterns.
+
+
+## State & Security
+
+- Remote backend with locking: S3 with `use_lockfile = true` (1.10+), Azure Blob, GCS, or Terraform Cloud. Never local state for shared infrastructure. DynamoDB-based S3 locking (`dynamodb_table`) is deprecated and slated for removal; prefer `use_lockfile`. Both may be set at once while migrating an existing table off.
+- OpenTofu-only: `terraform { encryption { key_provider "pbkdf2" "k" {...}  method "aes_gcm" "m" { keys = key_provider.pbkdf2.k }  state { method = method.aes_gcm.m }  plan { method = method.aes_gcm.m } } }` encrypts state and plan files client-side (or via `TF_ENCRYPTION`). Roll out with a `fallback { method = method.unencrypted.x }` so existing plaintext state still loads, and never rename a key provider or method without a `fallback` block. OpenTofu also accepts `var.*`/`local.*` in `backend {}` arguments and in module `source`/`version` (resolved at `init`; no state or provider-function references); the same HCL is a hard error in Terraform ("A backend block cannot refer to named values").
+- Encrypt state at rest. Never commit `.tfstate`, `.terraform/`, or `*.tfplan`. Always commit `.terraform.lock.hcl`.
+- `sensitive = true` redacts CLI output (plan, apply, `terraform output`) only; the value is still stored in plaintext state. Keep secrets out of state in this order: provider-managed secrets (for example `manage_master_user_password = true`), then an `ephemeral` resource (1.10+) feeding a write-only `*_wo` argument (1.11+). Write-only values never enter plan or state, so changing one produces no diff: increment its `*_wo_version` companion argument (a provider convention, not enforced by core) to push a rotation.
+- `default_tags` on provider for consistent resource tagging.
+- Encryption at rest on all storage. Private networking by default; public access is opt-in.
+- Least-privilege security groups. No `0.0.0.0/0` ingress without explicit justification.
+- Never hardcode credentials; use assume_role, OIDC, or secrets managers.
+- Pre-commit: auto-format first (`terraform fmt -recursive` rewrites files), then verify (`terraform validate && tflint && trivy config .`)
+- Use `moved` blocks with `from` and `to` addresses for refactoring resource names/modules without destroy-recreate. Retain historical moves for downstream upgrades; remove only after every affected state has migrated, or as an explicitly breaking module release.
+
+
+## Troubleshooting
+
+- State lock stuck: `terraform force-unlock <ID>`, only after confirming no other operation running
+- Resource drift: Save a state-reconciliation plan with `terraform plan -refresh-only -out=refresh.tfplan`. Review and obtain approval before applying that file.
+- Intentional replacement: Save the plan with `terraform plan '-replace=ADDR' -out=replace.tfplan`, substituting the resource instance address. Review and obtain approval before applying that file.
+- Import existing: `import` blocks (1.5+) for declarative import, or `terraform import ADDR ID`
+
+
+## Dependency Management
+
+Use `locals` with `try()` to control deletion ordering without explicit `depends_on`:
+
+```hcl
+locals {
+  vpc_id = try(aws_vpc_ipv4_cidr_block_association.this[0].vpc_id, aws_vpc.this.id, "")
+}
+```
+
+This forces Terraform to destroy subnets before CIDR associations, which prevents deletion errors.
+
+- `cidrsubnet(var.vpc_cidr, 8, count.index)` for calculated subnet CIDRs; never hardcode subnets
+- Multi-region: `provider "aws" { alias = "eu_west_1" }` + `providers = { aws = aws.eu_west_1 }` in module blocks
+
+
+## Verify
+
+Run before declaring done:
+
+```bash
+terraform fmt -check && terraform validate && tflint && trivy config .
+```
+
+All commands must pass with zero errors. Inspect providers, data sources, provisioners, and external commands before selecting test files. Include safe plan tests and fully mocked apply tests in completion checks. Keep real-service or infrastructure tests behind the task's authorization and cost boundary. Pass the root-relative test filename, such as `terraform test -filter=tests/vpc_unit_test.tftest.hcl`, and verify that the intended file completed at least one run; an exit code alone can accept an unknown filter with no tests selected. Use the checked selection recipe in [native-test-patterns.md](./references/native-test-patterns.md).
+
+## Task-specific references
+
+Read the relevant reference before implementing or reviewing the matching behavior:
+
+- For native plan/apply tests, fixture ordering, or CI test selection: [native-test-patterns.md](./references/native-test-patterns.md).

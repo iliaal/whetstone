@@ -1,0 +1,98 @@
+---
+name: ia-linux-bash-scripting
+description: "Defensive Bash scripting for Linux: safe foundations, argument parsing, production patterns, ShellCheck compliance. Use when writing bash scripts, shell scripts, cron jobs, or CLI tools in bash."
+paths: ["**/*.sh", "**/*.bash"]
+---
+
+# Linux Bash Scripting
+
+Produce bash scripts that pass `shellcheck --enable=all` and `shfmt -d` with zero warnings.
+
+Target: GNU Bash 4.4+ on Linux. No macOS/BSD workarounds, no Windows paths, no POSIX-only restrictions.
+
+## Script Foundation
+
+```bash
+#!/usr/bin/env bash
+main() (
+  set -Eeuo pipefail
+  shopt -s inherit_errexit
+
+  SCRIPT_DIR=$(dirname -- "${BASH_SOURCE[0]}") || exit "$?"
+  SCRIPT_DIR=$(cd -- "${SCRIPT_DIR}" && pwd -P) || exit "$?"
+  readonly SCRIPT_DIR
+
+  trap 'printf "Error at %s:%d\n" "${BASH_SOURCE[0]}" "$LINENO" >&2' ERR
+  _tmpdir=""
+  trap 'if [[ -n ${_tmpdir} ]]; then rm -rf -- "${_tmpdir}"; fi' EXIT
+
+  printf '%s\n' "${SCRIPT_DIR}"
+)
+
+if [[ ${BASH_SOURCE[0]} == "${0}" ]]; then
+  main "$@"
+fi
+```
+
+- `-E` propagates ERR traps into functions
+- `inherit_errexit` propagates errexit into `$()`  command substitutions
+- Resolve the script's own data files against `SCRIPT_DIR`, never the caller's cwd or `git rev-parse --show-toplevel`. A shared linter invoked from another project's git hook, a cron job, or a wrapper runs with someone else's cwd, so a caller-relative rules path resolves to a file that does not exist: the rule set loads empty, zero violations are found, exit 0. It is a silent no-op, not an error, and running it from inside its own repo passes for the wrong reason. Exercise it once from a scratch directory that is not the script's own tree
+- Always create temp dirs under the EXIT trap: `_tmpdir=$(mktemp -d)`
+- Keep shell options, readonly variables, and traps inside `main`. Use a subshell body to contain them when tests call the function. Guard the call so sourcing only defines functions.
+
+## Core rules
+
+- Quote expansions, use arrays for commands, and never evaluate external data as shell code.
+- Validate numeric syntax, sign, and application bounds before arithmetic. Convert unsigned digits with `10#` before applying the sign; `10#-08` is invalid.
+- Keep secrets out of process arguments and tracing. Feed them through stdin and use a JSON-aware encoder.
+- Check exact exit statuses where “absent” differs from “failed to inspect.” Separate `local` and `readonly` declarations from command substitutions.
+- Use NUL-delimited file iteration, validate required flag values, and reject conflicting output/target combinations.
+- For atomic replacement, stage beside the destination; for multi-file activation, switch a single staged release reference.
+- Preserve unrelated files and report the actual signal or command status after cleanup.
+- Do not assume Bash options work in `sh`, GNU utility modes behave like syscall modes, or a configured fallback path is usable.
+
+## Task-specific references
+
+Read the relevant reference before implementing the matching behavior:
+
+- For command execution, external input, numeric conversion, argument parsing, iteration, or subprocess status handling: [input-and-process-safety.md](./references/input-and-process-safety.md).
+- For file activation, secrets, locking, retries, cleanup, permissions, logging, or restartable automation: [production-patterns.md](./references/production-patterns.md).
+
+## Performance
+
+- Parameter expansion over externals: `${path%/*}` not `dirname`, `${path##*/}` not `basename`, `${var//old/new}` not `sed`
+- `(( ))` over `expr`; `[[ =~ ]]` over `echo | grep`
+- Cache results: `val=$(cmd)` once, reuse `$val`
+- `xargs -0 -P "$(nproc)"` for parallel work
+- `declare -A map` for lookups instead of repeated grep
+
+## Bash 4.4+ / 5.x
+
+- `${var@Q}` shell-quoted (Bash 4.4+); `${var@U}` uppercase and `${var@L}` lowercase (Bash 5.1+)
+- `declare -n ref=varname` nameref for indirect access
+- `wait -n` wait for any background job
+- `$EPOCHSECONDS`, `$EPOCHREALTIME`: timestamps without forking `date` (Bash 5.0+)
+
+## Linux-Specific
+
+- GNU coreutils differ from macOS: `sed -i` (no `''` suffix), `grep -P` (PCRE support), `readlink -f` (canonical path)
+- `timeout 30s cmd` to prevent automation hangs
+- `sed -i` replaces a symlink with a regular file: it writes a temp file and renames it over the path, so the two copies diverge later with no error. Use `sed -i --follow-symlinks` or edit the target by name, and check `git status --short` for `T` (typechange) after scripted edits
+
+## ShellCheck
+
+Run `shellcheck --enable=all script.sh`. Key rules:
+- **SC2155**: Separate declaration from assignment
+- **SC2086**: Double-quote variables
+- **SC2046**: Quote command substitutions
+- **SC2164**: `cd dir || exit`
+- **SC2327/SC2328**: Keep stdout available to command substitution; redirecting it away leaves the captured value empty
+- Read regex captures from `${BASH_REMATCH[n]}`, not positional parameters
+
+Pre-commit: `shellcheck *.sh && shfmt -i 2 -ci -d *.sh`
+
+## Verify
+
+Run `shellcheck --enable=all` and `shfmt -d` with zero warnings before declaring done. Test edge cases: empty input, missing files, spaces in paths.
+
+If `shellcheck` or `shfmt` is not installed (`command -v shellcheck` fails), the check was skipped, not passed: report "static analysis not run: shellcheck unavailable" and fall back to `bash -n` for syntax only. A skipped linter is the same silent no-op as the empty rules file above.

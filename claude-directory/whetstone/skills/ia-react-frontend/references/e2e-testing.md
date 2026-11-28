@@ -1,0 +1,216 @@
+# E2E Testing with Playwright
+
+> When to read: when authoring Playwright end-to-end tests: directory layout, fixtures, page objects, network mocking, CI integration.
+
+## Directory Structure
+
+```
+project-root/
+├── playwright.config.ts
+└── e2e/
+    ├── fixtures/
+    │   ├── auth.fixture.ts
+    │   └── test-data.fixture.ts
+    ├── pages/
+    │   ├── base.page.ts
+    │   └── <page-name>.page.ts
+    ├── tests/
+    │   ├── auth/
+    │   │   └── login.spec.ts
+    │   └── smoke/
+    │       └── critical-paths.spec.ts
+    └── utils/
+        └── api-helpers.ts
+```
+
+Naming: tests `<feature>.spec.ts`, page objects `<page>.page.ts`, fixtures `<concern>.fixture.ts`.
+
+## Configuration
+
+Keep this config at the project root and run the CLI from that root. Playwright resolves `testDir` relative to the config file. For a nested config, adjust its relative directories and pass `--config <path>` explicitly.
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+const authFile = process.env.PLAYWRIGHT_AUTH_FILE;
+if (!authFile) throw new Error('Set PLAYWRIGHT_AUTH_FILE using the auth state setup below');
+
+export default defineConfig({
+  testDir: './e2e/tests',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  expect: {
+    toHaveScreenshot: { animations: 'disabled' },
+  },
+  use: {
+    baseURL: 'http://localhost:5173',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    { name: 'setup', testDir: './e2e/fixtures', testMatch: 'auth.fixture.ts' },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], storageState: authFile },
+      dependencies: ['setup'],
+    },
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+## Page Object Model
+
+Tests never use selectors directly; page objects encapsulate all locators and actions.
+
+```typescript
+// e2e/pages/base.page.ts
+import { type Page, type Locator } from '@playwright/test';
+
+export abstract class BasePage {
+  constructor(protected readonly page: Page) {}
+  abstract goto(): Promise<void>;
+  abstract readonly ready: Locator;
+  async waitForLoad() { await this.ready.waitFor(); }
+  get toast(): Locator { return this.page.getByRole('alert'); }
+}
+
+// e2e/pages/users.page.ts
+export class UsersPage extends BasePage {
+  readonly ready: Locator;
+  readonly createButton: Locator;
+  readonly searchInput: Locator;
+
+  constructor(page: Page) {
+    super(page);
+    this.ready = page.getByRole('heading', { name: /users/i });
+    this.createButton = page.getByRole('button', { name: /create/i });
+    this.searchInput = page.getByRole('searchbox', { name: /search/i });
+  }
+
+  async goto() {
+    await this.page.goto('/users');
+    await this.waitForLoad();
+  }
+
+  async searchFor(query: string) {
+    const resp = this.page.waitForResponse('**/api/users?*');
+    await this.searchInput.fill(query);
+    await resp;
+  }
+}
+```
+
+Rules: locators as public readonly properties, actions as async methods with internal waits, no assertions in page objects, one PO per page.
+
+## Selector Priority
+
+| Priority | Method | Use when |
+|----------|--------|----------|
+| 1 | `getByRole` | Buttons, links, headings, inputs |
+| 2 | `getByLabel` | Form inputs with labels |
+| 3 | `getByPlaceholder` | Search inputs |
+| 4 | `getByText` | Static text content |
+| 5 | `getByTestId` | No accessible selector available |
+
+Never use CSS selectors, XPath, or DOM structure selectors. When adding `data-testid`, use `<action>-<entity>-<type>` pattern: `create-user-btn`.
+
+## Filling Inputs
+
+Prefer `locator.fill(value)` to `page.keyboard.type()`. Synthesised keystrokes drop characters intermittently under a browser-attached session (CDP against an already-running browser), and the driver reports the full string as typed while the DOM holds a short value, so the assertion that would catch it is the one nobody writes. Rich-text editors whose state lives outside the element's `value` (ProseMirror, Slate, TipTap) ignore programmatic writes and still need `type()`; there, assert `input_value()` (or the editor's own serialized content) after typing and retry on a short read.
+
+## Wait Strategies
+
+Never use `waitForTimeout` or `setTimeout`. Do not use `waitForLoadState('networkidle')` as a readiness signal; Playwright's API docs mark it discouraged for testing and point to web assertions instead. Start a `waitForResponse` before the action that triggers the request, or a fast response is missed. Use explicit conditions:
+
+```typescript
+await page.getByRole('heading', { name: 'Dashboard' }).waitFor();
+await page.waitForURL('/dashboard');
+const resp = page.waitForResponse(
+  (r) => r.url().includes('/api/users') && r.status() === 200,
+);
+await page.getByRole('button', { name: /load/i }).click();
+await resp;
+await page.getByTestId('spinner').waitFor({ state: 'hidden' });
+```
+
+## Auth State Reuse
+
+Save auth state once per run and reuse it in that run's dependent test projects. Add `/e2e/.auth/` to the root `.gitignore` before generating state. Browser state can include reusable credentials. Give each invocation a private directory and verify Git ignores the exact state file before running the fixture. [Playwright authentication guide](https://playwright.dev/docs/auth#core-concepts)
+
+Pass the same auth state setup to focused, repeated, headed, or UI runs that load this config. Replace the final test command below with the desired invocation.
+
+```bash
+(
+  mkdir -p e2e/.auth || exit
+  auth_dir=$(mktemp -d e2e/.auth/run.XXXXXXXX) || exit
+  trap 'rm -f -- "$auth_dir/user.json"; rmdir -- "$auth_dir"' EXIT
+  if ! git check-ignore -q -- "$auth_dir/user.json"; then
+    printf '%s\n' 'Auth state path must be ignored by Git' >&2
+    exit 1
+  fi
+  PLAYWRIGHT_AUTH_FILE="$PWD/$auth_dir/user.json" npx playwright test
+)
+```
+
+```typescript
+// e2e/fixtures/auth.fixture.ts
+import { test as setup } from '@playwright/test';
+
+setup('authenticate', async ({ page }) => {
+  const authFile = process.env.PLAYWRIGHT_AUTH_FILE;
+  if (!authFile) throw new Error('PLAYWRIGHT_AUTH_FILE is required');
+
+  await page.goto('/login');
+  await page.getByLabel('Email').fill('testuser@example.com');
+  await page.getByLabel('Password').fill('TestPassword123!');
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await page.waitForURL('/dashboard');
+  await page.context().storageState({ path: authFile });
+});
+```
+
+Tests receive auth state via `storageState` in config projects.
+
+## Test Data & Network
+
+- Tests create own data via API helpers (faster than UI), clean up in `finally` blocks
+- Mock responses with `page.route('**/api/path', route => route.fulfill({ ... }))`
+- Simulate errors with `route.abort('failed')`
+- For a mocked error path, assert that the intended route handler intercepted the request and that the UI reaches the expected error state. If a service worker intercepts the request first, set `serviceWorkers: 'block'` for the mock-only context as needed. Exercise service-worker behavior separately with workers enabled. [Playwright network guide](https://playwright.dev/docs/network#missing-network-events-and-service-workers)
+
+## Flaky Test Fixes
+
+| Cause | Fix |
+|-------|-----|
+| Hardcoded waits | Explicit wait conditions |
+| Shared test data | Each test creates its own |
+| Animations | Wait for the actual interaction result; for screenshot assertions, use `expect.toHaveScreenshot.animations: 'disabled'` as configured above |
+| Race conditions | Wait for API responses before assertions |
+
+The screenshot animation option affects screenshot assertions. It does not disable application animations during interaction tests.
+
+**Quarantine workflow**: confirm flakiness before quarantining:
+```bash
+npx playwright test --repeat-each=10 path/to/test.spec.ts  # Confirm flakiness
+npx playwright test --retries=3 path/to/test.spec.ts       # Check if retries help
+```
+
+Mark confirmed flaky tests with an issue reference:
+```typescript
+test.fixme(true, 'Flaky - Issue #123');                       // Always skip
+test.skip(!!process.env.CI, 'Flaky in CI only - Issue #123'); // Skip in CI only
+```
+
+```bash
+npx playwright test --headed --debug  # Debug mode
+npx playwright show-trace trace.zip   # Trace viewer
+npx playwright test --ui              # Interactive UI
+```

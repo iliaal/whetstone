@@ -1,0 +1,171 @@
+# Laravel Common Pitfalls: mechanism and fix
+
+Mechanism and fix for the one-line entries in SKILL.md's Common Pitfalls list, plus the request-lifecycle and resource entries linked from Laravel Architecture and API Resources. Entries whose SKILL.md bullet links to `pitfalls-deep.md` are documented there instead; nothing is repeated across the two files.
+
+## Model events and observers
+
+### Query-builder update() and delete() bypass the event layer
+
+`Model::query()->where(...)->update([...])` and `Relation::update()` are query-builder writes: no model events fire, so observers, `Auditable` traits and `static::saving` / `static::updating` hooks are all bypassed. Anything those hooks enforce (an audit row, a search-index sync, a derived-column refresh) is silently void on that path. Fix: `lockForUpdate()` + `save()` inside a transaction keeps events firing; take the raw mass update only with an explicit `// intentionally bypasses <Observer>` comment naming what is skipped.
+
+The same holds for `Model::query()->where(...)->delete()`: a mass delete fires no `deleting`/`deleted` events, so cleanup an observer owns (stored files, polymorphic satellite rows) is skipped, and the external objects are orphaned with nothing pointing at them. Delete per row, or delete the file paths explicitly in the same job.
+
+### FK cascades and the Eloquent event layer are different layers
+
+`->cascadeOnDelete()` is a database constraint. The two failures are mirror images and both are silent.
+
+**The cascade fires and the event layer does not.** The database removes the children itself, Eloquent never loads or deletes them, no `deleted` event fires, and no observer, `Auditable` trait, search sync or storage cleanup runs for them, while the parent's own delete IS audited, so the log looks populated and contains no record of what the cascade took with it. The tell in review: a sibling path in the same codebase deleting children row by row with a comment explaining why. That comment is the codebase saying it depends on model events, so every FK cascade in that family is a hole in whatever the events enforce.
+
+**The cascade does not fire at all when the parent soft-deletes.** `SoftDeletes` intercepts `delete()` at the model layer and rewrites it as `UPDATE ... SET deleted_at = ...`; `ON DELETE CASCADE` only fires on real `DELETE` SQL. The parent row stays alive, the children's FK still points at a live row, and the cascade is a pure no-op for every path that calls `$parent->delete()`, usually the dominant one. It applies only to the `forceDelete()` minority, with no warning at migration time and no failure at runtime. Same trap in any ORM that overlays soft delete on an SQL referential action.
+
+When a change adds a delete path on a parent, answer both: do the children die by cascade or row by row, and does the parent use `SoftDeletes`? `grep` the parent model for `use SoftDeletes;` and classify every `->delete()` / `->forceDelete()` call site. Delete per row inside the transaction wherever an event-layer invariant must hold. On the test side, write cascade assertions as `$parent->forceDelete()`: `forceDelete()` is defined on the base Eloquent `Model`, not only on the trait, so it is safe to write before `SoftDeletes` lands and stays green when the trait arrives from the target branch (verify at the pinned version rather than trusting that).
+
+### Observer deleting() cleanup at parent scope nukes siblings
+
+`Storage::deleteDirectory($parent->uploadPath)` in a child's `deleting()` observer wipes storage for every sibling while their rows still point at the deleted keys. Detection: when a single-row `delete()` has an observer, check whether each hook operates at row scope or parent scope. Fix: scope the cleanup to the row's own paths, or move it to an Action that knows the sibling count.
+
+### An updating() observer without a dirty-guard fires on unrelated writes
+
+An `updating()` hook that rewrites state (promoting a placeholder row's status, recomputing a derived column) runs on every `save()`/`update()` of the model, not only the write it was written for. A flag-only or sort-order `update()` then silently moves a placeholder row to a satisfied status. Gate the hook on `isDirty('<triggering field>')`, or use `updateQuietly()` for the unrelated write, and test with events on, because `withoutEvents()` hides it.
+
+### BelongsToMany pivot writes fire no model events without using()
+
+`attach` / `detach` / `sync` / `updateExistingPivot` are query-builder writes: without `using()`, no pivot model events fire and observers and audit traits record nothing. Fix: make the pivot a real `Pivot` model (`->using(PivotModel::class)`). With `using()` set, the same calls go through the model: `attach` saves a new pivot instance per record (`attachUsingCustomClass`), `detach` deletes each attached pivot model (`detachUsingCustomClass`), and `updateExistingPivot` saves the loaded pivot (`updateExistingPivotUsingCustomClass`), so their events fire without hand-written `save()` calls.
+
+Qualification for one path: `syncWithoutDetaching([$id => [...]])` is attach-or-UPDATE, not insert-only, and `using()` decides both idempotency and whether events fire. It is `sync($ids, false)` (the `false` disables detaching and nothing else), and `attachNew()` routes an already-attached id with a non-empty attribute array to `updateExistingPivot()`. Without `using()` that is an unconditional `UPDATE` plus pivot timestamps and no model events, so re-running with the same value still writes. With `using(CustomPivot::class)` it is dirty-checked through `fill()->isDirty()`, issues no query when unchanged, and DOES fire normal Eloquent events on the pivot subclass. "Is it idempotent?" is answered by `grep -n 'using(' <Model>.php`; "does it clobber?" is answered by the pivot column's value set (a two-case enum has nothing to lose; a `draft`/`verified`/`completed` status does).
+
+**`sync()` reads the RAW pivot table, so a relationship-level `where` does not filter it.** `sync()` / `syncWithoutDetaching()` resolve the current attachments through `getCurrentlyAttachedPivots()` -> `newPivotQuery()`, and `newPivotQuery()` is built on `newPivotStatement()` = `$this->query->getQuery()->newQuery()->from($table)`, a fresh builder inheriting none of the relationship's constraints. It re-applies recorded pivot constraints plus the parent-key constraint; inspect the installed version's replay list rather than assuming every `wherePivot*` form is included. So a soft-delete filter written as `belongsToMany(...)->whereNull('pivot_table.deleted_at')` does NOT reach sync's current-set query: the soft-deleted row counts as attached, sync skips it, and nothing is re-inserted or revived. That makes "sync resurrects a soft-deleted pivot" a false positive for that shape. Use `wherePivotNull('deleted_at')` when that filter must reach the current-set query. Decide by reading which builder the filter lands on, not by the relationship's apparent semantics.
+
+Version caveats: the closure form `wherePivot(fn ($q) => ...)` is recorded into `pivotWheres` (and so reaches `sync()`, `detach()`, and `updateExistingPivot()`) only from Laravel 13.31.0 (framework PR #61488). Earlier releases applied the closure to the relationship query and silently dropped it from the pivot query. Laravel 13.34.0 adds `pivotWhereBetweens` replay for `wherePivotBetween()` and `wherePivotNotBetween()` (framework PR #61747); without that fix, reads can respect the range while those writes affect rows outside it. Scalar `wherePivot($column, '>=', $lower)->wherePivot($column, '<=', $upper)` constraints express an inclusive range on affected versions. Verify each used write operation against in-range and out-of-range rows, including preservation of excluded rows.
+
+## Serialisation and resources
+
+### date:<fmt> cast format reaches toArray(), not JsonResource::resolve()
+
+A `date:<fmt>` cast changes `$model->toArray()` and nothing else. A resource returning the raw attribute emits Carbon's ISO 8601 and ignores the cast, so a cast-format change is not a wire-format change unless the path uses `toArray()` directly (Filament, DTO hydration, `json_encode($model)`). Verify with a live reproducer through the real serialisation path before flagging either direction.
+
+### A nested JsonResource wrapping null never runs the child's toArray()
+
+`ConditionallyLoadsAttributes::filter()` replaces the whole value on `$value instanceof self && is_null($value->resource)` before `resolve()` reaches the child, so the nested resource serialises to JSON `null` and an overriding `toArray()` that would fatal on a null resource is never entered. `Resource::make($nullable)` and an explicit `$nullable ? Resource::make(...) : null` are byte-identical on the wire. The base-class `is_null($this->resource) => []` guard is not the mechanism and is overridden in every real resource.
+
+Probe resource serialisation through the parent's `resolve($request)`. `json_encode(['k' => Child::make(null)])` skips `filter()` entirely and throws, which reads as a production 500 and is not one.
+
+### parent::toArray() in a resource subclass is the parent RESOURCE's whitelist
+
+`JsonResource::toArray()` returns `$this->resource->toArray()` (every non-hidden model attribute), so `$data = parent::toArray($request)` reads as "this serialises the whole model, and a newly added sensitive column leaks unless it is in `$hidden`". That holds only when the resource extends `JsonResource` or `ResourceCollection` **directly**. When it extends another resource, `parent::` is that resource's `toArray()`, which is usually an explicit field whitelist that never touches the new column, and the attribute is not serialised at all, regardless of `$hidden`.
+
+`parent::` is a call up the class hierarchy, not a synonym for the framework default. Resolve the `extends` chain to the class that actually extends `JsonResource` and read that class's `toArray()`; if any ancestor returns an explicit array literal, the spread stops there. Confirm with a grep for the column name across the resource directory; zero hits is dispositive. The inverse mistake is just as real, so the rule is symmetric: read the resolved `toArray()`, never infer it from the base class name.
+
+### $hidden only affects toArray() and toJson()
+
+`$hidden` filters model serialisation (`toArray()`, `toJson()`, and anything built on them) and nothing else. `getAttributes()`, `getDirty()` and `getOriginal()` return raw attributes, and audit packages build old/new values from them, so a hidden PII field still lands in the audit row on every write that touches it. laravel-auditing honours `$hidden` only in strict mode (`audit.strict`, default `false`). Exclude the field explicitly (`$auditExclude` in laravel-auditing) and assert it is absent from the stored audit row, not from the API response.
+
+## Validation and request shape
+
+### Bound expanded input keys before FormRequest validation
+
+`TrimStrings` and `ConvertEmptyStringsToNull` build repeated parent paths for nested input before FormRequest validation. A body-size cap alone does not bound that work. Confirm the installed `TransformsRequest` has the cumulative key-byte guard (20 MiB in v13.38.0). Upgrade or backport the guard on affected versions. In custom equivalents, check the budget before concatenation. Share the query/body budget within each middleware invocation. Reset the budget per request, including after rejection.
+
+Test long parent keys with many descendants below the raw-body limit. Verify HTTP 413 originates from normalization before the next middleware; a rejection by an earlier body-size guard does not exercise this limit.
+
+### Nested-array validation accepts scalar elements
+
+`'items.*.name' => 'string'` does not enforce that each `items.*` is an array. Scalars pass, and then `$data['items'][0]['name']` yields `null` (a blank row) or a `TypeError` (a 500). Always pair per-key rules with `'items.*' => 'array'`.
+
+### array:a,b restricts which keys may appear and requires none of them
+
+`'field' => ['array:a,b']` is a whitelist, not a requirement; pairing it with per-key `sometimes` rules is the intended shape. The trap is downstream: OpenAPI generators publish that key list as the object's `required` array, so the generated request contract marks every key of a section mandatory while every per-key rule is optional, and a `sometimes|nullable` enum key publishes as required AND non-nullable. Never read a generated `required` list as the endpoint's contract; open the FormRequest. The control that proves the list is evidence about `array:` and not about the endpoint: a sibling field with a bare `array` rule emits no `required` at all.
+
+### Empty arrays and absent keys collapse under empty() or truthiness
+
+`empty($data['key']) ? null : ...` as an absence test cannot distinguish `{"key": []}` from a key that was never sent; a plain truthiness check also loses that distinction. `isset()` and `?? null` distinguish an empty array from absence, but conflate an explicit `null` with absence. Use `array_key_exists()` when key presence must remain distinct even for `null`. An `empty()` guard on a Remove / Clear-all affordance can silently skip the emptied collection: 200, nothing written, and a refetch restores what the user deleted. Removing *some* items works, because a non-empty array is not `empty`, so the defect is exactly the remove-all case. Say so, or the report reads as "the whole feature is broken" and cannot be reproduced.
+
+Two amplifiers. Form and query encoding genuinely drop empty arrays (`http_build_query(['key' => [], 'other' => 'v'])` is `other=v`), so over `x-www-form-urlencoded` or `multipart/form-data` the empty collection and the absent key are the same bytes and no server-side guard can recover the distinction; a payload that must carry "explicitly empty" needs a JSON body. And a probe that builds the request with form parameters measures the absent case under an "empty" label, returning the right answer for the wrong reason; a non-empty control passes and proves nothing, because a non-empty array survives encoding. Print the parsed input's own `array_key_exists` verdict and run three rows: empty, non-empty, genuinely absent.
+
+Widening the gate so `[]` means "clear" is a producer-side change, not just a consumer-side one: every upstream hook that can synthesise an empty collection (`prepareForValidation()`, a normaliser that `merge()`s filtered rows back, a serializer default) now reaches a destructive branch, and it runs before the validator, so the per-item `required` rules never see those shapes. Sweep the request pipeline for `merge(`, `replace(`, `array_filter`, `?? []` before shipping the one-line fix.
+
+### FormRequest authorize() = true plus a controller-body 404 leaks existence
+
+`ValidatesWhenResolvedTrait::validateResolved()` runs `prepareForValidation()`, then `passesAuthorization()`, then validation, and only then does the controller body run. An ownership check written as `abort_if(...)` / `abort(404)` inside the controller therefore sits *after* validation, so a foreign-but-existing id combined with an invalid body returns 422 while a non-existent id returns 404 at route binding. An authenticated caller separates "belongs to another tenant" from "does not exist" by probing with `{}`. The same shape appears when a FormRequest with no `authorize()` runs an `after()` closure that does a global lookup: it 422s on existence before the controller's `$this->authorize(...)` can 403.
+
+Tests mask it almost universally, because the natural "other tenant gets 404" test posts a *valid* payload and the controller check fires. Fix: move the ownership and type check into `FormRequest::authorize()` and override `failedAuthorization()` to `throw new NotFoundHttpException`. Regression test shape: foreign-but-existing id plus an empty body must return 404, not 422.
+
+## Authentication and sessions
+
+### AuthenticateSession baselines the password hash on first pass, not at login
+
+`Illuminate\Session\Middleware\AuthenticateSession` (`auth.session`) establishes its baseline lazily: `if (! $request->session()->has('password_hash_'.$driver)) { $this->storePasswordHashInSession($request); }`, then compares the user's current hash against that stored value and logs the session out on mismatch. The baseline is therefore whatever the hash happened to be the **first time the middleware ran for that session**, not the hash at login. If the login route is not itself covered by the middleware and the password changes before any request on the session passes through it, the middleware stores the post-change hash as the baseline and the mismatch never occurs. "Log out other devices on password change" is silently defeated: no exception, no log line, the old session keeps working.
+
+The typical shape: `auth.session` applied to the authenticated route group, login and password-reset routes outside it, and a device that logs in and then goes idle while the password is rotated elsewhere. Rule: any application relying on password-change session invalidation must confirm the login path itself passes through `AuthenticateSession`, not only the routes it protects; read the `route:list --path=login` middleware column rather than the group definition. From v13.33.0 and v12.70.0 (framework PR #61594), `SessionGuard::login()` stores the hash at login, which closes the window for logins through the session guard; still verify coverage in the installed version rather than relying on which side of that change it sits, because the invariant is "baseline written at login", and a middleware-only setup only satisfies it when the login request is covered. Regression test: log in on session A, change the password on session B without touching A, then make one request on A and assert it is logged out.
+
+## Collections
+
+### Collection::unique() compares loosely
+
+`Collection::unique($key = null, $strict = false)` defaults to loose comparison: with no key it is `array_unique($items, SORT_REGULAR)`, and with a key it is `in_array($id, $exists, false)`. PHP compares two numeric-looking strings as numbers, so `"00123" == "123"` and `"1e3" == "1000"` collapse to one element. Any dedup, merge or conflict-detection step that leans on `->unique()` to decide "are these the same value?" silently treats distinct identity strings as equal: a merge-or-throw design that counts distinct values then sees `count() === 1`, concludes there is no conflict, and drops the row that held the other value. Fix: `->uniqueStrict()` (byte equality) for identity columns that can hold numeric-looking values: ids, phone numbers, ZIPs, licence and visa numbers, any code with leading zeros. Same rule for `array_unique` without `SORT_STRING` and `in_array` without `$strict`.
+
+## Logging and exceptions
+
+### QueryException::getMessage() interpolates raw bindings
+
+The message carries the query's raw bindings plus the host and database name, so any log sink or APM that records exception messages leaks parameter values on every failed query. Recent versions add a per-connection `mask_bindings_in_exception_messages` option (env `DB_MASK_BINDINGS`), default off; enable it in production where query exceptions reach logs, after confirming the option exists in the installed version.
+
+## PHP type semantics
+
+### Widening one parameter to ?T obliges auditing every call site that forwards the value
+
+The sibling call downstream still declares `string`, and `null` throws a `TypeError` there, including in a file with no `declare(strict_types=1)`, because coercive mode coerces between scalars and never coerces `null` into one. The PHP 8.1 "passing null to parameter of type string is deprecated" behaviour is internal-functions-only; user functions have thrown on `null` since PHP 7.0. So "no strict_types, it'll coerce" is not a safety net, and the crash lands on the exact null-input case the widening was for.
+
+The mode is decided by the file the CALL is written in, never by the file declaring the callee, so "the callee declares strict types, therefore this 500s" is a phantom; read the caller's first lines. Where the caller is coercive the boundary silently coerces instead of throwing (an object carrying `__toString()` becomes a string), and the follow-up question is whether that string is usable downstream, not whether it threw. `php -r` is coercive; adding `declare(strict_types=1);` to the same snippet reproduces a strict caller, so both modes are one command apart.
+
+## Container lifetimes
+
+### #[Scoped] resets in exactly one place: the queue worker, between jobs
+
+Inside `laravel/framework`, `forgetScopedInstances()` has a single caller, so under PHP-FPM `#[Scoped]` and `#[Singleton]` are indistinguishable (a fresh container per request resets everything anyway). Octane adds a second reset: its published `config/octane.php` runs `FlushTemporaryContainerInstances` on `OperationTerminated`, which calls `forgetScopedInstances()` after every request, task or tick unless the app removed that listener. None of the reset points is a database transaction boundary: a scoped service that fills a memo from rows written inside `DB::transaction()` keeps that memo after the rollback, for the rest of the request or job.
+
+Lazy invalidation (`unset` the key, re-query on the next read) is rollback-safe by construction. Converting it to a write-through refill as an optimisation silently trades that away, and no test that never rolls back mid-request will show it.
+
+### once() can confuse replaced objects whose IDs are reused
+
+PHP can reuse `spl_object_id()` after an object is destroyed. In implementations without framework PR #62121 (released in v13.39.0), including v13.38.0, `once()` can return a previous object's result when the receiver survives but a directly captured argument object is replaced at the same callsite. Confirm the installed `Once` checks captured-object weak references before returning cached values. Otherwise avoid this memoization pattern. Test successive short-lived argument objects on one receiver. `HasOnceHash` uses a separate explicit key contract.
+
+For custom identity caches, use objects as `WeakMap` keys rather than storing only their IDs. An immutable domain key is another option when paired with an explicit invalidation policy.
+
+### config([...]) at runtime is process-wide
+
+`config(['feature.gate' => false])` writes the one config repository the process holds; nothing scopes it to the current command or job. A command that flips a gate leaks the new value to its caller when run through `Artisan::call()`, and to every later job in the same `queue:work` process. Save the old value and restore it in `finally`.
+
+## Deploy and boot
+
+### A set -e container entrypoint is a fail-fast contract
+
+Only put steps in it whose failure should genuinely block traffic. Migrations and `config:cache` qualify. Docs generation, optional caches, and any strict artisan command that exits non-zero on one bad annotation do not: the non-zero exit aborts the entrypoint before php-fpm and the workers start, so the container never boots and every deploy of that image fails. Amplifier to check for: a step that only runs outside local (`if ($this->app->isLocal()) return;`) is green on the author's machine and bricks staging and production only. Move non-critical steps after the workers start, or wrap them so a failure degrades that one feature (a 404 docs page) rather than the service.
+
+### route:cache serializes closure actions rather than rejecting them
+
+Laravel 12 `route:cache` no longer throws `LogicException: Uses Closure`. `Route::prepareForSerialization()` hands the action to `SerializableClosure`, which serializes whatever `$this` closed over, and a closure that captures `$this` from a service provider drags the bound application container in with it, so the cached payload balloons. Verified on Laravel 12.68 it still terminates: it serializes, it does not diverge. Unbounded blowup (`Maximum call stack size / Infinite recursion?`) requires an actual reference cycle, for example the provider storing the closure back onto its own property, which the container then re-serializes on the next pass.
+
+Plain closure routes cache fine; group and middleware closures are fine; only serialized ACTION closures matter. Fix: move the handler to an invokable controller, or capture a local `use ($var)` instead of reaching through `$this`. Verify with `php artisan route:cache; echo $?` with the route present and removed. This is the opposite of `config:cache`, which cannot represent a closure at all and aborts the deploy step.
+
+## Migrations
+
+### The migrations row is written after up() returns and outside its transaction
+
+`Migrator::runUp()` calls `runMigration()` and then, as a separate statement, `repository->log()`. A process killed in that window leaves a committed-but-unrecorded migration. On a deploy model that runs `migrate --force` at container preboot and can kill the task mid-boot, the migration stays "pending", every subsequent container re-runs `up()`, hits `relation already exists` / `type already exists`, and crash-loops, bricking every further deploy, not just this one.
+
+Use an early-return `Schema::hasTable()` guard only when the database commits the entire migration in one transaction and the table can only be created by that transaction. For independent commits or nontransactional DDL, split atomic DDL from nontransactional work where feasible. Otherwise make each step resumable. Inspect the exact definition and validity of each existing object, repair incomplete steps, and fail on a conflicting definition. Verify the whole intended schema before returning from `up()`. Exercise a retry from a partially applied state, including an invalid index after an interrupted `CREATE INDEX CONCURRENTLY` if that step applies.
+
+## Outbound HTTP
+
+### Http::batch() can report success for Laravel request exceptions
+
+In affected versions including v13.38.0, `Batch` checks Guzzle's exception class but misses `Illuminate\Http\Client\RequestException` results from `throw()` or retry exhaustion. Those failures can leave `failedRequests` at zero and run `then`; ordinary failed responses are already counted. Confirm the installed implementation contains framework PR #62120's handling of both exception classes (released in v13.39.0).
+
+Until fixed, gate success side effects on the expected result count/keys and every result being an `Illuminate\Http\Client\Response` acceptable under the application's contract. Perform that check before the side effect, including inside `then` if the callback performs it. Neither `then` nor `hasFailures()` alone establishes success. Test ordinary HTTP failure, thrown HTTP failure, retry exhaustion, and transport failure.
+
+### Http::timeout() is per redirect hop, not per logical call
+
+It becomes `CURLOPT_TIMEOUT_MS` on one curl handle, and Guzzle follows redirects itself: `RedirectMiddleware` re-invokes the handler per hop with the same options, so each hop gets a fresh full budget. With the default `max` of 5 the ceiling is `(max_redirects + 1) x timeout`: 90s at `timeout(15)`, not 15s.
+
+A hanging endpoint IS bounded correctly, because curl aborts the hop and the exception ends the call, so `rows x timeout` is the right figure for "every request hangs" and the wrong one for a worst case, since six hops each answering just under the timeout reaches `6N`. Anything sized off that aggregate inherits the error: a `withoutOverlapping()` expiry, a queue `$timeout`, a task timeout, an SLO. `Http::fake()` does not model redirect latency, so this is not reproducible in a test.

@@ -1,0 +1,91 @@
+# Worktree integration
+
+## Dependency Provenance
+
+Never satisfy a worktree's gitignored dependency directory with a symlink to another checkout's. Generated autoloaders and module resolvers compute the application base directory from the *real* location of their own files, so the link resolves back into the donor tree and every first-party class or module loads from there: your worktree's edits never execute, new files appear as "not found", and config comes from the other tree's `.env`. Give the worktree a real directory: `cp -al <donor>/vendor "$WT/vendor"` (hard links: same inodes, near-zero disk, correct base dir) for a read-only harness, or a full dereferencing copy / real install whenever anything will write into it, because with hard links a package-manager write edits the donor too. Assert it once rather than assuming: print the resolved file path of one first-party symbol and confirm it names the worktree.
+
+Give each worktree its own build output directory. Build tools name workspace-member artifacts without the checkout path, so worktrees that share one target (`CARGO_TARGET_DIR`, a shared `build/`) overwrite each other's artifacts; the result is a stale binary or a compile error about code the current worktree does not contain. To keep the cache saving across worktrees, use a compiler cache whose hashing ignores the checkout path.
+
+
+## Environment Detection
+
+Before creating worktrees, detect the execution context:
+
+1. **Worktree support and permissions?** Inspect the installed `git worktree` commands and effective permissions before choosing a workflow. Check whether permitted operations allow writes to both the destination and repository administration data, resolving the common directory with `git rev-parse --git-common-dir`. Environment variables and path prefixes alone do not establish that worktrees are unavailable. Preserve requested isolation. If an isolated checkout is unavailable, serialize only in an exclusively owned checkout when that satisfies the task; otherwise report the limitation. Do not switch branches in a shared checkout as a fallback.
+2. **Bare repo?** If `git rev-parse --is-bare-repository` returns true, follow the creation procedure in [SKILL.md](../SKILL.md) with the destination `<common-git-directory>/.worktrees/<branch>`. Confirm that location against the resolved common Git directory, and keep the same path, base-commit, ownership, and cleanup checks. Copy no environment files: no main checkout exists. No `.gitignore` or main-checkout marker is written in the bare repository.
+
+Adapt the workflow to the detected context rather than failing with a generic error.
+
+
+## Integration with Workflows
+
+### Code review (`/ia-review` in Claude Code)
+
+1. Check current branch
+2. If ALREADY on target branch -> stay there, no worktree needed; for a PR target, first confirm `git rev-parse HEAD` equals `gh pr view <pr> --json headRefOid -q .headRefOid`, and on a mismatch refetch or review `gh pr diff <pr>`
+3. If DIFFERENT branch -> Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. Options: 1) review in a new worktree 2) switch branch in place
+
+### Plan execution (`/ia-work` in Claude Code)
+
+Always offer choice:
+1. New branch on current worktree (live work)
+2. Worktree (parallel work)
+
+
+## Branch Completion
+
+When work in a worktree is done, verify tests pass, then present exactly 3 options. Ask via AskUserQuestion (Claude Code; load with ToolSearch `select:AskUserQuestion` if not loaded) or request_user_input (Codex); fall back to numbered options in chat. An answer that auto-continued on idle, or a result saying the user may be away or nobody answered, is not a choice: merge and push nothing, report the branch and worktree as awaiting a decision, and re-ask when the user returns.
+
+1. **Merge locally**: merge into base branch, delete worktree branch, clean up worktree
+2. **Push + PR**: push branch, create PR with `gh pr create`, keep worktree until merged
+3. **Keep as-is**: leave branch and worktree for later
+Discarding is never offered as an option. Delete the branch and worktree only when the user asks for it explicitly, and require typing "discard" to confirm first. No silent discards.
+
+### Local merge and recovery
+
+1. Before an authorized local merge, require an exclusively owned base checkout with a clean tracked working tree and index. Record `integration_base=$(git rev-parse HEAD)`, then merge the selected feature commit and record `integration_head=$(git rev-parse HEAD)`. Preserve the feature branch and worktree until post-merge checks pass.
+2. Run the applicable checks against the integrated checkout. If they fail, retain the feature branch and diagnose. If the merge changed nothing (`integration_head` equals `integration_base`), report the failing baseline; there is no integration to undo.
+3. Before recovery, confirm HEAD still equals `integration_head` and the tracked working tree and index remain clean. Preserve test-generated or intervening changes; if they prevent safe recovery, report the blocker instead of overwriting them.
+4. Reverse the complete integrated tree, including every commit delivered by a fast-forward, using an inverse patch in this owned checkout:
+
+   ```bash
+   rollback_patch=$(mktemp)
+   git diff --binary --no-ext-diff --no-textconv --src-prefix=a/ --dst-prefix=b/ "$integration_head" "$integration_base" -- > "$rollback_patch"
+   git apply --check --index "$rollback_patch"
+   git apply --index "$rollback_patch"
+   git diff --cached --binary --no-ext-diff --no-textconv
+   test "$(git write-tree)" = "$(git rev-parse "$integration_base^{tree}")"
+   git commit -m "Revert failed feature integration"
+   git diff --exit-code "$integration_base" HEAD --
+   ```
+
+   The explicit prefixes keep the patch applicable under a user's `diff.noprefix` or `diff.srcPrefix`/`diff.dstPrefix` config, which would otherwise make `git apply` strip the wrong path component and fail at the moment recovery is needed.
+
+5. Inspect the exact rollback commit, rerun the applicable checks, and report the recovery result. Do not claim restoration until the tree matches the captured base and checks have completed. Keep the feature branch for diagnosis.
+
+`git revert -m 1 HEAD` can succeed on an ordinary commit, but reverting only the tip of a multi-commit fast-forward leaves earlier feature changes integrated. Capturing the base and reversing the complete integration avoids that partial recovery for either merge topology.
+
+
+## Change Summary
+
+When completing work in a worktree (before merge or PR), output a structured summary; omit any section with nothing to report:
+
+```
+CHANGES MADE:
+- src/routes/tasks.ts: Added validation middleware
+
+THINGS I DIDN'T TOUCH (intentionally):
+- src/routes/auth.ts: Has similar validation gap but out of scope
+
+POTENTIAL CONCERNS:
+- The Zod schema is strict -- rejects extra fields. Confirm this is desired.
+```
+
+The "DIDN'T TOUCH" section prevents reviewers from wondering whether adjacent issues were missed or intentionally deferred.
+
+
+## Hooks and Local Excludes
+
+Before writing any git hook, check `git config core.hooksPath`; Husky repos ignore `.git/hooks/` entirely. Personal tooling excludes go in `$(git rev-parse --git-path info/exclude)`, never the tracked `.gitignore`. Details: [hooks-and-excludes.md](./hooks-and-excludes.md)
+
+In a linked worktree `.git` is a file, so every `.git/<state-file>` test is wrong: `test -f .git/MERGE_HEAD` reports "no merge in progress" in the middle of a conflict, because per-worktree state lives in the common dir under `worktrees/<name>/`. Ask the plumbing instead: `git rev-parse -q --verify MERGE_HEAD` for the state, `git rev-parse --git-path <file>` for the path. Same for `REBASE_HEAD`, `CHERRY_PICK_HEAD`, and hook paths.

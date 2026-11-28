@@ -273,6 +273,7 @@ write_fixture_files() {
 
 	printf 'raise SystemExit(0)\n' >distillery/scripts/distiller.py
 	printf 'raise SystemExit(0)\n' >scripts/generate-manifest.py
+	printf 'raise SystemExit(0)\n' >scripts/package-claude-directory.py
 	printf '{}\n' >distillery/.skill-versions.json
 	printf 'fixture\n' >distillery/tests/fixture.txt
 	printf '%s\n' '---' 'name: ia-debugging' 'description: Debug failures.' '---' >plugins/whetstone/skills/ia-debugging/SKILL.md

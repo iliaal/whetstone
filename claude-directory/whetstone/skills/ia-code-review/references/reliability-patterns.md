@@ -1,0 +1,81 @@
+# Reliability Patterns
+
+Review lens for operational resilience: what happens when things go wrong at runtime.
+
+## Error Handling Completeness
+
+- **Swallowed errors**: empty `catch` blocks, `.catch(() => {})`, bare `except: pass`. Every error must be logged, re-thrown, or explicitly documented as intentional.
+- **Partial error handling**: catching at the top but not handling failures from intermediate steps. If step 2 of 5 fails, are steps 1's side effects cleaned up?
+- **Error type specificity**: catching broad exception types (`Exception`, `Error`) when only specific failures are expected. Broad catches mask unexpected bugs.
+- **Error context stripping**: re-throwing without the original cause/stack. Wrap, don't replace.
+- **Idempotent-retry branch that skips the rest of the operation**: when one logical operation is two calls (confirm then mark-verified, create then attach) and the handler treats "already done" on the first as "fully handled", a failure between the two becomes permanent: the retry returns success without ever performing the second call. The already-done path must still run the remaining calls.
+- **Partial-failure abort guard keyed on success instead of output**: a fan-out that isolates failed sub-operations and publishes the survivors usually guards "nothing salvaged, fail loudly". Keyed on "every sub-operation failed", it passes when the data-bearing parts failed and the rest succeeded empty, and publishes an empty result as success. Key the guard on "something failed and the final output is empty", and test the mixed failed-plus-empty-survivors input. A chain of continue-on-error steps has the same hole: it exits 0 on 100% item failure unless something aggregates the counts.
+
+## Timeout and Cancellation
+
+- **Unbounded external calls**: HTTP requests, DB queries, queue operations, file I/O without timeouts. Every external call must have an explicit timeout.
+- **Timeout propagation**: if a request has a 30s timeout but calls three services sequentially, each needs a fraction of the budget, not the full 30s.
+- **Nested timeout controls**: distinguish the overall operation budget from each request's timeout and check that they can be configured independently. Raising or disabling the outer budget must not imply that an unchanged inner timer was raised or disabled. State the effective limits and which deadline fired; inspect the caller's cancellation state before attributing failure to the request timer.
+- **Cancellation handling**: long-running operations should respect cancellation signals (AbortController, context cancellation, CancellationToken). Check whether in-flight work is abandoned or cleaned up.
+
+## Retry Logic
+
+- **Retry without a safety proof**: retrying a non-idempotent operation (payment charge, email send) causes duplicates. Before adding retry logic, verify one of two proofs: write idempotency (a key or natural idempotence), or retry isolation to the pre-write phase. The second is why a missing idempotency key is not automatically a defect: retry is safe under two conditions that must both hold and both be traced. Every transient-prone step (download, external enrichment, lookup) runs *before* the write phase, and the write phase never lets a transient-classifiable exception escape, its layers catching and returning status values instead of raising. Then a retry can only have been triggered from a pre-write step, with nothing yet written to duplicate; a partial write simply stays partial. Verify layer by layer from the I/O call outward; a single un-swallowed transient-prone call sitting after a partial write is the whole bug, and the code comment asserting isolation is only as good as the isolation.
+- **Retry without backoff**: immediate retries under failure just amplify load. Use exponential backoff with jitter.
+- **Unbounded retries**: max attempts must be finite. Infinite retry loops become resource exhaustion.
+- **Retry surface**: retry at the right layer. Retrying an entire transaction because one HTTP call failed wastes work. Retry the call, not the transaction.
+- **Double retry (stacked retry layers)**: application `@retry` wrapping a client SDK that already auto-retries multiplies attempts (3×3 = 9) and the backoff compounds, so a nominal 5s timeout becomes 30s+. Audit the client's default retry policy before wrapping it. Retry at exactly one layer: if the SDK retries, configure its policy; do not add another `@retry` on top. The no-wrapper case needs the same audit: an SDK's `timeout` is normally **per attempt**, and several SDKs default to non-zero built-in retries, so a single call with `timeout=T` has a worst case near `T × (retries + 1)` plus backoff even with no application-level retry around it. "Bounded" is true; a claimed hard ceiling on an interactive path is not. Require `max_retries=0` plus the per-attempt timeout, or an outer deadline.
+- **Assuming a throw reaches the retry mechanism**: "it throws, so the queue retries" holds only if the exception escapes the handler. A `catch` that marks the job failed, disables further retries, or logs and returns turns the throw into a permanent failure with no requeue, and the attempt budget never engages. Read the job's own catch and failure path before asserting either retry-safety or that a retry happens at all.
+
+## Post-Commit External Writes
+
+- **After-commit external mutation is a one-way valve.** Moving an object-store copy, search-index update, or third-party webhook out of the database transaction into an after-commit hook closes "external work done, transaction rolled back" and opens the inverse: the row is committed, the external op fails, and there is no transaction to roll back, no retry, and no reconciler. The row now advertises a state the external store does not hold. Ask three questions: does the committed write encode an invariant that depends on the external op succeeding; is the external op retried on failure (an inline after-commit closure is not); and does anything detect divergence. Escalating to a queued job with retries is necessary but not sufficient: without a terminal-failure handler that reverts the precondition and clears any in-flight flag, you have replaced "lost immediately" with "lost after N retries" while the row still claims the invariant.
+
+## Circuit Breakers
+
+When calling a flaky upstream service:
+- **Missing circuit breaker**: repeated calls to a failing service waste resources and slow everything downstream. Open the circuit after N consecutive failures, half-open to probe recovery.
+- **No fallback**: when the circuit is open, what happens? Graceful degradation (cached data, default response, feature flag) beats a 500 error.
+
+## Resource Cleanup
+
+- **Connection/handle leaks on error paths**: DB connections, file handles, locks acquired in try blocks must be released in finally/defer/context manager. Check BOTH success and error paths.
+- **Pool exhaustion**: if connections are acquired but not returned on timeout or error, the pool drains over time. This is a slow-burn production incident.
+- **Subscription leaks**: event listeners, WebSocket connections, pub/sub subscriptions registered without corresponding unsubscribe on teardown.
+- **Early exit added mid-construction**: a new bailout placed after a function builds state in stages inherits every reference, flag, and scope swap acquired so far. Reading the function's tail for frees misses releases the normal path performs only because the skipped callee sets a flag at run time. Prefer moving the check before the first stage, where nothing is held yet; if it must stay late, list each acquisition and trace who releases it on the normal path.
+
+## Queue and Job Resilience
+
+- **No dead letter queue**: failed jobs that exceed retry limits must go somewhere observable, not disappear silently.
+- **No job idempotency**: workers may receive the same message twice (at-least-once delivery). The handler must be safe to re-execute.
+- **Asynchronous result coverage.** Verify that the job reached the expected terminal state, the client consumed all result pages, and the expected items succeeded. Follow the provider's continuation for the same job until exhaustion, enforce a deadline, and treat repeated cursors as incomplete. Inspect item statuses and any separate error results. If the evidence cannot account for the expected items, report item coverage as unverified. Reuse SDK pagination where verified.
+- **Writers of the same lifecycle state.** When the diff adds a state value or field, or changes a write to lifecycle state (a status or enum column, a claim or lease stamp, a nullable timestamp such as `processed_at`, a counter that triggers an action) or the condition that write checks, search the whole repository for every writer of that state, including SQL functions, triggers, scheduled jobs, and workers the diff does not touch. Tabulate each writer: what it read before deciding, what its write predicate checks, and the state it leaves. Test each added or changed transition against three cases: the same event arrives twice, a stale writer acts after a newer one, and another writer changes the state between this writer's read and its write. The usual defect is a write whose predicate checks less than the decision relied on, such as a decision made from a claim stamp with an update that checks only the status. After a writer takes a claim, every return and thrown error must either finish the work or release the claim.
+- **Missing visibility timeout**: if a worker crashes mid-processing, the message must become available again within a bounded time.
+- **A field added to an in-flight job class defaults for every message already queued.** Payload revival skips the constructor, so the well-known fix (give the field a real default) silently answers a second question: what did the old payload *mean*? A neutral default on a job whose identity is one mode inverts it, and a downstream filter then fans out to nothing. State what an already-enqueued payload stood for, and set the default to that.
+- **A pre-extended visibility timeout also floors the redelivery delay.** A worker that extends invisibility to cover slow work, then raises on an early failure so the message redelivers, inherits the extended window: a sub-second blip costs the full extension. Shorten the window explicitly in the early-failure branch, wrapped so a failure to shorten cannot fail the path. Accept the trade: a short loop burns receive count faster in a sustained outage and pages someone in minutes instead of hours.
+
+## Rollout and In-Flight State
+
+- **A flag that gates the producer is not a revert.** A staged rollout gates the writer on a flag while a shared list or type set gates the readers. Flag on gives a bounded window; flag off removes the bound: the producer never runs, replacement records never arrive, and the reader-side suppression becomes permanent. Grep the flag's config key for every reader; if its only consumer is the producer's dispatcher, "with the flag off the change is inert" is false. Classify each consumer of the shared list as row-keyed or type-keyed.
+- **A memoisation key must cover the transformer, not just the input.** A key over the source digest proves the input unchanged and says nothing about the code that transformed it; the first time two versions coexist (a binary replaced mid-run, a warm container outliving a deploy) the cache serves old-rule output forever. Bind the rule set's digest or the build revision, with a hand-bumped constant as the floor, and prefer over-invalidation. Ask of any added cache: what happens when the process is replaced while the cache directory survives?
+- **The old release is a writer during every rolling deploy.** A new marker column, a new column default, or a repair keyed on a transition (`old === null && new !== null`) is maintained only by instances running the new code. An old instance still serving creates rows already past the transition and without the marker, so a one-shot backfill that already streamed past them and a transition-gated guard both miss them permanently. Enumerate writers of the state, old release included. Close with a re-runnable sweep after old instances drain, or with a write at the invalidating mutation that holds however the state arose; that write is itself absent from old instances, so only the post-drain sweep needs no deploy choreography.
+- **A companion change that deletes redundant enforcement expires the producer's "safe to revert".** While two sides enforce the same rule, one side's change is genuinely additive and reversible. Once the companion removes its copy, the producer is the only place the rule lives, and "additive, revert the change" becomes false with no change to the producer's diff. When a description claims revertability, check for in-flight changes that delete the other copy, and restate the claim against the merge order.
+- **Stamp a request's race-guard marker immediately before persisting it, not before slow I/O.** When completion is detected as `result_ts >= marker_ts`, where `marker_ts` records when this request was made, a marker taken before a multi-second upload or remote call lets any result written during that window (a prior run, a redelivered job) satisfy the comparison, and it shortens every timeout measured from the marker. Take `now()` at the persist; declare the variable before the `try` so a rollback path can still reference it.
+
+## Detection Patterns
+
+Grep-able signals that often indicate reliability gaps:
+
+```
+# Empty catch blocks
+catch\s*\([^)]*\)\s*\{\s*\}
+except:?\s*$\n\s*pass
+
+# HTTP calls without timeout
+fetch\(.*\)(?!.*timeout)
+requests\.(get|post|put|delete)\((?!.*timeout)
+axios\.(get|post|put|delete)\((?!.*timeout)
+
+# Retry without backoff
+retry.*max.*(?!.*backoff|delay|sleep|wait)
+```

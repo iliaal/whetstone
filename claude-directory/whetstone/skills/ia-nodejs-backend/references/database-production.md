@@ -1,0 +1,44 @@
+# Database & Production
+
+> When to read: when picking an ORM, configuring connection pooling, planning a migration, or hardening a Node service for production deploy.
+
+## Database
+
+ORM: **Drizzle** (SQL-like, lightweight) or **Prisma** (schema-first, migrations built-in)
+
+Connection pooling: `new Pool({ max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 2000 })`
+
+Transactions: `BEGIN` → ops → `COMMIT` / catch → `ROLLBACK` / finally → `client.release()`
+
+For message consumers with database effects, enforce a database uniqueness constraint on the consumer and message ID. Insert the receipt and apply the effect in the same transaction. Skip the effect when a committed receipt already exists. Roll back both when handling fails. Acknowledge delivery only after commit. A receipt committed before the effect can suppress necessary retries; a receipt committed afterward can allow the effect twice. Verify replay after rollback succeeds and replay after commit leaves the effect unchanged. External calls, payment operations, and email delivery require their own idempotency or reconciliation contract; the database transaction cannot roll those effects back.
+
+With NestJS RMQ manual acknowledgments (`noAck: false`), choose an explicit settlement policy for internal handler failures. Unsettled deliveries occupy prefetch slots until the channel closes. The opt-in `nackOnInternalError` from v12.6.1 rejects these deliveries without requeue. The broker sends them to the queue's dead-letter exchange if configured and discards them otherwise. Enable the option only where that outcome fits the retry policy. Settle successful deliveries and `RpcException` paths explicitly. Use per-delivery settlement within the handler lifetime so Nest can recognize manual settlement. Settle each delivery at most once on its original channel. v12.6.2 extends original-channel handling to the framework's early rejection paths after reconnect. When the delivery's channel is gone, allow broker redelivery. Verify the configured dead-letter and retry paths through a broker. Exercise reconnect during settlement and check that the consumer handles the next delivery.
+
+64-bit integer columns (`BIGINT` primary keys): configure the driver to return them as `string` or `BigInt` *before* any JS code touches the value, and keep them strings across the API boundary. Ordering is the whole point: casting to string in the serializer, after the driver has already produced a JS `Number`, does not restore the lost digits; precision is gone at parse time. `node-postgres` returns `int8` as a string by default; `mysql2` returns a `Number` unless `supportBigNumbers` and `bigNumberStrings` are set. Nothing throws; IDs past 2^53 just come back with wrong low digits, surfacing much later as "record not found".
+
+Index strategies:
+```sql
+CREATE INDEX idx_col ON t(col);                            -- equality
+CREATE INDEX idx_multi ON t(col1, col2);                   -- composite
+CREATE INDEX idx_partial ON t(col) WHERE status = 'active'; -- filtered
+CREATE INDEX idx_cover ON t(col) INCLUDE (name);            -- covering
+```
+
+Start slow-query inspection with `EXPLAIN`. Use `EXPLAIN ANALYZE` only when executing the query and its side effects is authorized and safe. For writes, prefer disposable data; use a transaction followed by rollback only when all relevant effects are transactional. Watch for sequential scans on large tables.
+
+**Migrations:**
+- Separate schema and data migrations; data backfills in their own migration file
+- Renames/removals use expand-contract: add new column → deploy compatible dual writes → drain old writers → backfill and reconcile → switch reads → drop old in a later deploy (see `ia-postgresql` skill for the full pattern)
+- Never edit a migration that has already run in a shared environment
+- Kysely: always type migrations as `Kysely<any>`, not your app's typed DB interface; migrations are frozen in time and the schema will evolve past them
+- Drizzle/Prisma: keep migration SQL files under version control, review generated SQL before applying
+
+## Production
+
+- **Docker**: multi-stage build using the same supported Node release in builder and runtime, matching the project's `engines` and required APIs (Node 22+ for this skill; for example, `node:22-alpine` while supported). Pin the project's chosen image version or digest; install runtime dependencies with `npm ci --omit=dev`.
+- **Process**: PM2 cluster mode (`instances: 'max'`) or container orchestration
+- **Shutdown**: SIGTERM → stop accepting connections → drain in-flight → close DB pool
+  - Deduplicate signal handling separately from application-initiated shutdown. A SIGTERM listener suppresses Node's default termination; if a signal arrives during `close()`, await the shared shutdown promise and then terminate, rather than returning because shutdown already started. Attempt every resource's teardown even when another fails, with a forced `disconnect()` / `destroy()` fallback when graceful close rejects. Verify both a signal during `close()` and a rejected resource teardown.
+- **Logging**: Pino (structured JSON), not console.log
+- **Health**: `GET /health` returning `{ status: 'ok' }`
+- **Compression**: gzip/brotli via middleware

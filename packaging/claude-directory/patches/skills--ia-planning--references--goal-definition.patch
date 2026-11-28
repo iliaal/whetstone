@@ -1,0 +1,11 @@
+--- a/skills/ia-planning/references/goal-definition.md
++++ b/skills/ia-planning/references/goal-definition.md
+@@ -14,7 +14,7 @@
+ 
+ 1. Run the *Goal Quality Gate* on the stated goal.
+ 2. Pick the path per *When to Plan*: full plan, flat list, or skip.
+-3. For a full plan, scaffold `.plan/` via [init-plan.sh](../scripts/init-plan.sh).
++3. For a full plan, create `.plan/` per [plan-format.md](./plan-format.md#planning-files).
+ 4. Write the plan per the [plan template](./plan-format.md#plan-template), applying the quality, sizing, and task rules.
+ 5. Run the [Verify checklist](../SKILL.md#authority-and-verification) against the finished plan.
+ 6. Continue authorized implementation unless [Execution handoff](./execution-handoff.md#execution-handoff) identifies a material choice.

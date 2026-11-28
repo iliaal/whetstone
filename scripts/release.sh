@@ -186,6 +186,14 @@ fi
 python3 "$SCRIPT_DIR/generate-manifest.py"
 echo "  Manifest updated"
 
+echo "[Pre-commit] Regenerating the Claude plugin directory edition..."
+python3 "$SCRIPT_DIR/package-claude-directory.py" || {
+	echo "ERROR: The directory edition failed to build or failed its checks."
+	echo "       Re-author the patches under packaging/claude-directory/patches/ against the current source."
+	exit 1
+}
+echo "  Directory edition regenerated"
+
 if [[ -z "$(git status --porcelain)" ]]; then
 	echo "ERROR: Nothing to commit"
 	exit 1
@@ -223,6 +231,7 @@ git add -A -- \
 # Also stage project-level skill and command changes if any
 git add -A -- .claude/skills/ 2>/dev/null || true
 git add -A -- .claude/commands/ 2>/dev/null || true
+git add -A -- packaging/ claude-directory/ 2>/dev/null || true
 git commit -m "$commit_msg"
 release_sha=$(git rev-parse HEAD)
 

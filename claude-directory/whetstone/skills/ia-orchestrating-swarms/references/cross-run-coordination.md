@@ -1,0 +1,22 @@
+# Cross-Run Coordination
+
+> When to read: designing a multi-agent pipeline that dedupes items across reruns by ID, or that serializes access to one shared resource (a checkout, a test database) across one-shot subprocesses and short-lived subagents.
+
+## Identifier minting
+
+**The orchestrator mints identifiers; workers never do.** Compute IDs in the merge step from model-independent fields. Model-authored titles, summaries, or hashes can vary across runs and duplicate the backlog. Let workers return raw tuples and echo a prior ID only when supplied. Use the same file, category, and nearby lines to locate possible prior matches. Reuse an ID only when the evidence identifies the same underlying issue and the same affected occurrence. Keep separate IDs when that match is ambiguous. Check each evidence quote against the cited file before persisting it.
+
+## TTL lease file
+
+**Serialize a shared resource with a TTL lease file, not a coordination daemon.** When the participants are one-shot subprocesses and short-lived subagents rather than pollers, a message bus is a daemon where a lock is needed; the real concurrency is session-against-session on one checkout or one test database. Four design points decide whether the lease works:
+
+- A file-lock cannot express the lifetime. A round spans many separate invocations, so lock only the read-modify-write of a lease *file* stamped with the session id, and write it by rename from a temp file so a reader never sees a torn lease.
+- Process liveness is not a staleness signal. The acquiring shell exits immediately, so keying staleness on the recorded pid reads every live lease as breakable; expiry is TTL plus explicit release, and the pid is diagnostic only.
+- Expiry outranks ownership. Check the TTL *before* holder equality, or a session's own expired lease reports as held-by-me, the exact false confidence the lease exists to remove.
+- Size the TTL above the work's realistic maximum and renew it while the work is alive. A TTL set exactly equal to the expected duration has no margin: the one run that overshoots frees the lease under itself and admits a second concurrent holder.
+
+Scope it honestly: the lease is advisory for the work. It removes one destructive collision and serializes one resource; it does not stop an agent that never asks.
+
+## Deterministic right-of-way without a lock
+
+**Independent sessions with no shared coordination server converge on the same yield decision by computing it identically.** When two uncoordinated sessions edit one repository and no orchestrator assigned ownership, a lease has nothing to lease. Instead, each side computes a symmetric overlap or risk signal both can evaluate from the same inputs (working-set file overlap, tree distance between touched paths), and breaks ties with a fixed order-independent rule: more progress, then earlier start, then stable id. Both sides read the same facts and apply the same rule, so they never pick the same move. Bound any resulting block to a single tool call, not the session, and fail open on any error: a broken detector must never halt work. This is a design principle for a hook or scanner, not something a prompt can enforce on its own.
