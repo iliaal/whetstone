@@ -17,6 +17,14 @@ This edition contains only Markdown and JSON, as the directory requires for comm
 
 The full plugin, with hooks, scripts, and the MCP server, installs from the source repository: `/plugin marketplace add iliaal/whetstone`, then `/plugin install whetstone@iliaal-marketplace`. Do not install both editions at once; they share the `whetstone` name.
 
+## External services
+
+Whetstone has no telemetry and sends nothing to its author. Some commands contact services through tools you already configured:
+
+- **GitHub**, through your own `gh` CLI login: commands that read or update pull requests, issues, and releases (for example `/whetstone:ia-review`, `/whetstone:ia-work`, `/whetstone:ia-report-bug`, `/whetstone:ia-changelog`) send API requests for the repository you name, only when you run them.
+- **Your own rclone remote**: `/whetstone:ia-feature-video` uploads the recorded video, preview GIF, and screenshots only when you have configured rclone and approve the upload.
+- **Public documentation sites**: research agents fetch official documentation pages with the harness's web tools.
+
 ## Source
 
 Generated from [iliaal/whetstone](https://github.com/iliaal/whetstone) by `scripts/package-claude-directory.py`. Report issues there. MIT licensed.
