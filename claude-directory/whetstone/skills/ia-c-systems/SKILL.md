@@ -1,7 +1,6 @@
 ---
 name: ia-c-systems
 description: "C patterns for systems code, libraries, and native extensions: module layout, function decomposition, status-enum errors, memory safety, undefined behavior, and performance measurement. Use when writing, reviewing, refactoring, or debugging C, working with malloc lifetimes, buffer overflows, sanitizers, or Valgrind, or building native extensions. For C++, see ia-cpp-systems."
-paths: ["**/*.c", "**/*.h"]
 ---
 
 # C Systems & Native Code

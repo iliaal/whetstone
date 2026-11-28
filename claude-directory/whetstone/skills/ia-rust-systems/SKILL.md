@@ -1,7 +1,6 @@
 ---
 name: ia-rust-systems
 description: "Rust patterns for CLI tools, backend services, and general application code. Use when working with Rust, Cargo workspaces, axum/tokio services, clap CLIs, async concurrency, or configuring clippy, rustfmt, cargo-nextest, or Cargo.toml."
-paths: ["**/*.rs", "**/Cargo.toml"]
 ---
 
 # Rust Systems & Services

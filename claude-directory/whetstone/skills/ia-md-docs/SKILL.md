@@ -1,7 +1,6 @@
 ---
 name: ia-md-docs
 description: "Manages project documentation: CLAUDE.md, AGENTS.md, README.md, CONTRIBUTING.md, DOCS.md. Use when asked to update, create, or init these context files. Not for general markdown editing."
-paths: "**/*.md"
 ---
 
 # Markdown Documentation

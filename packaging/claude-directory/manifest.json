@@ -23,7 +23,6 @@
       "description",
       "argument-hint",
       "disable-model-invocation",
-      "paths",
       "model"
     ],
     "command": [

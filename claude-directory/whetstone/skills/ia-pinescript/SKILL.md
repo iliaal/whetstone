@@ -1,7 +1,6 @@
 ---
 name: ia-pinescript
 description: "Pine Script v6: syntax, performance, error diagnosis, backtesting, visualization. Use when writing or debugging `.pine` files or TradingView Pine indicators/strategies."
-paths: "**/*.pine"
 ---
 
 # Pine Script Development
